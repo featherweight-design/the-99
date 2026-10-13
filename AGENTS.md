@@ -860,9 +860,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   Stripe retries rather than a real payment being refused for good), 400 unsigned or stale, 200 to an event type it ignores, and reads no
   feature switch: a payment already taken is processed even while sales are stopped. **The Stripe account is
   SHARED with Concert Crawl** (one LLC; each app has its own restricted key and endpoint, and every endpoint
-  receives every Checkout on the account), so every Session this app creates carries `metadata.app = "the-99"`
-  (`PAYMENTS_APP`), and a Session without it is answered 200 and left alone before anything else is read: never
-  a 503, which would have Stripe retry another app's payment for days. Only one of OURS waiting on config is 503. A `checkout.session.completed` is a TRIGGER: `fulfilCheckoutSession`
+  receives every Checkout on the account), so every Session this app creates MUST carry `metadata.app = "the-99"`
+  (`PAYMENTS_APP`; the Checkout builder is K1b, and its test pins the tag), and a Session without it is answered
+  200 and left alone before anything else is read, with one fixed info line: never a 503, which would have Stripe
+  retry another app's payment for days. Only one of OURS waiting on config is 503. A `checkout.session.completed` is a TRIGGER: `fulfilCheckoutSession`
   retrieves the Session from Stripe and `decideFulfilment` (`fulfil-rule.ts`) grants only a paid, one-item,
   quantity-1 Session for a Price in the pack registry (`packs.ts`, $5 for 40), in its currency and amount net of
   tax, whose customer maps through `stripe_customers` to the account its `client_reference_id` and metadata

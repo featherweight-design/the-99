@@ -86,8 +86,9 @@ describe("POST /api/stripe-webhook: what a verified event does", () => {
       expect((await POST(delivery("checkout.session.completed", { metadata }))).status).toBe(200);
     }
     expect(fulfil).not.toHaveBeenCalled();
-    const logged = [console.info, console.warn, console.error].flatMap((fn) => vi.mocked(fn).mock.calls).length;
-    expect(logged).toBe(0);
+    // One fixed info line each, and nothing louder: a Session of ours that lost its tag still shows.
+    expect(vi.mocked(console.info).mock.calls.flat()).toEqual(Array(6).fill("[stripe-webhook] checkout.session.completed: not this app's Session; ignored"));
+    expect([console.warn, console.error].flatMap((fn) => vi.mocked(fn).mock.calls)).toEqual([]);
   });
 
   it("acknowledges an event type it does not handle, and acts on none", async () => {

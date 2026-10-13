@@ -15,7 +15,8 @@ export const dynamic = "force-dynamic";
  * even while sales are stopped (stopping sales is the Checkout side's switch, from K1b).
  *
  * - Not configured (no signing secret, or no client for this environment): 503, nothing runs. A
- *   completed Checkout with a pack's Price variable unset is 503 too, so Stripe retries it.
+ *   completed Checkout of OURS with a pack's Price variable unset is 503 too, so Stripe retries it;
+ *   another app's is still 200 (below).
  * - A missing, forged or stale signature (5-minute tolerance): 400, nothing runs.
  * - An event type it does not handle: 200 and ignored, so subscribing to more cannot break it.
  * - A Session that is not this app's (`metadata.app`; the account is shared with Concert Crawl): 200 and
@@ -41,10 +42,14 @@ export async function POST(req: NextRequest) {
   const event = verified;
   if (event.type !== "checkout.session.completed") return new Response("Ignored", { status: 200 });
   // The Stripe account is shared with Concert Crawl, and this endpoint receives their Sessions too. One
-  // not tagged as ours is acknowledged and left alone: no retrieve, no record, no log line, and never a
-  // 503, which would have Stripe retry another app's payment for days. The event's own copy is enough to
-  // decide that (the event is signed); granting still reads the retrieved Session.
-  if (!isOurSession(event.data.object.metadata)) return new Response("Ignored", { status: 200 });
+  // not tagged as ours is acknowledged and left alone: no retrieve, no record, and never a 503, which
+  // would have Stripe retry another app's payment for days. The event's own copy is enough to decide that
+  // (the event is signed); granting still reads the retrieved Session. One fixed line says it happened,
+  // so a Session of ours that lost its tag shows in the logs rather than vanishing.
+  if (!isOurSession(event.data.object.metadata)) {
+    console.info(`[stripe-webhook] ${event.type}: not this app's Session; ignored`);
+    return new Response("Ignored", { status: 200 });
+  }
   // One of OURS with a pack's Price variable unset: it cannot be judged, and refusing it would record
   // the event and lose a real payment for good. 503, so Stripe retries once the variable is back.
   if (!paymentsConfigured()) {
