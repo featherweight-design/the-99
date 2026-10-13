@@ -95,7 +95,7 @@ export function resolveEntry(entry: AboutEntry, env: NodeJS.ProcessEnv): AboutEn
 
 /** The entries this deployment draws, in page order. An entry with no switch always draws. */
 export function visibleEntries(
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
   entries: readonly AboutEntry[] = aboutEntries,
 ): AboutEntry[] {
   return entries

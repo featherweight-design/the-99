@@ -2,6 +2,7 @@
 //   pnpm tsx scripts/eval/measure-combos.mts "Counter Intelligence" "Wizards" ...   (no args: every deck)
 import { connectStaging } from "./lib/staging.mjs";
 import type { ComboPieceRow } from "../../src/lib/synopsis/combo-facts";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const argv = process.argv.slice(2);
 const showAll = argv.includes("--all");
@@ -17,7 +18,7 @@ const times: number[] = [];
 for (const d of decks) {
   const head = await loadProfileHead(d.id, d.user_id);
   if (!head) continue;
-  const profile = await loadDeckProfileFromHead(head);
+  const profile = await loadDeckProfileFromHead(head, process.env);
   const t0 = performance.now();
   const out = await loadComboFacts(profile);
   const ms = Math.round(performance.now() - t0);

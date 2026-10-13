@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 import { buildPoolRollup } from "../recs/pool-rollup";
 import { ROLES_WEIGHT, type PoolCard } from "../recs/score";
 import { assembleDiscovery, assembleDiscoveryWithIds, discoveryKey } from "./list";
@@ -376,6 +377,6 @@ describe("discoveryKey", () => {
   });
 
   it("keeps two sorts apart", () => {
-    expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
+    expect(discoveryKey("new", ENV_VIEW)).not.toEqual(discoveryKey("fit", ENV_VIEW));
   });
 });

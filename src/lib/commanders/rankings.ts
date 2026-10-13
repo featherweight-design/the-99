@@ -157,14 +157,14 @@ const PAYLOAD_VERSION = 11;
  * flips without a deploy, and nothing else in this key moves when it does (admin PR 6d-2). `env` is
  * the reader's resolved switches, the same env `loadCommanderRankings` is handed.
  */
-export function commanderRankingsKey(env: NodeJS.ProcessEnv = process.env): string[] {
+export function commanderRankingsKey(env: NodeJS.ProcessEnv): string[] {
   return ["commander-rankings", `v${PAYLOAD_VERSION}`, `basis:${roleBasisFromEnv(env)}`];
 }
 
 export async function loadCommanderRankings(
   userId: string,
   /** The reader's resolved switches (`requestSwitchEnv`). */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<CommanderRankings> {
   const rankedList = await getRankedList(userId, env);
   const { items: ranked, degraded, uniqueCardsRead, candidateCount } = rankedList;

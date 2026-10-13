@@ -11,7 +11,7 @@ for (const { path, line, why, fingerprint } of findings) {
   console.error(`${path}:${line} ${why} [${fingerprint}]: decide a switch from the reader's env (requestSwitchEnv), never process.env`);
 }
 for (const { path, kind, fingerprint, expected, found, lines } of drift) {
-  const list = kind === "default" ? "DEFAULTS_PENDING" : "ALLOWED/PENDING";
+  const list = kind === "default" ? "DEFAULTS_PENDING" : "ALLOWED";
   const where = lines.length ? ` (lines ${lines.join(", ")})` : "";
   if (found > expected) {
     const fix = kind === "default" ? "take the reader's env as a required parameter instead" : "pass the reader's env (requestSwitchEnv) instead";

@@ -86,9 +86,8 @@ export async function liveOffendingIds(tx: Tx, deckId: string, commanderIds: rea
 export async function loadDeckNotices(
   deckId: string,
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the rows' deck printing picks; the environment
-   *  alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the rows' deck printing picks. */
+  env: NodeJS.ProcessEnv,
 ): Promise<DeckNotices | null> {
   // The deck, its reading and its cards from ONE snapshot: read apart, an edit or an analysis
   // committing between them pairs a reading's marks with a list it never described.

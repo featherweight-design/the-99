@@ -42,7 +42,7 @@ export async function overviewDataMovedFor(
   userId: string,
   overviewSeen: number,
   /** The reader's resolved switches (`requestSwitchEnv`). */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<boolean> {
   // Behind the notices switch: off, no overview is marked stale by data it cannot show.
   if (!noticesEnabled(env)) return false;

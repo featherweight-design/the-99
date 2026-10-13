@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { ENV_VIEW } from "@/test/env-view";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { aboutCopy } from "../../lib/copy/about";
 import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
@@ -17,7 +18,7 @@ afterEach(() => {
 
 describe.each([false, true])("About with HOW_IT_WORKS_ENABLED off (sheetMode %s)", (sheetMode) => {
   it("draws no appendix and keeps the intro word for word", () => {
-    const { container } = render(<AboutPage seen={0} sheetMode={sheetMode} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} sheetMode={sheetMode} />);
     expect(container.querySelector("#how-it-works")).toBeNull();
     expect(container.querySelector("[data-method]")).toBeNull();
     expect(screen.queryByText(howItWorksRowsCopy.title)).toBeNull();
@@ -31,7 +32,7 @@ describe.each([false, true])("About with HOW_IT_WORKS_ENABLED off (sheetMode %s)
 describe("About with HOW_IT_WORKS_ENABLED on", () => {
   it("draws the appendix after the chapters", () => {
     process.env.HOW_IT_WORKS_ENABLED = "true";
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const section = container.querySelector("#how-it-works");
     expect(section).not.toBeNull();
     const chapters = [...container.querySelectorAll("section[id^='chapter-']")];
@@ -43,7 +44,7 @@ describe("About with HOW_IT_WORKS_ENABLED on", () => {
 
   it("links each entry the appendix explains to its row, and nothing else", () => {
     process.env.HOW_IT_WORKS_ENABLED = "true";
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const links = [...container.querySelectorAll<HTMLAnchorElement>("[data-entry-link]")];
     const drawn = [...container.querySelectorAll("section[id^='chapter-'] li[id]")].map((li) => li.id);
     const expected = drawn.filter((id) => entryRow[id]);
@@ -57,7 +58,7 @@ describe("About with HOW_IT_WORKS_ENABLED on", () => {
 
   it("lists the entries that explain each row, back up the page", () => {
     process.env.HOW_IT_WORKS_ENABLED = "true";
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     fireEvent.click(screen.getByRole("button", { name: /^Prices/ }));
     const body = container.querySelector("#how-prices-body")!;
     const back = [...body.querySelectorAll<HTMLAnchorElement>("a[href^='#']")].map((a) => a.getAttribute("href"));
@@ -68,7 +69,7 @@ describe("About with HOW_IT_WORKS_ENABLED on", () => {
 
   it("adds the appendix and its eight rows to both contents, and eight to the search's total", () => {
     process.env.HOW_IT_WORKS_ENABLED = "true";
-    const { container } = render(<AboutPage seen={0} sheetMode />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} sheetMode />);
     const navs = [...container.querySelectorAll("nav")].filter((n) => n.querySelector("a[href='#how-it-works']"));
     expect(navs).toHaveLength(2);
     const rail = navs.find((n) => n.querySelectorAll("a[data-entry-row][href^='#how-']").length === 8)!;

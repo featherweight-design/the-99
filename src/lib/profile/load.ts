@@ -285,7 +285,7 @@ function compositionFrom(row: CompositionRow | undefined) {
  * ceiling expires. The head already holds `(oracleId, quantity)`, so this joins `cards` by
  * those ids.
  */
-export async function loadDeckProfileFromHead(head: ProfileHead, env: NodeJS.ProcessEnv = process.env): Promise<DeckProfile> {
+export async function loadDeckProfileFromHead(head: ProfileHead, env: NodeJS.ProcessEnv): Promise<DeckProfile> {
   const commanderIds = [
     head.commanderOracleId,
     ...(head.partnerOracleId ? [head.partnerOracleId] : []),
@@ -581,7 +581,7 @@ async function loadStaples(
 export async function loadDeckProfile(
   deckId: string,
   userId: string,
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<DeckProfile | null> {
   const head = await loadProfileHead(deckId, userId);
   return head ? loadDeckProfileFromHead(head, env) : null;
@@ -603,7 +603,7 @@ export async function loadDeckProfile(
 export async function cachedDeckProfile(
   deckId: string,
   userId: string,
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<DeckProfile | null> {
   const head = await loadProfileHead(deckId, userId);
   if (!head) return null;

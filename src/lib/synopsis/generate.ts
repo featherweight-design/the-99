@@ -13,7 +13,7 @@ import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
 import { readProfileHead } from "../profile/load";
-import { readStoredReading, sameList, type StoredProfileDeps } from "../profile/stored";
+import { readStoredReading, requestProfileDeps, sameList, type StoredProfileDeps } from "../profile/stored";
 import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } from "./limits";
@@ -296,7 +296,7 @@ export async function readShownSynopses(deckIds: readonly string[], userId: stri
  * against the READING's stamp rather than an earlier read of the row is what lets the quiet
  * rebuild of an older `PROFILE_VERSION` through, since that rebuild moves `computed_at` itself.
  */
-async function freshReading(deckId: string, userId: string, deps?: StoredProfileDeps) {
+async function freshReading(deckId: string, userId: string, deps: StoredProfileDeps) {
   const reading = await readStoredReading(deckId, userId, deps);
   if (!reading?.fresh) return null;
   const [row] = await db
@@ -311,12 +311,12 @@ async function freshReading(deckId: string, userId: string, deps?: StoredProfile
 export async function factsFor(
   profile: Parameters<typeof buildSynopsisFacts>[0],
   /** Read the combos of any size, assembled or one card short (one query). Off unless the v2 method is on. */
-  v2?: boolean,
+  v2: boolean | undefined,
   /** Quote the evidence benchmarks' interaction reading (plan PR 1b), so the Overview and the
    *  Analysis tab's grade agree. Off with the switch: the facts are exactly the classifier's. */
-  benchmarks?: boolean,
-  /** The switches either flag left out is read from: the eval harness runs outside a request. */
-  env: NodeJS.ProcessEnv = process.env,
+  benchmarks: boolean | undefined,
+  /** The switches either flag left out is read from; the eval harness, outside a request, passes `process.env`. */
+  env: NodeJS.ProcessEnv,
 ): Promise<SynopsisFacts> {
   return (await factsWithSource(profile, v2 ?? overviewV2Enabled(env), benchmarks ?? deckBenchmarksEnabled(env))).facts;
 }
@@ -443,7 +443,7 @@ export async function startRun(
    */
   method: "free" | "paid" | null = null,
   /** The reader's resolved switches (`requestSwitchEnv`): the notices switch the lock re-checks. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "free_gone" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
@@ -613,7 +613,7 @@ async function run(
   // Read once: a write is made wholly under one contract, whatever the switch does mid-flight.
   const v2 = overviewV2Enabled(env);
   const benchmarks = deckBenchmarksEnabled(env);
-  const reading = await freshReading(deckId, userId, deps.profile);
+  const reading = await freshReading(deckId, userId, deps.profile ?? requestProfileDeps(env));
   if (!reading) return { kind: "no_reading" };
   const current = await readShownSynopsis(deckId, userId, reading.list);
   if (retry && (!current || current.id !== retry.id || current.fingerprint !== reading.list)) return { kind: "nothing_to_retry" };
@@ -724,13 +724,13 @@ async function run(
 
 /**
  * Write the deck's synopsis, or return the one already written for this list. `env` is the reader's
- * resolved switches (`requestSwitchEnv`); a probe or a script, outside a request, takes the environment.
+ * resolved switches (`requestSwitchEnv`); a probe or a script, outside a request, passes `process.env`.
  */
 export function writeSynopsisFor(
   deckId: string,
   userId: string,
   deps: GenerateDeps = defaultDeps(),
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<WriteResult> {
   return run(deckId, userId, deps, null, env);
 }
@@ -745,7 +745,7 @@ export async function retrySynopsisFor(
   synopsisId: string,
   deps: GenerateDeps = defaultDeps(),
   /** As `writeSynopsisFor`'s. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<WriteResult> {
   const current = await readShownSynopsis(deckId, userId);
   if (!current || current.id !== synopsisId) return { kind: "nothing_to_retry" };

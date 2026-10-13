@@ -22,7 +22,7 @@ vi.mock("../../lib/about/visible", async (importOriginal) => {
   const real = await importOriginal<typeof import("../../lib/about/visible")>();
   return {
     ...real,
-    visibleEntries: (env?: NodeJS.ProcessEnv) => [...real.visibleEntries(env), ...extraEntries] as ReturnType<typeof real.visibleEntries>,
+    visibleEntries: (env: NodeJS.ProcessEnv) => [...real.visibleEntries(env), ...extraEntries] as ReturnType<typeof real.visibleEntries>,
   };
 });
 

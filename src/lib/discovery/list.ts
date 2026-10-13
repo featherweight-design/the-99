@@ -389,7 +389,7 @@ const PAYLOAD_VERSION = 9;
     in this key moves when it does: without it an entry counted by one basis would be served under
     the other for up to the hour ceiling (admin PR 6d-2). `env` is the reader's resolved switches,
     the same env the load is handed. */
-export function discoveryKey(sort: string, env: NodeJS.ProcessEnv = process.env): string[] {
+export function discoveryKey(sort: string, env: NodeJS.ProcessEnv): string[] {
   return ["discovery", sort, `v${PAYLOAD_VERSION}`, `basis:${roleBasisFromEnv(env)}`];
 }
 
@@ -407,8 +407,8 @@ export function discoveryKey(sort: string, env: NodeJS.ProcessEnv = process.env)
 export async function loadDiscoveryPool(
   userId: string,
   /** The reader's resolved switches (`requestSwitchEnv`), which the claim model reads its `locked` key
-   *  and its pending clause from; the environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+   *  and its pending clause from. */
+  env: NodeJS.ProcessEnv,
   /** Called the moment the collection resolves, before the availability read: lets a caller start a
    *  read that needs only the collection (the label read) beside it. */
   onCollection?: (collection: Awaited<ReturnType<typeof loadCollectionPool>>["collection"]) => void,
@@ -444,7 +444,7 @@ export async function loadDiscoveryPool(
 export async function loadDiscovery(
   userId: string,
   opts: { sort: "fit" | "new" },
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<DiscoveryList> {
   return (await loadDiscoveryWithIds(userId, opts, env)).list;
 }
@@ -463,7 +463,7 @@ export async function loadDiscoveryWithIds(
   userId: string,
   opts: { sort: "fit" | "new" },
   /** The reader's resolved switches: the role basis follows its `LABEL_ROLE_COUNTS_ENABLED`. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<{ list: DiscoveryList; oracleIds: string[]; basis: RoleBasis; fellBack: boolean }> {
   // The label read starts the moment the collection resolves, beside the availability read and then
   // the candidate query: it needs only the collection. `loadPoolRoleBasis` never rejects (a failed

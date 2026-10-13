@@ -6,6 +6,7 @@ import { parseArgs } from "node:util";
 import { loadCorpus, renderMetrics, scoreCase, toReply, type Reply } from "./lib/corpus.mjs";
 import { armStats, fromChecked, gateChecks, renderGate, type GateRow } from "./lib/gate.mjs";
 import { acquireRunLock, OVERVIEW_ACCURACY_LIMITS, readLedger, record, refusal, spent } from "./lib/ledger.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 /**
  * The Overview accuracy corpus, two commands (plan 2026-10-10-overview-accuracy.md, 5 and 11).
@@ -180,7 +181,7 @@ if (command === "run") {
       writeFileSync(file, `${JSON.stringify(doc, null, 2)}\n`);
       console.log(`${c.id}: pinned ${live.slice(0, 8)}`);
     }
-    const facts = await factsFor(await loadDeckProfileFromHead(head), v2);
+    const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), v2, undefined, process.env);
     const prompt = buildSynopsisPrompt(facts, undefined, { v2, contract8: v8 });
     const maxTokens = arm.maxTokens;
     const stops: { what: string; stopReason: string | null; outputTokens: number }[] = [];

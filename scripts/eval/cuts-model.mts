@@ -39,6 +39,7 @@ import { costUsd, worstCaseUsd, type Usage } from "./lib/pricing.mjs";
 import { buildParams, parseReply } from "./lib/request.mjs";
 import { ROOT } from "./lib/run.mjs";
 import { connectStaging } from "./lib/staging.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const { values: args } = parseArgs({
   options: {
@@ -122,7 +123,7 @@ type Prepared = {
 const prepared: Prepared[] = [];
 for (const t of truths) {
   const [profile, support] = await Promise.all([
-    loadDeckProfileFromHead(t.head),
+    loadDeckProfileFromHead(t.head, process.env),
     readCutSupport(t.head.commanderOracleId, t.head.partnerOracleId),
   ]);
   const facts = cutFacts({

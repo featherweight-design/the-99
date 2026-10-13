@@ -1,7 +1,7 @@
 // Under `src/`, a feature switch is decided from the READER's resolved env (`requestSwitchEnv`), never
-// from the environment alone (admin plan PR 4 and 5 to 7). Since admin PR 7a every flag function takes
-// its `env` as a required argument, so leaving it out no longer compiles; what still compiles is handing
-// it `process.env` itself, which reads the environment and skips every override. This check holds that
+// from the environment alone. Every flag function and every reader that decides one takes its `env` as a
+// required argument, so leaving it out does not compile; what still compiles is handing it `process.env`
+// itself, which reads the environment and skips every override. This check holds that
 // half: under `src/`, the `process.env` OBJECT never travels anywhere (an argument, a spread or copy, an
 // object property, a variable, a return value, a JSX prop), outside the resolver (`src/lib/switches/`),
 // tests, and the ALLOWED list below.
@@ -14,9 +14,8 @@
 // What is NOT a finding: a member read (`process.env.FOO`, `process.env[key]`), `key in process.env`, and
 // a destructuring read (`const { FOO } = process.env`; a REST element, `const { ...e } = process.env`, is a
 // copy and is a finding). A PARAMETER DEFAULT (`env = process.env`, or `{ env = process.env }` destructured
-// in a parameter, a component's prop) is not a finding either, but is held to DEFAULTS_PENDING so no new
-// one lands while admin PR 7d removes them (7b emptied `src/lib/decks` and `src/lib/tuning`, 7c collection,
-// commander-change, intake, swaps and recs); a binding default in a VARIABLE
+// in a parameter, a component's prop) is held to DEFAULTS_PENDING: every one fails but the `keep` entries
+// there, each of which reads the environment on purpose and says why. A binding default in a VARIABLE
 // (`const { env = process.env } = opts`) is a finding.
 //
 // Every listed occurrence is pinned by a FINGERPRINT, never a line number or a per-file total:
@@ -38,7 +37,7 @@ import ts from "typescript";
  * fingerprints (`<scope>:<use>`, see `occurrences`) it approves, each with its count. Keep it small: an entry
  * is a claim that no reader's switches apply on that path.
  */
-/** @typedef {{ path: string, uses: Record<string, number>, reason: string, pr?: string }} ListEntry */
+/** @typedef {{ path: string, uses: Record<string, number>, reason: string }} ListEntry */
 /** @type {ListEntry[]} */
 export const ALLOWED = [
   {
@@ -50,41 +49,18 @@ export const ALLOWED = [
 ];
 
 /**
- * Files that still fall back to the environment, each removed by a named later PR, pinned by fingerprint like
- * ALLOWED. The check fails when a fingerprint's count moves either way, so the list only shrinks by being edited.
- */
-/** @type {ListEntry[]} */
-export const PENDING = [
-  {
-    path: "src/lib/profile/stored.ts",
-    uses: { "REQUEST_DEPS:argument:requestProfileDeps": 1, "storedBasisMoved:argument:roleBasisFromEnv": 1, "computeAndStoreProfile:fallback:noticesEnabled": 1, "computeAndStoreProfile:fallback:roleBasisFromEnv": 1 },
-    pr: "7d",
-    reason: "`REQUEST_DEPS`, `storedBasisMoved`'s default basis and `deps.env ?? process.env`",
-  },
-];
-
-/**
- * Parameter defaults of `process.env` (`env = process.env`, or `{ env = process.env }` destructured in a
- * parameter), pinned per file by fingerprint (`<scope>:default:<name>`) with a count each, the same way as
- * PENDING: a new default fails, and a removed one fails until its entry shrinks. Admin PR 7d
- * empties the rest (7b emptied `src/lib/decks`' and `src/lib/tuning`'s, 7c collection's, commander-change's,
- * intake's, swaps' and recs'); `keep` names a default that reads the environment on purpose, with its reason.
- * Seeded from the tree at admin PR 7a.
+ * The parameter defaults of `process.env` (`env = process.env`, or `{ env = process.env }` destructured in a
+ * parameter) that read the environment ON PURPOSE, each `keep` with a reason a reviewer can check, pinned per
+ * file by fingerprint (`<scope>:default:<name>`) with a count, the same way as ALLOWED: any other default fails,
+ * and a removed one fails until its entry shrinks.
  */
 /** @type {Record<string, { pr: string, reason?: string, uses: Record<string, number> }>} */
 export const DEFAULTS_PENDING = {
-  "src/components/about/about-page.tsx": { pr: "7d", uses: { "AboutPage:default:env": 1 } },
-  "src/lib/about/visible.ts": { pr: "7d", uses: { "visibleEntries:default:env": 1 } },
-  "src/lib/cards/chain-art.ts": { pr: "7d", uses: { "chainArt:default:env": 1 } },
-  "src/lib/commanders/rankings.ts": { pr: "7d", uses: { "commanderRankingsKey:default:env": 1, "loadCommanderRankings:default:env": 1 } },
   "src/lib/decks/label-counts-flag.ts": {
     pr: "keep",
     reason: "`envForPageBasis`'s `environment`: it reads the ENVIRONMENT's kill switch (`off`) on purpose, which no resolved env carries",
     uses: { "envForPageBasis:default:environment": 1 },
   },
-  "src/lib/discovery/list.ts": { pr: "7d", uses: { "discoveryKey:default:env": 1, "loadDiscoveryPool:default:env": 1, "loadDiscovery:default:env": 1, "loadDiscoveryWithIds:default:env": 1 } },
-  "src/lib/discovery/payload.ts": { pr: "7d", uses: { "loadDiscoveryPayload:default:env": 1 } },
-  "src/lib/discovery/resolve-slug.ts": { pr: "7d", uses: { "resolveCommanderSlug:default:env": 1 } },
   "src/lib/intake/stub.ts": {
     pr: "keep",
     reason: "reads only `NODE_ENV`, `INTAKE_LIVE`, `INTAKE_STUB` and `INTAKE_STUB_DELAY_MS`: deployment settings for the model stand-in, none of them a registry switch, so `resolveEnv` passes each through unchanged and a reader's env could not differ",
@@ -95,17 +71,16 @@ export const DEFAULTS_PENDING = {
     reason: "`stubTheReadDeps` hands its env only to `stubMode` and `stubDelayMs` (`intake/stub.ts`, kept for the same reason): deployment settings, never a registry switch",
     uses: { "stubTheReadDeps:default:env": 1 },
   },
-  "src/lib/notices/overview.ts": { pr: "7d", uses: { "overviewDataMovedFor:default:env": 1 } },
-  "src/lib/notices/read.ts": { pr: "7d", uses: { "loadDeckNotices:default:env": 1 } },
-  "src/lib/profile/load.ts": { pr: "7d", uses: { "loadDeckProfileFromHead:default:env": 1, "loadDeckProfile:default:env": 1, "cachedDeckProfile:default:env": 1 } },
   "src/lib/swaps/fits-read-stub.ts": {
     pr: "keep",
     reason: "reads only `NODE_ENV`, `FITS_READ_LIVE`, `FITS_READ_STUB` and `FITS_READ_STUB_DELAY_MS`: deployment settings for the model stand-in, none of them a registry switch, so `resolveEnv` passes each through unchanged and a reader's env could not differ",
     uses: { "fitsReadLive:default:env": 1, "fitsStubMode:default:env": 1, "fitsStubDelayMs:default:env": 1 },
   },
-  "src/lib/synopsis/generate.ts": { pr: "7d", uses: { "factsFor:default:env": 1, "startRun:default:env": 1, "writeSynopsisFor:default:env": 1, "retrySynopsisFor:default:env": 1 } },
-  "src/lib/synopsis/read.ts": { pr: "7d", uses: { "readSynopsisState:default:env": 1, "readVersionSynopsis:default:env": 1 } },
-  "src/lib/synopsis/stub.ts": { pr: "7d", uses: { "stubMode:default:env": 1, "stubDelayMs:default:env": 1, "stubDelay:default:env": 1, "synopsisLive:default:env": 1 } },
+  "src/lib/synopsis/stub.ts": {
+    pr: "keep",
+    reason: "reads only `NODE_ENV`, `SYNOPSIS_LIVE`, `SYNOPSIS_STUB` and `SYNOPSIS_STUB_DELAY_MS`: deployment settings for the model stand-in, none of them a registry switch, so `resolveEnv` passes each through unchanged and a reader's env could not differ",
+    uses: { "stubMode:default:env": 1, "stubDelayMs:default:env": 1, "stubDelay:default:env": 1, "synopsisLive:default:env": 1 },
+  },
 };
 
 const EXEMPT = (path) => path.startsWith("src/lib/switches/");
@@ -130,7 +105,7 @@ function bindingOwner(node) {
 
 /**
  * What one occurrence of `process.env` does: `read` (only reads the environment), `default` (a parameter
- * default, held per file by DEFAULTS_PENDING until admin PR 7d removes them), or `handoff` (the
+ * default, held per file to DEFAULTS_PENDING's `keep` entries), or `handoff` (the
  * object travels on, a finding).
  */
 function classify(node) {
@@ -287,9 +262,8 @@ async function walk(dir, top = true) {
 }
 
 /**
- * Every finding under `root`'s `src`, and every ALLOWED or PENDING entry whose count no longer matches
- * (`drift`). A file listed in either is held to its count exactly: one more is a new finding, one fewer
- * is an entry to edit.
+ * Every finding under `root`'s `src`, and every ALLOWED entry whose count no longer matches (`drift`). A
+ * listed file is held to its count exactly: one more is a new finding, one fewer is an entry to edit.
  */
 /**
  * Compares the fingerprints `found` in one file against the ones its entry approves (`uses`, fingerprint to
@@ -315,7 +289,7 @@ function compare(path, found, uses, kind) {
  * A hand-off in an unlisted file is a finding; in a listed file, and for parameter defaults everywhere, each
  * fingerprint is held to its listed count, so the lists only shrink by being edited.
  */
-export async function switchReadFindings(root, { allowed = ALLOWED, pending = PENDING, defaults = DEFAULTS_PENDING, dir = "src" } = {}) {
+export async function switchReadFindings(root, { allowed = ALLOWED, defaults = DEFAULTS_PENDING, dir = "src" } = {}) {
   const files = await walk(join(root, dir));
   const handoffs = new Map();
   const defaultsByPath = new Map();
@@ -337,7 +311,7 @@ export async function switchReadFindings(root, { allowed = ALLOWED, pending = PE
     if (h.length) handoffs.set(path, h);
     if (d.length) defaultsByPath.set(path, d);
   }
-  const listed = new Map([...allowed, ...pending].map((e) => [e.path, e]));
+  const listed = new Map(allowed.map((e) => [e.path, e]));
   const findings = [];
   const drift = [];
   for (const [path, found] of handoffs) {

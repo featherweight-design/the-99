@@ -1,4 +1,5 @@
 import { connectStaging } from "./lib/staging.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 /**
  * Prints the v2 facts and the prompt size for staging decks whose name matches an argument, and
@@ -16,7 +17,7 @@ for (const needle of process.argv.slice(2)) {
   for (const d of rows.filter((r) => r.name.toLowerCase().includes(needle.toLowerCase()))) {
     const head = await loadProfileHead(d.id, d.user_id);
     if (!head) continue;
-    const facts = await factsFor(await loadDeckProfileFromHead(head), true);
+    const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), true, undefined, process.env);
     const off = buildSynopsisPrompt(facts);
     const on = buildSynopsisPrompt(facts, undefined, { v2: true });
     console.log(`\n== ${d.name} (${d.id})\nchars off ${off.system.length + off.user.length}, on ${on.system.length + on.user.length}`);

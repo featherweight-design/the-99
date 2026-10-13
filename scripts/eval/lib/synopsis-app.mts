@@ -2,6 +2,7 @@ import { connectStaging } from "./staging.mjs";
 import { splitDecks } from "./split.mjs";
 import { outsideMarks } from "./line-rule.mjs";
 import { applySynopsisVariant, type SynopsisVariant } from "../variants/synopsis.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 /**
  * The deck overview (code name "synopsis") as the app writes it, opened once against staging,
@@ -40,7 +41,7 @@ export async function openSynopsis() {
     for (const deckId of ids) {
       const head = await loadProfileHead(deckId, userId);
       if (!head) throw new Error(`eval: deck ${deckId} not readable`);
-      const facts = await factsFor(await loadDeckProfileFromHead(head));
+      const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), undefined, undefined, process.env);
       const { facts: shown, messages } = applySynopsisVariant(variant, facts, (f) => buildSynopsisPrompt(f));
       out.push({ deckId, facts: shown, ...messages });
     }

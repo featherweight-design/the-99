@@ -51,6 +51,7 @@ import { buildParams, parseReply } from "./lib/request.mjs";
 import { ROOT } from "./lib/run.mjs";
 import { connectStaging } from "./lib/staging.mjs";
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const LEDGER_CUTS_CAP = LEDGER_LIMITS["ledger-cuts.jsonl"].hardCapUsd;
 const LEDGER_CUTS_ASK = LEDGER_LIMITS["ledger-cuts.jsonl"].askAtUsd;
@@ -181,7 +182,7 @@ for (const d of want) {
   const locked = liveSnap ? liveSnap.locked : neverCutEnabled(process.env) ? [...(await liveLockedIds(db, d.id))] : [];
   const rawIntent = liveSnap ? liveSnap.intent : deck.intent;
   const intent = rawIntent?.trim() ? rawIntent : null;
-  const [profile, support] = await Promise.all([loadDeckProfileFromHead(head), readCutSupport(head.commanderOracleId, head.partnerOracleId)]);
+  const [profile, support] = await Promise.all([loadDeckProfileFromHead(head, process.env), readCutSupport(head.commanderOracleId, head.partnerOracleId)]);
   const facts = cutFacts({ profile, locked: new Set(locked), support, declaredBracket: (head.declaredBracket ?? null) as 1 | 2 | 3 | 4 | 5 | null });
   if (facts.over === 0) throw new Error(`deck ${d.name}: the rebuilt list is not over 100`);
   const [cmdrRows, keyCards, textRows] = await Promise.all([

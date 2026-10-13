@@ -18,7 +18,7 @@ import { discoveryKey, loadDiscoveryWithIds } from "./list";
  * because the label read failed is served and never filed (admin PR 6d-2): stored under the labels
  * key, it would be served as the labels' ranking until the ceiling.
  */
-export function loadDiscoveryPayload(userId: string, sort: "fit" | "new", env: NodeJS.ProcessEnv = process.env) {
+export function loadDiscoveryPayload(userId: string, sort: "fit" | "new", env: NodeJS.ProcessEnv) {
   return cacheForUser(
     userId,
     discoveryKey(sort, env),

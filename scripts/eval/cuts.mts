@@ -21,6 +21,7 @@ if (!/^\d+$/.test(args.gishathOver ?? "")) throw new Error("--gishathOver must b
 
 import { connectStaging } from "./lib/staging.mjs";
 import { CUT_DECKS, GISHATH_DECK, loadCutTruth, pairedSwaps, type Head } from "./lib/cuts-truth.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const db = await connectStaging();
 const { eq, inArray } = await import("drizzle-orm");
@@ -98,7 +99,7 @@ async function withLabelRoles(profile: Profile, support: Support): Promise<Profi
 const cases: Case[] = [];
 for (const t of await loadCutTruth(db)) {
   const [profile, support] = await Promise.all([
-    loadDeckProfileFromHead(t.head),
+    loadDeckProfileFromHead(t.head, process.env),
     readCutSupport(t.head.commanderOracleId, t.head.partnerOracleId),
   ]);
   const rolesOf = new Map<string, Set<string>>();
@@ -211,7 +212,7 @@ console.log();
     partnerOracleId: deck.partnerOracleId, declaredBracket: deck.declaredBracket, cards,
   };
   const [profile, support] = await Promise.all([
-    loadDeckProfileFromHead(head), readCutSupport(head.commanderOracleId, head.partnerOracleId),
+    loadDeckProfileFromHead(head, process.env), readCutSupport(head.commanderOracleId, head.partnerOracleId),
   ]);
   const padded = { ...profile, counts: { ...profile.counts, total: 100 + over } };
   const r = proposeCuts({ profile: padded, locked: new Set(), support });
