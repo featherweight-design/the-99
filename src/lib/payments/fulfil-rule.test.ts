@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decideFulfilment, type FetchedSession } from "./fulfil-rule";
-import { isPackId, packForPrice } from "./packs";
+import { isPackId, packForPrice, packsConfigured } from "./packs";
 
 const env = { STRIPE_PRICE_PACK_40: "price_pack40" };
 const paid: FetchedSession = {
@@ -16,6 +16,9 @@ describe("packs", () => {
     expect(packForPrice("price_pack40", env)?.id).toBe("pack40");
     expect(packForPrice("price_pack40", {})).toBeNull();
     expect(packForPrice("price_other", env)).toBeNull();
+    expect(packsConfigured(env)).toBe(true);
+    expect(packsConfigured({})).toBe(false);
+    expect(packsConfigured({ STRIPE_PRICE_PACK_40: "  " })).toBe(false);
   });
 });
 

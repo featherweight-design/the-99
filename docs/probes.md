@@ -1942,8 +1942,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   arriving while a purge holds the account's mapping waits and is kept `unattributed`, leaving no lot; and the purge
   takes the mapping and the lot and keeps the payment record. The signature half is the route's own test.
   It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and
-  production are refused by id. Mutation-checked four ways (the event row's conflict, the lot's conflict target,
-  the attribution check, the mapping read without `FOR SHARE`).
+  production are refused by id. Mutation-checked five ways (the event row's conflict, the lot's conflict target,
+  the attribution check, the mapping read without `FOR SHARE`, a payment-record conflict let through to the grant).
 - `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
   count and GOT state (summed across printings), that a write moves the owner's data stamp, that an unknown card
   and a quantity outside 1 to 99 write nothing, that a friend reads the lines with only the wanted count and got,

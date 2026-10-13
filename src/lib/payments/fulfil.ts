@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { db } from "../../db";
 import { creditGrants, paymentRecords, stripeCustomers, stripeEvents } from "../../db/schema";
 import { decideFulfilment, type Decision, type FetchedSession } from "./fulfil-rule";
-import { PACKS } from "./packs";
+import { PACKS, packsConfigured } from "./packs";
 
 /**
  * The webhook's one job for a completed Checkout Session (payments scope §5.3, §5.5). SERVER-ONLY.
@@ -52,6 +52,11 @@ export async function fulfilCheckoutSession(stripe: Stripe, eventId: string, eve
     // A Session already granted under another event id writes nothing here, and says so.
     return { outcome: granted.length > 0 ? "grant" as const : "duplicate" as const };
   });
+}
+
+/** Whether the pack registry can judge a Session at all (`packsConfigured`): the route answers 503 until it can. */
+export function paymentsConfigured(): boolean {
+  return packsConfigured(priceEnv());
 }
 
 /** The Price ids the packs name, by member read: the registry's own variables and nothing else. */

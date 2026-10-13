@@ -18,6 +18,15 @@ export function isPackId(value: unknown): value is PackId {
   return typeof value === "string" && Object.hasOwn(PACKS, value);
 }
 
+/**
+ * Whether every pack's Price variable is set. Until it is, no paid Session can be judged: a Price
+ * the registry cannot name might be ours, so the webhook answers 503 and Stripe retries, rather than
+ * refusing (and recording) a real payment for good.
+ */
+export function packsConfigured(env: Record<string, string | undefined>): boolean {
+  return Object.values(PACKS).every((p) => (env[p.priceEnv]?.trim() ?? "") !== "");
+}
+
 /** The pack a Stripe Price id is for, or null when the Price is none of ours (or its variable is unset). */
 export function packForPrice(priceId: string, env: Record<string, string | undefined>): Pack | null {
   for (const id of Object.keys(PACKS) as PackId[]) {

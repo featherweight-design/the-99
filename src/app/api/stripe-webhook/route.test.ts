@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Stripe from "stripe";
 
 const fulfil = vi.hoisted(() => vi.fn());
-vi.mock("../../../lib/payments/fulfil", () => ({ fulfilCheckoutSession: fulfil }));
+const configured = vi.hoisted(() => ({ value: true }));
+vi.mock("../../../lib/payments/fulfil", () => ({ fulfilCheckoutSession: fulfil, paymentsConfigured: () => configured.value }));
 
 import { POST } from "./route";
 
@@ -26,6 +27,7 @@ beforeEach(() => {
   vi.stubEnv("STRIPE_WEBHOOK_SECRET_PREVIOUS", "");
   vi.stubEnv("ADMIN_ENV_LABEL", "staging");
   fulfil.mockReset();
+  configured.value = true;
   vi.spyOn(console, "info").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -67,6 +69,12 @@ describe("POST /api/stripe-webhook: fails closed", () => {
 });
 
 describe("POST /api/stripe-webhook: what a verified event does", () => {
+  it("answers 503 to a completed Checkout while a pack's Price is unset, so the payment is retried, not lost", async () => {
+    configured.value = false;
+    expect((await POST(delivery("checkout.session.completed"))).status).toBe(503);
+    expect(fulfil).not.toHaveBeenCalled();
+  });
+
   it("acknowledges an event type it does not handle, and acts on none", async () => {
     expect((await POST(delivery("customer.created"))).status).toBe(200);
     expect(fulfil).not.toHaveBeenCalled();

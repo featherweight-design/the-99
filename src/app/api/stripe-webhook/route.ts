@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { fulfilCheckoutSession } from "../../../lib/payments/fulfil";
+import { fulfilCheckoutSession, paymentsConfigured } from "../../../lib/payments/fulfil";
 import { verifyStripeEvent } from "../../../lib/payments/verify";
 import { stripeClient } from "../../../lib/payments/stripe";
 
@@ -13,7 +13,8 @@ export const dynamic = "force-dynamic";
  * secret on every call. It reads no feature switch, and must never: a payment already taken is processed
  * even while sales are stopped (stopping sales is the Checkout side's switch, from K1b).
  *
- * - Not configured (no signing secret, or no client for this environment): 503, nothing runs.
+ * - Not configured (no signing secret, or no client for this environment): 503, nothing runs. A
+ *   completed Checkout with a pack's Price variable unset is 503 too, so Stripe retries it.
  * - A missing, forged or stale signature (5-minute tolerance): 400, nothing runs.
  * - An event type it does not handle: 200 and ignored, so subscribing to more cannot break it.
  * - `checkout.session.completed`: the Session is retrieved from Stripe and judged there
@@ -36,6 +37,12 @@ export async function POST(req: NextRequest) {
   }
   const event = verified;
   if (event.type !== "checkout.session.completed") return new Response("Ignored", { status: 200 });
+  // A pack's Price variable unset: the Session cannot be judged, and refusing it would record the
+  // event and lose a real payment for good. 503, so Stripe retries once the variable is back.
+  if (!paymentsConfigured()) {
+    console.error(`[stripe-webhook] ${event.type}: a pack's Price is not configured; Stripe will retry`);
+    return new Response("Webhook not configured", { status: 503 });
+  }
   try {
     const { outcome, reason } = await fulfilCheckoutSession(stripe, event.id, event.type, event.data.object.id);
     if (outcome === "refuse") console.error(`[stripe-webhook] ${event.type}: refused (${reason}); nothing granted`);

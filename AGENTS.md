@@ -854,7 +854,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `STRIPE_SECRET_KEY` must be a RESTRICTED key (`rk_`): an account secret key (`sk_`) is refused in either mode.
   On the production project it is live, Production scope alone and Sensitive. `POST /api/stripe-webhook` is public in `src/proxy.ts` and authorized only by the signature over the
   RAW body (`STRIPE_WEBHOOK_SECRET`, and `STRIPE_WEBHOOK_SECRET_PREVIOUS` while a roll overlaps; 5-minute
-  tolerance). It answers 503 unconfigured, 400 unsigned or stale, 200 to an event type it ignores, and reads no
+  tolerance). It answers 503 unconfigured (a completed Checkout with a pack's Price variable unset included, so
+  Stripe retries rather than a real payment being refused for good), 400 unsigned or stale, 200 to an event type it ignores, and reads no
   feature switch: a payment already taken is processed even while sales are stopped. A `checkout.session.completed` is a TRIGGER: `fulfilCheckoutSession`
   retrieves the Session from Stripe and `decideFulfilment` (`fulfil-rule.ts`) grants only a paid, one-item,
   quantity-1 Session for a Price in the pack registry (`packs.ts`, $5 for 40), in its currency and amount net of
