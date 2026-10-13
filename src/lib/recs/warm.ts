@@ -18,7 +18,7 @@ import { collectionGeneration, indexGeneration, persistScores } from "./store";
  * `env` is the writer's resolved switches, taken BEFORE `after()`: the role basis, and the writer
  * version it stamps, follow its `LABEL_ROLE_COUNTS_ENABLED` (admin PR 6d-2).
  */
-export async function warmCommanderScores(userId: string, env: NodeJS.ProcessEnv = process.env): Promise<void> {
+export async function warmCommanderScores(userId: string, env: NodeJS.ProcessEnv): Promise<void> {
   try {
     const [generation, indexGen] = await Promise.all([collectionGeneration(userId), indexGeneration()]);
     const recs = await recommendCommanders(userId, env);

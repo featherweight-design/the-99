@@ -2,6 +2,7 @@
 // served and flagged, so neither writer persists it: `commander_scores` records no basis
 // (labels-everywhere PR 5).
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 const pool = vi.hoisted(() => ({ collection: [] as unknown[], basis: { basis: "classifier", roleSets: undefined, fellBack: false } as unknown }));
 vi.mock("../../db", () => ({
@@ -41,14 +42,14 @@ beforeEach(() => {
 describe("recommendCommanders — the label fallback flag", () => {
   it("is set when the label read fell back to the classifier", async () => {
     pool.basis = { basis: "classifier", roleSets: undefined, fellBack: true };
-    expect((await recommendCommanders("u1")).labelFallback).toBe(true);
+    expect((await recommendCommanders("u1", ENV_VIEW)).labelFallback).toBe(true);
   });
 
   it("is absent on a classifier list by configuration and on a label list", async () => {
     pool.basis = { basis: "classifier", roleSets: undefined, fellBack: false };
-    expect((await recommendCommanders("u1")).labelFallback).toBeUndefined();
+    expect((await recommendCommanders("u1", ENV_VIEW)).labelFallback).toBeUndefined();
     pool.basis = { basis: "labels", roleSets: new Map(), fellBack: false };
-    expect((await recommendCommanders("u1")).labelFallback).toBeUndefined();
+    expect((await recommendCommanders("u1", ENV_VIEW)).labelFallback).toBeUndefined();
   });
 });
 

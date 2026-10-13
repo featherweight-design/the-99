@@ -105,7 +105,7 @@ describe("the lists", () => {
     expect(new Set(paths).size).toBe(paths.length);
     for (const [path, entry] of Object.entries(DEFAULTS_PENDING)) {
       expect(Object.values(entry.uses).every((n) => n > 0) && Object.keys(entry.uses).length > 0, path).toBe(true);
-      expect(["7c-2", "7d", "keep"], path).toContain(entry.pr);
+      expect(["7d", "keep"], path).toContain(entry.pr);
       if (entry.pr === "keep") expect(entry.reason?.length ?? 0, path).toBeGreaterThan(20);
     }
   });

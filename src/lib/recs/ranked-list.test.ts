@@ -3,6 +3,7 @@
 // These tests pin the deck exclusion to the read, so a cache hit cannot
 // reintroduce a commander the player has already built.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 const loadScores = vi.fn<(userId: string) => Promise<unknown>>();
 const persistScores = vi.fn<(userId: string, ranked: unknown[], gen: number | null, indexGen?: number | null) => Promise<void>>(
@@ -109,7 +110,7 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
 
-    const list = await getRankedList("user_1");
+    const list = await getRankedList("user_1", ENV_VIEW);
 
     expect(list.items.map((i) => i.oracleId)).toEqual(["kept"]);
     expect(recommendCommanders).not.toHaveBeenCalled();
@@ -125,7 +126,7 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
 
-    const list = await getRankedList("user_1");
+    const list = await getRankedList("user_1", ENV_VIEW);
 
     expect(list.items.map((i) => i.oracleId)).toEqual(["kept"]);
   });
@@ -137,7 +138,7 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
 
-    const list = await getRankedList("user_1");
+    const list = await getRankedList("user_1", ENV_VIEW);
 
     expect(list.candidateCount).toBe(1);
   });
@@ -152,7 +153,7 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
 
-    await getRankedList("user_1");
+    await getRankedList("user_1", ENV_VIEW);
 
     expect(persistScores.mock.calls[0]?.[1]).toHaveLength(2);
   });
@@ -168,7 +169,7 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set());
 
-    const list = await getRankedList("user_1");
+    const list = await getRankedList("user_1", ENV_VIEW);
 
     expect(list.items).toHaveLength(1);
     expect(persistScores).not.toHaveBeenCalled();
@@ -189,7 +190,7 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set());
 
-    await getRankedList("user_1");
+    await getRankedList("user_1", ENV_VIEW);
 
     const call = persistScores.mock.calls[0];
     expect(call?.[2]).toBe(1); // collectionGeneration's value
@@ -211,7 +212,7 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set());
 
-    await getRankedList("user_1");
+    await getRankedList("user_1", ENV_VIEW);
 
     // THE FULL SEQUENCE, not two `indexOf` comparisons. An absent entry yields
     // -1, and `compute` at index 0 is greater than -1 — so both comparisons
@@ -232,7 +233,7 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
 
-    const list = await getRankedList("user_1");
+    const list = await getRankedList("user_1", ENV_VIEW);
 
     expect(recommendCommanders).not.toHaveBeenCalled();
     expect(list.items.map((i) => i.oracleId)).toEqual(["kept"]);
@@ -254,7 +255,7 @@ describe("getRankedList", () => {
       candidateCount: 2,
     });
 
-    await getRankedList("user_1");
+    await getRankedList("user_1", ENV_VIEW);
 
     expect(recommendCommanders).toHaveBeenCalled();
   });
@@ -272,7 +273,7 @@ describe("getRankedList", () => {
       candidateCount: 2,
     });
 
-    await getRankedList("user_1");
+    await getRankedList("user_1", ENV_VIEW);
 
     expect(recommendCommanders).toHaveBeenCalled();
   });
@@ -293,7 +294,7 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
 
-    const list = await getRankedList("user_1");
+    const list = await getRankedList("user_1", ENV_VIEW);
 
     expect(list.items.map((i) => i.oracleId)).toEqual(["kept"]);
     expect(list.degraded).toBe(false);
@@ -312,14 +313,14 @@ describe("getRankedList", () => {
     });
     loadBuiltCommanderIds.mockResolvedValue(new Set(["built"]));
 
-    expect((await getRankedList("user_1")).degraded).toBe(true);
+    expect((await getRankedList("user_1", ENV_VIEW)).degraded).toBe(true);
   });
 
   it("skips the deck read entirely for an empty collection", async () => {
     getCollectionStats.mockResolvedValue({ uniqueCards: 0 });
     loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
 
-    const list = await getRankedList("user_1");
+    const list = await getRankedList("user_1", ENV_VIEW);
 
     expect(list).toEqual({ items: [], degraded: false, uniqueCardsRead: 0, candidateCount: 0 });
     expect(loadBuiltCommanderIds).not.toHaveBeenCalled();

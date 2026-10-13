@@ -23,6 +23,7 @@ import { sql } from "drizzle-orm";
 import ws from "ws";
 import { unplayedCountsSql } from "../src/lib/recs/home-novelty";
 import { readySlice, READY_SHOWN } from "../src/lib/recs/ready-to-build";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const { MEASURE_TARGET_URL, MEASURE_USER_ID } = requireEnv(["MEASURE_TARGET_URL", "MEASURE_USER_ID"]);
 neonConfig.webSocketConstructor = ws;
@@ -49,7 +50,7 @@ async function main() {
           )
         order by s.rank_score desc, s.oracle_id
       `);
-      const counts = await tx.execute<{ oracleId: string; unplayed: number }>(unplayedCountsSql(MEASURE_USER_ID));
+      const counts = await tx.execute<{ oracleId: string; unplayed: number }>(unplayedCountsSql(MEASURE_USER_ID, undefined, process.env));
       return { ranked: rows, unplayed: new Map(counts.rows.map((r) => [r.oracleId, r.unplayed])) };
     },
     { accessMode: "read only" },

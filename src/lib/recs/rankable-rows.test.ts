@@ -3,6 +3,7 @@
 // same shape: a number on one screen disagreeing with the same number on
 // another, which no test of either screen alone would catch.
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 import { db } from "../../db";
 import { commanderScores } from "../../db/schema";
 import { SCORE_WRITER_CURRENT } from "../../db/schema";
@@ -12,7 +13,7 @@ const emitted = () =>
   db
     .select({ oracleId: commanderScores.oracleId })
     .from(commanderScores)
-    .where(rankableScoreRows("user_1"))
+    .where(rankableScoreRows("user_1", ENV_VIEW))
     .toSQL();
 
 describe("rankableScoreRows", () => {

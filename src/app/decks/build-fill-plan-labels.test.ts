@@ -97,8 +97,8 @@ describe("buildFillPlan by label", () => {
 });
 
 // Admin PR 6f-1: the fill's budget gate asks the claim model which owned cards are free, and that model
-// reads NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it is handed. `loadFillGate` takes the
-// environment when none is passed, so the plan's env must reach it: the reader's env and the environment
+// reads NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it is handed. `loadFillGate` requires
+// that env (admin PR 7b), and the plan's must be the one that reaches it: the reader's env and the environment
 // hold opposite values here, and the handed env is checked by identity, as a boolean.
 describe("buildFillPlan's budget gate", () => {
   afterEach(() => vi.unstubAllEnvs());

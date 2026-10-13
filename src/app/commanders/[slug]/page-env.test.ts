@@ -1,6 +1,6 @@
 // Admin PR 6f-1: a commander page in free mode reads the free pool, whose claim model decides
-// NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it is handed. `loadFreePool` takes the
-// environment when none is passed, so the page's resolved env must reach it (and, being memoised by
+// NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it is handed. `loadFreePool` requires that
+// env (admin PR 7c-2), and the page's resolved env must be the one that reaches it (and, being memoised by
 // argument, the same env the ranking above it passed, or the page pays the rollup twice). The reader's
 // env and the environment hold opposite values here; the handed env is checked by identity, as a boolean.
 import { afterEach, describe, expect, it, vi } from "vitest";

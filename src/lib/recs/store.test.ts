@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 import { sql } from "drizzle-orm";
 
 // store.ts imports the db client, which throws at module init without DATABASE_URL.
@@ -82,7 +83,7 @@ const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
 
 describe("toScoreRow", () => {
   it("carries the list fields and drops detail-only ones", () => {
-    const row = toScoreRow("user_1", ranked());
+    const row = toScoreRow("user_1", ranked(), ENV_VIEW);
     expect(row.userId).toBe("user_1");
     expect(row.slug).toBe("atraxa-praetors-voice");
     expect(row.score).toBe(58);
@@ -101,18 +102,18 @@ describe("toScoreRow", () => {
     try {
       const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
       expect(toScoreRow("user_1", ranked(), on).writerVersion).toBe(-SCORE_WRITER_CURRENT);
-      expect(toScoreRow("user_1", ranked()).writerVersion).toBe(SCORE_WRITER_CURRENT);
+      expect(toScoreRow("user_1", ranked(), ENV_VIEW).writerVersion).toBe(SCORE_WRITER_CURRENT);
     } finally {
       vi.unstubAllEnvs();
     }
   });
 
   it("preformats receipts rather than storing the raw overlap list", () => {
-    expect(typeof toScoreRow("user_1", ranked()).receipts).toBe("string");
+    expect(typeof toScoreRow("user_1", ranked(), ENV_VIEW).receipts).toBe("string");
   });
 
   it("stores null fitSynergy for a degraded row", () => {
-    const row = toScoreRow("user_1", ranked({ fitSynergy: null, synergyState: "degraded" }));
+    const row = toScoreRow("user_1", ranked({ fitSynergy: null, synergyState: "degraded" }), ENV_VIEW);
     expect(row.fitSynergy).toBeNull();
     expect(row.synergyState).toBe("degraded");
   });
@@ -121,7 +122,7 @@ describe("toScoreRow", () => {
     // Slugs are assigned in rank order with -2/-3 dedup, so recomputing after a
     // rank change could hand the same commander a different slug. Persisting it
     // is what decouples the URL from the ranking.
-    expect(toScoreRow("user_1", ranked({ slug: "atraxa-praetors-voice-2" })).slug)
+    expect(toScoreRow("user_1", ranked({ slug: "atraxa-praetors-voice-2" }), ENV_VIEW).slug)
       .toBe("atraxa-praetors-voice-2");
   });
 });
@@ -255,7 +256,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(at));
+    await persistScores("user_1", [ranked()], gen(at), undefined, undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -265,7 +266,7 @@ describe("persistScores generation guard", () => {
     stub.db.transaction = fake.db.transaction;
 
     // Captured before the newer confirm landed.
-    await persistScores("user_1", [ranked()], gen(new Date("2026-07-24T12:00:00Z")));
+    await persistScores("user_1", [ranked()], gen(new Date("2026-07-24T12:00:00Z")), undefined, undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });
@@ -274,7 +275,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(null);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(null));
+    await persistScores("user_1", [ranked()], gen(null), undefined, undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -295,6 +296,7 @@ describe("persistScores generation guard", () => {
       [ranked()],
       gen(collection),
       String(new Date("2026-08-03T04:10:00Z").getTime()),
+      undefined, ENV_VIEW,
     );
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
@@ -306,7 +308,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, index);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(collection), String(index.getTime()));
+    await persistScores("user_1", [ranked()], gen(collection), String(index.getTime()), undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -320,7 +322,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(collection));
+    await persistScores("user_1", [ranked()], gen(collection), undefined, undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -333,7 +335,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, null);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(collection), "0");
+    await persistScores("user_1", [ranked()], gen(collection), "0", undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -346,7 +348,7 @@ describe("persistScores generation guard", () => {
     stub.db.transaction = fake.db.transaction;
     indexRead.fails = true;
     try {
-      await expect(persistScores("user_1", [ranked()], gen(collection), "0"))
+      await expect(persistScores("user_1", [ranked()], gen(collection), "0", undefined, ENV_VIEW))
         .rejects.toThrow("relation does not exist");
     } finally {
       indexRead.fails = false;
@@ -370,7 +372,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, null);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(collection), INDEX_UNREADABLE);
+    await persistScores("user_1", [ranked()], gen(collection), INDEX_UNREADABLE, undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
     expect(fake.trace()).toEqual([]);
@@ -383,7 +385,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(collection, new Date("2026-09-03T04:10:00Z"));
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(collection), "0");
+    await persistScores("user_1", [ranked()], gen(collection), "0", undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });
@@ -402,7 +404,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(at), String(at.getTime()));
+    await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), undefined, ENV_VIEW);
 
     // Asserted as the whole sequence rather than as two `indexOf` comparisons,
     // because what makes this write safe is that NOTHING is read before the
@@ -427,7 +429,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(at), String(at.getTime()));
+    await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), undefined, ENV_VIEW);
 
     const t = fake.trace();
     // Membership first, and not as belt-and-braces: `indexOf` returns -1 for an
@@ -445,7 +447,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(at), String(at.getTime()));
+    await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), undefined, ENV_VIEW);
 
     // Shared on the index key: score writes have no reason to serialise
     // against each other, and the one exclusive taker is the rebuild. Read
@@ -462,7 +464,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(at));
+    await persistScores("user_1", [ranked()], gen(at), undefined, undefined, ENV_VIEW);
 
     // The per-user lock is unconditional — the collection guard always runs —
     // so what an omitted index generation must skip is the INDEX key and its
@@ -483,7 +485,7 @@ describe("persistScores generation guard", () => {
       const fake = fakeDb(at, at);
       stub.db.transaction = fake.db.transaction;
       labelRead.sets = new Map(counted);
-      await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), check);
+      await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), check, ENV_VIEW);
       expect(fake.conflictSet()).not.toBeNull();
     });
 
@@ -492,7 +494,7 @@ describe("persistScores generation guard", () => {
       const fake = fakeDb(at, at);
       stub.db.transaction = fake.db.transaction;
       labelRead.sets = new Map([["a", ["draw"]], ["b", ["draw"]]]);
-      await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), check);
+      await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), check, ENV_VIEW);
       expect(fake.conflictSet()).toBeNull();
     });
 
@@ -501,7 +503,7 @@ describe("persistScores generation guard", () => {
       const fake = fakeDb(at, at);
       stub.db.transaction = fake.db.transaction;
       labelRead.sets = new Map([["b", ["draw"]]]);
-      await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), check);
+      await persistScores("user_1", [ranked()], gen(at), String(at.getTime()), check, ENV_VIEW);
       expect(fake.conflictSet()).toBeNull();
     });
   });
@@ -515,7 +517,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(at));
+    await persistScores("user_1", [ranked()], gen(at), undefined, undefined, ENV_VIEW);
 
     expect(Object.keys(fake.conflictSet() ?? {})).toContain("writerVersion");
   });
@@ -529,7 +531,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(at));
+    await persistScores("user_1", [ranked()], gen(at), undefined, undefined, ENV_VIEW);
 
     const announced = fake.executed().join(" ");
     expect(announced).toContain("set_config");
@@ -557,7 +559,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, null, 8);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], generationToken(7, at.getTime()));
+    await persistScores("user_1", [ranked()], generationToken(7, at.getTime()), undefined, undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });
@@ -567,7 +569,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, null, 8);
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], generationToken(8, at.getTime()));
+    await persistScores("user_1", [ranked()], generationToken(8, at.getTime()), undefined, undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -579,7 +581,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(at, null, "absent");
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(at));
+    await persistScores("user_1", [ranked()], gen(at), undefined, undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
   });
@@ -588,7 +590,7 @@ describe("persistScores generation guard", () => {
     const fake = fakeDb(new Date("2026-07-24T12:05:00Z"));
     stub.db.transaction = fake.db.transaction;
 
-    await persistScores("user_1", [ranked()], gen(null));
+    await persistScores("user_1", [ranked()], gen(null), undefined, undefined, ENV_VIEW);
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });
@@ -673,21 +675,21 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
 
   it("serves rows this code wrote", async () => {
     stub.db.select = resolvingSelect([row()]);
-    const { items } = await loadScores("user_1");
+    const { items } = await loadScores("user_1", ENV_VIEW);
     expect(items).toHaveLength(1);
   });
 
   // Neither empty nor degraded, so nothing else would ever mark the list stale.
   it("reads a sentinel rank score as a miss so the caller recomputes", async () => {
     stub.db.select = resolvingSelect([row({ rankScore: RANK_SCORE_UNWRITTEN })]);
-    await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+    await expect(loadScores("user_1", ENV_VIEW)).resolves.toEqual({ items: [], degradedOracleIds: [] });
   });
 
   // persistScores writes a user's rows in one transaction, so a set holding one such row
   // was written whole by that deployment. Keeping the rest would serve a truncated list.
   it("condemns the whole set rather than dropping the one row", async () => {
     stub.db.select = resolvingSelect([row(), row({ rankScore: RANK_SCORE_UNWRITTEN })]);
-    const { items } = await loadScores("user_1");
+    const { items } = await loadScores("user_1", ENV_VIEW);
     expect(items).toEqual([]);
   });
 
@@ -696,17 +698,17 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
   // ever mark it stale.
   it("reads an older writer's rows as a miss", async () => {
     stub.db.select = resolvingSelect([row({ writerVersion: 1 })]);
-    await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+    await expect(loadScores("user_1", ENV_VIEW)).resolves.toEqual({ items: [], degradedOracleIds: [] });
   });
 
   it("condemns a set where only one row predates the current writer", async () => {
     stub.db.select = resolvingSelect([row(), row({ writerVersion: 1 })]);
-    const { items } = await loadScores("user_1");
+    const { items } = await loadScores("user_1", ENV_VIEW);
     expect(items).toEqual([]);
   });
 
   it("names the current writer on every row it writes", () => {
-    expect(toScoreRow("user_1", ranked()).writerVersion).toBe(SCORE_WRITER_CURRENT);
+    expect(toScoreRow("user_1", ranked(), ENV_VIEW).writerVersion).toBe(SCORE_WRITER_CURRENT);
   });
 
   // The role basis rides in the version (labels-everywhere PR 5): the switch flipping either way
@@ -716,25 +718,25 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
 
     it("stamps a label-counted row with the negated writer version", () => {
       vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
-      expect(toScoreRow("user_1", ranked()).writerVersion).toBe(-SCORE_WRITER_CURRENT);
+      expect(toScoreRow("user_1", ranked(), ENV_VIEW).writerVersion).toBe(-SCORE_WRITER_CURRENT);
     });
 
     it("reads a classifier-counted set as a miss with the switch on", async () => {
       vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
       stub.db.select = resolvingSelect([row({ writerVersion: SCORE_WRITER_CURRENT })]);
-      await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+      await expect(loadScores("user_1", ENV_VIEW)).resolves.toEqual({ items: [], degradedOracleIds: [] });
     });
 
     it("serves a label-counted set with the switch on", async () => {
       vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
       stub.db.select = resolvingSelect([row({ writerVersion: -SCORE_WRITER_CURRENT })]);
-      expect((await loadScores("user_1")).items).toHaveLength(1);
+      expect((await loadScores("user_1", ENV_VIEW)).items).toHaveLength(1);
     });
 
     it("reads a label-counted set as a miss with the switch off, so a rollback restores the classifier", async () => {
       vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
       stub.db.select = resolvingSelect([row({ writerVersion: -SCORE_WRITER_CURRENT })]);
-      await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+      await expect(loadScores("user_1", ENV_VIEW)).resolves.toEqual({ items: [], degradedOracleIds: [] });
     });
   });
 });
@@ -746,17 +748,17 @@ describe("loadScores when the schema is behind the code", () => {
 
   it("reads as an empty cache so the caller recomputes", async () => {
     stub.db.select = rejectingSelect(pgError("42P01"));
-    await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+    await expect(loadScores("user_1", ENV_VIEW)).resolves.toEqual({ items: [], degradedOracleIds: [] });
   });
 
   it("treats a missing column the same way", async () => {
     stub.db.select = rejectingSelect(pgError("42703"));
-    await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+    await expect(loadScores("user_1", ENV_VIEW)).resolves.toEqual({ items: [], degradedOracleIds: [] });
   });
 
   it("rethrows anything else rather than hiding it behind a recompute", async () => {
     stub.db.select = rejectingSelect(pgError("53300"));
-    await expect(loadScores("user_1")).rejects.toThrow("pg error 53300");
+    await expect(loadScores("user_1", ENV_VIEW)).rejects.toThrow("pg error 53300");
   });
 });
 
@@ -778,7 +780,7 @@ describe("findScoredCommander when the schema is behind the code", () => {
 
   it("resolves to null so the page falls back to the computed ranking", async () => {
     const limit = stubWith(pgError("42P01"));
-    await expect(findScoredCommander("user_1", "atraxa-praetors-voice")).resolves.toBeNull();
+    await expect(findScoredCommander("user_1", "atraxa-praetors-voice", ENV_VIEW)).resolves.toBeNull();
     // Proves the query chain actually executed rather than throwing early, which
     // would make the null above a false pass.
     expect(limit).toHaveBeenCalled();
@@ -786,7 +788,7 @@ describe("findScoredCommander when the schema is behind the code", () => {
 
   it("rethrows anything else", async () => {
     stubWith(pgError("53300"));
-    await expect(findScoredCommander("user_1", "atraxa-praetors-voice")).rejects.toThrow(
+    await expect(findScoredCommander("user_1", "atraxa-praetors-voice", ENV_VIEW)).rejects.toThrow(
       "pg error 53300",
     );
   });

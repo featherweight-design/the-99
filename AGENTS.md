@@ -707,14 +707,14 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `envForPageBasis`, which reads the kill switch on purpose), and the wrappers that took an OPTIONAL env and forwarded
   it to the claim model (`applyCollectionChange`, `loadContestedCard`, `loadSummaryView`, `loadFillGate`,
   `resolveAnswer`, `loadOwnedCandidates`). Since admin PR 7c so does every reader under `src/lib/collection`,
-  `src/lib/commander-change`, `src/lib/intake` and `src/lib/swaps`, the defaulted claim-model wrappers among them
-  (`loadContestedCards`, `countContestedCards`, `loadChooserCards`, `loadCardDetail`, `loadResultsPage`,
-  `searchCommanders`, `trialFill`, `loadChangeCandidates`, `loadFits`, `loadStandIns`, `takeStandIn`), but for the
+  `src/lib/commander-change`, `src/lib/intake`, `src/lib/swaps` and `src/lib/recs`, the defaulted claim-model wrappers
+  among them (`loadContestedCards`, `countContestedCards`, `loadChooserCards`, `loadCardDetail`, `loadResultsPage`,
+  `searchCommanders`, `trialFill`, `loadChangeCandidates`, `loadFits`, `loadStandIns`, `takeStandIn`, `loadFreePool`,
+  `rankFree`), but for the
   model stand-ins' settings readers (`intake/stub.ts`, `stubTheReadDeps`, `swaps/fits-read-stub.ts`), which are
   `keep`: they read `NODE_ENV` and their own `*_LIVE` / `*_STUB*` knobs, never a registry switch. Wrappers that
-  DEFAULT their own `env` to `process.env` and hand it to the claim model still compile without one: 7c-2 holds
-  `recs/free-ranking`, and 7d `commanders/rankings` and `discovery/list`. Every other reader's `env` default goes in
-  7c-2 (`src/lib/recs`) or 7d. The keys:
+  DEFAULT their own `env` to `process.env` and hand it to the claim model still compile without one: 7d holds
+  `commanders/rankings` and `discovery/list`, and every other reader's `env` default. The keys:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
   (`scoreWriterVersion(env)`), and `cachePageForUser` already keys on every switch. The registry
   (`src/lib/switches/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
@@ -726,9 +726,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   PR 6e, and since 6f-2 every claim read in `src` is handed the reader's env, so `NEVER_CUT_ENABLED` and
   `CHANGE_COMMANDER_ENABLED` are always the reader's. Since admin PR 7b the claim model's entry points and the deck
   wrappers that start them (`loadCart`, `loadShoppingRollup`, `listDecksWithStats`) take a REQUIRED `env`, so an
-  env-less call to one does not compile; the defaulted wrappers named above still compile without one until 7c-2 and
+  env-less call to one does not compile; the defaulted wrappers named above still compile without one until
   7d. `switch-adoption.test.ts`'s `CLAIM_ENV` now names only `chainArt`, for `DECK_PRINTINGS_ENABLED`, whose `env`
-  still defaults until 7d. A deeper reader that takes a defaulted env is caught only once admin PRs 7c-2 and 7d make
+  still defaults until 7d. A deeper reader that takes a defaulted env is caught only once admin PR 7d makes
   `env` required. `loadFriendSpares` runs each friend's claim model under that FRIEND's switches, `resolveSwitchEnv(friend)`) (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
   proxy keys About's cookie on the reader's resolved entries, so a flip retires exactly the readers it changes.
   `check:list-cache` knows the two override tables reach a cached page through its key alone, and fails if any loader
@@ -744,8 +744,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   and so does a listed fingerprint that is gone.
   A member read and a destructuring read are not findings (a rest element, `{ ...e } = process.env`, is a copy and
   is one). A parameter default (`env = process.env`, destructured in a parameter included) is not a finding but is
-  pinned the same way in `DEFAULTS_PENDING` (`<scope>:default:<param>`), so a new one fails and 7c-2 and 7d each shrink it (7b emptied `src/lib/decks`' and `src/lib/tuning`'s, 7c
-  collection's, commander-change's, intake's and swaps'); a binding
+  pinned the same way in `DEFAULTS_PENDING` (`<scope>:default:<param>`), so a new one fails and 7d shrinks it (7b emptied `src/lib/decks`' and `src/lib/tuning`'s, 7c
+  collection's, commander-change's, intake's, swaps' and recs'); a binding
   default in a variable (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached
   through anything but `process.env` itself, or an env built by hand from member reads.
 

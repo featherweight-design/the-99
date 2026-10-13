@@ -65,9 +65,8 @@ export function freePool(
  */
 export const loadFreePool = cache(async function loadFreePool(
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model; the environment alone
-   *  when omitted. Memoised by identity, so the page and its ranking pass the same env to share a read. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model. Memoised by identity, so the page and its ranking pass the same env to share a read. */
+  env: NodeJS.ProcessEnv,
 ): Promise<PoolCard[] | null> {
   const { collection } = await loadCollectionPool(userId);
   try {
@@ -172,13 +171,13 @@ function carryCanonicalArt(
 export async function rankFree(
   userId: string,
   canonical: CommanderListItem[],
-  preloaded?: {
+  preloaded: {
     collection: PoolCard[];
     availability: Map<string, Availability>;
-  },
+  } | undefined,
   /** The reader's resolved switches: the role basis follows its `LABEL_ROLE_COUNTS_ENABLED`, as the
    *  canonical list's does, or the two modes would count one collection two ways. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<{ items: CommanderListItem[]; ok: boolean; labelFallback?: true }> {
   // Slugs come only from the canonical list, so an empty one can only ever
   // produce an empty ranking. `ok` is still true: nothing failed, there is just

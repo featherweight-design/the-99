@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 import { PgDialect } from "drizzle-orm/pg-core";
 
 const execute = vi.hoisted(() => vi.fn());
@@ -8,7 +9,7 @@ const { loadUnplayedCounts, unplayedCountsSql, NOVELTY_CANDIDATES } = await impo
 const { READY_COUNT } = await import("./ready-to-build");
 
 describe("unplayedCountsSql", () => {
-  const { sql, params } = new PgDialect().sqlToQuery(unplayedCountsSql("user_1"));
+  const { sql, params } = new PgDialect().sqlToQuery(unplayedCountsSql("user_1", undefined, ENV_VIEW));
 
   it("scopes every read to the reader, and reaches past the set", () => {
     expect(params.filter((p) => p === "user_1")).toHaveLength(6);
@@ -45,14 +46,14 @@ describe("unplayedCountsSql", () => {
 describe("loadUnplayedCounts", () => {
   it("maps each candidate to its count", async () => {
     execute.mockResolvedValueOnce({ rows: [{ oracleId: "a", unplayed: 3 }, { oracleId: "b", unplayed: 0 }] });
-    expect(await loadUnplayedCounts("user_1")).toEqual(new Map([["a", 3], ["b", 0]]));
+    expect(await loadUnplayedCounts("user_1", ENV_VIEW)).toEqual(new Map([["a", 3], ["b", 0]]));
   });
 
   // A failed read costs the lean, never Home: null walks the plain shuffle.
   it("returns null rather than throwing when the read fails", async () => {
     execute.mockRejectedValueOnce(new Error("boom"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(await loadUnplayedCounts("user_1")).toBeNull();
+    expect(await loadUnplayedCounts("user_1", ENV_VIEW)).toBeNull();
     spy.mockRestore();
   });
 });
@@ -63,12 +64,12 @@ describe("unplayedCountsSql by role basis", () => {
   it("refuses any set not written under this basis: <> and the negated version with the switch on", async () => {
     const { SCORE_WRITER_CURRENT } = await import("../../db/schema");
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
-    const on = new PgDialect().sqlToQuery(unplayedCountsSql("user_1"));
+    const on = new PgDialect().sqlToQuery(unplayedCountsSql("user_1", undefined, ENV_VIEW));
     expect(on.sql).toMatch(/stale\.writer_version <> \$\d+/);
     expect(on.params).toContain(-SCORE_WRITER_CURRENT);
     expect(on.params).not.toContain(SCORE_WRITER_CURRENT);
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
-    const off = new PgDialect().sqlToQuery(unplayedCountsSql("user_1"));
+    const off = new PgDialect().sqlToQuery(unplayedCountsSql("user_1", undefined, ENV_VIEW));
     expect(off.params).toContain(SCORE_WRITER_CURRENT);
     expect(off.params).not.toContain(-SCORE_WRITER_CURRENT);
   });
