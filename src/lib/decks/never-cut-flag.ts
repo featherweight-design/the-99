@@ -9,6 +9,6 @@
  * The same shape as `swapToolsEnabled`: server-side, read per request, and OFF for anything but
  * the exact string `'true'`. Changing it on Vercel needs a redeploy.
  */
-export function neverCutEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function neverCutEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.NEVER_CUT_ENABLED === "true";
 }

@@ -11,6 +11,6 @@
  * gate the change log's writes in the ingests. Those are invisible, and writing them regardless
  * lets history accumulate, so the switch turns on over a log that already holds it.
  */
-export function noticesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function noticesEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.NOTICES_ENABLED === "true";
 }

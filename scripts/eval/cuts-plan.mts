@@ -90,6 +90,8 @@ const schema = await import("../../src/db/schema");
 const { readCutSupport, readKeyCardNames } = await import("../../src/lib/decks/cuts-read");
 const { liveLockedIds } = await import("../../src/lib/decks/locks");
 const { neverCutEnabled } = await import("../../src/lib/decks/never-cut-flag");
+// Both calls below pass `process.env`: an offline eval run by hand, with no signed-in reader whose
+// switches could differ from the environment's.
 const { loadDeckProfileFromHead, readProfileHead } = await import("../../src/lib/profile/load");
 const { castFaceText } = await import("../../src/lib/cards/facet");
 const { FEATURE_CALLS } = await import("../../src/lib/model/prices");
@@ -138,7 +140,7 @@ for (const d of want) {
       const h = await readProfileHead(tx, d.id, deck.userId);
       if (!h) return null;
       const [row] = await tx.select({ intent: schema.decks.intent }).from(schema.decks).where(eq(schema.decks.id, d.id));
-      return { head: h, intent: row?.intent ?? null, locked: neverCutEnabled() ? [...(await liveLockedIds(tx, d.id))] : [] };
+      return { head: h, intent: row?.intent ?? null, locked: neverCutEnabled(process.env) ? [...(await liveLockedIds(tx, d.id))] : [] };
     }, { isolationLevel: "repeatable read" });
     if (!snap) throw new Error(`deck ${d.name}: the app's own head read found nothing`);
     head = snap.head;
@@ -176,7 +178,7 @@ for (const d of want) {
     };
     hughCutIds = committed.rows.filter((r) => !inDraft.has(r.oracleId)).map((r) => r.oracleId);
   }
-  const locked = liveSnap ? liveSnap.locked : neverCutEnabled() ? [...(await liveLockedIds(db, d.id))] : [];
+  const locked = liveSnap ? liveSnap.locked : neverCutEnabled(process.env) ? [...(await liveLockedIds(db, d.id))] : [];
   const rawIntent = liveSnap ? liveSnap.intent : deck.intent;
   const intent = rawIntent?.trim() ? rawIntent : null;
   const [profile, support] = await Promise.all([loadDeckProfileFromHead(head), readCutSupport(head.commanderOracleId, head.partnerOracleId)]);

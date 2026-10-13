@@ -6,6 +6,6 @@
  *
  * `'true'` on staging and unset on production until the logs have been read there.
  */
-export function rateLimitEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function rateLimitEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.RATE_LIMIT_ENABLED === "true";
 }

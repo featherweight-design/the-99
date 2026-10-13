@@ -11,6 +11,6 @@
  * The same shape as `helpMeChooseEnabled`: server-side, read per request, and OFF for anything but
  * the exact string `'true'`. Changing it on Vercel needs a redeploy.
  */
-export function howItWorksEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function howItWorksEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.HOW_IT_WORKS_ENABLED === "true";
 }

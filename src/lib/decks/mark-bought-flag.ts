@@ -10,6 +10,6 @@ import { collectionEditEnabled } from "../collection/edit-flag";
  * The same shape as the other release switches: server-side, read per request, OFF for anything
  * but the exact string `'true'`.
  */
-export function shoppingMarkBoughtEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function shoppingMarkBoughtEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.SHOPPING_MARK_BOUGHT_ENABLED === "true" && collectionEditEnabled(env);
 }

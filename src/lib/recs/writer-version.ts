@@ -11,6 +11,6 @@ import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
  * number is also what keeps rollback safe: a deployment that predates the switch reads
  * `-8 < 8` as stale and never serves a label row.
  */
-export function scoreWriterVersion(env: NodeJS.ProcessEnv = process.env): number {
+export function scoreWriterVersion(env: NodeJS.ProcessEnv): number {
   return labelRoleCountsEnabled(env) ? -SCORE_WRITER_CURRENT : SCORE_WRITER_CURRENT;
 }

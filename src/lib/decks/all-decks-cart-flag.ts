@@ -6,6 +6,6 @@
  * The same shape as the other release switches: server-side, read per request, OFF for anything
  * but the exact string `'true'`. `'true'` on staging, unset on production until Hugh has used it.
  */
-export function allDecksCartEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function allDecksCartEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.ALL_DECKS_CART_ENABLED === "true";
 }

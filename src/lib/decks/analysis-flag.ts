@@ -16,6 +16,6 @@
  * that happened to carry this code. The `'true'` spelling matches the repository variables
  * the workflows already use (`PRICE_REFRESH_ENABLED`, `COMBO_REFRESH_ENABLED`).
  */
-export function analysisTabEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function analysisTabEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.ANALYSIS_TAB_ENABLED === "true";
 }

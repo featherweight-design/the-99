@@ -16,6 +16,6 @@
  * Discard restoring the version's commander: it compares first and writes nothing unless they
  * differ, which with the switch off they never do.
  */
-export function changeCommanderEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function changeCommanderEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.CHANGE_COMMANDER_ENABLED === "true";
 }

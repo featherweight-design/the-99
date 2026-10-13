@@ -111,6 +111,11 @@ jobs:
       - name: Collection route invalidation
         run: pnpm check:collection-routes
 
+      # Every flag function takes the reader's env since admin PR 7a, so leaving it out does not
+      # compile; handing it `process.env` still does, and reads the environment past every override.
+      - name: Switch reads
+        run: pnpm check:switch-reads
+
       # Routes meant to carry the same control have to render the same component, not
       # a lookalike. Every inventory is passed; one with no `shares` block is a no-op.
       - name: Shared components

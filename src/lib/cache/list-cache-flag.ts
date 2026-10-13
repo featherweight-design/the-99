@@ -10,6 +10,6 @@
  * The same shape as the other release switches: server-side, read per request, and OFF for
  * anything but the exact string `'true'`. Changing it on Vercel needs a redeploy.
  */
-export function listCacheEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function listCacheEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.LIST_CACHE_ENABLED === "true";
 }

@@ -6,6 +6,6 @@
  * or any string but `'true'` means the Stats segment does not exist and nothing about it is
  * fetched or drawn.
  */
-export function deckStatsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function deckStatsEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.DECK_STATS_ENABLED === "true";
 }
