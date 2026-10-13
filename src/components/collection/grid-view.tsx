@@ -28,7 +28,6 @@ import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
 import { GhostButton } from "../ui/button";
 import { HydratedImg } from "../ui/hydrated-art";
-import { PreviewButton } from "../ui/preview-button";
 
 /**
  * Past three glyphs (facts plus the combo lemniscate), the meta line draws the first two and
@@ -122,9 +121,8 @@ export function GridView({
         const shownMarks = tooMany ? allMarks.slice(0, MAX_TILE_MARKS - 1) : allMarks;
         const moreCount = tooMany ? allMarks.length - shownMarks.length : 0;
         return (
-        <PreviewButton
+        <button
           key={c.oracleId}
-          imageUri={c.imageUri}
           type="button"
           onClick={() => onOpen(c.oracleId)}
           // Never `disabled`, for the reason CardDetailTrigger states: disabling
@@ -343,7 +341,7 @@ export function GridView({
               </span>
             }
           />
-        </PreviewButton>
+        </button>
         );
       })}
 

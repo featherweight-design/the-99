@@ -2049,3 +2049,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   stranded-default cards and 1 of 30 typical ones. Its first run FAILED 4 of 30: two equally cheap printings tie, the
   rule takes the first, and the modal's order is `comparePrintings` (set code, then collector number) where the
   loader had no order; the loader now sorts the same way. `hover-art.test.ts` pins who may import the primitives.
+
+- `pnpm probe:hover-rows` walks where the hover preview is and is not (Hugh, 2026-10-12), in a real browser at 1300x900
+  and 390x844. A TILE draws no preview (the art on it is about the size of one): the deck's Card view, the collection
+  grid, a set's grid and an open precon's Card view are each hovered and must open nothing, and each is paired with a
+  control that does preview (a decklist row, a collection row, an open precon's list row), so "nothing opened" cannot
+  come from a probe that never hovered. A token row previews on its image and its name, with the token's normal-size
+  image, and not on the rules text, the makers line or the row's empty space. Card details opened from a token pages
+  through the deck's tokens: Next reaches the second token and Previous comes back. The box is `md:block`, so the hover
+  checks run at 1300 and the phone walk is the paging and no overflow. A proposed cut's reason is `probe:cuts-panel`'s,
+  which hovers the reason (nothing) and the name (the card). Makes no writes, but needs a server with
+  `DECK_TOKENS_ENABLED` and `PRECONS_ENABLED` on and a database holding the token catalog and a deck that makes two or
+  more tokens: a `pull:staging` copy on a scratch branch of staging, with the account's About row cleared
+  (`markEveryEntrySeen`). Mutation-checked 2026-10-12: putting the hover back on a deck tile fails "no tile previews",
+  and dropping the siblings from the token rows fails "Next is offered" at both widths. The contact sheet
+  (`docs/superpowers/inventories/hover-rows.json`, `HOVER_ROWS_DECK`) photographs the same surfaces at rest.

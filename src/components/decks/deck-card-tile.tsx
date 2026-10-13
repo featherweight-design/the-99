@@ -54,7 +54,6 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useLockCards } from "./lock-cards";
 import { LockMark } from "./lock-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
-import { usePreviewRow } from "./hover-preview";
 import { FadingImg } from "../ui/hydrated-art";
 
 // The shell and the art ratio live in `ui/card-tile-caption`, a server-safe module: this one is
@@ -75,8 +74,6 @@ export function DeckCardTile({
   spent?: boolean;
 }) {
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
-  // The same hover preview the list row draws, borrowed from the decklist's provider.
-  const previewHandlers = usePreviewRow(card.imageUri);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
   const reportRemoveFailure = useReportRemoveFailure();
@@ -185,7 +182,7 @@ export function DeckCardTile({
   if (spent) return <UndoTile deckId={deckId} card={card} />;
 
   return (
-    <li className="flex flex-col" {...previewHandlers}>
+    <li className="flex flex-col">
       <div
         /* THE WHOLE LEFT EDGE, art included. It was on the caption, on call B's
            reasoning that the shell's border already carries over-committed and

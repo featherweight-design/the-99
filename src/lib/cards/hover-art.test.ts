@@ -25,8 +25,6 @@ export const RESOLVERS = new Set([
 /** Components that draw a hover preview, mapped to the module whose read supplies the art they hand it. */
 const FEEDERS: Record<string, string> = {
   "components/decks/decklist-row.tsx": "lib/decks/read.ts",
-  "components/decks/deck-card-tile.tsx": "lib/decks/read.ts",
-  "components/decks/suggestion-tile.tsx": "lib/decks/suggestions-read.ts",
   "components/decks/cuts-panel.tsx": "lib/decks/cuts-read.ts",
   // The shared name trigger itself draws the box; each CALLER that passes `preview` is a surface of its own:
   "components/cards/card-detail-provider.tsx": "",
@@ -56,21 +54,18 @@ const FEEDERS: Record<string, string> = {
   "components/decks/notices-body.tsx": "lib/notices/read.ts",
   // The button a row or tile IS: the owner (browser.tsx, set-grid-view.tsx) passes each row's art from its own loader.
   "components/ui/preview-button.tsx": "",
-  // The collection's own rows and the set grid's cells ARE the printing they draw: the collection list resolves its
-  // art per owned printing (browse.ts), and a set cell is one catalog printing, so there is no feeder to chain.
+  // The collection's own rows ARE the printing they draw: the collection list resolves its art per owned
+  // printing (browse.ts), so there is no feeder to chain.
   "components/collection/rows-view.tsx": "",
-  "components/collection/grid-view.tsx": "",
-  "components/sets/set-cell.tsx": "",
   "components/decks/proxy-list-view.tsx": "lib/decks/proxy-list.ts",
   "components/decks/cart/cart-line.tsx": "lib/decks/cart-read.ts",
   "components/intake/choose-row.tsx": "lib/intake/rows.ts",
   "components/commanders/synergy-row.tsx": "app/commanders/[slug]/page.tsx",
   "components/decks/cart/cart-deck-group.tsx": "lib/decks/cart-read.ts",
-  // Tokens are their own bug batch's, and precons their own lane's: named so the list stays complete, not checked.
+  // Tokens are not cards: a token row previews the printing it is pictured with (`assembleDeckTokens`), which is the one
+  // its card details open on (`loadTokenDetail`), so there is no owned-printing chain to apply. Named so the list stays complete.
   "components/decks/token-makers.tsx": "",
-  // The open precon's Card view: its art and card details both show the precon's own printing (O6, `preconArt` in
-  // `lib/precons/open-read.ts` and the page's `viewPrintings`), not the owned-printing chain, by design.
-  "components/decks/read-only-card-tile.tsx": "",
+  "components/decks/token-row.tsx": "",
   "components/decks/lineup/shared-card.tsx": "lib/lineup/load.ts",
   "components/decks/lineup/collection-card.tsx": "lib/lineup/collection-read.ts",
 };
@@ -180,7 +175,7 @@ describe("every hover preview shows the printing card details opens", () => {
 
 // ---- Every card ROW has BOTH a hover preview and a press that opens card details (Hugh, 2026-10-12) ----
 
-const PRESS_BINDINGS = ["CardDetailTrigger", "useCardDetail", "FullCardTrigger"];
+const PRESS_BINDINGS = ["CardDetailTrigger", "useCardDetail", "useCardDetailIfAny", "FullCardTrigger"];
 
 const importsBinding = (src: string, name: string) =>
   new RegExp(`import\\s*(?:type\\s*)?\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from`).test(src);
@@ -238,8 +233,69 @@ const DEFINES_PRESS = new Set([
  * from the owner as `onOpen`. Each half is checked where it lives, so neither file passes on the other's word.
  */
 const COMPOSED_ROWS: Record<string, string[]> = {
-  "components/collection/browser.tsx": ["components/collection/rows-view.tsx", "components/collection/grid-view.tsx"],
-  "components/sets/set-grid-view.tsx": ["components/sets/set-cell.tsx"],
+  "components/collection/browser.tsx": ["components/collection/rows-view.tsx"],
+};
+
+/**
+ * TILE views: a card drawn as its art at about the size of the hover preview, so the preview shows the reader what is
+ * already in front of them (Hugh, 2026-10-12). They keep the press that opens card details and draw NO hover. A tile
+ * that regains one fails below, and so does a row that is listed here and no longer a tile.
+ */
+const TILE_VIEWS = [
+  "components/decks/deck-card-tile.tsx",
+  "components/decks/suggestion-tile.tsx",
+  "components/decks/read-only-card-tile.tsx",
+  "components/collection/grid-view.tsx",
+  "components/sets/set-cell.tsx",
+  // The grid that owns the cells: it opens card details for them and mounts no provider.
+  "components/sets/set-grid-view.tsx",
+];
+
+const HOVER_BINDINGS = ["usePreviewRow", "PreviewButton", "HoverPreviewProvider"];
+
+/** Tags that are a row's own shell: a hover handler spread on one of them previews for the WHOLE row. */
+const ROW_SHELL_TAGS = new Set(["li", "article", "div", "tr", "section", "ul", "p"]);
+
+/**
+ * The elements that carry a `usePreviewRow` result as their own handlers while being a row's shell: `const h =
+ * usePreviewRow(...)` then `<li {...h}>`. Such a row previews wherever the pointer is on it, which covers any prose in
+ * it (the reason under a proposed cut). A handler on a name, a thumbnail or a button is not found here.
+ */
+export function wholeRowHover(src: string): string[] {
+  const file = ts.createSourceFile("row.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const handlers = new Set<string>();
+  const collect = (node: ts.Node) => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && ts.isCallExpression(node.initializer)
+      && ts.isIdentifier(node.initializer.expression) && node.initializer.expression.text === "usePreviewRow") handlers.add(node.name.text);
+    ts.forEachChild(node, collect);
+  };
+  collect(file);
+  const found: string[] = [];
+  const visit = (node: ts.Node) => {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && ROW_SHELL_TAGS.has(node.tagName.getText(file))) {
+      for (const a of node.attributes.properties) {
+        if (ts.isJsxSpreadAttribute(a) && ts.isIdentifier(a.expression) && handlers.has(a.expression.text)) found.push(node.tagName.getText(file));
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return found;
+}
+
+/**
+ * Plain rows that preview as a whole row: a line of data with no prose to cover (a decklist row, a diff row, a stand-in
+ * row, a ledger line). A row that carries descriptive text previews on its name and thumbnail ONLY, and is not listed
+ * here; when unsure it is not listed (Hugh, 2026-10-12). Adding a file is a decision that shows up in a diff.
+ */
+const WHOLE_ROW_OK: Record<string, string> = {
+  "components/decks/decklist-row.tsx": "the decklist row: name, cost and marks on one line",
+  "components/decks/top-off-list.tsx": "a Consider row: type, cost, availability and synergy figures, no paragraph",
+  "components/decks/update-diff-row.tsx": "a draft diff row: name, tag and figures on one or two lines",
+  "components/decks/version-diff.tsx": "a version diff row: one line, name and cost",
+  "components/decks/benchmark-ledger.tsx": "a ledger line: name, one truncated clause and a figure; the row is the one button",
+  "components/decks/stand-ins-sheet.tsx": "a stand-in row and its replacing line: name, price and availability",
+  "components/decks/token-makers.tsx": "a maker line: a name and nothing else",
 };
 
 /**
@@ -271,6 +327,16 @@ describe("the row guard's own failure paths", () => {
     expect(rowGaps({ "components/a.tsx": mixed }, new Set())).toEqual([{ path: "components/a.tsx", missing: "hover" }]);
   });
 
+  it("finds a handler spread on a row's own shell and not one on a name, a thumbnail or a button", () => {
+    const shell = `import { usePreviewRow } from "./hover-preview";\nexport function R({ c }) { const h = usePreviewRow(c.imageUri); return <article {...h}><button>{c.name}</button></article>; }`;
+    const name = `import { usePreviewRow } from "./hover-preview";\nexport function R({ c }) { const h = usePreviewRow(c.imageUri); return <article><span {...h}><button>{c.name}</button></span><button {...h}>x</button></article>; }`;
+    expect(wholeRowHover(shell)).toEqual(["article"]);
+    expect(wholeRowHover(name)).toEqual([]);
+    // Spread of something that is not a usePreviewRow result, and a result spread nowhere.
+    expect(wholeRowHover(`export function R({ p }) { return <li {...p} />; }`)).toEqual([]);
+    expect(wholeRowHover(`export function R({ c }) { const h = usePreviewRow(c.imageUri); return <li />; }`)).toEqual([]);
+  });
+
   it("does not take a comment, a string or a different element's `preview` for a half", () => {
     const comment = `// uses CardDetailTrigger and usePreviewRow\nexport const A = () => <Other preview />;`;
     expect(hasPress(comment)).toBe(false);
@@ -286,7 +352,25 @@ describe("every card row has a hover preview and a press that opens card details
 
   it("has no row with one half and not the other, beyond the headers and doors", () => {
     const composed = new Set(Object.entries(COMPOSED_ROWS).flatMap(([owner, children]) => [owner, ...children]));
-    expect(rowGaps(files, new Set([...NOT_A_ROW, ...composed]))).toEqual([]);
+    expect(rowGaps(files, new Set([...NOT_A_ROW, ...composed, ...TILE_VIEWS]))).toEqual([]);
+  });
+
+  it("tile views draw no hover preview, only the press (a tile already shows the art at preview size)", () => {
+    for (const tile of TILE_VIEWS) {
+      expect(files[tile], `${tile} does not exist`).toBeDefined();
+      const bound = HOVER_BINDINGS.filter((name) => importsBinding(files[tile], name));
+      expect(bound, `${tile} draws a hover preview`).toEqual([]);
+      expect(hasHover(files[tile]), `${tile} passes \`preview\` to a trigger`).toBe(false);
+    }
+  });
+
+  it("previews a whole row only for the plain rows named for it, so a row with prose previews on its name and thumbnail", () => {
+    const whole = Object.entries(files)
+      .filter(([path, src]) => !/\.test\.tsx$/.test(path) && wholeRowHover(src).length > 0)
+      .map(([path]) => path)
+      .sort();
+    expect(whole.filter((path) => !(path in WHOLE_ROW_OK))).toEqual([]);
+    expect(Object.keys(WHOLE_ROW_OK).filter((path) => !whole.includes(path))).toEqual([]);
   });
 
   it("composed rows: the owner mounts the provider and opens details, each child draws the preview", () => {

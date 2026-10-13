@@ -14,6 +14,8 @@ export type TokenPictured = {
   scryfallId: string;
   setCode: string;
   collectorNumber: string;
+  /** The normal-size image: the hover preview draws it at 252x352, where the small one would blur. */
+  imageUri: string | null;
   imageUriSmall: string | null;
   artCropUri: string | null;
   /** How many printings the token has: "cheapest of N printings" is only true when this is the field. */
@@ -61,7 +63,7 @@ export type TokenRowFacts = {
 };
 export type TokenPrintingFacts = {
   scryfallId: string; tokenOracleId: string; setCode: string; collectorNumber: string;
-  imageUriSmall: string | null; artCropUri: string | null;
+  imageUri: string | null; imageUriSmall: string | null; artCropUri: string | null;
 };
 
 export type DeckTokenInputs = {
@@ -140,7 +142,7 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
       picture: chosen
         ? {
           scryfallId: chosen.scryfallId, setCode: chosen.setCode, collectorNumber: chosen.collectorNumber,
-          imageUriSmall: chosen.imageUriSmall, artCropUri: chosen.artCropUri, printings: all.length,
+          imageUri: chosen.imageUri, imageUriSmall: chosen.imageUriSmall, artCropUri: chosen.artCropUri, printings: all.length,
         }
         : null,
       price,
@@ -249,7 +251,7 @@ export async function loadDeckTokens(
       db.select({
         scryfallId: tokenPrintings.scryfallId, tokenOracleId: tokenPrintings.tokenOracleId,
         setCode: tokenPrintings.setCode, collectorNumber: tokenPrintings.collectorNumber,
-        imageUriSmall: tokenPrintings.imageUriSmall, artCropUri: tokenPrintings.artCropUri,
+        imageUri: tokenPrintings.imageUri, imageUriSmall: tokenPrintings.imageUriSmall, artCropUri: tokenPrintings.artCropUri,
       }).from(tokenPrintings).where(inArray(tokenPrintings.tokenOracleId, tokenIds)),
       (await tokenPriceTablesExist()) ? loadTokenPrices(tokenIds) : Promise.resolve({ prices: new Map(), newestAsOf: null }),
     ]);

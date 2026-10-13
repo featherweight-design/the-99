@@ -185,19 +185,37 @@ describe("the makers fold", () => {
     const name = screen.getByRole("button", { name: "Goblin" });
     fireEvent.click(name);
     expect(stub.open.mock.calls[0][0]).toBe("t-goblin");
-    // No siblings: a token opens alone, so the modal draws no Prev/Next.
-    expect(stub.open.mock.calls[0][1]).toBeUndefined();
-    expect(stub.open.mock.calls[0][3]).toMatchObject({ opener: name });
+    // The deck's tokens are the list Prev/Next pages through, this one among them.
+    expect(stub.open.mock.calls[0][1]).toEqual([{ oracleId: "t-goblin", name: "Goblin", imageUri: null }]);
+    // `.toBe` on the element, not `toMatchObject`: a deep match walks the element's React fiber, which now reaches the preview provider.
+    expect(stub.open.mock.calls[0][3].opener).toBe(name);
     const art = document.querySelector("li button[aria-hidden]") as HTMLElement;
     expect(art.tabIndex).toBe(-1);
     fireEvent.click(art);
     expect(stub.open.mock.calls[1][0]).toBe("t-goblin");
     // The way back is the name, never the image the reader cannot reach.
-    expect(stub.open.mock.calls[1][3]).toMatchObject({ opener: name });
+    expect(stub.open.mock.calls[1][3].opener).toBe(name);
     // Intent on the name reads the token ahead of the press, as a card's trigger does.
     fireEvent.focus(name);
     expect(stub.prefetch).toHaveBeenCalledWith("t-goblin");
     expect(screen.queryAllByRole("button", { expanded: true })).toHaveLength(0);
+  });
+
+  it("hands card details every token of the deck in the group's order, with each one's art, from any row", () => {
+    const pictured = (n: string) => ({ scryfallId: n, setCode: "tla", collectorNumber: "8", imageUri: `https://img/${n}.jpg`, imageUriSmall: null, artCropUri: null, printings: 1 });
+    draw(ok([
+      token({ oracleId: "a", name: "Ally", picture: pictured("a") }),
+      token({ oracleId: "b", name: "Food", picture: pictured("b") }),
+      token({ oracleId: "c", name: "Goblin", picture: null }),
+    ]));
+    fireEvent.click(screen.getByRole("button", { name: "Food" }));
+    const siblings = [
+      { oracleId: "a", name: "Ally", imageUri: "https://img/a.jpg" },
+      { oracleId: "b", name: "Food", imageUri: "https://img/b.jpg" },
+      { oracleId: "c", name: "Goblin", imageUri: null },
+    ];
+    expect(stub.open.mock.calls[0][0]).toBe("b");
+    expect(stub.open.mock.calls[0][1]).toEqual(siblings);
   });
 
   it("is closed until the row is pressed, then names its cards A to Z with the count", () => {
@@ -281,7 +299,7 @@ describe("the line that says what is sent", () => {
   const withPrice = (product: { productName: string | null; productSet: string | null; productNumber: string | null }) =>
     token({
       name: "Soldier",
-      picture: { scryfallId: "p", setCode: "tla", collectorNumber: "8", imageUriSmall: null, artCropUri: null, printings: 5 },
+      picture: { scryfallId: "p", setCode: "tla", collectorNumber: "8", imageUri: null, imageUriSmall: null, artCropUri: null, printings: 5 },
       price: {
         cents: 15, foilCents: null, etchedCents: null, asOf: NEWEST,
         printing: { scryfallId: "p", setCode: "tla", collectorNumber: "8", ...product },
@@ -322,7 +340,7 @@ describe("the Tokens group on Shopping", () => {
   const soldier = token({
     oracleId: "s1", name: "Soldier", typeLine: "Token Creature — Soldier", colors: ["W"], power: "1", toughness: "1",
     joined: true, price: priced(15),
-    picture: { scryfallId: "p", setCode: "tla", collectorNumber: "8", imageUriSmall: null, artCropUri: null, printings: 5 },
+    picture: { scryfallId: "p", setCode: "tla", collectorNumber: "8", imageUri: null, imageUriSmall: null, artCropUri: null, printings: 5 },
   });
 
   it("draws nothing without the provider, and nothing when no token is joined", () => {
@@ -395,4 +413,49 @@ describe("a joined token whose maker left the deck", () => {
     expect(screen.getByRole("button", { name: /off this deck’s Shopping list/ })).toBeTruthy();
   });
 
+});
+
+
+describe("a token row's hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({
+        matches: query === "(hover: hover)", media: query, onchange: null,
+        addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {},
+        dispatchEvent: () => false,
+      }),
+    });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const art = { scryfallId: "p", setCode: "tla", collectorNumber: "8", imageUri: "https://img/ally.jpg", imageUriSmall: "https://img/ally-s.jpg", artCropUri: null, printings: 1 };
+  const hover = (el: Element) => {
+    fireEvent.mouseEnter(el, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(el, { clientX: 14, clientY: 14 });
+    act(() => void vi.advanceTimersByTime(400));
+  };
+
+  it("shows the token's normal-size image from its name and from its image, and not from the prose under them", () => {
+    draw(ok([token({ oracleId: "a", name: "Ally", oracleText: "Vigilance", picture: art })]));
+    hover(screen.getByRole("button", { name: "Ally" }));
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img/ally.jpg");
+    fireEvent.mouseLeave(screen.getByRole("button", { name: "Ally" }));
+    act(() => void vi.advanceTimersByTime(400));
+    expect(screen.queryByTestId("hover-preview")).toBeNull();
+    hover(document.querySelector("li button[aria-hidden]") as HTMLElement);
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img/ally.jpg");
+    fireEvent.mouseLeave(document.querySelector("li button[aria-hidden]") as HTMLElement);
+    act(() => void vi.advanceTimersByTime(400));
+    hover(screen.getByText("Vigilance"));
+    expect(screen.queryByTestId("hover-preview")).toBeNull();
+  });
+
+  it("draws nothing for a token with no printing", () => {
+    draw(ok([token({ oracleId: "a", name: "Ally", picture: null })]));
+    hover(screen.getByRole("button", { name: "Ally" }));
+    expect(screen.queryByTestId("hover-preview")).toBeNull();
+  });
 });

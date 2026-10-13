@@ -490,7 +490,9 @@ function CutRow({ item, panel, deps, items, onSettled }: {
   const [busy, setBusy] = useState<string | null>(null);
   const { open } = useCardDetail();
   const intent = useCardIntent(item.cutOracleId);
-  // Hover and press on the same card, answered or not (Hugh, 2026-10-12): every row that names a card has both.
+  // Hover and press on the same card, answered or not (Hugh, 2026-10-12): every row that names a card has both. The hover
+  // is on the thumbnail and the name ONLY, never the row: the reason below them is prose, and a preview over the row
+  // covers the text being read (Hugh, 2026-10-12).
   const previewHandlers = usePreviewRow(item.cutImageUri);
   const openCard = (event: React.MouseEvent<HTMLElement>) =>
     open(item.cutOracleId, items.map((i) => ({ oracleId: i.cutOracleId, name: i.cutName, imageUri: i.cutImageUri })), undefined, { opener: event.currentTarget });
@@ -533,7 +535,6 @@ function CutRow({ item, panel, deps, items, onSettled }: {
       <div>
         <div
           data-testid={done ? "answered-cut" : "answered-kept"}
-          {...previewHandlers}
           className="flex flex-wrap items-center gap-[9px] rounded-[9px] px-[12px] py-[9px]"
           style={{ background: done ? "var(--surface)" : "var(--surface-sunken)", border: `1px solid ${done ? "var(--success)" : "var(--border)"}` }}
         >
@@ -543,7 +544,7 @@ function CutRow({ item, panel, deps, items, onSettled }: {
           <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: done ? "var(--success)" : "var(--fg-locked)" }}>
             {done ? copy.cutDone : copy.kept}
           </span>
-          <button type="button" onClick={openCard} {...intent} aria-label={item.cutName}
+          <button type="button" onClick={openCard} {...previewHandlers} {...intent} aria-label={item.cutName}
             className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${done ? "line-through [text-decoration-color:var(--fg-locked)] text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>
             {item.cutName}
           </button>
@@ -576,18 +577,20 @@ function CutRow({ item, panel, deps, items, onSettled }: {
 
   const chips: Chip[] = cutChips(item.evidence, item.reason, panel.chips);
   return (
-    <article aria-label={item.cutName} {...previewHandlers} className="flex flex-col gap-[9px] rounded-[9px] px-[12px] py-[11px]"
+    <article aria-label={item.cutName} className="flex flex-col gap-[9px] rounded-[9px] px-[12px] py-[11px]"
       style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}>
       <div className="flex flex-col gap-[9px] md:flex-row md:items-center md:justify-between md:gap-[12px]">
         <span className="flex min-w-0 items-center gap-[10px]">
           <span className="w-[86px] flex-none rounded-full px-[8px] py-[2px] text-center font-mono text-[9px] uppercase tracking-[0.1em]"
             style={{ color: "var(--accent)", border: "1px solid var(--accent-dim)" }}>{copy.suggestion}</span>
+          <span {...previewHandlers} className="flex min-w-0 items-center gap-[10px]">
           <span aria-hidden className="h-[31px] w-[22px] flex-none rounded-[3px] bg-cover bg-center [border:1px_solid_var(--border-strong)]"
             style={item.cutImageUri ? { backgroundImage: cssUrl(item.cutImageUri) } : undefined} />
           <button type="button" onClick={openCard} {...intent} aria-label={item.cutName}
             className="min-w-0 text-left text-[13px] font-semibold text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]">
             {item.cutName}
           </button>
+          </span>
         </span>
         <span className="flex gap-[8px] md:flex-none md:gap-[7px]">
           <button type="button" disabled={busy !== null} onClick={() => void answer("cut")}

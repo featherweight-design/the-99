@@ -18,7 +18,7 @@ const tok = (oracleId: string, name: string, over: Partial<DeckTokenInputs["toke
   oracleText: `text of ${name}`, ...over,
 });
 const printing = (scryfallId: string, tokenOracleId: string, setCode: string, collectorNumber: string): TokenPrintingFacts =>
-  ({ scryfallId, tokenOracleId, setCode, collectorNumber, imageUriSmall: `s-${scryfallId}`, artCropUri: null });
+  ({ scryfallId, tokenOracleId, setCode, collectorNumber, imageUri: `n-${scryfallId}`, imageUriSmall: `s-${scryfallId}`, artCropUri: null });
 const fact = (scryfallId: string): TokenPriceFact => ({
   cents: 15, foilCents: null, etchedCents: null, asOf: new Date("2026-10-11"),
   printing: { scryfallId, setCode: "x", collectorNumber: "1", productName: null, productSet: null, productNumber: null },

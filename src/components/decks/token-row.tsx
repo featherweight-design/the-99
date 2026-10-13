@@ -11,7 +11,8 @@ import { spokenFullManaCost } from "../../lib/copy/card-surfaces";
 import { CostPips } from "../ui/cost-pips";
 import { TokenMakers } from "./token-makers";
 import { Chevron } from "../ui/chevron";
-import { useCardDetailIfAny, useCardIntentIfAny } from "../cards/card-detail-provider";
+import { useCardDetailIfAny, useCardIntentIfAny, type SiblingCard } from "../cards/card-detail-provider";
+import { usePreviewRow } from "./hover-preview";
 
 /** `{W}{U}` for a token's colors, `{C}` for none: the row's pip is the same pip a card's cost draws. */
 export function tokenPips(colors: string[]): string {
@@ -78,8 +79,12 @@ export function useTokenPress() {
  * make it folded behind the row. Never a verdict word, never a warning color on ownership.
  */
 export function TokenRow({
-  deckId, token, newestAsOf,
-}: { deckId: string; token: DeckToken; newestAsOf: Date | null }) {
+  deckId, token, newestAsOf, siblings,
+}: {
+  deckId: string; token: DeckToken; newestAsOf: Date | null;
+  /** The deck's tokens in the order the group lists them: what card details' Prev/Next page through. */
+  siblings?: readonly SiblingCard[];
+}) {
   const [open, setOpen] = useState(false);
   const { press, pending, refused } = useTokenPress();
 
@@ -98,11 +103,14 @@ export function TokenRow({
   // A pointer resting on the name or the image, or keyboard focus on the name, reads the details ahead
   // of the press, as a card's trigger does.
   const intent = useCardIntentIfAny(token.oracleId);
+  // The hover preview is on the image and the name only, never the row: the rules text and the makers line under
+  // them are prose, and a preview over the row covers what is being read (Hugh, 2026-10-12).
+  const preview = usePreviewRow(token.picture?.imageUri);
   // Read only in the press, never during render: the ref is the element the press hands focus back to.
   const openDetails = (e: MouseEvent<HTMLElement>) => {
     // The row's own press toggles the makers; this one is the card's.
     e.stopPropagation();
-    detail?.open(token.oracleId, undefined, undefined, { opener: nameRef.current ?? e.currentTarget });
+    detail?.open(token.oracleId, siblings, undefined, { opener: nameRef.current ?? e.currentTarget });
   };
   const toggleAria = tokensCopy.row.toggleAria(token.name, token.makers.length);
 
@@ -150,6 +158,7 @@ export function TokenRow({
                   // A pointer press must not focus it either: it is in no tree a reader can follow.
                   onMouseDown={(e) => e.preventDefault()}
                   {...intent}
+                  {...preview}
                   onClick={openDetails}
                   {...art}
                   className={`${art.className} cursor-pointer`}
@@ -164,6 +173,7 @@ export function TokenRow({
                   ref={nameRef}
                   type="button"
                   {...intent}
+                  {...preview}
                   onClick={openDetails}
                   aria-describedby={`token-${token.oracleId}-face`}
                   className="cursor-pointer text-left"
