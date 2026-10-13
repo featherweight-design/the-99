@@ -26,7 +26,13 @@ function token(name: string): [number, number, number] {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
 }
 
-type Png = { width: number; height: number; pixel: (x: number, y: number) => [number, number, number] };
+type Png = {
+  width: number;
+  height: number;
+  pixel: (x: number, y: number) => [number, number, number];
+  /** 255 for a face with no alpha channel. */
+  alpha: (x: number, y: number) => number;
+};
 
 /**
  * Enough of a PNG reader to sample a pixel: 8-bit RGB or RGBA, no interlace,
@@ -96,6 +102,7 @@ function readPng(bytes: Buffer): Png {
       const at = y * stride + x * channels;
       return [out[at], out[at + 1], out[at + 2]];
     },
+    alpha: (x, y) => (channels === 4 ? out[y * stride + x * channels + 3] : 255),
   };
 }
 
@@ -119,6 +126,10 @@ function readIco(bytes: Buffer): Map<number, Png> {
 
 const ico = readIco(readFileSync(join(HERE, "favicon.ico")));
 const apple = readPng(readFileSync(join(HERE, "apple-icon.png")));
+// The installed app's icons (`manifest.ts`), drawn from `icon.svg`; the maskable one at 80%.
+const installed = new Map(
+  ["icon-192.png", "icon-512.png", "maskable-512.png"].map((f) => [f, readPng(readFileSync(join(HERE, "../../public/icons", f)))]),
+);
 
 // Antialiasing means most pixels are a blend of two tokens, so the question
 // each check asks is "is this pixel that token", within a tolerance, rather
@@ -161,16 +172,49 @@ describe("the raster icons", () => {
       expect(distance(face.pixel(0, 0), "bg"), `${size}px face corner`).toBeLessThanOrEqual(NEAR);
     }
     expect(distance(apple.pixel(0, 0), "bg"), "apple corner").toBeLessThanOrEqual(NEAR);
+    for (const [file, face] of installed) {
+      expect(distance(face.pixel(0, 0), "bg"), `${file} corner`).toBeLessThanOrEqual(NEAR);
+    }
   });
 
   // The 48px face and the apple icon both carry the full lockup, so the crown's
   // accent and the numeral's bone both have to be in them. The 16px face is the
   // numeral alone and is checked for bone only.
   it("draws the crown in accent and the numeral in bone", () => {
-    for (const [size, face] of [[32, ico.get(32)!], [48, ico.get(48)!], [180, apple]] as const) {
+    for (const [size, face] of [[32, ico.get(32)!], [48, ico.get(48)!], [180, apple], ...installed] as const) {
       expect(carries(face, "accent"), `${size}px face carries the crown`).toBe(true);
       expect(carries(face, "fg"), `${size}px face carries the numeral`).toBe(true);
     }
+  });
+
+  // A home screen draws these on its own background, so a transparent pixel would show through
+  // where the RGB checks above see the ground. Every pixel is opaque.
+  it("draws the installed icons fully opaque", () => {
+    for (const [file, face] of installed) {
+      let clear = 0;
+      for (let y = 0; y < face.height; y += 1) for (let x = 0; x < face.width; x += 1) if (face.alpha(x, y) < 255) clear += 1;
+      expect(clear, `${file} transparent pixels`).toBe(0);
+    }
+  });
+
+  // A launcher crops a maskable icon to a circle, and only the central 80% (radius 0.4 of the
+  // width) is promised to survive. The mark has to sit inside it; the plain 512 does not, which is
+  // why the maskable one is its own drawing.
+  it("keeps the maskable icon's mark inside the safe circle", () => {
+    const reach = (face: Png) => {
+      let far = 0;
+      for (let y = 0; y < face.height; y += 1) {
+        for (let x = 0; x < face.width; x += 1) {
+          if (distance(face.pixel(x, y), "bg") > NEAR) {
+            far = Math.max(far, Math.hypot(x + 0.5 - face.width / 2, y + 0.5 - face.height / 2) / face.width);
+          }
+        }
+      }
+      return far;
+    };
+    expect(reach(installed.get("maskable-512.png")!)).toBeLessThanOrEqual(0.4);
+    // The check can fail: the full-size drawing reaches past the circle.
+    expect(reach(installed.get("icon-512.png")!)).toBeGreaterThan(0.4);
   });
 
   // The smallest face drops the crown: at 16px three diamonds are three specks

@@ -18,6 +18,9 @@ const ALLOWED = new Set([
   // These are art, not theme surface, and do not move between themes.
   "lib/collection/gradients.ts",
   "lib/collection/gradients.test.ts",
+  // The web app manifest is JSON a launcher reads, so its colours must be literals. `manifest.test.ts`
+  // pins the value to the default theme's `--bg` read out of globals.css, so it cannot drift.
+  "app/manifest.ts",
   // The theme library's own tests are about hex values, so they contain them.
   "lib/theme/color.test.ts",
   "lib/theme/parse-css.test.ts",
