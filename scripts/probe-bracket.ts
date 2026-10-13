@@ -91,6 +91,7 @@ import { fitSkeleton } from "../src/lib/profile/fit";
 import { slotDeck } from "../src/lib/bracket/slot";
 import { bracketDelta } from "../src/lib/bracket/delta";
 import { upgradePath } from "../src/lib/bracket/upgrade";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -192,7 +193,7 @@ async function makeDeck(
 }
 
 async function profileFor(deckId: string) {
-  const profile = await loadDeckProfile(deckId, USER);
+  const profile = await loadDeckProfile(deckId, USER, process.env);
   if (!profile) throw new Error(`no profile for ${deckId} — the fixture did not take`);
   return profile;
 }

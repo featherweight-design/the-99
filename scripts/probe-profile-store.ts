@@ -88,8 +88,9 @@ const deps: StoredProfileDeps = {
   generation: async () => generation ?? readCatalogGeneration(),
   compute: async (deckId, userId) => {
     computes += 1;
-    return loadDeckProfile(deckId, userId);
+    return loadDeckProfile(deckId, userId, process.env);
   },
+  env: process.env,
 };
 
 type Row = { n: number; permits: number[]; dirty: boolean; profile_version: number;
@@ -335,10 +336,11 @@ async function run() {
     const pressFirst: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
-        const built = await loadDeckProfile(id, user);
+        const built = await loadDeckProfile(id, user, process.env);
         await computeAndStoreProfile(deck.id, USER, deps);
         return built;
       },
+      env: process.env,
     };
     const pressed = await marksOf();
     await pinAnalysisToVersion(deck.id, USER, { versionId: racedCommit.id, list: listFingerprint(head) }, pressFirst);
@@ -365,10 +367,11 @@ async function run() {
     const editFirst: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
-        const built = await loadDeckProfile(id, user);
+        const built = await loadDeckProfile(id, user, process.env);
         await db.transaction((tx) => touchDeck(tx, deck.id));
         return built;
       },
+      env: process.env,
     };
     const answeredStale = await readStoredReading(deck.id, USER, editFirst);
     check("an edit landing mid-rebuild leaves the reading dirty", (await storedRow(deck.id))?.dirty, true);
@@ -443,10 +446,11 @@ async function run() {
     const racing: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
-        const built = await loadDeckProfile(id, user);
+        const built = await loadDeckProfile(id, user, process.env);
         v3 = (await commitVersion(deck.id, null, undefined, undefined, process.env)).version;
         return built;
       },
+      env: process.env,
     };
     const raced = await computeAndStoreProfile(deck.id, USER, racing);
     check("a commit landing mid-build leaves the reading unpinned",
@@ -487,11 +491,12 @@ async function run() {
     const late: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
-        const built = await loadDeckProfile(id, user);
+        const built = await loadDeckProfile(id, user, process.env);
         await fixture.execute(sql`update deck_cards set oracle_id = ${body[1].oracle_id}::uuid
           where deck_id = ${deck.id}::uuid and oracle_id = ${spareB.oracle_id}::uuid`);
         return built;
       },
+      env: process.env,
     };
     await computeAndStoreProfile(deck.id, USER, late);
     const after = await storedRow(deck.id);

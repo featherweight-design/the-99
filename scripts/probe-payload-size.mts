@@ -151,7 +151,7 @@ async function main() {
       let leastRows = Number.POSITIVE_INFINITY;
       let worstShipped = 0;
       for (const account of accounts) {
-        const list = await loadDiscovery(account.user_id, { sort });
+        const list = await loadDiscovery(account.user_id, { sort }, process.env);
         // A DEGRADED PAYLOAD IS A SMALLER PAYLOAD, so measuring one certifies
         // the budget from the wrong number. Both lanes now return `priceOk` /
         // `availOk` instead of throwing — the change this PR made two rounds
@@ -230,7 +230,7 @@ async function main() {
     // assert; the total is the whole reading.
     let worstOwned = { bytes: 0, rows: 0, prose: 0 };
     for (const account of accounts) {
-      const rankings = await loadCommanderRankings(account.user_id);
+      const rankings = await loadCommanderRankings(account.user_id, process.env);
       // AVAILABILITY ONLY. The owned lane reads no prices — every commander on
       // it is owned, and §7.4 row 5 unmounts the slot — so there is no
       // `priceOk` to check and passing `true` would be asserting a constant.

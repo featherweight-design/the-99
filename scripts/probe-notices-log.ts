@@ -179,7 +179,7 @@ async function main() {
       update deck_profiles set seen_seq = 4242, rules_version = 0, computed_at = ${stamp}::timestamp,
         analyzed_oracle_ids = ${SENTINEL_IDS}::uuid[], profile_version = ${PROFILE_VERSION - 1}
       where deck_id = ${reading.deck_id}::uuid`);
-    const deps: StoredProfileDeps = { generation: readCatalogGeneration, compute: loadDeckProfile };
+    const deps: StoredProfileDeps = { generation: readCatalogGeneration, compute: (d, u) => loadDeckProfile(d, u, process.env), env: process.env };
     const rebuilt = await readStoredReading(reading.deck_id, reading.user_id, deps);
     const [after] = await rows<{ v: number; seen: number; rules: number; at: string; ids: string[] }>(sql`
       select profile_version as v, seen_seq::int as seen, rules_version as rules,

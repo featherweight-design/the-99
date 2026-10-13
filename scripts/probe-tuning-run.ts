@@ -546,7 +546,7 @@ async function run() {
     check("13 · every universal staple is named through the catalog",
       context.universal.map((u2) => u2.oracleId).sort(), [...universalIds].sort());
 
-    const profile = await loadDeckProfileFromHead(head);
+    const profile = await loadDeckProfileFromHead(head, process.env);
     const pack = buildEvidencePack({
       profile, play: buildPlayGroup([]), intent: null, owned: new Set(), ...context,
       limits: { capCents: null, sets: [], ownedOnly: false },

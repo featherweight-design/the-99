@@ -63,8 +63,9 @@ let computes = 0;
 let freshComputes = 0;
 const deps: StoredProfileDeps = {
   generation: readCatalogGeneration,
-  compute: async (d, u) => { computes += 1; return loadDeckProfile(d, u); },
-  computeFresh: async (d, u) => { freshComputes += 1; return loadDeckProfile(d, u); },
+  compute: async (d, u) => { computes += 1; return loadDeckProfile(d, u, process.env); },
+  computeFresh: async (d, u) => { freshComputes += 1; return loadDeckProfile(d, u, process.env); },
+  env: process.env,
 };
 
 const planted: number[] = [];
@@ -117,7 +118,7 @@ async function run() {
     body.map((id) => sql`(${deck.id}::uuid, ${id}::uuid, 1)`), sql`, `)}`);
 
   // 1 · A deck never analyzed has no data notices, and no violations to start with.
-  const before = await loadDeckNotices(deck.id, USER);
+  const before = await loadDeckNotices(deck.id, USER, process.env);
   check("1 · no reading, no data notices", before && { data: before.dataCount, v: before.violationCount }, { data: 0, v: 0 });
   await agree("no reading");
 
@@ -132,7 +133,7 @@ async function run() {
   const combo = await plant("combo", [legend.oracle_id, body[3]].sort(), {
     variantId: "probe-cmd", produces: ["Infinite mana"], mustBeCommander: [legend.oracle_id],
   });
-  const seen = await loadDeckNotices(deck.id, USER);
+  const seen = await loadDeckNotices(deck.id, USER, process.env);
   check("2 · only the held Game Changer and the commander-led combo reach the deck",
     seen?.groups.map((g) => [g.group, g.items.map((i) => (i.kind === "data" ? i.seq : -1))]),
     [["gameChangers", [gc]], ["twoCardCombos", [combo]]]);
@@ -146,17 +147,17 @@ async function run() {
   // 3 · A card added AFTER the analysis is the dirty flag's to report, not this read's.
   await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${spare}::uuid, 1)`);
   await plant("gameChanger", [spare]);
-  check("3 · a card added since the analysis is not reported", (await loadDeckNotices(deck.id, USER))?.dataCount, 2);
-  check("3 · and the reading reads stale, so the foot sends the player to the tab", (await loadDeckNotices(deck.id, USER))?.readingStale, true);
+  check("3 · a card added since the analysis is not reported", (await loadDeckNotices(deck.id, USER, process.env))?.dataCount, 2);
+  check("3 · and the reading reads stale, so the foot sends the player to the tab", (await loadDeckNotices(deck.id, USER, process.env))?.readingStale, true);
   await agree("a card added since");
   await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${spare}::uuid`);
 
   // 4 · Opening quiets them (the mark PR 6's action moves), and a new entry brings the dot back.
   await db.execute(sql`update deck_profiles set notices_read_seq = ${seen!.readMarks.seq} where deck_id = ${deck.id}::uuid`);
-  check("4 · read: still listed, none unread", await loadDeckNotices(deck.id, USER).then((n) => n && [n.dataCount, n.dataUnread]), [2, 0]);
+  check("4 · read: still listed, none unread", await loadDeckNotices(deck.id, USER, process.env).then((n) => n && [n.dataCount, n.dataUnread]), [2, 0]);
   await agree("read data");
   await plant("extraTurns", [body[4]]);
-  check("4 · a new entry is unread again", await loadDeckNotices(deck.id, USER).then((n) => n && [n.dataCount, n.dataUnread]), [3, 1]);
+  check("4 · a new entry is unread again", await loadDeckNotices(deck.id, USER, process.env).then((n) => n && [n.dataCount, n.dataUnread]), [3, 1]);
   await agree("unread 1");
 
   // 5 · H1: a press on the unchanged list RECOMPUTES, past the cache, and clears them.
@@ -166,9 +167,9 @@ async function run() {
   const r5 = await reading(deck.id);
   check("5 · the recompute went past the cache", { computes, freshComputes }, { computes: 0, freshComputes: 1 });
   check("5 · the mark moved past every entry", Number(r5.seen) >= Math.max(...planted), true);
-  check("5 · and the reading is fresh again", (await loadDeckNotices(deck.id, USER))?.readingStale, false);
+  check("5 · and the reading is fresh again", (await loadDeckNotices(deck.id, USER, process.env))?.readingStale, false);
   check("5 · the analysis date moved", r5.at !== at0, true);
-  check("5 · and the notices cleared", (await loadDeckNotices(deck.id, USER))?.dataCount, 0);
+  check("5 · and the notices cleared", (await loadDeckNotices(deck.id, USER, process.env))?.dataCount, 0);
 
   // 6 · With nothing pending, a press answers from the store, as ruling 5 always did.
   computes = 0; freshComputes = 0;
@@ -183,42 +184,42 @@ async function run() {
   computes = 0; freshComputes = 0;
   await computeAndStoreProfile(deck.id, USER, deps, { pinTo: { versionId: version.id, list: listFingerprint(head!) } });
   check("7 · the pin computed nothing", { computes, freshComputes }, { computes: 0, freshComputes: 0 });
-  check("7 · and the entry is still pending", (await loadDeckNotices(deck.id, USER))?.groups.flatMap((g) => g.items)
+  check("7 · and the entry is still pending", (await loadDeckNotices(deck.id, USER, process.env))?.groups.flatMap((g) => g.items)
     .map((i) => (i.kind === "data" ? i.seq : -1)), [pending]);
 
   // 8 · A rules entry touches a reading computed under an older version, and the recompute clears it.
   await computeAndStoreProfile(deck.id, USER, deps);
   await db.execute(sql`update deck_profiles set rules_version = 0 where deck_id = ${deck.id}::uuid`);
   const rules = await plant("rules", [], { rulesVersion: "1", rule: "Probe rule", reads: "what it reads" }, "moved");
-  const n8 = await loadDeckNotices(deck.id, USER);
+  const n8 = await loadDeckNotices(deck.id, USER, process.env);
   check("8 · the rules entry is listed, last", n8?.groups.map((g) => g.group), ["rules"]);
   check("8 · with its words", n8?.groups[0]?.items[0]?.kind === "data" && n8.groups[0].items[0].detail, { rule: "Probe rule", reads: "what it reads" });
   await agree("a rules entry above the reading's version");
   await computeAndStoreProfile(deck.id, USER, deps);
-  check("8 · re-analyzing clears it", { rules: (await reading(deck.id)).rules, count: (await loadDeckNotices(deck.id, USER))?.dataCount },
+  check("8 · re-analyzing clears it", { rules: (await reading(deck.id)).rules, count: (await loadDeckNotices(deck.id, USER, process.env))?.dataCount },
     { rules: 1, count: 0 });
   void rules;
 
   // 9 · Violations are live: a banned card in the deck is listed until it leaves; reading it does
   //     not clear it, and the read state is the SET the player saw (F11).
   await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${banned.oracle_id}::uuid, 1)`);
-  const n9 = await loadDeckNotices(deck.id, USER);
+  const n9 = await loadDeckNotices(deck.id, USER, process.env);
   check("9 · a banned card is listed first, unread", n9 && [n9.groups[0]?.group, n9.violationCount, n9.violationsUnread], ["notLegal", 1, true]);
   await agree("notLegalUnread");
   // The real mark, the one opening the sheet writes.
   await markNoticesRead(deck.id, USER, n9!.readMarks);
-  const n9r = await loadDeckNotices(deck.id, USER);
+  const n9r = await loadDeckNotices(deck.id, USER, process.env);
   check("9 · reading quiets it and keeps it listed", n9r && [n9r.violationCount, n9r.violationsUnread], [1, false]);
   await agree("notLegalRead");
   // Both kinds at once (the tile marker addendum, F20): the summary keeps the legality kind and
   // carries the unread data count beside it, which the tile's tooltip and spoken name both use.
   const both = await plant("gameChanger", [body[0]]);
-  const n9b = await loadDeckNotices(deck.id, USER);
+  const n9b = await loadDeckNotices(deck.id, USER, process.env);
   check("9 · with data pending too, the sheet reads both", n9b && [n9b.violationCount > 0, n9b.dataUnread > 0], [true, true]);
   await agree("notLegalRead, with data");
   await db.execute(sql`delete from deck_data_changes where seq = ${both}`);
   await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
-  check("9 · the card leaving clears it", (await loadDeckNotices(deck.id, USER))?.violationCount, 0);
+  check("9 · the card leaving clears it", (await loadDeckNotices(deck.id, USER, process.env))?.violationCount, 0);
   await agree("none");
 
   // 10 · The overview's data-moved check (plan D11) counts only entries touching THIS deck.
@@ -246,19 +247,19 @@ async function run() {
     now: () => new Date(),
     profile: deps,
   };
-  const overview = async () => (await readSynopsisState(deck.id, USER, deps))!;
-  check("12 · the first overview is written", (await writeSynopsisFor(deck.id, USER, generate)).kind, "written");
+  const overview = async () => (await readSynopsisState(deck.id, USER, deps, undefined, process.env))!;
+  check("12 · the first overview is written", (await writeSynopsisFor(deck.id, USER, generate, process.env)).kind, "written");
   await plant("gameChanger", [body[6]]);
   await computeAndStoreProfile(deck.id, USER, deps);
   const s12 = await overview();
   check("12 · the re-analysis marks it stale, and a press would write", [s12.stale, s12.wouldSpend], [true, true]);
-  check("12 · Write a new overview writes one", (await writeSynopsisFor(deck.id, USER, generate)).kind, "written");
+  check("12 · Write a new overview writes one", (await writeSynopsisFor(deck.id, USER, generate, process.env)).kind, "written");
   check("12 · which is current", (await overview()).stale, false);
 
   // 13 · A ban moves the reading too (H1): the stored profile carries `legality.banned`. It is never
   //      LISTED as data (the live legality read names the card), but a press recomputes past it.
   const ban = await plant("notLegal", [body[8]]);
-  const listed = (await loadDeckNotices(deck.id, USER))?.groups.flatMap((g) => g.items)
+  const listed = (await loadDeckNotices(deck.id, USER, process.env))?.groups.flatMap((g) => g.items)
     .some((i) => i.kind === "data" && i.seq === ban);
   check("13 · a ban entry is not listed as data", listed, false);
   computes = 0; freshComputes = 0;
@@ -285,24 +286,24 @@ async function run() {
   const head14 = (await db.transaction((tx) => readProfileHead(tx, deck.id, USER)))!;
   await db.execute(sql`update deck_profiles set profile_version = 0, dirty = false,
     fingerprint = ${profileFingerprint(head14)} where deck_id = ${deck.id}::uuid`);
-  check("14 · a pre-0054 reading over an unchanged list reads fresh in Notices", (await loadDeckNotices(deck.id, USER))?.readingStale, false);
+  check("14 · a pre-0054 reading over an unchanged list reads fresh in Notices", (await loadDeckNotices(deck.id, USER, process.env))?.readingStale, false);
   await db.execute(sql`update deck_profiles set fingerprint = 'probe-other-list' where deck_id = ${deck.id}::uuid`);
-  check("14 · and stale once its list is another", (await loadDeckNotices(deck.id, USER))?.readingStale, true);
+  check("14 · and stale once its list is another", (await loadDeckNotices(deck.id, USER, process.env))?.readingStale, true);
 
   // 15 · The legality mark is written only while it is still the deck's set. An open that read the
   //      banned card, finishing after the card left (and after a later open marked the empty set),
   //      must not write its older set back: the dot would return over a set already seen.
   const legalSeen = async () => (await db.select({ s: decks.noticesLegalSeen }).from(decks).where(eq(decks.id, deck.id)))[0]?.s ?? [];
   await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${banned.oracle_id}::uuid, 1)`);
-  const early = (await loadDeckNotices(deck.id, USER))!.readMarks;
+  const early = (await loadDeckNotices(deck.id, USER, process.env))!.readMarks;
   await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
-  const later = (await loadDeckNotices(deck.id, USER))!.readMarks;
+  const later = (await loadDeckNotices(deck.id, USER, process.env))!.readMarks;
   check("15 · the later open records its set", await markNoticesRead(deck.id, USER, later), true);
   check("15 · the late open says it recorded nothing", await markNoticesRead(deck.id, USER, early), false);
   check("15 · a late open's older legality set is not written back", await legalSeen(), []);
-  check("15 · and the deck reads quiet", (await loadDeckNotices(deck.id, USER))?.violationsUnread, false);
+  check("15 · and the deck reads quiet", (await loadDeckNotices(deck.id, USER, process.env))?.violationsUnread, false);
   await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${banned.oracle_id}::uuid, 1)`);
-  await markNoticesRead(deck.id, USER, (await loadDeckNotices(deck.id, USER))!.readMarks);
+  await markNoticesRead(deck.id, USER, (await loadDeckNotices(deck.id, USER, process.env))!.readMarks);
   check("15 · a mark of the deck's own set is written", await legalSeen(), [banned.oracle_id]);
   await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
 
@@ -314,7 +315,7 @@ async function run() {
          + (select count(*) from model_calls where user_id = ${USER})::int as n`))[0].n;
   await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${banned.oracle_id}::uuid, 1)`);
   const before14 = await runs();
-  check("16 · the write refuses as illegal", (await writeSynopsisFor(deck.id, USER, generate)).kind, "illegal");
+  check("16 · the write refuses as illegal", (await writeSynopsisFor(deck.id, USER, generate, process.env)).kind, "illegal");
   check("16 · and writes no run and records no call", await runs(), before14);
   const s14 = await overview();
   check("16 · the read says illegal, keeps the saved overview, and would spend nothing", [s14.illegal, s14.synopsis !== null, s14.wouldSpend], [true, true, false]);
@@ -337,7 +338,7 @@ async function run() {
     await holder.query("begin");
     await holder.query("select 1 from decks where id = $1 for update", [deck.id]);
     const before17 = await runs();
-    const racing = writeSynopsisFor(deck.id, USER, generate);
+    const racing = writeSynopsisFor(deck.id, USER, generate, process.env);
     let waiting = false;
     for (let i = 0; i < 100 && !waiting; i += 1) {
       const [w] = await rows<{ n: number }>(sql`select count(*)::int as n from pg_stat_activity
@@ -365,7 +366,7 @@ async function run() {
  */
 async function agree(state: string) {
   const [row] = await db.select({ n: noticeSummarySql() }).from(decks).where(eq(decks.id, fixtureDeck));
-  const d = await loadDeckNotices(fixtureDeck, USER);
+  const d = await loadDeckNotices(fixtureDeck, USER, process.env);
   const expected = !d ? null : d.violationCount > 0
     ? { kind: d.violationsUnread ? "notLegalUnread" : "notLegalRead", count: d.readMarks.violations.length, dataUnread: d.dataUnread }
     : d.dataUnread > 0 ? { kind: "unread", count: d.dataUnread } : null;

@@ -2,6 +2,7 @@
 // off is about-page.test.tsx's, and every one of those tests runs unchanged.
 
 import { act, render, screen, within } from "@testing-library/react";
+import { ENV_VIEW } from "@/test/env-view";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
 
@@ -31,7 +32,7 @@ describe("the what's-new index (§O)", () => {
     const seen = 6;
     const want = newSince(seen);
     expect(want.length).toBeGreaterThan(1);
-    render(<AboutPage seen={seen} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={seen} sheetMode />);
     const nav = index()!;
     expect(within(nav).getByRole("heading").textContent).toBe(aboutCopy.newSinceEyebrow(want.length));
     const links = within(nav).getAllByRole("link");
@@ -39,7 +40,7 @@ describe("the what's-new index (§O)", () => {
   });
 
   it("makes each row one link, holding the title and route as text (O1)", () => {
-    render(<AboutPage seen={PRIOR} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={PRIOR} sheetMode />);
     const [row] = within(index()!).getAllByRole("link");
     const entry = newSince(PRIOR)[0];
     expect(row.textContent).toBe(`${entry.title}${entry.route}`);
@@ -47,15 +48,15 @@ describe("the what's-new index (§O)", () => {
   });
 
   it("draws nothing for a current reader, nor at seen 0 (O3)", () => {
-    const { unmount } = render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    const { unmount } = render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(index()).toBeNull();
     unmount();
-    render(<AboutPage seen={0} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={0} sheetMode />);
     expect(index()).toBeNull();
   });
 
   it("retires the eyebrow into the index heading", () => {
-    render(<AboutPage seen={PRIOR} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={PRIOR} sheetMode />);
     // Once, in the index, rather than an eyebrow above the title as well.
     // Counted rather than written as 1: two entries are `since` the current version
     // (`suggested-changes` and `credits`), and the eyebrow names however many there are.
@@ -65,24 +66,24 @@ describe("the what's-new index (§O)", () => {
   });
 
   it("offers no dismiss, even when a next is on the URL", () => {
-    render(<AboutPage seen={PRIOR} next="/decks" sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={PRIOR} next="/decks" sheetMode />);
     expect(screen.queryByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })).toBeNull();
   });
 });
 
 describe("the intro", () => {
   it("reads the same whether or not the sheet is what brings them", () => {
-    const { unmount } = render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    const { unmount } = render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(screen.getByText(aboutCopy.pageIntro.split("\n\n")[0])).toBeTruthy();
     unmount();
-    render(<AboutPage seen={ABOUT_VERSION} />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} />);
     expect(screen.getByText(aboutCopy.pageIntro.split("\n\n")[0])).toBeTruthy();
   });
 });
 
 describe("the new-entry marks (§P0)", () => {
   it("puts the pill before the title visually, and the spoken half after it", () => {
-    render(<AboutPage seen={PRIOR} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={PRIOR} sheetMode />);
     const entry = newSince(PRIOR)[0];
     const h3 = document.getElementById(entry.id)!.querySelector("h3")!;
     // childNodes, not firstElementChild: the title is a TEXT node, and an
@@ -96,7 +97,7 @@ describe("the new-entry marks (§P0)", () => {
   });
 
   it("gives a new entry a 2px accent rule, and an old one none of it", () => {
-    render(<AboutPage seen={PRIOR} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={PRIOR} sheetMode />);
     const fresh = document.getElementById(newSince(PRIOR)[0].id)!;
     const old = document.getElementById(aboutEntries.find((e) => e.since === 1)!.id)!;
     expect(fresh.className).toContain("border-t-2");
@@ -108,7 +109,7 @@ describe("the new-entry marks (§P0)", () => {
 
 describe("recording the visit (§O4, audit E2)", () => {
   it("records once the page is open, for a reader who is behind", () => {
-    render(<AboutPage seen={PRIOR} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={PRIOR} sheetMode />);
     expect(recordAboutVisit).toHaveBeenCalledOnce();
   });
 
@@ -122,12 +123,12 @@ describe("recording the visit (§O4, audit E2)", () => {
   });
 
   it("records a first-run reader too, so their sheet stops", () => {
-    render(<AboutPage seen={0} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={0} sheetMode />);
     expect(recordAboutVisit).toHaveBeenCalledOnce();
   });
 
   it("records nothing for a current reader", () => {
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(recordAboutVisit).not.toHaveBeenCalled();
   });
 
@@ -136,11 +137,11 @@ describe("recording the visit (§O4, audit E2)", () => {
   it("records a current reader who has not seen the appendix, while its switch is on", () => {
     process.env.HOW_IT_WORKS_ENABLED = "true";
     try {
-      render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+      render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
       expect(recordAboutVisit).toHaveBeenCalledOnce();
       recordAboutVisit.mockClear();
       document.body.innerHTML = "";
-      render(<AboutPage seen={ABOUT_VERSION} seenIds={["how-it-works"]} sheetMode />);
+      render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} seenIds={["how-it-works"]} sheetMode />);
       expect(recordAboutVisit).not.toHaveBeenCalled();
     } finally {
       delete process.env.HOW_IT_WORKS_ENABLED;
@@ -148,7 +149,7 @@ describe("recording the visit (§O4, audit E2)", () => {
   });
 
   it("records nothing with the switch off, where the dismiss still does it", () => {
-    render(<AboutPage seen={PRIOR} />);
+    render(<AboutPage env={ENV_VIEW} seen={PRIOR} />);
     expect(recordAboutVisit).not.toHaveBeenCalled();
   });
 });
@@ -158,7 +159,7 @@ describe("the jump mark (§P)", () => {
 
   it("washes the landed entry's title line and focuses its heading", () => {
     const entry = aboutEntries[3];
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     act(() => {
       window.location.hash = entry.id;
       window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -169,7 +170,7 @@ describe("the jump mark (§P)", () => {
 
   it("moves the mark when another jump lands, leaving one", () => {
     const [a, b] = [aboutEntries[2], aboutEntries[5]];
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     for (const e of [a, b]) {
       act(() => {
         window.location.hash = e.id;
@@ -184,7 +185,7 @@ describe("the jump mark (§P)", () => {
   it("marks an entry the page was opened on with a hash", () => {
     const entry = aboutEntries[4];
     window.history.replaceState(null, "", `/about#${entry.id}`);
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(titleLine(entry.id).hasAttribute("data-jumped")).toBe(true);
   });
 
@@ -204,7 +205,7 @@ describe("the jump mark (§P)", () => {
     } as unknown as typeof IntersectionObserver;
     try {
       const entry = aboutEntries[6];
-      render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+      render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
       act(() => {
         window.location.hash = entry.id;
         window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -224,7 +225,7 @@ describe("the jump mark (§P)", () => {
 
   it("lands again when the same row is pressed twice", () => {
     const entry = aboutEntries[3];
-    render(<AboutPage seen={PRIOR} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={PRIOR} sheetMode />);
     act(() => {
       window.location.hash = entry.id;
       window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -248,13 +249,13 @@ describe("the jump mark (§P)", () => {
 
   it("survives a hash that is not a valid escape", () => {
     window.history.replaceState(null, "", "/about#%E0");
-    expect(() => render(<AboutPage seen={ABOUT_VERSION} sheetMode />)).not.toThrow();
+    expect(() => render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />)).not.toThrow();
     expect(document.querySelector("[data-jumped]")).toBeNull();
   });
 
   it("draws no mark with the switch off", () => {
     const entry = aboutEntries[3];
-    render(<AboutPage seen={ABOUT_VERSION} />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} />);
     act(() => {
       window.location.hash = entry.id;
       window.dispatchEvent(new HashChangeEvent("hashchange"));

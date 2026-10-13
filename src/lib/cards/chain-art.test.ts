@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 const calls = vi.hoisted(() => ({
   owned: new Map<string, { imageUri: string | null }>(),
@@ -46,17 +47,17 @@ describe("chainArt", () => {
     // By identity, as a boolean: a chain that fell back to the environment must not print it on failure.
     expect((calls.deckArgs as unknown[])[3] === ENV).toBe(true);
     expect(calls.ownedArgs).toBeUndefined();
-    expect(await chainArt("u", null, ["a"])).toEqual(new Map([["a", "owned.jpg"]]));
+    expect(await chainArt("u", null, ["a"], ENV_VIEW)).toEqual(new Map([["a", "owned.jpg"]]));
     expect(calls.ownedArgs).toEqual(["u", ["a"]]);
   });
 
   it("leaves out a card with no owned art, a null id and a printing with no image", async () => {
     calls.deck = new Map([["a", { imageUri: "a.jpg" }], ["b", { imageUri: null }]]);
-    const got = await chainArt("u", "d", ["a", "b", "c", null, undefined, "a"]);
+    const got = await chainArt("u", "d", ["a", "b", "c", null, undefined, "a"], ENV_VIEW);
     expect([...got]).toEqual([["a", "a.jpg"]]);
     expect((calls.deckArgs as unknown[]).slice(0, 3)).toEqual(["u", "d", ["a", "b", "c"]]);
-    // Omitted, the env is the environment alone; compared by identity so a failure never prints it.
-    expect((calls.deckArgs as unknown[])[3] === process.env).toBe(true);
+    // The env handed in is the one handed on; compared by identity so a failure never prints it.
+    expect((calls.deckArgs as unknown[])[3] === ENV_VIEW).toBe(true);
   });
 
   // A card nothing above resolves is one the reader does not own: it opens on the printing card details open an
@@ -64,7 +65,7 @@ describe("chainArt", () => {
   it("falls back to the opening printing for a card no owned printing resolves, and asks only for those", async () => {
     calls.owned = new Map([["a", { imageUri: "owned-a.jpg" }]]);
     calls.opening = new Map([["b", "opening-b.jpg"]]);
-    const got = await chainArt("u", null, ["a", "b", "c"]);
+    const got = await chainArt("u", null, ["a", "b", "c"], ENV_VIEW);
     expect([...got].sort()).toEqual([["a", "owned-a.jpg"], ["b", "opening-b.jpg"]]);
     expect(calls.openingArgs).toEqual(["b", "c"]);
   });
@@ -74,20 +75,20 @@ describe("chainArt", () => {
   it("answers nothing, and applies no opening printing, when the ownership read fails", async () => {
     calls.fail = true;
     calls.opening = new Map([["a", "opening-a.jpg"]]);
-    expect(await chainArt("u", null, ["a"])).toEqual(new Map());
-    expect(await chainArt("u", "d", ["a"])).toEqual(new Map());
+    expect(await chainArt("u", null, ["a"], ENV_VIEW)).toEqual(new Map());
+    expect(await chainArt("u", "d", ["a"], ENV_VIEW)).toEqual(new Map());
     expect(calls.openingArgs).toBeUndefined();
   });
 
   it("does not send a card the reader owns, whose printing has no art, through the unowned rule", async () => {
     calls.owned = new Map([["a", { imageUri: null }]]);
     calls.opening = new Map([["a", "opening-a.jpg"], ["b", "opening-b.jpg"]]);
-    expect([...(await chainArt("u", null, ["a", "b"]))]).toEqual([["b", "opening-b.jpg"]]);
+    expect([...(await chainArt("u", null, ["a", "b"], ENV_VIEW))]).toEqual([["b", "opening-b.jpg"]]);
     expect(calls.openingArgs).toEqual(["b"]);
   });
 
   it("reads nothing for no ids", async () => {
-    expect(await chainArt("u", "d", [null])).toEqual(new Map());
+    expect(await chainArt("u", "d", [null], ENV_VIEW)).toEqual(new Map());
     expect(calls.deckArgs).toBeUndefined();
   });
 });

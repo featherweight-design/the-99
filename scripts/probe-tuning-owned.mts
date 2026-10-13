@@ -63,7 +63,7 @@ if (!inputs) throw new Error("deck not readable");
 const { head, games, intent, locked } = inputs;
 const limits = values.limits ? (JSON.parse(values.limits) as typeof inputs.limits) : inputs.limits;
 // The profile loader itself: `profileOfHead` wraps it in Next's data cache, which needs a request.
-const profile = await loadDeckProfileFromHead(head);
+const profile = await loadDeckProfileFromHead(head, process.env);
 const [owned, { overview, universal }] = await Promise.all([
   readOwnedOracleIds(userId, [...profile.cards.map((c) => c.oracleId), ...profile.skeleton.staples.map((s) => s.oracleId)]),
   readTuningContext(head),

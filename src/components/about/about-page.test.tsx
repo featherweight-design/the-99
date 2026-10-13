@@ -1,4 +1,5 @@
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { ENV_VIEW } from "@/test/env-view";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
@@ -98,13 +99,13 @@ const phoneDismiss = () =>
 
 describe("the page a first-time reader sees", () => {
   it("marks nothing, because all of it is new to them", () => {
-    render(<AboutPage seen={0} />);
+    render(<AboutPage env={ENV_VIEW} seen={0} />);
     expect(screen.queryAllByText(aboutCopy.newBadge)).toHaveLength(0);
     expect(screen.queryByText(aboutCopy.newSinceEyebrow(1))).toBeNull();
   });
 
   it("draws every entry", () => {
-    render(<AboutPage seen={0} />);
+    render(<AboutPage env={ENV_VIEW} seen={0} />);
     for (const entry of aboutEntries) {
       expect(screen.getByRole("heading", { name: new RegExp(escape(entry.title)) })).toBeTruthy();
     }
@@ -117,7 +118,7 @@ describe("the page a first-time reader sees", () => {
     // to a bare `/about`. A reader who came to look has a nav rail and a back
     // button, and `Got it — takes you home` would send them somewhere they
     // never asked to go.
-    const sent = render(<AboutPage seen={0} next="/decks" />);
+    const sent = render(<AboutPage env={ENV_VIEW} seen={0} next="/decks" />);
     expect(dismissButtons()).toHaveLength(2);
     expect(railDismiss(), "no dismiss in the contents rail").toBeTruthy();
     expect(phoneDismiss(), "no dismiss pinned for the phone").toBeTruthy();
@@ -142,7 +143,7 @@ describe("the page a first-time reader sees", () => {
     sent.unmount();
 
     // Behind, but came to look: nothing to press.
-    render(<AboutPage seen={0} />);
+    render(<AboutPage env={ENV_VIEW} seen={0} />);
     expect(
       screen.queryAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) }),
       "a reader who navigated here was offered a way out of a flow they never entered",
@@ -152,7 +153,7 @@ describe("the page a first-time reader sees", () => {
 
 describe("the reader who is current", () => {
   it("has no dismiss to press", () => {
-    render(<AboutPage seen={ABOUT_VERSION} />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} />);
     expect(screen.queryAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })).toHaveLength(0);
   });
 });
@@ -181,7 +182,7 @@ describe("the reader who is behind", () => {
     });
     const { AboutPage: Page } = await import("./about-page");
 
-    render(<Page seen={1} />);
+    render(<Page env={ENV_VIEW} seen={1} />);
     const badges = screen.getAllByText(aboutCopy.newBadge);
     expect(badges).toHaveLength(1);
     expect(badges[0].closest("li")?.textContent).toContain("Newer entry");
@@ -193,14 +194,14 @@ describe("the reader who is behind", () => {
 
 describe("where the dismiss sends them", () => {
   it("carries a same-origin destination through", () => {
-    render(<AboutPage seen={0} next="/decks?sort=name" />);
+    render(<AboutPage env={ENV_VIEW} seen={0} next="/decks?sort=name" />);
     const form = railDismiss().closest("form");
     expect(form?.querySelector("input[name=next]")).toHaveValue("/decks?sort=name");
     expect(screen.getByText(aboutCopy.dismissDestination("/decks?sort=name"))).toBeTruthy();
   });
 
   it("refuses to print or carry another origin", () => {
-    render(<AboutPage seen={0} next="//evil.example" />);
+    render(<AboutPage env={ENV_VIEW} seen={0} next="//evil.example" />);
     const form = railDismiss().closest("form");
     expect(form?.querySelector("input[name=next]")).toHaveValue("/");
     expect(screen.getByText(aboutCopy.dismissDestinationHome)).toBeTruthy();
@@ -209,7 +210,7 @@ describe("where the dismiss sends them", () => {
 
 describe("the contents", () => {
   it("links every chapter that has entries", () => {
-    render(<AboutPage seen={0} />);
+    render(<AboutPage env={ENV_VIEW} seen={0} />);
     // TWO navigations carry this label now — the in-flow list below the wide
     // stop and the sticky rail above it — so the compact one is taken by
     // position rather than by name alone.
@@ -233,7 +234,7 @@ describe("the dismiss control's accessible name", () => {
     // The clause beside the button is a sibling, so it is not part of the
     // button's name. Without this a screen-reader user hears "Got it" and
     // nothing about the destination.
-    render(<AboutPage seen={0} next="/decks" />);
+    render(<AboutPage env={ENV_VIEW} seen={0} next="/decks" />);
     expect(
       screen.getAllByRole("button", {
         name: `${aboutCopy.dismiss}, ${aboutCopy.dismissDestination("/decks")}`,
@@ -247,7 +248,7 @@ describe("a crafted link", () => {
     // `//evil.example/decks` never leaves the origin, but it resolves to
     // /decks — a destination the reader never asked for, chosen by whoever
     // wrote the link. The page must not print or carry it.
-    render(<AboutPage seen={0} next="//evil.example/decks" />);
+    render(<AboutPage env={ENV_VIEW} seen={0} next="//evil.example/decks" />);
     const form = screen
       .getAllByRole("button", { name: new RegExp("^" + aboutCopy.dismiss) })[0]
       .closest("form");
@@ -270,7 +271,7 @@ describe("the figures", () => {
     // every time a figure lands, which makes the test a chore rather than a
     // guard — and the thing worth catching is a figure REGISTERED in FIGURES
     // that renders nothing, which counting catches and a label list does not.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const drawn = container.querySelectorAll("[data-specimen]").length;
     const registered = aboutEntries.filter((e) => e.id in FIGURES).length;
     expect(registered, "no entry has a figure at all").toBeGreaterThan(0);
@@ -290,7 +291,7 @@ describe("the figures", () => {
     // every figure is hidden, so every entry MUST carry its own prose. An
     // entry with an aria-hidden figure and nothing readable beside it would
     // hide its whole subject from the readers least able to recover it.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const all = Object.entries(figures(container));
     expect(all.length, "no figures at all").toBeGreaterThan(0);
 
@@ -311,7 +312,7 @@ describe("the figures", () => {
   it("draws the buy tag's four claims, which are not four ways of saying cost", () => {
     // The frame is not the figure: asserting `data-width` alone leaves three
     // of the four states deletable with the suite still green.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["buy-tag"];
     // `sold out` is a live-row comparison, so it only appears when the fixture
     // is stale against the newest stamp — a wrong date silently makes it a
@@ -327,7 +328,7 @@ describe("the figures", () => {
   });
 
   it("draws the Stats curve card itself, from the fixture's counts, with Creature lit", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["deck-stats"];
     const columns = [...plate.querySelectorAll("[data-curve-column]")];
     expect(columns).toHaveLength(8);
@@ -338,7 +339,7 @@ describe("the figures", () => {
   });
 
   it("draws How it plays in its rows layout for Scrappy Survivors: four dependency rows and no opener", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["deck-benchmarks"];
     const block = plate.querySelector("[data-benchmarks]")!;
     expect(block).not.toBeNull();
@@ -362,7 +363,7 @@ describe("the figures", () => {
     // `out of 100` and `out of 40` are SpecimenCell captions and print whether
     // or not FitBar returned anything, so the annotation cannot stand in for
     // the figure.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["fit"];
     const tracks = [...plate.querySelectorAll("div")].filter((el) =>
       el.className.toString().includes("rounded-full"),
@@ -371,7 +372,7 @@ describe("the figures", () => {
   });
 
   it("gives an inset entry the inset frame and a plate entry the plate", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const f = figures(container);
     // `width` is a field on every entry and was ignored at first, so the
     // buy-tag entry drew a full-width frame around one small mark.
@@ -383,7 +384,7 @@ describe("the figures", () => {
   // counted elements inside the frame, which counts the grid and the cells —
   // an empty plate has more than two of those and passed.
   it("draws the four availability states, including the one that draws nothing", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["availability"];
 
     // FOUR ROWS, as §3 draws them — a numeral and the marker beside it. The
@@ -424,7 +425,7 @@ describe("the figures", () => {
     //
     // `free` is the single exception and states it: the marker draws nothing,
     // so the row has words of its own or it reads as a figure that failed.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = container.querySelector('[data-specimen="availability"]')!;
     const rows = [...plate.querySelectorAll(":scope > div > div")];
     expect(rows.length).toBeGreaterThan(0);
@@ -434,7 +435,7 @@ describe("the figures", () => {
   });
 
   it("draws all seven statuses, each with the figure that explains it", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["status"];
     const pills = [...plate.querySelectorAll("span")].filter((el) =>
       el.className.toString().includes("rounded-[6px]"),
@@ -472,7 +473,7 @@ describe("the figures", () => {
   });
 
   it("draws the decklist marks as rows, at the row's own geometry", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["marks"];
 
     // The figure mounts `DecklistRow`, so each assertion below names a slot
@@ -561,7 +562,7 @@ describe("the figures", () => {
   // asserted starting point — so every assertion on it passes whatever the
   // measured payload says. This one is about the payload itself.
   it("draws the informed-build figure from a measured mix, wipes at zero", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["informed-build"];
 
     // PROVENANCE. The source line is the only place the strip says where its
@@ -608,7 +609,7 @@ describe("the figures", () => {
   });
 
   it("draws the recommended mix as the deck page's own strip", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["roles"];
 
     // Five cells, which is the strip's own `ROLE_ORDER` rather than a number
@@ -649,7 +650,7 @@ describe("the figures", () => {
   });
 
   it("draws the decklist's own order bar, on the shopping filter", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["decklist-order"];
 
     // The two sections, which is the caption's first clause.
@@ -669,7 +670,7 @@ describe("the figures", () => {
   });
 
   it("draws the Add panel: the field, the toggle, and rows under them", async () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["add-cards"];
 
     // The caption's first clause, which the rows-only figure left with nothing
@@ -693,7 +694,7 @@ describe("the figures", () => {
   });
 
   it("draws a spent slot between two live rows", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["undo-removal"];
 
     // The receipt names the card, which is the caption's "naming it".
@@ -722,7 +723,7 @@ describe("the figures", () => {
   });
 
   it("draws the import route's own door, with both modes and no link mode", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["deck-import"];
 
     // The two doors the route actually offers.
@@ -762,7 +763,7 @@ describe("the figures", () => {
   });
 
   it("draws the version rail", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["versions"];
 
     // The rail. `initial` rather than `+99` is the v1 reading, and it is the
@@ -778,7 +779,7 @@ describe("the figures", () => {
   });
 
   it("draws the Shopping filter's two ways onto the list", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["shopping"];
 
     // Row one is unowned. Row two is the caption's load-bearing sentence: a
@@ -800,7 +801,7 @@ describe("the figures", () => {
   });
 
   it("draws the export dialog on the tab its key lines are about", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["export"];
 
     // Both tabs are present, and the SHOPPING one is the open one — the link
@@ -832,7 +833,7 @@ describe("the figures", () => {
   });
 
   it("draws both fit shapes and writes no prose inside the frame", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = figures(container)["fit"];
     // Rule 4 of the copy file: a figure may only draw what the app draws.
     // The decomposition and the denominators are annotation under the bar,
@@ -873,7 +874,7 @@ describe("the figures", () => {
     // none. The ledger is empty now, so the question worth asking flipped: the
     // page's unit is a figure with a caption, and an empty frame is the way
     // that unit fails quietly.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const entries = [...container.querySelectorAll("li")].filter((li) =>
       li.querySelector("h3"),
     );
@@ -903,7 +904,7 @@ describe("the contents", () => {
   it("gives every chapter row a figure, new or not", () => {
     // A row that carried a count only when something was new would be blank
     // for every reader at launch, which is everyone.
-    render(<AboutPage seen={0} />);
+    render(<AboutPage env={ENV_VIEW} seen={0} />);
     const [nav] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
     const counts = within(nav).getAllByText(/\d+ (entries|entry|new)/);
     expect(counts).toHaveLength(4);
@@ -918,7 +919,7 @@ describe("the contents rail", () => {
     const navs = screen.queryAllByRole("navigation", { name: aboutCopy.contentsLabel });
     expect(navs).toHaveLength(0);
 
-    render(<AboutPage seen={0} />);
+    render(<AboutPage env={ENV_VIEW} seen={0} />);
     const [inFlow, rail] = screen.getAllByRole("navigation", {
       name: aboutCopy.contentsLabel,
     });
@@ -935,7 +936,7 @@ describe("the contents rail", () => {
   });
 
   it("marks where the reader is, for a screen reader as well as an eye", () => {
-    render(<AboutPage seen={0} />);
+    render(<AboutPage env={ENV_VIEW} seen={0} />);
     const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
     const current = within(rail).getAllByRole("link").filter((a) => a.getAttribute("aria-current"));
     expect(current).toHaveLength(1);
@@ -972,7 +973,7 @@ describe("the contents rail", () => {
     }
     vi.stubGlobal("IntersectionObserver", Stub);
     try {
-      render(<AboutPage seen={0} />);
+      render(<AboutPage env={ENV_VIEW} seen={0} />);
       const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
       const marked = () =>
         within(rail)
@@ -1029,7 +1030,7 @@ describe("the contents rail", () => {
   });
 
   it("links every chapter from the rail", () => {
-    render(<AboutPage seen={0} />);
+    render(<AboutPage env={ENV_VIEW} seen={0} />);
     const [, rail] = screen.getAllByRole("navigation", { name: aboutCopy.contentsLabel });
     for (const n of ["01", "02", "03", "04"] as const) {
       expect(within(rail).getByRole("link", { name: new RegExp(escape(aboutCopy.chapters[n].title)) }))
@@ -1045,7 +1046,7 @@ describe("what each chapter 01 figure actually draws", () => {
   // all, which is the fifth round in this feature that an assertion measured
   // the frame instead of the body.
   const plate = (label: string) => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const el = container.querySelector(`[data-specimen="${label}"]`);
     expect(el, `${label} drew no specimen`).toBeTruthy();
     return el as HTMLElement;
@@ -1435,7 +1436,7 @@ describe("the themes figure", () => {
     // swatches and the six names keep the frame non-empty, so the figure whose
     // whole subject is "a theme changes the palette" goes green while showing
     // no palette at all.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const plate = container.querySelector('[data-specimen="themes"]');
     expect(plate).toBeTruthy();
     const tiles = [...plate!.querySelectorAll("[data-theme]")];
@@ -1482,7 +1483,7 @@ describe("what each legend must hold", () => {
     // ROUTE's order control now, open, so the orders and their glosses come
     // from `ORDER_OPTIONS` and a rename reaches the figure by itself. The old
     // check counted legend rows and cannot see that.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const el = container.querySelector('[data-specimen="discover"]')!;
     expect(el, "discover drew no figure").toBeTruthy();
     for (const o of ORDER_OPTIONS.discover) {
@@ -1500,7 +1501,7 @@ describe("what each legend must hold", () => {
   });
 
   it("deck-page: the badge, the bar and the tabs the key lines name", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const el = container.querySelector('[data-specimen="deck-page"]')!;
     expect(el, "deck-page drew no figure").toBeTruthy();
 
@@ -1528,7 +1529,7 @@ describe("what each legend must hold", () => {
   });
 
   it("deck-analysis: a range with its two chips, then the climb", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const el = container.querySelector<HTMLElement>('[data-specimen="deck-analysis"]')!;
     expect(el, "deck-analysis drew no figure").toBeTruthy();
 
@@ -1550,7 +1551,7 @@ describe("what each legend must hold", () => {
   });
 
   it("card-marks: a key naming only the facts its two rows carry", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const el = container.querySelector<HTMLElement>('[data-specimen="card-marks"]')!;
     expect(el, "card-marks drew no figure").toBeTruthy();
 
@@ -1579,7 +1580,7 @@ describe("what each legend must hold", () => {
     // picks its verb by ranking three stamps, so a typed figure keeps printing
     // them after the ranking changes. The fixture states dates now and the
     // block chooses, so this reads what it CHOSE.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const text =
       container.querySelector("[data-specimen='resume']")?.textContent ?? "";
     const c = refreshCopy.home.touched;
@@ -1642,7 +1643,7 @@ describe("the page's own type, against the design table", () => {
     // than the property — and it covered two headings while the same preflight
     // default was left on the third. The entry title is an h3 with
     // `font-display` and no weight, which §3 draws at 600.
-    render(<AboutPage seen={0} />);
+    render(<AboutPage env={ENV_VIEW} seen={0} />);
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1.className).toContain("font-bold");
     expect(h1.className).toContain("leading-[1.2]");
@@ -1669,7 +1670,7 @@ describe("the page's own type, against the design table", () => {
   // elements are reached structurally rather than by class, because a query
   // written from the class list can only find what it already describes.
   it("sizes the route link and the key line at both widths", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
 
     // The route sits beside its own entry title, so the title's next sibling
     // is the link — no class in the selector.
@@ -1695,7 +1696,7 @@ describe("the page's own type, against the design table", () => {
   });
 
   it("separates the intro from the h1 by the drawn 10px", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     // The intro is paragraphs now, so it is the block after the h1 rather than one <p>.
     const intro = container.querySelector("h1 + div");
     expect(intro?.className).toContain("mt-[10px]");
@@ -1711,7 +1712,7 @@ describe("the page's own type, against the design table", () => {
     // inset and so tested one chassis twice, because there were two chassis
     // then. `LegendBox` was the second, and chapter 04 removed it with the
     // last legend.
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const frames = [...container.querySelectorAll("[data-width]")];
     expect(frames.length).toBeGreaterThan(30);
 
@@ -1745,7 +1746,7 @@ describe("entry anchors", () => {
   // wrong entries, or with an extra anchored `li` the page never declared — and
   // the claim here is that each entry gets its OWN key, in order.
   it("gives every entry its own id, in order, and no others", () => {
-    const { container } = render(<AboutPage seen={ABOUT_VERSION} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} />);
     const ids = [...container.querySelectorAll("li[id]")].map((el) => el.id);
     expect(ids).toEqual(aboutEntries.map((e) => e.id));
   });
@@ -1753,7 +1754,7 @@ describe("entry anchors", () => {
   // The pairing, which order alone does not prove: an anchor is only useful if
   // it sits on the element carrying that entry's own title.
   it("puts each id on the element that holds that entry's title", () => {
-    const { container } = render(<AboutPage seen={ABOUT_VERSION} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} />);
     for (const e of aboutEntries) {
       const li = container.querySelector(`li[id="${e.id}"]`);
       expect(li, `${e.id} has no anchor`).not.toBeNull();
@@ -1767,7 +1768,7 @@ describe("the vocabulary on /about", () => {
   // The three-reading specimen went with the marks it drew. The figure returns
   // to its three legend rows, and the STATUS figure grows a seventh plate.
   it("draws no mark specimen in the versions figure", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const figure = container.querySelector("[data-specimen='versions']");
     expect(figure).toBeTruthy();
     const plated = [...figure!.querySelectorAll("span")].filter(
@@ -1777,7 +1778,7 @@ describe("the vocabulary on /about", () => {
   });
 
   it("draws all seven statuses in the status figure", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const figure = container.querySelector("[data-specimen='status']");
     for (const word of ["New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete"]) {
       expect(within(figure as HTMLElement).getByText(word), word).toBeInTheDocument();
@@ -1791,7 +1792,7 @@ describe("figures that draw what their keys name", () => {
   const specimen = (c: HTMLElement, label: string) => c.querySelector<HTMLElement>(`[data-specimen="${label}"]`)!;
 
   it("role-coverage draws the commander page's group heads, not the retired chips", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const el = specimen(container, "role-coverage");
     // Wipes: 1 owned against the 3 the specimen commander's decks run (its measured target).
     expect(el.textContent).toContain("1 owned");
@@ -1801,18 +1802,18 @@ describe("figures that draw what their keys name", () => {
   });
 
   it("log-findings draws the heading its first key describes", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const heading = deriveHeadline(GAME_SUMMARY)!.heading;
     expect(specimen(container, "log-findings").querySelector("h3")?.textContent).toBe(heading);
   });
 
   it("combo-awareness is drawn open, so the source marker its key names is there", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     expect(specimen(container, "combo-awareness").textContent).toContain(comboAwarenessCopy.modal.qualifier);
   });
 
   it("post-import's Still short is the contested row, with no receipt row under it", () => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     expect(specimen(container, "post-import").textContent).not.toContain("2 decks want 1 copy");
   });
 });
@@ -1833,7 +1834,7 @@ describe("every key line has its numeral on its figure", () => {
   });
 
   it.each(keyed.map((e) => [e.id, e] as const))("%s", (_id, entry) => {
-    const { container } = render(<AboutPage seen={0} />);
+    const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     const figure = container.querySelector(`[id="${entry.id}"] [data-specimen]`);
     expect(figure, "no figure drawn").not.toBeNull();
     const drawn = [...figure!.querySelectorAll("[data-key-numeral]")]

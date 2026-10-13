@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 // THE ENRICHMENT HAD NO BEHAVIOUR TEST — only the cache constants were pinned,
 // and the payload probe counts bytes and rows. So a regression in any of the
@@ -70,7 +71,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
       ]),
     );
 
-    const { items } = await loadCommanderRankings("user_1");
+    const { items } = await loadCommanderRankings("user_1", ENV_VIEW);
 
     expect(items[0].prose).toBe("A grinds counters.");
     expect(items[0].deckCount).toBe(1000);
@@ -84,7 +85,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
   // list, never `allPlayed` — which would assert the reader plays everything a
   // commander with nothing on file leans on.
   it("draws noMechanics for a commander with no support row", async () => {
-    const { items } = await loadCommanderRankings("user_1");
+    const { items } = await loadCommanderRankings("user_1", ENV_VIEW);
 
     expect(items[0].prose).toBeNull();
     expect(items[0].deckCount).toBeNull();
@@ -99,7 +100,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
       ]),
     );
 
-    const { items } = await loadCommanderRankings("user_1");
+    const { items } = await loadCommanderRankings("user_1", ENV_VIEW);
 
     // `blink` is the fixture deck's tag, so the reader already plays it — and
     // the state carries the commander's own theme, which is what the row prints
@@ -117,7 +118,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
   // a per-commander slot and a `priceOk` flag went with it; the row component's
   // own tests cover the slot, on the lane that has one.
   it("carries no price field, because every commander here is owned", async () => {
-    const { items } = await loadCommanderRankings("user_1");
+    const { items } = await loadCommanderRankings("user_1", ENV_VIEW);
 
     expect(items[0]).not.toHaveProperty("price");
     expect(items[0]).not.toHaveProperty("priceOk");
@@ -126,7 +127,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
   // Every read is keyed on the listed commanders, so a list of two must not ask
   // for the whole catalogue.
   it("asks for metadata and prices by the ids it is about to draw", async () => {
-    await loadCommanderRankings("user_1");
+    await loadCommanderRankings("user_1", ENV_VIEW);
 
     expect(vi.mocked(loadSupportMeta)).toHaveBeenCalledWith(["a", "b"]);
   });
@@ -139,7 +140,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
-    const { items } = await loadCommanderRankings("user_1");
+    const { items } = await loadCommanderRankings("user_1", ENV_VIEW);
 
     expect(items).toEqual([]);
     expect(vi.mocked(loadSupportMeta)).not.toHaveBeenCalled();
@@ -193,19 +194,19 @@ describe("loadCommanderRankings · the owned printing", () => {
   // Admin PR 6d-2 (Copilot round 5): either ranking counted by the classifier only because the label
   // read failed marks the payload, so the page serves it without filing it under the labels key.
   it("marks the payload when either ranking fell back to the classifier", async () => {
-    expect((await loadCommanderRankings("user_1")).labelFallback).toBeUndefined();
+    expect((await loadCommanderRankings("user_1", ENV_VIEW)).labelFallback).toBeUndefined();
     vi.mocked(rankFree).mockResolvedValue({ ok: false, items: [], labelFallback: true } as never);
-    expect((await loadCommanderRankings("user_1")).labelFallback).toBe(true);
+    expect((await loadCommanderRankings("user_1", ENV_VIEW)).labelFallback).toBe(true);
     vi.mocked(rankFree).mockResolvedValue({ ok: false } as never);
     vi.mocked(getRankedList).mockResolvedValue({
       items: [item("a")], degraded: false, uniqueCardsRead: 10, candidateCount: 1, labelFallback: true,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
-    expect((await loadCommanderRankings("user_1")).labelFallback).toBe(true);
+    expect((await loadCommanderRankings("user_1", ENV_VIEW)).labelFallback).toBe(true);
   });
 
   it("enriches the rows it is about to draw", async () => {
-    const { items } = await loadCommanderRankings("user_1");
+    const { items } = await loadCommanderRankings("user_1", ENV_VIEW);
 
     expect(items.map((i) => i.imageUri)).toEqual(["owned.jpg", "owned.jpg"]);
     expect(items[0].printedName).toBe("Freya");
@@ -218,7 +219,7 @@ describe("loadCommanderRankings · the owned printing", () => {
   it("hands the free ranking the enriched list, not the raw one", async () => {
     vi.mocked(rankFree).mockResolvedValue({ ok: true, items: [] } as never);
 
-    await loadCommanderRankings("user_1");
+    await loadCommanderRankings("user_1", ENV_VIEW);
 
     const [, canonical] = vi.mocked(rankFree).mock.calls[0];
     expect((canonical as { imageUri: string | null }[]).every((c) => c.imageUri === "owned.jpg"))
@@ -260,7 +261,7 @@ describe("the list caches' payload versions", () => {
   // The sort rides in the key beside the version, so two sorts cannot share an
   // entry — a property of the key's shape rather than of either number.
   it("keeps the two discovery sorts apart at the same version", () => {
-    expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
-    expect(discoveryKey("new")).toContain("v9");
+    expect(discoveryKey("new", ENV_VIEW)).not.toEqual(discoveryKey("fit", ENV_VIEW));
+    expect(discoveryKey("new", ENV_VIEW)).toContain("v9");
   });
 });

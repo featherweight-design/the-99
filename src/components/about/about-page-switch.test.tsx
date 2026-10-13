@@ -3,6 +3,7 @@
 // what the index lists — is the code that ships.
 
 import { cleanup, render, screen, within } from "@testing-library/react";
+import { ENV_VIEW } from "@/test/env-view";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn(), recordAboutVisit: vi.fn(async () => {}) }));
@@ -21,13 +22,13 @@ afterEach(() => {
 
 describe("an entry tied to a switch, on the page", () => {
   it("is not on the page while its switch is off", () => {
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(drawn()).toBeNull();
   });
 
   it("is on the page, and new, once the switch is on, for a reader who is current by version", () => {
     process.env.NEVER_CUT_ENABLED = "true";
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(drawn()).not.toBeNull();
     const links = within(index()!).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual([`#${switched.id}`]);
@@ -35,7 +36,7 @@ describe("an entry tied to a switch, on the page", () => {
 
   it("is not new once the reader has met it by id", () => {
     process.env.NEVER_CUT_ENABLED = "true";
-    render(<AboutPage seen={ABOUT_VERSION} seenIds={[switched.id]} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} seenIds={[switched.id]} sheetMode />);
     expect(drawn()).not.toBeNull();
     expect(index()).toBeNull();
   });
@@ -44,7 +45,7 @@ describe("an entry tied to a switch, on the page", () => {
 describe("the legacy page (no sheet), for a reader current by version", () => {
   it("marks a newly enabled switched entry new and offers the way back, as the legacy gate sent them for it", () => {
     process.env.NEVER_CUT_ENABLED = "true";
-    render(<AboutPage seen={ABOUT_VERSION} next="/decks" />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} next="/decks" />);
     expect(drawn()).toBeTruthy();
     expect(index()).toBeNull(); // the index is the sheet's; the eyebrow and the mark are the legacy page's
     expect(screen.getAllByRole("button", { name: /got it/i }).length).toBeGreaterThan(0);
@@ -52,7 +53,7 @@ describe("the legacy page (no sheet), for a reader current by version", () => {
 
   it("leaves a reader who has met the entry alone: nothing to acknowledge, no dismiss", () => {
     process.env.NEVER_CUT_ENABLED = "true";
-    render(<AboutPage seen={ABOUT_VERSION} seenIds={[switched.id]} next="/decks" />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} seenIds={[switched.id]} next="/decks" />);
     expect(screen.queryByRole("button", { name: /got it/i })).toBeNull();
   });
 });
@@ -66,19 +67,19 @@ describe("deck-benchmarks, on the page", () => {
 
   it("is not on the page while the Analysis tab is off, whatever its own switch says", () => {
     process.env.DECK_BENCHMARKS_ENABLED = "true";
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(benchmarks()).toBeNull();
   });
 
   it("is not on the page while DECK_BENCHMARKS_ENABLED is off", () => {
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(benchmarks()).toBeNull();
   });
 
   it("draws with its specimen, and is new, once the switch is on", () => {
     process.env.DECK_BENCHMARKS_ENABLED = "true";
     process.env.ANALYSIS_TAB_ENABLED = "true";
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(benchmarks()).not.toBeNull();
     expect(benchmarks()!.querySelector("[data-specimen] [data-benchmarks]")).not.toBeNull();
     const links = within(index()!).getAllByRole("link");
@@ -95,7 +96,7 @@ describe("all-decks-cart, on the page", () => {
   it("speaks the owned fact and the price its hidden figure draws, which no key line repeats", async () => {
     process.env.ALL_DECKS_CART_ENABLED = "true";
     const { allDecksCartCopy } = await import("../../lib/copy/all-decks-cart");
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     const entry = document.getElementById("all-decks-cart")!;
     expect(entry).not.toBeNull();
     const spoken = [...entry.querySelectorAll(".sr-only")].map((e) => e.textContent ?? "");
@@ -104,7 +105,7 @@ describe("all-decks-cart, on the page", () => {
 
   it("draws the Sol Ring cart line in its figure: three decks, the owned fact and the line's tag", () => {
     process.env.ALL_DECKS_CART_ENABLED = "true";
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     // The body, not the frame: `Specimen` makes the `[data-specimen]` node whatever it holds.
     const el = document.querySelector<HTMLElement>('[data-specimen="all-decks-cart"]')!;
     expect(el).not.toBeNull();
@@ -121,17 +122,17 @@ describe("notes, on the page", () => {
   });
 
   it("draws only while its switch is on", () => {
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(document.getElementById("notes")).toBeNull();
     cleanup();
     process.env.DECK_NOTES_ENABLED = "true";
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     expect(document.getElementById("notes")).not.toBeNull();
   });
 
   it("draws the note in its figure: both tagged cards and the date, the panel's own tags", () => {
     process.env.DECK_NOTES_ENABLED = "true";
-    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} sheetMode />);
     const el = document.querySelector<HTMLElement>('[data-specimen="notes"]')!;
     expect(el).not.toBeNull();
     expect(el.textContent).toContain("Laboratory Maniac");

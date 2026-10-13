@@ -7,7 +7,7 @@ import { readAllowance } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
-import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
+import { readStoredReading, requestProfileDeps, type StoredProfileDeps } from "../profile/stored";
 import { allEvidenceIds } from "./based-on";
 import { readShownSynopsis, type SynopsisRow } from "./generate";
 import { methodNoticeOf, freeRunsFor, type MethodNotice } from "./method-notice";
@@ -154,10 +154,11 @@ export function pressWrites(live: string | null, synopsis: Pick<SynopsisRow, "fi
 export async function readSynopsisState(
   deckId: string,
   userId: string,
-  deps?: StoredProfileDeps,
+  /** Absent, the request's readers under `env` (`requestProfileDeps`). */
+  deps: StoredProfileDeps | undefined,
   now: Date = new Date(),
-  /** The reader's resolved switches (`requestSwitchEnv`); a probe, outside a request, takes the environment. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`); a probe, outside a request, passes `process.env`. */
+  env: NodeJS.ProcessEnv,
 ): Promise<SynopsisState | null> {
   const [owned] = await db.select({ id: decks.id }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   if (!owned) return null;
@@ -177,7 +178,7 @@ export async function readSynopsisState(
     return { live: list, synopsis: await readShownSynopsis(deckId, userId, list ?? undefined, tx), illegal };
   }, { isolationLevel: "repeatable read" });
   const [reading, row, newest, allowance] = await Promise.all([
-    readStoredReading(deckId, userId, deps),
+    readStoredReading(deckId, userId, deps ?? requestProfileDeps(env)),
     db.select({ list: deckProfiles.fingerprint }).from(deckProfiles)
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))).then((r) => r[0]),
     db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint, origin: modelCalls.origin })
@@ -246,7 +247,7 @@ export async function readVersionSynopsis(
   versionId: string,
   userId: string,
   /** As `readSynopsisState`'s. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; art: Record<string, string | null>; evidenceNames: Record<string, string> } | null> {
   const [row] = await db
     .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content })

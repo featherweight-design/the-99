@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 // `run` stamps the contract it WROTE under on the pending row `startRun` inserts. This drives the
 // real `writeSynopsisFor` up to that insert (which throws a sentinel to stop the run) and reads the
@@ -99,7 +100,7 @@ async function stampedRow(opts: { v2: boolean; benchmarks: boolean; labelsFail?:
   ];
   state.inserted = [];
   vi.spyOn(console, "error").mockImplementation(() => undefined);
-  await expect(writeSynopsisFor("deck-1", "user-1", deps)).rejects.toBe(STOP);
+  await expect(writeSynopsisFor("deck-1", "user-1", deps, ENV_VIEW)).rejects.toBe(STOP);
   expect(state.inserted).toHaveLength(1);
   return state.inserted[0];
 }

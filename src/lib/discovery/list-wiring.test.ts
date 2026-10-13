@@ -4,6 +4,7 @@
 // asked against, what a failed availability read leaves behind, and which
 // collection size the subtitle reads.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 import type { Availability } from "../decks/availability";
 
 const collection = [
@@ -113,7 +114,7 @@ describe("loadDiscovery — wiring", () => {
   // oracle-id set is passed because there is no wider collection to compare to.
   it("asks the candidate query for the whole collection, committed cards and all", async () => {
     availability = new Map([["sol-ring", committed]]);
-    await loadDiscovery("user-1", { sort: "fit" });
+    await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW);
     const [, oracleIds, collectionOracleIds] = loadCandidates.mock.calls[0] as unknown as [
       string,
       string[],
@@ -127,10 +128,10 @@ describe("loadDiscovery — wiring", () => {
   // claim nothing can make on a failed read. The list carries no per-item receipt
   // counts, so this flag is the only thing that tells the two reads apart.
   it("reports the availability read's outcome either way", async () => {
-    expect((await loadDiscovery("user-1", { sort: "fit" })).availOk).toBe(true);
+    expect((await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW)).availOk).toBe(true);
 
     availabilityThrows = true;
-    const got = await loadDiscovery("user-1", { sort: "fit" });
+    const got = await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW);
     expect(got.availOk).toBe(false);
     // The ranking survives a failed read: only the receipt was ever at stake.
     expect(got.items).toHaveLength(1);
@@ -139,10 +140,10 @@ describe("loadDiscovery — wiring", () => {
   // The fit score reads the commander's loaded targets, not the flat constants. Swapping the
   // loaded map for anything else passes the pure assembly test, which injects its own.
   it("scores against the targets the reader loaded", async () => {
-    const flat = await loadDiscovery("user-1", { sort: "fit" });
+    const flat = await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW);
     roleTargetMock.measured = true;
     try {
-      const measured = await loadDiscovery("user-1", { sort: "fit" });
+      const measured = await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW);
       expect(measured.items.length).toBeGreaterThan(0);
       const roles = (l: typeof flat) => l.items.map((i) => i.fitRoles).reduce((a, b) => a + b, 0);
       expect(roles(measured)).toBeGreaterThan(roles(flat));
@@ -157,18 +158,18 @@ describe("loadDiscovery — wiring", () => {
   it("forwards the label basis to the targets and the label sets to the rollup", async () => {
     roleTargetMock.basisSeen.length = 0;
     const roles = (l: { items: { fitRoles: number }[] }) => l.items.reduce((a, i) => a + i.fitRoles, 0);
-    const byText = await loadDiscovery("user-1", { sort: "fit" });
+    const byText = await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW);
     expect(roleTargetMock.basisSeen).toEqual(["classifier"]);
 
     roleTargetMock.basisSeen.length = 0;
     basisMock.value = { basis: "labels", roleSets: new Map([["sol-ring", ["ramp"]]]), fellBack: false };
     try {
-      const byLabel = await loadDiscovery("user-1", { sort: "fit" });
+      const byLabel = await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW);
       expect(roleTargetMock.basisSeen).toEqual(["labels"]);
       expect(roles(byLabel)).toBeGreaterThan(roles(byText));
       // And an UNLABELLED card counts toward no role: an empty map scores below the labelled one.
       basisMock.value = { basis: "labels", roleSets: new Map(), fellBack: false };
-      expect(roles(await loadDiscovery("user-1", { sort: "fit" }))).toBeLessThan(roles(byLabel));
+      expect(roles(await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW))).toBeLessThan(roles(byLabel));
     } finally {
       basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: false };
     }
@@ -210,14 +211,14 @@ describe("loadDiscovery — wiring", () => {
 
   it("reads the subtitle's collection size off the whole collection", async () => {
     availability = new Map([["sol-ring", committed]]);
-    const got = await loadDiscovery("user-1", { sort: "fit" });
+    const got = await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW);
     // "read against N cards" names the collection, and building a deck out of a
     // card does not make the player own fewer of them.
     expect(got.cardsRead).toBe(2);
   });
 
   // Admin PR 6f-1: the claim model decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it
-  // is handed, and the pool takes the environment when none is passed: the list must hand it the reader's.
+  // is handed, and the pool requires its env: the list must hand it the reader's.
   // The environment says the opposite; identity is checked as a boolean.
   it("runs the availability read under the reader's resolved switches, not the environment", async () => {
     vi.stubEnv("NEVER_CUT_ENABLED", "false");
@@ -235,7 +236,7 @@ describe("loadDiscovery — wiring", () => {
   });
 
   it("scopes the availability read to the collection it will score", async () => {
-    await loadDiscoveryPool("user-1");
+    await loadDiscoveryPool("user-1", ENV_VIEW);
     const [userArg, opts] = loadAvailability.mock.calls[0] as unknown as [
       string,
       { oracleIds: string[] },
@@ -256,13 +257,13 @@ describe("loadDiscovery · the price read's status", () => {
   it("carries a failed price read through to the payload", async () => {
     priceRead = { prices: new Map(), ok: false };
 
-    const list = await loadDiscovery("user_1", { sort: "fit" });
+    const list = await loadDiscovery("user_1", { sort: "fit" }, ENV_VIEW);
 
     expect(list.priceOk).toBe(false);
   });
 
   it("carries a healthy one, so the field is not a constant", async () => {
-    const list = await loadDiscovery("user_1", { sort: "fit" });
+    const list = await loadDiscovery("user_1", { sort: "fit" }, ENV_VIEW);
 
     expect(list.priceOk).toBe(true);
   });

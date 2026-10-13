@@ -58,7 +58,7 @@ export async function openTuning() {
     for (const [i, deckId] of ids.entries()) {
       const inputs = await tuningInputs(deckId, userId, process.env);
       if (!inputs) throw new Error(`eval: deck ${deckId} not readable`);
-      const profile = await loadDeckProfileFromHead(inputs.head);
+      const profile = await loadDeckProfileFromHead(inputs.head, process.env);
       const owned = await readOwnedOracleIds(userId, [
         ...profile.cards.map((c) => c.oracleId),
         ...profile.skeleton.staples.map((s) => s.oracleId),

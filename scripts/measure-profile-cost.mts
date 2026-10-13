@@ -22,6 +22,7 @@
  * is a cache lookup whose price is the cache layer's, not this gather's.
  */
 import "dotenv/config";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 // STAGING OR NOTHING, unless the caller says otherwise IN WORDS.
 //
@@ -88,7 +89,7 @@ for (const d of decks) {
     console.log(`${d.name.slice(0, 34).padEnd(34)} ${String(d.cards).padStart(5)}   — no head`);
     continue;
   }
-  const profile = await loadDeckProfileFromHead(head);
+  const profile = await loadDeckProfileFromHead(head, process.env);
   const t2 = performance.now();
   await computeReadingBenchmarks(profile);
   const t3 = performance.now();

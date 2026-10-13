@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { connectStaging } from "./lib/staging.mjs";
 import { acquireRunLock } from "./lib/ledger.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 /**
  * The priced smoke for the v2 Overview facts (plan 2026-10-10-overview-accuracy.md, E1s):
@@ -54,7 +55,7 @@ for (const needle of needles) {
   if (!d) { console.log(`no deck matches ${needle}`); continue; }
   const head = await loadProfileHead(d.id, d.user_id);
   if (!head) continue;
-  const facts = await factsFor(await loadDeckProfileFromHead(head), !v1);
+  const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), !v1, undefined, process.env);
   const prompt = buildSynopsisPrompt(facts, undefined, { v2: !v1 });
   const approxIn = Math.ceil((prompt.system.length + prompt.user.length) / 3.5);
   const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, SYNOPSIS_MAX_TOKENS, { batch: false });

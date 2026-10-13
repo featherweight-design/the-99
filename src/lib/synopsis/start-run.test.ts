@@ -3,6 +3,7 @@
 // nothing reserved. The lock itself is a fact about two connections, and `probe:synopsis`'s race
 // proves it; this proves the refusal comes before the charge.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 import { listFingerprint } from "../profile/fingerprint";
 import type { ProfileHead } from "../profile/load";
@@ -37,7 +38,7 @@ const HEAD: ProfileHead = {
   cards: [{ oracleId: "a", quantity: 1 }, { oracleId: "b", quantity: 1 }],
 };
 const LIST = listFingerprint(HEAD);
-const start = () => startRun("deck", "user", LIST, "stub", new Date(), null, true);
+const start = () => startRun("deck", "user", LIST, "stub", new Date(), null, true, undefined, undefined, undefined, undefined, ENV_VIEW);
 
 describe("startRun: the list under the lock", () => {
   beforeEach(() => {
@@ -87,7 +88,7 @@ describe("startRun: the list under the lock", () => {
 // capped at two per deck per contract, and decided under the deck's lock. A refused free press
 // falls through to the PLAYER path, reuse check and allowance included.
 describe("startRun: the free method-change rewrite", () => {
-  const free = () => startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "free");
+  const free = () => startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "free", ENV_VIEW);
   const run = (status: string, ok: boolean) => ({ status, content: ok ? { verdicts: [{ section: "overview", status: "ok" }] } : null });
   /** deck row, stored reading, then the free-run count (the queue is read in this order). */
   const lock = (runs: ReturnType<typeof run>[]) => {
@@ -130,7 +131,7 @@ describe("startRun: the free method-change rewrite", () => {
   it("a press that already knew the tries were spent is the paid fallback, under the player's allowance", async () => {
     lock([run("done", false), run("done", false)]);
     queue.push([]);
-    const paid = await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid");
+    const paid = await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid", ENV_VIEW);
     expect(reserveModelCall.mock.calls[0][5]).toBe("player");
     expect(paid.kind).toBe("started");
   });
@@ -138,13 +139,13 @@ describe("startRun: the free method-change rewrite", () => {
   it("the paid fallback is still the player's: a spent allowance refuses it", async () => {
     lock([run("done", false), run("done", false)]);
     reserveModelCall.mockResolvedValue({ refused: "allowance" });
-    expect(await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid")).toEqual({ kind: "allowance" });
+    expect(await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid", ENV_VIEW)).toEqual({ kind: "allowance" });
   });
 
   it("the paid fallback hands back an overview a concurrent rewrite already wrote at the new contract", async () => {
     lock([run("done", false), run("done", false)]);
     queue.push([{ id: "syn-new" }], [{ id: "syn-new", content: { verdicts: [] } }]);
-    expect((await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid")).kind).toBe("reused");
+    expect((await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid", ENV_VIEW)).kind).toBe("reused");
   });
 
   it("a rewrite that produced an overview since the press read it returns that overview, reserving nothing", async () => {
@@ -158,7 +159,7 @@ describe("startRun: the free method-change rewrite", () => {
     lock([run("done", true)]);
     queue.push([{ id: "syn-new", content: { verdicts: [] } }]);
     reserveModelCall.mockResolvedValue({ refused: "allowance" });
-    const retry = await startRun("deck", "user", LIST, "stub", new Date(), "syn-old", false, 0, false, 8, "free");
+    const retry = await startRun("deck", "user", LIST, "stub", new Date(), "syn-old", false, 0, false, 8, "free", ENV_VIEW);
     expect(retry.kind).toBe("reused");
     expect(reserveModelCall).not.toHaveBeenCalled();
   });

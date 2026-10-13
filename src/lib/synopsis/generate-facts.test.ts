@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 const loadComboFacts = vi.fn();
 vi.mock("./combo-facts", () => ({ loadComboFacts: (...a: unknown[]) => loadComboFacts(...a) }));
@@ -32,20 +33,20 @@ describe("factsFor combo wiring", () => {
     const combo = { pieces: ["A", "B", "C"], produces: ["Infinite mana"], usesCommander: false, manaNeeded: 0 };
     const near = { have: "D", missing: "E", produces: ["Win the game"] };
     loadComboFacts.mockResolvedValueOnce({ combos: [combo], nearCombos: [near] });
-    const facts = await factsFor(profile, true);
+    const facts = await factsFor(profile, true, undefined, ENV_VIEW);
     expect(facts.combos).toEqual([combo]);
     expect(facts.nearCombos).toEqual([near]);
   });
 
   it("keeps the profile's two-card list, and no near combos, when the read fails", async () => {
     loadComboFacts.mockResolvedValueOnce(null);
-    const facts = await factsFor(profile, true);
+    const facts = await factsFor(profile, true, undefined, ENV_VIEW);
     expect(facts.combos?.map((c) => c.pieces)).toEqual([["Walking Ballista", "Heliod"]]);
     expect(facts.nearCombos).toEqual([]);
   });
 
   it("does not run the read when v2 is off", async () => {
-    const facts = await factsFor(profile, false);
+    const facts = await factsFor(profile, false, undefined, ENV_VIEW);
     expect(loadComboFacts).not.toHaveBeenCalled();
     expect(facts.combos?.length).toBe(1);
   });
@@ -57,12 +58,12 @@ describe("factsFor interaction, behind DECK_BENCHMARKS_ENABLED", () => {
 
   it("quotes the benchmarks' reading when on: a counterspell is interaction", async () => {
     readLabels.mockResolvedValueOnce(new Map([["id-Heliod", [counter]]]));
-    const facts = await factsFor(profile, false, true);
+    const facts = await factsFor(profile, false, true, ENV_VIEW);
     expect(facts.stats?.interaction).toMatchObject({ total: 1, cheap: 1 });
   });
 
   it("reads no labels and keeps the classifier's figures when off", async () => {
-    const facts = await factsFor(profile, false, false);
+    const facts = await factsFor(profile, false, false, ENV_VIEW);
     expect(readLabels).not.toHaveBeenCalled();
     expect(facts.stats?.interaction.total).toBe(0);
   });
@@ -71,10 +72,10 @@ describe("factsFor interaction, behind DECK_BENCHMARKS_ENABLED", () => {
     // Heliod's text reads as a counterspell, so a reading built from text alone would count 1.
     cardRows.mockResolvedValueOnce([{ oracleId: "id-Heliod", oracleText: "Counter target spell.", keywords: [] }]);
     readLabels.mockResolvedValueOnce(new Map());
-    expect((await factsFor(profile, false, true)).stats?.interaction.total).toBe(1);
+    expect((await factsFor(profile, false, true, ENV_VIEW)).stats?.interaction.total).toBe(1);
     cardRows.mockResolvedValueOnce([{ oracleId: "id-Heliod", oracleText: "Counter target spell.", keywords: [] }]);
     readLabels.mockRejectedValueOnce(new Error("down"));
-    expect((await factsFor(profile, false, true)).stats?.interaction.total).toBe(0);
+    expect((await factsFor(profile, false, true, ENV_VIEW)).stats?.interaction.total).toBe(0);
   });
 
   it("says which reading the figures are, so a write stamps the contract it really used", async () => {

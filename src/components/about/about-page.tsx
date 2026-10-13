@@ -252,7 +252,7 @@ export function AboutPage({
   seenIds = [],
   next,
   sheetMode = false,
-  env = process.env,
+  env,
 }: {
   seen: number;
   /** The switched entries this reader has already met, by id (`user_prefs.about_seen_ids`). */
@@ -265,7 +265,7 @@ export function AboutPage({
    */
   sheetMode?: boolean;
   /** The reader's resolved switches (`resolveSwitchEnv`), the same the proxy's gate and sheet decide from. */
-  env?: NodeJS.ProcessEnv;
+  env: NodeJS.ProcessEnv;
 }) {
   // Only the entries this reader is drawn: one tied to a switch that is off for them is not on the page.
   const visible = visibleEntries(env);

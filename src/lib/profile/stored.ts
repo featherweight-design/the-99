@@ -53,9 +53,9 @@ export type StoredProfileDeps = {
   computeFresh?: (deckId: string, userId: string) => Promise<DeckProfile | null>;
   /**
    * The reader's resolved switches (`requestSwitchEnv`): the notices switch and the role basis a press
-   * is judged against. Absent, the environment alone decides, which only a probe should rely on.
+   * is judged against. A probe, with no signed-in reader, passes `process.env`.
    */
-  env?: NodeJS.ProcessEnv;
+  env: NodeJS.ProcessEnv;
 };
 
 /**
@@ -71,8 +71,6 @@ export function requestProfileDeps(env: NodeJS.ProcessEnv): StoredProfileDeps {
     env,
   };
 }
-
-const REQUEST_DEPS: StoredProfileDeps = requestProfileDeps(process.env);
 
 /** A stored reading, with whether it still describes the deck. */
 export type StoredReading = {
@@ -138,7 +136,7 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
  */
 export function storedBasisMoved(
   profile: Pick<DeckProfile, "skeleton"> | null | undefined,
-  basis: RoleBasis = roleBasisFromEnv(process.env),
+  basis: RoleBasis,
 ): boolean {
   return (profile?.skeleton?.roleBasis ?? "classifier") !== basis;
 }
@@ -155,8 +153,8 @@ export async function pressMustRecompute(args: {
   storedProfile: Pick<DeckProfile, "skeleton"> | null | undefined;
   noticesOn: boolean;
   logMoved: () => Promise<boolean>;
-  /** The reader's role basis; absent, the environment's. */
-  basis?: RoleBasis;
+  /** The reader's role basis (`roleBasisFromEnv(env)`). */
+  basis: RoleBasis;
 }): Promise<boolean> {
   if (!args.isPress || !args.sameAnswer) return false;
   if (storedBasisMoved(args.storedProfile, args.basis)) return true;
@@ -203,7 +201,7 @@ const SNAPSHOT = { isolationLevel: "repeatable read" } as const;
 export async function readStoredReading(
   deckId: string,
   userId: string,
-  deps: StoredProfileDeps = REQUEST_DEPS,
+  deps: StoredProfileDeps,
 ): Promise<StoredReading | null> {
   const { head, row } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), SNAPSHOT);
   if (!head || !row) return null;
@@ -240,7 +238,7 @@ export async function readStoredReading(
 export async function readStoredProfile(
   deckId: string,
   userId: string,
-  deps: StoredProfileDeps = REQUEST_DEPS,
+  deps: StoredProfileDeps,
 ): Promise<DeckProfile | null> {
   const reading = await readStoredReading(deckId, userId, deps);
   return reading?.fresh ? reading.profile : null;
@@ -289,7 +287,7 @@ export type AnalyzeResult =
 export async function computeAndStoreProfile(
   deckId: string,
   userId: string,
-  deps: StoredProfileDeps = REQUEST_DEPS,
+  deps: StoredProfileDeps,
   {
     pinTo,
     rebuildOf,
@@ -377,8 +375,8 @@ export async function computeAndStoreProfile(
     isPress,
     sameAnswer: Boolean(row && sameAnswer),
     storedProfile: row?.profile,
-    noticesOn: noticesEnabled(deps.env ?? process.env),
-    basis: roleBasisFromEnv(deps.env ?? process.env),
+    noticesOn: noticesEnabled(deps.env),
+    basis: roleBasisFromEnv(deps.env),
     // Read only when nothing cheaper already said yes, and only for a row that exists.
     logMoved: () => readingMoved({
       seenSeq: row!.seenSeq,
@@ -598,7 +596,7 @@ export async function pinAnalysisToVersion(
   deckId: string,
   userId: string,
   pinTo: CommitPin,
-  deps: StoredProfileDeps = REQUEST_DEPS,
+  deps: StoredProfileDeps,
 ): Promise<void> {
   try {
     await computeAndStoreProfile(deckId, userId, deps, { pinTo });

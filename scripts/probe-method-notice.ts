@@ -35,6 +35,7 @@ import { SYNOPSIS_CONTRACT_VERSION_V2 } from "../src/lib/synopsis/limits";
 import { readSynopsisState } from "../src/lib/synopsis/read";
 import type { SynopsisReply } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const LOCAL_DEV = "br-patient-hall-a6nbonvo";
 requireEnv(["DATABASE_URL"]);
@@ -54,7 +55,8 @@ const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> => (await db.
 
 const profileDeps: StoredProfileDeps = {
   generation: () => readCatalogGeneration(),
-  compute: (deckId, userId) => loadDeckProfile(deckId, userId),
+  compute: (deckId, userId) => loadDeckProfile(deckId, userId, process.env),
+  env: process.env,
 };
 
 let calls = 0;
@@ -72,7 +74,7 @@ const deps: GenerateDeps = {
 };
 
 const setV2 = (on: boolean) => { if (on) process.env.OVERVIEW_V2_ENABLED = "true"; else delete process.env.OVERVIEW_V2_ENABLED; };
-const state = async (deckId: string) => (await readSynopsisState(deckId, USER, profileDeps))!;
+const state = async (deckId: string) => (await readSynopsisState(deckId, USER, profileDeps, undefined, process.env))!;
 const origins = async (deckId: string) => rows<{ origin: string; status: string; contract_version: number }>(sql`
   select mc.origin, mc.status, ds.contract_version from deck_synopses ds join model_calls mc on mc.id = ds.model_call_id
   where ds.deck_id = ${deckId}::uuid order by ds.created_at`);
@@ -96,7 +98,7 @@ async function oldDeck(name: string, offset: number): Promise<string> {
   const id = await makeDeck(name, offset);
   setV2(false);
   await computeAndStoreProfile(id, USER, profileDeps);
-  const first = await writeSynopsisFor(id, USER, deps);
+  const first = await writeSynopsisFor(id, USER, deps, process.env);
   if (first.kind !== "written" || first.outcome !== "survived") throw new Error(`the contract-7 write failed: ${JSON.stringify(first)}`);
   // The player's credit for it is long spent: age it out of the window so the allowance starts whole.
   await db.execute(sql`update model_calls set created_at = now() - interval '25 hours'
@@ -109,7 +111,7 @@ async function oldDeck(name: string, offset: number): Promise<string> {
 async function failFree(deckId: string, n: number) {
   for (let i = 0; i < n; i++) {
     queue = ["busy"];
-    const got = await writeSynopsisFor(deckId, USER, deps);
+    const got = await writeSynopsisFor(deckId, USER, deps, process.env);
     if (got.kind !== "written" || got.outcome !== "upstream_busy") throw new Error(`free try ${i + 1}: ${JSON.stringify(got)}`);
   }
 }
@@ -158,7 +160,7 @@ async function seed() {
   // evidence refs and all), for the "Based on" contact sheet. No model call: the stub is injected.
   const f = await oldDeck(`${SEED_PREFIX}contract-8`, 7);
   queue = ["survived"];
-  const wrote = await writeSynopsisFor(f, USER, deps);
+  const wrote = await writeSynopsisFor(f, USER, deps, process.env);
   if (wrote.kind !== "written" || wrote.outcome !== "survived") throw new Error(`the contract-8 seed failed: ${JSON.stringify(wrote)}`);
   console.log(`export MN_CONTRACT_8=${f}`);
   console.log(`export MN_ELIGIBLE=${a} MN_PRESS_PHONE=${pp} MN_PRESS_DESKTOP=${pd} MN_ONE_LEFT=${b} MN_BOTH_USED=${c} MN_WITH_STALE=${d} MN_WITH_OLDER_ROW=${e}`);
@@ -191,21 +193,21 @@ async function scenarios() {
   check("every credit is out", (await state(deck)).allowance.used >= (await state(deck)).allowance.limit, true);
   calls = 0;
   queue = ["busy"];
-  const second = await writeSynopsisFor(deck, USER, deps);
+  const second = await writeSynopsisFor(deck, USER, deps, process.env);
   check("the second free try runs with no credit left", [second.kind, calls], ["written", 1]);
   s = await state(deck);
   check("…and both tries are then used: the paid fallback", s.methodNotice, { attemptsLeft: 0 });
 
   // 4 · THE CAP: a third free attempt is refused, and falls to the player path (which says so).
   calls = 0;
-  const third = await writeSynopsisFor(deck, USER, deps);
+  const third = await writeSynopsisFor(deck, USER, deps, process.env);
   check("a third attempt is refused: the player's allowance answers", [third.kind, calls], ["allowance", 0]);
   check("…and wrote no third system call", (await origins(deck)).filter((r) => r.origin === "system").length, 2);
 
   // 5 · THE PAID PRESS: with a credit back, the third press is the player's, and ends the notice.
   await db.execute(sql`update model_calls set created_at = now() - interval '25 hours' where user_id = ${USER} and origin = 'player'`);
   const paidBefore = await allowanceUsed();
-  const paid = await writeSynopsisFor(deck, USER, deps);
+  const paid = await writeSynopsisFor(deck, USER, deps, process.env);
   check("the fallback writes under a credit", [paid.kind, await allowanceUsed()], ["written", paidBefore + 1]);
   check("…as a player call, and the notice is gone", [(await origins(deck)).slice(-1)[0].origin, (await state(deck)).methodNotice], ["player", null]);
 
@@ -214,14 +216,14 @@ async function scenarios() {
   await db.execute(sql`delete from model_calls where user_id = ${USER} and origin = 'player' and id not in (select model_call_id from deck_synopses)`);
   const used0 = await allowanceUsed();
   calls = 0;
-  const free = await writeSynopsisFor(ok, USER, deps);
+  const free = await writeSynopsisFor(ok, USER, deps, process.env);
   check("a free rewrite over an overview the list already has is WRITTEN, not reused", [free.kind, calls], ["written", 1]);
   check("…is a system call, spent", (await origins(ok)).slice(-1), [{ origin: "system", status: "spent", contract_version: SYNOPSIS_CONTRACT_VERSION_V2 }]);
   check("…costs the player no credit", await allowanceUsed(), used0);
   s = await state(ok);
   check("…and the shown overview is the new method's: no notice", [s.methodNotice, s.synopsis?.contractVersion], [null, SYNOPSIS_CONTRACT_VERSION_V2]);
   calls = 0;
-  check("a second press reuses it, calling no model", [(await writeSynopsisFor(ok, USER, deps)).kind, calls], ["reused", 0]);
+  check("a second press reuses it, calling no model", [(await writeSynopsisFor(ok, USER, deps, process.env)).kind, calls], ["reused", 0]);
 
   // 7 · A REVERT: the free run's overview belongs to another list now, so the shown row is the old
   // contract-7 one again, and the free rewrite already produced an overview: no second one.
@@ -235,7 +237,7 @@ async function scenarios() {
   await db.execute(sql`update model_calls set created_at = now() - interval '25 hours' where user_id = ${USER}`);
   const usedR = await allowanceUsed();
   queue = ["survived"];
-  const retry = await retrySynopsisFor(retryDeck, USER, shown.id, deps);
+  const retry = await retrySynopsisFor(retryDeck, USER, shown.id, deps, process.env);
   check("a retry on an eligible overview writes it whole, as a free system call", [retry.kind, (await origins(retryDeck)).slice(-1)[0].origin, await allowanceUsed()], ["written", "system", usedR]);
 }
 

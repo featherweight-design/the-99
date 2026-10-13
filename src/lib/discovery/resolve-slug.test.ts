@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 const { findScoredCommander, getRankedList, loadDiscoveryPool, loadCandidateSlugRows } =
   vi.hoisted(() => ({
@@ -25,14 +26,14 @@ beforeEach(() => {
 describe("resolveCommanderSlug", () => {
   it("prefers the persisted row, and asks nothing else", async () => {
     findScoredCommander.mockResolvedValue({ oracleId: "a", rank: 4, anyDegraded: true });
-    expect(await resolveCommanderSlug("user", "atraxa"))
+    expect(await resolveCommanderSlug("user", "atraxa", ENV_VIEW))
       .toEqual({ oracleId: "a", rank: 4, anyDegraded: true });
     expect(getRankedList).not.toHaveBeenCalled();
   });
 
   it("falls through to the computed owned ranking on a store miss", async () => {
     getRankedList.mockResolvedValue({ items: [{ slug: "zur", oracleId: "z" }, { slug: "meren", oracleId: "m" }] });
-    expect(await resolveCommanderSlug("user", "meren"))
+    expect(await resolveCommanderSlug("user", "meren", ENV_VIEW))
       .toEqual({ oracleId: "m", rank: 2, anyDegraded: false });
     expect(loadCandidateSlugRows).not.toHaveBeenCalled();
   });
@@ -42,7 +43,7 @@ describe("resolveCommanderSlug", () => {
       { oracleId: "low", name: "Low", ownedSupport: 5 },
       { oracleId: "high", name: "High", ownedSupport: 90 },
     ]);
-    expect(await resolveCommanderSlug("user", "low"))
+    expect(await resolveCommanderSlug("user", "low", ENV_VIEW))
       .toEqual({ oracleId: "low", rank: 2, anyDegraded: false });
   });
 
@@ -54,8 +55,8 @@ describe("resolveCommanderSlug", () => {
       collection: [{ oracleId: "owned-committed" }, { oracleId: "owned-free" }],
     });
     loadCandidateSlugRows.mockResolvedValue([{ oracleId: "x", name: "X", ownedSupport: 1 }]);
-    // Under the reader's resolved switches (admin PR 6f-1): the pool's claim read takes the environment
-    // when none is passed, and the environment says the opposite here. Identity, as a boolean.
+    // Under the reader's resolved switches (admin PR 6f-1): the pool's claim read requires its env, and
+    // the environment says the opposite here. Identity, as a boolean.
     const READER = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     vi.stubEnv("NEVER_CUT_ENABLED", "false");
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
@@ -74,6 +75,6 @@ describe("resolveCommanderSlug", () => {
   });
 
   it("is null when all three miss, so the caller owns the 404", async () => {
-    expect(await resolveCommanderSlug("user", "nobody")).toBeNull();
+    expect(await resolveCommanderSlug("user", "nobody", ENV_VIEW)).toBeNull();
   });
 });

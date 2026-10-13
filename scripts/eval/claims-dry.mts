@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { loadCorpus, toReply } from "./lib/corpus.mjs";
 import { connectStaging } from "./lib/staging.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 /**
  * `pnpm tsx scripts/eval/claims-dry.mts <answers.jsonl>...` runs the contract-8 claim checks
@@ -27,7 +28,7 @@ for (const file of process.argv.slice(2)) {
     const owner = (await db.execute(sql`select user_id from decks where id = ${c.deck.deckId}`)).rows[0] as { user_id: string } | undefined;
     const head = owner && await loadProfileHead(c.deck.deckId, owner.user_id);
     if (!head) continue;
-    const facts = await factsFor(await loadDeckProfileFromHead(head), true);
+    const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), true, undefined, process.env);
     const byId = new Map(facts.cards.map((f) => [f.oracleId, f]));
     const deck = new Map([...deckNameIndex(facts.cards)].map(([k, v]) => [k, byId.get(v.oracleId)!]));
     if ((row.reply as { assessment?: unknown }).assessment) throw new Error(`${row.id}: a contract-8 answer holds no tip card names; run validateSynopsisV8 on it instead`);

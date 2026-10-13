@@ -27,7 +27,7 @@ export async function resolveCommanderSlug(
   slug: string,
   /** The reader's resolved switches: the stored set and the owned ranking are read under its role
    *  basis, so a slug resolves to the rank the reader's own list shows. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<ResolvedCommander | null> {
   const found = await findScoredCommander(userId, slug, env);
   if (found) return found;
