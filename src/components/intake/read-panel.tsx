@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
 
 import { submitChoose, theReadState } from "../../app/decks/new/choose/actions";
+import { useAiSweepRef } from "../ui/use-ai-sweep";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { colorNames } from "../../lib/copy/color-labels";
 import { INTAKE_POLL_MS } from "../../lib/intake/limits";
@@ -141,6 +142,7 @@ export function ReadPanel({
   deps?: ReadPanelDeps;
 }) {
   const router = useRouter();
+  const sweepRef = useAiSweepRef();
   const scope = useContext(ReadContext);
   const phase = scope.phase ?? phaseOf(served);
   const setPhase = scope.setPhase;
@@ -241,6 +243,7 @@ export function ReadPanel({
 
   return (
     <div
+      ref={sweepRef}
       data-testid="read-panel"
       data-phase={phase}
       className={`flex flex-col gap-[12px] md:flex-row md:items-center md:gap-[24px] p-[13px_14px] md:p-[14px_16px] rounded-[10px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_28%,var(--border))] bg-[color:color-mix(in_oklab,var(--accent)_6%,var(--surface-sunken))]${phase === "reading" ? " ai-sweep" : ""}`}

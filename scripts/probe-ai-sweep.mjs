@@ -1,11 +1,17 @@
 // probe:ai-sweep — the shared `.ai-sweep` border rides each AI tool WHILE its read runs and is gone
-// once the result lands, in a real browser at 1300x900 and 390x844 (Hugh, 2026-10-13: option 1, the
-// conic sweep, for Help me choose, Suggested changes, Proposed cuts and Find a deck's read).
+// once the result lands, in a real browser at 1300x900 and 390x844 (Hugh, 2026-10-13: the firefly, a
+// 30deg arc with a glow, for Help me choose, Suggested changes, Proposed cuts and Find a deck's read).
 //
 // jsdom lays nothing out and computes no pseudo-element styles, so this reads the page:
 //  - ON while running: the host carries `.ai-sweep`, its ring (`::before`) runs the `ai-sweep`
-//    animation and paints a conic gradient, in the tool's own theme accent.
-//  - REDUCED MOTION: the same host under `prefers-reduced-motion: reduce` has no animation and a
+//    animation and paints a conic gradient, in the tool's own theme accent, and its glow (`::after`) is a
+//    blurred copy on the same lap.
+//  - THE GLOW IS NOT CLIPPED: neither the host nor any ancestor with overflow other than visible sits within
+//    10px of the card (the ring's 3px outset plus about twice the blur's 3.5px).
+//  - THE START: the lap starts at the top-right corner, so `--ai-sweep-start` equals atan2(width, height) of
+//    the card's own box (76deg on a wide band, 27deg on a tall one, 45deg only on a square). Every tool at
+//    both widths is a different box, so the wide and the tall are both covered; the figures are printed.
+//  - REDUCED MOTION: the same host under `prefers-reduced-motion: reduce` has no animation, no glow and a
 //    plain accent ring (the static border).
 //  - OFF afterward: once the read settles, nothing on the page carries `.ai-sweep`. A sweep left
 //    running behind a finished answer is the one failure this exists to catch.
@@ -89,9 +95,41 @@ async function signIn(page) {
 const ringOf = (page, hostSelector) =>
   page.evaluate((sel) => {
     const hosts = [...document.querySelectorAll(sel)];
+    // How far the glow reaches past the host: its ring starts 3px out (`inset: -3px`) and its blur (3.5px) spreads
+    // it about twice that again, so an ancestor must sit this far off for nothing to be cut.
+    const GLOW = 10;
     return hosts.map((el) => {
       const ring = getComputedStyle(el, "::before");
-      return { cls: el.classList.contains("ai-sweep"), anim: ring.animationName, bg: ring.backgroundImage, w: Math.round(el.getBoundingClientRect().width) };
+      const glow = getComputedStyle(el, "::after");
+      const r = el.getBoundingClientRect();
+      // Whatever clips the glow, the host itself first: its own `overflow` cuts everything outside its padding
+      // box, the glow and the ring's outer pixel with it. Then each ancestor: any axis with overflow other than
+      // `visible` (hidden, clip, auto or scroll) cuts at its edge, so the card must sit GLOW px inside it.
+      const clipped = [];
+      const name = (a) => `${a.tagName.toLowerCase()}${a.getAttribute("data-testid") ? `[${a.getAttribute("data-testid")}]` : ""}`;
+      const own = getComputedStyle(el);
+      if (own.overflowX !== "visible" || own.overflowY !== "visible") clipped.push(`${name(el)} (the host itself)`);
+      for (let a = el.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        const ar = a.getBoundingClientRect();
+        const x = cs.overflowX !== "visible";
+        const y = cs.overflowY !== "visible";
+        if ((x && (r.left - ar.left < GLOW || ar.right - r.right < GLOW)) || (y && (r.top - ar.top < GLOW || ar.bottom - r.bottom < GLOW))) clipped.push(name(a));
+      }
+      const start = parseFloat(el.style.getPropertyValue("--ai-sweep-start"));
+      return {
+        cls: el.classList.contains("ai-sweep"),
+        anim: ring.animationName,
+        bg: ring.backgroundImage,
+        glowAnim: glow.animationName,
+        glowFilter: glow.filter,
+        glowContent: glow.content,
+        clipped,
+        start,
+        corner: (Math.atan2(r.width, r.height) * 180) / Math.PI,
+        aspect: Math.round((r.width / r.height) * 100) / 100,
+        w: Math.round(r.width),
+      };
     });
   }, hostSelector);
 // The whole document, dialogs included: a picker draws outside <main>.
@@ -112,10 +150,17 @@ async function check(page, label, hostSelector, settled, shotName) {
     return;
   }
   report(`${tag}: its ring runs the sweep on a conic gradient`, hosts.every((h) => h.anim === "ai-sweep" && h.bg.includes("conic-gradient")), `${hosts[0].anim} / ${hosts[0].bg.slice(0, 24)}`);
+  report(`${tag}: a blurred glow follows the head, on the same lap`, hosts.every((h) => h.glowAnim === "ai-sweep" && /blur\(/.test(h.glowFilter) && h.glowContent !== "none"), `${hosts[0].glowAnim} / ${hosts[0].glowFilter}`);
+  report(`${tag}: no ancestor clips the glow`, hosts.every((h) => h.clipped.length === 0), hosts.flatMap((h) => h.clipped).join(", ") || "none within 10px");
+  report(
+    `${tag}: the lap starts at the top-right corner of the card's own box`,
+    hosts.every((h) => Number.isFinite(h.start) && Math.abs(h.start - h.corner) < 0.6),
+    hosts.map((h) => `${h.start.toFixed(1)}deg for a ${h.w}px box at ${h.aspect}:1 (corner ${h.corner.toFixed(1)}deg)`).join("; "),
+  );
   if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/ai-sweep-${shotName}-${page.viewportSize().width}.png`, fullPage: false });
   await page.emulateMedia({ reducedMotion: "reduce" });
   const still = (await ringOf(page, hostSelector)).filter((h) => h.cls);
-  report(`${tag}: reduced motion holds the ring still, as a plain accent border`, still.length > 0 && still.every((h) => h.anim === "none" && !h.bg.includes("conic")), `${still[0]?.anim} / ${still[0]?.bg.slice(0, 24)}`);
+  report(`${tag}: reduced motion holds the ring still, as a plain accent border, with no glow`, still.length > 0 && still.every((h) => h.anim === "none" && !h.bg.includes("conic") && h.glowContent === "none"), `${still[0]?.anim} / ${still[0]?.bg.slice(0, 24)} / glow ${still[0]?.glowContent}`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   let gone = false;
   for (let i = 0; i < 160 && !gone; i += 1) {

@@ -928,16 +928,24 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
-/* A read in flight: an arc of the accent travels round the border, eased in and out, starting after a beat (the delay is the first lap's only)
-   (Hugh, 2026-10-13, option 1 of the loading mock). One class for every AI tool: Help me choose's
-   reading panel, Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read
-   band. It is drawn as a ring ABOVE the host's own border, so the host keeps its background and its
-   layout, and it takes each theme's accent. The host sets the class only while its read runs and drops
-   it the moment the result lands, so it never runs behind a finished answer. The host needs no
-   `overflow: hidden`, which would clip the ring (it sits on the border edge). The base rule is the
-   STATIC accent border that reduced motion, and a browser without `@property`, keep: the angle
-   cannot animate there, so the sweep rule below is gated on motion alone and an unsupported engine
-   shows the arc at rest: the angle falls back to 0deg, and the keyframe's 0 to 360deg lands on the same place. */
+/* A read in flight: a firefly goes round the border, a 30deg arc of the accent with a fading tail, and a soft glow
+   that follows its head and bleeds about 3px outside the edge (Hugh, 2026-10-13: the firefly, option C of the
+   mock; it replaced the long conic sweep of #1673). One class for every AI tool: Help me choose's reading
+   panel, Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read band. The ring is
+   drawn ABOVE the host's own border (`::before`), and the glow is a blurred copy of the arc alone
+   (`::after`), so the host keeps its background and layout and takes each theme's accent. The unlit ring is
+   55% of `--accent-dim` in `--surface-raised`. The host sets the class only while its read runs and drops it the
+   moment the result lands, so it never runs behind a finished answer.
+
+   THE START: the lap starts at the host's top-RIGHT corner, whose angle from the top is atan2(width, height)
+   for its own aspect. CSS cannot read an auto-height card's height without size containment, so the host
+   reports it as `--ai-sweep-start` (`useAiSweepRef`) and 45deg, the square's, stands until it has measured.
+   The head leads: its hot stop is 1deg short of the gradient's end (359 of 360), so at the start it sits on the corner
+   to within a degree.
+
+   CLIPPING: no host may clip its glow. `overflow: hidden` on the host or an ancestor within 3px of it cuts the
+   glow off at that edge (`probe:ai-sweep` checks). Reduced motion, and an engine without `@property` (the
+   angle falls back to 0deg and the arc sits at the corner), keep the still accent ring and draw no glow. */
 @property --ai-sweep-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 .ai-sweep { position: relative; }
 .ai-sweep::before {
@@ -952,17 +960,43 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
+.ai-sweep::after { content: none; }
 @media (prefers-reduced-motion: no-preference) {
+  .ai-sweep::before,
+  .ai-sweep::after {
+    --ai-sweep-from: calc(var(--ai-sweep-start, 45deg) + var(--ai-sweep-angle, 0deg));
+    animation: ai-sweep var(--motion-loop) var(--motion-ease) var(--motion-delay) infinite;
+  }
   .ai-sweep::before {
     background: conic-gradient(
-      from var(--ai-sweep-angle, 0deg),
-      var(--accent-dim) 0deg,
-      var(--accent-dim) 250deg,
-      var(--accent) 310deg,
-      var(--accent-hover) 345deg,
-      var(--accent-dim) 360deg
+      from var(--ai-sweep-from),
+      color-mix(in srgb, var(--accent-dim) 55%, var(--surface-raised)) 0deg,
+      color-mix(in srgb, var(--accent-dim) 55%, var(--surface-raised)) 330deg,
+      var(--accent) 346deg,
+      var(--accent-hover) 359deg,
+      transparent 360deg
     );
-    animation: ai-sweep var(--motion-loop) var(--motion-ease) var(--motion-delay) infinite;
+  }
+  .ai-sweep::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    padding: 3px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: conic-gradient(
+      from var(--ai-sweep-from),
+      transparent 0deg,
+      transparent 330deg,
+      color-mix(in srgb, var(--accent) 70%, transparent) 346deg,
+      var(--accent-hover) 359deg,
+      transparent 360deg
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    filter: blur(3.5px);
+    opacity: 0.95;
   }
 }
 @keyframes ai-sweep { to { --ai-sweep-angle: 360deg; } }

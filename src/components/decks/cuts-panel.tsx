@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useAiSweepRef } from "../ui/use-ai-sweep";
 
 import {
   cutProposed,
@@ -363,8 +364,9 @@ export function CutsPanelView({
 }
 
 function Band({ children, accent = false }: { children: ReactNode; accent?: boolean }) {
+  const sweepRef = useAiSweepRef();
   return (
-    <div className={`mt-[14px] rounded-[10px] px-[14px] py-[14px] md:px-[16px]${accent ? " ai-sweep" : ""}`}
+    <div ref={sweepRef} className={`mt-[14px] rounded-[10px] px-[14px] py-[14px] md:px-[16px]${accent ? " ai-sweep" : ""}`}
       style={{ background: "var(--surface)", border: `1px solid ${accent ? "var(--accent)" : "var(--border)"}` }}>
       {children}
     </div>

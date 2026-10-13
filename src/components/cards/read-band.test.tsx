@@ -33,4 +33,13 @@ describe("the .ai-sweep stylesheet", () => {
     const motion = rule.slice(rule.indexOf("@media (prefers-reduced-motion: no-preference)"), rule.indexOf("@keyframes ai-sweep"));
     expect(motion).toContain("animation: ai-sweep var(--motion-loop) var(--motion-ease) var(--motion-delay) infinite");
   });
+
+  it("draws the glow only under no-preference, as a blurred copy of the arc", () => {
+    expect(rule.slice(0, rule.indexOf("@media"))).toContain('.ai-sweep::after { content: none; }');
+    const motion = rule.slice(rule.indexOf("@media (prefers-reduced-motion: no-preference)"), rule.indexOf("@keyframes ai-sweep"));
+    expect(motion).toMatch(/\.ai-sweep::after \{[^}]*filter: blur\(/);
+    expect(motion).toContain("inset: -3px;");
+    // The head's hot stop sits 1deg short of the seam the lap starts from, so it starts on the corner.
+    expect(motion.match(/var\(--accent-hover\) 359deg/g)).toHaveLength(2);
+  });
 });
