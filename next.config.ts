@@ -1,11 +1,6 @@
 import type { NextConfig } from "next";
 import { CLERK_JS_VERSION, CLERK_UI_VERSION } from "./src/lib/shell/clerk-scripts";
 
-/** `INLINE_CSS_ENABLED`, `"true"` on the-99-staging only (speed plan, 2026-10-12). */
-export function inlineCssEnabled(env: Record<string, string | undefined>): boolean {
-  return env.INLINE_CSS_ENABLED === "true";
-}
-
 // Deliberately empty. `experimental.staleTimes.dynamic` used to live here, to
 // stop /collection and /commanders refetching their whole payload on every
 // filter change — but it is a router-wide setting, so it bought that one fix
@@ -34,12 +29,6 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: { "/admin": ["./docs/superpowers/eval/ledger*.jsonl"] },
   experimental: {
     serverActions: { bodySizeLimit: "4.4mb" },
-    // The stylesheet inside the HTML instead of a <link>. On a slow phone the one render-blocking
-    // stylesheet (34KB) shared the line with ~750KB of scripts, and first paint waited for it until
-    // ~5.1s. Inlined, it arrives with the document. The cost is a heavier document on every full
-    // load, since the CSS is no longer cached on its own, so it is an EXPERIMENT behind a switch set
-    // on the staging project only. Read at BUILD time: turning it on or off is a redeploy.
-    inlineCss: inlineCssEnabled(process.env),
   },
 };
 
