@@ -218,7 +218,7 @@ describe("loadDiscovery — wiring", () => {
   });
 
   // Admin PR 6f-1: the claim model decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it
-  // is handed, and the pool takes the environment when none is passed: the list must hand it the reader's.
+  // is handed, and the pool requires its env: the list must hand it the reader's.
   // The environment says the opposite; identity is checked as a boolean.
   it("runs the availability read under the reader's resolved switches, not the environment", async () => {
     vi.stubEnv("NEVER_CUT_ENABLED", "false");

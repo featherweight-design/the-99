@@ -23,8 +23,8 @@ vi.mock("../../lib/recs/store", () => ({}));
 
 const { findExcludedMatches, rememberCommandersAvail } = await import("./actions");
 
-// Admin PR 6f-1: `loadDiscoveryPool` takes the environment when no env is passed, and the environment
-// says the opposite of the reader's switches here. Identity, as a boolean.
+// Admin PR 6f-1: `loadDiscoveryPool` requires its env, and the environment says the opposite of the
+// reader's switches here. Identity, as a boolean.
 describe("findExcludedMatches", () => {
   it("reads the pool under the reader's resolved switches, not the environment", async () => {
     vi.stubEnv("NEVER_CUT_ENABLED", "false");
