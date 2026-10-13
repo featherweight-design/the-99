@@ -206,7 +206,7 @@ export async function readSynopsisState(
   // Behind the switch, so a deployment on contract 7 reads nothing more.
   const v2 = overviewV2Enabled(env);
   const [art, evidenceNames] = synopsis
-    ? await Promise.all([namedArt(synopsis.content, userId, deckId, v2), v2 ? evidenceNamesOf(synopsis.content) : Promise.resolve({})])
+    ? await Promise.all([namedArt(synopsis.content, userId, deckId, v2, env), v2 ? evidenceNamesOf(synopsis.content) : Promise.resolve({})])
     : [{}, {}];
   const methodNotice = illegal ? null : methodNoticeOf({ v2, shown: synopsis && { contractVersion: synopsis.contractVersion, overviewOk: !!synopsis.content?.overview }, runs: v2 ? await freeRunsFor(db, deckId) : { attempts: 0, succeeded: false } });
   return {
@@ -223,12 +223,12 @@ export async function readSynopsisState(
  * and the card it opened drew different frames). The deck's own printing picks come first, since the
  * details it opens draw them too. Fail-soft through `resolveDeckOwnedPrintings`.
  */
-async function namedArt(content: CheckedSynopsis, userId: string, deckId: string, withEvidence: boolean): Promise<Record<string, string | null>> {
+export async function namedArt(content: CheckedSynopsis, userId: string, deckId: string, withEvidence: boolean, env: NodeJS.ProcessEnv): Promise<Record<string, string | null>> {
   const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...(withEvidence ? allEvidenceIds(content) : [])])];
   if (named.length === 0) return {};
   const [rows, owned] = await Promise.all([
     db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named)),
-    resolveDeckOwnedPrintings(userId, deckId, named),
+    resolveDeckOwnedPrintings(userId, deckId, named, env),
   ]);
   return Object.fromEntries(rows.map((r) => [r.oracleId, owned.get(r.oracleId)?.imageUri ?? r.imageUri]));
 }
@@ -258,6 +258,6 @@ export async function readVersionSynopsis(
   // The art for every card it names, as the draft read carries: a version can name cards the deck
   // no longer holds, and the page's own art covers only the deck as it is now.
   const v2 = overviewV2Enabled(env);
-  const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, v2), v2 ? evidenceNamesOf(row.content) : {}]);
+  const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, v2, env), v2 ? evidenceNamesOf(row.content) : {}]);
   return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, art, evidenceNames };
 }
