@@ -5,7 +5,7 @@
 import { spawnSync } from "node:child_process";
 import { appendFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
-import { compare, failingFiles, failureSummary, mutate, splitMisses } from "./lib/ci-calibrate.mjs";
+import { compare, failingFiles, failureSummary, mutate, recheckAlone } from "./lib/ci-calibrate.mjs";
 
 const [cmd, ...args] = process.argv.slice(2);
 
@@ -28,21 +28,17 @@ if (cmd === "mutate") {
   if (r.missed.length > 0) {
     // One process per file, so "alone" is true; a stale report from an earlier run is removed first so a
     // rerun that dies before writing one cannot be read as this run's.
-    const aloneFailing = [];
-    let complete = true;
-    for (const file of r.missed) {
+    ({ real, loadSensitive } = recheckAlone(r.missed, (file) => {
       rmSync("recheck-results.json", { force: true });
       spawnSync("pnpm", ["exec", "vitest", "run", "--passWithNoTests", "--reporter=json", "--outputFile=recheck-results.json", file], {
         encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
       });
       try {
-        const got = failingFiles(JSON.parse(readFileSync("recheck-results.json", "utf8")), process.cwd());
-        if (got.includes(file)) aloneFailing.push(file);
+        return failingFiles(JSON.parse(readFileSync("recheck-results.json", "utf8")), process.cwd());
       } catch {
-        complete = false;
+        return null;
       }
-    }
-    ({ real, loadSensitive } = splitMisses(r.missed, complete ? aloneFailing : null));
+    }));
   }
   const why = failureSummary(report, r.missed, process.cwd());
   const lines = [

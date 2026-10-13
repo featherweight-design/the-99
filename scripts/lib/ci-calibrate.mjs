@@ -75,3 +75,18 @@ export function splitMisses(missed, aloneFailing) {
     loadSensitive: missed.filter((f) => !aloneFailing.includes(f)),
   };
 }
+
+/**
+ * Run each missed file by itself and split the misses. `runAlone(file)` returns the files that failed in
+ * that run, or null when it produced no report. Any null leaves every candidate a real miss.
+ * @param {string[]} missed @param {(file: string) => string[] | null} runAlone
+ */
+export function recheckAlone(missed, runAlone) {
+  const aloneFailing = [];
+  for (const file of missed) {
+    const got = runAlone(file);
+    if (got === null) return splitMisses(missed, null);
+    if (got.includes(file)) aloneFailing.push(file);
+  }
+  return splitMisses(missed, aloneFailing);
+}

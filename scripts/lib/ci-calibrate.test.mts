@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { describe, expect, it } from "vitest";
-import { compare, failingFiles, failureSummary, mutate, splitMisses } from "./ci-calibrate.mjs";
+import { compare, failingFiles, failureSummary, mutate, recheckAlone, splitMisses } from "./ci-calibrate.mjs";
 
 describe("mutate", () => {
   it("appends a module-level throw to code", () => {
@@ -70,6 +70,21 @@ describe("splitMisses", () => {
   });
   it("a file that fails alone is never cleared", () => {
     expect(splitMisses(["a"], ["a"]).loadSensitive).toEqual([]);
+  });
+});
+
+describe("recheckAlone", () => {
+  it("clears a file whose isolated run passes and keeps one whose run fails", () => {
+    const ran: string[] = [];
+    const out = recheckAlone(["a", "b"], (f) => { ran.push(f); return f === "b" ? ["b"] : []; });
+    expect(out).toEqual({ real: ["b"], loadSensitive: ["a"] });
+    expect(ran).toEqual(["a", "b"]); // each file is run by itself, one call per file
+  });
+  it("keeps every candidate real when any rerun produced no report", () => {
+    expect(recheckAlone(["a", "b"], (f) => (f === "a" ? [] : null))).toEqual({ real: ["a", "b"], loadSensitive: [] });
+  });
+  it("does not clear a file because ANOTHER file failed in its run", () => {
+    expect(recheckAlone(["a"], () => ["z"])).toEqual({ real: [], loadSensitive: ["a"] });
   });
 });
 
