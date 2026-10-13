@@ -249,6 +249,13 @@ describe("CostsDetail, a month with no runs (C3)", () => {
     expect(screen.getByRole("table", { name: "Eval ledgers" })).toBeInTheDocument();
     expect(within(screen.getByRole("table", { name: "Eval ledgers" })).getByText("Original campaign")).toBeInTheDocument();
   });
+  it("still draws the month's evals, and an unreadable ledger's figure, with nothing else run", () => {
+    const { container, unmount } = draw({ ledgers: [{ file: "ledger-cuts.jsonl", entries: [{ at: "2026-10-10T08:21:54Z", usd: 21.48, requests: 40 }] }] });
+    expect(container.querySelector("[data-evals-apart]")).toHaveTextContent("Evals (all environments, from the repo)$21.48");
+    unmount();
+    const empty = draw({ ledgers: [], ledgersUnreadable: ["ledger-cuts.jsonl"] });
+    expect(empty.container.querySelector("[data-evals-apart]")).toHaveTextContent("$0 so far");
+  });
 });
 
 describe("segWidths", () => {

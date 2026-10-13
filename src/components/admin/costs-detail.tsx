@@ -335,6 +335,9 @@ export function CostsDetail({ s, d, month, env }: { s: CostSummary; d: CostDetai
   const monthName = monthLabel(month, "long").split(" ")[0];
   // A month with no runs keeps the eval ledgers alone (STATES C3): they are committed, not monthly rows.
   const empty = s.calls.runs === 0 && d.labelRuns.length === 0;
+  // Drawn whether or not the environment ran anything: a month of evals alone, or an unreadable
+  // ledger in an empty month, still owes its figure.
+  const evals = (s.evals.micro > 0 || s.evals.partial) && <EvalsApart s={s} d={d} />;
   const refundShare = s.calls.micro > 0 ? Math.round((d.refunds.micro / s.calls.micro) * 100) : 0;
   return (
     <>
@@ -345,7 +348,7 @@ export function CostsDetail({ s, d, month, env }: { s: CostSummary; d: CostDetai
 
           <SectionHead title={copy.split} />
           <Split s={s} month={month} />
-          {(s.evals.micro > 0 || s.evals.partial) && <EvalsApart s={s} d={d} />}
+          {evals}
 
           <SectionHead title={copy.byFeature} meta={copy.byFeatureMeta} />
           <ByFeature d={d} />
@@ -372,6 +375,7 @@ export function CostsDetail({ s, d, month, env }: { s: CostSummary; d: CostDetai
           )}
         </>
       )}
+      {empty && evals}
 
       <SectionHead title={copy.evals} meta={copy.evalsMeta} />
       {d.ledgersUnreadable.length > 0 && (
