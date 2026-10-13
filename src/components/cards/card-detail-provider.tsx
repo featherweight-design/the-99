@@ -108,6 +108,15 @@ export function warmCardModal(): Promise<unknown> {
   return Promise.all([CardModal.fetch(), FitsView.fetch(), FitsPicker.fetch()]);
 }
 
+/**
+ * Which of the modal's views have arrived, read by the warm test. A module loaded is not the same as
+ * its wrapper being ready: the fits view imports the picker's module statically, and the picker's
+ * wrapper still draws nothing until its own fetch has run.
+ */
+export function cardModalViewsReady() {
+  return { modal: CardModal.isLoaded(), fitsView: FitsView.isLoaded(), fitsPicker: FitsPicker.isLoaded() };
+}
+
 // Edit copies (collection edit R2 §C) is loaded when first pressed: every deck surface mounts this
 // provider, and only /collection ever opens the sheet.
 const EditCopiesHost = lazy(() =>
