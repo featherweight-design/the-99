@@ -18,7 +18,7 @@
  * back (`soft-failure.ts`) is not stored either, for the same reason.
  */
 import { switchBits } from "../switches/resolve";
-import { resolveSwitchEnv } from "../switches/snapshot";
+import { requestSwitchEnv } from "../switches/request";
 import { listCacheEnabled } from "./list-cache-flag";
 import { cacheForUser } from "./user-lists";
 import { decodePlain, encodePlain } from "./plain";
@@ -40,21 +40,29 @@ class NotStored {
 
 export type PageLoad<T> = { value: T; store: boolean };
 
+/**
+ * `load` is handed the env the key was built from, and must decide every switch from it: that is
+ * what makes the key the whole story. A page that also decides switches OUTSIDE the cached load
+ * resolves once (`requestSwitchEnv`) and passes that env as `env`, so the key, the loader and the
+ * rest of the render read one snapshot; without it, the reader's switches are resolved here.
+ */
 export async function cachePageForUser<T>(
   userId: string,
   page: string,
   key: string[],
-  load: () => Promise<PageLoad<T>>,
+  load: (env: NodeJS.ProcessEnv) => Promise<PageLoad<T>>,
+  env?: NodeJS.ProcessEnv,
 ): Promise<T> {
-  const env = await resolveSwitchEnv(userId);
+  const resolved = env ?? await requestSwitchEnv(userId);
+  const run = () => load(resolved);
   // Switched off, the page runs exactly as it did before this cache: no stamp read, nothing stored.
-  if (!listCacheEnabled(env)) return (await load()).value;
+  if (!listCacheEnabled(resolved)) return (await run()).value;
   const stamp = await userDataStamp(userId);
   // Without a stamp there is nothing to say an entry is still true, so nothing is cached.
-  if (stamp === null) return (await load()).value;
+  if (stamp === null) return (await run()).value;
   try {
-    const text = await cacheForUser(userId, ["page", page, switches(env), String(stamp), ...key], async () => {
-      const { value: result, fellBack } = await watchSoftFailures(load);
+    const text = await cacheForUser(userId, ["page", page, switches(resolved), String(stamp), ...key], async () => {
+      const { value: result, fellBack } = await watchSoftFailures(run);
       // Thrown rather than returned: the data cache stores whatever the function returns.
       if (!result.store || fellBack) throw new NotStored(result.value);
       return encodePlain(result.value);

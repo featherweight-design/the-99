@@ -14,6 +14,7 @@ import { loadSummaryView } from "../../../../../lib/collection/summary-read";
 import { ArrivalsSummary } from "../../../../../components/collection/arrivals-summary";
 import { isUuid } from "../../../../../lib/uuid";
 import { addedCopyEnabled } from "../../../../../lib/collection/added-copy-flag";
+import { requestSwitchEnv } from "../../../../../lib/switches/request";
 import { formatDeckDate } from "../../../../../lib/decks/format";
 import type { UploadPreview } from "../../../actions";
 
@@ -30,7 +31,7 @@ export default async function ImportSummaryPage({
 
   // Read once, per request, and handed to both halves: the read loads each line's chooser and the
   // receipt draws the line, so the two cannot disagree about whether the feature is on.
-  const addedCopy = addedCopyEnabled();
+  const addedCopy = addedCopyEnabled(await requestSwitchEnv(userId));
   const view = await loadSummaryView(uploadId, userId, { addedCopy });
   if (!view) notFound();
   // An unconfirmed upload has no receipt to show and is not a page: the player is still in the

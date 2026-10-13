@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
+// The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
+vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => process.env }));
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: 0, totalCards: 0 }) }));
 vi.mock("../../../lib/collection/browse", async (orig) => ({
   ...(await orig<typeof import("../../../lib/collection/browse")>()),

@@ -1,5 +1,6 @@
 import { requireUserId } from "../../lib/auth";
 import { helpMeChooseEnabled } from "../../lib/intake/flag";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { getCollectionStats } from "../../lib/home/summary";
 import { CardFan } from "../../components/marks";
 import { DiscoveryView } from "../../components/commanders/discovery-view";
@@ -32,6 +33,8 @@ export default async function DiscoverPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const userId = await requireUserId();
+  // The reader's resolved switches (`requestSwitchEnv`), once for the whole render.
+  const env = await requestSwitchEnv(userId);
   const params = parseLaneParams(searchParamsToQuery(await searchParams), "discover");
   const stats = await getCollectionStats(userId);
 
@@ -101,7 +104,7 @@ export default async function DiscoverPage({
   return (
     <section className="flex flex-col min-h-screen">
       {/* The view decodes once. */}
-      <DiscoveryView encoded={shipped} printedIn={printedIn} chooseLink={helpMeChooseEnabled()} />
+      <DiscoveryView encoded={shipped} printedIn={printedIn} chooseLink={helpMeChooseEnabled(env)} />
     </section>
   );
 }

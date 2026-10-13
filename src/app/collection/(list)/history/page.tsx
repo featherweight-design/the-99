@@ -7,6 +7,7 @@
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
+import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { listHistory } from "../../../../lib/collection/history";
 import { historyShipDate } from "../../../../lib/collection/history-ship";
 import { dayLabel, historyReachesBack } from "../../../../lib/collection/history-view";
@@ -20,8 +21,9 @@ async function readClock() {
 }
 
 export default async function CollectionHistoryPage({ searchParams }: { searchParams: Promise<{ entry?: string | string[] }> }) {
-  if (!collectionEditEnabled()) notFound();
+  // The reader first: the switch is theirs (`requestSwitchEnv`).
   const userId = await requireUserId();
+  if (!collectionEditEnabled(await requestSwitchEnv(userId))) notFound();
   const { entry } = await searchParams;
   const focusId = typeof entry === "string" && isUuid(entry) ? entry : undefined;
   const { entries, nextBefore } = await listHistory(userId);

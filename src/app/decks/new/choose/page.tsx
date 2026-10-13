@@ -19,6 +19,7 @@ import { SearchFailed } from "../../../../components/intake/search-failed";
 import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
+import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { answersOf, parseLiveParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
 import { answerChips } from "../../../../lib/intake/present";
 import { isAnyOf } from "../../../../lib/intake/rank";
@@ -50,8 +51,9 @@ function toSearchParams(raw: Record<string, string | string[] | undefined>): URL
 }
 
 export default async function ChoosePage({ searchParams }: { searchParams: SearchParams }) {
-  if (!helpMeChooseEnabled()) notFound();
+  // The reader first: the switch is theirs (`requestSwitchEnv`).
   const userId = await requireUserId();
+  if (!helpMeChooseEnabled(await requestSwitchEnv(userId))) notFound();
   const sp = toSearchParams(await searchParams);
   const p = parseLiveParams(sp);
 

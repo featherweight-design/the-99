@@ -111,7 +111,7 @@ describe("switchReaders", () => {
       expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
       writeFileSync(file, "// flag_overrides is read by page-cache alone\nexport const y = 1;\n");
       expect(switchReaders([rel])).toEqual([]);
-      expect(switchReaders(["src/lib/switches/snapshot.ts", "src/lib/switches/resolve.ts", "src/lib/switches/registry.ts"])).toEqual([]);
+      expect(switchReaders(["src/lib/switches/snapshot.ts", "src/lib/switches/request.ts", "src/lib/switches/resolve.ts", "src/lib/switches/registry.ts"])).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true });
     }

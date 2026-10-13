@@ -13,6 +13,7 @@ import { provenanceForm } from "../../../lib/decks/price";
 import { isUuid } from "../../../lib/uuid";
 import { CartView } from "../../../components/decks/cart/cart-view";
 import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
 
@@ -26,19 +27,21 @@ export default async function AllDecksShoppingPage({
 }: {
   searchParams: Promise<{ view?: string | string[]; deck?: string | string[] }>;
 }) {
-  if (!allDecksCartEnabled()) notFound();
+  // The reader first: the switch is theirs (`requestSwitchEnv`), resolved once for the whole render.
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!allDecksCartEnabled(env)) notFound();
   const params = await searchParams;
   // `?deck=<id>` is the tile's link (Q8): it lands by deck, on that deck. Anything else is ignored.
   // Lowercased: `isUuid` takes either case, and every deck id the cart holds is Postgres's lowercase.
   const deck = typeof params.deck === "string" && isUuid(params.deck) ? params.deck.toLowerCase() : null;
   const initialView = params.view === "deck" || deck ? "deck" : "card";
-  const userId = await requireUserId();
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
   // A cart whose prices could not be read is served and never stored: the next visit reads again.
   const cart = await cachePageForUser(userId, "cart", [], async () => {
     const value = await loadCart(userId);
     return { value, store: value.priced };
-  });
+  }, env);
   // The provenance line is built here, once, as PriceStrip's caller builds it: the locale and the
   // clock are the server's, so the client never re-derives a date that could hydrate differently.
   const newest = cart.newestAsOf ? new Date(cart.newestAsOf) : null;
@@ -49,7 +52,7 @@ export default async function AllDecksShoppingPage({
       provenance={provenance}
       initialView={initialView}
       focusDeckId={deck}
-      buyEnabled={shoppingMarkBoughtEnabled()}
+      buyEnabled={shoppingMarkBoughtEnabled(env)}
     />
   );
 }

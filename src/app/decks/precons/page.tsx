@@ -9,6 +9,7 @@ import { requireUserId } from "../../../lib/auth";
 import { cachePageForUser } from "../../../lib/cache/page-cache";
 import { preconsCopy } from "../../../lib/copy/precons";
 import { preconsEnabled } from "../../../lib/precons/flag";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 import { parsePreconParams } from "../../../lib/precons/list";
 import { loadPreconList, type PreconList } from "../../../lib/precons/list-read";
 import { PreconListView } from "../../../components/decks/precons/precon-list-view";
@@ -18,8 +19,10 @@ import { parsePreconsViewCookie, PRECONS_VIEW_COOKIE } from "../../../components
 export const metadata: Metadata = { title: preconsCopy.list.title };
 
 export default async function PreconsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  if (!preconsEnabled()) notFound();
   const userId = await requireUserId();
+  // The reader's resolved switches, once: the gate and the cached list's key read the same env.
+  const env = await requestSwitchEnv(userId);
+  if (!preconsEnabled(env)) notFound();
   const raw = await searchParams;
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(raw)) if (typeof v === "string") params.set(k, v);
@@ -31,7 +34,7 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
     list = await cachePageForUser(userId, "precons", [], async () => {
       const value = await loadPreconList(userId);
       return { value, store: value.rows.length > 0 };
-    });
+    }, env);
   } catch (error) {
     // not a fallback: a load that throws is never stored, and this renders L4, not a list.
     console.error("precons: the list could not be read", error);
