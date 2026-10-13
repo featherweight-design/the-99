@@ -39,7 +39,9 @@ import { switchBits } from "./lib/switches/resolve";
 //
 // /api/csp-report is public because a browser sends a CSP report with no session; it only writes a
 // cut-down log line and answers 204 (`api/csp-report/route.ts`).
-const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/"]);
+// /api/stripe-webhook is public because Stripe calls it with no session; its route verifies Stripe's
+// signature on the raw body and refuses anything unsigned (`api/stripe-webhook/route.ts`).
+const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader

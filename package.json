@@ -169,6 +169,7 @@
     "probe:undo-stack": "node scripts/probe-undo-stack.mjs",
     "check:collection-routes": "node scripts/check-collection-routes.mjs",
     "check:list-cache": "node scripts/check-list-cache.mjs",
+    "check:payments-reads": "node scripts/check-payments-reads.mjs",
     "check:social-reads": "node scripts/check-social-reads.mjs",
     "check:switch-reads": "node scripts/check-switch-reads.mjs",
     "seed:summary": "tsx scripts/seed-summary-fixture.ts",
@@ -233,6 +234,7 @@
     "probe:fits-read-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-fits-read-state.mts",
     "probe:cuts-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-state.mts",
     "probe:payments-ledger": "tsx scripts/probe-payments-ledger.ts",
+    "probe:payments-webhook": "tsx scripts/probe-payments-webhook.ts",
     "probe:spend-cap": "tsx scripts/probe-spend-cap.ts",
     "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",
     "probe:intent-line": "node scripts/probe-intent-line.mjs",
@@ -281,6 +283,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-window": "^1.8.11",
+    "stripe": "22.6.2",
     "tailwind-merge": "^3.6.0",
     "ws": "^8.21.1",
     "zod": "^4.4.3"

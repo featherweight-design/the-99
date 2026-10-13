@@ -40,7 +40,7 @@ export const PURGE_ORDER = [
   "collection_history", "collection_items", "card_art_preferences", "commander_scores", "csv_uploads", "user_prefs",
   "owned_support_counts", "owned_support_stamps",
   "wishlist_items", "rate_hits",
-  "model_calls", "credit_grants",
+  "model_calls", "credit_grants", "stripe_customers",
   "admin_events", "flag_overrides", "flag_group_members",
 ] as const;
 

@@ -2190,6 +2190,49 @@ export const deckProfiles = pgTable("deck_profiles", {
 ]);
 
 /**
+ * WHICH ACCOUNT A STRIPE CUSTOMER IS (payments K1, scope §4). One row per account, written when the
+ * account first starts a Checkout (K1b). It is the AUTHORITY for who a payment belongs to: the webhook
+ * maps a Session's customer through this table, and a Session whose own `client_reference_id` or
+ * metadata names someone else is refused, never "fixed" (§5.5). Purged with the account.
+ */
+export const stripeCustomers = pgTable("stripe_customers", {
+  userId: text("user_id").primaryKey(),
+  stripeCustomerId: text("stripe_customer_id").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/**
+ * Every Stripe event the webhook acted on, by Stripe's own id (scope §5.5). Inserted FIRST, inside the
+ * grant's transaction, so a replayed or duplicated delivery conflicts on the key and grants nothing.
+ * Holds no account and no payload: the id, the type and when it arrived.
+ */
+export const stripeEvents = pgTable("stripe_events", {
+  eventId: text("event_id").primaryKey(),
+  type: text("type").notNull(),
+  receivedAt: timestamp("received_at").notNull().defaultNow(),
+});
+
+/**
+ * The minimum kept of a payment, with NO account id (Hugh, Q6, 2026-10-13): tax and dispute records
+ * outlive an account, so this table is kept through the purge on purpose. Stripe's ids, the amounts,
+ * the currency, the billing country and the outcome. `unattributed` is a paid Session whose customer
+ * maps to no account (deleted between paying and the webhook, §5.5): Hugh refunds it by hand.
+ */
+export const paymentRecords = pgTable("payment_records", {
+  paymentIntentId: text("payment_intent_id").primaryKey(),
+  checkoutSessionId: text("checkout_session_id").notNull().unique(),
+  amountCents: integer("amount_cents").notNull(),
+  taxCents: integer("tax_cents").notNull(),
+  currency: text("currency").notNull(),
+  country: text("country"),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("payment_records_status_check", sql`${t.status} in ('granted', 'unattributed')`),
+  check("payment_records_amounts_check", sql`${t.amountCents} >= 0 and ${t.taxCents} >= 0`),
+]);
+
+/**
  * PAID CREDITS, one row per lot (payments plan, PR L, 2026-10-13). A `plan` lot is a subscription
  * period's credits and a `pack` lot a one-time purchase. A lot is spent by the `model_calls` rows that
  * name it (`credit_grant_id`), counted by the same rule as the allowance minus its 24-hour window
