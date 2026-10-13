@@ -169,6 +169,25 @@ try {
     report(`${w.label} C3 the offer is gone while a result stands`, g.lookDeeperH === null, g.lookDeeperH);
     await shot("c3-result");
 
+    // The hover preview is on the cut's thumbnail and name only (Hugh, 2026-10-12): a preview over the row covers the
+    // reason being read. Desktop only, since the box is hidden below md.
+    if (w.desktop) {
+      const article = panel(page).locator("article").first();
+      const boxOpen = () => page.evaluate(() => document.querySelector('[data-testid="hover-preview"]') !== null);
+      await page.mouse.move(2, 2);
+      await article.locator("p").first().hover();
+      await page.waitForTimeout(700);
+      const overReason = await boxOpen();
+      await page.mouse.move(2, 2);
+      await page.waitForTimeout(300);
+      await article.locator("button").first().hover();
+      await page.waitForTimeout(700);
+      const overName = await boxOpen();
+      report(`${w.label} C3 hover: none over the reason, the card over its name`, !overReason && overName, { overReason, overName });
+      await page.mouse.move(2, 2);
+      await page.waitForTimeout(300);
+    }
+
     // Cut writes to the list, and the result stays: the row collapses to its answered form and the
     // offer does not come back. The action chains the run's fingerprint before it returns, so the
     // panel's re-read sees a result that is still current.

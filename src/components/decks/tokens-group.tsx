@@ -4,6 +4,7 @@ import Link from "next/link";
 import { tokensCopy } from "../../lib/copy/tokens";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useDeckTokens } from "./deck-tokens-context";
+import { HoverPreviewProvider } from "./hover-preview";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { TokenRow } from "./token-row";
 
@@ -31,6 +32,7 @@ export function TokensGroup() {
   }
 
   const note = tokensCopy.group.note(read.makerCount);
+  const siblings = read.tokens.map((t) => ({ oracleId: t.oracleId, name: t.name, imageUri: t.picture?.imageUri ?? null }));
   return (
     <section aria-labelledby={HEADING} className="mt-[16px] md:mt-[20px]">
       <DecklistGroupHeader label={tokensCopy.group.label} count={read.tokens.length} note={note} headingId={HEADING} focusable />
@@ -48,11 +50,13 @@ export function TokensGroup() {
           </Link>
         </div>
       )}
-      <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
-        {read.tokens.map((t) => (
-          <TokenRow key={t.oracleId} deckId={deckId} token={t} newestAsOf={read.newestPriceAsOf} />
-        ))}
-      </ul>
+      <HoverPreviewProvider>
+        <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
+          {read.tokens.map((t) => (
+            <TokenRow key={t.oracleId} deckId={deckId} token={t} newestAsOf={read.newestPriceAsOf} siblings={siblings} />
+          ))}
+        </ul>
+      </HoverPreviewProvider>
     </section>
   );
 }

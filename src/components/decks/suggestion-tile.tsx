@@ -32,7 +32,6 @@ import { comboClauseSpoken } from "../cards/combo-clause";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
-import { usePreviewRow } from "./hover-preview";
 import { FadingImg } from "../ui/hydrated-art";
 
 // The bar is decoration for a figure that is always present as text, so a card
@@ -183,8 +182,6 @@ export function SuggestionTile({
   const marks = factsFromCandidate(suggestion.facts) ?? [];
   const addOptimisticCard = useAddOptimisticCard();
   const noArt = suggestion.imageUri === null;
-  // The hover preview the Consider tab's provider owns: the same card art the row's details open at.
-  const previewHandlers = usePreviewRow(suggestion.imageUri);
 
   // `selfClaimed`, not `applied`: these figures came back from a query that
   // excluded this deck's stored claim, which an add made seconds ago is not yet
@@ -244,7 +241,6 @@ export function SuggestionTile({
       // an attribute nobody renders fails for the wrong reason, or passes over an empty list.
       data-testid="suggestion-tile"
       data-oracle-id={suggestion.oracleId}
-      {...previewHandlers}
       className="group flex flex-col gap-[8px] rounded-[10px] p-[9px] pb-[10px] transition-colors border bg-[color:var(--surface)] border-[color:var(--border)] hover:bg-[color:var(--elevated-hover)] hover:border-[color:var(--border-strong)]"
       style={{ opacity: noArt ? 0.55 : 1 }}
     >

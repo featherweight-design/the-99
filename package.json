@@ -128,6 +128,7 @@
     "probe:pip-gap": "node scripts/probe-pip-gap.mjs",
     "probe:last-slots": "node scripts/probe-last-slots.mjs",
     "probe:hover-preview": "node scripts/probe-hover-preview.mjs",
+    "probe:hover-rows": "node scripts/probe-hover-rows.mjs",
     "probe:analysis-tab": "node scripts/probe-analysis-tab.mjs",
     "probe:card-prefetch": "node scripts/probe-card-prefetch.mjs",
     "probe:card-note": "node scripts/probe-card-note.mjs",

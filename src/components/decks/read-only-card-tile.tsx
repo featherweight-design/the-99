@@ -9,7 +9,8 @@
 // It draws only what the read-only list row draws: the ownership dot (and `not owned` beside an
 // unowned one, since there is no buy tag to say it), the name, and the precon's printing. No `✕`
 // column, buy tag, availability chip, proxy mark, lock, draft edge, dimming or verdict. Card details
-// open on press, on the printing the provider was given, and the desktop hover preview is kept.
+// open on press, on the printing the provider was given. A tile draws no hover preview: the art on it is already
+// about the size of one.
 
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { preconsCopy } from "../../lib/copy/precons";
@@ -19,7 +20,6 @@ import { CardDetailTrigger, cardDetailCopy, type Sibling } from "../cards/card-d
 import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
 import { HydratedImg } from "../ui/hydrated-art";
 import { OwnershipDot } from "../ui/ownership-dot";
-import { usePreviewRow } from "./hover-preview";
 
 const copy = preconsCopy;
 
@@ -34,7 +34,6 @@ export function ReadOnlyCardTile({
    *  what you own, so no dot. `arts` is how many printings of it the precon holds. */
   basic?: { arts: number };
 }) {
-  const preview = usePreviewRow(card.imageUri);
   const printing =
     card.printedSetCode && card.printedCollectorNumber
       ? `${card.printedSetCode.toUpperCase()} ${card.printedCollectorNumber}`
@@ -52,7 +51,6 @@ export function ReadOnlyCardTile({
             ? "[border:1px_dashed_var(--border-dashed)] bg-transparent"
             : "bg-[color:var(--surface)] [border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)] transition-colors"
         }`}
-        {...preview}
       >
         <CardDetailTrigger
           oracleId={card.oracleId}
