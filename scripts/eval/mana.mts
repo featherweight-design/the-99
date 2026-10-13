@@ -39,7 +39,7 @@ const balance = await loadManaBalance(detail);
 if (!balance) throw new Error("eval:mana: the golden deck's text reads failed");
 // A source row's id is an oracle id; the commanders' are `commander:N`, which only patterns list.
 const names = new Map(detail.cards.map((c) => [c.oracleId, c.name]));
-const goldenHelp = await loadManaHelp(detail, owner.userId, "G");
+const goldenHelp = await loadManaHelp(detail, owner.userId, "G", process.env);
 if (!goldenHelp) throw new Error("eval:mana: the golden deck's help could not be read");
 const actual = goldenShape(balance, (id) => names.get(id) ?? id, { G: { sourcesNow: goldenHelp.sourcesNow, rebalance: goldenHelp.rebalance.map((m) => `${m.from} x${m.maxCopies}`) } });
 const fingerprint = listFingerprint({ commanderOracleId: detail.commander.oracleId, partnerOracleId: detail.partner?.oracleId ?? null, cards: detail.cards });
@@ -105,7 +105,7 @@ const price = (cents: number | null) => (cents === null ? "no price" : `$${(cent
 const changeText = (cs: { color: string; before: number; after: number }[]) => cs.map((c) => `${c.color} ${c.before} to ${c.after}`).join(", ");
 for (const [label, id, color] of ASKS) {
   const d = await getDeckDetail(id, owner.userId, undefined, process.env);
-  const h = d ? await loadManaHelp(d, owner.userId, color) : null;
+  const h = d ? await loadManaHelp(d, owner.userId, color, process.env) : null;
   console.log(`- ${label}, add ${color} (${h?.sourcesNow ?? "?"} sources now)${h ? "" : ": read failed"}`);
   if (!h) continue;
   for (const m of h.rebalance) console.log(`  rebalance: up to ${m.maxCopies} ${m.basicOut} to ${m.basicIn} (${changeText(m.changes)})`);

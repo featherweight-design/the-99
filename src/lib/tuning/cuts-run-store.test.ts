@@ -45,6 +45,7 @@ vi.mock("../decks/never-cut-flag", () => ({ neverCutEnabled: () => false }));
 import { deckCutItems, deckSuggestionRuns } from "../../db/schema";
 import { CUTS_PROMPT_VERSION } from "./cuts-prompt";
 import { persistCutsRun, startCutsRun } from "./cuts-run-store";
+import { ENV_VIEW } from "@/test/env-view";
 import type { CutsReport, ValidatedCut } from "./cuts-validate";
 
 const NOW = new Date("2026-10-10T12:00:00Z");
@@ -60,7 +61,7 @@ beforeEach(() => {
 
 describe("startCutsRun", () => {
   it("reserves a proposed_cuts unit and records the cuts tool and prompt version", async () => {
-    const out = await startCutsRun("u", "d", "fp", 4, { runId: "r", now: NOW });
+    const out = await startCutsRun("u", "d", "fp", 4, { runId: "r", now: NOW, env: ENV_VIEW });
     expect(out).toEqual({ kind: "started", runId: "run_1", callId: "call_1" });
     expect(rec.reserved).toEqual([["u", "proposed_cuts", "claude-sonnet-5-5", NOW]]);
     expect(rec.inserts).toHaveLength(1);
@@ -73,7 +74,7 @@ describe("startCutsRun", () => {
 
   it("inserts no run row when the reservation is refused", async () => {
     rec.reserveResult = { refused: "allowance" };
-    expect(await startCutsRun("u", "d", "fp", null)).toEqual({ kind: "allowance" });
+    expect(await startCutsRun("u", "d", "fp", null, { env: ENV_VIEW })).toEqual({ kind: "allowance" });
     expect(rec.inserts).toHaveLength(0);
   });
 });

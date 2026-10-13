@@ -43,8 +43,8 @@ export async function loadManaHelp(
   userId: string,
   color: BalanceColor,
   /** The reader's resolved switches (`requestSwitchEnv`): the basis the mix's targets come from. An eval
-   *  script, outside a request, takes the environment. */
-  env: NodeJS.ProcessEnv = process.env,
+   *  script, outside a request, passes `process.env` itself. */
+  env: NodeJS.ProcessEnv,
 ): Promise<ManaHelp | null> {
   const inputs = await loadManaInputs(deck);
   if (!inputs) return null;

@@ -154,7 +154,7 @@ try {
     const inputs = (await readProposedCuts(deckId, owner, process.env))!;
     const picks = inputs.facts.cards.slice(0, 3);
     await q(`delete from deck_suggestion_runs where deck_id = $1`, [deckId]);
-    const run = await startCutsRun(owner, deckId, inputs.fingerprint, inputs.readVersion);
+    const run = await startCutsRun(owner, deckId, inputs.fingerprint, inputs.readVersion, { env: process.env });
     if (run.kind !== "started") throw new Error(`start: ${run.kind}`);
     // Recorded the moment it exists: a failure below must still reach the cleanup.
     callIds.push(run.callId);
