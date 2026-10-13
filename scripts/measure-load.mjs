@@ -13,9 +13,11 @@
 //   - the card-details press on the deck page: a cold card, the same card again, and another cold
 //     card, each to the dialog and to its art.
 // Times come from CDP, never Resource Timing: Scryfall's CDN sends no `Timing-Allow-Origin`.
-// Each figure is the MEDIAN of MEASURE_RUNS runs (default 3).
+// Each figure is the MEDIAN of MEASURE_RUNS runs (default 7: at 3, one outlier moved a median by
+// over 300ms on deployed staging).
 //
-// Before the first run, every route is loaded once at every width and the figure thrown away. The
+// Before the first run, every route is loaded once at every width and the figure thrown away, in
+// the startup pass too. The
 // first request a route gets after an idle spell pays the server's own warm-up (a cold function, an
 // empty data cache), and without this pass it landed on whichever width ran first: /discover read as
 // a warm-load regression at 1300 that moved to 390 when 390 ran first (2026-10-12).
@@ -122,7 +124,7 @@ const DEPLOYED_ENV = DEPLOYED
 const VERCEL_PROJECT = process.env.MEASURE_VERCEL_PROJECT ?? "the-99-staging";
 // Read-only `pg_stat_statements` deltas on staging, taken around each warm load. No reset.
 const PGSTAT_URL = process.env.MEASURE_PGSTAT_URL ?? null;
-const RUNS = Math.max(1, Number(process.env.MEASURE_RUNS ?? 3));
+const RUNS = Math.max(1, Number(process.env.MEASURE_RUNS ?? 7));
 const OUT = process.env.MEASURE_OUT ?? path.join(os.tmpdir(), `measure-load-${Date.now()}.json`);
 const SERVER_LOG = process.env.MEASURE_SERVER_LOG ?? null;
 const DB_URL = process.env.MEASURE_DB_URL ?? null;
@@ -853,7 +855,7 @@ function routesFor(deckId) {
 
 async function runAll(browser, state, routes, sql) {
   console.error(`profile ${PROFILE}, routes ${routes.map((r) => r.label).join(", ")}${PRESS_AT == null ? "" : `, startup pass: press at ${PRESS_AT}ms to ${PRESS_TO}`}`);
-  if (PRESS_AT == null) for (const width of MEASURED_WIDTHS) await warmUp(browser, state, width, routes);
+  for (const width of MEASURED_WIDTHS) await warmUp(browser, state, width, routes);
   const runs = [];
   for (let i = 0; i < RUNS; i += 1) {
     const run = {};

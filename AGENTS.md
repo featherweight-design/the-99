@@ -1012,7 +1012,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   deck page, to the dialog and to its art: cold, warm, another cold card, and after INTENT (a
   pointer resting on the card, or focus at 390 as a keyboard reader would), which is what the
   prefetch is for; a tap starts no prefetch, since one started by the press has no head start. The
-  median of `MEASURE_RUNS` runs (default 3), printed as a Markdown table.
+  median of `MEASURE_RUNS` runs (default 7), printed as a Markdown table, after one discarded
+  warm-up load of every route at every width: the first request a route gets after an idle spell
+  pays the server's warm-up, and without that pass it read as a regression on whichever width ran
+  first (2026-10-12).
 
   **Point it at `next start`, never `next dev`**, whose compile times swamp every figure. The
   server runs on a scratch Neon branch holding a `pull:staging` copy, and the worktree's `.env`
