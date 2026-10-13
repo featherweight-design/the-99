@@ -1,6 +1,6 @@
 import * as React from "react";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -21,6 +21,26 @@ const READ = {
 const { loadStandInsAction, takeStandInAction, undoSwapAction } = vi.hoisted(() => ({
   loadStandInsAction: vi.fn(), takeStandInAction: vi.fn(), undoSwapAction: vi.fn(),
 }));
+// `landOnReceipt` is a hold that outlives the sheet that starts it, so nothing in the component stops it
+// when a test ends: its eased reveal arms a timer that fires into a torn-down jsdom (an unhandled
+// error after every test has passed). The test owns what it started, so it keeps each hold's stop
+// and ends them all after unmounting.
+const holds = vi.hoisted(() => ({ stops: [] as Array<() => void> }));
+vi.mock("./swap-receipt", async (original) => {
+  const real = await original<typeof import("./swap-receipt")>();
+  return {
+    ...real,
+    landOnReceipt: (swapId: string) => {
+      const stop = real.landOnReceipt(swapId);
+      holds.stops.push(stop);
+      return stop;
+    },
+  };
+});
+afterEach(() => {
+  cleanup();
+  for (const stop of holds.stops.splice(0)) stop();
+});
 vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, takeStandInAction, undoSwapAction }));
 
 // The trigger reports the list its stacked card would page, so the sheet's Prev/Next set is
