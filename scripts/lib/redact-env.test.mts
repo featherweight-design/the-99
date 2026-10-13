@@ -1,6 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { looksSecret, REDACTED, redactSecrets } from "./redact-env.mjs";
 
+describe("the Stripe secrets (payments scope §5.2)", () => {
+  it("are redacted by name, and the Price ids are not secrets", () => {
+    for (const name of ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_WEBHOOK_SECRET_PREVIOUS"]) {
+      expect(looksSecret(name, "x")).toBe(true);
+    }
+    expect(looksSecret("STRIPE_PRICE_PACK_40", "price_123")).toBe(false);
+  });
+});
+
 describe("redactSecrets", () => {
   it("replaces credentials by name and by value, and leaves switches and plumbing alone", () => {
     const env: Record<string, string | undefined> = {

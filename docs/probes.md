@@ -1933,6 +1933,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   reports, and staging and production are refused by id. Mutation-checked five ways (the window's lot filter, the
   per-player lock, the plan-before-pack order, a refunded run read as spend, `hasCredit` reduced to the free
   allowance); each fails it.
+- `pnpm probe:payments-webhook` proves the Stripe webhook's grant transaction (payments K1a) against a real database,
+  through the real `fulfilCheckoutSession`, `readAllowance` and `purgeAccount`, with Stripe a stand-in whose
+  `checkout.sessions.retrieve` serves a crafted Session and counts its calls: a paid Session for its own account
+  grants one 40-credit pack lot and a `granted` payment record; a replayed event asks Stripe nothing and grants
+  nothing; a second event for one Session and two concurrent deliveries of one event each grant once; a Session
+  naming another account is refused with nothing written; a customer with no account is kept `unattributed`; a grant
+  arriving while a purge holds the account's mapping waits and is kept `unattributed`, leaving no lot; and the purge
+  takes the mapping and the lot and keeps the payment record. The signature half is the route's own test.
+  It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and
+  production are refused by id. Mutation-checked five ways (the event row's conflict, the lot's conflict target,
+  the attribution check, the mapping read without `FOR SHARE`, a payment-record conflict let through to the grant).
 - `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
   count and GOT state (summed across printings), that a write moves the owner's data stamp, that an unknown card
   and a quantity outside 1 to 99 write nothing, that a friend reads the lines with only the wanted count and got,

@@ -847,6 +847,33 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   buying screens' design (U1). Purged
   with the account; unspent credits are forfeited (Q7). `pnpm probe:payments-ledger` proves it on a scratch branch.
 
+- **Stripe, the webhook half** (payments K1a, scope `boards/scope-payments-2026-10-13.md` §5). `stripe` is pinned
+  EXACTLY, and so is the API version in `src/lib/payments/stripe.ts`; an upgrade is its own reviewed change. Its
+  types took the type check past Node's default heap in CI (about 2GB, where `main` already sat), so `typecheck`,
+  `build` and `vercel-build` run with `NODE_OPTIONS=--max-old-space-size=4096`.
+  **Test mode everywhere but production**: `stripeClient()` refuses a live key unless `ADMIN_ENV_LABEL=production`
+  and a test key when it is (`key-mode.ts`), and is then null, so a misconfigured deployment does nothing.
+  `STRIPE_SECRET_KEY` must be a RESTRICTED key (`rk_`): an account secret key (`sk_`) is refused in either mode.
+  On the production project it is live, Production scope alone and Sensitive. `POST /api/stripe-webhook` is public in `src/proxy.ts` and authorized only by the signature over the
+  RAW body (`STRIPE_WEBHOOK_SECRET`, and `STRIPE_WEBHOOK_SECRET_PREVIOUS` while a roll overlaps; 5-minute
+  tolerance). It answers 503 unconfigured (a completed Checkout with a pack's Price variable unset included, so
+  Stripe retries rather than a real payment being refused for good), 400 unsigned or stale, 200 to an event type it ignores, and reads no
+  feature switch: a payment already taken is processed even while sales are stopped. A `checkout.session.completed` is a TRIGGER: `fulfilCheckoutSession`
+  retrieves the Session from Stripe and `decideFulfilment` (`fulfil-rule.ts`) grants only a paid, one-item,
+  quantity-1 Session for a Price in the pack registry (`packs.ts`, $5 for 40), in its currency and amount net of
+  tax, whose customer maps through `stripe_customers` to the account its `client_reference_id` and metadata
+  name. A disagreement is refused and logged, never fixed; a customer with no account is kept `unattributed` in
+  `payment_records` for Hugh to refund by hand. The grant is one transaction: the `stripe_events` row first (a
+  conflict is a duplicate), then the `payment_records` row and the `credit_grants` lot, both idempotent on
+  Stripe's ids. A refusal, a duplicate or an unattributed payment answers 200; a failure to reach Stripe or the
+  database answers 500 and Stripe retries. Logs carry the type and the outcome, never an id or an amount.
+  `payment_records` holds no account id and is KEPT through the purge (Hugh, Q6); `stripe_customers` goes, FIRST
+  of the payment rows: the grant reads that mapping `FOR SHARE`, so a purge holding it leaves a late payment
+  unattributed, and a grant holding it commits before the purge deletes the lots.
+  `pnpm check:payments-reads` fails when code under `src/` outside `src/lib/payments/` imports `stripe` or names a
+  Stripe table, and runs against the shipped tree inside `pnpm test`. `pnpm probe:payments-webhook` proves the
+  grant transaction on a scratch branch. Creating a Checkout session is K1b.
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its
