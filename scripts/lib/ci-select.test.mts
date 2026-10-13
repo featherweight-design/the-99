@@ -16,6 +16,11 @@ describe("decide", () => {
     expect(decide({ ...base, event: "push" })).toMatchObject({ mode: "full", files: base.allTests });
     expect(decide({ ...base, event: "" }).mode).toBe("full");
   });
+  it("runs everything when vitest could not read the import graph", () => {
+    const d = decide({ ...base, graphError: "vitest list exited 1: Transform failed" });
+    expect(d).toMatchObject({ mode: "full", files: base.allTests });
+    expect(d.reason).toContain("import graph unreadable");
+  });
   it("runs everything under the ci:full label", () => {
     expect(decide({ ...base, forceFull: true }).reason).toBe("ci:full label");
   });

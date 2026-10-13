@@ -85,19 +85,32 @@ jobs:
         id: select
         run: GITHUB_EVENT_NAME=pull_request CI_BASE_REF=HEAD~1 node scripts/ci-select.mjs
 
+      # `affected` is the only answer that tests the selection. `full` because vitest could not read the
+      # import graph (a syntactically broken file, invalid JSON) is the selector working as designed: the
+      # whole suite then runs, so nothing can be missed and the leg passes with a note. Any other `full`
+      # means the leg tested nothing.
       - name: The selector made a real selection
         env:
           MODE: ${{ steps.select.outputs.mode }}
+          REASON: ${{ steps.select.outputs.reason }}
         run: |
-          if [ "$MODE" != affected ]; then
-            echo "::error::the selector answered '$MODE', not 'affected': this leg would test nothing"
-            exit 1
-          fi
+          if [ "$MODE" = affected ]; then exit 0; fi
+          case "$MODE/$REASON" in
+            full/"import graph unreadable"*)
+              echo "::notice::graph unreadable, so the selector chose the full suite: $REASON"
+              echo "### Calibration leg: the selector fell back to the full suite ($REASON)" >> "$GITHUB_STEP_SUMMARY"
+              echo "FALLBACK_FULL=1" >> "$GITHUB_ENV" ;;
+            *)
+              echo "::error::the selector answered '$MODE' ($REASON), not 'affected': this leg would test nothing"
+              exit 1 ;;
+          esac
 
       - name: Run the whole suite
+        if: ${{ env.FALLBACK_FULL != '1' }}
         run: pnpm exec vitest run --passWithNoTests --reporter=json --outputFile=calibration-results.json || true
 
       - name: Compare
+        if: ${{ env.FALLBACK_FULL != '1' }}
         env:
           FILE: ${{ matrix.file }}
           MODE: ${{ matrix.mode }}

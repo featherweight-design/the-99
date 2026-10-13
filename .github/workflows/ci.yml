@@ -20,14 +20,18 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Which tests this PR would need. SHADOW: it prints the decision to the job summary and gates
-  # nothing but its own success; the full suite below still runs. `vitest related` alone skips the
-  # guards that READ the tree instead of importing it (measured: 23 of the last 25 merged PRs), so
-  # the selection is related UNION every fs-reading test, or the full suite when a global file moves.
+  # Which tests this PR needs (plan: boards/plan-ci-affected-tests-2026-10-12.md). `vitest related`
+  # alone skips the guards that READ the tree instead of importing it (23 of the last 25 merged PRs),
+  # so the selection is related UNION every fs-reading test, or the FULL suite when a global file moves,
+  # when vitest cannot read the import graph, under the `ci:full` label, and on every push to main.
   # A failure here fails `checks`, so a broken selector can never read as a pass.
   select:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      mode: ${{ steps.select.outputs.mode }}
+      shard_list: ${{ steps.select.outputs.shard_list }}
+      shards: ${{ steps.select.outputs.shards }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,10 +49,18 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Select tests
+        id: select
         env:
           CI_BASE_REF: origin/${{ github.base_ref || 'main' }}
           CI_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') && '1' || '' }}
         run: node scripts/ci-select.mjs
+
+      - name: Keep the selection for the test shards
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-selection
+          path: ci-selection.txt
+          retention-days: 3
 
   # Static checks and the build. Tests run in their own sharded job so the slowest step of the old
   # single job (about 80% of its wall clock) no longer serialises behind everything else.
@@ -119,6 +131,9 @@ jobs:
         run: pnpm check:db-pool
 
   test:
+    needs: select
+    # `none` is unreachable while the always set exists, and is the only case a skipped job may mean "pass".
+    if: ${{ needs.select.outputs.mode != 'none' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -126,7 +141,7 @@ jobs:
       # losing the results of three that were still running.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: ${{ fromJSON(needs.select.outputs.shard_list) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -140,8 +155,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test (shard ${{ matrix.shard }}/6)
-        run: pnpm test --shard=${{ matrix.shard }}/6
+      - name: Full suite (shard ${{ matrix.shard }}/${{ needs.select.outputs.shards }})
+        if: ${{ needs.select.outputs.mode == 'full' }}
+        run: pnpm test --shard=${{ matrix.shard }}/${{ needs.select.outputs.shards }}
+
+      - name: Download the selection
+        if: ${{ needs.select.outputs.mode == 'affected' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-selection
+
+      # Shards the SELECTED files, not the whole glob (checked: four explicit files split 2 and 2).
+      - name: Selected tests (shard ${{ matrix.shard }}/${{ needs.select.outputs.shards }})
+        if: ${{ needs.select.outputs.mode == 'affected' }}
+        # Through the package `test` script, like the full path, so a change to its flags reaches both.
+        # mapfile + a quoted array: no word splitting, no globbing of `[id]`, no xargs length limit.
+        run: |
+          mapfile -t files < ci-selection.txt
+          pnpm test --shard=${{ matrix.shard }}/${{ needs.select.outputs.shards }} "${files[@]}"
 
   # The one status the rest of the process looks at keeps its old name, `checks`, and is green
   # only when every job above is. `always()` so a skipped or cancelled dependency fails it
@@ -154,4 +185,6 @@ jobs:
     steps:
       - name: Every job succeeded
         run: |
-          [ "${{ needs.select.result }}" = success ] && [ "${{ needs.static.result }}" = success ] && [ "${{ needs.test.result }}" = success ]
+          [ "${{ needs.select.result }}" = success ] && [ "${{ needs.static.result }}" = success ] || exit 1
+          # A skipped `test` job is a pass only when the selector said nothing needed testing.
+          [ "${{ needs.test.result }}" = success ] || { [ "${{ needs.test.result }}" = skipped ] && [ "${{ needs.select.outputs.mode }}" = none ]; }

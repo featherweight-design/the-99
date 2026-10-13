@@ -84,16 +84,20 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   every production deploy failed for five hours, across seven deployments and five merged PRs.
   Nothing was down — the running build kept serving — but nothing new shipped either.
 - `GET /api/health` (public, unauthenticated) reports migration state — 200 when the schema matches the build or is ahead of it, 503 when migrations are pending or the ledger is unreadable. Use it to confirm a deploy instead of loading a page that depends on the schema.
-- **CI test selection** (`scripts/ci-select.mjs`, rules in `scripts/lib/ci-select.mjs`; plan
-  `boards/plan-ci-affected-tests-2026-10-12.md`). A PR's tests are `vitest related` UNION the
-  *always set*, which is COMPUTED: every test file whose source mentions `node:fs`,
-  `child_process`, `process.cwd()` or the like. The graph alone skipped 10 to 28 tree-reading guards
-  in 23 of the last 25 merged PRs, because those guards read files instead of importing them. A change
-  to the lockfile, a vitest/tsconfig/eslint/next config, `.nvmrc`, `vitest.setup.ts`, `ci.yml` or
-  package.json dependency fields runs everything, and main always does. A test that reads the tree
-  through a helper module, never naming `fs` itself, is invisible to the always set: have the test
-  file mention it. Rollout: shadow (the `select` job prints, the full suite runs), calibration, then
-  the switch.
+- **CI test selection** (`scripts/ci-select.mjs`, rules in `scripts/lib/ci-select.mjs`). A PR's tests are `vitest related` UNION the
+  *always set*, which is COMPUTED: every test file whose source mentions `node:fs`, `child_process`,
+  `process.cwd()`, `import.meta.url` or the like. The graph alone skipped 10 to 28 tree-reading guards
+  in 23 of the last 25 merged PRs, because those guards read files instead of importing them. The FULL
+  suite runs when the lockfile, a vitest/tsconfig/eslint/next config, `.nvmrc`, `vitest.setup.ts`,
+  `ci.yml`, the selector or package.json dependency fields (or its `test` script) change, when vitest
+  cannot read the import graph (a syntax error), under the `ci:full` PR label, and ALWAYS on a push to
+  main, which is the net under a selection miss. A test that reads the tree through a helper module,
+  never naming `fs` or a path API itself, is invisible to the always set: have the test file mention it.
+  The `select` job feeds `test`, which shards the selected files (`vitest run <files> --shard i/N`, N
+  from `SHARD_SIZE` 170 per shard, at most 6), and `checks` is red unless `select` succeeded.
+  `CI selector calibration` (dispatch-only) breaks one file at a time (`scripts/ci-calibration-cases.json`),
+  runs the whole suite, and fails a leg when a test went red that the selector did not choose; run it after
+  changing the rules. First run, 2026-10-13: 22 legs; 15 clean, 4 hit the unreadable-graph fallback, and 3 reported one missed tuning test each that did not recur when those three legs were re-run (0 missed).
 - `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. The `Upstream contract checks` workflow runs it daily at 07:00, two hours ahead of the daily catalog refresh, so an upstream shape change is known before the ingest that would fail on it.
 - `pnpm check:manapool` validates ManaPool's price-feed contract (payload shape, a real parse, and
   the `scryfall_id` duplication ratio) without touching a database, and runs daily in that same

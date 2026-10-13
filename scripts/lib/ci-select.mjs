@@ -66,11 +66,15 @@ export function shardsFor(count) {
 // alwaysSet. `allTests`: every test file. `forceFull`: the ci:full label.
 /**
  * @param {{ event?: string, changed: string[], packageChanged?: boolean, related?: string[],
- *   always?: string[], allTests?: string[], forceFull?: boolean }} input
+ *   always?: string[], allTests?: string[], forceFull?: boolean, graphError?: string }} input
  */
-export function decide({ event, changed, packageChanged = false, related = [], always = [], allTests = [], forceFull = false }) {
+export function decide({ event, changed, packageChanged = false, related = [], always = [], allTests = [], forceFull = false, graphError = "" }) {
   if (event !== "pull_request") return { mode: "full", reason: `event is ${event || "unknown"}, not a pull request`, files: allTests };
   if (forceFull) return { mode: "full", reason: "ci:full label", files: allTests };
+  // vitest could not read the import graph: a changed file does not transform (a syntax error), which
+  // calibration showed for a half-deleted source file and for invalid JSON. Nothing can be said about what it
+  // affects, and the full suite will fail on it by name, so run the full suite rather than fail the selector.
+  if (graphError) return { mode: "full", reason: `import graph unreadable: ${graphError}`, files: allTests };
   const hit = changed.map(globalReason).find(Boolean);
   if (hit) return { mode: "full", reason: `global file changed: ${hit}`, files: allTests };
   if (packageChanged) return { mode: "full", reason: "package.json dependency fields changed", files: allTests };
