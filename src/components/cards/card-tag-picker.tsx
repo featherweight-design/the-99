@@ -123,7 +123,8 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   const overCap = (text: string, next: Picked) => (sizeOf(text, next) > max && sizeOf(text, next) > count) || overTags(text, next);
 
   const place = (text: string, at: number, nextPicked: Picked = picked) => {
-    if (overCap(text, nextPicked)) return;
+    // Every way the picker writes (a pick, the `[[ ]]` button, typing) is closed with the box: a read-only value must not change under a save.
+    if (disabled || overCap(text, nextPicked)) return;
     onChange(text, nextPicked);
     setCaret(at);
     setDismissed(false);
@@ -176,6 +177,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     },
     /** What the field's own `onChange` calls with the text it now holds and its caret. */
     typed: (raw: string, caretAt: number | null) => {
+      if (disabled) return;
       const text = normalize ? normalize(raw) : raw;
       // The cap is on RENDERED text, so a longer paste is refused whole rather than cut mid-tag.
       if (overCap(text, picked)) return;

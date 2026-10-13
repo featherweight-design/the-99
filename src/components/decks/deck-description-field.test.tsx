@@ -90,6 +90,14 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
       expect(screen.queryByRole("listbox")).toBeNull();
     });
 
+    it("changes nothing from the [[ ]] button or typing while its save is out", () => {
+      const onChange = vi.fn();
+      render(<DeckDescriptionField value="Keep" onChange={onChange} onBlur={() => {}} saving refused={null} />);
+      fireEvent.click(screen.getByRole("button", { name: "Insert a card tag" }));
+      fireEvent.change(screen.getByRole("combobox"), { target: { value: "Keep more" } });
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it("draws the [[ ]] button and the card-tags tip beside the label", () => {
       render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
       expect(screen.getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
