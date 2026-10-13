@@ -38,18 +38,30 @@ function latestSnapshot(): Snapshot {
   return JSON.parse(readFileSync(`drizzle/meta/${last}`, "utf8"));
 }
 
-/** `child -> parent` for each FK into a purged table that neither cascades, sets null, nor is deleted first. */
-function fkBlocks(snap: Snapshot): string[] {
+/**
+ * `child -> parent` for each FK into a table the purge EMPTIES of the account's rows (a listed table, or any
+ * table reached from one by cascade, transitively) that neither cascades, sets null, nor is deleted first.
+ */
+function fkBlocks(snap: Snapshot, listed: ReadonlySet<string> = purged): string[] {
   const order = PURGE_ORDER as readonly string[];
-  const out: string[] = [];
-  for (const t of Object.values(snap.tables)) {
-    for (const fk of Object.values(t.foreignKeys)) {
-      if (!purged.has(fk.tableTo) || fk.tableTo === fk.tableFrom) continue;
-      if (fk.onDelete === "cascade" || fk.onDelete === "set null") continue;
-      const child = order.indexOf(fk.tableFrom);
-      if (child !== -1 && child < order.indexOf(fk.tableTo)) continue;
-      out.push(`${fk.tableFrom} -> ${fk.tableTo}`);
+  const fks = Object.values(snap.tables).flatMap((t) => Object.values(t.foreignKeys));
+  const reached = new Set(listed);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const fk of fks) {
+      if (fk.onDelete === "cascade" && reached.has(fk.tableTo) && !reached.has(fk.tableFrom)) {
+        reached.add(fk.tableFrom);
+        grew = true;
+      }
     }
+  }
+  const out: string[] = [];
+  for (const fk of fks) {
+    if (!reached.has(fk.tableTo) || fk.tableTo === fk.tableFrom) continue;
+    if (fk.onDelete === "cascade" || fk.onDelete === "set null") continue;
+    const child = order.indexOf(fk.tableFrom);
+    if (child !== -1 && child < order.indexOf(fk.tableTo)) continue;
+    out.push(`${fk.tableFrom} -> ${fk.tableTo}`);
   }
   return out;
 }
@@ -86,6 +98,14 @@ describe("the account purge's coverage", () => {
     // `token_prices_printing_fk` is declared with `foreignKey({...})`, not `.references()`.
     expect(fks.map((f) => f.name)).toContain("token_prices_printing_fk");
     expect(fks.length).toBeGreaterThan(40);
+  });
+
+  it("follows cascades transitively: a grandchild with no on delete under a cascaded child is reported", () => {
+    const snap = { tables: {
+      "public.child": { name: "child", foreignKeys: { a: { name: "a", tableFrom: "child", tableTo: "decks", onDelete: "cascade" } } },
+      "public.grandchild": { name: "grandchild", foreignKeys: { b: { name: "b", tableFrom: "grandchild", tableTo: "child", onDelete: "no action" } } },
+    } };
+    expect(fkBlocks(snap)).toEqual(["grandchild -> child"]);
   });
 
   it("fails a child of a purged table with no on delete, in either declaration form", () => {
