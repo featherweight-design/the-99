@@ -135,7 +135,7 @@ export async function addToCollection(actionId: string, lines: unknown): Promise
     return { ...l, scryfallId: printing.scryfallId, condition: null };
   });
   const placements = addedCopyEnabled(env);
-  const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId, ...(placements ? { placements } : {}) });
+  const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId, env, ...(placements ? { placements } : {}) });
   const done = settled(userId, env, result);
   // Where each copy went, read inside the write. A retry that found the save applied has no read of
   // its own (the first request's snapshot is gone), so it says nothing rather than guess.
@@ -219,7 +219,7 @@ export async function editCollection(
     return { ...r, scryfallId: printing?.scryfallId ?? null, condition: r.condition ?? null };
   });
   const result = await applyCollectionChange(
-    userId, { kind: "edit", rows: editRows, seen: seenIdentities }, { id: actionId, confirmShort: parseShortDecks(confirmShort) },
+    userId, { kind: "edit", rows: editRows, seen: seenIdentities }, { id: actionId, confirmShort: parseShortDecks(confirmShort), env },
   );
   const done = settled(userId, env, result);
   if (done) return done;

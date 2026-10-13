@@ -113,8 +113,10 @@ export async function loadPhraseIndex(themes: readonly VocabularyTheme[]): Promi
 /** The search, with the build-around card's own facts for its chip (owned, price, flags). */
 export type SearchOutcome = SearchResult & { card: CardFacts | null };
 
-export async function searchCommanders(userId: string, asked: Answers): Promise<SearchOutcome> {
-  const facts = await loadSearchFacts(userId, asked);
+/** `env`: the reader's resolved switches (`requestSwitchEnv`), for the build-around card's claim read; the
+ *  environment alone when omitted (admin PR 7 makes it required). */
+export async function searchCommanders(userId: string, asked: Answers, env: NodeJS.ProcessEnv = process.env): Promise<SearchOutcome> {
+  const facts = await loadSearchFacts(userId, asked, env);
   return { ...rankCandidates(facts.candidates, facts.answers, facts.card, facts.tribes), card: facts.card };
 }
 
@@ -122,12 +124,12 @@ export async function searchCommanders(userId: string, asked: Answers): Promise<
 export type SearchFacts = { answers: Answers; candidates: Candidate[]; card: CardFacts | null; tribes: Tribes };
 
 /** Exported so `measure-intake-tribes` ranks exactly what the search does, twice, from one read. */
-export async function loadSearchFacts(userId: string, asked: Answers): Promise<SearchFacts> {
+export async function loadSearchFacts(userId: string, asked: Answers, env: NodeJS.ProcessEnv = process.env): Promise<SearchFacts> {
   // The card is resolved FIRST. A card id that parses but names no card any more (a stale link), or
   // one the intake could never have offered (a basic, a banned card), is dropped, as every invalid
   // answer is, and the search then runs as if no card were asked: every read below, the owned
   // order's support counts included, is decided on the answers it actually runs.
-  const cardRow = asked.card === null ? null : await loadCardRow(userId, asked.card);
+  const cardRow = asked.card === null ? null : await loadCardRow(userId, asked.card, env);
   const card = cardRow === null ? null : asked.card;
   const answers: Answers = { ...asked, card };
   // Owned support is the no-theme order's only input, and it is the dearest figure here: a count
@@ -237,8 +239,13 @@ export type CardRow = {
  * `cache`d per request: the results page reads the card twice in one render, for the chip
  * (`loadCardChip`) and for the search (`loadSearchFacts`), and the claim read below is the
  * expensive half. `claims: false` skips it for a caller that only needs to know the card counts.
+ * `env` is the reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
+ * pending clause; the environment alone when omitted (admin PR 7 makes it required). It is part of the
+ * `cache` key by identity, so the two reads share one only when the page hands both the same env.
  */
-export const loadCardRow = cache(async (userId: string, oracleId: string, claims = true): Promise<CardRow | null> => {
+export const loadCardRow = cache(async (
+  userId: string, oracleId: string, env: NodeJS.ProcessEnv = process.env, claims = true,
+): Promise<CardRow | null> => {
   const [row] = (await db.execute(sql`
     select c.name, c.game_changer, c.type_line, c.image_uri,
       exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
@@ -247,7 +254,7 @@ export const loadCardRow = cache(async (userId: string, oracleId: string, claims
   if (!row || isBasicLand(row.type_line)) return null;
   // The same claim read the commander's held mark and the fill's charge use, and the same rule:
   // a copy is free when the row says one is.
-  const a = claims && row.owned ? (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) : undefined;
+  const a = claims && row.owned ? (await loadAvailability(userId, { oracleIds: [oracleId], env })).get(oracleId) : undefined;
   const held = row.owned && a !== undefined && buysCopy(true, a) ? { deck: hardDecks(a)[0]?.name ?? null } : null;
   return { name: row.name, owned: row.owned, held, gameChanger: row.game_changer, imageUri: row.image_uri };
 });

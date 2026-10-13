@@ -131,7 +131,7 @@ const READERS = [
   "src/lib/discovery/payload.ts",
   "src/lib/discovery/resolve-slug.ts",
   // Admin PR 6e: the claim model (NEVER_CUT_ENABLED's lock key, CHANGE_COMMANDER_ENABLED's pending clause) and
-  // the deck readers that start it. Its callers elsewhere in lib pass the reader's env since 6f-1, but for CLAIM_PENDING.
+  // the deck readers that start it. Every caller in src passes the reader's env since 6f-2 (the claim scan below).
   "src/lib/decks/availability-query.ts",
   "src/lib/decks/cart-read.ts",
   "src/lib/decks/fill-plan.ts",
@@ -192,23 +192,13 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
 /**
  * Admin PR 6e: the claim model (`availability-query`) decides NEVER_CUT_ENABLED's `locked` key and
  * CHANGE_COMMANDER_ENABLED's pending clause from the env it is handed, and its `env` still defaults to the
- * environment, so a caller that omits it compiles and reads the environment alone. Every call to
- * `loadAvailability` must name `env` in its options object, and every call to `loadDeckBuyRows` must pass
- * its fourth argument (and `loadCart`, which starts both, its second), except in the modules below. Admin PR 6f-1
- * converted the deck, commander, discovery, tuning, lineup, swap and social readers. Left for 6f-2, whose callers resolve
- * no env yet: the collection's two writes, its contested-card reads (`summary-read`, which the deck changes page and
- * the replace summary page render and the assignment and mark-bought actions call), the new-deck search (`intake/rows`, `intake/search`) and Fits
- * your decks (`swaps/fits`). The list only shrinks:
- * a module on it whose every call passes an env fails until it is taken off.
+ * environment until admin PR 7 makes it required, so a caller that omits it compiles and reads the
+ * environment alone. Every call to `loadAvailability` must name `env` in its options object, and every call
+ * to `loadDeckBuyRows` must pass its fourth argument (and `loadCart`, which starts both, its second),
+ * everywhere in `src`. Admin PR 6f-1 converted the deck, commander, discovery, tuning, lineup, swap and social
+ * readers; 6f-2 the collection's writes and contested-card reads, the new-deck search and Fits your decks, and
+ * emptied the list of modules left to convert, so there is no exemption.
  */
-const CLAIM_PENDING = [
-  "src/lib/collection/arrivals-write.ts",
-  "src/lib/collection/summary-read.ts",
-  "src/lib/collection/write.ts",
-  "src/lib/intake/rows.ts",
-  "src/lib/intake/search.ts",
-  "src/lib/swaps/fits.ts",
-];
 
 /**
  * The claim readers and where each takes its env: in an options object (`opts`, which must name `env`) or
@@ -311,10 +301,9 @@ describe("every claim read is handed the reader's env (admin PR 6e)", () => {
     );
   });
 
-  it("names no call without one outside the 6f modules, and no 6f module that has been converted", async () => {
-    const { readFileSync, readdirSync, statSync, existsSync } = await import("node:fs");
+  it("names no call without one anywhere in src", async () => {
+    const { readFileSync, readdirSync, statSync } = await import("node:fs");
     const { join } = await import("node:path");
-    expect(CLAIM_PENDING.filter((path) => !existsSync(path))).toEqual([]);
     const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
       const path = join(dir, name);
       return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
@@ -322,8 +311,6 @@ describe("every claim read is handed the reader's env (admin PR 6e)", () => {
     const all = (await Promise.all(walk("src").map((path) => claimCalls(path, readFileSync(path, "utf8"))))).flat();
     // A scan that found nothing would pass over everything: the deck page, Home and the pull all read claims.
     expect(all.filter((c) => c.env).length).toBeGreaterThan(20);
-    const bare = all.filter((c) => !c.env);
-    expect(bare.filter((c) => !CLAIM_PENDING.some((p) => c.call.startsWith(`${p}:`))).map((c) => c.call)).toEqual([]);
-    expect(CLAIM_PENDING.filter((p) => !bare.some((c) => c.call.startsWith(`${p}:`)))).toEqual([]);
+    expect(all.filter((c) => !c.env).map((c) => c.call)).toEqual([]);
   });
 });

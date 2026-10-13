@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith, ENV_VIEW, ENV_VIEW as RESOLVED } from "@/test/env-view";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides. Through a stand-in object that
 // reads it, so a case can pin WHICH env the action handed on by identity, never by comparing the
 // environment itself.
-import { ENV_VIEW as RESOLVED } from "@/test/env-view";
 vi.mock("../../lib/switches/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
   return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
@@ -76,6 +76,8 @@ describe("previewRevert", () => {
     const preview = await previewRevert(ENTRY);
     expect(stub.apply.mock.calls[0][1]).toEqual({ kind: "revert", entryId: ENTRY });
     expect(stub.apply.mock.calls[0][2].dryRun).toBe(true);
+    // The preview's deck check reads claims under the reader's resolved switches, checked by identity.
+    expect(stub.apply.mock.calls[0][2].env === RESOLVED).toBe(true);
     expect(preview).toMatchObject({ differs: true, decks: [deck], expected: { [KEY]: 0 } });
   });
 
@@ -93,7 +95,9 @@ describe("revertCollectionEntry", () => {
     expect(await revertCollectionEntry(ENTRY, ACTION, { [KEY]: 0 }, [deck, { junk: 1 } as never]))
       .toEqual({ reverted: { id: ACTION } });
     expect(stub.apply.mock.calls[0][1]).toEqual({ kind: "revert", entryId: ENTRY, expected: { [KEY]: 0 } });
-    expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION, confirmShort: [deck] });
+    const { env, ...opts } = stub.apply.mock.calls[0][2];
+    expect(opts).toEqual({ id: ACTION, confirmShort: [deck] });
+    expect(env === RESOLVED).toBe(true);
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
     expect(stub.warm).toHaveBeenCalledWith("user_1", RESOLVED);
   });
@@ -173,5 +177,29 @@ describe("revertCollectionEntry", () => {
     await expect(revertCollectionEntry(ENTRY, ACTION, { [KEY]: -1 })).rejects.toThrow("bad revert preview");
     await expect(revertCollectionEntry(ENTRY, ACTION, [] as never)).rejects.toThrow("bad revert preview");
     expect(stub.apply).not.toHaveBeenCalled();
+  });
+});
+
+// Admin PR 6f-2: a revert's deck check reads claims under the reader's env. Opposite to the environment on
+// both claim-model switches, so a dropped argument would read the other way.
+describe("the reader's env", () => {
+  it("reaches the write from a preview and from a revert, by identity", async () => {
+    const { requestSwitchEnv } = await import("../../lib/switches/request");
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    const env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    vi.mocked(requestSwitchEnv).mockResolvedValue(env);
+    try {
+      stub.entry.mockResolvedValue({ rows: [] });
+      stub.apply.mockResolvedValue({ status: "preview", raised: 0, lowered: 0, decks: [], rows: [] });
+      await previewRevert(ENTRY);
+      stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+      await revertCollectionEntry(ENTRY, ACTION, {});
+      expect(stub.apply).toHaveBeenCalledTimes(2);
+      for (const call of stub.apply.mock.calls) expect(call[2].env === env).toBe(true);
+    } finally {
+      vi.mocked(requestSwitchEnv).mockResolvedValue(ENV_VIEW);
+      vi.unstubAllEnvs();
+    }
   });
 });

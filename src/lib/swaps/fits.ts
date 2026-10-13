@@ -149,8 +149,12 @@ type CardRowDb = {
   keywords: string[] | null;
 };
 
-/** The whole read for one card, for the signed-in reader. Null when the card does not exist. */
-export async function loadFits(userId: string, oracleId: string): Promise<FitsRead | null> {
+/**
+ * The whole read for one card, for the signed-in reader. Null when the card does not exist. `env` is the
+ * reader's resolved switches (`requestSwitchEnv`), for the card's claim read and the partners' art; the
+ * environment alone when omitted (admin PR 7 makes it required).
+ */
+export async function loadFits(userId: string, oracleId: string, env: NodeJS.ProcessEnv = process.env): Promise<FitsRead | null> {
   const [cardRes, deckRes] = await Promise.all([
     db.execute<CardRowDb>(sql`
       select oracle_id, name, color_identity, commander_legal, type_line, oracle_text, keywords
@@ -204,7 +208,7 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
     card.role === "other" || open.length === 0
       ? new Map<string, RecommendedMix>()
       : loadMixesForCommanders(open.map((r) => ({ commanderOracleId: r.commander_oracle_id, partnerOracleId: r.partner_oracle_id }))),
-    loadAvailability(userId, { oracleIds: [oracleId] }),
+    loadAvailability(userId, { oracleIds: [oracleId], env }),
     // The one staple definition, never a second lookup of our own (F18). NOT fail-soft: a staple
     // the read could not classify would draw a percentage as this commander's, which is false, so a
     // failure fails the read and the picker shows its failed state.
@@ -238,7 +242,7 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
     const theme = themeReason(themed, cards, r.commander_types, isType);
     if (theme) reasons.set(r.id, { kind: "theme", ...theme });
   }));
-  await withPartnerArt(userId, reasons);
+  await withPartnerArt(userId, reasons, env);
 
   const a = availability.get(oracleId);
   return shapeFits(card, rows, roleCounts, mixes, { owned: a?.owned ?? 0, free: a ? a.free : null }, staples.has(oracleId), reasons);
@@ -251,12 +255,12 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
  * every piece (`chainArt`), plus one `cards` read for the catalog fallback. Fail-soft: a failed read leaves the
  * piece without a preview.
  */
-async function withPartnerArt(userId: string, reasons: Map<string, FitReason>): Promise<void> {
+async function withPartnerArt(userId: string, reasons: Map<string, FitReason>, env: NodeJS.ProcessEnv): Promise<void> {
   const combos = [...reasons.values()].flatMap((r) => (r.kind === "combo" ? [r] : []));
   if (combos.length === 0) return;
   const ids = [...new Set(combos.map((r) => r.with.oracleId))];
   const [owned, catalog] = await Promise.all([
-    chainArt(userId, null, ids),
+    chainArt(userId, null, ids, env),
     db.select({ oracleId: cardsTable.oracleId, imageUri: cardsTable.imageUri }).from(cardsTable).where(inArray(cardsTable.oracleId, ids))
       .then((rows) => new Map(rows.map((x) => [x.oracleId, x.imageUri] as const)))
       .catch(() => new Map<string, string | null>()),

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith } from "@/test/env-view";
 
 import type { FitsReadReply } from "./fits-read";
 import { inputs } from "./fits-read.fixture";
@@ -22,11 +23,16 @@ vi.mock("./fits-read-store", async (orig) => ({
   startFitsRead: vi.fn(async () => store.started),
   finishFitsRead: vi.fn(async (_h: unknown, write: unknown, billed: unknown) => { store.finished.push(write); store.bills.push(billed); return true; }),
 }));
+const live = vi.hoisted(() => ({ inputs: vi.fn(async () => null) }));
+vi.mock("./fits-read-load", async (orig) => ({
+  ...(await orig<typeof import("./fits-read-load")>()),
+  loadFitsReadInputs: live.inputs,
+}));
 vi.mock("../model/allowance", () => ({
   readAllowance: vi.fn(async () => ({ used: 0, limit: 3, reopensAt: null, nextAt: null })),
 }));
 
-const { pressFitsRead, readFitsRead } = await import("./fits-read-run");
+const { LIVE_DEPS, pressFitsRead, readFitsRead } = await import("./fits-read-run");
 const { candidateHashes } = await import("./fits-read-store");
 const { staleness } = await import("./fits-read-state");
 const { startFitsRead } = await import("./fits-read-store");
@@ -209,6 +215,34 @@ describe("pressFitsRead: outcomes and the unit (lock 4)", () => {
     await readFitsRead("u", "card", d);
     await pressFitsRead("u", "card", d);
     expect(store.reaped - before).toBe(2);
+  });
+});
+
+// Admin PR 6f-2: the free list's claim read takes the reader's env. Opposite to the environment on both
+// claim-model switches, so a dropped argument would read the other way; checked by identity, never compared.
+describe("the reader's env", () => {
+  const ENV = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+  beforeEach(() => {
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    return () => vi.unstubAllEnvs();
+  });
+
+  it("reaches every load a read and a press make", async () => {
+    const { d } = deps({ picks: [{ ...good("D1"), deck: "D1" }] });
+    const load = vi.fn(d.load);
+    await readFitsRead("u", "card", { ...d, load }, ENV);
+    await pressFitsRead("u", "card", { ...d, load }, ENV);
+    // The read's one load, then the press's load before the call and its re-read after it.
+    expect(load.mock.calls.length).toBeGreaterThanOrEqual(3);
+    for (const call of load.mock.calls) expect((call as unknown[])[2] === ENV).toBe(true);
+  });
+
+  it("is handed on by the live loader to loadFitsReadInputs", async () => {
+    await LIVE_DEPS.load("u", "card", ENV);
+    const call = live.inputs.mock.calls[0] as unknown[];
+    expect(call.slice(0, 2)).toEqual(["u", "card"]);
+    expect(call[3] === ENV).toBe(true);
   });
 });
 

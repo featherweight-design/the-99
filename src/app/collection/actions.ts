@@ -21,7 +21,6 @@ import {
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
-import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
 import { summarizeUploadPreview, type UploadPreviewDetail } from "../../lib/collection/upload-preview";
 import { randomUUID } from "node:crypto";
@@ -221,7 +220,7 @@ export async function previewUploadChange(
   // Replace as "removes everything", which the save would never do.
   if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
   const [result, edits, editedKeys, totals, lastUpload] = await Promise.all([
-    applyCollectionChange(userId, { kind, items: pendingItems, uploadId }, { id: randomUUID(), dryRun: true }),
+    applyCollectionChange(userId, { kind, items: pendingItems, uploadId }, { id: randomUUID(), dryRun: true, env }),
     editsSinceUpload(userId),
     // Only a Replace overwrites hand changes, so only it tags rows `edited`.
     kind === "replace" ? editedKeysSinceUpload(userId) : Promise.resolve(new Set<string>()),
@@ -309,7 +308,7 @@ export async function confirmUpload(
       { kind: mode, items: pendingItems, uploadId, tokens: preview.tokens },
       {
         id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort),
-        ownedCounts: true,
+        ownedCounts: true, env,
       },
     );
     switch (result.status) {
@@ -359,7 +358,7 @@ export async function confirmUpload(
     nowShort,
     unmatched: preview.unmatched ?? [],
     parseErrorCount: (preview.parseErrors ?? []).length,
-    addedCopy: addedCopyEnabled(env),
+    env,
   });
 
   // Warm the new collection's scores without blocking the upload response. If this

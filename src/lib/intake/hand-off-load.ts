@@ -38,11 +38,18 @@ export type HandOffAnswers = {
  * as the results page's do: a failed vocabulary labels themes by their slugs, a failed support read
  * prints no figures, and a failed card read draws no card row. None takes the create form down.
  */
-export async function loadHandOffAnswers(userId: string, commanderId: string, p: ChooseParams): Promise<HandOffAnswers> {
+export async function loadHandOffAnswers(
+  userId: string,
+  commanderId: string,
+  p: ChooseParams,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the card chip's claim read and art; the
+   *  environment alone when omitted (admin PR 7 makes it required). */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<HandOffAnswers> {
   const [vocabulary, card, [row], printings] = await Promise.all([
     p.themes.length > 0 ? loadIntakeThemes().catch(() => []) : Promise.resolve([]),
     // `undefined` when the read failed; `null` when it says there is no such card.
-    p.card ? loadCardChip(userId, p.card).catch(() => undefined) : Promise.resolve(null),
+    p.card ? loadCardChip(userId, p.card, env).catch(() => undefined) : Promise.resolve(null),
     db.execute(sql`
       select cs.deck_count, cs.tags, c.type_line,
         ${p.card ? sql`(select csc.inclusion from commander_support_cards csc

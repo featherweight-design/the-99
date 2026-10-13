@@ -88,10 +88,28 @@ describe("trialFillRows", () => {
   });
 });
 
+// The page loader's arguments before its env, which is checked by identity on its own (never compared).
+const pageArgs = (call: unknown[] | undefined) => (call ?? []).slice(0, 4);
+
 describe("moreRows", () => {
   it("hands the parsed answers and the offset to the page loader", async () => {
     await moreRows("?t=dinosaurs&b=150", 12);
-    expect(stub.page).toHaveBeenCalledWith("user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12, null);
+    expect(pageArgs(stub.page.mock.calls[0])).toEqual(["user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12, null]);
+  });
+
+  it("hands the page loader the reader's resolved env, not the environment", async () => {
+    // The search's claim reads decide NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from it: a dropped
+    // argument would read the environment, which has both the other way.
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    const env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
+    try {
+      await moreRows("?t=dinosaurs", 12);
+      expect(stub.page.mock.calls[0][4] === env).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("orders a slice by the reader's own done read, and by nothing for any other state", async () => {
@@ -100,18 +118,18 @@ describe("moreRows", () => {
     stub.read.mockResolvedValueOnce({ kind: "done", result });
     await moreRows(`?t=dinosaurs&r=${READ}`, 12);
     expect(stub.read).toHaveBeenCalledWith(READ, "user_1");
-    expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.anything(), 12, result);
+    expect(pageArgs(stub.page.mock.lastCall)).toEqual(["user_1", expect.anything(), 12, result]);
     // Pending, or a read that is not this reader's (`none`): the free order.
     for (const state of [{ kind: "pending", phase: null }, { kind: "none" }]) {
       stub.read.mockResolvedValueOnce(state);
       await moreRows(`?t=dinosaurs&r=${READ}`, 12);
-      expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.anything(), 12, null);
+      expect(pageArgs(stub.page.mock.lastCall)).toEqual(["user_1", expect.anything(), 12, null]);
     }
   });
 
   it("ignores the retired card answer (F1)", async () => {
     await moreRows("?t=dinosaurs&a=0000aaaa-0000-4000-8000-000000000001", 0);
-    expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.objectContaining({ card: null }), 0, null);
+    expect(pageArgs(stub.page.mock.lastCall)).toEqual(["user_1", expect.objectContaining({ card: null }), 0, null]);
   });
 
   it("refuses a forged offset or query before any read", async () => {

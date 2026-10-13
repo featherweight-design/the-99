@@ -111,13 +111,14 @@ export async function writeArrivalsReceipt(args: {
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
   /**
-   * Write version 4's `went` (where each arrived card's copies went): the reader's resolved switch,
-   * which the confirm passes. Absent (a probe, outside a request), the environment decides. Off, the
-   * receipt is the version 3 it always was.
+   * The reader's resolved switches (`requestSwitchEnv`), which the confirm passes: ADDED_COPY_ENABLED decides
+   * write version 4's `went` (where each arrived card's copies went; off, the receipt is the version 3
+   * it always was), and every claim read below takes it for the claim model's `locked` key and pending
+   * clause. Absent (a probe, outside a request), the environment decides; admin PR 7 makes it required.
    */
-  addedCopy?: boolean;
+  env?: NodeJS.ProcessEnv;
 }): Promise<ArrivalsSummary> {
-  const { userId, uploadId, ownedAfter, ownedBefore, buyBefore } = args;
+  const { userId, uploadId, ownedAfter, ownedBefore, buyBefore, env } = args;
 
   // Only the cards that GAINED copies. Contention is a question about arrivals, so the
   // claim read is narrowed to them — passing every oracle in the old and new collection
@@ -131,19 +132,19 @@ export async function writeArrivalsReceipt(args: {
   // arrived copy to a deck the availability never saw holding it, or keep A's "No longer to buy"
   // row beside a line saying the copy went to B. Repeatable read fixes all three at the first
   // statement. Off, the money rows are read as they always were.
-  const addedCopyOn = args.addedCopy ?? addedCopyEnabled(process.env);
+  const addedCopyOn = addedCopyEnabled(env);
   type Reservations = Map<string, { deckId: string; copies: number }[]>;
   type Read = { buyAfter: Awaited<ReturnType<typeof loadDeckBuyRows>>; availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations };
   const read: Read = !addedCopyOn
     ? {
-      buyAfter: await loadDeckBuyRows(userId),
-      availability: arrivedIds.length ? await loadAvailability(userId, { oracleIds: arrivedIds }) : new Map(),
+      buyAfter: await loadDeckBuyRows(userId, undefined, undefined, env),
+      availability: arrivedIds.length ? await loadAvailability(userId, { oracleIds: arrivedIds, env }) : new Map(),
       reservations: new Map(),
     }
     : await db.transaction(async (tx): Promise<Read> => {
-        const buyAfter = await loadDeckBuyRows(userId, undefined, tx);
+        const buyAfter = await loadDeckBuyRows(userId, undefined, tx, env);
         if (arrivedIds.length === 0) return { buyAfter, availability: new Map(), reservations: new Map() };
-        const availability = await loadAvailability(userId, { oracleIds: arrivedIds }, tx);
+        const availability = await loadAvailability(userId, { oracleIds: arrivedIds, env }, tx);
         // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`),
         // the one `regrant` needs to say which reservation the smaller supply covered.
         const reservations: Reservations = new Map();

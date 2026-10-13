@@ -2,6 +2,7 @@
 // beside that commander, read the same way. Its reads are stubbed; what is tested is how it turns
 // them into figures and which answers survive.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith } from "@/test/env-view";
 
 const stub = vi.hoisted(() => ({ rows: [] as unknown[], themes: vi.fn(), chip: vi.fn() }));
 vi.mock("../../db", () => ({ db: { execute: vi.fn(async () => ({ rows: stub.rows })) } }));
@@ -24,6 +25,21 @@ beforeEach(() => {
 });
 
 describe("loadHandOffAnswers", () => {
+  it("hands the card chip the reader's env, by identity (admin PR 6f-2)", async () => {
+    // The chip's claim read decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from it: a dropped
+    // argument reads the environment, which has both the other way.
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    const env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    try {
+      await loadHandOffAnswers("u", COMMANDER, ask(), env);
+      expect(stub.chip.mock.calls[0].slice(0, 2)).toEqual(["u", CARD]);
+      expect(stub.chip.mock.calls[0][2] === env).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("prints the results' own figures: a theme's share and the card's inclusion, as whole percents", async () => {
     const a = await loadHandOffAnswers("u", COMMANDER, ask());
     expect(a.themes).toEqual([{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }]);
