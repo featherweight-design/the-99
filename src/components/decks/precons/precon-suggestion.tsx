@@ -49,10 +49,11 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
     return (
       <>
         <ArrivalBandShell align="start">
-          {/* Link it sits to the right of the heading and its figures from 360px up, where it fits on
-              one line and the strip is shortest; below that the width forces it under them. */}
-          <div className="flex min-w-0 flex-1 flex-col gap-[8px] min-[360px]:flex-row min-[360px]:items-center min-[360px]:gap-[14px]">
-            <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
+          {/* ✕ is pinned to the band's top-right corner, out of the flow, so the text never shares a row
+              with it. The text takes the whole width less the ✕'s column (the pr-[40px]); Link it sits on its own line,
+              flush right (Hugh, 2026-10-13: the row layout read squished at 360px and up). */}
+          <div className="flex min-w-0 flex-1 flex-col gap-[8px]">
+            <div className="flex min-w-0 flex-col gap-[4px] pr-[40px]">
               <p className="m-0 text-[13.5px] leading-[1.45] text-[color:var(--fg)]">
                 {m.sameCommanders ? copy.lead(m.name) : copy.leadOtherCommander(m.name)}
               </p>
@@ -60,9 +61,9 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
                 {m.sameCommanders ? copy.metaSame(m.shared, m.of, m.commanders.length === 2) : copy.metaOther(m.shared, m.of, m.commanders.join(" + "))}
               </p>
             </div>
-            <button type="button" onClick={() => setConfirming(m)} className={`${LINK} self-start min-[360px]:self-auto`}>{copy.link}</button>
+            <button type="button" onClick={() => setConfirming(m)} className={`${LINK} self-end`}>{copy.link}</button>
           </div>
-          <button type="button" onClick={dismiss} aria-label={copy.dismissAria(m.name)} className={CLOSE}>✕</button>
+          <button type="button" onClick={dismiss} aria-label={copy.dismissAria(m.name)} className={`${CLOSE} absolute right-[4px] top-[2px] md:right-[22px] md:top-[4px]`}>✕</button>
         </ArrivalBandShell>
         {dialog}
       </>
