@@ -5,7 +5,7 @@ import { dailyLimitsFor, modelOwnerUserId, ownerShareMicro, readAllowance } from
 import { ALLOWANCE_WINDOW_MS, type LedgerRow } from "../model/allowance-rule";
 import { explainForAccounts, hubForAccount } from "../switches/explain";
 import { readSwitchSnapshot } from "../switches/snapshot";
-import { listAccounts, type Account } from "./accounts";
+import { listAccounts, orderAccounts, type Account } from "./accounts";
 import {
   accountRows,
   accountTiles,
@@ -56,13 +56,21 @@ async function windowRows(now: Date): Promise<(LedgerRow & { userId: string })[]
   return rows as (LedgerRow & { userId: string })[];
 }
 
+/**
+ * The list's order (A1): the allowance owner (`MODEL_OWNER_USER_ID`) first, then A to Z. `listAccounts`
+ * puts every admin id first, which is the Switches page's order; this page names the one owner.
+ */
+export function inListOrder(accounts: readonly Account[], owner: string | null = modelOwnerUserId()): Account[] {
+  return orderAccounts(accounts, new Set(owner ? [owner] : []));
+}
+
 /** `overridesRead` is false when `readSwitchSnapshot()` failed: groups and switches then read as the env alone, and the page says so. */
 export type AccountsListData = { rows: AccountRow[]; clerk: "ok" | "down"; overridesRead: boolean; month: string };
 
 /** `/admin/accounts` (A1 to A3). */
 export async function loadAccountsList(now: Date = new Date()): Promise<AccountsListData> {
   const { start, end } = monthBounds(now);
-  const [{ accounts, clerk }, snapshot, heads, spendRows, ledger] = await Promise.all([
+  const [{ accounts: listed, clerk }, snapshot, heads, spendRows, ledger] = await Promise.all([
     listAccounts(),
     readSwitchSnapshot(),
     loadGroupHeads(),
@@ -73,6 +81,7 @@ export async function loadAccountsList(now: Date = new Date()): Promise<Accounts
       .groupBy(modelCalls.userId),
     windowRows(now),
   ]);
+  const accounts = inListOrder(listed);
   const ids = accounts.map((a) => a.id);
   const limits = await dailyLimitsFor(db, ids);
   return {
@@ -106,10 +115,6 @@ export type AccountPage = {
   overridesRead: boolean;
 };
 
-/**
- * `/admin/accounts/<clerkId>` (A4 to A7). Null when the id is no account this environment knows: not
- * in the universe, and named by no membership, override or `model_calls` row.
- */
 /** Whether a membership or an account override names this id: the existence check when the snapshot is unread. */
 async function namedByRows(userId: string): Promise<boolean> {
   const { rows } = await db.execute(sql`
@@ -119,6 +124,10 @@ async function namedByRows(userId: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+/**
+ * `/admin/accounts/<clerkId>` (A4 to A7). Null when the id is no account this environment knows: not
+ * in the universe, and named by no membership, override or `model_calls` row.
+ */
 export async function loadAccountPage(userId: string, now: Date = new Date()): Promise<AccountPage | null> {
   // `system` is the batch spend's sentinel (`scripts/lib/system-spend.ts`), never an account, though
   // it has `model_calls` rows; the list leaves it out too (`accounts.ts`).
