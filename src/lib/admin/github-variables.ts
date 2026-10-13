@@ -44,8 +44,10 @@ export function pickJobValues(body: unknown): Record<JobVariable, string | null>
   for (const v of list) {
     if (typeof v !== "object" || v === null) continue;
     const { name, value } = v as { name?: unknown; value?: unknown };
-    if (typeof name !== "string" || typeof value !== "string") continue;
-    if (!(JOB_VARIABLE_NAMES as readonly string[]).includes(name)) continue;
+    // Unlisted names are ignored whatever their shape. A LISTED name with a value that is not a
+    // string rejects the whole body: reading it as unset would draw "not set" over a variable that is set.
+    if (typeof name !== "string" || !(JOB_VARIABLE_NAMES as readonly string[]).includes(name)) continue;
+    if (typeof value !== "string") return null;
     out[name as JobVariable] = value.slice(0, MAX_VALUE_CHARS);
   }
   return out;

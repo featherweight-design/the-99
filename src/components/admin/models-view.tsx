@@ -23,47 +23,67 @@ const modelText = (r: ModelRowDef) => (r.batch ? copy.batch(r.model) : r.model);
 const effortText = (r: ModelRowDef) => r.effort ?? copy.noEffort;
 const spentText = (r: ModelsRow) => (r.partial ? copy.partial(usd(r.micro)) : usd(r.micro));
 
+/** A value with its column's name before it, for a screen reader: the visible column heads are `aria-hidden`. */
+function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <>
+      <span className="sr-only">{`${label} `}</span>
+      {children}
+    </>
+  );
+}
+
+const DOT = <span aria-hidden>{" · "}</span>;
+
 /** One feature or job: a card on a phone, a grid row with its location line under it from `md` up. */
-function ModelLine({ row, first }: { row: ModelsRow; first: boolean }) {
+function ModelLine({ row, first, month }: { row: ModelsRow; first: boolean; month: string }) {
+  const h = copy.cols;
   const name = copy.rows[row.key];
   const origin = copy.origin[row.origin];
   return (
     <li data-model-row={row.key} className={first ? undefined : ROW_LINE}>
-      <div className="flex flex-col gap-[4px] px-[14px] py-[11px] md:hidden">
+      <div data-form="phone" className="flex flex-col gap-[4px] px-[14px] py-[11px] md:hidden">
         <div className="flex items-baseline justify-between gap-[10px]">
-          <span className="min-w-0 text-[14px] font-medium text-[color:var(--fg)]">{name}</span>
-          <span className="flex-none font-mono text-[13px] text-[color:var(--fg)]">{spentText(row)}</span>
+          <span className="min-w-0 text-[14px] font-medium text-[color:var(--fg)]"><Labeled label={h.feature}>{name}</Labeled></span>
+          <span className="flex-none font-mono text-[13px] text-[color:var(--fg)]"><Labeled label={month}>{spentText(row)}</Labeled></span>
         </div>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">
-          {`${modelText(row)} · ${effortText(row)} · ${origin} · ${row.at}`}
+          <Labeled label={h.model}>{modelText(row)}</Labeled>
+          {DOT}
+          <Labeled label={h.effort}>{effortText(row)}</Labeled>
+          {DOT}
+          <Labeled label={h.origin}>{origin}</Labeled>
+          {DOT}
+          <Labeled label={h.at}>{row.at}</Labeled>
         </span>
       </div>
-      <div className={`hidden items-baseline px-[14px] pb-[11px] pt-[11px] md:grid ${MODEL_GRID}`}>
-        <span className="min-w-0 text-[13.5px] font-medium text-[color:var(--fg)]">{name}</span>
-        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg-body)]">{origin}</span>
-        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{modelText(row)}</span>
-        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg-body)]">{effortText(row)}</span>
-        <span className="min-w-0 text-right font-mono text-[12.5px] text-[color:var(--fg)]">{spentText(row)}</span>
-        <span className="col-span-full mt-[-6px] font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{row.at}</span>
+      <div data-form="desktop" className={`hidden items-baseline px-[14px] pb-[11px] pt-[11px] md:grid ${MODEL_GRID}`}>
+        <span className="min-w-0 text-[13.5px] font-medium text-[color:var(--fg)]"><Labeled label={h.feature}>{name}</Labeled></span>
+        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg-body)]"><Labeled label={h.origin}>{origin}</Labeled></span>
+        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg-body)] [overflow-wrap:anywhere]"><Labeled label={h.model}>{modelText(row)}</Labeled></span>
+        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg-body)]"><Labeled label={h.effort}>{effortText(row)}</Labeled></span>
+        <span className="min-w-0 text-right font-mono text-[12.5px] text-[color:var(--fg)]"><Labeled label={month}>{spentText(row)}</Labeled></span>
+        <span className="col-span-full mt-[-6px] font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]"><Labeled label={h.at}>{row.at}</Labeled></span>
       </div>
     </li>
   );
 }
 
 function JobLine({ name, readAt, value, first }: { name: string; readAt: string; value: string; first: boolean }) {
+  const j = copy.jobCols;
   return (
     <li data-job={name} className={first ? undefined : ROW_LINE}>
-      <div className="flex flex-col gap-[4px] px-[14px] py-[11px] md:hidden">
+      <div data-form="phone" className="flex flex-col gap-[4px] px-[14px] py-[11px] md:hidden">
         <div className="flex items-baseline justify-between gap-[10px]">
-          <span className="min-w-0 font-mono text-[12px] text-[color:var(--fg)] [overflow-wrap:anywhere]">{name}</span>
-          <span className="flex-none font-mono text-[13px] text-[color:var(--fg)]">{value}</span>
+          <span className="min-w-0 font-mono text-[12px] text-[color:var(--fg)] [overflow-wrap:anywhere]"><Labeled label={j.variable}>{name}</Labeled></span>
+          <span className="flex-none font-mono text-[13px] text-[color:var(--fg)]"><Labeled label={j.value}>{value}</Labeled></span>
         </div>
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{readAt}</span>
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]"><Labeled label={j.readAt}>{readAt}</Labeled></span>
       </div>
-      <div className={`hidden items-baseline px-[14px] py-[11px] md:grid ${JOB_GRID}`}>
-        <span className="min-w-0 font-mono text-[12px] text-[color:var(--fg)] [overflow-wrap:anywhere]">{name}</span>
-        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg-body)]">{value}</span>
-        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg)] [overflow-wrap:anywhere]">{readAt}</span>
+      <div data-form="desktop" className={`hidden items-baseline px-[14px] py-[11px] md:grid ${JOB_GRID}`}>
+        <span className="min-w-0 font-mono text-[12px] text-[color:var(--fg)] [overflow-wrap:anywhere]"><Labeled label={j.variable}>{name}</Labeled></span>
+        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg-body)]"><Labeled label={j.value}>{value}</Labeled></span>
+        <span className="min-w-0 font-mono text-[12.5px] text-[color:var(--fg)] [overflow-wrap:anywhere]"><Labeled label={j.readAt}>{readAt}</Labeled></span>
       </div>
     </li>
   );
@@ -85,7 +105,7 @@ export function ModelsView({ rows, jobs, month, env }: { rows: readonly ModelsRo
         </div>
         <ul className="m-0 list-none border-0 border-solid border-[color:var(--border)] p-0 md:[border-top-width:1px]">
           {rows.map((r, i) => (
-            <ModelLine key={r.key} row={r} first={i === 0} />
+            <ModelLine key={r.key} row={r} first={i === 0} month={month} />
           ))}
         </ul>
       </div>

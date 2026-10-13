@@ -30,7 +30,9 @@ describe("ModelsView", () => {
     const t = MODEL_ROWS.find((r) => r.key === "tuning")!;
     expect(tuning.getByText(t.model)).toBeTruthy();
     expect(tuning.getByText(t.at)).toBeTruthy();
-    expect(tuning.getByText(`${t.model} · ${t.effort} · player · ${t.at}`)).toBeTruthy();
+    expect(table.querySelector("[data-model-row='tuning'] [data-form='phone']")!.textContent).toContain(
+      `${copy.cols.model} ${t.model} · ${copy.cols.effort} ${t.effort} · ${copy.cols.origin} player · ${copy.cols.at} ${t.at}`,
+    );
     const labels = within(table.querySelector<HTMLElement>("[data-model-row='labels']")!);
     expect(labels.getByText(copy.batch(MODEL_ROWS.find((r) => r.key === "labels")!.model))).toBeTruthy();
     expect(labels.getAllByText("$120.95 so far")).toHaveLength(2);
@@ -56,6 +58,35 @@ describe("ModelsView", () => {
       expect(within(li).getAllByText("—")).toHaveLength(2);
       expect(within(li).queryByText("true")).toBeNull();
     }
+  });
+});
+
+describe("ModelsView for a screen reader", () => {
+  // The visible column heads are aria-hidden, so every value carries its column's name before it.
+
+  it("names every value's column, in both forms of both tables", () => {
+    render(<ModelsView rows={ROWS} jobs={{ values: VALUES }} month="October" env="staging" />);
+    const t = MODEL_ROWS.find((r) => r.key === "tuning")!;
+    const tuning = screen.getByTestId("model-rows").querySelector("[data-model-row='tuning']")!;
+    const expectedModel = [
+      `${copy.cols.feature} ${copy.rows.tuning}`, `${copy.cols.origin} player`, `${copy.cols.model} ${t.model}`,
+      `${copy.cols.effort} ${t.effort}`, "October $0.549", `${copy.cols.at} ${t.at}`,
+    ];
+    for (const form of ["phone", "desktop"]) {
+      const text = tuning.querySelector(`[data-form='${form}']`)!.textContent!;
+      for (const want of expectedModel) expect(text, `${form}: ${want}`).toContain(want);
+    }
+    const desktopCells = [...tuning.querySelector("[data-form='desktop']")!.children];
+    expect(desktopCells.map((c) => c.firstElementChild?.className)).toEqual(Array(6).fill("sr-only"));
+
+    const prose = screen.getByTestId("job-rows").querySelector("[data-job='PROSE_MAX_USD']")!;
+    for (const form of ["phone", "desktop"]) {
+      const text = prose.querySelector(`[data-form='${form}']`)!.textContent!;
+      for (const want of [`${copy.jobCols.variable} PROSE_MAX_USD`, `${copy.jobCols.value} 0`, `${copy.jobCols.readAt} .github/workflows/commander-index.yml`]) {
+        expect(text, `${form}: ${want}`).toContain(want);
+      }
+    }
+    expect([...prose.querySelector("[data-form='desktop']")!.children].map((c) => c.firstElementChild?.className)).toEqual(Array(3).fill("sr-only"));
   });
 });
 

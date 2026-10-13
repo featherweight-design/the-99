@@ -13,7 +13,7 @@ const BODY = {
     { name: "CATALOG_REFRESH_ENABLED", value: "true" },
     { name: "PROSE_MAX_USD", value: "0" },
     { name: "SOME_OTHER_VARIABLE", value: "leak-me" },
-    { name: "CARD_LABELS_ENABLED", value: 7 },
+    { name: "ANOTHER_UNLISTED", value: 7 },
   ],
 };
 
@@ -71,6 +71,7 @@ describe("readJobValues", () => {
     ["a timeout", async () => { throw new DOMException(`timed out ${TOKEN}`, "TimeoutError"); }],
     ["bad JSON", async () => new Response("not json", { status: 200 })],
     ["the wrong shape", async () => json({ variables: "nope" })],
+    ["a listed variable with a malformed value", async () => json({ variables: [{ name: "PROSE_MAX_USD", value: 0 }] })],
   ];
   for (const [what, respond] of failures) {
     it(`draws M2 on ${what}, with one fixed log line that carries nothing of the token or the response`, async () => {
@@ -105,6 +106,13 @@ describe("pickJobValues", () => {
     expect(pickJobValues([])).toBeNull();
     expect(pickJobValues({})).toBeNull();
   });
+  it("rejects the whole body when a LISTED variable's value is not a string, and ignores a malformed unlisted one", () => {
+    for (const value of [7, null, true, { v: "true" }, undefined]) {
+      expect(pickJobValues({ variables: [{ name: "CATALOG_REFRESH_ENABLED", value: "true" }, { name: "CARD_LABELS_ENABLED", value }] })).toBeNull();
+    }
+    expect(pickJobValues({ variables: [{ name: "UNLISTED", value: 7 }, { name: "CARD_LABELS_ENABLED", value: "true" }] })!.CARD_LABELS_ENABLED).toBe("true");
+  });
+
   it("cuts a long value", () => {
     expect(pickJobValues({ variables: [{ name: "PROSE_MAX_USD", value: "9".repeat(200) }] })!.PROSE_MAX_USD).toHaveLength(64);
   });

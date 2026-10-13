@@ -314,7 +314,7 @@ export const adminCopy = {
     sub: "Which feature or job calls which model, at which effort, and where the constant lives. A model change shows here first.",
     features: "Features and jobs",
     featuresMeta: (month: string, env: string) => `${month} so far, ${env}`,
-    cols: { feature: "Feature or job", origin: "Origin", model: "Model", effort: "Effort" },
+    cols: { feature: "Feature or job", origin: "Origin", model: "Model", effort: "Effort", at: "Where it lives" },
     rows: {
       overview8: "Overview, contract 8",
       overview7: "Overview, contract 7",

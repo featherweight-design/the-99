@@ -83,6 +83,17 @@ describe("rowSpend", () => {
     expect(rowSpend(row("prose"), detail).micro).toBe(2_000_000);
     expect(rowSpend(row("cuts"), detail).micro).toBe(0);
   });
+  it("marks both Help me choose rows partial when step-less runs from before the parts table hold spend, and splits none of it", () => {
+    const legacy = { ...detail, features: [...detail.features, f({ feature: "intake", model: "claude-sonnet-5", step: null, micro: 40_000 })] };
+    expect(rowSpend(row("shortlist"), legacy)).toEqual({ micro: 3_000, partial: true });
+    expect(rowSpend(row("judgement"), legacy)).toEqual({ micro: 10_000, partial: true });
+    // A step-less run of a feature no row splits by step marks nothing.
+    expect(rowSpend(row("overview7"), detail).partial).toBe(false);
+    // A free step-less row costs nothing to leave out.
+    const free = { ...detail, features: [...detail.features, f({ feature: "intake", step: null, micro: 0 })] };
+    expect(rowSpend(row("shortlist"), free).partial).toBe(false);
+  });
+
   it("reads card labels from the Costs labels series, partial while a run collects", () => {
     expect(rowSpend(row("labels"), detail)).toEqual({ micro: 120_950_000, partial: true });
   });

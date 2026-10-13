@@ -118,15 +118,20 @@ export const JOB_VARIABLE_NAMES: readonly JobVariable[] = JOB_VARIABLES.map((v) 
 
 /**
  * A row's spend this month, in micro-dollars, from the Costs detail the Costs page draws. `partial`
- * when a label run is still collecting or could not be priced, as the Costs page marks it.
+ * when a label run is still collecting or could not be priced, as the Costs page marks it, or when a
+ * row split by step shares its feature with step-less runs from before the parts table.
  */
 export function rowSpend(def: ModelRowDef, detail: Pick<CostDetail, "features" | "series" | "labelsIncomplete">): { micro: number; partial: boolean } {
   const m = def.spend;
   if ("labels" in m) return { micro: detail.series.labels, partial: detail.labelsIncomplete };
-  const micro = detail.features
+  const mine = detail.features
     .filter((f) => f.feature === m.feature && f.origin === m.origin)
-    .filter((f) => !m.models || m.models.includes(f.model))
+    .filter((f) => !m.models || m.models.includes(f.model));
+  const micro = mine
     .filter((f) => !m.steps || (f.step !== null && m.steps.includes(f.step)))
     .reduce((n, f) => n + f.micro, 0);
-  return { micro, partial: false };
+  // A run from before `model_call_parts` has no step, so it cannot be split between a feature's steps.
+  // Its dollars are not guessed onto either row: both rows read as a floor (`partial`) instead.
+  const unsplit = !!m.steps && mine.some((f) => f.step === null && f.micro > 0);
+  return { micro, partial: unsplit };
 }
