@@ -1674,7 +1674,9 @@ export function CardDetailProvider({
           nextSibling={nextSibling}
           enterFrom={enterFrom}
           enterOffset={enterOffset}
-          startMinimized={minimized}
+          // Only a page carries the min snap (Prev, Next, a peek, a swipe): `enterFrom` is set for
+          // those alone. A step back to a partner or any other remount opens at the teaser.
+          startMinimized={minimized && enterFrom !== null}
           onMinimizedChange={setMinimized}
         />
       ) : null}
@@ -1742,7 +1744,9 @@ export function CardDetailProvider({
           nextSibling={nextSibling}
           enterFrom={enterFrom}
           enterOffset={enterOffset}
-          startMinimized={minimized}
+          // Only a page carries the min snap (Prev, Next, a peek, a swipe): `enterFrom` is set for
+          // those alone. A step back to a partner or any other remount opens at the teaser.
+          startMinimized={minimized && enterFrom !== null}
           onMinimizedChange={setMinimized}
         />
       ) : null}

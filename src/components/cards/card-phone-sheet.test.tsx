@@ -458,6 +458,22 @@ describe("the sheet's min snap", () => {
     expect(onNext).toHaveBeenCalledTimes(1);
   });
 
+  // Out of sight is not enough: the clipped teaser below the shelf must be out of reach too.
+  it("puts the teaser below the min shelf out of reach", () => {
+    mount();
+    expect(screen.getByRole("button", { name: cardSheetCopy.expand }).closest("[inert]")).toBeNull();
+    minimize();
+    expect(screen.getByText(cardSheetCopy.expand).closest("[inert]")).not.toBeNull();
+  });
+
+  // A remount that is not a page opens at the teaser and says so, so the provider stops carrying a
+  // min the reader can no longer see into the next page.
+  it("reports the snap it mounted at", () => {
+    const onMinimizedChange = vi.fn();
+    mount({ onMinimizedChange });
+    expect(onMinimizedChange).toHaveBeenCalledWith(false);
+  });
+
   // Paging remounts the modal per card, so the provider hands the next card the snap it left.
   it("opens at min when the card before it was left there", () => {
     mount({ startMinimized: true });

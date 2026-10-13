@@ -948,6 +948,15 @@ export function CardModal({
    * controls and gestures; everything else reads `sheetOpen`, which is false at desktop widths.
    */
   const [snap, setSnapState] = useState<SheetSnap>(startMinimized ? "min" : "teaser");
+  // A card mounts at the snap it was handed, and says so: a remount that is not a page (a step back
+  // from a partner, say) starts at the teaser, and the provider must not go on carrying a min the
+  // reader can no longer see into the next page.
+  const reportedMount = useRef(false);
+  useEffect(() => {
+    if (reportedMount.current) return;
+    reportedMount.current = true;
+    onMinimizedChange?.(startMinimized);
+  }, [onMinimizedChange, startMinimized]);
   // Whether the sheet's last move reached or left the min snap: those moves are gentle (the motion
   // rule's beat and ease-in-out), and teaser to full keeps its shipped 240ms snap.
   const [gentle, setGentle] = useState(false);
@@ -2344,8 +2353,17 @@ export function CardModal({
           )}
           {/* The stand-ins door (swap tools), which sat under the retired art header: at the
               sheet's head, at both snaps, with the teaser grown by its 44px to hold it. */}
-          {/* Not at the min snap, whose shelf is the title row alone. */}
-          {doorStrip !== null ? <div ref={doorRef} className={(min ? "hidden" : "md:hidden") + " flex-none"}>{doorStrip}</div> : null}
+          {/* Not at the min snap, whose shelf is the title row alone: there it leaves the flow and
+              the accessibility tree but keeps its box, so the teaser's height (which counts it) does
+              not drop by the strip and jump back when the reader returns to the teaser. */}
+          {doorStrip !== null ? (
+            <div
+              ref={doorRef}
+              className={(min ? "invisible absolute inset-x-0 top-0" : "md:hidden") + " flex-none"}
+            >
+              {doorStrip}
+            </div>
+          ) : null}
           {/* Desktop close button — §Desktop: Close Button. Over a sheet that names itself it
               becomes the way back to that sheet, in the same slot and on the same plate. */}
           {back ? (
@@ -2454,7 +2472,8 @@ export function CardModal({
 
             {/* THE SHEET'S SECOND LINE, at both snaps (README R2 "Teaser price"): the shipped price
                 plate, moved here from under the retired art header, beside what the reader owns. */}
-            <div className="md:hidden mt-[12px] flex flex-wrap items-center gap-[12px]">
+            {/* Below the min shelf's title row, so out of reach there as well as out of sight. */}
+            <div inert={min} className="md:hidden mt-[12px] flex flex-wrap items-center gap-[12px]">
               {priceTag && (
                 <div data-testid="modal-price-mobile">
                   {/* THE PLATE, as the art-wash ratification defines it: opaque `--bg` under one
@@ -2481,7 +2500,7 @@ export function CardModal({
                 pinned above the home inset. A short text leaves its slack above the button, which
                 is also the keyboard's and the screen reader's way to the rest. */}
             {!full && (
-              <div className="md:hidden flex min-h-0 flex-1 flex-col">
+              <div inert={min} className="md:hidden flex min-h-0 flex-1 flex-col">
                 {card.oracleText && (
                   <div
                     data-testid="teaser-oracle"
