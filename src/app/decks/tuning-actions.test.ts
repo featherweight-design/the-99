@@ -155,6 +155,7 @@ vi.mock("../../lib/tuning/verdicts", () => ({
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { NOTES_RAW_MAX } from "../../lib/tuning/limits";
 import {
   applySuggestion,
   readTuningPanel,
@@ -302,6 +303,15 @@ describe("runTuning's model call (v2)", () => {
     } finally {
       calls.resolveText = undefined;
     }
+  });
+
+  it("refuses a raw notes body past the wire bound without reading it", async () => {
+    calls.startKind = "started";
+    const before = calls.resolveAsked.length;
+    // Interior whitespace collapses to one space when drawn, so only the raw bound can tell this from a valid note.
+    expect(await runTuning(DECK, { anyway: true, notes: `a${" ".repeat(NOTES_RAW_MAX)}b` })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    expect(calls.resolveAsked.length).toBe(before);
+    expect(calls.started).toBe(0);
   });
 
   it("refuses a notes string over its own character cap", async () => {

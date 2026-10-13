@@ -33,7 +33,7 @@ import { resolveTaggedText } from "../../lib/cards/tagged-text";
 import { plainText, tagCount } from "../../lib/decks/notes-body";
 import { tuningEnabled } from "../../lib/tuning/flag";
 import { gateReason } from "../../lib/tuning/gate";
-import { intentTooLong, MAX_SUGGESTIONS, NOTES_TAGS_MAX, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
+import { intentTooLong, MAX_SUGGESTIONS, NOTES_TAGS_MAX, MODEL_TIMEOUT_MS, NOTES_RAW_MAX, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
@@ -204,6 +204,8 @@ export async function runTuning(
   // The body may carry `[[id|Name]]` tags (the box takes the `[[` picker). The cap is on what it DRAWS, in
   // code points, and a body holds at most `NOTES_TAGS_MAX` tags; a tag's id adds no drawn text, so those two
   // bound the raw length as well.
+  // The raw bound comes first: nothing below should scan or copy a string a forged request made huge.
+  if (rawNotes !== undefined && rawNotes.length > NOTES_RAW_MAX) return { ok: false, message: deckTuningCopy.run.refused };
   const trimmedBody = rawNotes === undefined ? null : rawNotes.trim();
   const notesCap = deckDescriptionCopy.notes.maxLength;
   if (trimmedBody !== null && (tagCount(trimmedBody) > NOTES_TAGS_MAX || countCharacters(plainText(trimmedBody)) > notesCap)) {
