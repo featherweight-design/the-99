@@ -56,8 +56,8 @@ export function DeckSiblingsProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * The decklist hands over the list it draws. A no-op outside a provider. When the decklist
- * unmounts (another tab, or an emptied deck) the list goes with it, so the commander pages alone
+ * The decklist hands over the list it draws. A no-op outside a provider. When the publisher
+ * unmounts (another tab, an emptied deck, or a view that draws no list) the list goes with it, so the commander pages alone
  * rather than through a list that may have changed since.
  */
 export function usePublishDeckSiblings(list: readonly SiblingCard[]) {
@@ -66,6 +66,12 @@ export function usePublishDeckSiblings(list: readonly SiblingCard[]) {
     store?.publish(list);
   }, [store, list]);
   useEffect(() => () => store?.publish(EMPTY), [store]);
+}
+
+/** `usePublishDeckSiblings` as an element, so each branch of a view publishes the list IT draws. */
+export function PublishDeckSiblings({ list }: { list: readonly SiblingCard[] }) {
+  usePublishDeckSiblings(list);
+  return null;
 }
 
 /**

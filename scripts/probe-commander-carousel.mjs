@@ -7,7 +7,10 @@
 //
 //   - the counter reads "1 of N", where N is the commanders plus the deck's listed cards;
 //   - Next steps to the decklist's FIRST card, the one its first row opens;
-//   - Prev from there steps back to the commander.
+//   - Prev from there steps back to the commander;
+//
+// in All, and again in Shopping when the deck has something to buy (Shopping draws its own list in
+// its own order, and the commander pages into that one).
 //
 //   PROBE_BASE=http://localhost:3071 PROBE_DECK_ID=<id> node scripts/probe-commander-carousel.mjs
 //
@@ -90,6 +93,39 @@ async function closeModal(page) {
   await page.locator("#card-modal-title").waitFor({ state: "detached", timeout: 30_000 });
 }
 
+/** From one view of the decklist: its first row's card and total, then the commander's carousel. */
+async function checkView(page, label, view) {
+  const tag = `${label}, ${view}`;
+  // The decklist's own first card, and how many it pages through, from its first row.
+  await onPage(page, "[data-decklist-row]").filter({ visible: true }).first().click();
+  const first = await readModal(page);
+  await closeModal(page);
+  const listTotal = Number(first.counter?.split(" of ")[1]?.replace(/,/g, ""));
+
+  // The commander's own control, scoped to this width's header: both headers are in the document,
+  // and a pair's partner name is a card-details press too.
+  const header = label === "phone" ? "[data-testid=spine-band]" : "[data-deck-spine-desktop]";
+  await onPage(page, `${header} button[aria-label='View card details']`)
+    .filter({ visible: true })
+    .first()
+    .click();
+  const commander = await readModal(page);
+  const total = Number(commander.counter?.split(" of ")[1]?.replace(/,/g, ""));
+  if (!commander.counter?.startsWith("1 of ")) fail(`${tag}: the commander reads ${commander.counter ?? "no counter"}, not 1 of N`);
+  else if (!(total > listTotal)) fail(`${tag}: the commander pages ${total}, the list ${listTotal}; the deck was not added`);
+  else ok(`${tag}: the commander reads ${commander.counter} (the list alone is ${listTotal})`);
+
+  // A pair puts its partner second; Next past every commander lands on the list's first card.
+  let at = commander;
+  for (let i = 0; i < total - listTotal; i++) at = await step(page, "Next card", at.title);
+  if (at.title !== first.title) fail(`${tag}: Next from the commanders opened ${at.title}, the list starts at ${first.title}`);
+  else ok(`${tag}: Next steps to the list's first card, ${at.title}`);
+  for (let i = 0; i < total - listTotal; i++) at = await step(page, "Previous card", at.title);
+  if (at.title !== commander.title) fail(`${tag}: Prev came back to ${at.title}, not ${commander.title}`);
+  else ok(`${tag}: Prev steps back to ${commander.title}`);
+  await closeModal(page);
+}
+
 await clerkSetup();
 const browser = await chromium.launch();
 let aboutCapture = null;
@@ -111,34 +147,14 @@ try {
     await clearAboutSheet(page, userId);
     await onPage(page, "[data-decklist-row]").first().waitFor({ timeout: 60_000 });
 
-    // The decklist's own first card, and how many it pages through, from its first row.
-    await onPage(page, "[data-decklist-row]").filter({ visible: true }).first().click();
-    const first = await readModal(page);
-    await closeModal(page);
-    const listTotal = Number(first.counter?.split(" of ")[1]?.replace(/,/g, ""));
-
-    // The commander, from the header's own control.
-    // The commander's own control, scoped to this width's header: both headers are in the document,
-    // and a pair's partner name is a card-details press too.
-    const header = label === "phone" ? "[data-testid=spine-band]" : "[data-deck-spine-desktop]";
-    await onPage(page, `${header} button[aria-label='View card details']`)
-      .filter({ visible: true })
-      .first()
-      .click();
-    const commander = await readModal(page);
-    const total = Number(commander.counter?.split(" of ")[1]?.replace(/,/g, ""));
-    if (!commander.counter?.startsWith("1 of ")) fail(`${label}: the commander reads ${commander.counter ?? "no counter"}, not 1 of N`);
-    else if (!(total > listTotal)) fail(`${label}: the commander pages ${total}, the list ${listTotal}; the deck was not added`);
-    else ok(`${label}: the commander reads ${commander.counter} (the list alone is ${listTotal})`);
-
-    // A pair puts its partner second; Next past every commander lands on the list's first card.
-    let at = commander;
-    for (let i = 0; i < total - listTotal; i++) at = await step(page, "Next card", at.title);
-    if (at.title !== first.title) fail(`${label}: Next from the commanders opened ${at.title}, the list starts at ${first.title}`);
-    else ok(`${label}: Next steps to the list's first card, ${at.title}`);
-    for (let i = 0; i < total - listTotal; i++) at = await step(page, "Previous card", at.title);
-    if (at.title !== commander.title) fail(`${label}: Prev came back to ${at.title}, not ${commander.title}`);
-    else ok(`${label}: Prev steps back to ${commander.title}`);
+    await checkView(page, label, "all cards");
+    // The Shopping view draws its own list in its own order; the commander pages into that one.
+    const shopping = onPage(page, "[data-shopping-filter]").filter({ visible: true }).first();
+    if ((await shopping.count()) && /\b[1-9]/.test(await shopping.innerText())) {
+      await shopping.click();
+      await page.waitForTimeout(500);
+      await checkView(page, label, "Shopping");
+    } else console.log(`  skip ${label}: the deck has nothing to buy, so the Shopping view is unmeasured here (decklist.test.tsx pins its order)`);
     await context.close();
   }
 } finally {
