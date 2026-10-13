@@ -57,8 +57,10 @@ export function perfRoute(route: string): Perf {
  * One read, timed on its own: `[perf] read <label>=<ms> pool=<idle>/<total>`, logged when it settles.
  * For reads no page's tracker reaches (the shell, a layout, a cache key), whose cost is paid before or
  * beside the page's own spans. `pool` is the shared database pool's idle and open connections just
- * before the read: `0/0` means this read had to open a websocket first, which is the cost a cold
- * instance pays. Off, it is `fn()` and nothing else.
+ * before the read. An idle count of 0 means no warm connection was free, so this read opened a
+ * websocket (or waited on one): the cost a cold instance pays. Read the IDLE half, not `0/0`: a
+ * sibling read started first in the same `Promise.all` has already counted its own new connection
+ * in the total. Off, it is `fn()` and nothing else.
  */
 export function perfRead<T>(label: string, fn: () => Promise<T>): Promise<T> {
   if (!enabled()) return fn();
