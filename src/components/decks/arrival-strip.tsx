@@ -87,7 +87,7 @@ export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
 export function ArrivalBandShell({ children, align = "center" }: { children: React.ReactNode; align?: "center" | "start" }) {
   return (
     <div
-      className={`flex ${align === "center" ? "items-center" : "items-start"} gap-[9px] px-[16px] py-[10px] md:gap-[11px] md:px-[30px] md:py-[12px]`}
+      className={`relative flex ${align === "center" ? "items-center" : "items-start"} gap-[9px] px-[16px] py-[10px] md:gap-[11px] md:px-[30px] md:py-[12px]`}
       style={{ background: "var(--surface-rail)", borderBottom: "1px solid var(--border)" }}
     >
       {children}

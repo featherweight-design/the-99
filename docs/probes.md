@@ -14,6 +14,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   started, checked first with `ps -o pid=,comm= -p <pid>`.
 
 ---
+- `pnpm probe:precon-notice` walks the one-suggestion precon notice on a deck page at 390 and 1300 (bug batch D
+  item 2, Hugh 2026-10-13): the ✕ sits in the band's top-right corner, `Link it` is flush with the band's right
+  padding edge on a line below it, and the text stops before the ✕'s column. local-dev holds no precon catalog, so
+  it writes a fixture deck and a fixture precon with the same list (`probe-precon-notice.json`) under the account it
+  signs in as and deletes both in a `finally`; it refuses staging and production by `neon.branch_id`. Needs
+  `PRECONS_ENABLED=true` on the server, started fresh for the run (the precon catalog is memoized per server for ten minutes). Moving `Link it` back to `self-start` fails it at both widths.
 - `pnpm probe:search-clear` presses a search field's ✕ ONCE with a real pointer (a touch tap at phone width, a
   mouse click at desktop) and reports the field's value, whether it is still the focused element, and whether the ✕
   held its box (`PROBE_BASE`, a signed-in `+clerk_test` user like its siblings; mutate-free, it only types into a
