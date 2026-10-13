@@ -95,7 +95,7 @@ const REQUIREMENT_RULE =
  * marks it "Required card", and a commander qualifies only if its decks run it (the keys listed under it).
  */
 const CARD_REQUIREMENT_RULE =
-  "A card the request marks as a required card is a requirement: return only commanders whose decks run it (the keys listed under it), and none if no commander's decks do.";
+  "A card the request marks as a required card is a requirement, and the commanders you are given are already only those whose decks run it; the keys listed under the card are just the most common of them. Never name a commander that is not in your list, and none if the list is empty.";
 
 const SHORTLIST_RULES = [
   "You help a Magic: The Gathering Commander player choose a commander for a new deck.",
@@ -160,8 +160,8 @@ export function shortlistRequest(args: { words: string; filters: ReadFilters; ca
  * which are the keys the request listed under it. Held in code and not left to the model following the rule.
  * No required card, the pool as it was.
  */
-export function allowedKeys(pool: ReadonlySet<number>, cards: readonly ReadCard[]): ReadonlySet<number> {
-  let allowed = pool;
+export function allowedKeys(pool: ReadonlySet<number>, cards: readonly ReadCard[]): Set<number> {
+  let allowed = new Set(pool);
   for (const c of cards) {
     if (!c.required) continue;
     const runs = new Set(c.eligible ?? c.runBy);

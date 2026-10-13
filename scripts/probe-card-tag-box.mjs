@@ -13,6 +13,7 @@
 // `clearAboutSheet` and nothing else. Point it at `local-dev`, never production.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
@@ -21,8 +22,8 @@ import { onPage, onPageRole } from "./lib/surface.mjs";
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const QUERY = "Rhys";
-const TAG = /\[\[[0-9a-f-]{36}\|[^\]|]*Rhystic Study\]\]/;
+const QUERY = "Sol Ri";
+const TAG = /\[\[[0-9a-f-]{36}\|[^\]|]*Sol Ring\]\]/;
 
 const VIEWPORTS = [
   { label: 1300, width: 1300, height: 900 },
@@ -66,6 +67,15 @@ async function signIn(page) {
   return userId;
 }
 
+// Fail closed before the first write: this probe writes the account's About row (`clearAboutSheet`), through
+// the DATABASE_URL `env.mjs` loads, so that is the database whose branch is checked. Never staging or production.
+const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
+const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
+const [{ branch }] = await neon(requireEnv(["DATABASE_URL"]).DATABASE_URL)`select current_setting('neon.branch_id', true) as branch`;
+if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
+  throw new Error(`probe:card-tag-box refuses branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch.`);
+}
+
 await clerkSetup();
 const browser = await chromium.launch();
 let prior = null;
@@ -103,11 +113,11 @@ try {
     await page.keyboard.type(`a deck around [[${QUERY}`);
     const list = onPageRole(page, "listbox");
     await list.waitFor({ timeout: 10_000 });
-    const option = onPageRole(page, "option", /Rhystic Study/);
+    const option = onPageRole(page, "option", /Sol Ring/);
     await option.first().waitFor({ timeout: 10_000 });
     // The picker eases the box to the top a beat after it opens; let the placement settle.
     await page.waitForTimeout(1500);
-    report(`${vp.label} the list opens from [[ and offers Rhystic Study`, (await option.count()) > 0);
+    report(`${vp.label} the list opens from [[ and offers Sol Ring`, (await option.count()) > 0);
 
     const geometry = await list.evaluate((ul) => {
       const l = ul.getBoundingClientRect();
@@ -130,7 +140,7 @@ try {
 
     await option.first().dispatchEvent("mousedown");
     const written = await box.inputValue();
-    report(`${vp.label} picking writes the card's name into the box`, written.includes("Rhystic Study") && !/\[\[[0-9a-f-]{36}/.test(written), JSON.stringify(written));
+    report(`${vp.label} picking writes the card's name into the box`, written.includes("Sol Ring") && !/\[\[[0-9a-f-]{36}/.test(written), JSON.stringify(written));
 
     // Press Find commanders and read the server action's request, then abort it: no read, no credit.
     let posted = null;
@@ -162,7 +172,7 @@ try {
       await box2.waitFor({ timeout: 60_000 });
       await box2.click();
       await p2.keyboard.type(`a deck around [[${QUERY}`);
-      await onPageRole(p2, "option", /Rhystic Study/).first().waitFor({ timeout: 10_000 });
+      await onPageRole(p2, "option", /Sol Ring/).first().waitFor({ timeout: 10_000 });
       await p2.waitForTimeout(1500);
       const room = await onPageRole(p2, "listbox").evaluate((ul) => {
         const l = ul.getBoundingClientRect();
@@ -185,7 +195,7 @@ try {
       await box3.evaluate((n) => { const r = n.getBoundingClientRect(); window.scrollBy(0, r.top - 150); });
       await box3.click();
       await p3.keyboard.type(`a deck around [[${QUERY}`);
-      await onPageRole(p3, "option", /Rhystic Study/).first().waitFor({ timeout: 10_000 });
+      await onPageRole(p3, "option", /Sol Ring/).first().waitFor({ timeout: 10_000 });
       await p3.waitForTimeout(1500);
       const flip = await onPageRole(p3, "listbox").evaluate((ul) => {
         const l = ul.getBoundingClientRect();

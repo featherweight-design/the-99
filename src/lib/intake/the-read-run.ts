@@ -130,9 +130,13 @@ export async function loadTheReadInputs(userId: string, words: string, filters: 
   // The pool is the free search's own list, so the read can never show a commander the filters exclude.
   const ranked = rankCandidates(facts.candidates, facts.answers, facts.card, facts.tribes);
   const poolIds = ranked.rows.map((r) => r.candidate.oracleId);
-  const pool = new Set(poolIds.flatMap((id) => list.keyOf.get(id) ?? []));
-  const cards = await loadReadCards(words, catalog.index, list, pool, tagged);
-  const narrowed = filtersSet(filters);
+  const filtered = new Set(poolIds.flatMap((id) => list.keyOf.get(id) ?? []));
+  const cards = await loadReadCards(words, catalog.index, list, filtered, tagged);
+  // A required card narrows the pool BEFORE the model sees it: the commanders it is shown are exactly those
+  // whose decks run every required card, so the bounded `runBy` hint is only a hint and nothing legal is
+  // hidden behind it. The code gate in the run holds the reply to the same set.
+  const pool = allowedKeys(filtered, cards);
+  const narrowed = filtersSet(filters) || pool.size !== filtered.size;
   return {
     list, pool, narrowed, decks, cards, collection,
     fingerprint: readFingerprint({ words, tagged: tagged.map((t) => t.oracleId), filters, listGeneration: list.generation, pool: poolIds, collection, decks }),
