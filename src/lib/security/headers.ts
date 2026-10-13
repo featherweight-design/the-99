@@ -30,7 +30,7 @@ export function clerkFrontendHost(publishableKey: string | undefined): string | 
   }
 }
 
-/** The report-only policy. `clerkHost` is added to the script, connect and frame sources when known. */
+/** The report-only policy. `clerkHost` is added to the script and connect sources when known. */
 export function contentSecurityPolicy(clerkHost: string | null): string {
   const clerk = clerkHost ? [`https://${clerkHost}`] : [];
   const sources = {

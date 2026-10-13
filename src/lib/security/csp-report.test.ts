@@ -19,6 +19,10 @@ describe("originOf", () => {
     expect(originOf("eval")).toBe("eval");
     expect(originOf("data:image/png;base64,AAAA")).toBe("data");
   });
+  it("refuses a custom scheme too long to be one, so a report cannot fill a log line", () => {
+    expect(originOf(`${"a".repeat(2000)}://x`)).toBeNull();
+    expect(originOf("chrome-extension://abc/x.js")).toBe("chrome-extension");
+  });
   it("refuses a non-string, an empty string and an oversized one", () => {
     for (const v of [null, 5, "", "x".repeat(3000)]) expect(originOf(v)).toBeNull();
   });

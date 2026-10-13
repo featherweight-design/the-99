@@ -18,7 +18,10 @@ export function originOf(value: unknown): string | null {
   if (/^(inline|eval|data|blob|self|wasm-eval|trusted-types-policy)$/.test(value)) return value;
   try {
     const u = new URL(value);
-    if (u.protocol !== "https:" && u.protocol !== "http:") return u.protocol.replace(":", "");
+    if (u.protocol !== "https:" && u.protocol !== "http:") {
+      const scheme = u.protocol.replace(":", "");
+      return /^[a-z][a-z0-9+.-]{0,15}$/.test(scheme) ? scheme : null;
+    }
     return /^[a-z0-9.-]{1,100}$/i.test(u.hostname) ? `${u.protocol}//${u.hostname}` : null;
   } catch {
     return null;
