@@ -4,6 +4,7 @@
 // Owns filter/grouping render; filter and grouping come as props from BuilderShell.
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
+import { usePublishDeckSiblings } from "./deck-siblings";
 import { useSwapTools } from "../../lib/swaps/context";
 import { GotItDoorRegistration } from "./got-it-door";
 import { StandInsSheet } from "./stand-ins-sheet";
@@ -744,6 +745,8 @@ export function Decklist({
     .flatMap(([, groupCards]) => groupCards)
     .filter((c) => !spentOracleIds.has(c.oracleId))
     .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri }));
+  // The header's commander opens page on into this list, in this order.
+  usePublishDeckSiblings(orderedIds);
 
   if (notesOpen) {
     // The picker's "In this deck" group: this deck's cards and its commanders, by the name the deck draws.

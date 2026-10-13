@@ -2191,3 +2191,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   server; it refuses any other host) and `PROBE_DECK_ID`, a deck with commander art. It writes only the
   probe account's About row, restores it, and refuses a `DATABASE_URL` reporting the production or
   staging branch. Removing `press-through` from the block fails it.
+
+- `pnpm probe:commander-carousel` proves the deck header's commander card details page on into the deck,
+  at 390 and 1300: opened from the header's card-details control, the counter reads `1 of N` where N is
+  the commanders plus the decklist's own total, Next past the commanders lands on the card the
+  decklist's first row opens, and Prev returns to the commander. `PROBE_BASE` (a local server; it
+  refuses any other host) and `PROBE_DECK_ID`, a deck the probe account owns. It writes only the probe
+  account's About row, restores it, and refuses a `DATABASE_URL` reporting the production or staging
+  branch. Dropping the list from the phone header's door fails it at 390 and leaves 1300 green.

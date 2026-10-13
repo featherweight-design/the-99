@@ -9,6 +9,7 @@
 import { useRef, useState } from "react";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { useCommanderSiblings } from "./deck-siblings";
 import { IdentityPips } from "../commanders/commander-art";
 import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash } from "../ui/art-wash";
@@ -141,6 +142,10 @@ export function SpineDesktop({
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
+  // The commander's card details page on into the deck: the commanders, then the list as drawn.
+  const commanderSiblings = useCommanderSiblings(
+    [commander, partner].flatMap((c) => (c ? [{ oracleId: c.oracleId, name: commanderDisplayName(c) }] : [])),
+  );
   const { built } = counts;
   const bodySize = deckBodySize(partner !== null);
   const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
@@ -250,7 +255,7 @@ export function SpineDesktop({
           positioned, so its absence shifts nothing. Hidden while editing (STATES §2, state 3:
           "the corner buttons hide"). */}
       {!renaming && (
-        <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" hasCrop={Boolean(commander.artCropUri)} />
+        <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" hasCrop={Boolean(commander.artCropUri)} siblings={commanderSiblings} />
       )}
 
       <div
@@ -495,6 +500,7 @@ export function SpineDesktop({
                   <CardDetailTrigger
                     oracleId={partner.oracleId}
                     name={commanderDisplayName(partner)}
+                    siblings={commanderSiblings}
                     title={commanderDisplayName(partner)}
                     ariaLabel={deckImportCopy.commander.partnerCardAria(commanderDisplayName(partner))}
                     className="font-mono"
