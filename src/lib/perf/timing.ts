@@ -62,16 +62,24 @@ export function perfRoute(route: string): Perf {
  * counted too, so read it beside the milliseconds (a read that opened its own connection is also the
  * slow one), never alone. Off, it is `fn()` and nothing else.
  */
+type CountedPool = { on(e: "connect", f: () => void): void; __the99Connects?: number };
+
+/** The pool's running count of connections opened, from ONE listener however many reads are in flight. */
+function connectsSoFar(pool: CountedPool): number {
+  if (pool.__the99Connects === undefined) {
+    pool.__the99Connects = 0;
+    pool.on("connect", () => { pool.__the99Connects! += 1; });
+  }
+  return pool.__the99Connects;
+}
+
 export function perfRead<T>(label: string, fn: () => Promise<T>): Promise<T> {
   if (!enabled()) return fn();
-  type Events = { on(e: "connect", f: () => void): void; off(e: "connect", f: () => void): void };
-  const pool = (globalThis as { __the99Pool?: Events }).__the99Pool;
-  let opened = 0;
-  const count = () => { opened += 1; };
-  pool?.on("connect", count);
+  const pool = (globalThis as { __the99Pool?: CountedPool }).__the99Pool;
+  const before = pool ? connectsSoFar(pool) : 0;
   const t = performance.now();
   return fn().finally(() => {
-    pool?.off("connect", count);
-    console.log(`[perf] read ${label}=${Math.round(performance.now() - t)} opened=${pool ? opened : "none"}`);
+    const opened = pool ? connectsSoFar(pool) - before : "none";
+    console.log(`[perf] read ${label}=${Math.round(performance.now() - t)} opened=${opened}`);
   });
 }

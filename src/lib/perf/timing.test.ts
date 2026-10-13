@@ -99,7 +99,9 @@ describe("perfRead", () => {
     pool.emit("connect"); // after it settled: not counted
     expect(log).toHaveBeenCalledTimes(1);
     expect(String(log.mock.calls[0][0])).toMatch(/^\[perf\] read shell\.collectionStats=\d+ opened=1$/);
-    expect(pool.listenerCount("connect")).toBe(0);
+    // One listener on the pool, however many reads run.
+    await Promise.all(Array.from({ length: 12 }, (_, i) => perfRead(`r${i}`, async () => i)));
+    expect(pool.listenerCount("connect")).toBe(1);
   });
 
   it("logs a failed read too, and still rejects", async () => {
