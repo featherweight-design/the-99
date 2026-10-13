@@ -14,6 +14,9 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
  *    `ARRIVAL_STAGGER_MS` apart, so a screen fills from the top down;
  *  - nothing is held hidden past `ARRIVAL_CAP_MS` after its own bytes landed: a slow piece above
  *    it delays a row by that much at most, and the slow piece fades in on its own when it lands.
+ *    The list's first row holds for `ARRIVAL_FIRST_CAP_MS` only: it is usually the largest paint on
+ *    the page, and its hold is what LCP pays (measured on slow 4G: about +100-180ms at 150ms;
+ *    orchestrator ruling, 2026-10-12). It still fades as one row.
  *
  * Art that settled before it joined (cached, or already painted when the page hydrated) never
  * joins, so it is never held. With no `<ArrivalOrder>` above it, art fades as it lands. Under
@@ -21,6 +24,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
  * every piece is drawn as its bytes land.
  */
 export const ARRIVAL_CAP_MS = 150;
+export const ARRIVAL_FIRST_CAP_MS = 80;
 export const ARRIVAL_STAGGER_MS = 50;
 /** Boxes whose tops are this close are one row: a grid's tiles can differ by a subpixel. */
 const ROW_TOLERANCE_PX = 4;
@@ -84,7 +88,7 @@ export class ArrivalQueue {
     }
     let blocked = false;
     let next = Infinity;
-    for (const row of rows) {
+    for (const [index, row] of rows.entries()) {
       const landed = row.filter((e) => e.item.landedAt !== null);
       if (landed.length === 0) {
         blocked = true;
@@ -92,7 +96,9 @@ export class ArrivalQueue {
       }
       const whole = landed.length === row.length;
       const firstLanded = Math.min(...landed.map((e) => e.item.landedAt as number));
-      const capAt = firstLanded + ARRIVAL_CAP_MS;
+      // The first row, until anything has been released, takes the tighter cap.
+      const first = index === 0 && this.lastRelease === -Infinity;
+      const capAt = firstLanded + (first ? ARRIVAL_FIRST_CAP_MS : ARRIVAL_CAP_MS);
       // In order: this row and every row above it have landed. Else the cap lets it go anyway.
       const due = !blocked && whole ? Math.max(now, this.lastRelease + ARRIVAL_STAGGER_MS) : capAt;
       if (!whole) blocked = true;

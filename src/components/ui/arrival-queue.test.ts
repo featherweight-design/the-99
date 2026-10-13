@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ARRIVAL_CAP_MS, ARRIVAL_STAGGER_MS, ArrivalQueue } from "./arrival-queue";
+import { ARRIVAL_CAP_MS, ARRIVAL_FIRST_CAP_MS, ARRIVAL_STAGGER_MS, ArrivalQueue } from "./arrival-queue";
 
 // A grid laid out by hand: each piece of art has the top edge of its row.
 function grid(rows: number, cols: number) {
@@ -64,10 +64,13 @@ describe("ArrivalQueue", () => {
     const { q, cells, released } = setup(2, 2);
     q.landed(cells[0][0]);
     cells[1].forEach((el) => q.landed(el));
-    advance(ARRIVAL_CAP_MS - 1);
-    expect(released).toEqual([]);
+    // The first row's landed piece goes at the first row's cap, the row below at its own.
+    advance(ARRIVAL_FIRST_CAP_MS);
+    expect(released).toEqual([cells[0][0]]);
+    advance(ARRIVAL_CAP_MS - ARRIVAL_FIRST_CAP_MS - 1);
+    expect(released).toEqual([cells[0][0]]);
     advance(1);
-    // Everything that landed goes at the cap; the slow piece waits only for itself.
+    // Everything that landed has gone by the cap; the slow piece waits only for itself.
     expect(released).toEqual(expect.arrayContaining([cells[0][0], ...cells[1]]));
     expect(released).not.toContain(cells[0][1]);
     q.landed(cells[0][1]);
@@ -75,6 +78,16 @@ describe("ArrivalQueue", () => {
     advance(ARRIVAL_STAGGER_MS);
     expect(released).toContain(cells[0][1]);
     expect(q.size).toBe(0);
+  });
+
+  it("holds the first row for the tighter cap only, still as one row's release", () => {
+    const { q, cells, released } = setup(1, 3);
+    q.landed(cells[0][0]);
+    q.landed(cells[0][1]);
+    advance(ARRIVAL_FIRST_CAP_MS - 1);
+    expect(released).toEqual([]);
+    advance(1);
+    expect(released).toEqual([cells[0][0], cells[0][1]]);
   });
 
   it("stops waiting on a piece that left", () => {
