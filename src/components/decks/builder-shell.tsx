@@ -260,17 +260,17 @@ interface BuilderShellProps {
   /** `NEVER_CUT_ENABLED` (`src/lib/decks/never-cut-flag.ts`): whether the rows draw the lock and
    *  the toolbar offers Lock cards. Off, nothing of the lock is drawn or pressable. */
   neverCut?: boolean;
-  /** `tuningEnabled()` (`src/lib/tuning/flag.ts`): whether this deployment draws "Suggested
+  /** `tuningEnabled(env)` (`src/lib/tuning/flag.ts`): whether this deployment draws "Suggested
    *  changes". Off, the Analysis tab still draws the bracket and the Overview — the tab mounts
    *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
    *  credit lines' mention of it are withheld, same as `analysisEnabled` withholds the whole tab. */
   tuningEnabled?: boolean;
-  /** `proposedCutsEnabled()`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
+  /** `proposedCutsEnabled(env)`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
-  /** `manaBalanceEnabled()`: whether the Analysis tab offers Mana Balance (a hub tile, or mounted
+  /** `manaBalanceEnabled(env)`: whether the Analysis tab offers Mana Balance (a hub tile, or mounted
    *  directly when it is the only tool on). */
   manaBalanceEnabled?: boolean;
-  /** `tuningHubEnabled()`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes
+  /** `tuningHubEnabled(env)`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes
    *  and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Off, both
    *  tools mount directly, exactly as before the hub. */
   tuningHubEnabled?: boolean;

@@ -13,12 +13,12 @@ import { KILL } from "../switches/resolve";
  * on it carries the basis in its own key (`discoveryKey`, `commanderRankingsKey`, the scores'
  * `writer_version`) rather than relying on the deployment.
  */
-export function labelRoleCountsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function labelRoleCountsEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.LABEL_ROLE_COUNTS_ENABLED === "true";
 }
 
 /** The basis the switch selects, for a reader that resolves targets. */
-export function roleBasisFromEnv(env: NodeJS.ProcessEnv = process.env): RoleBasis {
+export function roleBasisFromEnv(env: NodeJS.ProcessEnv): RoleBasis {
   return labelRoleCountsEnabled(env) ? "labels" : "classifier";
 }
 

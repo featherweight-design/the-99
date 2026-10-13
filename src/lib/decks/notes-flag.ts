@@ -3,6 +3,6 @@
  * and the About entry. Server-side, read per request and OFF for anything but the exact string
  * `'true'`, the shape of `deckStatsEnabled`. Changing it needs a redeploy.
  */
-export function deckNotesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function deckNotesEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.DECK_NOTES_ENABLED === "true";
 }

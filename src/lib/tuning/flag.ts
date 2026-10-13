@@ -11,7 +11,7 @@
  * `'true'` AND `ANALYSIS_TAB_ENABLED` is `'true'` — a deployment can ship the bracket and the
  * Overview with Tuning off, but never Tuning with the tab itself off.
  */
-export function tuningEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function tuningEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.TUNING_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
 }
 
@@ -23,7 +23,7 @@ export function tuningEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
  * true only when BOTH `PROPOSED_CUTS_ENABLED` and `ANALYSIS_TAB_ENABLED` are `'true'`. Independent
  * of `TUNING_ENABLED`: a deployment can ship either tool without the other.
  */
-export function proposedCutsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function proposedCutsEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.PROPOSED_CUTS_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
 }
 
@@ -34,7 +34,7 @@ export function proposedCutsEnabled(env: NodeJS.ProcessEnv = process.env): boole
  * Independent of `TUNING_ENABLED` and `PROPOSED_CUTS_ENABLED`. It gates the surface and not a
  * spend: tier 1 makes no model call.
  */
-export function manaBalanceEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function manaBalanceEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.MANA_BALANCE_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
 }
 
@@ -45,7 +45,7 @@ export type HubTool = "suggested" | "mana" | "cuts";
  * The tools the Tuning hub would draw, read from each tool's own switch: no switch of its own
  * (orchestrator, 2026-10-11). Each of these already needs the Analysis tab.
  */
-export function hubTools(env: NodeJS.ProcessEnv = process.env): HubTool[] {
+export function hubTools(env: NodeJS.ProcessEnv): HubTool[] {
   return [
     ...(tuningEnabled(env) ? ["suggested" as const] : []),
     ...(manaBalanceEnabled(env) ? ["mana" as const] : []),
@@ -59,6 +59,6 @@ export function hubTools(env: NodeJS.ProcessEnv = process.env): HubTool[] {
  * Two or more tools on draws it. Exactly one mounts that tool directly, as before the hub, since a
  * landing with one tile is a step with no choice in it; none leaves the tab as it was.
  */
-export function tuningHubEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function tuningHubEnabled(env: NodeJS.ProcessEnv): boolean {
   return hubTools(env).length >= 2;
 }

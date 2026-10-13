@@ -16,7 +16,7 @@ import type { Job } from "./types";
  * cron runs. Released after `SWAP_TOOLS_ENABLED` and after the backfill is published (d9,
  * 2026-10-02). Off, nothing here is called and every comparison takes the text path.
  */
-export function standInLabelsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function standInLabelsEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.STAND_IN_LABELS_ENABLED === "true";
 }
 
@@ -28,7 +28,7 @@ export function standInLabelsEnabled(env: NodeJS.ProcessEnv = process.env): bool
  * not the stand-ins sheet's (every feature behind its own switch, the 2026-09-24 release ruling). Off,
  * no label and no lens is read, and the page is exactly as it was before labels reached it.
  */
-export function labelSurfacesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function labelSurfacesEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.LABEL_SURFACES_ENABLED === "true";
 }
 

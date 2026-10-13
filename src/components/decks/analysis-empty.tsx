@@ -59,7 +59,7 @@ export function AnalysisEmpty({
   /** Saves the description. The press (below) awaits this before it reads (engineering note 1):
    *  a description typed seconds before Analyze must not be lost to a race. */
   onSaveDescription?: (value: string) => Promise<DeckMutationResult>;
-  /** `tuningEnabled()`: the field is asked only to feed a Suggested changes run ("will help us
+  /** `tuningEnabled(env)`: the field is asked only to feed a Suggested changes run ("will help us
    *  suggest more accurate card swaps"), so it draws nothing while that is off — the description
    *  itself stays editable from the header pencil, where it doubles as the deck's tagline. */
   tuningEnabled?: boolean;

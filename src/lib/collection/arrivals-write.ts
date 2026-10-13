@@ -114,9 +114,9 @@ export async function writeArrivalsReceipt(args: {
    * The reader's resolved switches (`requestSwitchEnv`), which the confirm passes: ADDED_COPY_ENABLED decides
    * write version 4's `went` (where each arrived card's copies went; off, the receipt is the version 3
    * it always was), and every claim read below takes it for the claim model's `locked` key and pending
-   * clause. Absent (a probe, outside a request), the environment decides; admin PR 7 makes it required.
+   * clause. Required since admin PR 7a: a probe outside a request passes `process.env` itself.
    */
-  env?: NodeJS.ProcessEnv;
+  env: NodeJS.ProcessEnv;
 }): Promise<ArrivalsSummary> {
   const { userId, uploadId, ownedAfter, ownedBefore, buyBefore, env } = args;
 

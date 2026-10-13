@@ -7,6 +7,6 @@
  * but the exact string `'true'`. `'true'` on staging, unset on production until Hugh has read it.
  * The ingest, the prices and the ownership writes are data and run whatever this says.
  */
-export function deckTokensEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function deckTokensEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.DECK_TOKENS_ENABLED === "true";
 }

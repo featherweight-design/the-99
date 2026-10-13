@@ -147,6 +147,8 @@ async function main() {
       buyBefore: [{ deckId: deck.id, oracleId: second, quantity: 1 }],
       unmatched: [],
       parseErrorCount: 0,
+      // A probe on a scratch branch with no request: the environment's switches are the ones under test.
+      env: process.env,
     });
     check("the receipt counts what arrived", written.arrived, 2);
     check("and what left", written.left, 1);
@@ -199,6 +201,8 @@ async function main() {
       buyBefore: [{ deckId: deck.id, oracleId: second, quantity: 1 }],
       unmatched: [],
       parseErrorCount: 0,
+      // A probe on a scratch branch with no request: the environment's switches are the ones under test.
+      env: process.env,
     });
     check("an arrival more decks want than there are copies is contested",
       withContention.contested[0]?.oracleId, second);

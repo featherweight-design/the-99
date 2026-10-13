@@ -62,137 +62,18 @@ describe("an action reads the reader's resolved switches", () => {
   });
 });
 
-/** A `"use server"` directive: the module's first statement, whatever comments come before it. */
-async function isServerModule(src: string): Promise<boolean> {
-  const { default: ts } = await import("typescript");
-  const first = ts.createSourceFile("m.tsx", src, ts.ScriptTarget.Latest, false, ts.ScriptKind.TSX).statements[0];
-  return !!first && ts.isExpressionStatement(first) && ts.isStringLiteral(first.expression) && first.expression.text === "use server";
-}
-
-/**
- * Pages that still decide a switch from the environment alone, left for the admin plan's later PRs
- * (their readers take no env yet). The scan fails when one of these LOSES its last bare call, so the
- * list only ever shrinks by being edited. Empty since 6b converted the deck page and its review route.
+/*
+ * Admin PR 5 to 6f scanned every action, route, page, layout and listed reader for a BARE switch call
+ * (`fooEnabled()`, `roleBasisFromEnv()`, `scoreWriterVersion()`). Since admin PR 7a each of those takes a
+ * required `env`, so a bare call no longer compiles and the scan is gone. What still compiles is handing
+ * one `process.env`, which reads the environment past every override: `pnpm check:switch-reads`
+ * (`scripts/lib/switch-reads.mjs`) holds that, across all of src.
  */
-const PENDING: string[] = [];
-
-/**
- * Readers a converted page starts, which decide every switch from the env they are handed (Admin PR
- * 6b: the deck page, its review route and their readers; 6c: locks and tuning reads). A bare call in one reads the environment
- * alone however carefully the page threads its own.
- */
-const READERS = [
-  "src/lib/cache/page-cache.ts",
-  "src/lib/decks/read.ts",
-  "src/lib/decks/printings.ts",
-  "src/lib/decks/draft-state.ts",
-  "src/lib/decks/versions.ts",
-  "src/lib/decks/suggestions-read.ts",
-  "src/lib/decks/shopping-rollup.ts",
-  "src/lib/commander-change/mix-key.ts",
-  "src/lib/commander-change/draft-rows.ts",
-  "src/lib/commander-change/candidates.ts",
-  "src/lib/cards/chain-art.ts",
-  "src/lib/decks/notes-read.ts",
-  "src/lib/notices/read.ts",
-  "src/lib/decks/cuts-read.ts",
-  "src/lib/decks/tuning-read.ts",
-  "src/lib/profile/load.ts",
-  "src/lib/profile/stored.ts",
-  "src/lib/swaps/draft-swap.ts",
-  "src/lib/swaps/gather.ts",
-  "src/lib/swaps/take.ts",
-  "src/lib/tuning/cuts-run-store.ts",
-  "src/lib/tuning/cuts-verdicts.ts",
-  "src/lib/tuning/mana-trade.ts",
-  "src/lib/tuning/run-store.ts",
-  "src/lib/tuning/verdicts.ts",
-  // 6d: the synopsis, benchmarks, card details, arrivals, the Consider filter and the deck mix.
-  "src/lib/synopsis/generate.ts",
-  "src/lib/synopsis/read.ts",
-  "src/lib/synopsis/pin.ts",
-  "src/lib/notices/overview.ts",
-  "src/lib/benchmarks/reading.ts",
-  "src/lib/collection/card-detail.ts",
-  "src/lib/collection/arrivals-write.ts",
-  "src/lib/decks/consider-labels.ts",
-  "src/lib/decks/deck-mix.ts",
-  "src/lib/tuning/mana-help-load.ts",
-  // Admin PR 6d-2: recs and discovery, which count roles by the reader's LABEL_ROLE_COUNTS_ENABLED.
-  "src/lib/recs/pool-role-basis.ts",
-  "src/lib/recs/recommend.ts",
-  "src/lib/recs/free-ranking.ts",
-  "src/lib/recs/ranked-list.ts",
-  "src/lib/recs/warm.ts",
-  "src/lib/recs/store.ts",
-  "src/lib/recs/home-novelty.ts",
-  "src/lib/commanders/rankings.ts",
-  "src/lib/discovery/list.ts",
-  "src/lib/discovery/payload.ts",
-  "src/lib/discovery/resolve-slug.ts",
-  // Admin PR 6e: the claim model (NEVER_CUT_ENABLED's lock key, CHANGE_COMMANDER_ENABLED's pending clause) and
-  // the deck readers that start it. Every caller in src passes the reader's env since 6f-2 (the claim scan below).
-  "src/lib/decks/availability-query.ts",
-  "src/lib/decks/cart-read.ts",
-  "src/lib/decks/fill-plan.ts",
-];
-
-/** A switch read from the environment alone: `fooEnabled()`, `roleBasisFromEnv()` or `scoreWriterVersion()`
- *  (the stored scores' role basis) with no env. */
-const BARE_CALL = /\b(\w+Enabled|roleBasisFromEnv|scoreWriterVersion)\(\s*\)/g;
-
-describe("no Server Action, route handler, page, layout or deck-page reader reads a switch from the environment alone", () => {
-  it("finds the directive after a header comment", async () => {
-    expect(await isServerModule(`/** A header. */\n// and a line\n"use server";\nexport async function a() {}`)).toBe(true);
-    expect(await isServerModule(`import x from "y";\n"use server";`)).toBe(false);
-  });
-
-  it("finds a bare call (the scan's own failure path)", () => {
-    const code = "const a = deckPrintingsEnabled();\nconst b = roleBasisFromEnv( );\nconst c = tuningEnabled(env);\nconst d = scoreWriterVersion();\nconst e = scoreWriterVersion(env);";
-    expect([...code.matchAll(BARE_CALL)].map((m) => m[1])).toEqual(["deckPrintingsEnabled", "roleBasisFromEnv", "scoreWriterVersion"]);
-  });
-
-  it("names no bare call in a \"use server\" module, a route handler, a page, a layout, a listed reader or a module directly under lib/lineup", async () => {
-    const { readFileSync, readdirSync, statSync, existsSync } = await import("node:fs");
-    const { join } = await import("node:path");
-    // A listed reader that moved would drop out of the scan silently.
-    expect(READERS.filter((path) => !existsSync(path))).toEqual([]);
-    const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
-      const path = join(dir, name);
-      return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
-    });
-    let actions = 0;
-    let pages = 0;
-    let readers = 0;
-    const found = (await Promise.all(walk("src").map(async (path) => {
-      const src = readFileSync(path, "utf8");
-      const isAction = await isServerModule(src);
-      const isRoute = /\/route\.ts$/.test(path);
-      const isPage = /\/(page|layout)\.tsx$/.test(path);
-      const isReader = READERS.includes(path) || path.startsWith("src/lib/lineup/");
-      if (isAction) actions++;
-      if (isPage) pages++;
-      if (READERS.includes(path)) readers++;
-      if (!isAction && !isRoute && !isPage && !isReader) return [];
-      const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-      return [...code.matchAll(BARE_CALL)].map((m) => ({ path, call: `${path}: ${m[1]}()` }));
-    }))).flat();
-    // A scan that found no action module, or no page, would pass over anything.
-    expect(actions).toBeGreaterThan(20);
-    expect(pages).toBeGreaterThan(20);
-    expect(readers).toBe(READERS.length);
-    expect(found.filter((f) => !PENDING.includes(f.path)).map((f) => f.call)).toEqual([]);
-    // A listed reader that moved or was renamed would drop out of the scan silently.
-    expect(READERS.filter((path) => !existsSync(path))).toEqual([]);
-    // A pending page converted is a page to take off the list.
-    expect(PENDING.filter((path) => !found.some((f) => f.path === path))).toEqual([]);
-  });
-});
 
 /**
  * Admin PR 6e: the claim model (`availability-query`) decides NEVER_CUT_ENABLED's `locked` key and
  * CHANGE_COMMANDER_ENABLED's pending clause from the env it is handed, and its `env` still defaults to the
- * environment until admin PR 7 makes it required, so a caller that omits it compiles and reads the
+ * environment until admin PR 7b makes it required, so a caller that omits it compiles and reads the
  * environment alone. Every call to `loadAvailability` must name `env` in its options object, and every call
  * to `loadDeckBuyRows` must pass its fourth argument (and `loadCart`, which starts both, its second),
  * everywhere in `src`. Admin PR 6f-1 converted the deck, commander, discovery, tuning, lineup, swap and social
@@ -205,7 +86,7 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
  * which must name `env`) or as a positional argument (`at`, which must be present). Most are the claim
  * model and the wrappers that start it (NEVER_CUT_ENABLED's `locked` key, CHANGE_COMMANDER_ENABLED's pending
  * clause); `chainArt` decides DECK_PRINTINGS_ENABLED, the deck's printing picks. A reader deeper than these
- * that takes a defaulted env is not scanned: admin PR 7 makes `env` required, which catches that whole class
+ * that takes a defaulted env is not scanned: admin PRs 7b to 7d make `env` required, which catches that whole class
  * at compile time. `listDecksWithStats` is a reader by way of its
  * seniority read: its own `opts.env` is handed on to `loadDeckBuyRows`, so a call that names none passes
  * `undefined` there and the claim model reads the environment (round 1 of #1635 found the deck page doing it).

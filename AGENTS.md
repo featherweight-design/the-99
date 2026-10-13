@@ -700,9 +700,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
   A `plumbing` switch (`LIST_CACHE_ENABLED`, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis scores are counted
   by) takes the app-wide override alone. An app-wide override still flips one without a deploy, so its readers
-  are handed the resolved env too (a reader's `env` parameter still defaults to `process.env` until admin PR 7
-  makes it required, so an omitted argument is not caught yet), and a cache whose payload depends on it carries it
-  in its key:
+  are handed the resolved env too (since admin PR 7a every flag function, and `roleBasisFromEnv`, `hubTools` and
+  `scoreWriterVersion`, REQUIRES its `env`, so leaving it out does not compile; a reader's own `env` parameter
+  still defaults to `process.env` until admin PRs 7b to 7d remove those defaults), and a cache whose payload
+  depends on it carries it in its key:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
   (`scoreWriterVersion(env)`), and `cachePageForUser` already keys on every switch. The registry
   (`src/lib/switches/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
@@ -714,13 +715,25 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   PR 6e, and since 6f-2 every claim read in `src` is handed the reader's env, so `NEVER_CUT_ENABLED` and
   `CHANGE_COMMANDER_ENABLED` are always the reader's. `switch-adoption.test.ts` fails an env-less call, with no
   exemption list, to the readers and wrappers its `CLAIM_ENV` names (the claim model's entry points, and `chainArt`
-  for `DECK_PRINTINGS_ENABLED`); a deeper reader that takes a defaulted env is caught only once admin PR 7 makes
-  `env` required. `loadFriendSpares` runs each friend's claim model under that FRIEND's switches, `resolveSwitchEnv(friend)`) (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
+  for `DECK_PRINTINGS_ENABLED`); a deeper reader that takes a defaulted env is caught only once admin PRs 7b to
+  7d make `env` required. `loadFriendSpares` runs each friend's claim model under that FRIEND's switches, `resolveSwitchEnv(friend)`) (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
   proxy keys About's cookie on the reader's resolved entries, so a flip retires exactly the readers it changes.
   `check:list-cache` knows the two override tables reach a cached page through its key alone, and fails if any loader
   but `page-cache.ts` and the resolver it goes through (`src/lib/switches/request.ts`) reads them. Every page,
-  layout, action and route handler decides a switch from `requestSwitchEnv(userId)`, never a bare `fooEnabled()`;
-  `src/app/decks/switch-adoption.test.ts` fails a bare call outside its `PENDING` list.
+  layout, action and route handler decides a switch from `requestSwitchEnv(userId)`. A bare `fooEnabled()` no
+  longer compiles; `fooEnabled(process.env)` still does, so `pnpm check:switch-reads` (`scripts/lib/switch-reads.mjs`,
+  in CI and inside `pnpm test`) fails any code under `src/` that hands the `process.env` OBJECT on (an argument, a
+  spread or copy, a `?? process.env` fallback, a variable, a prop), outside `src/lib/switches/`, tests, an `ALLOWED`
+  list (a file, its approved uses and a reason a reviewer can check) and a `PENDING` list of the fallbacks 7b and 7d
+  remove. Each approved use is pinned by a FINGERPRINT with a count, never a line or a per-file total:
+  `<enclosing function, method or module const>:<use>` (`loadAvailability:fallback`,
+  `REQUEST_DEPS:argument:requestProfileDeps`), so swapping an approved use for a new one elsewhere in the file fails,
+  and so does a listed fingerprint that is gone.
+  A member read and a destructuring read are not findings (a rest element, `{ ...e } = process.env`, is a copy and
+  is one). A parameter default (`env = process.env`, destructured in a parameter included) is not a finding but is
+  pinned the same way in `DEFAULTS_PENDING` (`<scope>:default:<param>`), so a new one fails and 7b to 7d each shrink it; a binding
+  default in a variable (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached
+  through anything but `process.env` itself, or an env built by hand from member reads.
 
 - **Social foundation** (plan `boards/plan-social-foundation-2026-10-12.md`, Hugh's rulings 2026-10-12), behind
   `SOCIAL_FRIENDS_ENABLED` (`'true'` on staging, unset on production; dark until the first UI PR). Friends are added

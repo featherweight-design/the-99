@@ -134,7 +134,8 @@ for (const [i, d] of BLIND_DECKS.entries()) {
   };
   // `readProposedCuts`'s inputs, from this rebuilt list: live locks under the same switch, the
   // deck's stored intent, the profile and the commander's support.
-  const locked = neverCutEnabled() ? [...(await liveLockedIds(db, d.id))] : [];
+  // An offline eval run by hand with no signed-in reader: the environment's switch is the right one.
+  const locked = neverCutEnabled(process.env) ? [...(await liveLockedIds(db, d.id))] : [];
   const intent = deck.intent?.trim() ? deck.intent : null;
   const [profile, support] = await Promise.all([loadDeckProfileFromHead(head), readCutSupport(head.commanderOracleId, head.partnerOracleId)]);
   const facts = cutFacts({

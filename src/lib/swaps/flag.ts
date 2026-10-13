@@ -10,7 +10,7 @@
  * The H2 rename ("Undo swap" in the tuning panel) is not behind it: that panel sits inside the
  * Analysis tab, which `ANALYSIS_TAB_ENABLED` already gates.
  */
-export function swapToolsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function swapToolsEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.SWAP_TOOLS_ENABLED === "true";
 }
 
@@ -20,6 +20,6 @@ export function swapToolsEnabled(env: NodeJS.ProcessEnv = process.env): boolean 
  * It needs the picker itself, so it is off whenever the swap tools are. Off, the picker is exactly
  * today's (lock 7).
  */
-export function findADeckReadEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function findADeckReadEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.FIND_A_DECK_READ_ENABLED === "true" && swapToolsEnabled(env);
 }

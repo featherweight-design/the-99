@@ -3,7 +3,7 @@
  * `'true'` on staging, unset on production until Hugh walks it. Exactly `'true'` turns it on. The
  * foundation ships dark: no route or action reads it yet, and the first UI PR gates on it.
  */
-export function socialFriendsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function socialFriendsEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.SOCIAL_FRIENDS_ENABLED === "true";
 }
 
@@ -13,6 +13,6 @@ export function socialFriendsEnabled(env: NodeJS.ProcessEnv = process.env): bool
  * except the wishlist), checked here so an override of this one never raises its parent. Dark until its
  * UI PR: `logGame` refuses opponents while it is off.
  */
-export function socialGamesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function socialGamesEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.SOCIAL_GAMES_ENABLED === "true" && socialFriendsEnabled(env);
 }

@@ -7,6 +7,6 @@
  * the exact string `'true'`. Changing it on Vercel needs a redeploy. One reader gates the route
  * (not-found when off) and both doors (F3).
  */
-export function helpMeChooseEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function helpMeChooseEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.HELP_ME_CHOOSE_ENABLED === "true";
 }

@@ -162,6 +162,7 @@
     "check:collection-routes": "node scripts/check-collection-routes.mjs",
     "check:list-cache": "node scripts/check-list-cache.mjs",
     "check:social-reads": "node scripts/check-social-reads.mjs",
+    "check:switch-reads": "node scripts/check-switch-reads.mjs",
     "seed:summary": "tsx scripts/seed-summary-fixture.ts",
     "probe:mana-symbols": "node scripts/probe-mana-symbols.mjs",
     "fetch:mana": "tsx scripts/fetch-mana-symbols.ts",

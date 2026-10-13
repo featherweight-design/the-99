@@ -14,6 +14,6 @@
  * layout does not mount the sheet, or every browser is marked shown for a sheet it
  * never saw.
  */
-export function aboutSheetEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function aboutSheetEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.ABOUT_SHEET_ENABLED === "true";
 }

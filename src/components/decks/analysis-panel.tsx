@@ -122,7 +122,7 @@ export function AnalysisPanel({
   /** The deck's description (H35), and its save — passed straight to the empty state's field. */
   description?: string | null;
   onSaveDescription?: (value: string) => Promise<import("../../lib/decks/mutation-result").DeckMutationResult>;
-  /** `tuningEnabled()`: whether the empty state draws the description field at all (asked only
+  /** `tuningEnabled(env)`: whether the empty state draws the description field at all (asked only
    *  to feed a Suggested changes run, per its own help text) — defaults true, same as `tuning`
    *  itself being left undrawn is what withholds the panel below a reading. */
   tuningEnabled?: boolean;
