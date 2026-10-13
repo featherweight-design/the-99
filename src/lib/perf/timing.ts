@@ -52,3 +52,34 @@ export function perfRoute(route: string): Perf {
     },
   };
 }
+
+/**
+ * One read, timed on its own: `[perf] read <label>=<ms> opened=<n>`, logged when it settles. For
+ * reads no page's tracker reaches (the shell, a layout, a cache key), whose cost is paid before or
+ * beside the page's own spans. `opened` counts the connections the shared database pool opened
+ * WHILE this read ran (its `connect` events), the cost a cold instance pays as a websocket setup. It
+ * is a window, not an attribution: a sibling read in the same `Promise.all` that opened one is
+ * counted too, so read it beside the milliseconds (a read that opened its own connection is also the
+ * slow one), never alone. Off, it is `fn()` and nothing else.
+ */
+type CountedPool = { on(e: "connect", f: () => void): void; __the99Connects?: number };
+
+/** The pool's running count of connections opened, from ONE listener however many reads are in flight. */
+function connectsSoFar(pool: CountedPool): number {
+  if (pool.__the99Connects === undefined) {
+    pool.__the99Connects = 0;
+    pool.on("connect", () => { pool.__the99Connects! += 1; });
+  }
+  return pool.__the99Connects;
+}
+
+export function perfRead<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  if (!enabled()) return fn();
+  const pool = (globalThis as { __the99Pool?: CountedPool }).__the99Pool;
+  const before = pool ? connectsSoFar(pool) : 0;
+  const t = performance.now();
+  return fn().finally(() => {
+    const opened = pool ? connectsSoFar(pool) - before : "none";
+    console.log(`[perf] read ${label}=${Math.round(performance.now() - t)} opened=${opened}`);
+  });
+}

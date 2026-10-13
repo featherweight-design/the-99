@@ -24,6 +24,7 @@ import { cacheForUser } from "./user-lists";
 import { decodePlain, encodePlain } from "./plain";
 import { watchSoftFailures } from "./soft-failure";
 import { userDataStamp } from "./user-data-stamp";
+import { perfRead } from "../perf/timing";
 
 /**
  * The reader's RESOLVED switches, every one of them, as bits (brief, locked rule 6). An override
@@ -61,7 +62,7 @@ export async function cachePageForUser<T>(
   const run = () => load(resolved);
   // Switched off, the page runs exactly as it did before this cache: no stamp read, nothing stored.
   if (!listCacheEnabled(resolved)) return (await run()).value;
-  const stamp = await userDataStamp(userId);
+  const stamp = await perfRead("userDataStamp", () => userDataStamp(userId));
   // Without a stamp there is nothing to say an entry is still true, so nothing is cached.
   if (stamp === null) return (await run()).value;
   try {
