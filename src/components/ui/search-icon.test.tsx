@@ -37,4 +37,24 @@ describe("SearchIcon", () => {
     });
     expect(offenders).toEqual([]);
   });
+
+  // The other way back to a second magnifier: redrawing the lens locally.
+  it("has no local lens drawing outside the shared component", () => {
+    const walk = (d: string): string[] =>
+      readdirSync(d).flatMap((f) => {
+        const p = join(d, f);
+        return statSync(p).isDirectory() ? walk(p) : /\.tsx$/.test(f) && !/\.test\./.test(f) ? [p] : [];
+      });
+    const offenders = walk(join(process.cwd(), "src"))
+      .filter((p) => !p.endsWith("ui/search-icon.tsx"))
+      .filter((p) => /<circle[^>]*\sr="(5\.4|5\.8)"/.test(readFileSync(p, "utf8")));
+    expect(offenders).toEqual([]);
+  });
+
+  it("is 18px on a phone and 16px from md when no size is given", () => {
+    const { container } = render(<SearchIcon />);
+    const svg = container.querySelector("svg")!;
+    expect(svg.getAttribute("width")).toBe("18");
+    expect(svg.getAttribute("class")).toContain("md:size-[16px]");
+  });
 });

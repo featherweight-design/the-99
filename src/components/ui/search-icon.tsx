@@ -5,18 +5,20 @@
  * touch at any size; the old drawing's handle began inside the stroke and read
  * as one smear at 14px.
  */
-export function SearchIcon({ size = 16, className }: { size?: number; className?: string }) {
+export function SearchIcon({ size, className }: { size?: number; className?: string }) {
+  // No size given: the field default, 18px on a phone and 16px from `md`, like every control icon.
+  const box = size ?? 18;
   return (
     <svg
-      width={size}
-      height={size}
+      width={box}
+      height={box}
       viewBox="0 0 20 20"
       fill="none"
       stroke="currentColor"
       strokeWidth={1.7}
       strokeLinecap="round"
       aria-hidden="true"
-      className={className}
+      className={size === undefined ? `md:size-[16px] ${className ?? ""}`.trim() : className}
       data-search-icon
     >
       <circle cx="8.4" cy="8.4" r="5.8" />

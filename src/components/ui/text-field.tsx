@@ -109,7 +109,7 @@ export function SearchField({
       {/* `undefined` is the absent prop; `null` is a caller asking for no leading
           element at all, which `??` would have overruled with the magnifier. */}
       {leading === undefined ? (
-        <SearchIcon size={16} className="shrink-0 text-[color:var(--fg-faint)]" />
+        <SearchIcon className="shrink-0 text-[color:var(--fg-faint)]" />
       ) : (
         leading
       )}

@@ -188,7 +188,7 @@ export function SwitchesList({
         className="sticky top-[var(--admin-head-h,0px)] z-[1] flex flex-none flex-col gap-[10px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:px-[28px] md:pb-[14px] md:pt-[18px]"
       >
         <label className={`flex h-[44px] items-center gap-[10px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] md:h-[38px] md:max-w-[420px] ${AFFIX_FOCUS_INPUT}`}>
-          <SearchIcon size={16} className="text-[color:var(--fg-faint)]" />
+          <SearchIcon className="shrink-0 text-[color:var(--fg-faint)]" />
           <input
             type="search"
             value={query}
