@@ -111,6 +111,15 @@ describe("recording the visit (§O4, audit E2)", () => {
     expect(recordAboutVisit).toHaveBeenCalledOnce();
   });
 
+  it("hands the visit the switched entries it drew from the reader's switches, and no others", () => {
+    const env = { ...process.env, DECK_NOTES_ENABLED: "true" } as NodeJS.ProcessEnv;
+    const { unmount } = render(<AboutPage seen={PRIOR} sheetMode env={env} />);
+    expect((recordAboutVisit.mock.calls[0] as unknown as [string[]])[0]).toContain("notes");
+    unmount();
+    render(<AboutPage seen={PRIOR} sheetMode env={{ ...env, DECK_NOTES_ENABLED: "false" } as NodeJS.ProcessEnv} />);
+    expect((recordAboutVisit.mock.calls[1] as unknown as [string[]])[0]).not.toContain("notes");
+  });
+
   it("records a first-run reader too, so their sheet stops", () => {
     render(<AboutPage seen={0} sheetMode />);
     expect(recordAboutVisit).toHaveBeenCalledOnce();

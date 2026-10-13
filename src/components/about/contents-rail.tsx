@@ -109,6 +109,8 @@ export function ContentsRail({
   dismiss: {
     destination: string;
     clause: string;
+    /** The switched entry ids the page showed, which the dismiss acknowledges. */
+    shown: readonly string[];
   } | null;
 }) {
   const current = useCurrentChapter(chapters);
@@ -158,7 +160,7 @@ export function ContentsRail({
       </ol>
 
       {dismiss && (
-        <DismissForm destination={dismiss.destination} className="mt-[18px]">
+        <DismissForm destination={dismiss.destination} shown={dismiss.shown} className="mt-[18px]">
           {/* `px-[18px]`: the button base carries NO horizontal padding — every
               other caller supplies its own — so at `w-auto` the label filled
               the box edge to edge and read as a clipped word. */}

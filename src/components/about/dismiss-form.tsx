@@ -13,11 +13,14 @@ import { usePendingPush } from "../shell/pending-push";
  */
 export function DismissForm({
   destination,
+  shown,
   className,
   style,
   children,
 }: {
   destination: string;
+  /** The switched entry ids the page showed: the dismiss acknowledges these and no others. */
+  shown: readonly string[];
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
@@ -32,6 +35,7 @@ export function DismissForm({
       }}
     >
       <input type="hidden" name="next" value={destination} />
+      {shown.map((id) => <input key={id} type="hidden" name="shown" value={id} />)}
       {children}
     </form>
   );

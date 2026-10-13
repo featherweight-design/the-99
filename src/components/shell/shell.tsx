@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { NavRail, TabBar, MobileHeader } from "./nav";
 import { getCollectionStats } from "../../lib/home/summary";
 import type { ThemeKey } from "../../lib/theme/themes";
-import { aboutSheetEnabled } from "../../lib/about/flag";
+import { SHEET_ON_HEADER } from "../../lib/about/gate";
 import { readSheetState } from "../../lib/about/sheet-state";
 import { AboutSheet } from "./about-sheet";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
@@ -42,7 +42,11 @@ export default async function Shell({
   // even when it says nothing, because the sheet latches the state it MOUNTED
   // with: a later re-render of this layout (router.refresh, a revalidating
   // action) arrives without the header and must not unmount an unread sheet.
-  const sheet = aboutSheetEnabled() ? readSheetState(await headers()) : null;
+  // On when the PROXY says so for this reader (`SHEET_ON_HEADER`): it decides from their resolved
+  // switches and strips both headers from every request, so this never resolves them a second time
+  // through its own memo, which could disagree with the proxy's for up to its lifetime after a flip.
+  const requestHeaders = await headers();
+  const sheet = requestHeaders.get(SHEET_ON_HEADER) === "1" ? readSheetState(requestHeaders) : null;
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
   const door = isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {};
 

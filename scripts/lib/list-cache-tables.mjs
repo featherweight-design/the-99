@@ -46,8 +46,13 @@ function resolveImport(fromFile, spec) {
 }
 
 /** Value imports only: an `import type` brings in no query. */
+/**
+ * Every module this source takes a VALUE from: a value import, or a value re-export
+ * (`export { x } from`, `export * from`), since a barrel re-exporting a reader is as much a path to
+ * it as importing it directly. Type-only forms carry no runtime edge and are left out.
+ */
 function importsOf(source) {
-  return [...source.matchAll(/^import\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
+  return [...source.matchAll(/^(?:import|export)\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
 }
 
 /** Every file the pages reach through the loaders, the pages included. */
@@ -113,10 +118,42 @@ export function triggeredTables(sources = migrationSources()) {
   return out;
 }
 
+/**
+ * Per-user tables whose content reaches a cached page through its KEY, not its payload (admin
+ * brief, locked rule 8). The switch overrides change what a reader is drawn, and an app-wide or
+ * group row changes many readers at once, which a per-row stamp trigger cannot express. So
+ * `cachePageForUser` resolves the reader's switches before it opens an entry and puts every one in
+ * the key: a flip asks for a different entry, and no stored payload outlives it. Only
+ * `page-cache.ts` may read them on the pages' path (`switchReaders`), or the key would not be the
+ * whole story.
+ */
+export const KEYED_BY_SWITCHES = new Set(["flag_overrides", "flag_group_members"]);
+export const SWITCH_READER = "src/lib/cache/page-cache.ts";
+const SWITCH_MODULE = "src/lib/switches/snapshot.ts";
+
+/**
+ * Every file on the pages' path that reads the overrides other than the one allowed to: by importing
+ * the snapshot, or by naming either table itself, by its Drizzle binding or in raw SQL. Either would
+ * read them where the key does not see it.
+ */
+export function switchReaders(files = loaderFiles(), tables = schemaTables()) {
+  const bindings = [...tables].filter(([, t]) => KEYED_BY_SWITCHES.has(t.name)).map(([binding]) => binding);
+  const named = new RegExp(`\\b(${[...bindings, ...KEYED_BY_SWITCHES].join("|")})\\b`);
+  return files.filter((file) => {
+    // The snapshot itself, and the one file allowed to call it. Nothing else in its directory is
+    // exempt: a helper placed beside it reads the tables as surely as a loader anywhere else.
+    if (file === SWITCH_READER || file === SWITCH_MODULE) return false;
+    const source = readFileSync(file, "utf8");
+    if (named.test(source.replace(/^\s*(\/\/|\*).*$/gm, ""))) return true;
+    return importsOf(source).some((spec) => resolveImport(resolve(file), spec) === resolve(SWITCH_MODULE));
+  }).map((file) => `KEYED   ${file} reads the switch overrides inside a cached page's path; only ${SWITCH_READER} may, and only to build the key`);
+}
+
 /** Every table the pages read that the stamp does not cover, with the reason. */
 export function listCacheProblems(perUser = tablesRead().perUser, triggers = triggeredTables()) {
   const problems = [];
   for (const table of perUser) {
+    if (KEYED_BY_SWITCHES.has(table.name)) continue;
     const keyed = triggers.get(table.name);
     if (!keyed) problems.push(`MISSING ${table.name} is read by Home or /decks and carries no deferred user_data_touch trigger`);
     else if (keyed !== table.owner) problems.push(`WRONG   ${table.name}'s trigger is keyed on ${keyed}, but the table's owner column is ${table.owner}`);

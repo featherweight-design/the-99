@@ -689,6 +689,21 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   migrated to 0073: a wrong branch refused, `disable` took all sixteen and `probe:list-stamp`
   then failed 66 checks, `enable` put them back and it passed. The runbook above says WHEN.
 
+- **Feature switches resolve per reader** (admin plan PR 4, brief `2026-10-11-admin-ui.md`). Each `*_ENABLED`
+  variable keeps its meaning and is the default; `flag_overrides` holds overrides on top of it, app-wide, per group
+  (`flag_groups`, one group per account in `flag_group_members`) or per account. Per switch: the variable set to the
+  literal `off` wins outright (the KILL SWITCH: no override can raise it, so a bad override is always beaten by a
+  redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
+  A `plumbing` switch (`LIST_CACHE_ENABLED`) takes the app-wide override alone. The registry
+  (`src/lib/switches/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
+  `src/` reads a variable it does not name. `resolveSwitchEnv(userId)` reads the overrides through a 30-second
+  per-instance memo, falls back to the environment alone when the read fails, and returns an env-shaped object every
+  flag function takes as it takes `process.env`; parents stay checked inside the flag functions, so a child override
+  never raises its parent. `cachePageForUser` puts every resolved switch in its key and the proxy keys About's
+  cookie on the reader's resolved entries, so a flip retires exactly the readers it changes. `check:list-cache` knows
+  the two override tables reach a cached page through its key alone, and fails if any loader but `page-cache.ts`
+  reads them.
+
 - **Social foundation** (plan `boards/plan-social-foundation-2026-10-12.md`, Hugh's rulings 2026-10-12), behind
   `SOCIAL_FRIENDS_ENABLED` (`'true'` on staging, unset on production; dark until the first UI PR). Friends are added
   by a single-use invite link or its QR code and never by search; a friendship is two directed `friend_links` rows,

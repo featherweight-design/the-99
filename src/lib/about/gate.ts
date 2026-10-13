@@ -169,6 +169,14 @@ export const SHEET_COOKIE = "about_sheet";
  * ids of the visible entries this reader has not seen, comma-separated, in page order.
  */
 export const SHEET_HEADER = "x-about-sheet";
+/**
+ * Set by the proxy, on every request it forwards for a signed-in reader, when the sheet is on for
+ * THAT reader (their resolved switches; admin brief, locked rule 9), and stripped from every
+ * request otherwise. The shell mounts the sheet on it rather than resolving the switch again: the
+ * proxy and the page run in separate bundles with separate override memos, which can disagree
+ * for up to their lifetime after a flip.
+ */
+export const SHEET_ON_HEADER = "x-about-sheet-on";
 
 /**
  * The sheet cookie's value: the reader, the version, and every switched entry this deployment

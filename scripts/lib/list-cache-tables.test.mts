@@ -1,11 +1,11 @@
 // `check:list-cache`'s failure paths, each written as the shape that would let a stale page pass.
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  listCacheProblems, loaderFiles, schemaTables, socialKeyProblems, tablesRead, triggeredTables, unrecordedCatches,
+  KEYED_BY_SWITCHES, listCacheProblems, loaderFiles, schemaTables, socialKeyProblems, switchReaders, tablesRead, triggeredTables, unrecordedCatches,
 } from "./list-cache-tables.mjs";
 
 const create = (table: string, column: string, deferred = true) =>
@@ -58,6 +58,63 @@ describe("listCacheProblems", () => {
     expect(listCacheProblems(read, new Map([["decks", "user_id"], ["deck_cards", "user_id"]]))).toEqual([
       expect.stringMatching(/^WRONG {3}deck_cards/),
     ]);
+  });
+
+  it("does not ask the stamp to cover the switch overrides, which reach a page through its key", () => {
+    const keyed = [...KEYED_BY_SWITCHES].map((name) => ({ name, owner: "user_id" }));
+    expect(listCacheProblems([...read, ...keyed], new Map([["decks", "user_id"], ["deck_cards", "deck_id"]]))).toEqual([]);
+  });
+});
+
+describe("switchReaders", () => {
+  it("follows a barrel's value re-export to the snapshot", () => {
+    const dir = mkdtempSync(join(process.cwd(), "src/lib/.switch-barrel-"));
+    const barrel = join(dir, "barrel.ts");
+    const loader = join(dir, "loader.ts");
+    writeFileSync(barrel, 'export { resolveSwitchEnv } from "../switches/snapshot";\n');
+    writeFileSync(loader, 'import { resolveSwitchEnv } from "./barrel";\nexport const x = resolveSwitchEnv;\n');
+    const page = join(dir, "page.tsx");
+    writeFileSync(page, 'import { x } from "./loader";\nexport default x;\n');
+    const rel = (f: string) => f.slice(process.cwd().length + 1);
+    try {
+      const files = loaderFiles([rel(page)]);
+      expect(files).toEqual(expect.arrayContaining([rel(barrel), "src/lib/switches/snapshot.ts"]));
+      expect(switchReaders(files)).toEqual([expect.stringMatching(new RegExp(`^KEYED {3}${rel(barrel)}`))]);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("exempts the snapshot alone, not a helper placed beside it", () => {
+    const dir = mkdtempSync(join(process.cwd(), "src/lib/switches/.reader-"));
+    const file = join(dir, "helper.ts");
+    writeFileSync(file, 'import { flagGroupMembers } from "../../../db/schema";\nexport const x = flagGroupMembers;\n');
+    try {
+      expect(switchReaders([file.slice(process.cwd().length + 1)])).toEqual([expect.stringMatching(/^KEYED/)]);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("reports a loader on the pages' path that reads the overrides itself", () => {
+    const dir = mkdtempSync(join(process.cwd(), "src/lib/.switch-reader-"));
+    const file = join(dir, "loader.ts");
+    writeFileSync(file, 'import { resolveSwitchEnv } from "../switches/snapshot";\nexport const x = resolveSwitchEnv;\n');
+    const rel = file.slice(process.cwd().length + 1);
+    try {
+      expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
+      expect(switchReaders(["src/lib/cache/page-cache.ts"])).toEqual([]);
+      // Naming a table directly reads it as surely as the snapshot does.
+      writeFileSync(file, 'import { flagOverrides } from "../../db/schema";\nexport const x = flagOverrides;\n');
+      expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
+      writeFileSync(file, 'export const q = "select value from flag_group_members";\n');
+      expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
+      writeFileSync(file, "// flag_overrides is read by page-cache alone\nexport const y = 1;\n");
+      expect(switchReaders([rel])).toEqual([]);
+      expect(switchReaders(["src/lib/switches/snapshot.ts", "src/lib/switches/resolve.ts", "src/lib/switches/registry.ts"])).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
   });
 });
 
@@ -123,6 +180,12 @@ describe("the shipped tree", () => {
 
   it("has no fallback on the pages' path that the cache would store", () => {
     expect(unrecordedCatches()).toEqual([]);
+  });
+
+  it("reads the switch overrides only in page-cache.ts, to build the key", () => {
+    expect(loaderFiles()).toContain("src/lib/switches/snapshot.ts");
+    expect(tablesRead().perUser.map((t) => t.name)).toEqual(expect.arrayContaining([...KEYED_BY_SWITCHES]));
+    expect(switchReaders()).toEqual([]);
   });
 });
 

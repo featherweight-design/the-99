@@ -45,20 +45,33 @@ describe("Shell and the About sheet", () => {
   });
 
   it("hands the sheet the proxy's decision with the switch on", async () => {
-    process.env.ABOUT_SHEET_ENABLED = "true";
-    requestHeaders = new Headers({ "x-about-sheet": "0" });
+    requestHeaders = new Headers({ "x-about-sheet-on": "1", "x-about-sheet": "0" });
     await renderShell();
     expect(screen.getByTestId("about-sheet").textContent).toBe("firstRun");
   });
 
-  it("still mounts it with no header, so a re-render cannot unmount an open sheet", async () => {
+  it("follows the proxy's decision for this reader, whatever this bundle's environment says", async () => {
+    // The proxy resolved the sheet on for this reader (an override), and says so.
+    requestHeaders = new Headers({ "x-about-sheet-on": "1", "x-about-sheet": "0" });
+    await renderShell();
+    expect(screen.getByTestId("about-sheet").textContent).toBe("firstRun");
+  });
+
+  it("ignores a sheet header the proxy did not mark on, though the environment has the switch on", async () => {
     process.env.ABOUT_SHEET_ENABLED = "true";
+    requestHeaders = new Headers({ "x-about-sheet": "0" });
+    await renderShell();
+    expect(screen.queryByTestId("about-sheet")).toBeNull();
+  });
+
+  it("still mounts it with no header, so a re-render cannot unmount an open sheet", async () => {
+    requestHeaders = new Headers({ "x-about-sheet-on": "1" });
     await renderShell();
     expect(screen.getByTestId("about-sheet").textContent).toBe("none");
   });
 
   it("puts it after the page, last in tab order", async () => {
-    process.env.ABOUT_SHEET_ENABLED = "true";
+    requestHeaders = new Headers({ "x-about-sheet-on": "1" });
     await renderShell();
     const main = screen.getByText("page").closest("main")!;
     const sheet = screen.getByTestId("about-sheet");

@@ -5,6 +5,7 @@ import { requireUserId } from "../../lib/auth";
 import { aboutSeen } from "../../lib/about/read";
 import { AboutPage } from "../../components/about/about-page";
 import { aboutSheetEnabled } from "../../lib/about/flag";
+import { requestSwitchEnv } from "../../lib/switches/request";
 
 /**
  * A repeated query key arrives as an array — `/about?next=/decks&next=/collection`
@@ -25,13 +26,15 @@ export default async function AboutRoute({
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
   const [userId, params] = await Promise.all([requireUserId(), searchParams]);
-  const seen = await aboutSeen(userId);
+  // The switches the proxy decided this request from: the page must draw the entries its gate counted.
+  const [seen, env] = await Promise.all([aboutSeen(userId), requestSwitchEnv(userId)]);
   return (
     <AboutPage
       seen={seen.version}
       seenIds={seen.ids}
       next={soleNext(params.next)}
-      sheetMode={aboutSheetEnabled()}
+      sheetMode={aboutSheetEnabled(env)}
+      env={env}
     />
   );
 }
