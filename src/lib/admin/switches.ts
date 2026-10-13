@@ -1,11 +1,12 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { adminEvents, flagGroupMembers, flagGroups, flagOverrides } from "../../db/schema";
+import { adminEvents } from "../../db/schema";
 import { explainForAccounts, switchEnvValues } from "../switches/explain";
-import type { SwitchName } from "../switches/registry";
+import { isSwitchName, type SwitchName } from "../switches/registry";
+import type { SwitchSnapshot } from "../switches/resolve";
 import { readSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts } from "./accounts";
-import { switchPage, type OverrideDetail, type SwitchPage } from "./switch-page-rule";
+import { switchPage, type GroupInfo, type OverrideDetail, type SwitchPage } from "./switch-page-rule";
 import { switchRows, type SwitchRow } from "./switches-rule";
 
 /** The history the switch page lists, newest first (admin plan 8b). */
@@ -37,25 +38,40 @@ export async function loadSwitchesList(): Promise<SwitchesList> {
  * switch's own override rows with their notes, the groups, its last 100 events and the account
  * universe. Read fresh, as the list is.
  */
+/**
+ * Every override with its note and author, every membership and every group, in ONE statement, so
+ * the ladder's verdicts and the rows it draws are one instant (the reason `SNAPSHOT_SQL` is one
+ * statement too). Null when the read fails.
+ */
+async function readSwitchState(): Promise<{ snapshot: SwitchSnapshot; overrides: (OverrideDetail & { switchName: string })[]; groups: GroupInfo[] } | null> {
+  try {
+    const { rows } = await db.execute<{ overrides: (Omit<OverrideDetail, "updatedAt"> & { switchName: string; updatedAt: string })[]; members: { userId: string; groupId: string }[]; groups: GroupInfo[] }>(sql`select
+      coalesce((select json_agg(json_build_object(
+        'switchName', o."switch", 'scope', o.scope, 'groupId', o.group_id, 'userId', o.user_id, 'value', o.value,
+        'note', o.note, 'updatedBy', o.updated_by, 'updatedAt', o.updated_at
+      )) from flag_overrides o), '[]'::json) as overrides,
+      coalesce((select json_agg(json_build_object('userId', m.user_id, 'groupId', m.group_id)) from flag_group_members m), '[]'::json) as members,
+      coalesce((select json_agg(json_build_object(
+        'id', g.id, 'name', g.name, 'members', (select count(*) from flag_group_members gm where gm.group_id = g.id)
+      )) from flag_groups g), '[]'::json) as groups`);
+    const [row] = rows;
+    // A timestamp inside json_build_object arrives as text, without a zone; the column holds UTC.
+    const overrides = row.overrides.filter((o) => isSwitchName(o.switchName)).map((o) => ({ ...o, updatedAt: new Date(`${o.updatedAt}Z`) }));
+    return {
+      snapshot: { overrides: overrides.map(({ switchName, scope, groupId, userId, value }) => ({ switchName: switchName as SwitchName, scope, groupId, userId, value })), groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) },
+      overrides,
+      groups: row.groups,
+    };
+  } catch (error) {
+    console.error("admin: switch overrides could not be read; drawing the env var alone", error);
+    return null;
+  }
+}
+
 export async function loadSwitchPage(name: SwitchName, viewerId: string): Promise<SwitchPageData> {
-  const [snapshot, { accounts, clerk }, overrides, groups, events] = await Promise.all([
-    readSwitchSnapshot(),
+  const [state, { accounts, clerk }, events] = await Promise.all([
+    readSwitchState(),
     listAccounts(),
-    db
-      .select({
-        scope: flagOverrides.scope,
-        groupId: flagOverrides.groupId,
-        userId: flagOverrides.userId,
-        value: flagOverrides.value,
-        note: flagOverrides.note,
-        updatedBy: flagOverrides.updatedBy,
-        updatedAt: flagOverrides.updatedAt,
-      })
-      .from(flagOverrides)
-      .where(eq(flagOverrides.switchName, name)),
-    db
-      .select({ id: flagGroups.id, name: flagGroups.name, members: sql<number>`(select count(*) from ${flagGroupMembers} m where m.group_id = ${flagGroups}.id)::int` })
-      .from(flagGroups),
     db
       .select({
         at: adminEvents.at,
@@ -77,15 +93,15 @@ export async function loadSwitchPage(name: SwitchName, viewerId: string): Promis
   const page = switchPage({
     name,
     env: switchEnvValues(),
-    // A failed snapshot read resolves every account from the env var alone, so the rows are left out
-    // too: the page then draws one consistent world under its "Overrides didn't load" line.
-    overrides: snapshot ? (overrides as OverrideDetail[]) : [],
-    verdicts: explainForAccounts(snapshot, accounts.map((a) => a.id)),
+    // A failed read resolves every account from the env var alone, with no rows: one consistent
+    // world under the page's "Overrides didn't load" line.
+    overrides: state?.overrides.filter((o) => o.switchName === name) ?? [],
+    verdicts: explainForAccounts(state?.snapshot ?? null, accounts.map((a) => a.id)),
     accounts,
-    groups,
+    groups: state?.groups ?? [],
     events,
     historyLimit: HISTORY_LIMIT,
     viewerId,
   });
-  return { page, overridesRead: snapshot !== null, clerk };
+  return { page, overridesRead: state !== null, clerk };
 }
