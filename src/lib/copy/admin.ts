@@ -227,7 +227,7 @@ export const adminCopy = {
  */
 export const switchCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
   ABOUT_SHEET_ENABLED: { label: "About sheet", description: "The What’s new sheet. While off, a redirect to About instead." },
-  ADDED_COPY_ENABLED: { label: "Added copy", description: "Say where an added copy went, with Change to move it." },
+  ADDED_COPY_ENABLED: { label: "Added copy", description: "An added copy says where it went, with Change to move it." },
   ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
@@ -237,10 +237,10 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   DECK_PRINTINGS_ENABLED: { label: "Deck printings", description: "Choose the printing of each card in a deck." },
   DECK_STATS_ENABLED: { label: "Deck stats", description: "The Stats view on a deck." },
   DECK_TOKENS_ENABLED: { label: "Deck tokens", description: "The tokens a deck makes, on the deck and in Shopping." },
-  FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A read inside Find a deck, for one credit." },
+  FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A one-credit read inside Find a deck for it." },
   HELP_ME_CHOOSE_ENABLED: { label: "Help me choose", description: "Find a commander from a few words, and Look deeper." },
   HOW_IT_WORKS_ENABLED: { label: "How it works", description: "The How it works page in About." },
-  LABEL_ROLE_COUNTS_ENABLED: { label: "Label role counts", description: "Count a deck’s roles from card labels, not the classifier." },
+  LABEL_ROLE_COUNTS_ENABLED: { label: "Label role counts", description: "Role counts from card labels instead of the classifier, in decks and recommendations." },
   LABEL_SURFACES_ENABLED: { label: "Label surfaces", description: "Card labels drawn on cards and lists." },
   LINEUP_ENABLED: { label: "Lineup", description: "The Stats view on /decks, across every deck." },
   LIST_CACHE_ENABLED: { label: "List cache", description: "Home and /decks cached per reader." },
@@ -248,7 +248,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   NEVER_CUT_ENABLED: { label: "Never cut", description: "Mark cards a suggestion may not cut." },
   NOTICES_ENABLED: { label: "Notices", description: "Notices on a deck." },
   OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
-  PRECONS_ENABLED: { label: "Precons", description: "Commander precons." },
+  PRECONS_ENABLED: { label: "Precons", description: "Browse Commander precons and start a deck from one." },
   PROPOSED_CUTS_ENABLED: { label: "Proposed cuts", description: "Cuts proposed for a deck over 99." },
   RATE_LIMIT_ENABLED: { label: "Request counting", description: "Counts each player’s requests and logs what a limit would refuse. Refuses nothing." },
   SHOPPING_MARK_BOUGHT_ENABLED: { label: "Mark bought", description: "Mark a shopping line bought and add it to the collection." },
@@ -256,6 +256,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SOCIAL_GAMES_ENABLED: { label: "Opponents", description: "Opponents in the game log." },
   SOCIAL_WISHLIST_ENABLED: { label: "Wishlist", description: "Cards wanted outside any deck." },
   STAND_IN_LABELS_ENABLED: { label: "Stand-in labels", description: "Stand-in labels where a card has none yet." },
-  SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swap tools on a deck. Find a deck read needs it." },
+  SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },
   TUNING_ENABLED: { label: "Suggested changes", description: "Suggested changes for a deck." },
 };
