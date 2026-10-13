@@ -121,7 +121,7 @@ export async function finishFitsRead(handle: FitsReadHandle, write: FitsReadOutc
         .where(and(eq(fitsReads.id, handle.readId), eq(fitsReads.status, "pending")))
         .returning({ id: fitsReads.id });
       if (written.length === 0) throw new RunSupersededError();
-      await settleModelCall(tx, handle.callId, refunded ? "refunded" : "spent", billed, now, write.status === "failed" ? "failed" : "nothing_valid");
+      await settleModelCall(tx, handle.callId, refunded ? "refunded" : "spent", billed, now);
     });
   } catch (err) {
     if (err instanceof RunSupersededError) {

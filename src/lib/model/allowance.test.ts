@@ -4,12 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { callMicroFor, dailyLimitFor, joinBilled, ownerShareMicro, recordModelUsage, reserveModelCall } from "./allowance";
+import { callMicroFor, dailyLimitFor, joinBilled, ownerShareMicro, recordModelUsage, reserveModelCall, settleModelCall } from "./allowance";
 import { modelCallParts } from "../../db/schema";
 import { costMicroUsd } from "./prices";
 import type { ModelFeature } from "./allowance-rule";
 import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "./prices";
-import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "./allowance-rule";
+import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE, RESERVATION_TTL_MS } from "./allowance-rule";
 
 describe("ownerShareMicro", () => {
   const before = process.env.MODEL_OWNER_MONTHLY_USD;
@@ -181,5 +181,48 @@ describe("recordModelUsage writes one part per provider call (admin brief, rule 
     const { tx, inserted } = fakeTx(false);
     await recordModelUsage(tx, "call_3", { model: "claude-sonnet-5", usage: usage(10), step: "write", effort: "low" });
     expect(inserted).toHaveLength(0);
+  });
+});
+
+describe("settleModelCall: what the row ends on, and why", () => {
+  const now = new Date("2026-10-13T12:00:00Z");
+  // A transaction whose UPDATE records its `set` and answers with the row it moved (none when it was no longer reserved).
+  const fakeTx = (moved: { status: string } | null) => {
+    const seen: { set?: Record<string, unknown> } = {};
+    const tx = {
+      update: () => ({ set: (v: Record<string, unknown>) => { seen.set = v; return { where: () => ({ returning: async () => (moved ? [moved] : []) }) }; } }),
+    };
+    return { tx: tx as never, seen };
+  };
+  const rendered = (v: unknown) => new PgDialect().sqlToQuery(v as never);
+
+  it("a refund carries the reason its caller names", async () => {
+    const { tx, seen } = fakeTx({ status: "refunded" });
+    expect(await settleModelCall(tx, "call", "refunded", undefined, now, "reaped")).toBe("refunded");
+    expect(seen.set).toEqual({ status: "refunded", refundReason: "reaped" });
+  });
+
+  it("a refund whose caller names none stores none", async () => {
+    const { tx, seen } = fakeTx({ status: "refunded" });
+    await settleModelCall(tx, "call", "refunded", undefined, now);
+    expect(seen.set).toEqual({ status: "refunded", refundReason: null });
+  });
+
+  it("a spend is decided in the statement: spent while the reservation is live, refunded as late_success after", async () => {
+    const { tx, seen } = fakeTx({ status: "spent" });
+    expect(await settleModelCall(tx, "call", "spent", undefined, now, "failed")).toBe("spent");
+    const status = rendered(seen.set?.status);
+    const reason = rendered(seen.set?.refundReason);
+    expect(status.sql).toMatch(/case when .* then 'spent' else 'refunded' end/);
+    expect(reason.sql).toMatch(/case when .* then null else 'late_success' end/);
+    // Both compare the row's age against the same cutoff: the TTL before `now`, and a caller's reason never replaces it.
+    const cutoff = new Date(now.getTime() - RESERVATION_TTL_MS);
+    expect(status.params).toEqual([cutoff.toISOString()]);
+    expect(reason.params).toEqual([cutoff.toISOString()]);
+  });
+
+  it("reports the status a late success ended on, and null for a row already settled", async () => {
+    expect(await settleModelCall(fakeTx({ status: "refunded" }).tx, "call", "spent", undefined, now)).toBe("refunded");
+    expect(await settleModelCall(fakeTx(null).tx, "call", "spent", undefined, now)).toBeNull();
   });
 });

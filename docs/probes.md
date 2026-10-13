@@ -2138,7 +2138,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   was not refunded. Built after two staging reads on 2026-10-12 ended `ok` with their credit `refunded` and nothing
   recorded why. `PROBE_TARGET_URL` names the database and is required; the probe refuses the production and staging
   branches, writes only rows under a per-run `user_id` and deletes them in a `finally`, so `local-dev` is fine.
-  Tuning, fits and synopsis name `failed` / `nothing_valid` on their refunds and the five reapers `reaped`; this probe settles
-  the intake paths only, and `late_success` comes from the shared `settleModelCall` for all of them.
+  The five reapers write `reaped` and `late_success` comes from the shared `settleModelCall` for every feature; `failed` and
+  `nothing_valid` are named by the intake paths alone, because tuning, fits and synopsis refund for mixed causes. This probe
+  settles the intake paths only.
   Mutation-checked 2026-10-13: dropping `"reaped"` from the intake reaper, the loud log, or the `late_success` write each
   fails exactly its own check.
