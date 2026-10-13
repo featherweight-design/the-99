@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { LineupData } from "../../lib/lineup/types";
 
 const read = vi.hoisted(() => ({ stats: vi.fn() }));
@@ -147,5 +147,18 @@ describe("DecksView: Stats on /decks", () => {
     draw({ data: STATS, view: "stats", foldServer: null });
     expect(screen.getByRole("tab", { name: "Stats" }).getAttribute("aria-selected")).toBe("true");
     expect(document.querySelector("[data-decks-stats]")).not.toBeNull();
+  });
+
+  // The shell's Decks link clears the query without unmounting: a bare /decks must not keep Stats drawn.
+  it("goes back to Tiles when the address bar loses ?view=stats, and a later flip needs no read", async () => {
+    window.history.replaceState(null, "", "/decks?view=stats");
+    draw({ data: STATS, view: "stats", foldServer: null });
+    expect(document.querySelector("[data-decks-stats]")).not.toBeNull();
+    act(() => { window.history.pushState(null, "", "/decks"); window.dispatchEvent(new PopStateEvent("popstate")); });
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).toBeNull());
+    expect(screen.getByRole("tab", { name: "Tiles" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
+    expect(read.stats).not.toHaveBeenCalled();
   });
 });

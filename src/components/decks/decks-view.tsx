@@ -342,6 +342,13 @@ export function DecksView({
     mounted.current = true;
     return () => { mounted.current = false; };
   }, []);
+  // The shell's `Decks` link clears the query without unmounting this view, so a bare /decks reached from
+  // Stats must draw Tiles: the address bar no longer asks for Stats. `heldStats` stays for a later flip.
+  const [seenViewQuery, setSeenViewQuery] = useState(liveQuery);
+  if (liveQuery !== seenViewQuery) {
+    setSeenViewQuery(liveQuery);
+    if (view === "stats" && new URLSearchParams(liveQuery).get("view") !== "stats") setView("tiles");
+  }
   if (lineup?.data && lineup.data !== heldStats) {
     setHeldStats(lineup.data);
     // A press on Stats that had to ask the server lands here: the payload it asked for, drawn as Stats.
