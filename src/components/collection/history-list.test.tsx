@@ -22,7 +22,7 @@ const NOW = Date.parse("2026-10-09T20:00:00Z");
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e1", seq: 5, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
   copiesUp: 2, copiesDown: 0, removesOnly: false, revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false,
-  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, ...over,
+  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, cartDecks: null, ...over,
 });
 const row = (name: string, before: number | null, after: number | null): HistoryRow => ({
   oracleId: name, setCode: "lea", collectorNumber: "1", finish: "nonfoil", name,
@@ -169,6 +169,20 @@ describe("HistoryList", () => {
     expect(link.getAttribute("href")).toBe("/decks/shopping");
     expect(link.closest("p")?.textContent).toBe("From Shopping for all decks");
     expect(link.closest("button")).toBeNull();
+  });
+
+  it("names the decks a cart purchase was bought for, linked, with the overflow counted", () => {
+    const cartDecks = { named: [{ id: "d1", name: "Gishath" }, { id: "d2", name: "Omnath" }, { id: "d3", name: "Atraxa" }], more: 2, gone: 1 };
+    draw([entry({ kind: "edit", source: "shopping:cart:d1,d2,d3", firstName: "Sol Ring", shoppingCart: true, cartDecks })]);
+    const p = screen.getByRole("link", { name: "Shopping for all decks" }).closest("p")!;
+    expect(p.textContent).toBe("From Shopping for all decks. Bought for Gishath, Omnath, Atraxa, 2 more and a deck you’ve since deleted.");
+    expect(screen.getByRole("link", { name: "Omnath" }).getAttribute("href")).toBe("/decks/d2");
+  });
+
+  it("says only that a cart purchase's decks are gone when none survive", () => {
+    draw([entry({ kind: "edit", source: "shopping:cart:d1,d2", firstName: "Sol Ring", shoppingCart: true, cartDecks: { named: [], more: 0, gone: 2 } })]);
+    expect(screen.getByRole("link", { name: "Shopping for all decks" }).closest("p")?.textContent)
+      .toBe("From Shopping for all decks. Bought for 2 decks you’ve since deleted.");
   });
 
   it("names a deleted deck without a link and keeps Revert (§D3)", () => {

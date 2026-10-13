@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { listColumns, revertDiffers } from "./history";
+import { cartDecksOf, listColumns, revertDiffers } from "./history";
 
 const id = { oracleId: "a", setCode: "lea", collectorNumber: "1", finish: "nonfoil" };
 const row = (before: number | null, after: number | null) => ({
@@ -61,5 +61,19 @@ describe("the list's copies figure", () => {
     expect(text).toContain("then substr(h.source, 10)::uuid end ) as shopping_deck_name");
     // The id is read off the source alone, so a deleted deck still yields its id with a null name.
     expect(text).toContain("then substr(h.source, 10) end as shopping_deck_id");
+  });
+});
+
+describe("cartDecksOf", () => {
+  const living = new Map([["a", "Gishath"], ["b", "Omnath"], ["c", "Atraxa"], ["d", "Kinnan"], ["e", "Zur"]]);
+  it("names the first three living decks in the source's order, counts the rest, and counts the deleted apart", () => {
+    expect(cartDecksOf(["a", "x", "b", "c", "d", "e", "y"], living)).toEqual({
+      named: [{ id: "a", name: "Gishath" }, { id: "b", name: "Omnath" }, { id: "c", name: "Atraxa" }],
+      more: 2,
+      gone: 2,
+    });
+  });
+  it("is empty of names when every deck is gone", () => {
+    expect(cartDecksOf(["x", "y"], living)).toEqual({ named: [], more: 0, gone: 2 });
   });
 });
