@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { adminCopy } from "../../lib/copy/admin";
-import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
-import { SearchIcon } from "../ui/search-icon";
+import { SearchField } from "../ui/text-field";
 import type { ConfirmContext } from "./model-confirm";
 import { RowControls } from "./override-controls";
 
@@ -101,18 +100,16 @@ export function OverridePicker({
         <div className="flex flex-col gap-[6px]">
           {/* Accounts always search; groups once there are more than a lookup shows. */}
           {(kind === "user" || choices.length > MAX_RESULTS) && (
-            <label className={`flex h-[44px] items-center gap-[10px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] md:h-[38px] ${AFFIX_FOCUS_INPUT}`}>
-              <SearchIcon className="shrink-0 text-[color:var(--fg-faint)]" />
-              <input
-                type="search"
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={kind === "user" ? copy.accountSearch : copy.groupSearch}
-                aria-label={kind === "user" ? copy.accountSearch : copy.groupSearch}
-                className={`min-w-0 flex-1 p-0 text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:text-[14px] ${AFFIX_INPUT}`}
-              />
-            </label>
+            <SearchField
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery("")}
+              placeholder={kind === "user" ? copy.accountSearch : copy.groupSearch}
+              aria-label={kind === "user" ? copy.accountSearch : copy.groupSearch}
+              containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px]"
+              className="text-[16px] md:text-[14px]"
+            />
           )}
           {choices.length === 0 && kind === "group" ? (
             <p className="m-0 text-[13px] text-[color:var(--fg-muted)]">{copy.groupsNone}</p>

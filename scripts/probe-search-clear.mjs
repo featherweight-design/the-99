@@ -27,6 +27,10 @@ const SURFACES = [
   { route: "/collection", name: "collection compact", widths: ["phone"] },
   { route: "/collection", name: "collection wide", widths: ["desktop"] },
   { route: "/collection/sets", name: "sets index", widths: ["phone", "desktop"] },
+  // The deck list's field is in the column at desktop and behind its search button, in a sheet, on the phone.
+  { route: "/decks", name: "decks column", widths: ["desktop"] },
+  { route: "/decks", name: "decks sheet", widths: ["phone"], open: 'button[aria-label="Search decks"]', field: '[role="dialog"] [data-search-field]' },
+  { route: "/decks/precons", name: "precons list", widths: ["phone", "desktop"], open: null, field: "main [data-search-field]" },
 ];
 
 async function signIn(page) {
@@ -77,9 +81,11 @@ try {
     await signIn(page);
     for (const s of SURFACES.filter((x) => x.widths.includes(w.name))) {
       await page.goto(`${BASE}${s.route}`, { waitUntil: "domcontentloaded" });
-      const input = onPage(page, "[data-search-field] input").first();
+      const scope = s.field ?? "main [data-search-field]";
+      if (s.open && w.name === "phone") await onPage(page, s.open).first().click();
+      const input = page.locator(`${scope} input`).first();
       await input.waitFor({ state: "visible", timeout: 30_000 });
-      const clear = onPage(page, "[data-search-field] button[aria-label]").first();
+      const clear = page.locator(`${scope} button[aria-label]`).first();
       await input.fill("zzq");
       await clear.waitFor({ state: "visible" });
       const before = await clear.boundingBox();
@@ -87,10 +93,10 @@ try {
       if (w.name === "phone") await page.touchscreen.tap(before.x + before.width / 2, before.y + before.height / 2);
       else await page.mouse.click(before.x + before.width / 2, before.y + before.height / 2);
       await page.waitForTimeout(250);
-      const after = await page.evaluate(() => ({
-        value: document.querySelector("main [data-search-field] input")?.value,
-        focused: document.activeElement === document.querySelector("main [data-search-field] input"),
-      }));
+      const after = await page.evaluate((sel) => ({
+        value: document.querySelector(`${sel} input`)?.value,
+        focused: document.activeElement === document.querySelector(`${sel} input`),
+      }), scope);
       const tag = `${w.name} ${s.name}`;
       check(after.value === "", `${tag}: one tap empties the field`, `value=${JSON.stringify(after.value)}`);
       check(after.focused, `${tag}: the field keeps focus`, `focused=${after.focused}`);
