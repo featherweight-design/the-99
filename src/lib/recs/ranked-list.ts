@@ -3,6 +3,7 @@ import { loadBuiltCommanderIds } from "../decks/built";
 import { getCollectionStats } from "../home/summary";
 import { recommendCommanders, toListItem, type CommanderListItem } from "./recommend";
 import { collectionGeneration, indexGeneration, loadScores, persistScores } from "./store";
+import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 
 export type RankedList = {
   items: CommanderListItem[];
@@ -34,9 +35,33 @@ export type RankedList = {
  * does not name) so that deleting the deck never brought it back. The persisted
  * scores stay whole: building a deck must not invalidate the cache, and must not
  * evict from it either.
+ *
+ * `env` is the reader's resolved switches (`requestSwitchEnv`): the role basis follows its
+ * `LABEL_ROLE_COUNTS_ENABLED`, which takes an app-wide override (admin PR 6d-2). The per-request memo
+ * is keyed on the user and that BASIS, never on the env object: React's `cache` compares arguments by
+ * identity, and every `requestSwitchEnv` call builds a new object, so an env argument would turn each
+ * of a render's several callers (the slug resolve, the rankings, the free ranking) into a recompute.
+ * Two callers in one request that resolved different bases still get different lists.
  */
-export const getRankedList = cache(async function getRankedList(
+const rankedListMemo = cache(() => new Map<string, Promise<RankedList>>());
+
+export function getRankedList(
   userId: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<RankedList> {
+  const memo = rankedListMemo();
+  const key = `${userId}|${labelRoleCountsEnabled(env) ? "labels" : "classifier"}`;
+  let list = memo.get(key);
+  if (!list) {
+    list = loadRankedList(userId, env);
+    memo.set(key, list);
+  }
+  return list;
+}
+
+async function loadRankedList(
+  userId: string,
+  env: NodeJS.ProcessEnv,
 ): Promise<RankedList> {
   // Stats first and alone: an empty collection has nothing to score, so it must
   // reach neither the store nor the decks table. Checked ahead of the stored-rows
@@ -50,7 +75,7 @@ export const getRankedList = cache(async function getRankedList(
 
   // The deck read moves up here, ahead of `assemble`, because the stored set's
   // usability now depends on it: see the degraded filter below.
-  const [stored, built] = await Promise.all([loadScores(userId), loadBuiltCommanderIds(userId)]);
+  const [stored, built] = await Promise.all([loadScores(userId, env), loadBuiltCommanderIds(userId)]);
 
   // Degradation is a property of the rows this list SHOWS. The store holds built
   // commanders too, and a degraded row among them is a row nobody is looking at:
@@ -65,7 +90,7 @@ export const getRankedList = cache(async function getRankedList(
     degradedOracleIds: stored.degradedOracleIds.filter((id) => !built.has(id)),
   };
 
-  const list = await assemble(userId, visible, stats.uniqueCards);
+  const list = await assemble(userId, visible, stats.uniqueCards, env);
 
   // The one exclusion both paths pass through. Nothing to exclude from an empty
   // list — a collection can hold cards without supporting a single rankable
@@ -82,12 +107,13 @@ export const getRankedList = cache(async function getRankedList(
   // its own degraded set from, so both paths now answer this the same way.
   const degraded = items.some((i) => i.synergyState === "degraded");
   return { ...list, items, degraded, candidateCount: items.length };
-});
+}
 
 async function assemble(
   userId: string,
   stored: Awaited<ReturnType<typeof loadScores>>,
   uniqueCards: number,
+  env: NodeJS.ProcessEnv,
 ): Promise<RankedList> {
   if (stored.items.length > 0 && stored.degradedOracleIds.length === 0) {
     return {
@@ -106,12 +132,12 @@ async function assemble(
     collectionGeneration(userId),
     indexGeneration(),
   ]);
-  const recs = await recommendCommanders(userId);
+  const recs = await recommendCommanders(userId, env);
   // The computed list is already correct; persisting is only an optimisation for
   // the next request, so a transient write failure must not fail this render.
   try {
     // A list counted by the classifier only because the label read failed is served, not stored.
-    if (!recs.labelFallback) await persistScores(userId, recs.results, generation, indexGen, recs.labelCheck);
+    if (!recs.labelFallback) await persistScores(userId, recs.results, generation, indexGen, recs.labelCheck, env);
   } catch {
     // not a fallback: the list is already computed and correct; only its store for next time failed.
     // Next load recomputes.

@@ -64,8 +64,11 @@ const basisMock = vi.hoisted(() => ({
   value: { basis: "classifier", roleSets: undefined, fellBack: false } as {
     basis: string; roleSets: Map<string, string[]> | undefined; fellBack: boolean;
   },
+  enabledSeen: [] as boolean[],
 }));
-vi.mock("../recs/pool-role-basis", () => ({ loadPoolRoleBasis: async () => basisMock.value }));
+vi.mock("../recs/pool-role-basis", () => ({
+  loadPoolRoleBasis: async (_cards: unknown, enabled: boolean) => (basisMock.enabledSeen.push(enabled), basisMock.value),
+}));
 vi.mock("./candidates", () => ({
   loadCandidates: (...args: unknown[]) =>
     (loadCandidates as unknown as (...a: unknown[]) => unknown)(...args),
@@ -168,6 +171,23 @@ describe("loadDiscovery — wiring", () => {
       expect(roles(await loadDiscovery("user-1", { sort: "fit" }))).toBeLessThan(roles(byLabel));
     } finally {
       basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: false };
+    }
+  });
+
+  // Admin PR 6d-2: the switch is decided from the env the reader resolved, never the environment
+  // alone. The environment has it off and the resolved env on, so a loader reading `process.env`
+  // asks for the classifier and one reading its env asks for the labels.
+  it("asks for the label read by the reader's resolved env, not the environment", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
+    try {
+      basisMock.enabledSeen.length = 0;
+      await loadDiscovery("user-1", { sort: "fit" }, { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
+      expect(basisMock.enabledSeen).toEqual([true]);
+      basisMock.enabledSeen.length = 0;
+      await loadDiscovery("user-1", { sort: "fit" }, { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv);
+      expect(basisMock.enabledSeen).toEqual([false]);
+    } finally {
+      vi.unstubAllEnvs();
     }
   });
 

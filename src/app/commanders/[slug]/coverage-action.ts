@@ -8,6 +8,7 @@ import type { RoleCard, RoleName } from "../../../lib/recs/score";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { withAvailability } from "../../../lib/decks/availability";
 import { resolveOwnedPrintings } from "../../../lib/collection/owned-printings";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 
 /** A1: one retry for the whole section. Re-resolves EDHREC and hands back only
     the role cards — the four panels read one payload, so there is one action,
@@ -34,11 +35,14 @@ export async function retryCoverageFigures(
   avail: "all" | "free",
 ): Promise<Record<RoleName, RoleCard[]> | null> {
   const userId = await requireUserId();
+  // The reader's resolved switches, as the page decided from: the retry scores under the same role
+  // basis (`LABEL_ROLE_COUNTS_ENABLED`) the page rendered with.
+  const env = await requestSwitchEnv(userId);
 
   // The same resolver the page uses, so the retry reaches the commander the
   // page rendered. Resolving through the store alone would no-op on every
   // discovery page, which is exactly where a degraded EDHREC is retried.
-  const found = await resolveCommanderSlug(userId, slug);
+  const found = await resolveCommanderSlug(userId, slug, env);
   if (!found) return null;
 
   // The same pool the page scored with — and it is NOT free to ask for.
@@ -77,7 +81,7 @@ export async function retryCoverageFigures(
     pool = free;
   }
 
-  const scored = await scoreOneCommander(userId, found.oracleId, slug, pool);
+  const scored = await scoreOneCommander(userId, found.oracleId, slug, pool, env);
   if (!scored) return null;
 
   // Return only roleCards — the section owns the state update.

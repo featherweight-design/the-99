@@ -45,6 +45,15 @@ describe("resolveEnv", () => {
     expect(resolveEnv(e({}), app, "u1").LIST_CACHE_ENABLED).toBe("true");
   });
 
+  it("takes only the app-wide override of the role-count basis, which is plumbing", () => {
+    const user = snap([row({ switchName: "LABEL_ROLE_COUNTS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(resolveEnv(e({ LABEL_ROLE_COUNTS_ENABLED: "false" }), user, "u1").LABEL_ROLE_COUNTS_ENABLED).toBe("false");
+    const group = snap([row({ switchName: "LABEL_ROLE_COUNTS_ENABLED", scope: "group", groupId: "g1", value: "on" })], { u1: "g1" });
+    expect(resolveEnv(e({}), group, "u1").LABEL_ROLE_COUNTS_ENABLED).toBeUndefined();
+    const app = snap([row({ switchName: "LABEL_ROLE_COUNTS_ENABLED", scope: "app", value: "on" })]);
+    expect(resolveEnv(e({ LABEL_ROLE_COUNTS_ENABLED: "false" }), app, "u1").LABEL_ROLE_COUNTS_ENABLED).toBe("true");
+  });
+
   it("never raises a parent: a child switched on for an account still needs its parent", () => {
     const s = snap([row({ switchName: "TUNING_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     expect(tuningEnabled(resolveEnv(e({ ANALYSIS_TAB_ENABLED: "false" }), s, "u1"))).toBe(false);

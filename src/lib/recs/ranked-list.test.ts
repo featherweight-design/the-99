@@ -51,6 +51,26 @@ beforeEach(() => {
 
 
 describe("getRankedList", () => {
+  // Admin PR 6d-2: the stored set is read, the list computed and the set stored under the reader's
+  // resolved switches. The environment has the label basis off; the env handed in has it on, and it
+  // must reach all three, or a set counted by label is stored under the classifier's version.
+  it("reads, computes and stores under the env it is handed, not the environment", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
+    try {
+      const env = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+      loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
+      recommendCommanders.mockResolvedValue({ results: [item("a", 90)], degraded: false, uniqueCardsRead: 10, candidateCount: 1 });
+
+      await getRankedList("user_1", env);
+
+      expect((loadScores.mock.calls[0] as unknown[])[1]).toBe(env);
+      expect((recommendCommanders.mock.calls[0] as unknown[])[1]).toBe(env);
+      expect((persistScores.mock.calls[0] as unknown[])[5]).toBe(env);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("drops commanders that already helm a deck, on the cached path", async () => {
     loadScores.mockResolvedValue({
       items: [item("kept", 90), item("built", 95)],

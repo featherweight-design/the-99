@@ -3,6 +3,7 @@ import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
 import { cacheForUser } from "../../lib/cache/user-lists";
 import { commanderRankingsKey, loadCommanderRankings } from "../../lib/commanders/rankings";
 import { readCommandersAvail } from "../../lib/commanders/avail-pref";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { permanentRedirect } from "next/navigation";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
@@ -67,8 +68,11 @@ export default async function CommandersPage({
   // Started now so it runs beside the rankings; a failure is handled where it is read.
   const printings = loadCommanderPrintings();
   printings.catch(() => {});
+  // The reader's resolved switches: the rankings' key and their load decide the role basis
+  // (`LABEL_ROLE_COUNTS_ENABLED`) from this one env.
+  const env = await requestSwitchEnv(userId);
   const [rankings, decks, savedAvail] = await Promise.all([
-    cacheForUser(userId, commanderRankingsKey, () => loadCommanderRankings(userId)),
+    cacheForUser(userId, commanderRankingsKey(env), () => loadCommanderRankings(userId, env)),
     listRecentDecks(userId, 1),
     readCommandersAvail(userId),
   ]);

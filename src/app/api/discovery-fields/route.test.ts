@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const stub = vi.hoisted(() => ({
@@ -7,6 +7,11 @@ const stub = vi.hoisted(() => ({
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/discovery/payload", () => ({ loadDiscoveryPayload: stub.load }));
+// The reader's resolved switches, a stand-in pinned by identity. The environment has the label basis
+// off and this env has it on: the payload is keyed on the basis, so the route reaches the page's entry
+// only by reading it under the reader's env (admin PR 6d-2).
+const RESOLVED = vi.hoisted(() => ({ LABEL_ROLE_COUNTS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
+vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => RESOLVED }));
 
 import { GET } from "./route";
 import { encodeDiscovery } from "../../../lib/discovery/encode";
@@ -23,9 +28,14 @@ const list = { items: [item("a"), item("b")], sort: "fit" } as unknown as Discov
 const get = (qs: string) => GET(new NextRequest(`http://localhost/api/discovery-fields?${qs}`));
 
 beforeEach(() => {
+  vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
   stub.userId = "user_1";
   stub.load.mockReset();
   stub.load.mockResolvedValue({ encoded: encodeDiscovery(list), oracleIds: [] });
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("GET /api/discovery-fields", () => {
@@ -36,7 +46,7 @@ describe("GET /api/discovery-fields", () => {
     const { fields } = await res.json();
     expect(Object.keys(fields)).toEqual(["a", "b"]);
     expect(fields.a.prose).toBe("About a.");
-    expect(stub.load).toHaveBeenCalledWith("user_1", "fit");
+    expect(stub.load).toHaveBeenCalledWith("user_1", "fit", RESOLVED);
   });
 
   it("answers nothing for a slug the reader's list does not hold", async () => {

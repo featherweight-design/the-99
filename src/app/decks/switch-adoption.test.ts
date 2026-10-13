@@ -118,10 +118,23 @@ const READERS = [
   "src/lib/decks/consider-labels.ts",
   "src/lib/decks/deck-mix.ts",
   "src/lib/tuning/mana-help-load.ts",
+  // Admin PR 6d-2: recs and discovery, which count roles by the reader's LABEL_ROLE_COUNTS_ENABLED.
+  "src/lib/recs/pool-role-basis.ts",
+  "src/lib/recs/recommend.ts",
+  "src/lib/recs/free-ranking.ts",
+  "src/lib/recs/ranked-list.ts",
+  "src/lib/recs/warm.ts",
+  "src/lib/recs/store.ts",
+  "src/lib/recs/home-novelty.ts",
+  "src/lib/commanders/rankings.ts",
+  "src/lib/discovery/list.ts",
+  "src/lib/discovery/payload.ts",
+  "src/lib/discovery/resolve-slug.ts",
 ];
 
-/** A switch read from the environment alone: `fooEnabled()` or `roleBasisFromEnv()` with no env. */
-const BARE_CALL = /\b(\w+Enabled|roleBasisFromEnv)\(\s*\)/g;
+/** A switch read from the environment alone: `fooEnabled()`, `roleBasisFromEnv()` or `scoreWriterVersion()`
+ *  (the stored scores' role basis) with no env. */
+const BARE_CALL = /\b(\w+Enabled|roleBasisFromEnv|scoreWriterVersion)\(\s*\)/g;
 
 describe("no Server Action, route handler, page, layout or deck-page reader reads a switch from the environment alone", () => {
   it("finds the directive after a header comment", async () => {
@@ -130,8 +143,8 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
   });
 
   it("finds a bare call (the scan's own failure path)", () => {
-    const code = "const a = deckPrintingsEnabled();\nconst b = roleBasisFromEnv( );\nconst c = tuningEnabled(env);";
-    expect([...code.matchAll(BARE_CALL)].map((m) => m[1])).toEqual(["deckPrintingsEnabled", "roleBasisFromEnv"]);
+    const code = "const a = deckPrintingsEnabled();\nconst b = roleBasisFromEnv( );\nconst c = tuningEnabled(env);\nconst d = scoreWriterVersion();\nconst e = scoreWriterVersion(env);";
+    expect([...code.matchAll(BARE_CALL)].map((m) => m[1])).toEqual(["deckPrintingsEnabled", "roleBasisFromEnv", "scoreWriterVersion"]);
   });
 
   it("names no bare call in a \"use server\" module, a route handler, a page, a layout, a listed reader or a module directly under lib/lineup", async () => {

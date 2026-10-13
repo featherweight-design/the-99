@@ -85,7 +85,9 @@ function linesOf(value: unknown, max = MAX_LINES): unknown[] {
 }
 
 /** Applied, or applied by an earlier request with this id: either way, the readers are stale. */
-function settled(userId: string, result: ChangeResult): { applied: { id: string } } | null {
+/** `env` is the editor's resolved switches, taken in the action: `after()` runs past the request, and the
+ *  warm counts roles by its `LABEL_ROLE_COUNTS_ENABLED`. */
+function settled(userId: string, env: NodeJS.ProcessEnv, result: ChangeResult): { applied: { id: string } } | null {
   if (result.status !== "applied" && result.status !== "alreadyApplied") return null;
   // A retry invalidates again: the request that wrote it may have died between its commit and
   // its own invalidation.
@@ -95,7 +97,7 @@ function settled(userId: string, result: ChangeResult): { applied: { id: string 
   // state. The warm follows the invalidation, as it did when both ran in the action.
   after(async () => {
     invalidateCollectionReaders(userId);
-    await warmCommanderScores(userId);
+    await warmCommanderScores(userId, env);
   });
   return { applied: { id: result.entry.id } };
 }
@@ -134,7 +136,7 @@ export async function addToCollection(actionId: string, lines: unknown): Promise
   });
   const placements = addedCopyEnabled(env);
   const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId, ...(placements ? { placements } : {}) });
-  const done = settled(userId, result);
+  const done = settled(userId, env, result);
   // Where each copy went, read inside the write. A retry that found the save applied has no read of
   // its own (the first request's snapshot is gone), so it says nothing rather than guess.
   if (done && result.status === "applied" && result.raised) {
@@ -172,7 +174,7 @@ export async function editCollection(
   confirmShort?: unknown,
   seen?: unknown,
 ): Promise<EditOutcome> {
-  const userId = await signedInEditor();
+  const { userId, env } = await signedInEditorEnv();
   if (!isUuid(actionId)) throw new Error("bad action id");
   // An edit may name every holding of one card (a removal zeroes each), so its bound is the snapshot's.
   const parsed = linesOf(rows, MAX_SEEN).map((r) => {
@@ -219,7 +221,7 @@ export async function editCollection(
   const result = await applyCollectionChange(
     userId, { kind: "edit", rows: editRows, seen: seenIdentities }, { id: actionId, confirmShort: parseShortDecks(confirmShort) },
   );
-  const done = settled(userId, result);
+  const done = settled(userId, env, result);
   if (done) return done;
   switch (result.status) {
     case "unchanged": return { unchanged: true };

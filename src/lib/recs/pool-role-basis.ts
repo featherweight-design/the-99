@@ -1,4 +1,3 @@
-import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { readLabelRoleSets } from "../labels/read";
 import { roleSetFingerprint } from "../labels/role-sets";
 import type { RoleBasis } from "../profile/build";
@@ -43,9 +42,14 @@ export type LabelCheck = { oracleIds: string[]; fingerprint: string };
 export const CLASSIFIER_POOL_BASIS: PoolRoleBasis = { basis: "classifier", roleSets: undefined, fellBack: false };
 const FELL_BACK: PoolRoleBasis = { ...CLASSIFIER_POOL_BASIS, fellBack: true };
 
+/**
+ * `enabled` is the READER's `LABEL_ROLE_COUNTS_ENABLED` (`labelRoleCountsEnabled(env)` of the env the
+ * request resolved), never read here: the switch takes an app-wide override, so the environment alone
+ * can disagree with what the rest of the request decided (admin PR 6d-2).
+ */
 export async function loadPoolRoleBasis(
   cards: readonly { oracleId: string }[],
-  enabled: boolean = labelRoleCountsEnabled(),
+  enabled: boolean,
   read: typeof readLabelRoleSets = readLabelRoleSets,
 ): Promise<PoolRoleBasis> {
   if (!enabled) return CLASSIFIER_POOL_BASIS;

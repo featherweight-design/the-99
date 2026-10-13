@@ -13,6 +13,7 @@ import { cache } from "react";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { loadPoolRoleBasis } from "./pool-role-basis";
+import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import {
@@ -171,6 +172,9 @@ export async function rankFree(
     collection: PoolCard[];
     availability: Map<string, Availability>;
   },
+  /** The reader's resolved switches: the role basis follows its `LABEL_ROLE_COUNTS_ENABLED`, as the
+   *  canonical list's does, or the two modes would count one collection two ways. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<{ items: CommanderListItem[]; ok: boolean }> {
   // Slugs come only from the canonical list, so an empty one can only ever
   // produce an empty ranking. `ok` is still true: nothing failed, there is just
@@ -253,7 +257,7 @@ export async function rankFree(
   // `inclusionByName`, which only feeds `roleCards`, and `toListItem` drops those before this
   // function returns: a cache read here pulled every buildable commander's whole EDHREC page
   // (~94KB each) for figures nothing drew.
-  const { basis, roleSets, fellBack } = await loadPoolRoleBasis(collection);
+  const { basis, roleSets, fellBack } = await loadPoolRoleBasis(collection, labelRoleCountsEnabled(env));
   // The canonical list this one is carried against may have been persisted under the labels basis.
   // With the label read down this list would count by the classifier, and the toggle would draw
   // two bases as one ranking. The control is disabled for this response instead, like any other

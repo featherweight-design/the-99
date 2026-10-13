@@ -14,12 +14,15 @@ import { collectionGeneration, indexGeneration, persistScores } from "./store";
  * each would describe the state the compute finished in rather than the state it read, and would
  * match itself no matter what moved underneath. So a warm overtaken by a later write is dropped
  * rather than stored.
+ *
+ * `env` is the writer's resolved switches, taken BEFORE `after()`: the role basis, and the writer
+ * version it stamps, follow its `LABEL_ROLE_COUNTS_ENABLED` (admin PR 6d-2).
  */
-export async function warmCommanderScores(userId: string): Promise<void> {
+export async function warmCommanderScores(userId: string, env: NodeJS.ProcessEnv = process.env): Promise<void> {
   try {
     const [generation, indexGen] = await Promise.all([collectionGeneration(userId), indexGeneration()]);
-    const recs = await recommendCommanders(userId);
-    if (!recs.labelFallback) await persistScores(userId, recs.results, generation, indexGen, recs.labelCheck);
+    const recs = await recommendCommanders(userId, env);
+    if (!recs.labelFallback) await persistScores(userId, recs.results, generation, indexGen, recs.labelCheck, env);
   } catch {
     // Swallow: the lazy path in getRankedList is the correctness backstop.
   }

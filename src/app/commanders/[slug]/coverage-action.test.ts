@@ -21,6 +21,10 @@ vi.mock("../../../lib/recs/recommend", () => ({ scoreOneCommander }));
 vi.mock("../../../lib/recs/free-ranking", () => ({ loadFreePool }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability }));
 vi.mock("../../../lib/collection/owned-printings", () => ({ resolveOwnedPrintings }));
+// The reader's resolved switches, a stand-in pinned by identity: the retry scores under the role
+// basis the page rendered with (admin PR 6d-2), so the env must reach the resolve and the score.
+const RESOLVED = vi.hoisted(() => ({ LABEL_ROLE_COUNTS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
+vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => RESOLVED }));
 
 /** A hard claim, so a stamped card reads as something other than free. */
 const CLAIMED = {
@@ -155,14 +159,15 @@ describe("retryCoverageFigures", () => {
     expect(loadFreePool).toHaveBeenCalledWith("user_1");
     expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", [
       { oracleId: "free-1" },
-    ]);
+    ], RESOLVED);
   });
 
   it("scores against the collection in the default mode, and reads no free pool", async () => {
     scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards });
     await retryCoverageFigures("korvold", "all");
     expect(loadFreePool).not.toHaveBeenCalled();
-    expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", undefined);
+    expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", undefined, RESOLVED);
+    expect(resolveCommanderSlug).toHaveBeenCalledWith("user_1", "korvold", RESOLVED);
   });
 
   // A failed free-pool read ABANDONS the retry rather than scoring against the

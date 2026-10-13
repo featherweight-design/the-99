@@ -13,6 +13,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { drawFieldsFor } from "../../../lib/discovery/encode";
 import { loadDiscoveryPayload } from "../../../lib/discovery/payload";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 import { MAX_FIELDS_BATCH } from "../../../lib/discovery/fields-batch";
 
 export const runtime = "nodejs";
@@ -30,6 +31,8 @@ export async function GET(req: NextRequest) {
   if (slugs.length === 0 || slugs.length > MAX_FIELDS_BATCH || !slugs.every((s) => SLUG.test(s))) {
     return NextResponse.json(null, { status: 400, headers: HEADERS });
   }
-  const { encoded } = await loadDiscoveryPayload(userId, sort);
+  // The reader's resolved switches, as the page read the payload under: the entry is keyed on the
+  // role basis, so the route reaches the page's entry only by deciding the basis the same way.
+  const { encoded } = await loadDiscoveryPayload(userId, sort, await requestSwitchEnv(userId));
   return NextResponse.json({ fields: drawFieldsFor(encoded, new Set(slugs)) }, { headers: HEADERS });
 }
