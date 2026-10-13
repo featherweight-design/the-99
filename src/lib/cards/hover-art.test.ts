@@ -52,7 +52,7 @@ const FEEDERS: Record<string, string> = {
   "components/cards/fits-picker.tsx": "lib/swaps/fits.ts",
   // Every card a notice names, down the chain card details uses (`loadDeckNotices`).
   "components/decks/notices-body.tsx": "lib/notices/read.ts",
-  // The button a row or tile IS: the owner (browser.tsx, set-grid-view.tsx) passes each row's art from its own loader.
+  // The button a row or tile IS: the owner (browser.tsx) passes each row's art from its own loader.
   "components/ui/preview-button.tsx": "",
   // The collection's own rows ARE the printing they draw: the collection list resolves its art per owned
   // printing (browse.ts), so there is no feeder to chain.

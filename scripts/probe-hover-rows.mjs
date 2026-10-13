@@ -9,8 +9,9 @@
 //  - A proposed cut's reason is `probe:cuts-panel`'s (it owns the stored-result fixture).
 //
 // The preview box is `md:block` only, so the hover checks run at 1300; the phone walk is the token paging and the
-// tile press, with no overflow. Makes no writes. Needs a server with DECK_TOKENS_ENABLED on and a database holding the
-// token catalog and a deck that makes tokens (a `pull:staging` copy on a scratch branch).
+// tile press, with no overflow. Makes no writes. Needs a server with DECK_TOKENS_ENABLED and PRECONS_ENABLED on and a
+// database holding the token catalog, the precons and a deck that makes tokens (a `pull:staging` copy on a scratch
+// branch). The precon is `PROBE_PRECON` (default CallingAllAngels_FDC); its list-row control names three of ITS cards.
 //
 //   PROBE_BASE=http://localhost:3731 PROBE_SHOTS=<dir> node scripts/probe-hover-rows.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -233,7 +234,8 @@ try {
 
     await page.goto(`${BASE}/decks/precons`, { waitUntil: "domcontentloaded" });
     await onPage(page, 'a[href^="/decks/precons/"]').first().waitFor({ timeout: 25_000 }).catch(() => {});
-    const preconHref = await page.evaluate(() => [...document.querySelectorAll('main a[href^="/decks/precons/"]')].map((a) => a.getAttribute("href")).find(Boolean) ?? null);
+    const preconFile = process.env.PROBE_PRECON ?? "CallingAllAngels_FDC";
+    const preconHref = await page.evaluate((file) => [...document.querySelectorAll('main a[href^="/decks/precons/"]')].map((a) => a.getAttribute("href")).find((h) => h === `/decks/precons/${file}`) ?? null, preconFile);
     report(`${w.label} a precon to open`, preconHref !== null, preconHref);
     if (preconHref) {
       await page.goto(`${BASE}${preconHref}`, { waitUntil: "domcontentloaded" });
@@ -242,8 +244,8 @@ try {
         await onPageRole(page, "button", /^List view$/).first().click({ timeout: 15_000 }).catch(() => {});
         await page.waitForTimeout(700);
         await shot("precon-list-view");
-        // The rows' names, by their text: a row here is not a list item. These are the first rows of the first precon the
-        // list offers, and any card name in the open list would do.
+        // The rows' names, by their text: a row here is not a list item. These are three cards of the default precon
+        // (`PROBE_PRECON`); a different precon needs its own names.
         const rowNames = onPage(page, "text=/^(Giada, Font of Hope|Angel of Finality|Angel of Vitality)$/");
         const rowOpens = await anyOpens(page, rowNames, 3);
         report(`${w.label} control: an open precon's list row previews`, rowOpens, { names: await rowNames.count() });

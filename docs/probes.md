@@ -2059,7 +2059,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   through the deck's tokens: Next reaches the second token and Previous comes back. The box is `md:block`, so the hover
   checks run at 1300 and the phone walk is the paging and no overflow. A proposed cut's reason is `probe:cuts-panel`'s,
   which hovers the reason (nothing) and the name (the card). Makes no writes, but needs a server with
-  `DECK_TOKENS_ENABLED` and `PRECONS_ENABLED` on and a database holding the token catalog and a deck that makes two or
+  `DECK_TOKENS_ENABLED` and `PRECONS_ENABLED` on and a database holding the token catalog, the precons (`PROBE_PRECON`,
+  default `CallingAllAngels_FDC`, whose card names the row control uses) and a deck that makes two or
   more tokens: a `pull:staging` copy on a scratch branch of staging, with the account's About row cleared
   (`markEveryEntrySeen`). Mutation-checked 2026-10-12: putting the hover back on a deck tile fails "no tile previews",
   and dropping the siblings from the token rows fails "Next is offered" at both widths. The contact sheet
