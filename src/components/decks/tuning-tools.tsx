@@ -2,17 +2,22 @@
 // The Tuning tools, loaded when first wanted. The hub and its three tools (Suggested changes,
 // Proposed cuts, Mana Balance) are ~290KB of source and the strings of `deck-tuning.ts` and
 // `tuning-hub.ts`, drawn only under the Analysis tab, yet bundled into `builder-shell` they were
-// part of the deck page's startup download. They are fetched together, because the hub opens a tool
-// the moment it draws and a tool that lagged the hub would leave a blank tile: at idle once the page
-// has loaded, on intent (a pointer resting on, or focus arriving at, the Analysis tab or a shortcut
+// part of the deck page's startup download. They are fetched together, and the hub draws only once its
+// tools have arrived (a tool that lagged it would leave a blank tile): at idle once the page has loaded, on intent (a pointer resting on, or focus arriving at, the Analysis tab or a shortcut
 // into a tool), and on the press itself.
 
 import { onDemand } from "../ui/on-demand";
 
-export const TuningHub = onDemand(() => import("./tuning-hub").then((m) => m.TuningHub));
 export const TuningPanel = onDemand(() => import("./tuning-panel").then((m) => m.TuningPanel));
 export const CutsPanelView = onDemand(() => import("./cuts-panel").then((m) => m.CutsPanelView));
 export const ManaBalancePanel = onDemand(() => import("./mana-balance-panel").then((m) => m.ManaBalancePanel));
+// The hub is not loaded until its tools are: it opens one the moment a tile is pressed, and a tool whose
+// code lagged would draw nothing. A tool that failed to arrive fails the hub's load too, so it is retried.
+export const TuningHub = onDemand(async () => {
+  await Promise.all([TuningPanel.fetch(), CutsPanelView.fetch(), ManaBalancePanel.fetch()]);
+  if (!TuningPanel.isLoaded() || !CutsPanelView.isLoaded() || !ManaBalancePanel.isLoaded()) throw new Error("the Tuning tools did not load");
+  return (await import("./tuning-hub")).TuningHub;
+});
 
 /**
  * Starts the tools' code downloading and resolves once every one has arrived. A second call costs

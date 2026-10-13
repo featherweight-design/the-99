@@ -132,6 +132,26 @@ describe("warming the Tuning tools", { timeout: 20_000 }, () => {
     await vi.waitFor(async () => expect(await loaded()).toEqual(ALL));
   });
 
+  it("does not draw the hub while one of its tools is still on the way", async () => {
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    // Re-registered for this case: a factory registered at the top is cached across `resetModules`.
+    vi.doMock("./mana-balance-panel", async () => {
+      await held;
+      return { ManaBalancePanel: () => <p>mana drawn</p> };
+    });
+    const { TuningHub, tuningToolsReady } = await import("./tuning-tools");
+    const hubProps = { deckId: "d", drawn: true, tools: [] } as unknown as Parameters<typeof TuningHub>[0];
+    render(<TuningHub {...hubProps} />);
+    await settle();
+    // The hub's own chunk is here and the others are, but Mana Balance is held: nothing draws.
+    expect(screen.queryByText("hub drawn")).toBeNull();
+    expect(tuningToolsReady()).toMatchObject({ hub: false, suggested: true, cuts: true, mana: false });
+    release();
+    await screen.findByText("hub drawn");
+    expect(tuningToolsReady()).toEqual({ hub: true, suggested: true, cuts: true, mana: true });
+  });
+
   it("keeps a shortcut's ask for the hub until the hub has loaded, then hands it over", async () => {
     // Nothing warms it: no idle time, and the press is the first intent. The hub arrives after the ask.
     vi.stubGlobal("requestIdleCallback", () => 0);
