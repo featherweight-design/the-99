@@ -224,7 +224,8 @@ These cover resolution, the ladder, the counts and the confirm.
   `T` in `N of T on` is its length. Signed-out readers are not counted. The footnote says how they
   resolve.
 - **The admin reads the tables fresh, never through the memo.** `snapshot.ts` exports its
-  repeatable-read reader as `readSwitchSnapshot()`, uncached. The admin's loaders call it, so a page
+  reader as `readSwitchSnapshot()`, uncached: one SQL statement over the Neon HTTP driver since
+  #1655, so its rows are one instant without a transaction. The admin's loaders call it, so a page
   drawn after a write shows that write. The 30-second window applies to players, not to this page.
 - **The raw environment stays under `src/lib/switches/`.**
   - `switchEnvValues()` returns `{ [name]: string | undefined }` by member reads, which are not

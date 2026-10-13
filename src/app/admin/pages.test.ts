@@ -25,6 +25,42 @@ const isGate = (node: ts.Node | undefined, source: ts.SourceFile) =>
 const callsAdminMetadata = (node: ts.Node | undefined, source: ts.SourceFile) =>
   !!node && /^(return )?adminMetadata(<[^>]*>)?\(/.test(flat(node, source));
 
+const GATES = ["requireAdmin", "adminMetadata"] as const;
+const ACCESS = /(^|\/)lib\/admin\/access$/;
+
+/**
+ * Each gate the module uses must be the real one: a named, unaliased import from `lib/admin/access`,
+ * and no other declaration of that name anywhere in the file. A check that read only the spelling
+ * would pass a local no-op `requireAdmin` awaited first.
+ */
+function bindingProblems(source: ts.SourceFile): string[] {
+  const imported = new Set<string>();
+  const declared = new Set<string>();
+  const visit = (node: ts.Node) => {
+    if (ts.isImportSpecifier(node)) {
+      const decl = node.parent.parent.parent;
+      const from = ts.isImportDeclaration(decl) && ts.isStringLiteral(decl.moduleSpecifier) ? decl.moduleSpecifier.text : "";
+      const real = ACCESS.test(from) && !node.isTypeOnly && !decl.importClause?.isTypeOnly && (!node.propertyName || node.propertyName.text === node.name.text);
+      (real ? imported : declared).add(node.name.text);
+    } else if (ts.isImportClause(node) && node.name) {
+      declared.add(node.name.text);
+    } else if (ts.isNamespaceImport(node)) {
+      declared.add(node.name.text);
+    } else if (
+      (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) || ts.isVariableDeclaration(node) || ts.isParameter(node) || ts.isBindingElement(node)) &&
+      node.name && ts.isIdentifier(node.name)
+    ) {
+      declared.add(node.name.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  const used = (name: string) => new RegExp(`\\b${name}\\b`).test(source.text);
+  return GATES.filter((g) => used(g) && (declared.has(g) || !imported.has(g))).map(
+    (g) => `\`${g}\` is not the named import from lib/admin/access`,
+  );
+}
+
 /** What is wrong with one route module's gating, or an empty list. */
 function gateProblems(path: string, text: string): string[] {
   const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
@@ -60,7 +96,7 @@ function gateProblems(path: string, text: string): string[] {
     }
   }
   if (defaultGated !== true) problems.push("the default export does not await requireAdmin() first");
-  return problems;
+  return [...problems, ...bindingProblems(source)];
 }
 
 describe("every admin page and layout is gated first", () => {
@@ -79,8 +115,9 @@ describe("every admin page and layout is gated first", () => {
 });
 
 describe("the gate check's failure paths", () => {
-  const page = (body: string, meta = 'export const generateMetadata = () => adminMetadata({ title: "X" });') =>
-    `${meta}\nexport default async function Page() {\n${body}\n}`;
+  const IMPORT = 'import { adminMetadata, requireAdmin } from "../../lib/admin/access";';
+  const page = (body: string, meta = 'export const generateMetadata = () => adminMetadata({ title: "X" });', imports = IMPORT) =>
+    `${imports}\n${meta}\nexport default async function Page() {\n${body}\n}`;
 
   it("passes a gated page", () => {
     expect(gateProblems("p.tsx", page("const { userId } = await requireAdmin();\nreturn null;"))).toEqual([]);
@@ -97,7 +134,7 @@ describe("the gate check's failure paths", () => {
 
   it("fails a default export or metadata exposed through a re-export", () => {
     const gatedMeta = 'export const generateMetadata = () => adminMetadata({ title: "X" });';
-    expect(gateProblems("p.tsx", `${gatedMeta}\nconst Page = async () => { await requireAdmin(); return null; };\nexport { Page as default };`)).toEqual([
+    expect(gateProblems("p.tsx", `${IMPORT}\n${gatedMeta}\nconst Page = async () => { await requireAdmin(); return null; };\nexport { Page as default };`)).toEqual([
       "`export { Page as default }` exposes `default` through a re-export this check cannot read",
       "the default export does not await requireAdmin() first",
     ]);
@@ -110,6 +147,25 @@ describe("the gate check's failure paths", () => {
     ]);
     // A type-only re-export carries no value and passes.
     expect(gateProblems("p.tsx", page("await requireAdmin();", `${gatedMeta}\nexport type { Metadata } from "next";`))).toEqual([]);
+  });
+
+  it("fails a gate that is not the real helper", () => {
+    const fake = "async function requireAdmin() { return { userId: \"x\" }; }";
+    expect(gateProblems("p.tsx", page("await requireAdmin();", 'export const generateMetadata = () => adminMetadata({ title: "X" });', 'import { adminMetadata } from "../../lib/admin/access";\n' + fake))).toEqual([
+      "`requireAdmin` is not the named import from lib/admin/access",
+    ]);
+    // Imported correctly, then shadowed by a local declaration.
+    expect(gateProblems("p.tsx", page("await requireAdmin();", 'export const generateMetadata = () => adminMetadata({ title: "X" });', `${IMPORT}\nconst adminMetadata = async (m: object) => m;`))).toEqual([
+      "`adminMetadata` is not the named import from lib/admin/access",
+    ]);
+    // Aliased, or from another module.
+    expect(gateProblems("p.tsx", page("await requireAdmin();", undefined, 'import { adminMetadata, noop as requireAdmin } from "../../lib/admin/access";'))).toEqual([
+      "`requireAdmin` is not the named import from lib/admin/access",
+    ]);
+    expect(gateProblems("p.tsx", page("await requireAdmin();", undefined, 'import { adminMetadata, requireAdmin } from "./access";'))).toEqual([
+      "`requireAdmin` is not the named import from lib/admin/access",
+      "`adminMetadata` is not the named import from lib/admin/access",
+    ]);
   });
 
   it("fails static metadata and metadata not gated through adminMetadata", () => {
