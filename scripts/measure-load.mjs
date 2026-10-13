@@ -15,6 +15,11 @@
 // Times come from CDP, never Resource Timing: Scryfall's CDN sends no `Timing-Allow-Origin`.
 // Each figure is the MEDIAN of MEASURE_RUNS runs (default 3).
 //
+// Before the first run, every route is loaded once at every width and the figure thrown away. The
+// first request a route gets after an idle spell pays the server's own warm-up (a cold function, an
+// empty data cache), and without this pass it landed on whichever width ran first: /discover read as
+// a warm-load regression at 1300 that moved to 390 when 390 ran first (2026-10-12).
+//
 // Two optional readings, each only as good as its source:
 //   - MEASURE_SERVER_LOG=<file>: the stdout of the server under test, started with PERF_TIMING=1.
 //     The `[perf]` lines `src/lib/perf/timing.ts` writes after each warm load are attached to that
@@ -801,6 +806,17 @@ async function main() {
   }
 }
 
+/** One load of every route at this width, discarded: the server's warm-up, kept out of the runs. */
+async function warmUp(browser, state, width, routes) {
+  for (const route of routes) {
+    const context = await browser.newContext({ viewport: width.viewport, isMobile: width.isMobile, hasTouch: width.hasTouch, storageState: state });
+    await context.addInitScript(CONTENT_PROBE);
+    const page = await context.newPage();
+    await load(page, await capture(page), `${BASE}${route.path}`);
+    await context.close();
+  }
+}
+
 /** Deployed: staging only, no write from the harness, the deck named by id, spans from Vercel's logs. */
 async function mainDeployed() {
   const sql = PGSTAT_URL ? neon(PGSTAT_URL) : null;
@@ -837,6 +853,7 @@ function routesFor(deckId) {
 
 async function runAll(browser, state, routes, sql) {
   console.error(`profile ${PROFILE}, routes ${routes.map((r) => r.label).join(", ")}${PRESS_AT == null ? "" : `, startup pass: press at ${PRESS_AT}ms to ${PRESS_TO}`}`);
+  if (PRESS_AT == null) for (const width of MEASURED_WIDTHS) await warmUp(browser, state, width, routes);
   const runs = [];
   for (let i = 0; i < RUNS; i += 1) {
     const run = {};
