@@ -171,6 +171,39 @@ async function main() {
       else console.log(`  race ${i}: ${bad.join(", ") || JSON.stringify(await rowsNaming(q))}`);
     }
     check("a purge racing an unfriend over shared pods settles, five times out of five, with nothing left", raced === 5, `${raced}/5`);
+
+    // And a purge racing the redemption of the account's own open invite, in the order that could strand a
+    // friendship: the redemption holds the invite row (as `redeemInvite` does first) while the purge starts,
+    // then writes the two links and commits. The purge must wait on the invite and then find the links.
+    {
+      const q = `${P}_redeem`;
+      const r = `${G}_redeem`;
+      racers.push(q, r);
+      await friends.ensureProfile(q, "Quin");
+      await friends.ensureProfile(r, "Rae");
+      const inv = await friends.createInvite(q);
+      if (!inv.ok) throw new Error("createInvite refused");
+      let release = () => {};
+      const held = new Promise<void>((done) => { release = done; });
+      let locked = () => {};
+      const locking = new Promise<void>((done) => { locked = done; });
+      const redemption = db.transaction(async (tx) => {
+        await tx.execute(sql`select 1 from friend_invites where token = ${inv.token} for update`);
+        locked();
+        await held;
+        await tx.execute(sql`update friend_invites set redeemed_at = now(), redeemed_by = ${r} where token = ${inv.token}`);
+        await tx.execute(sql`insert into friend_links (user_id, friend_user_id) values (${q < r ? q : r}, ${q < r ? r : q}), (${q < r ? r : q}, ${q < r ? q : r})`);
+      });
+      await locking;
+      const purging = purgeAccount(q);
+      await new Promise((done) => setTimeout(done, 1500));
+      release();
+      const results = await Promise.allSettled([redemption, purging]);
+      const bad = results.filter((x) => x.status === "rejected").map((x) => String((x as PromiseRejectedResult).reason?.cause?.code ?? (x as PromiseRejectedResult).reason));
+      const left = await rowsNaming(q);
+      check("a purge racing a redemption of its invite waits for it and leaves nothing", bad.length === 0 && Object.keys(left).length === 0,
+        bad.join(", ") || JSON.stringify(left));
+    }
   } finally {
     const all = [P, F, G, ...racers];
     const who = sql`(${sql.join(all.map((u) => sql`${u}`), sql`, `)})`;

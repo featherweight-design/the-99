@@ -1880,7 +1880,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   no list of account columns, so a table the schema scan missed would still show. It proves no column names the account afterwards, the deck's children went by cascade, the owned pod
   passed to the longest-standing member, a friend's pod, friendship and collection stand, the friend's stamp
   moved, the account's own stamp row did not come back at commit, a purge racing a friend's unfriend over shared
-  pods settles five times out of five, and a second purge deletes nothing
+  pods settles five times out of five, a purge racing a redemption of its own invite (held mid-way) waits and
+  leaves nothing, and a second purge deletes nothing
   anywhere (rows, social counts and the stamp all zero). It WRITES and
   DELETES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging,
   production and local-dev are refused by id. Mutation-checked: without `set constraints all immediate` the stamp

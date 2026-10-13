@@ -24,11 +24,17 @@ export type SocialPurge = { podsLeft: number; podsHandedOn: number; podsDeleted:
 
 export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge> {
   const out: SocialPurge = { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 0 };
-  // Locks in the hierarchy every social write takes them (`unfriend`, `addMember`, `leavePod`): pods first,
-  // in id order; then the friendship rows, in (user_id, friend_user_id) order, which is `friendshipRows`'
+  // Locks in the hierarchy every social write takes them. The account's invites first, in token order:
+  // `redeemInvite` locks its invite before it writes a friendship, so a redemption racing this either lands
+  // first (and its new links are read and deleted below) or waits and finds the invite gone. Then (as
+  // `unfriend`, `addMember` and `leavePod` take them) pods, in id order; then the friendship rows, in (user_id, friend_user_id) order, which is `friendshipRows`'
   // order; then the data stamps, in user id order. Left to the deletes and triggers below, they would be
   // taken in whatever order rows were visited, and an unfriend holding a shared pod could wait on a stamp
   // this purge held while it waited on that pod.
+  await tx.execute(sql`
+    select i.token from ${friendInvites} i
+    where i.inviter_user_id = ${userId} or i.redeemed_by = ${userId}
+    order by i.token for update`);
   await tx.execute(sql`
     select p.id from ${pods} p
     where p.owner_user_id = ${userId} or p.id in (select m.pod_id from ${podMembers} m where m.user_id = ${userId})
