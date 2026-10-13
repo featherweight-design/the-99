@@ -149,8 +149,9 @@ function WentToLine({ wentTo, linked }: { wentTo: NonNullable<HistoryListEntry["
 
 /** What an opened entry shows: every row when it is short, else its groups, one at a time, paged. */
 /**
- * `rowDecks` names the decks a row's own line may print. Null (no row line) for an entry of one row, whose
- * entry line already says it: the same sentence an inch apart would be said twice.
+ * `rowDecks` names the decks a row's own line may print. Null (no row line) for an entry of one row that
+ * already shows its entry line, which says it: the same sentence an inch apart would be said twice. An entry read
+ * before an upload's placement was stamped has no entry line, so its rows speak for themselves.
  */
 function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<Record<string, string>> | null }) {
   const groups = useMemo(() => groupRows(rows), [rows]);
@@ -286,7 +287,7 @@ export function HistoryEntryItem({
       {isOpen ? (
         <div className="border-t border-t-[color:var(--border)] px-[14px] py-[8px] md:pl-[176px]">
           {detail && detail !== "loading" && detail !== "failed" ? (
-            <EntryRows rows={detail.rows} rowDecks={detail.rows.length > 1 ? detail.rowDecks : null} />
+            <EntryRows rows={detail.rows} rowDecks={detail.rows.length > 1 || !e.wentTo ? detail.rowDecks : null} />
           ) : detail === "failed" ? (
             <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">
               {c.loadFailed}{" "}

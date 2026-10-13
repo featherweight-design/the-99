@@ -221,6 +221,15 @@ describe("HistoryList", () => {
     expect([...document.querySelectorAll("li span")].filter((n) => /^Went to /.test(n.textContent ?? ""))).toHaveLength(0);
   });
 
+  it("lets a single row speak when the entry was listed before its placement was kept", async () => {
+    const e = entry({ id: "late", rowCount: 1, wentTo: null });
+    loadEntry.mockResolvedValue(detail(e, [{ ...row("Sol Ring", null, 1), wentTo: { decks: [{ deckId: "d1", copies: 1 }] } }], { d1: "Gishath" }));
+    draw([e]);
+    await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
+    expect((await screen.findAllByText("Sol Ring")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText((_, n) => n?.tagName === "SPAN" && n.textContent === "Went to Gishath.")).toHaveLength(1);
+  });
+
   it("names a deleted deck without a link and keeps Revert (§D3)", () => {
     draw([entry({ kind: "edit", source: "shopping:x", firstName: "Swords to Plowshares", shoppingDeck: { id: "x", name: null } })]);
     expect(screen.getByText("From the Shopping list of a deck you’ve since deleted")).toBeTruthy();
