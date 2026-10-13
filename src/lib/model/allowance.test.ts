@@ -202,9 +202,9 @@ describe("settleModelCall: what the row ends on, and why", () => {
     expect(seen.set).toEqual({ status: "refunded", refundReason: "reaped" });
   });
 
-  it("a refund whose caller names none stores none", async () => {
+  it("a refund whose caller states no reason (null) stores none", async () => {
     const { tx, seen } = fakeTx({ status: "refunded" });
-    await settleModelCall(tx, "call", "refunded", undefined, now);
+    await settleModelCall(tx, "call", "refunded", undefined, now, null);
     expect(seen.set).toEqual({ status: "refunded", refundReason: null });
   });
 

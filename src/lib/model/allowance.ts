@@ -252,6 +252,25 @@ export async function reserveModelCall(
 export async function settleModelCall(
   tx: Tx,
   callId: string,
+  to: "spent",
+  billed: Billed | readonly Billed[] | undefined,
+  now?: Date,
+): Promise<"spent" | "refunded" | null>;
+/**
+ * A settle that can refund must say why: a `RefundReason`, or an intentional `null` where the path cannot
+ * tell causes apart (a thin answer and a failed call both refund). The type checker holds every caller to it.
+ */
+export async function settleModelCall(
+  tx: Tx,
+  callId: string,
+  to: "spent" | "refunded",
+  billed: Billed | readonly Billed[] | undefined,
+  now: Date,
+  reason: RefundReason | null,
+): Promise<"spent" | "refunded" | null>;
+export async function settleModelCall(
+  tx: Tx,
+  callId: string,
   to: "spent" | "refunded",
   /**
    * What the call was billed for, when it got a response back: recorded on a spent AND on a
@@ -261,7 +280,7 @@ export async function settleModelCall(
    */
   billed: Billed | readonly Billed[] | undefined,
   now: Date = new Date(),
-  reason?: RefundReason,
+  reason: RefundReason | null = null,
 ): Promise<"spent" | "refunded" | null> {
   const live = gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS));
   const [row] = await tx
@@ -269,7 +288,7 @@ export async function settleModelCall(
     .set(
       to === "spent"
         ? { status: sql`case when ${live} then 'spent' else 'refunded' end`, refundReason: sql`case when ${live} then null else 'late_success' end` }
-        : { status: "refunded", refundReason: reason ?? null },
+        : { status: "refunded", refundReason: reason },
     )
     .where(and(eq(modelCalls.id, callId), eq(modelCalls.status, "reserved")))
     .returning({ status: modelCalls.status });

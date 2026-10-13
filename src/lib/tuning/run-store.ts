@@ -160,7 +160,7 @@ export async function finishRun(
       .set(set)
       .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
       .returning({ callId: deckSuggestionRuns.modelCallId });
-    for (const r of rows) await settleModelCall(tx, r.callId, "refunded", billed);
+    for (const r of rows) await settleModelCall(tx, r.callId, "refunded", billed, new Date(), null);
     if (rows.length === 0) await recordLate(tx, callId, billed);
     return rows;
   });
@@ -204,7 +204,7 @@ export async function persistRun(
           bracketAfter: s.bracketAfter,
         })));
       }
-      await settleModelCall(tx, written[0].callId, settleAs, billed);
+      await settleModelCall(tx, written[0].callId, settleAs, billed, new Date(), null);
     });
   } catch (err) {
     if (err instanceof RunSupersededError) {
