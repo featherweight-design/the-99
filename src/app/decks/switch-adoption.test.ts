@@ -82,7 +82,7 @@ describe("no Server Action, route handler, page or layout reads a switch from th
     expect(await isServerModule(`import x from "y";\n"use server";`)).toBe(false);
   });
 
-  it("names no bare `fooEnabled()` call in a \"use server\" module, a route handler, a page, a layout, the page cache or the lineup", async () => {
+  it("names no bare `fooEnabled()` call in a \"use server\" module, a route handler, a page, a layout, the page cache or a module directly under lib/lineup", async () => {
     const { readFileSync, readdirSync, statSync } = await import("node:fs");
     const { join } = await import("node:path");
     const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {

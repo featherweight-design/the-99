@@ -699,8 +699,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `src/` reads a variable it does not name. `resolveSwitchEnv(userId)` reads the overrides through a 30-second
   per-instance memo, falls back to the environment alone when the read fails, and returns an env-shaped object every
   flag function takes as it takes `process.env`; parents stay checked inside the flag functions, so a child override
-  never raises its parent. `cachePageForUser` puts every resolved switch in its key and hands the load that same env
-  (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
+  never raises its parent. `cachePageForUser` puts every resolved switch in its key and hands the load that same env,
+  which every switch read inside the load must use (adoption in progress: the deep reads in `availability-query` and
+  `read.ts` still read the environment until admin PRs 6b and 6e) (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
   proxy keys About's cookie on the reader's resolved entries, so a flip retires exactly the readers it changes.
   `check:list-cache` knows the two override tables reach a cached page through its key alone, and fails if any loader
   but `page-cache.ts` and the resolver it goes through (`src/lib/switches/request.ts`) reads them. Every page,

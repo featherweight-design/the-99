@@ -41,8 +41,11 @@ class NotStored {
 export type PageLoad<T> = { value: T; store: boolean };
 
 /**
- * `load` is handed the env the key was built from, and must decide every switch from it: that is
- * what makes the key the whole story. A page that also decides switches OUTSIDE the cached load
+ * `load` is handed the env the key was built from, and must decide every switch from it: only then
+ * is the key the whole story. Not yet true of every read a load reaches: `availability-query` and
+ * `read.ts` still read `NEVER_CUT_ENABLED` and `CHANGE_COMMANDER_ENABLED` from the environment
+ * (admin adoption 6b and 6e thread `env` to them; nothing writes an override before the Switches
+ * page, which follows adoption). A page that also decides switches OUTSIDE the cached load
  * resolves once (`requestSwitchEnv`) and passes that env as `env`, so the key, the loader and the
  * rest of the render read one snapshot; without it, the reader's switches are resolved here.
  */
