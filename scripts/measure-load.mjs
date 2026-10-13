@@ -98,6 +98,7 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { markEveryEntrySeen, sheetCookie } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
+import { NAV_PROBE, PRESS_PROBE, TAB_PROBE } from "./lib/press-probe.mjs";
 import {
   assertDeployedBase,
   lookupUserId,
@@ -188,6 +189,27 @@ const CONTENT_PROBE = () => {
   };
   requestAnimationFrame(tick);
 };
+
+/**
+ * The armed navigation's time from press to content, or null when it never drew within 60s. A press
+ * that replaced the document (a hard navigation, which Next makes when a deploy lands mid-run) takes
+ * the probe with it, so the new document's content frame is read on the wall clock instead, against
+ * `pressedEpoch`: coarser, but never a null for a page that drew.
+ */
+async function navDrew(page, path, pressedEpoch) {
+  return page
+    .waitForFunction(([want, epoch]) => {
+      const n = window.__nav;
+      // Wrapped: a revisit can draw in under a millisecond, and a bare 0 would never end the wait.
+      if (n?.drew != null) return { ms: Math.round(n.drew - n.at) };
+      if (n) return null;
+      const main = document.querySelector("main");
+      return location.pathname === want && main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40
+        ? { ms: Math.round(performance.timeOrigin + performance.now() - epoch) }
+        : null;
+    }, [path, pressedEpoch], { timeout: 60_000, polling: 16 })
+    .then((h) => h.jsonValue().then((v) => v.ms), () => null);
+}
 
 /** Deployed sign-in: a Backend-API sign-in token, redeemed on the app's own origin. Writes nothing. */
 async function signInDeployed(browser) {
@@ -618,14 +640,19 @@ async function cardPress(page, cap, width) {
       else await triggers.nth(index).hover();
       await page.waitForTimeout(400);
     }
-    const pressed = Date.now();
+    // Timed IN THE PAGE, from the press's pointerdown to the first animation frame that holds the
+    // dialog and then its art. Never by Playwright's own wait: `waitFor` re-checks on a backoff that
+    // reaches 500ms, so a dialog landing just after one check was read ~500ms late, which drew a
+    // false "slow mode" of ~830ms in 2 of 7 runs where every trace showed the dialog at 204-338ms.
+    await page.evaluate(PRESS_PROBE);
     await triggers.nth(index).click();
     await dialog.waitFor({ state: "visible", timeout: 30_000 });
-    const dialogMs = Date.now() - pressed;
-    const art = await page.waitForFunction(() => {
-      const d = document.querySelector('[role="dialog"][aria-labelledby="card-modal-title"]');
-      return Boolean(d && [...d.querySelectorAll("*")].some((el) => /scryfall/.test(getComputedStyle(el).backgroundImage)));
-    }, null, { timeout: 30_000, polling: 16 }).then(() => Date.now() - pressed, () => null);
+    const stamps = await page
+      .waitForFunction(() => (window.__press?.art != null ? window.__press : null), null, { timeout: 30_000 })
+      .then((h) => h.jsonValue(), () => page.evaluate(() => window.__press));
+    const since = (t) => (t == null || stamps?.at == null ? null : Math.round(t - stamps.at));
+    const dialogMs = since(stamps?.dialog);
+    const art = since(stamps?.art);
     await page.waitForTimeout(400);
     // The read logs its spans in `after()`, once it has answered; the 400ms above covers that.
     const net = network(cap.all(), 0);
@@ -669,16 +696,12 @@ async function tabPress(browser, state, width, url) {
       else await tab.hover();
       await page.waitForTimeout(400);
     }
-    const pressed = Date.now();
+    // Timed in the page (TAB_PROBE): from the pointerdown to the first frame holding the hub.
+    await page.evaluate(TAB_PROBE);
     await tab.click();
     out[key] = await page
-      .waitForFunction(() => {
-        const panel = document.getElementById("panel-analysis");
-        // The hub's landing itself, not just any text under a settled panel: a build that has not yet
-        // drawn the Tuning tools must not read as done.
-        return Boolean(panel && !panel.hasAttribute("aria-busy") && panel.querySelector("[data-tuning-hub]"));
-      }, null, { timeout: 20_000, polling: 16 })
-      .then(() => Date.now() - pressed, () => null);
+      .waitForFunction(() => (window.__tab?.drew != null ? { ms: Math.round(window.__tab.drew - window.__tab.at) } : null), null, { timeout: 20_000 })
+      .then((h) => h.jsonValue().then((v) => v.ms), () => null);
     await context.close();
   }
   return out;
@@ -733,16 +756,32 @@ async function one(browser, state, width, routes, sql) {
   for (const pass of ["first", "revisit"]) {
     // Home last, and only when it is being measured (MEASURE_ROUTES can leave it out).
     for (const route of [...routes.filter((r) => r.path !== "/"), routes.find((r) => r.path === "/")].filter(Boolean)) {
-      const pressed = Date.now();
-      await page.evaluate((u) => window.next.router.push(u), route.path);
-      await page.waitForURL((u) => u.pathname === route.path.split("?")[0], { timeout: 60_000 });
+      // Armed first, then stamped by the push itself.
+      const path = route.path.split("?")[0];
+      // A push to the page already showing would stamp that page's own content in the next frame and
+      // read ~0ms with nothing navigated, which is every revisit when one route is measured. Leave it
+      // first, untimed.
+      if ((await page.evaluate(() => location.pathname)) === path) {
+        const away = path === "/" ? "/decks" : "/";
+        await page.evaluate(NAV_PROBE, { path: away, at: null });
+        const awayEpoch = await page.evaluate((u) => {
+          window.__nav.at = performance.now();
+          window.next.router.push(u);
+          return performance.timeOrigin + window.__nav.at;
+        }, away);
+        await navDrew(page, away, awayEpoch);
+        await page.waitForLoadState("networkidle").catch(() => {});
+      }
+      await page.evaluate(NAV_PROBE, { path, at: null });
+      const pressedEpoch = await page.evaluate((u) => {
+        window.__nav.at = performance.now();
+        window.next.router.push(u);
+        return performance.timeOrigin + window.__nav.at;
+      }, route.path);
       // A route that never leaves its loading screen records null, never the 60s it waited.
-      const drew = await page.waitForFunction(() => {
-        const main = document.querySelector("main");
-        return main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40;
-      }, null, { timeout: 60_000, polling: 16 }).then(() => true, () => false);
-      (result.soft[route.label] ??= {})[pass] = drew ? Date.now() - pressed : null;
-      if (!drew) console.warn(`soft ${pass} ${route.path}: no content frame within 60s`);
+      const drew = await navDrew(page, path, pressedEpoch);
+      (result.soft[route.label] ??= {})[pass] = drew;
+      if (drew == null) console.warn(`soft ${pass} ${route.path}: no content frame within 60s`);
       await page.waitForLoadState("networkidle").catch(() => {});
     }
   }
@@ -768,25 +807,22 @@ async function one(browser, state, width, routes, sql) {
       }
       // Timed from the click or the tap, which is when a reader starts waiting; the 300ms a pointer
       // rests first is the head start a prefetch on intent gets.
-      let pressed;
+      let pressedEpoch;
       if (width.isMobile) {
         // Scrolled first, as the hover branch is: a tap scrolls an off-screen tile into view itself,
         // and that is not the navigation being timed.
         await tile.scrollIntoViewIfNeeded();
-        pressed = Date.now();
+        await page.evaluate(NAV_PROBE, { path: deckRoute.path, at: null });
+        pressedEpoch = Date.now();
         await tile.tap();
       } else {
         await tile.hover();
         await page.waitForTimeout(300);
-        pressed = Date.now();
+        await page.evaluate(NAV_PROBE, { path: deckRoute.path, at: null });
+        pressedEpoch = Date.now();
         await tile.click();
       }
-      await page.waitForURL((u) => u.pathname === deckRoute.path, { timeout: 60_000 });
-      const drew = await page.waitForFunction(() => {
-        const main = document.querySelector("main");
-        return main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40;
-      }, null, { timeout: 60_000, polling: 16 }).then(() => true, () => false);
-      result.tile[from] = drew ? Date.now() - pressed : null;
+      result.tile[from] = await navDrew(page, deckRoute.path, pressedEpoch);
       await context.close();
     }
   }
