@@ -1,0 +1,210 @@
+{
+  "feature": "Find a deck read, UI-2: the view inside card details, the band, the read's rows and the fold",
+  "note": "Needs a server with SWAP_TOOLS_ENABLED and FIND_A_DECK_READ_ENABLED 'true', FITS_READ_STUB unset (the stub's picks) and FITS_READ_STUB_DELAY_MS about 2500 so the running band can be photographed, signed in as an account on a scratch branch with credits in hand. READ_CARD is a card that account owns, Commander-legal, that several of its decks can take and no read has been stored for yet (The Eternal Wanderer, 20a1671d-e8a4-4cf1-87a7-f2f6319f4b9e, on the 2026-10-12 scratch copy). OFFER_CARD is a second such card with no stored read (Sun Titan, b2e950fb-cb7e-40a0-a311-5bbdd0477b29): P1 and P2 open it, and P2's press stores its read, so the next run needs another. READ_CARD holds a stored read for P3 and P3a.",
+  "out": "contact-sheets/find-a-deck-read",
+  "rows": [
+    {
+      "id": "D1-details",
+      "label": "card details: the door as shipped, before the view",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${READ_CARD}",
+          "wait": "[data-testid='fits-door']:visible",
+          "settle": 900
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "D1-details-phone",
+      "label": "card details: the door as shipped, before the view",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${READ_CARD}",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-testid='fits-door']:visible",
+          "settle": 400
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "P1-offer",
+      "label": "the view in the dialog: head with the way back, the band's offer and press, the free list open",
+      "view": "src/components/cards/fits-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${OFFER_CARD}",
+          "wait": "[data-testid='fits-door']:visible",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "wait": "[data-testid='read-band-offer']",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "P1-offer-phone",
+      "label": "the view in the dialog: head with the way back, the band's offer and press, the free list open",
+      "view": "src/components/cards/fits-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${OFFER_CARD}",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details",
+          "settle": 800
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "wait": "[data-testid='read-band-offer']",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "P2-running",
+      "label": "running: the band in accent, still rows, the list live below",
+      "view": "src/components/cards/read-band.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?card=${OFFER_CARD}",
+          "wait": "[data-testid='fits-door']:visible",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "wait": "[data-testid='read-band-offer']",
+          "settle": 800
+        },
+        {
+          "click": "[data-testid='read-band-offer'] button",
+          "wait": "[data-testid='read-band-running']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "P3-result",
+      "label": "the read's rows: deck, commander and plan source, the sentence with marks, the cut, Swap in and Add only; the list folded",
+      "view": "src/components/cards/read-row.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${READ_CARD}",
+          "wait": "[data-testid='fits-door']:visible",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "wait": "[data-testid='read-row']",
+          "settle": 1500
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "P3-result-phone",
+      "label": "the read's rows: deck, commander and plan source, the sentence with marks, the cut, Swap in and Add only; the list folded",
+      "view": "src/components/cards/read-row.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${READ_CARD}",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details",
+          "settle": 800
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "wait": "[data-testid='read-row']",
+          "settle": 1500
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "P3a-swapped",
+      "label": "a row swapped in: filled Swapped in, the cut struck, Add only off; copies re-read",
+      "view": "src/components/cards/read-row.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?card=${READ_CARD}",
+          "wait": "[data-testid='fits-door']:visible",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "wait": "[data-testid='read-row']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Swap The Eternal Wanderer into",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "D4-card-from-view",
+      "widths": [
+        "desktop"
+      ],
+      "label": "a card the read names, opened from the view: it replaces the card with the way back reading `\u2190 Find a deck for it`",
+      "view": "src/components/cards/card-detail-provider.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${READ_CARD}",
+          "wait": "[data-testid='fits-door']:visible",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "wait": "[data-testid='read-row']",
+          "settle": 1200
+        },
+        {
+          "click": "[data-testid='read-row-sentence'] button >> nth=1",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

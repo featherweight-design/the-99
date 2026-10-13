@@ -184,10 +184,13 @@ export async function fitsGate(
   oracleId: string,
   on?: GateReader,
   enabled?: boolean,
-): Promise<{ commanderLegal?: boolean; hasDecks?: boolean }> {
+): Promise<{ commanderLegal?: boolean; hasDecks?: boolean; fitsRead?: boolean }> {
   // Nothing reads the gate while the swap tools are off, so a deployment without them pays no
   // round trip for it: the fields stay absent, which is also the door's closed state.
-  if (!(enabled ?? (await import("../swaps/flag")).swapToolsEnabled())) return {};
+  const flags = await import("../swaps/flag");
+  if (!(enabled ?? flags.swapToolsEnabled())) return {};
+  // Find a deck's read (its own switch): the door opens the in-dialog view rather than the stacked picker.
+  const read = flags.findADeckReadEnabled() ? { fitsRead: true } : {};
   try {
     const reader = on ?? ((await import("../../db")).db as unknown as GateReader);
     const { sql } = await import("drizzle-orm");
@@ -197,7 +200,7 @@ export async function fitsGate(
       from cards c where c.oracle_id = ${oracleId}
     `);
     const r = rows[0] as { commander_legal: boolean; has_decks: boolean } | undefined;
-    return r ? { commanderLegal: r.commander_legal, hasDecks: r.has_decks } : {};
+    return r ? { commanderLegal: r.commander_legal, hasDecks: r.has_decks, ...read } : {};
   } catch {
     return {};
   }

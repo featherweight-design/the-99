@@ -56,7 +56,8 @@ export type FitsRead = {
   owned: number;
   free: number | null;
   fits: FitDeck[];
-  holds: { id: string; name: string; quantity: number }[];
+  /** `commanders` as `FitDeck`'s, for a read's row about a deck that has since taken the card. */
+  holds: { id: string; name: string; quantity: number; commanders: string[] }[];
   /** Decks whose colors rule the card out, each with the card's colors outside the deck's. */
   excluded: { id: string; name: string; commanders: string[]; outside: string[] }[];
 };
@@ -99,7 +100,7 @@ export function shapeFits(
   for (const r of rows) {
     const outside = card.colorIdentity.filter((c) => !r.identity.includes(c));
     if (r.holds > 0 || r.leads) {
-      holds.push({ id: r.id, name: r.name, quantity: Math.max(r.holds, r.leads ? 1 : 0) });
+      holds.push({ id: r.id, name: r.name, quantity: Math.max(r.holds, r.leads ? 1 : 0), commanders: r.commander_names });
       continue;
     }
     if (outside.length > 0) {

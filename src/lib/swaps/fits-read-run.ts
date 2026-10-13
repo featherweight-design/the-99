@@ -1,3 +1,7 @@
+import { inArray } from "drizzle-orm";
+
+import { db } from "../../db";
+import { cards } from "../../db/schema";
 import { readAllowance, type Billed } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { callModel, type ModelOutcome } from "../model/client";
@@ -22,6 +26,9 @@ export type FitsReadPanel = {
   candidates: number;
   /** Where each candidate's plan came from, for the row's source line (handoff addendum, G12). */
   planSources: Record<string, PlanSource>;
+  /** The name of every card the stored read's sentences and cuts name, by oracle id: the view draws
+   *  the names, never the model (lock 1). */
+  names: Record<string, string>;
   allowance: Allowance;
 };
 
@@ -68,7 +75,28 @@ async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, mo
   const [rows, allowance] = await Promise.all([readFitsReadRows(userId, oracleId), readAllowance(userId, now, "fits_read")]);
   const planSources = Object.fromEntries(load.inputs.candidates.map((c) => [c.deckId, load.planOf.get(c.deckId)?.source ?? "none"]));
   const holding = new Set(load.fits.holds.map((h) => h.id));
-  return { fits: load.fits, view: fitsReadView(rows, candidateHashes(load.inputs, model), holding), candidates: load.inputs.candidates.length, planSources, allowance };
+  const view = fitsReadView(rows, candidateHashes(load.inputs, model), holding);
+  return { fits: load.fits, view, candidates: load.inputs.candidates.length, planSources, names: await pickNames(view, load), allowance };
+}
+
+/** Names for the stored picks' cards: from the inputs where the deck still runs the card, else the
+ *  catalog (a card a deck has since cut, on an out-of-date read). */
+async function pickNames(view: FitsReadView, load: FitsReadLoad): Promise<Record<string, string>> {
+  const ids = new Set<string>();
+  for (const p of view.stored?.picks ?? []) {
+    if (p.cut) ids.add(p.cut);
+    for (const part of p.parts) if ("card" in part) ids.add(part.card);
+  }
+  if (ids.size === 0) return {};
+  const out: Record<string, string> = {};
+  const known = [load.inputs.card, ...load.inputs.decks.flatMap((d) => [...d.commanders, ...d.list])];
+  for (const c of known) if (ids.has(c.oracleId)) out[c.oracleId] = c.name;
+  const missing = [...ids].filter((id) => !(id in out));
+  if (missing.length > 0) {
+    const rows = await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards).where(inArray(cards.oracleId, missing));
+    for (const r of rows) out[r.oracleId] = r.name;
+  }
+  return out;
 }
 
 /**

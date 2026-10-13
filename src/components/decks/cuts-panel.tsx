@@ -28,6 +28,7 @@ import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
 import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
+import { CreditButton, FailMark } from "../ui/credit-button";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -385,49 +386,16 @@ function Offer({ panel, variant, blocked, standing, onPress }: {
               {panel.thin ? d.offerLeadThin : d.offerLead(cutsAsk(panel.over))}
             </p>
           </div>
-          <CreditButton label={d.action} filled blocked={blocked} spent={spent} onPress={onPress} />
+          <CreditButton label={d.action} credit={d.credit} filled blocked={blocked} spent={spent} onPress={onPress} />
         </div>
       ) : (
-        <CreditButton label={d.retry} filled={false} blocked={blocked} spent={spent} onPress={onPress} />
+        <CreditButton label={d.retry} credit={d.credit} filled={false} blocked={blocked} spent={spent} onPress={onPress} />
       )}
       <p className="mt-[10px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}><CreditsText text={standing} /></p>
     </div>
   );
 }
 
-function CreditButton({ label, filled, blocked, spent, onPress }: {
-  label: string; filled: boolean; blocked: boolean; spent: boolean; onPress: () => void;
-}) {
-  const d = copy.deeper;
-  return (
-    <button
-      type="button"
-      onClick={onPress}
-      disabled={blocked}
-      aria-label={spent ? `${label}. No credits left.` : `${label}. Uses 1 credit.`}
-      className={`flex h-[44px] w-full flex-none items-stretch overflow-hidden rounded-[8px] border border-[color:var(--accent)] text-[13px] font-semibold disabled:opacity-50 md:h-[38px] md:w-auto ${filled ? "bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-transparent text-[color:var(--accent)]"}`}
-    >
-      <span className="flex flex-1 items-center justify-center px-[16px]">{label}</span>
-      {spent ? null : (
-        <span
-          aria-hidden
-          className={`flex items-center gap-[5px] border-l px-[11px] font-mono text-[11px] ${filled ? "[border-left-color:color-mix(in_srgb,var(--bg)_35%,transparent)]" : "border-[color:var(--accent)]"}`}
-        >
-          <span>{"◆"}</span>{d.credit}
-        </span>
-      )}
-    </button>
-  );
-}
-
-function FailMark({ label }: { label: string }) {
-  return (
-    <svg role="img" aria-label={label} width="18" height="18" viewBox="0 0 16 16" className="flex-none">
-      {/* A filled disc with the `!` cut out (even-odd), so whatever is behind it shows through. */}
-      <path fill="var(--danger)" fillRule="evenodd" clipRule="evenodd" d="M8 1.2 A6.8 6.8 0 1 0 8 14.8 A6.8 6.8 0 1 0 8 1.2 Z M7.05 4 H8.95 L8.6 9.3 H7.4 Z M8 10.5 A1.15 1.15 0 1 0 8 12.8 A1.15 1.15 0 1 0 8 10.5 Z" />
-    </svg>
-  );
-}
 
 /** "What we counted": the model's input, as it is. Nothing here names a card. */
 function Count({ panel, divider }: { panel: CutsPanel; divider: string | null }) {

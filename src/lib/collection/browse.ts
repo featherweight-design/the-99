@@ -234,6 +234,9 @@ export type BrowseCard = {
    */
   commanderLegal?: boolean;
   hasDecks?: boolean;
+  /** `FIND_A_DECK_READ_ENABLED`: the door opens Find a deck as a view inside card details, with the
+   *  read, rather than the stacked picker. Set beside the two above, absent otherwise. */
+  fitsRead?: boolean;
   /**
    * What the feed last carried for each of this card's printings, indexed both
    * ways `BrowsePrinting` can name one. Optional for the same reason

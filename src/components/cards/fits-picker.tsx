@@ -33,7 +33,7 @@ const colorsOf = (ids: string[]) => (ids.length === 0 ? "colorless" : colorWords
  * and opening that card; else the theme it joins, in --fg-body; a staple's own form; then ` · this deck
  * {need}`. With no reason and no need the row draws no line (R2: never the shares).
  */
-function ReasonLine({ deck, staple }: { deck: FitDeck; staple: boolean }) {
+function ReasonLine({ deck, staple, onOpenCard }: { deck: FitDeck; staple: boolean; onOpenCard?: (oracleId: string) => void }) {
   const r = deck.reason;
   const lead = staple
     ? <span className="italic whitespace-nowrap text-[color:var(--fg-body)]">{copy.cmdrStaple}</span>
@@ -41,13 +41,23 @@ function ReasonLine({ deck, staple }: { deck: FitDeck; staple: boolean }) {
       ? (
         <span className="whitespace-nowrap text-[color:var(--fg)]">
           {copy.reasonCombo}{" "}
-          <CardDetailTrigger
-            oracleId={r.with.oracleId}
-            name={r.with.name}
-            className="bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
-          >
-            {r.with.name}
-          </CardDetailTrigger>
+          {onOpenCard ? (
+            <button
+              type="button"
+              onClick={() => onOpenCard(r.with.oracleId)}
+              className="bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
+            >
+              {r.with.name}
+            </button>
+          ) : (
+            <CardDetailTrigger
+              oracleId={r.with.oracleId}
+              name={r.with.name}
+              className="bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
+            >
+              {r.with.name}
+            </CardDetailTrigger>
+          )}
         </span>
       )
       : r?.kind === "theme"
@@ -122,7 +132,7 @@ export function FitsPlate({
 
 /** The decks that could take the card, in the order the read gave them, each with its Add. */
 export function FitsRows({
-  rows, staple, cardName, freeNow, busy, refused, noteFor, onAdd,
+  rows, staple, cardName, freeNow, busy, refused, noteFor, onAdd, onOpenCard,
 }: {
   rows: FitDeck[];
   staple: boolean;
@@ -134,6 +144,9 @@ export function FitsRows({
   refused: string | null;
   noteFor: (deckId: string) => string | null;
   onAdd: (deck: FitDeck) => void;
+  /** Inside card details (Find a deck's view), a combo partner opens over the dialog through this,
+   *  so the way back returns to the view; elsewhere the provider's own trigger. */
+  onOpenCard?: (oracleId: string) => void;
 }) {
   return (
     <section className="flex flex-col" aria-label={copy.groupJoin}>
@@ -181,7 +194,7 @@ export function FitsRows({
                 </button>
               )}
             </div>
-            <ReasonLine deck={deck} staple={staple} />
+            <ReasonLine deck={deck} staple={staple} onOpenCard={onOpenCard} />
             {note ? (
               <p className="m-0 text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
                 {note}{" "}
@@ -217,25 +230,62 @@ export function FitsHolds({ holds }: { holds: FitsRead["holds"] }) {
   );
 }
 
-export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () => void }) {
+/** The staple note, above the list of a universal staple. */
+export function FitsStapleNote({ name, role }: { name: string; role: string }) {
+  return (
+    <section data-testid="fits-staple-note" className="flex flex-col gap-[6px] px-[13px] py-[11px] rounded-[10px] border border-dashed border-[color:var(--border-dashed)]">
+        <span className="flex items-center gap-[7px] font-mono text-[9.5px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-body)" }}>
+          <span aria-hidden="true" className="w-[7px] h-[7px] rounded-full border-[1.5px] border-[color:var(--fg-muted)]" />
+          {copy.stapleLabel}
+        </span>
+        <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}>
+          {role === "other" ? copy.stapleNoteNoRole(name) : copy.stapleNote(name)}
+        </p>
+      </section>
+  );
+}
+
+/**
+ * The free list's state, shared by the stacked picker and Find a deck's in-dialog view: the read
+ * when it opens, the rows in the order they opened in, and the Add with its re-read. `refresh` takes
+ * the read again (after a swap from the read, say), so the copies come from the server's count.
+ */
+export function useFitsList(card: BrowseCard) {
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [added, setAdded] = useState<Added[]>([]);
   const [refused, setRefused] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // One mutation at a time across the list and anything drawn beside it (the read's rows share it).
   const inFlight = useRef(false);
+  const claim = useCallback(() => {
+    if (inFlight.current) return false;
+    inFlight.current = true;
+    return true;
+  }, []);
+  const release = useCallback(() => { inFlight.current = false; }, []);
+  // A write made beside the list (a read row's Swap in or Add only): the payload's count is spent too.
+  const [wrote, setWrote] = useState(false);
   // The rows as the picker opened: an add re-reads the counts, never the order.
   const [rows, setRows] = useState<FitDeck[] | null>(null);
   // Decks an add found already holding the card: they leave the list for `already holds it`.
   const [heldAlready, setHeldAlready] = useState<string[]>([]);
 
-  const fetchRead = useCallback(() => {
-    loadFitsAction(card.oracleId)
+  // Every read of the list is numbered, and only the newest one asked lands: a slow read from before
+  // a write must never replace what a later read says about the copies left or the decks holding it.
+  const asked = useRef(0);
+  const readList = useCallback(() => {
+    const n = ++asked.current;
+    return loadFitsAction(card.oracleId)
+      .catch(() => null)
       .then((r) => {
-        setLoad(r ? { state: "ready", read: r } : { state: "failed" });
-        if (r) setRows((prev) => prev ?? r.fits);
-      })
-      .catch(() => setLoad({ state: "failed" }));
+        if (n === asked.current) {
+          setLoad(r ? { state: "ready", read: r } : { state: "failed" });
+          if (r) setRows((prev) => prev ?? r.fits);
+        }
+        return r;
+      });
   }, [card.oracleId]);
+  const fetchRead = useCallback(() => { void readList(); }, [readList]);
   useEffect(fetchRead, [fetchRead]);
   const retry = () => {
     setLoad({ state: "loading" });
@@ -251,11 +301,10 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
   // The payload's count is the card as it opened, so once an add has spent a copy only a read knows.
   // Before a read, the payload's count stands only when its availability read worked: a null there is
   // an unknown count, never `none free`.
-  const countsKnown = read !== null || (added.length === 0 && card.availability != null);
+  const countsKnown = read !== null || (!wrote && added.length === 0 && card.availability != null);
 
   const add = async (deck: FitDeck) => {
-    if (inFlight.current) return;
-    inFlight.current = true;
+    if (!claim()) return;
     setBusy(deck.id);
     setRefused(null);
     const freeBefore = freeNow;
@@ -265,11 +314,10 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
         setRefused(deck.id);
         return;
       }
-      const after = await loadFitsAction(card.oracleId).catch(() => null);
+      const after = await readList();
       if (result.held) {
         // Nothing was written and no copy used, so no stamp: the re-read lists the deck under holds.
         setHeldAlready((h) => [...h, deck.id]);
-        setLoad(after ? { state: "ready", read: after } : { state: "failed" });
         return;
       }
       // A re-read that failed says nothing about the copies left, so the note makes no claim that
@@ -277,14 +325,13 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
       const note = freeBefore === 0
         ? copy.addedToBuy
         : after && Math.max(0, after.free ?? 0) === 0 ? copy.addedUsedLast : copy.addedFree;
-      setAdded((a) => [...a, { deckId: deck.id, note }]);
       // A failed re-read leaves no count to draw: the old one is spent, and every row's Add or Add to
-      // buy would be a claim about it. So the picker fails, and Try again reads the server's count.
-      setLoad(after ? { state: "ready", read: after } : { state: "failed" });
+      // buy would be a claim about it. So the picker fails (`readList`), and Try again reads the count.
+      setAdded((a) => [...a, { deckId: deck.id, note }]);
     } catch {
       setRefused(deck.id);
     } finally {
-      inFlight.current = false;
+      release();
       setBusy(null);
     }
   };
@@ -293,6 +340,18 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
   const shown = (rows ?? []).filter((r) => !heldAlready.includes(r.id));
   const holds = read?.holds.filter((h) => !added.some((a) => a.deckId === h.id)) ?? [];
   const role = read?.card.role ?? "other";
+
+  /** Re-reads the list. `afterWrite`: the caller just wrote, so a failed re-read leaves no count. */
+  const refresh = useCallback(async (afterWrite = false) => {
+    if (afterWrite) setWrote(true);
+    return readList();
+  }, [readList]);
+
+  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry, refresh, claim, release };
+}
+
+export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () => void }) {
+  const { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry } = useFitsList(card);
 
   return (
     <ModalChrome
@@ -314,17 +373,7 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
           countsKnown={countsKnown}
         />
 
-        {read?.staple ? (
-          <section data-testid="fits-staple-note" className="flex flex-col gap-[6px] px-[13px] py-[11px] rounded-[10px] border border-dashed border-[color:var(--border-dashed)]">
-            <span className="flex items-center gap-[7px] font-mono text-[9.5px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-body)" }}>
-              <span aria-hidden="true" className="w-[7px] h-[7px] rounded-full border-[1.5px] border-[color:var(--fg-muted)]" />
-              {copy.stapleLabel}
-            </span>
-            <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}>
-              {role === "other" ? copy.stapleNoteNoRole(name) : copy.stapleNote(name)}
-            </p>
-          </section>
-        ) : null}
+        {read?.staple ? <FitsStapleNote name={name} role={role} /> : null}
 
         {load.state === "loading" ? (
           <div

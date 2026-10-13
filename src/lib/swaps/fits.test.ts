@@ -35,7 +35,7 @@ describe("shapeFits", () => {
     expect(r.fits.map((d) => d.name)).toEqual(["Gishath", "Kinnan"]);
     expect(r.fits[0]).toMatchObject({ need: { role: "ramp", have: 7, target: 10 }, reason: null });
     // A deck the card leads holds it too.
-    expect(r.holds).toEqual([{ id: "a", name: "Atraxa", quantity: 1 }, { id: "t", name: "Tymna", quantity: 1 }]);
+    expect(r.holds).toEqual([{ id: "a", name: "Atraxa", quantity: 1, commanders: ["Cmdr a"] }, { id: "t", name: "Tymna", quantity: 1, commanders: ["Cmdr t"] }]);
     expect(r.excluded).toEqual([{ id: "u", name: "Urza", commanders: ["Cmdr u"], outside: ["G"] }]);
     expect(r).toMatchObject({ owned: 2, free: 1, staple: false });
   });

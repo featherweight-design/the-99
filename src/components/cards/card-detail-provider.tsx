@@ -33,6 +33,8 @@ import { printedNameOf, resolvedPrinting, withDeckPick } from "../../lib/collect
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import { FitsPicker } from "./fits-picker";
+import { FitsView, type FitsViewMemory } from "./fits-view";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { CardModal, type DeckPrintingScope } from "./card-modal";
 import { setDeckPrinting } from "../../app/decks/printing-actions";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
@@ -454,7 +456,10 @@ type OpenAt = {
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
 /** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
 /** A card a combo partner was opened FROM, put back when the partner closes. */
-type TrailEntry = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean };
+const EMPTY_MEMORY: FitsViewMemory = { acts: {} };
+/** Find a deck's view leaving, as `anim-view-out` runs it. */
+const VIEW_LEAVE_MS = 160;
+type TrailEntry = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean; label?: string };
 /** A card lifted under a sheet, with its own partner trail for when it comes back. */
 type Held = TrailEntry & { opener: HTMLElement | null; trail: TrailEntry[] };
 
@@ -1011,7 +1016,43 @@ export function CardDetailProvider({
   // door is drawn for a Commander-legal card and a reader with a deck, both off the card's own payload,
   // which leaves them absent while the swap tools are off (`fitsGate`), so no door is drawn then.
   const [fitsFor, setFitsFor] = useState<BrowseCard | null>(null);
-  const fitsDoor = (c: BrowseCard) => (c.commanderLegal && c.hasDecks ? () => setFitsFor(c) : null);
+  // FIND A DECK'S VIEW (handoff R2, `FIND_A_DECK_READ_ENABLED`, on the card as `fitsRead`): the door
+  // opens the view inside this card's own dialog rather than stacking the picker. Keyed on the card,
+  // so a card opened from the view (a partner, with the way back) leaves it standing for the return.
+  // What the reader did on the read's rows, and whether a read is running, are kept per card for the
+  // visit, so neither is lost to that round trip.
+  const [fitsViewFor, setFitsViewFor] = useState<string | null>(null);
+  const [fitsMemory, setFitsMemory] = useState<Record<string, FitsViewMemory>>({});
+  const [fitsReading, setFitsReading] = useState<ReadonlySet<string>>(() => new Set());
+  const fitsDoor = (c: BrowseCard) => (c.commanderLegal && c.hasDecks
+    ? (c.fitsRead ? () => setFitsViewFor(c.oracleId) : () => setFitsFor(c))
+    : null);
+  // Back to the details plays the view's leave first (`anim-view-out`, 160ms); reduced motion swaps.
+  const [fitsLeaving, setFitsLeaving] = useState(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const leaveView = useCallback(() => {
+    if (leaveTimer.current) return;
+    const still = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (still) {
+      setFitsViewFor(null);
+      return;
+    }
+    setFitsLeaving(true);
+    leaveTimer.current = setTimeout(() => {
+      leaveTimer.current = null;
+      setFitsLeaving(false);
+      setFitsViewFor(null);
+    }, VIEW_LEAVE_MS);
+  }, []);
+  useEffect(() => () => { if (leaveTimer.current) clearTimeout(leaveTimer.current); }, []);
+  const markReading = useCallback((oracleId: string, on: boolean) => {
+    setFitsReading((prev) => {
+      if (prev.has(oracleId) === on) return prev;
+      const next = new Set(prev);
+      if (on) next.add(oracleId); else next.delete(oracleId);
+      return next;
+    });
+  }, []);
 
   // The card a sheet lifted out of the live slot (see `registerSheet`), read by `close`.
   const heldRef = useRef<Held | null>(null);
@@ -1034,7 +1075,10 @@ export function CardDetailProvider({
     // The picker sits over a HELD card, and a card opened from the picker stacks over both. Closing
     // that top card is a step back to the picker, the stand-ins sheet's rule, so only a close with
     // nothing held (the picker's own card going) takes the picker with it.
-    if (heldRef.current === null) setFitsFor(null);
+    if (heldRef.current === null) {
+      setFitsFor(null);
+      setFitsViewFor(null);
+    }
     // The live slot's trail goes with its card. A held card's own is in `Held`.
     trailRef.current = [];
     setTrail([]);
@@ -1096,10 +1140,10 @@ export function CardDetailProvider({
   // A combo partner, through the same `load` that pages, with the card it was reached from put on
   // the trail first. It arrives without the Shopping door: the partner was reached from the combo
   // block, not a Shopping row.
-  const selectPartner = useCallback((oracleId: string) => {
+  const selectPartner = useCallback((oracleId: string, label?: string) => {
     const from = live.current;
     pendingPartner.current = from.card && from.card.oracleId !== oracleId
-      ? { from: { card: from.card, siblings: from.siblings, openAt: from.openAt, door: from.door }, to: oracleId }
+      ? { from: { card: from.card, siblings: from.siblings, openAt: from.openAt, door: from.door, ...(label ? { label } : {}) }, to: oracleId }
       : null;
     void load(oracleId, undefined, undefined, { door: false });
   }, [load]);
@@ -1452,15 +1496,32 @@ export function CardDetailProvider({
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
             ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
-          backLabel={partnerOf ? partnerOf.name : backLabel}
+          backLabel={partnerOf ? (trail.at(-1)?.label ?? partnerOf.name) : backLabel}
           phoneBackLabel={partnerOf ? undefined : phoneBackLabel}
           // Fits your decks' door, on a card with no sheet under it (stacked sheets R1, call 8): nothing
-          // in a stacked card opens a further layer, and a stand-in's Take replaces the door anyway.
-          onFindDeck={sheetsBelow > 0 ? null : fitsDoor(card)}
+          // in a stacked card opens a further layer, and a stand-in's Take replaces the door anyway. A
+          // card opened from a read's view is such a layer too: its own view would take the one slot and
+          // lose the read the reader came back for.
+          onFindDeck={sheetsBelow > 0 || (fitsViewFor !== null && fitsViewFor !== card.oracleId) ? null : fitsDoor(card)}
+          fitsReading={fitsReading.has(card.oracleId)}
+          view={fitsViewFor === card.oracleId && sheetsBelow === 0 ? {
+            onBack: leaveView,
+            node: (
+              <FitsView
+                card={card}
+                onBack={leaveView}
+                leaving={fitsLeaving}
+                onOpenCard={(id) => selectPartner(id, swapToolsCopy.fits.pickerTitle)}
+                memory={fitsMemory[card.oracleId] ?? EMPTY_MEMORY}
+                setMemory={(update) => setFitsMemory((all) => ({ ...all, [card.oracleId]: update(all[card.oracleId] ?? EMPTY_MEMORY) }))}
+                onReading={(on) => markReading(card.oracleId, on)}
+              />
+            ),
+          } : null}
           // Only from /collection, and only on a card nothing is stacked on: a partner opened from a
           // combo block or a card over a sheet is not the reader's own collection row.
           onEditCopies={collectionEdit && sheetsBelow === 0 && partnerOf === null ? () => startEdit(card) : null}
-          fitsOpen={fitsFor !== null}
+          fitsOpen={fitsFor !== null || fitsViewFor === card.oracleId}
           // Only a card the door has something for: a door with nothing in it would still take its room
           // from the art.
           door={liveDoor ? (layout) => doorRender!(card.oracleId, layout) : null}
@@ -1530,7 +1591,7 @@ export function CardDetailProvider({
           footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
             ? (layout, priced) => sheetFooter(card.oracleId, layout, priced)
             : null}
-          backLabel={partnerOf ? partnerOf.name : backLabel}
+          backLabel={partnerOf ? (trail.at(-1)?.label ?? partnerOf.name) : backLabel}
           phoneBackLabel={partnerOf ? undefined : phoneBackLabel}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back

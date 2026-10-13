@@ -10,6 +10,7 @@ const actions = vi.hoisted(() => ({
   addFromFits: vi.fn(),
 }));
 vi.mock("../../lib/swaps/actions", () => actions);
+vi.mock("../../lib/swaps/fits-read-actions", () => ({ readFitsReadAction: vi.fn(async () => null), pressFitsReadAction: vi.fn() }));
 vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 
 const { FitsPicker } = await import("./fits-picker");
@@ -31,7 +32,7 @@ const read = (over: Partial<FitsRead> = {}): FitsRead => ({
       reason: { kind: "combo", with: { oracleId: "o-sanity", name: "Fraying Sanity" } } },
     { id: "d-k", name: "Kinnan", commanders: ["Kinnan, Bonder Prodigy"], need: null, reason: { kind: "theme", theme: "mill", n: 9 } },
   ],
-  holds: [{ id: "d-a", name: "Atraxa", quantity: 1 }],
+  holds: [{ id: "d-a", name: "Atraxa", quantity: 1, commanders: [] }],
   excluded: [],
   ...over,
 });
@@ -186,7 +187,7 @@ describe("FitsPicker", () => {
   });
 
   it("stamps nothing when the deck already held it, and moves the deck to its holders", async () => {
-    const heldBy = { id: "d-g", name: "Gishath", quantity: 1 };
+    const heldBy = { id: "d-g", name: "Gishath", quantity: 1, commanders: [] };
     actions.loadFitsAction.mockResolvedValueOnce(read())
       .mockResolvedValueOnce(read({ fits: [read().fits[1]], holds: [...read().holds, heldBy] }));
     actions.addFromFits.mockResolvedValue({ ok: true, held: true });
@@ -392,5 +393,42 @@ describe("a card opened from the picker", () => {
     await act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
     expect(dialogNamed("Fraying Sanity")).toBeUndefined();
     expect(screen.getByTestId("fits-picker")).toBeInTheDocument();
+  });
+});
+
+describe("a card opened from a read's view", () => {
+  // Round 7: a card the view names, opened over the dialog, had its own door, and its view took the
+  // one slot, so Back from it lost the read the reader came from. A card over a read's view is a
+  // layer, and nothing in a layer opens a further one.
+  const full = (oracleId: string, name: string) => ({
+    ...card, oracleId, name, typeLine: "Creature", manaCost: "{G}", cmc: 1, oracleText: null, keywords: [],
+    rarity: "rare", printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
+    commanderLegal: true, hasDecks: true, fitsRead: true, availability: null,
+  }) as unknown as BrowseCard;
+  const cards: Record<string, BrowseCard> = {
+    "o-birds": full("o-birds", "Birds of Paradise"),
+    "o-sanity": full("o-sanity", "Fraying Sanity"),
+  };
+
+  it("draws no door, and Back returns to the read's view", async () => {
+    actions.loadFitsAction.mockResolvedValue(read());
+    const { CardDetailTrigger } = await import("./card-detail-provider");
+    render(
+      <CardDetailProvider fetchCard={async (id) => cards[id] ?? null}>
+        <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">Birds of Paradise</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /Birds of Paradise/ })));
+    await settle();
+    await act(async () => fireEvent.click(screen.getAllByTestId("fits-door")[0]));
+    await settle();
+    await act(async () => fireEvent.click(within(screen.getByTestId("fits-view")).getAllByRole("button", { name: /Fraying Sanity/ })[0]));
+    await settle();
+    expect(screen.queryByTestId("fits-view")).toBeNull();
+    expect(screen.getByRole("dialog")).toHaveTextContent("Fraying Sanity");
+    expect(screen.queryAllByTestId("fits-door")).toHaveLength(0);
+    await act(async () => fireEvent.click(screen.getAllByRole("button", { name: new RegExp(copy.pickerTitle) })[0]));
+    await settle();
+    expect(screen.getByTestId("fits-view")).toBeInTheDocument();
   });
 });
