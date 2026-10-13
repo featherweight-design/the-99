@@ -39,12 +39,24 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+const FIT = { sort: "fit", basis: "classifier" } as const;
+
 describe("useDrawFields", () => {
   const all = Array.from({ length: 250 }, (_, i) => row(`c${i}`));
 
+  // Admin PR 6d-2: the fields are the PAGE's ranking's, so the request names the basis the page's
+  // payload was counted by, and the route loads that entry rather than resolving the switch again.
+  it("names the ranking's sort and role basis in every request", async () => {
+    renderHook(() => useDrawFields({ sort: "new", basis: "labels" }, all, [all[0]]));
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    const params = new URL(net.calls[0].url, "http://x").searchParams;
+    expect(params.get("sort")).toBe("new");
+    expect(params.get("b")).toBe("labels");
+  });
+
   it("asks for the rows the reader is waiting on first, one batch at a time", async () => {
     const wanted = [all[240], all[241]];
-    renderHook(() => useDrawFields("fit", all, wanted));
+    renderHook(() => useDrawFields(FIT, all, wanted));
     await waitFor(() => expect(net.calls).toHaveLength(1));
     const first = new URL(net.calls[0].url, "http://x").searchParams.get("s")!.split(",");
     expect(first.slice(0, 2)).toEqual(["c240", "c241"]);
@@ -62,7 +74,7 @@ describe("useDrawFields", () => {
   // over its limit, so the waiting rows are split across batches rather than asked for at once.
   it("never asks for more than one batch's limit, even for rows the reader is waiting on", async () => {
     const wanted = all.slice(0, 230);
-    renderHook(() => useDrawFields("fit", all, wanted));
+    renderHook(() => useDrawFields(FIT, all, wanted));
     await waitFor(() => expect(net.calls).toHaveLength(1));
     const first = new URL(net.calls[0].url, "http://x").searchParams.get("s")!.split(",");
     expect(first).toHaveLength(200);
@@ -75,7 +87,7 @@ describe("useDrawFields", () => {
 
   it("resolves a row once its fields have arrived", async () => {
     const wanted = [all[0]];
-    const { result } = renderHook(() => useDrawFields("fit", all, wanted));
+    const { result } = renderHook(() => useDrawFields(FIT, all, wanted));
     expect(result.current.resolve(all[0])).toBeNull();
     await waitFor(() => expect(net.calls).toHaveLength(1));
     await act(async () => net.calls[0].answer());
@@ -83,7 +95,7 @@ describe("useDrawFields", () => {
   });
 
   it("aborts the batch in flight and starts no other when the page is left", async () => {
-    renderHook(() => useDrawFields("fit", all, [all[0]]));
+    renderHook(() => useDrawFields(FIT, all, [all[0]]));
     await waitFor(() => expect(net.calls).toHaveLength(1));
     act(() => { window.dispatchEvent(new Event("pagehide")); });
     expect(net.calls[0].signal.aborted).toBe(true);
@@ -92,7 +104,7 @@ describe("useDrawFields", () => {
   });
 
   it("aborts on a click to another route, and not on one to this route", async () => {
-    renderHook(() => useDrawFields("fit", all, [all[0]]));
+    renderHook(() => useDrawFields(FIT, all, [all[0]]));
     await waitFor(() => expect(net.calls).toHaveLength(1));
     const same = document.createElement("a");
     same.href = `${location.pathname}?o=name`;
@@ -114,7 +126,7 @@ describe("useDrawFields", () => {
     let renders = 0;
     renderHook(() => {
       renders++;
-      return useDrawFields("fit", all, drawn);
+      return useDrawFields(FIT, all, drawn);
     });
     await waitFor(() => expect(net.calls).toHaveLength(1));
     const before = renders;
@@ -126,7 +138,7 @@ describe("useDrawFields", () => {
   // `Show more` ignores a press while its rows are awaited, so a failed batch for them must not
   // leave the list waiting for a change of window the reader has no reason to make.
   it("asks again on its own for rows the reader is waiting on after a batch fails", async () => {
-    const { result } = renderHook(() => useDrawFields("fit", all, [all[0]]));
+    const { result } = renderHook(() => useDrawFields(FIT, all, [all[0]]));
     await waitFor(() => expect(net.calls).toHaveLength(1));
     await act(async () => net.calls[0].fail());
     await waitFor(() => expect(net.calls).toHaveLength(2), { timeout: 2500 });
@@ -137,7 +149,7 @@ describe("useDrawFields", () => {
 
   it("never marks a window chosen after a batch was asked for as failed by that batch", async () => {
     const drawn = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) }));
-    const { rerender } = renderHook(({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields("fit", all, wanted), {
+    const { rerender } = renderHook(({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields(FIT, all, wanted), {
       initialProps: { wanted: drawn as DiscoveryRow[] },
     });
     await waitFor(() => expect(net.calls).toHaveLength(1));
@@ -149,7 +161,7 @@ describe("useDrawFields", () => {
 
   it("asks again for a window the reader returns to after it failed", async () => {
     const other = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) })) as DiscoveryRow[];
-    const { rerender } = renderHook(({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields("fit", all, wanted), {
+    const { rerender } = renderHook(({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields(FIT, all, wanted), {
       initialProps: { wanted: [all[240]] as DiscoveryRow[] },
     });
     await waitFor(() => expect(net.calls).toHaveLength(1));
@@ -168,14 +180,14 @@ describe("useDrawFields", () => {
   it("reports a stale page when the route leaves out a row the reader is waiting on", async () => {
     // A row nobody is waiting on going missing is not a stale page.
     const quiet = vi.fn();
-    const first = renderHook(() => useDrawFields("fit", all, [all[0]], quiet));
+    const first = renderHook(() => useDrawFields(FIT, all, [all[0]], quiet));
     await waitFor(() => expect(net.calls).toHaveLength(1));
     await act(async () => net.calls[0].omit("c5"));
     expect(quiet).not.toHaveBeenCalled();
     first.unmount();
 
     const onStale = vi.fn();
-    renderHook(() => useDrawFields("fit", all, [all[0]], onStale));
+    renderHook(() => useDrawFields(FIT, all, [all[0]], onStale));
     await waitFor(() => expect(net.calls.at(-1)!.url).toContain("s=c0"));
     await act(async () => net.calls.at(-1)!.omit("c0"));
     await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
@@ -185,7 +197,7 @@ describe("useDrawFields", () => {
   // for again, never resolved from the fields the previous payload fetched.
   it("keeps fields to the payload that fetched them", async () => {
     const { result, rerender } = renderHook(
-      ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields("fit", list, wanted),
+      ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields(FIT, list, wanted),
       { initialProps: { list: all, wanted: [all[0]] } },
     );
     await waitFor(() => expect(net.calls).toHaveLength(1));
@@ -202,7 +214,7 @@ describe("useDrawFields", () => {
     const onStale = vi.fn();
     const drawn = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) })) as DiscoveryRow[];
     const { rerender } = renderHook(
-      ({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields("fit", all, wanted, onStale),
+      ({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields(FIT, all, wanted, onStale),
       { initialProps: { wanted: drawn } },
     );
     await waitFor(() => expect(net.calls).toHaveLength(1));
@@ -215,7 +227,7 @@ describe("useDrawFields", () => {
   // A page restored from the back/forward cache is not remounted: `pagehide` stopped the loop,
   // and `pageshow` has to start it again, asking once more for the batch the hide aborted.
   it("starts again when the page is restored from the back/forward cache", async () => {
-    const { result } = renderHook(() => useDrawFields("fit", all, [all[0]]));
+    const { result } = renderHook(() => useDrawFields(FIT, all, [all[0]]));
     await waitFor(() => expect(net.calls).toHaveLength(1));
     act(() => { window.dispatchEvent(new Event("pagehide")); });
     expect(net.calls[0].signal.aborted).toBe(true);
@@ -232,7 +244,7 @@ describe("useDrawFields", () => {
   // cancels the retry, so a failure kept across a back/forward return would hold the window busy
   // with nothing left to clear it.
   it("asks again for a failed window when the page comes back from the back/forward cache", async () => {
-    renderHook(() => useDrawFields("fit", all, [all[0]]));
+    renderHook(() => useDrawFields(FIT, all, [all[0]]));
     await waitFor(() => expect(net.calls).toHaveLength(1));
     await act(async () => net.calls[0].fail());
     act(() => { window.dispatchEvent(new Event("pagehide")); });
@@ -247,7 +259,7 @@ describe("useDrawFields", () => {
   // the page is replacing, and every batch would hold the one in-flight slot.
   it("asks for nothing more of a list once it has sent the page for a fresh read", async () => {
     const onStale = vi.fn();
-    const { rerender } = renderHook(({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields("fit", all, wanted, onStale), {
+    const { rerender } = renderHook(({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields(FIT, all, wanted, onStale), {
       initialProps: { wanted: [all[0]] },
     });
     await waitFor(() => expect(net.calls).toHaveLength(1));
@@ -266,7 +278,7 @@ describe("useDrawFields", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const { rerender } = renderHook(
-        ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields("fit", list, wanted),
+        ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields(FIT, list, wanted),
         { initialProps: { list: all, wanted: [all[0]] } },
       );
       for (let i = 0; i < 4; i++) {
@@ -290,7 +302,7 @@ describe("useDrawFields", () => {
   it("gives up an old payload's batch when a new payload arrives for the same window", async () => {
     const drawn = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) })) as DiscoveryRow[];
     const { rerender } = renderHook(
-      ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields("fit", list, wanted),
+      ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields(FIT, list, wanted),
       { initialProps: { list: all, wanted: drawn } },
     );
     await waitFor(() => expect(net.calls).toHaveLength(1));
@@ -303,7 +315,7 @@ describe("useDrawFields", () => {
 
   it("asks for nothing when every row arrived drawn", async () => {
     const drawn = all.slice(0, 3).map((r) => ({ ...r, ...fieldsFor(r.slug) }));
-    renderHook(() => useDrawFields("fit", drawn, drawn));
+    renderHook(() => useDrawFields(FIT, drawn, drawn));
     await new Promise((r) => setTimeout(r, 400));
     expect(net.fn).not.toHaveBeenCalled();
   });

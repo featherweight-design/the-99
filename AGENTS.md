@@ -870,7 +870,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
 
 - **`/discover` ships whole rows for its first window only** (list payload plan, PR 3). The page
   cuts every row outside its URL's first 25 down to the list columns (`cutToWindow`), and the rest
-  of each row's draw fields arrive from `GET /api/discovery-fields?sort=&s=` — signed in, at most
+  of each row's draw fields arrive from `GET /api/discovery-fields?sort=&b=&s=` (`b`, the role basis the page's
+  payload was counted by, so a later switch flip never mixes bases) — signed in, at most
   `MAX_FIELDS_BATCH` (200) slugs, answered `private, no-store` from the same cached payload the
   page reads (`loadDiscoveryPayload`), so the two cannot disagree about a row. The window is cut
   at the request and never stored: the cache entry stays keyed on the sort (and the role basis) alone. `probe:payload`

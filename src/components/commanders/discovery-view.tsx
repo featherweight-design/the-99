@@ -1,5 +1,6 @@
 "use client";
 
+import type { RoleBasis } from "../../lib/profile/build";
 import {
   useCallback,
   useEffect,
@@ -87,8 +88,12 @@ export function DiscoveryView({
   encoded,
   printedIn,
   chooseLink = false,
+  basis,
 }: {
   encoded: EncodedDiscovery;
+  /** The role basis `encoded` was counted by (the reader's LABEL_ROLE_COUNTS_ENABLED at render). The
+      fields fetch asks for that basis's payload, so a later batch never mixes in the other's figures. */
+  basis: RoleBasis;
   /** `Printed in ▾`'s index for `encoded`'s rows, aligned by position. Absent when the read
       failed, and then the control is not drawn and a `?p=` is not applied. */
   printedIn?: LanePrintedIn;
@@ -328,7 +333,7 @@ export function DiscoveryView({
   // no drawn waiting state, which would be a Design question this does not answer.
   const wanted = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
   const refreshStale = useCallback(() => router.refresh(), [router]);
-  const { resolve } = useDrawFields(discovery.sort, discovery.items, wanted, refreshStale);
+  const { resolve } = useDrawFields({ sort: discovery.sort, basis }, discovery.items, wanted, refreshStale);
   const resolvedWanted = wanted.map(resolve);
   const complete = resolvedWanted.every((r) => r !== null);
   // The last rows drawn WHOLE, kept as drawn: a change of order resolves against another
