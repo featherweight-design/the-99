@@ -23,11 +23,10 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
  * SMALL art takes `ARRIVAL_SMALL_CAP_MS` (1,000ms) instead, first screen or not. A box under `SMALL_ART_AREA_PX`
  * (a 34x48 list thumb is 1,632) can never be the page's largest paint, so the LCP reason for the short cap does
  * not reach it, and a column of thumbs lands over several hundred ms in no order at all. Measured on the precon
- * list's rows (`probe:precon-arrival`, rows released out of order, of all pairs): deployed staging at 80ms,
- * 15 of 234 at 1300 and 11 of 135 at 390; a local production build, 3 runs a batch, 2 batches: 80ms 12 and 25
- * of 234 (1300), 15 and 1 of 135 (390); 300ms 12, 21 and 25 of 234, 3, 1 and 0 of 135, so 300 was too short; 1,000ms
- * 0 of 234 and 0 of 234, 0 of 135 and 0 of 135. A row of only small art waits for the rows above it that long;
- * a row with any larger art keeps the caps above.
+ * list's rows (`probe:precon-arrival`, pairs released out of order): deployed staging at the 80ms cap, 15 of 234
+ * at 1300 and 7 of 135 at 390; a local production build at 1,000ms, 0 of 234 (two batches of three runs) and 0 of
+ * 135. A row of only small art waits for the rows above it that long; a row with any larger art keeps the caps
+ * above.
  *
  * Art that settled before it joined (cached, or already painted when the page hydrated) never
  * joins, so it is never held. With no `<ArrivalOrder>` above it, art fades as it lands. Under

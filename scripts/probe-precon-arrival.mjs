@@ -6,12 +6,14 @@
 // than 4px (the queue's row tolerance) ABOVE an earlier one: a lower row faded in before an upper one. The queue
 // (`ui/arrival-queue.tsx`) lets a lower row go early only at its cap, so the count is what the cap costs.
 //
-// Rows are what the small-art cap fixes (`ARRIVAL_SMALL_CAP_MS`). Measured 2026-10-13, inversions / pairs over
-// 3 runs a batch: deployed staging before the cap (80ms) rows 1300 15/234, rows 390 11/135; a local production
-// build at 80ms (2 batches) 12 and 25/234, 15 and 1/135; at 300ms 12, 21 and 25/234, 3, 1 and 0/135 (too short); at
-// 1,000ms 0/234, 0/234, 0/135, 0/135. TILES keep the first-screen cap that Hugh's LCP ruling set (80ms), so a
-// slow first row is let go past: 0 inversions in most runs, and up to 33/190 (1300) or 4/28 (390) in some, on
-// staging as well as locally, before and after. That is why the tiles' bar is looser than the rows'.
+// Rows are what the small-art cap fixes (`ARRIVAL_SMALL_CAP_MS`). Measured 2026-10-13 with the view named in the
+// address (`?view=`), inversions / pairs over 3 runs a batch: deployed staging before the cap (80ms) rows 1300
+// 15/234, rows 390 7/135, tiles 1300 0/570, tiles 390 4/84; a local production build with the cap (1,000ms) rows
+// 1300 0/234 and 0/234, rows 390 0/135, tiles 1300 0/570 and 0/570, tiles 390 6/84 and 0/84. TILES keep the
+// first-screen cap that Hugh's LCP ruling set (80ms), so a slow first row is let go past: 0 inversions in most
+// runs and a few pairs in some, before and after, which is why the tiles' bar is looser than the rows'. (An
+// earlier version of this probe set the view in storage, which applies only after hydration, so its rows
+// samples mixed both layouts; its figures are not comparable and are not quoted.)
 //
 // Needs PRECONS_ENABLED=true and a database holding the precons (`pnpm db:seed:precons`). Reads only.
 //   local:  PROBE_BASE=http://localhost:3612 pnpm probe:precon-arrival      (a `next start`, local-dev)
@@ -124,8 +126,9 @@ try {
       try {
         await signIn(page);
         await page.addInitScript(OBSERVE);
-        await page.addInitScript((v) => { try { localStorage.setItem("the99:precons:view", v); } catch { /* storage may be blocked */ } }, view);
-        await page.goto(`${BASE}/decks/precons`, { waitUntil: "load" });
+        // The view is named in the address, so the server and the hydrated client draw the same layout from the
+        // first paint: a stored view applies only after hydration, and the observer would sample both layouts.
+        await page.goto(`${BASE}/decks/precons?view=${view}`, { waitUntil: "load" });
         await page.waitForSelector("main img", { timeout: 30_000 });
         await page.waitForTimeout(6000);
         const tops = await page.evaluate(() => window.__arrivals);

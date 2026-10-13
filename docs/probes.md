@@ -207,8 +207,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and 390x844 in both views: every art `data-arrival` turning `in` is stamped with its page-relative top, and an
   inversion is a lower row released before an upper one (more than 4px above). Rows (34x48 thumbs) may not exceed 1%
   of pairs, tiles 8%. The queue's small-art cap (`ARRIVAL_SMALL_CAP_MS`, 1,000ms, for boxes under 6,000px squared) is
-  what the rows' bar measures: 80ms left 5 to 11% of row pairs inverted, 300ms was still 0 to 11%, 1,000ms 0 in 12 runs.
-  Tiles keep the LCP caps (80/150ms), so a slow first row lets lower ones go: 0 inversions in most runs, up to 33/190
+  what the rows' bar measures: staging at the 80ms cap read 15 of 234 pairs inverted at 1300 and 7 of 135 at 390; a local
+  production build at 1,000ms read 0. The view is named in the address (`?view=`), because a stored view applies
+  only after hydration and the probe would sample both layouts.
+  Tiles keep the LCP caps (80/150ms), so a slow first row lets lower ones go: 0 inversions in most runs and a few pairs
   in some, before and after. Reads only; needs `PRECONS_ENABLED=true` and `pnpm db:seed:precons` on local-dev, or
   `MEASURE_DEPLOYED=1` against staging.
 - `pnpm probe:run-after` proves that leaving the page never cancels a Suggested changes or Proposed
