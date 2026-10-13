@@ -201,6 +201,21 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(within(row).getByRole("button", { name: r.swappedAria(card.name, "Goblins", "Goblin Instigator") })).toBeEnabled();
   });
 
+  it("what the reader did on a read's rows belongs to that read: a newer read starts with none of it", async () => {
+    const memory = { "r1:d-gob": { kind: "swapped", swapId: "s1" } } as const;
+    actions.loadFitsAction.mockResolvedValue(list());
+    const view = (readId: string) => {
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { stored: stored({ readId }) }));
+      return <FitsView key={readId} card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={() => {}} onReading={() => {}} />;
+    };
+    const { rerender } = render(view("r1"));
+    await settle();
+    expect(within(screen.getByTestId("read-row")).getByRole("button", { name: r.swappedAria(card.name, "Goblins", "Goblin Instigator") })).toHaveAttribute("aria-pressed", "true");
+    rerender(view("r2"));
+    await settle();
+    expect(within(screen.getByTestId("read-row")).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") })).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("Add only adds with nothing cut, says the deck is at 100, and pressed again takes it out (P3h, P3i)", async () => {
     await draw(panel({}, { stored: stored() }));
     actions.addFromFits.mockResolvedValue({ ok: true });

@@ -24,7 +24,10 @@ import { ReadRow, type RowAct } from "./read-row";
 const copy = swapToolsCopy.fits;
 const read = copy.read;
 
-/** What the reader did on the read's rows this visit, kept by the provider across a card opened over it. */
+/**
+ * What the reader did on the read's rows this visit, kept by the provider across a card opened over it.
+ * Keyed on the read and the deck (`actKey`), so a newer read never inherits an older one's Swapped in.
+ */
 export type FitsViewMemory = Record<string, RowAct>;
 
 /** How often a read in flight is asked after while the view waits on it (lock 5: one run, polled). */
@@ -167,6 +170,9 @@ export function FitsView({
     }
   }
 
+  const actKey = (deckId: string) => `${panel?.view.stored?.readId ?? ""}:${deckId}`;
+  const actOf = (deckId: string) => memory[actKey(deckId)] ?? null;
+
   const deckOf = (deckId: string) => {
     const row = list.read?.fits.find((d) => d.id === deckId) ?? panel?.fits.fits.find((d) => d.id === deckId);
     if (row) return { name: row.name, commanders: row.commanders };
@@ -176,19 +182,19 @@ export function FitsView({
 
   async function onSwap(deckId: string, cut: string, cutName: string) {
     if (!list.claim()) return;
-    const act = memory[deckId];
+    const act = actOf(deckId);
     setBusy(true);
     setRefused(null);
     try {
       if (act?.kind === "swapped") {
         const r = await undoReadSwapAction(act.swapId);
         if (!r.ok) return setRefused({ deckId, kind: "undo" });
-        setMemory((m) => ({ ...m, [deckId]: null }));
+        setMemory((m) => ({ ...m, [actKey(deckId)]: null }));
         setAnnounced(read.announceUndone(name, cutName));
       } else {
         const r = await swapFromReadAction(deckId, cut, card.oracleId);
         if (!r.ok) return setRefused({ deckId, kind: "swap" });
-        setMemory((m) => ({ ...m, [deckId]: { kind: "swapped", swapId: r.swapId } }));
+        setMemory((m) => ({ ...m, [actKey(deckId)]: { kind: "swapped", swapId: r.swapId } }));
         setAnnounced(read.announceSwapped(name, cutName));
       }
       await list.refresh(true);
@@ -202,21 +208,21 @@ export function FitsView({
 
   async function onAdd(deckId: string, deckName: string) {
     if (!list.claim()) return;
-    const act = memory[deckId];
+    const act = actOf(deckId);
     setBusy(true);
     setRefused(null);
     try {
       if (act?.kind === "added") {
         const r = await undoReadAddAction(deckId, card.oracleId);
         if (!r.ok) return setRefused({ deckId, kind: "undo" });
-        setMemory((m) => ({ ...m, [deckId]: null }));
+        setMemory((m) => ({ ...m, [actKey(deckId)]: null }));
         setAnnounced(read.announceAddUndone(name, deckName));
       } else {
         const toBuy = freeNow === 0;
         const r = await addFromFits(deckId, card.oracleId);
         if (!r.ok) return setRefused({ deckId, kind: "add" });
         if (!r.held) {
-          setMemory((m) => ({ ...m, [deckId]: { kind: "added", toBuy } }));
+          setMemory((m) => ({ ...m, [actKey(deckId)]: { kind: "added", toBuy } }));
           setAnnounced(read.announceAdded(name, deckName));
         }
       }
@@ -365,10 +371,10 @@ export function FitsView({
                   names={panel?.names ?? {}}
                   cardName={name}
                   freeNow={freeNow}
-                  act={memory[p.deckId] ?? null}
+                  act={actOf(p.deckId)}
                   // Took the card some other way since the read (the free list, another visit): resolved,
                   // not changed (READINESS-audit F2), and nothing left to press on this row.
-                  settled={!memory[p.deckId] && (result.resolved.includes(p.deckId) || heldNow.has(p.deckId))}
+                  settled={!actOf(p.deckId) && (result.resolved.includes(p.deckId) || heldNow.has(p.deckId))}
                   busy={rowsLocked}
                   refused={refused?.deckId === p.deckId ? refused.kind : null}
                   onSwap={() => p.cut && void onSwap(p.deckId, p.cut, panel?.names[p.cut] ?? "")}
