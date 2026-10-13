@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { FilterBar } from "./filter-bar";
 import type { SetOption } from "../../lib/collection/set-filter";
 
@@ -41,5 +41,27 @@ describe("the rack's trailing slot", () => {
     const { container } = bar([setOption("EOE")], { setCodes: ["EOE"] });
     const hrefs = [...container.querySelectorAll("a")].map((a) => a.getAttribute("href"));
     expect(hrefs.filter((h) => h?.startsWith("/collection"))).toEqual([]);
+  });
+});
+
+// One tap on the phone's ✕ must clear. Safari blurs the field on a button tap, the view well comes
+// back, the row narrows and the ✕ moves before the click lands, so the first tap did nothing.
+describe("the phone search's clear", () => {
+  it("refuses the mousedown that would blur the field, then clears and keeps focus in it", () => {
+    const changes: unknown[] = [];
+    const { container } = render(
+      <FilterBar
+        filters={{ search: "gishath", colors: [], types: [], setCodes: [], availability: [] } as never}
+        sort="name" sortDirection="asc" view="rows" setOptions={[]} typeOptions={[]}
+        availabilityOptions={[]} colorOptions={[]} shown={0} total={0} chips={[]}
+        onClearAll={() => {}} resultLine="" availabilityOk announcement="" onAnnounce={() => {}}
+        onFiltersChange={(f) => changes.push(f)} onSortChange={() => {}} onViewChange={() => {}}
+      />,
+    );
+    const clear = container.querySelector<HTMLButtonElement>('button[aria-label="Clear search"]')!;
+    expect(fireEvent.mouseDown(clear)).toBe(false); // false = preventDefault was called
+    fireEvent.click(clear);
+    expect(changes).toEqual([expect.objectContaining({ search: "" })]);
+    expect(document.activeElement).toBe(container.querySelector('input[type="search"]'));
   });
 });

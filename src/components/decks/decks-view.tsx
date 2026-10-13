@@ -90,7 +90,7 @@ import {
 } from "../../lib/decks/folder-view";
 import { ImportDeckButton } from "./import-deck-button";
 import { NewDeckButton } from "./new-deck-button";
-import { SearchIcon } from "./search-icon";
+import { SearchIcon } from "../ui/search-icon";
 import { DecksMarkKey } from "./decks-mark-key";
 import { mirrorUrl } from "../../lib/url/mirror";
 import type { LineupData } from "../../lib/lineup/types";
@@ -1064,7 +1064,7 @@ export function DecksView({
                     aria-expanded={sheet.open}
                     className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 text-[color:var(--fg-body)]"
                   >
-                  <SearchIcon size={16} />
+                  <SearchIcon size={18} />
                 </button>
               )
             }

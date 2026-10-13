@@ -17,6 +17,7 @@ import { KILL } from "../../lib/switches/resolve";
 import { PendingReporter } from "../shell/pending-reporter";
 import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
 import { usePublishedHeight } from "./admin-head";
+import { SearchIcon } from "../ui/search-icon";
 
 // The Switches list (admin STATES L1 to L6; design table, Switches list and the R2 deltas). The
 // shell scrolls the document, as on Costs, so "pinned" is sticky: the search and chips sit under
@@ -187,7 +188,7 @@ export function SwitchesList({
         className="sticky top-[var(--admin-head-h,0px)] z-[1] flex flex-none flex-col gap-[10px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:px-[28px] md:pb-[14px] md:pt-[18px]"
       >
         <label className={`flex h-[44px] items-center gap-[10px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] md:h-[38px] md:max-w-[420px] ${AFFIX_FOCUS_INPUT}`}>
-          <span aria-hidden className="text-[14px] text-[color:var(--fg-faint)]">⌕</span>
+          <SearchIcon size={16} className="text-[color:var(--fg-faint)]" />
           <input
             type="search"
             value={query}

@@ -1,4 +1,5 @@
 import { twMerge } from "tailwind-merge";
+import { SearchIcon } from "./search-icon";
 
 // Shared text-entry primitives, sibling to button.tsx.
 //
@@ -66,12 +67,7 @@ type SearchFieldProps = TextFieldProps & {
   trailing?: React.ReactNode;
   containerClassName?: string;
   /**
-   * Classes for the leading `⌕`. It needs its own slot because `className`
-   * lands on the `<input>`, and the design tables size the glyph per surface.
-   */
-  iconClassName?: string;
-  /**
-   * Replaces the leading `⌕` outright. The commanders filter bar captions its
+   * Replaces the leading magnifier outright. The commanders filter bar captions its
    * field `FIND` instead, mirroring the `COLORS` caption beside it — a magnifier
    * there would be a second vocabulary in a row that already has one.
    */
@@ -92,7 +88,6 @@ type SearchFieldProps = TextFieldProps & {
 export function SearchField({
   className,
   containerClassName,
-  iconClassName,
   leading,
   trailing,
   type = "search",
@@ -114,15 +109,7 @@ export function SearchField({
       {/* `undefined` is the absent prop; `null` is a caller asking for no leading
           element at all, which `??` would have overruled with the magnifier. */}
       {leading === undefined ? (
-        <span
-          aria-hidden
-          className={twMerge(
-            "font-mono text-[15px] shrink-0 text-[color:var(--fg-faint)]",
-            iconClassName,
-          )}
-        >
-          ⌕
-        </span>
+        <SearchIcon size={16} className="shrink-0 text-[color:var(--fg-faint)]" />
       ) : (
         leading
       )}

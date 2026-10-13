@@ -498,7 +498,15 @@ export function FilterBar({
                 <button
                   type="button"
                   aria-label={filterCopy.search.clear}
-                  onClick={() => onFiltersChange({ ...filters, search: "" })}
+                  // A tap on a <button> blurs the input in Safari, and blur shows the view well again
+                  // (globals.css), which narrows this row and moves the ✕ out from under the finger
+                  // before the click lands: the first tap only re-laid the bar out. Refusing the
+                  // mousedown keeps focus in the field, so one tap clears and the keyboard stays up.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    onFiltersChange({ ...filters, search: "" });
+                    searchRef.current?.focus();
+                  }}
                   className="flex h-[24px] w-[24px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[color:var(--border)] p-0 text-[12px] leading-none text-[color:var(--fg-faint)]"
                 >
                   ✕
