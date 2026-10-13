@@ -220,9 +220,12 @@ describe("readManaHelpReview (History's re-review)", () => {
   it("draws the help as it was shown, each trade re-checked against today's help for that color", async () => {
     state.helpRows = [{ summary: { color: "G", help: past } }];
     state.trades = [trade("s1", "forest")];
+    state.helpEnvs.length = 0;
     const shown = await readManaHelpReview(DECK, COUNT);
     expect(shown?.trades.map((t) => t.staple.oracleId)).toEqual(["s1", "s2"]);
     expect(shown?.noLonger).toEqual(["s2"]);
+    // Today's help, for the re-check, is loaded under the reader's resolved switches, not the environment's.
+    expect(state.helpEnvs.map((env) => env === ENV)).toEqual([true]);
   });
 
   it("is null for an id that names no help read (the reader, deck and tool filter is pinned in mana-help-read.test)", async () => {
