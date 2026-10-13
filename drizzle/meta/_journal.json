@@ -799,6 +799,13 @@
       "when": 1791914253917,
       "tag": "0113_group_daily_allowance",
       "breakpoints": true
+    },
+    {
+      "idx": 114,
+      "version": "7",
+      "when": 1791916367097,
+      "tag": "0114_stripe_tables",
+      "breakpoints": true
     }
   ]
 }
