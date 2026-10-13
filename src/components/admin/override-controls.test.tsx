@@ -116,6 +116,22 @@ describe("RowControls", () => {
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add an account override" }));
   });
 
+  it("forgets a cancelled clear's focus handoff, so a later confirmed set keeps focus on the row", async () => {
+    clear.mockResolvedValueOnce({ ok: false, error: "confirm", preview: PREVIEW });
+    set.mockResolvedValueOnce({ ok: false, error: "confirm", preview: PREVIEW }).mockResolvedValueOnce({ ok: true });
+    render(
+      <>
+        {row(false)}
+        <button type="button" data-add-override="user">Add an account override</button>
+      </>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Clear" })));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await act(async () => fireEvent.click(radio("Off")));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Turn on for 2" })));
+    expect(document.activeElement).not.toBe(screen.getByRole("button", { name: "Add an account override" }));
+  });
+
   it("says the server refused a change with no Try again", async () => {
     set.mockResolvedValueOnce({ ok: false, error: "killed" });
     render(row(false));

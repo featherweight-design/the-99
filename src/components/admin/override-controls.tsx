@@ -44,12 +44,13 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
     if (result.ok) {
       setConfirm(null);
       onSaved?.(p);
-      (afterSave ?? confirmAfter.current)?.();
       confirmAfter.current = null;
+      afterSave?.();
       router.refresh();
     } else if (result.error === "confirm") {
-      // A confirmed write saves later, from the dialog: keep what it should do then.
-      if (afterSave) confirmAfter.current = afterSave;
+      // A confirmed write saves later, from the dialog: keep what it should do then (and nothing
+      // else's: a dialog for a set must never run a cancelled clear's callback).
+      confirmAfter.current = afterSave ?? null;
       setConfirm({ preview: result.preview, pending: p });
     } else {
       setConfirm(null);
@@ -62,8 +63,11 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
       preview={confirm.preview}
       context={{ ...context, op: confirm.pending.op }}
       pending={inFlight !== null}
-      onCancel={() => setConfirm(null)}
-      onConfirm={(note) => run({ ...confirm.pending, note: note.trim() || confirm.pending.note }, confirm.preview.count)}
+      onCancel={() => {
+        confirmAfter.current = null;
+        setConfirm(null);
+      }}
+      onConfirm={(note) => run({ ...confirm.pending, note: note.trim() || confirm.pending.note }, confirm.preview.count, confirmAfter.current ?? undefined)}
     />
   );
   const failure = failed && (
