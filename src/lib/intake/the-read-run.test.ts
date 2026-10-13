@@ -23,6 +23,7 @@ import type { ModelOutcome } from "../model/client";
 import { formatPoolList } from "./pool-list";
 import type { JudgeReply, ShortlistReply } from "./the-read";
 import { beginTheRead, runTheRead, shortlistPrefix, type TheReadDeps, type TheReadInputs } from "./the-read-run";
+import { ENV_VIEW } from "@/test/env-view";
 
 const usage = { inputTokens: 100, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 };
 const commander = (id: string, name: string) => ({ oracleId: id, name, colorIdentity: ["B"], typeLine: "Legendary Creature — Horror", tags: [] });
@@ -37,7 +38,7 @@ const deps = (shortlist: ModelOutcome<ShortlistReply>, judge: ModelOutcome<Judge
   judge: vi.fn(async () => judge),
   now: () => 0,
 });
-const input = { readId: "r", words: "scary horrors", filters: { colors: [], match: "contains" as const, themes: [], budgetDollars: null, bracket: null } };
+const input = { readId: "r", words: "scary horrors", filters: { colors: [], match: "contains" as const, themes: [], budgetDollars: null, bracket: null }, env: ENV_VIEW };
 
 beforeEach(() => {
   allowance.read.mockReset().mockResolvedValue(OPEN);

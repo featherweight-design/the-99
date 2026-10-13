@@ -137,7 +137,7 @@ async function readNoncreatureSubtypes(): Promise<Set<string>> {
 /** Null when the deck is not this reader's, or the card is not in the catalog. */
 /** `full` reads every stand-in of every group, for `Show all` on a group the first read capped. */
 export async function loadStandIns(
-  deckId: string, userId: string, cutOracleId: string, full: boolean, env: NodeJS.ProcessEnv = process.env,
+  deckId: string, userId: string, cutOracleId: string, full: boolean, env: NodeJS.ProcessEnv,
 ): Promise<StandInsRead | null> {
   const deckRows = await db.execute<{ commander: string; partner: string | null }>(sql`
     select commander_oracle_id as commander, partner_oracle_id as partner

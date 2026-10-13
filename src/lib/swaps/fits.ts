@@ -151,10 +151,9 @@ type CardRowDb = {
 
 /**
  * The whole read for one card, for the signed-in reader. Null when the card does not exist. `env` is the
- * reader's resolved switches (`requestSwitchEnv`), for the card's claim read and the partners' art; the
- * environment alone when omitted (admin PR 7 makes it required).
+ * reader's resolved switches (`requestSwitchEnv`), for the card's claim read and the partners' art.
  */
-export async function loadFits(userId: string, oracleId: string, env: NodeJS.ProcessEnv = process.env): Promise<FitsRead | null> {
+export async function loadFits(userId: string, oracleId: string, env: NodeJS.ProcessEnv): Promise<FitsRead | null> {
   const [cardRes, deckRes] = await Promise.all([
     db.execute<CardRowDb>(sql`
       select oracle_id, name, color_identity, commander_legal, type_line, oracle_text, keywords

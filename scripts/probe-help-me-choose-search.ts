@@ -23,6 +23,7 @@
 //   pnpm probe:help-me-choose-search
 import { requireEnv } from "./lib/env.mjs";
 import { sql } from "drizzle-orm";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 requireEnv(["DATABASE_URL"]);
 
@@ -59,7 +60,7 @@ async function main() {
     JSON.stringify(matched.chips));
 
   console.log("\n2. The candidates and the no-theme order");
-  const all = await searchCommanders(USER, none);
+  const all = await searchCommanders(USER, none, process.env);
   const built = await rows<{ id: string }>(sql`
     select distinct commander_oracle_id as id from decks where user_id = ${USER} and commander_oracle_id is not null`);
   const listed = new Set(all.rows.map((r) => r.candidate.oracleId));
@@ -89,27 +90,27 @@ async function main() {
     drift.length === 0 ? `${sample.length} commanders agree, ${sample.filter((c) => c.colorIdentity.length === 0).length} colorless` : drift.join("; "));
 
   console.log("\n3. A theme and a card");
-  const byTheme = await searchCommanders(USER, { ...none, themes: [theme.slug] });
+  const byTheme = await searchCommanders(USER, { ...none, themes: [theme.slug] }, process.env);
   check(`a theme answer returns only commanders backing ${theme.label}`, byTheme.rows.length >= TOO_NARROW_BELOW
     && byTheme.rows.every((r) => r.themeFits[0].share > 0), `${byTheme.rows.length} rows`);
   check("the rows are in fit order", byTheme.rows.every((r, i) => i === 0 || byTheme.rows[i - 1].themeFits[0].share >= r.themeFits[0].share),
     `top ${byTheme.rows[0]?.candidate.name} at ${byTheme.rows[0]?.themeFits[0].share.toFixed(3)}`);
   const [solRing] = await rows<{ oracle_id: string }>(sql`select oracle_id from cards where name = 'Sol Ring'`);
-  const byCard = await searchCommanders(USER, { ...none, card: solRing.oracle_id });
+  const byCard = await searchCommanders(USER, { ...none, card: solRing.oracle_id }, process.env);
   check("a card answer returns only commanders whose decks run it", byCard.rows.length > 0
     && byCard.rows.every((r) => (r.cardFit ?? 0) > 0), `${byCard.rows.length} rows, top ${byCard.rows[0]?.cardFit?.toFixed(3)}`);
   // The card's figure and a theme's are compared (the weaker orders the row), so both must be
   // shares. EDHREC stores inclusion as a percentage; read raw it outranks every theme.
   check("a card's fit is a share, on the same scale as a theme's", byCard.rows.every((r) => (r.cardFit ?? 0) <= 1),
     `largest ${Math.max(...byCard.rows.map((r) => r.cardFit ?? 0)).toFixed(3)}`);
-  const both = await searchCommanders(USER, { ...none, themes: [theme.slug], card: solRing.oracle_id });
+  const both = await searchCommanders(USER, { ...none, themes: [theme.slug], card: solRing.oracle_id }, process.env);
   const weakest = (r: (typeof both.rows)[number]) => Math.min(r.themeFits[0].share, r.cardFit ?? 1);
   check("a theme and a card together order by the weaker figure", both.rows.length > 1
     && both.rows.every((r, i) => i === 0 || weakest(both.rows[i - 1]) >= weakest(r)), `top ${both.rows[0]?.candidate.name}: theme ${both.rows[0]?.themeFits[0].share.toFixed(3)}, card ${both.rows[0]?.cardFit?.toFixed(3)}`);
 
   console.log("\n4. The bracket");
   const gcCount = all.rows.filter((r) => r.candidate.gameChanger).length;
-  const b2 = await searchCommanders(USER, { ...none, bracket: 2 });
+  const b2 = await searchCommanders(USER, { ...none, bracket: 2 }, process.env);
   check("bracket 2 drops every Game Changer commander", gcCount > 0 && b2.rows.every((r) => !r.candidate.gameChanger)
     // An extra-turn commander breaks bracket 1 only, so bracket 2 keeps it; mass land denial does not.
     && b2.rows.length === all.rows.filter((r) => !r.candidate.gameChanger && !r.candidate.massLandDenial).length,
@@ -117,21 +118,21 @@ async function main() {
 
   console.log("\n5. Too narrow");
   const narrowTheme = vocab.at(-1)!;
-  const narrow = await searchCommanders(USER, { ...none, themes: [narrowTheme.slug], colors: ["W", "U", "B", "R", "G"], match: "exactly" });
+  const narrow = await searchCommanders(USER, { ...none, themes: [narrowTheme.slug], colors: ["W", "U", "B", "R", "G"], match: "exactly" }, process.env);
   check("a narrow ask is named, with what each answer removes", narrow.rows.length < TOO_NARROW_BELOW && narrow.tooNarrow !== null
     && narrow.tooNarrow.without.length === 2, `${narrow.rows.length} rows; ${JSON.stringify(narrow.tooNarrow?.without)}`);
   // Five colors exactly and five colors with others allowed are the same ask (there is no sixth
   // color), so no widen may be offered: offering one would promise commanders it cannot bring.
   check("a widen that admits no one more is not offered", narrow.tooNarrow?.widen === null, JSON.stringify(narrow.tooNarrow?.widen));
-  const mono = await searchCommanders(USER, { ...none, themes: [narrowTheme.slug], colors: ["G"], match: "exactly" });
+  const mono = await searchCommanders(USER, { ...none, themes: [narrowTheme.slug], colors: ["G"], match: "exactly" }, process.env);
   check("a widen, when offered, admits more than the exact ask", mono.tooNarrow?.widen == null || mono.tooNarrow.widen.count > mono.rows.length,
     `${mono.rows.length} exact, widen ${JSON.stringify(mono.tooNarrow?.widen)}`);
 
   console.log("\n6. The page the screen draws");
   const { loadCardChip, loadResultsPage, RESULT_PAGE } = await import("../src/lib/intake/rows");
   const { loadIntakeCatalog } = await import("../src/lib/intake/search");
-  const first = await loadResultsPage(USER, none);
-  const second = await loadResultsPage(USER, none, RESULT_PAGE);
+  const first = await loadResultsPage(USER, none, undefined, undefined, process.env);
+  const second = await loadResultsPage(USER, none, RESULT_PAGE, undefined, process.env);
   check("a blank ask ships one page of rows, and says more exist", first.rows.length === RESULT_PAGE && first.hasMore,
     `${first.rows.length} rows, hasMore ${first.hasMore}, of ${all.rows.length}`);
   check("the next page continues the same order", second.rows[0]?.oracleId === all.rows[RESULT_PAGE]?.candidate.oracleId,
@@ -146,18 +147,18 @@ async function main() {
   const [{ n: ownedCount }] = markedOwned.length === 0 ? [{ n: 0 }] : await rows<{ n: number }>(sql`
     select count(distinct oracle_id)::int as n from collection_items where user_id = ${USER} and oracle_id = any(${sql.param(markedOwned)}::uuid[])`);
   check("an owned mark is only ever on a commander the player owns", ownedCount === markedOwned.length, `${ownedCount} of ${markedOwned.length}`);
-  const byCardPage = await loadResultsPage(USER, { ...none, card: solRing.oracle_id });
+  const byCardPage = await loadResultsPage(USER, { ...none, card: solRing.oracle_id }, undefined, undefined, process.env);
   check("a card ask returns the card's own facts", byCardPage.card?.oracleId === solRing.oracle_id, JSON.stringify(byCardPage.card));
-  const stale = await searchCommanders(USER, { ...none, card: "00000000-0000-4000-8000-00000000dead" });
+  const stale = await searchCommanders(USER, { ...none, card: "00000000-0000-4000-8000-00000000dead" }, process.env);
   check("a card that no longer exists is dropped: the owned order, and no card facts", stale.order === "owned" && stale.card === null,
     `order ${stale.order}, card ${JSON.stringify(stale.card)}`);
   const [forest] = await rows<{ oracle_id: string }>(sql`select oracle_id from cards where name = 'Forest'`);
-  const basic = await searchCommanders(USER, { ...none, card: forest.oracle_id });
+  const basic = await searchCommanders(USER, { ...none, card: forest.oracle_id }, process.env);
   check("a basic land is no build-around card, whatever the URL says", basic.order === "owned" && basic.card === null,
     `order ${basic.order}, card ${JSON.stringify(basic.card)}`);
   // The chip reads the search's own card rule: a card the search drops draws no chip either, or
   // *We read this as* would name an answer the results never used.
-  const [basicChip, solChip] = [await loadCardChip(USER, forest.oracle_id), await loadCardChip(USER, solRing.oracle_id)];
+  const [basicChip, solChip] = [await loadCardChip(USER, forest.oracle_id, process.env), await loadCardChip(USER, solRing.oracle_id, process.env)];
   check("the answer chip drops the card the search drops, and names one it keeps",
     basicChip === null && solChip?.name === "Sol Ring", `basic ${JSON.stringify(basicChip)}, Sol Ring ${solChip?.name ?? "null"}`);
   check("and the owned order it falls back to still carries its support counts",

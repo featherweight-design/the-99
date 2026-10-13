@@ -64,7 +64,7 @@ async function readRow(tx: Tx, deckId: string, oracleId: string) {
  * suggestion first: an undo can only ever read the deck as it was before this very apply).
  */
 export async function planSwap(
-  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null, env: NodeJS.ProcessEnv = process.env,
+  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null, env: NodeJS.ProcessEnv,
 ): Promise<SwapPlan> {
   // One side may be absent: a line of tuning's two lists is an addition (no cut) or a cut (no add),
   // and each side's checks are then simply not asked. Both absent is no change at all.
@@ -152,7 +152,7 @@ export async function applySwap(
  * nothing. Does not touch the deck stamp.
  */
 export async function restoreSwap(
-  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null, snap: ApplySnapshot, env: NodeJS.ProcessEnv = process.env,
+  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null, snap: ApplySnapshot, env: NodeJS.ProcessEnv,
 ): Promise<boolean> {
   const add = addOracleId === null || !snap.add ? null : await readRow(tx, deckId, addOracleId);
   const cut = cutOracleId === null || !snap.cut ? null : await readRow(tx, deckId, cutOracleId);

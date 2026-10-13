@@ -18,6 +18,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { loadOpeningPrintings } from "../src/lib/cards/opening-printing";
 import { loadCardDetail } from "../src/lib/collection/card-detail";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 requireEnv(["DATABASE_URL"]);
 const READER = `probe-opening-printing-${Date.now()}`;
@@ -55,7 +56,7 @@ async function main() {
     let opened = 0;
     let oldWrong = 0;
     for (const s of sample) {
-      const detail = await loadCardDetail(READER, s.id);
+      const detail = await loadCardDetail(READER, s.id, undefined, process.env);
       const mine = opening.get(s.id)?.imageUri;
       if (mine === undefined) continue;                 // the rule found none: the caller keeps `cards.image_uri`
       opened += 1;

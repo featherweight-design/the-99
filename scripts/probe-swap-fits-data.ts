@@ -111,7 +111,7 @@ async function main() {
   await makeDeck(OTHER, "someone else's", x.commander, null, []);
 
   // 1. The three groups, by name, and only the reader's own decks.
-  const r = await loadFits(USER, x.oracle_id);
+  const r = await loadFits(USER, x.oracle_id, process.env);
   check("groups: the deck that can take it fits", r?.fits.map((d) => d.id), [fits]);
   check("groups: the deck holding it says one copy", r?.holds, [{ id: holds, name: "A holds", quantity: 1 }]);
   check("groups: the blue deck is ruled out by the card's colors", r?.excluded.map((d) => [d.id, d.outside]), [[blue, x.color_identity]]);
@@ -125,19 +125,19 @@ async function main() {
   // 3. Availability: two owned, one of them held by a committed deck.
   await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${USER}, ${x.oracle_id}::uuid, 2, 'probe')`);
   await commitVersion(holds, null, undefined, undefined, process.env);
-  const owned = await loadFits(USER, x.oracle_id);
+  const owned = await loadFits(USER, x.oracle_id, process.env);
   check("availability: owned and free", [owned?.owned, owned?.free], [2, 1]);
 
   // 3b. The Fits door's gate rides BOTH branches of the card payload: an owned card (two copies
   //     above) and an unowned one, and it reads no decks for a reader who has none.
-  const ownedCard = await loadCardDetail(USER, x.oracle_id);
+  const ownedCard = await loadCardDetail(USER, x.oracle_id, undefined, process.env);
   check("gate: an owned card carries it", [ownedCard?.commanderLegal, ownedCard?.hasDecks], [true, true]);
-  const unownedCard = await loadCardDetail(USER, peers[0].oracle_id);
+  const unownedCard = await loadCardDetail(USER, peers[0].oracle_id, undefined, process.env);
   check("gate: an unowned card carries it", [unownedCard?.quantity, unownedCard?.commanderLegal, unownedCard?.hasDecks], [0, true, true]);
-  check("gate: a reader with no decks has none", (await loadCardDetail(`${USER}-nobody`, x.oracle_id))?.hasDecks, false);
+  check("gate: a reader with no decks has none", (await loadCardDetail(`${USER}-nobody`, x.oracle_id, undefined, process.env))?.hasDecks, false);
 
   // 4. A deck the card LEADS holds it, even with no deck_cards row.
-  const led = await loadFits(USER, x.commander);
+  const led = await loadFits(USER, x.commander, process.env);
   check("leads: the commander's own decks hold it", led?.holds.map((d) => [d.name, d.quantity]), [["A holds", 1], ["B fits", 1]]);
   check("leads: so none of them fits it", led?.fits.length, 0);
 
@@ -166,14 +166,14 @@ async function main() {
     insert into commander_pair_support_cards (commander_oracle_id, partner_oracle_id, oracle_id, inclusion, synergy, position)
     values (${a}::uuid, ${b}::uuid, ${x.oracle_id}::uuid, 42.5, 1, 1)`);
   const pair = await makeDeck(USER, "D pair", blueLead.oracle_id, x.commander, []);
-  const paired = await loadFits(USER, x.oracle_id);
+  const paired = await loadFits(USER, x.oracle_id, process.env);
   check("pair: fits, over the union of both identities", paired?.fits.some((d) => d.id === pair), true);
   check("pair: named with both commanders", paired?.fits.find((d) => d.id === pair)?.commanders.length, 2);
 
   // v2 PR B: the decks run by each one's synergy for the card, read from the pair's own row for a pair.
   // The single deck's synergy is the support list's; the pair's is set either side of it, and the order
   // must follow. A projection reading the wrong table, or no synergy at all, leaves the order fixed.
-  const order = async () => (await loadFits(USER, x.oracle_id))?.fits.map((d) => d.id).filter((id) => id === pair || id === fits);
+  const order = async () => (await loadFits(USER, x.oracle_id, process.env))?.fits.map((d) => d.id).filter((id) => id === pair || id === fits);
   const single = x.synergy === null ? null : Number(x.synergy);
   check(`synergy: the fixture's own synergy (${single}) sits inside the range`, single !== null && single > -1 && single < 1, true);
   check("synergy: a pair favoring the card more leads", await order(), [pair, fits]);
@@ -227,7 +227,7 @@ async function main() {
     check("combo: a two-card variant the shared read counts", false, true);
   } else {
     const holder = await makeDeck(USER, "E combo", legend.oracle_id, null, [combo.held]);
-    const read = await loadFits(USER, combo.want);
+    const read = await loadFits(USER, combo.want, process.env);
     const row = read?.fits.find((d) => d.id === holder);
     // The piece previews the printing card details open for it: this fixture user owns none of it, so the catalog's art
     // (`withPartnerArt`). Asserted as the whole payload, not as its shape, so a dropped overlay fails here.
@@ -245,7 +245,7 @@ async function main() {
       return execute(q);
     }) as typeof appDb.execute;
     try {
-      await loadFits(USER, combo.want);
+      await loadFits(USER, combo.want, process.env);
     } finally {
       (appDb as { execute: typeof appDb.execute }).execute = execute;
     }
@@ -258,7 +258,7 @@ async function main() {
   const added = await addCardToDeckFor(USER, fits, x.oracle_id, { relock: false });
   // `released` lists the decks whose asks the add released (`releaseAskers`): none in this fixture.
   check("add: written", added, { result: { ok: true }, wrote: "added", released: [] });
-  const after = await loadFits(USER, x.oracle_id);
+  const after = await loadFits(USER, x.oracle_id, process.env);
   check("add: the deck moves from fits to holds", [after?.fits.some((d) => d.id === fits), after?.holds.some((d) => d.id === fits)], [false, true]);
   const again = await addCardToDeckFor(USER, fits, x.oracle_id, { relock: false });
   check("add: a second press is the singleton no-op", again.wrote, "held");
@@ -272,7 +272,7 @@ async function main() {
   //    the fixture card. An empty staple set fails rather than passing, since then no card could read true.
   const staples = [...(await loadUniversalStaples())].sort();
   if (staples.length === 0) throw new Error("format_staples names no universal staple on this database");
-  const stapleRead = await loadFits(USER, staples[0]);
+  const stapleRead = await loadFits(USER, staples[0], process.env);
   check("staple: a universal staple reads as one", stapleRead?.staple, true);
 
   // A staple's row draws `staple · any commander`, never a reason, so loadFits computes none. The case has
@@ -296,14 +296,14 @@ async function main() {
       check(`staple: a colorless card sharing ${themedStaple.themes[0]}`, false, true);
     } else {
       const themeDeck = await makeDeck(USER, "F staple theme", legend.oracle_id, null, [mate.oracle_id]);
-      const read = await loadFits(USER, themedStaple.oracle_id);
+      const read = await loadFits(USER, themedStaple.oracle_id, process.env);
       check("staple: no reason on any row, even where a theme is shared", read?.fits.find((f) => f.id === themeDeck)?.reason, null);
     }
   }
   check("staple: the fixture card does not", r?.staple, false);
 
   // 8. A card that does not exist reads as nothing.
-  check("unknown card: null", await loadFits(USER, "00000000-0000-4000-8000-000000000000"), null);
+  check("unknown card: null", await loadFits(USER, "00000000-0000-4000-8000-000000000000", process.env), null);
 }
 
 void (async () => {

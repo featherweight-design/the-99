@@ -43,7 +43,7 @@ export type TakeResult =
  * the deck has moved since the list was read (`SwapRefusal`), or when the deck is not the reader's.
  */
 export async function takeStandIn(
-  deckId: string, userId: string, cutOracleId: string, addOracleId: string, env: NodeJS.ProcessEnv = process.env,
+  deckId: string, userId: string, cutOracleId: string, addOracleId: string, env: NodeJS.ProcessEnv,
 ): Promise<TakeResult> {
   return db.transaction(async (tx) => {
     if (!(await lockOwnDeck(tx, deckId, userId))) return { ok: false, reason: "notFound" };
@@ -71,7 +71,7 @@ export async function takeStandIn(
  * Undo a take: both rows exactly as they were, and only over the deck the take left. Returns the
  * deck id, or null when the swap is not the reader's, was already undone, or the deck has moved.
  */
-export async function undoSwap(swapId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
+export async function undoSwap(swapId: string, userId: string, env: NodeJS.ProcessEnv): Promise<string | null> {
   return db.transaction(async (tx) => {
     // The deck is found unlocked (a swap's deck never changes), locked, and only then is the swap
     // row locked and read: the order every deck write here takes.

@@ -113,9 +113,8 @@ export async function loadPhraseIndex(themes: readonly VocabularyTheme[]): Promi
 /** The search, with the build-around card's own facts for its chip (owned, price, flags). */
 export type SearchOutcome = SearchResult & { card: CardFacts | null };
 
-/** `env`: the reader's resolved switches (`requestSwitchEnv`), for the build-around card's claim read; the
- *  environment alone when omitted (admin PR 7 makes it required). */
-export async function searchCommanders(userId: string, asked: Answers, env: NodeJS.ProcessEnv = process.env): Promise<SearchOutcome> {
+/** `env`: the reader's resolved switches (`requestSwitchEnv`), for the build-around card's claim read. */
+export async function searchCommanders(userId: string, asked: Answers, env: NodeJS.ProcessEnv): Promise<SearchOutcome> {
   const facts = await loadSearchFacts(userId, asked, env);
   return { ...rankCandidates(facts.candidates, facts.answers, facts.card, facts.tribes), card: facts.card };
 }
@@ -124,7 +123,7 @@ export async function searchCommanders(userId: string, asked: Answers, env: Node
 export type SearchFacts = { answers: Answers; candidates: Candidate[]; card: CardFacts | null; tribes: Tribes };
 
 /** Exported so `measure-intake-tribes` ranks exactly what the search does, twice, from one read. */
-export async function loadSearchFacts(userId: string, asked: Answers, env: NodeJS.ProcessEnv = process.env): Promise<SearchFacts> {
+export async function loadSearchFacts(userId: string, asked: Answers, env: NodeJS.ProcessEnv): Promise<SearchFacts> {
   // The card is resolved FIRST. A card id that parses but names no card any more (a stale link), or
   // one the intake could never have offered (a basic, a banned card), is dropped, as every invalid
   // answer is, and the search then runs as if no card were asked: every read below, the owned
@@ -240,11 +239,11 @@ export type CardRow = {
  * (`loadCardChip`) and for the search (`loadSearchFacts`), and the claim read below is the
  * expensive half. `claims: false` skips it for a caller that only needs to know the card counts.
  * `env` is the reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
- * pending clause; the environment alone when omitted (admin PR 7 makes it required). It is part of the
+ * pending clause. It is part of the
  * `cache` key by identity, so the two reads share one only when the page hands both the same env.
  */
 export const loadCardRow = cache(async (
-  userId: string, oracleId: string, env: NodeJS.ProcessEnv = process.env, claims = true,
+  userId: string, oracleId: string, env: NodeJS.ProcessEnv, claims = true,
 ): Promise<CardRow | null> => {
   const [row] = (await db.execute(sql`
     select c.name, c.game_changer, c.type_line, c.image_uri,

@@ -853,7 +853,7 @@ async function changesDoorSection() {
     const senior = await mk("Door senior", 60, 1);
     const junior = await mk("Door junior", 30, 1);
 
-    const [contested] = await loadContestedCards([card], USER_D);
+    const [contested] = await loadContestedCards([card], USER_D, process.env);
     check("the door finds the contested card", contested?.oracleId, card);
     // BOTH decks, including the one whose page this would be. An excluded read returns one.
     check("and both committed claimants", contested?.claimants.length, 2);
@@ -861,7 +861,7 @@ async function changesDoorSection() {
     check("with the junior deck buying", contested?.claimants[1]?.allocated, 0);
     // The route's own read agrees with the records read above, on the SAME scenario — the two
     // share one predicate, so a future change to either cannot drift without this failing.
-    check("countContestedCards agrees", await countContestedCards([card], USER_D), 1);
+    check("countContestedCards agrees", await countContestedCards([card], USER_D, process.env), 1);
 
     // A SHORTAGE WITH ONE CLAIMANT IS NOT A CHOICE. The junior deck goes; the senior one asks for
     // two copies against the one owned, which is short by one and has nobody to be short against.
@@ -870,17 +870,17 @@ async function changesDoorSection() {
       update deck_version_cards vc set quantity = 2
       from deck_versions v where v.id = vc.version_id and v.deck_id = ${senior}
     `);
-    const alone = await loadContestedCards([card], USER_D);
+    const alone = await loadContestedCards([card], USER_D, process.env);
     check("one claimant short of two copies is not contested", alone.length, 0);
-    check("and countContestedCards agrees", await countContestedCards([card], USER_D), 0);
+    check("and countContestedCards agrees", await countContestedCards([card], USER_D, process.env), 0);
 
     // AND NEITHER IS A CARD WITH ENOUGH COPIES FOR EVERYONE.
     await fixture.execute(sql`
       update collection_items set quantity = 4 where user_id = ${USER_D} and oracle_id = ${card}
     `);
-    const covered = await loadContestedCards([card], USER_D);
+    const covered = await loadContestedCards([card], USER_D, process.env);
     check("nor a card the collection covers", covered.length, 0);
-    check("and countContestedCards agrees", await countContestedCards([card], USER_D), 0);
+    check("and countContestedCards agrees", await countContestedCards([card], USER_D, process.env), 0);
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER_D}`);
     await fixture.execute(sql`delete from collection_items where user_id = ${USER_D}`);

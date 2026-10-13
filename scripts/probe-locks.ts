@@ -192,10 +192,10 @@ async function main() {
     {
       const d = await freshDeck("swap-cut");
       await lock(d.id, X);
-      const locked = await fixture.transaction((tx) => planSwap(tx as unknown as SwapTx, d.id, X, W));
+      const locked = await fixture.transaction((tx) => planSwap(tx as unknown as SwapTx, d.id, X, W, process.env));
       check("9 · a swap cutting a locked card is refused", locked.ok ? "ok" : locked.reason, "cutLocked");
       process.env.NEVER_CUT_ENABLED = "false";
-      const off = await fixture.transaction((tx) => planSwap(tx as unknown as SwapTx, d.id, X, W));
+      const off = await fixture.transaction((tx) => planSwap(tx as unknown as SwapTx, d.id, X, W, process.env));
       process.env.NEVER_CUT_ENABLED = "true";
       check("9 · with the switch off, the same swap plans (D3)", off.ok, true);
     }
@@ -204,13 +204,13 @@ async function main() {
     {
       const d = await freshDeck("swap-undo");
       const snap = await fixture.transaction(async (tx) => {
-        const plan = await planSwap(tx as unknown as SwapTx, d.id, Y, W);
+        const plan = await planSwap(tx as unknown as SwapTx, d.id, Y, W, process.env);
         if (!plan.ok) throw new Error(`fixture swap refused: ${plan.reason}`);
         await applySwap(tx as unknown as SwapTx, d.id, Y, W, plan.snapshot);
         return plan.snapshot;
       });
       await lock(d.id, W);
-      const undone = await fixture.transaction((tx) => restoreSwap(tx as unknown as SwapTx, d.id, Y, W, snap));
+      const undone = await fixture.transaction((tx) => restoreSwap(tx as unknown as SwapTx, d.id, Y, W, snap, process.env));
       check("10 · an undo that would take out a card locked since is refused", undone, false);
       check("10 · and the locked add is still in the deck", await rowOf(d.id, W), "live");
     }

@@ -17,6 +17,7 @@
 //   MEASURE_USER_ID=<staging account> pnpm measure:intake-tribes
 
 import { requireEnv } from "./lib/env.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const { THE_99_NEON_STAGING_DIRECT } = requireEnv(["THE_99_NEON_STAGING_DIRECT"]);
@@ -51,7 +52,7 @@ const slugs = TRIBES.map((label) => {
 const label = (slug: string) => themes.find((t) => t.slug === slug)?.label ?? slug;
 const asked = { colors: [], match: "contains" as const, themes: slugs, themeJoin: "all" as const, card: null, budgetDollars: null, bracket: null };
 
-const facts = await loadSearchFacts(userId, asked);
+const facts = await loadSearchFacts(userId, asked, process.env);
 const name = (k: { kind: string; slug?: string }) => (k.kind === "theme" ? label(k.slug!) : k.kind);
 console.log(`staging · ${facts.candidates.length} candidates · asked: ${TRIBES.join(", ")}`);
 console.log(`tribes derived: ${[...facts.tribes].map(([s, f]) => `${label(s)} -> ${f.join("|")}`).join(" · ")}`);
@@ -94,7 +95,7 @@ for (const r of anyOf.rows.slice(0, 12)) {
 
 // Three answers, PR 2: Hugh's whole ask, the four tribes as any of, printed in HOB or HOC. The
 // Sets answer runs through the loader (`printedIn`), so it is asked for there, not filtered here.
-const hugh = await loadSearchFacts(userId, { ...asked, themeJoin: "any", sets: ["hob", "hoc"] });
+const hugh = await loadSearchFacts(userId, { ...asked, themeJoin: "any", sets: ["hob", "hoc"] }, process.env);
 const hughRanked = rankCandidates(hugh.candidates, hugh.answers, hugh.card, hugh.tribes);
 console.log(`\nANY OF, printed in HOB or HOC: ${hughRanked.rows.length} results`);
 for (const r of hughRanked.rows) {

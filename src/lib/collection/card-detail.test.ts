@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 import { envViewWith } from "../../test/env-view";
 
 // Only the two reads are stood in for; the aggregation they feed is the real one, so a
@@ -293,7 +294,7 @@ describe("loadCardDetail availability", () => {
     selectCollectionRows.mockResolvedValue([row]);
     loadAvailability.mockRejectedValue(new Error("down"));
     loadPrintingPrices.mockResolvedValue(EMPTY_PRICES);
-    const card = await loadCardDetail("user_1", "o-1");
+    const card = await loadCardDetail("user_1", "o-1", undefined, ENV_VIEW);
     expect(card?.name).toBe("Arcane Signet");
     expect(card?.availability).toBeNull();
   });
@@ -302,7 +303,7 @@ describe("loadCardDetail availability", () => {
     selectCollectionRows.mockResolvedValue([row]);
     loadAvailability.mockResolvedValue(new Map());
     loadPrintingPrices.mockResolvedValue(PRICES);
-    const card = await loadCardDetail("user_1", "o-1");
+    const card = await loadCardDetail("user_1", "o-1", undefined, ENV_VIEW);
     expect(card?.prices).toEqual(PRICES);
     expect(loadPrintingPrices).toHaveBeenCalledWith("o-1");
   });
@@ -320,7 +321,7 @@ describe("loadCardDetail availability", () => {
       byScryfallId: {},
       byPrintingKey: { "ZNR|1": { cents: 5, foilCents: null, etchedCents: null, asOf: PRICES.newestAsOf } },
     });
-    const card = await loadCardDetail("user_1", "o-1");
+    const card = await loadCardDetail("user_1", "o-1", undefined, ENV_VIEW);
     expect(card?.preferredPrinting).toEqual({ setCode: "C21", collectorNumber: "263" });
     const { resolvedPrinting } = await import("./browse");
     expect(resolvedPrinting(card!)?.collectorNumber).toBe("263");
@@ -351,7 +352,7 @@ describe("loadCardDetail availability", () => {
     // The db stub above is scoped to this case; the real module is restored after.
     vi.resetModules();
     const { loadCardDetail: fresh } = await import("./card-detail");
-    const card = await fresh("user_1", "o-1");
+    const card = await fresh("user_1", "o-1", undefined, ENV_VIEW);
     vi.doUnmock("../../db");
 
     expect(card?.prices).toEqual(PRICES);
@@ -378,7 +379,7 @@ describe("loadCardDetail availability", () => {
     }));
     vi.resetModules();
     const { loadCardDetail: fresh } = await import("./card-detail");
-    const card = await fresh("user_1", "o-1");
+    const card = await fresh("user_1", "o-1", undefined, ENV_VIEW);
     vi.doUnmock("../../db");
 
     expect(card?.proxiedBy).toEqual([{ id: "d-1", name: "HD Gods" }]);
@@ -398,7 +399,7 @@ describe("loadCardDetail availability", () => {
     }));
     vi.resetModules();
     const { loadCardDetail: fresh } = await import("./card-detail");
-    const card = await fresh("user_1", "o-1");
+    const card = await fresh("user_1", "o-1", undefined, ENV_VIEW);
     vi.doUnmock("../../db");
 
     expect(card?.proxiedBy).toEqual([{ id: "d-2", name: "Prismari Artistry" }]);
@@ -423,7 +424,7 @@ describe("loadCardDetail availability", () => {
     }));
     vi.resetModules();
     const { loadCardDetail: fresh } = await import("./card-detail");
-    const card = await fresh("user_1", "o-1");
+    const card = await fresh("user_1", "o-1", undefined, ENV_VIEW);
     vi.doUnmock("../../db");
 
     expect(card?.oracleId).toBe("o-1");
@@ -440,7 +441,7 @@ describe("loadCardDetail availability", () => {
     selectCollectionRows.mockResolvedValue([row]);
     loadAvailability.mockResolvedValue(new Map());
     loadPrintingPrices.mockRejectedValue(new Error("feed down"));
-    const card = await loadCardDetail("user_1", "o-1");
+    const card = await loadCardDetail("user_1", "o-1", undefined, ENV_VIEW);
     expect(card?.name).toBe("Arcane Signet");
     expect(card?.prices).toBeNull();
   });
@@ -553,7 +554,7 @@ describe("loadCardDetail's round trips", () => {
     loadAvailability.mockClear();
     const { load, asked } = await fresh({ catalog: [] });
     try {
-      expect(await load("user_1", "o-missing")).toBeNull();
+      expect(await load("user_1", "o-missing", undefined, ENV_VIEW)).toBeNull();
       // Long enough for any read started behind the return to have reached its stub.
       for (let i = 0; i < 5; i += 1) await flush();
       expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, partners: 0, token: ["o-missing"] });
@@ -567,7 +568,7 @@ describe("loadCardDetail's round trips", () => {
     const token = { kind: "token", oracleId: "t-1", name: "Goblin" };
     const { load, asked } = await fresh({ catalog: [], token });
     try {
-      expect(await load("user_1", "t-1")).toBe(token);
+      expect(await load("user_1", "t-1", undefined, ENV_VIEW)).toBe(token);
       for (let i = 0; i < 5; i += 1) await flush();
       expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, partners: 0, token: ["t-1"] });
     } finally { done(); }
@@ -582,7 +583,7 @@ describe("loadCardDetail's round trips", () => {
     loadAvailability.mockResolvedValue(new Map());
     const { load, asked } = await fresh({ catalog: [catalogRow] });
     try {
-      const pending = load("user_1", "o-1");
+      const pending = load("user_1", "o-1", undefined, ENV_VIEW);
       for (let i = 0; i < 5; i += 1) await flush();
       // The prices read has not answered, and everything else has already been asked.
       expect(loadAvailability).toHaveBeenCalled();
@@ -602,7 +603,7 @@ describe("loadCardDetail's round trips", () => {
     loadPrintingPrices.mockResolvedValue(null);
     const { load, asked } = await fresh({ catalog: [catalogRow], printings });
     try {
-      const pending = load("user_1", "o-1");
+      const pending = load("user_1", "o-1", undefined, ENV_VIEW);
       for (let i = 0; i < 5; i += 1) await flush();
       expect(asked.printings).toBe(1);
       expect(loadPrintingPrices).toHaveBeenCalled();
@@ -647,7 +648,7 @@ describe("loadCardDetail's round trips", () => {
     loadAvailability.mockResolvedValue(new Map());
     const { load } = await fresh({ catalog: new Error("catalog down") });
     try {
-      expect((await load("user_1", "o-1"))?.name).toBe("Arcane Signet");
+      expect((await load("user_1", "o-1", undefined, ENV_VIEW))?.name).toBe("Arcane Signet");
     } finally { done(); }
   });
 
@@ -659,7 +660,7 @@ describe("loadCardDetail's round trips", () => {
     loadAvailability.mockResolvedValue(new Map());
     const { load } = await fresh({ catalog: "stall" });
     try {
-      expect((await load("user_1", "o-1"))?.name).toBe("Arcane Signet");
+      expect((await load("user_1", "o-1", undefined, ENV_VIEW))?.name).toBe("Arcane Signet");
     } finally { done(); }
   });
 
@@ -674,7 +675,7 @@ describe("loadCardDetail's round trips", () => {
       return failed;
     })() });
     try {
-      expect((await load("user_1", "o-1"))?.oracleId).toBe("o-1");
+      expect((await load("user_1", "o-1", undefined, ENV_VIEW))?.oracleId).toBe("o-1");
     } finally { done(); }
   });
 });

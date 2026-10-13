@@ -82,7 +82,7 @@ describe("an action reads the reader's resolved switches", () => {
  * The readers whose DEFAULTED env decides a switch, and the position of that env, which a call must reach
  * (`at`). `chainArt` decides
  * DECK_PRINTINGS_ENABLED, the deck's printing picks, and its `env` defaults until admin PR 7d makes it
- * required. A reader deeper than this that takes a defaulted env is not scanned: admin PRs 7c and 7d make
+ * required. A reader deeper than this that takes a defaulted env is not scanned: admin PRs 7c-2 and 7d make
  * `env` required, which catches that whole class at compile time.
  */
 const CLAIM_ENV = {

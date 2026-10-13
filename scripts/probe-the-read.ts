@@ -28,6 +28,7 @@ import ws from "ws";
 import { READ_JUDGE_MODEL, READ_SHORTLIST_MODEL } from "../src/lib/intake/limits";
 import type { JudgeReply, ShortlistReply } from "../src/lib/intake/the-read";
 import type { ModelOutcome } from "../src/lib/model/client";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -100,7 +101,7 @@ async function main() {
     let current = "";
     const press = (fingerprint: string, d: ReturnType<typeof deps>) => {
       current = randomUUID();
-      return runTheRead(USER, { readId: current, words: "scary horrors", filters }, d, inputs(fingerprint));
+      return runTheRead(USER, { readId: current, words: "scary horrors", filters, env: process.env }, d, inputs(fingerprint));
     };
     const pick = async (): Promise<ModelOutcome<JudgeReply>> => ({ ok: true, value: { picks: [{ key: 2, reason: "Its horrors drain every opponent." }] }, usage: judgeUsage });
 
@@ -140,7 +141,7 @@ async function main() {
       return loader;
     };
     const begin = (user: string, loader: ReturnType<typeof counted>, d = deps(pick)) =>
-      beginTheRead(user, { readId: randomUUID(), words: "scary horrors", filters }, d, loader);
+      beginTheRead(user, { readId: randomUUID(), words: "scary horrors", filters, env: process.env }, d, loader);
 
     console.log("\n4. A burst of presses by one player reads the pool once");
     const burstLoader = counted("fp-burst", 500);

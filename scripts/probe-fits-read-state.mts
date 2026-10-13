@@ -17,6 +17,7 @@
 //   pnpm probe:fits-read-state
 // First, and on its own line: the helper's import loads `.env`.
 import { requireEnv } from "./lib/env.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 process.env.FIND_A_DECK_READ_ENABLED = "true";
 process.env.SWAP_TOOLS_ENABLED = "true";
@@ -116,13 +117,13 @@ try {
   const { rows: existing } = await db.execute<{ id: string }>(sql`
     select id from fits_reads where user_id = ${FIXTURE} and oracle_id = ${pick.oracle_id}::uuid`);
   e2e = { user: FIXTURE, card: pick.oracle_id, before: new Set(existing.map((r) => r.id)) };
-  const before = await readFitsRead(FIXTURE, pick.oracle_id);
+  const before = await readFitsRead(FIXTURE, pick.oracle_id, undefined, process.env);
   if (!before || before.candidates === 0) throw new Error(`${FIXTURE} has no candidate deck for the end-to-end card`);
-  const pressed = await pressFitsRead(FIXTURE, pick.oracle_id);
+  const pressed = await pressFitsRead(FIXTURE, pick.oracle_id, undefined, process.env);
   if (!pressed.ok) throw new Error(`press refused: ${pressed.reason}`);
   check("a press on real decks stores the read as current", [pressed.panel.view.stored?.outcome, pressed.panel.view.stored?.current], ["picks", true]);
   check("with the stub's picks, each with a cut", pressed.panel.view.stored?.picks.every((p) => p.cut !== null), true);
-  check("a second press is refused as current, reserving nothing", await pressFitsRead(FIXTURE, pick.oracle_id), { ok: false, reason: "current" });
+  check("a second press is refused as current, reserving nothing", await pressFitsRead(FIXTURE, pick.oracle_id, undefined, process.env), { ok: false, reason: "current" });
 } finally {
   if (e2e) {
     const { rows } = await db.execute<{ id: string }>(sql`
