@@ -5,7 +5,7 @@
 // deck's own list: the commanders first, then the cards in the order the decklist draws them. At
 // 390 and at 1300 this opens the commander from the header's card-details control and checks:
 //
-//   - the counter reads "1 of N", where N is the commanders plus the deck's listed cards;
+//   - the counter reads "1 of N", where N is the list plus each commander it does not already hold;
 //   - Next steps to the decklist's FIRST card, the one its first row opens;
 //   - Prev from there steps back to the commander;
 //
@@ -112,17 +112,28 @@ async function checkView(page, label, view) {
   const commander = await readModal(page);
   const total = Number(commander.counter?.split(" of ")[1]?.replace(/,/g, ""));
   if (!commander.counter?.startsWith("1 of ")) fail(`${tag}: the commander reads ${commander.counter ?? "no counter"}, not 1 of N`);
-  else if (!(total > listTotal)) fail(`${tag}: the commander pages ${total}, the list ${listTotal}; the deck was not added`);
+  // Shopping lists an unowned or spoken-for commander as a row of its own, and the carousel lists
+  // each commander once, at its head. So the carousel holds the list plus at most two commanders.
+  else if (total < listTotal || total > listTotal + 2) fail(`${tag}: the commander pages ${total}, the list ${listTotal}; the deck was not added`);
   else ok(`${tag}: the commander reads ${commander.counter} (the list alone is ${listTotal})`);
 
-  // A pair puts its partner second; Next past every commander lands on the list's first card.
-  let at = commander;
-  for (let i = 0; i < total - listTotal; i++) at = await step(page, "Next card", at.title);
-  if (at.title !== first.title) fail(`${tag}: Next from the commanders opened ${at.title}, the list starts at ${first.title}`);
-  else ok(`${tag}: Next steps to the list's first card, ${at.title}`);
-  for (let i = 0; i < total - listTotal; i++) at = await step(page, "Previous card", at.title);
-  if (at.title !== commander.title) fail(`${tag}: Prev came back to ${at.title}, not ${commander.title}`);
-  else ok(`${tag}: Prev steps back to ${commander.title}`);
+  // A pair puts its partner second; Next past the commanders lands on the list's first card. When
+  // the list's first row IS the commander (Shopping), the carousel already starts there.
+  if (first.title === commander.title) {
+    ok(`${tag}: the list opens on the commander itself, as the carousel does`);
+  } else {
+    let at = commander;
+    let steps = 0;
+    while (at.title !== first.title && steps < 2) {
+      at = await step(page, "Next card", at.title);
+      steps++;
+    }
+    if (at.title !== first.title) fail(`${tag}: Next from the commanders opened ${at.title}, the list starts at ${first.title}`);
+    else ok(`${tag}: Next steps to the list's first card, ${at.title}`);
+    for (let i = 0; i < steps; i++) at = await step(page, "Previous card", at.title);
+    if (at.title !== commander.title) fail(`${tag}: Prev came back to ${at.title}, not ${commander.title}`);
+    else ok(`${tag}: Prev steps back to ${commander.title}`);
+  }
   await closeModal(page);
 }
 
