@@ -1,5 +1,5 @@
 // Usage (see .github/workflows/ci-calibration.yml):
-//   node scripts/ci-calibrate.mjs mutate <path>
+//   node scripts/ci-calibrate.mjs mutate <path> [auto|throw|half]
 //   node scripts/ci-calibrate.mjs compare <selection.txt> <vitest-results.json> <label>
 // `compare` exits 1 when a test failed that the selector did not choose.
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
@@ -9,10 +9,10 @@ import { compare, failingFiles, mutate } from "./lib/ci-calibrate.mjs";
 const [cmd, ...args] = process.argv.slice(2);
 
 if (cmd === "mutate") {
-  const [path] = args;
-  if (!path) throw new Error("usage: mutate <path>");
-  writeFileSync(path, mutate(path, readFileSync(path)));
-  console.log(`broke ${path}`);
+  const [path, mode = "auto"] = args;
+  if (!path) throw new Error("usage: mutate <path> [auto|throw|half]");
+  writeFileSync(path, mutate(path, readFileSync(path), mode));
+  console.log(`broke ${path} (${mode})`);
 } else if (cmd === "compare") {
   const [selectionFile, resultsFile, label] = args;
   const selected = readFileSync(selectionFile, "utf8").split("\n").filter(Boolean);

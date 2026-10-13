@@ -8,12 +8,21 @@
 
 const CODE = /\.(ts|tsx|mts|mjs|js|jsx)$/;
 
-/** @param {string} path @param {Buffer} content @returns {Buffer} */
-export function mutate(path, content) {
-  if (CODE.test(path)) {
+/**
+ * `throw` appends a module-level throw (fails everything that IMPORTS the file); `half` keeps only the
+ * second half (breaks a parse, and removes the text a guard READING the file looks for). `auto` is
+ * `throw` for code and `half` for everything else. A source file a guard reads as text needs both: the
+ * throw leaves its regexes intact, so only `half` can turn that guard red.
+ * @param {string} path @param {Buffer} content @param {"auto" | "throw" | "half"} [mode]
+ * @returns {Buffer}
+ */
+export function mutate(path, content, mode = "auto") {
+  const how = mode === "auto" ? (CODE.test(path) ? "throw" : "half") : mode;
+  if (how === "throw") {
     return Buffer.concat([content, Buffer.from('\nthrow new Error("ci-calibration: deliberately broken");\n')]);
   }
-  return content.subarray(Math.floor(content.length / 2));
+  if (how === "half") return content.subarray(Math.floor(content.length / 2));
+  throw new Error(`unknown mutation mode: ${mode}`);
 }
 
 /**

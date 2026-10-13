@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { basename, dirname } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compare, failingFiles, mutate } from "./ci-calibrate.mjs";
 
@@ -12,6 +13,11 @@ describe("mutate", () => {
   it("keeps only the second half of anything else", () => {
     expect(mutate("a.css", Buffer.from("abcdefgh")).toString()).toBe("efgh");
     expect(mutate("a.json", Buffer.from('{"a":1,"b":2}')).length).toBeLessThan(13);
+  });
+  it("honors an explicit mode over the extension", () => {
+    expect(mutate("a.ts", Buffer.from("abcdefgh"), "half").toString()).toBe("efgh");
+    expect(mutate("a.css", Buffer.from("abc"), "throw").toString()).toContain("throw");
+    expect(() => mutate("a.ts", Buffer.from("x"), "bogus" as never)).toThrow(/unknown mutation mode/);
   });
   it.each(["a.ts", "a.tsx", "a.mts", "a.mjs"])("treats %s as code", (p) => {
     expect(mutate(p, Buffer.from("x")).toString()).toContain("throw");
@@ -41,10 +47,12 @@ describe("failingFiles", () => {
 });
 
 describe("the case list", () => {
-  const cases = JSON.parse(readFileSync(new URL("../ci-calibration-cases.json", import.meta.url), "utf8")) as { path: string; why: string }[];
+  const cases = JSON.parse(readFileSync(new URL("../ci-calibration-cases.json", import.meta.url), "utf8")) as { path: string; why: string; modes?: string[] }[];
   it("names files that exist and a reason for each", () => {
     for (const c of cases) {
-      expect(() => readFileSync(new URL(`../../${c.path}`, import.meta.url)), c.path).not.toThrow();
+      // Exact case: macOS resolves `w.svg` to `W.svg`, a Linux runner does not.
+      const abs = new URL(`../../${c.path}`, import.meta.url).pathname;
+      expect(readdirSync(dirname(abs)), c.path).toContain(basename(abs));
       expect(c.why.length).toBeGreaterThan(5);
     }
   });
