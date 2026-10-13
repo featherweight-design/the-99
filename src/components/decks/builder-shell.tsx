@@ -550,6 +550,12 @@ export function BuilderShell({
       clearTimeout(timer);
     };
   }, [toolsOn]);
+  // The Analysis view opening is itself the last intent: the hub mounts alone, and a tool's own wrapper
+  // mounts only once it is opened, so without this a press nobody warmed for would fetch the tools in a
+  // second waterfall after the hub.
+  useEffect(() => {
+    if (toolsOn && view === "analysis") void warmTuningTools();
+  }, [toolsOn, view]);
   // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
   // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
   // mutually exclusive, but both write through the same action.

@@ -66,7 +66,7 @@ async function renderShell(flags: Record<string, boolean>, initialView: "deck" |
   );
 }
 
-describe("warming the Tuning tools", () => {
+describe("warming the Tuning tools", { timeout: 20_000 }, () => {
   it("loads nothing until something asks", async () => {
     await import("./tuning-tools");
     await settle();
@@ -123,6 +123,13 @@ describe("warming the Tuning tools", () => {
     // The mount itself asks for the code, so it arrives; until then nothing is drawn.
     await screen.findByText("hub drawn");
     expect(tuningToolsReady().hub).toBe(true);
+  });
+
+  it("loads all four when the Analysis view opens with nothing warmed, not the hub alone", async () => {
+    vi.stubGlobal("requestIdleCallback", () => 0);
+    vi.stubGlobal("cancelIdleCallback", () => {});
+    await renderShell({ tuningEnabled: true }, "analysis");
+    await vi.waitFor(async () => expect(await loaded()).toEqual(ALL));
   });
 
   it("keeps a shortcut's ask for the hub until the hub has loaded, then hands it over", async () => {

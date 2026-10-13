@@ -637,7 +637,7 @@ async function cardPress(page, cap, width) {
 }
 
 /**
- * The deck page's Analysis tab, pressed three ways on a fresh load each: `early` straight after the load
+ * The deck page's Analysis tab, pressed three ways, each in a fresh context (an empty cache): `early` straight after the load
  * event (a build that loads the Tuning tools on demand may still be fetching them), `idle` after the
  * page has sat for IDLE_WAIT_MS (they are warmed by then), and `intent` after a pointer rested on the tab
  * (focus at 390) for 400ms. Each reads press to the tab's panel no longer busy, which is when it has
@@ -645,10 +645,15 @@ async function cardPress(page, cap, width) {
  * builds means anything.
  */
 const IDLE_WAIT_MS = 8000;
-async function tabPress(page, cap, width, url) {
+async function tabPress(browser, state, width, url) {
   const out = {};
   for (const key of ["early", "idle", "intent"]) {
-    cap.reset();
+    // A fresh context from the saved sign-in each time, throttled like every other page, so each
+    // reading starts from the same empty cache: reusing the deck route's page would hand `early` the
+    // tools its warm load had already fetched.
+    const context = await browser.newContext({ viewport: width.viewport, isMobile: width.isMobile, hasTouch: width.hasTouch, storageState: state });
+    const page = await context.newPage();
+    await capture(page);
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
     await page.waitForLoadState("load", { timeout: LOAD_CAP_MS }).catch(() => {});
     const tab = page.locator("#tab-analysis");
@@ -661,13 +666,13 @@ async function tabPress(page, cap, width, url) {
     }
     const pressed = Date.now();
     await tab.click();
-    const drawn = await page
+    out[key] = await page
       .waitForFunction(() => {
         const panel = document.getElementById("panel-analysis");
         return Boolean(panel && !panel.hasAttribute("aria-busy") && panel.innerText.trim().length > 40);
       }, null, { timeout: 60_000, polling: 16 })
       .then(() => Date.now() - pressed, () => null);
-    out[key] = drawn;
+    await context.close();
   }
   return out;
 }
@@ -706,7 +711,7 @@ async function one(browser, state, width, routes, sql) {
     const evicted = await load(page, cap, `${BASE}${route.path}`);
     result.routes[route.label] = { cold, warm, evicted, coldSpans, spans, db };
     if (route.label === "deck") result.card = await cardPress(page, cap, width);
-    if (route.label === "deck") result.tab = await tabPress(page, cap, width, `${BASE}${route.path}`);
+    if (route.label === "deck") result.tab = await tabPress(browser, state, width, `${BASE}${route.path}`);
     await context.close();
   }
   // Client navigation from Home, a first visit and then a revisit.
