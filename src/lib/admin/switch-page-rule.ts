@@ -44,7 +44,9 @@ export type SwitchPageInput = {
   verdicts: ReadonlyMap<string, AccountSwitches>;
   accounts: readonly Account[];
   groups: readonly GroupInfo[];
+  /** Newest first. One more than `historyLimit` means older events exist and the list is cut. */
   events: readonly SwitchEvent[];
+  historyLimit: number;
   viewerId: string;
 };
 
@@ -66,6 +68,8 @@ export type SwitchPage = {
   groups: OverrideItem[];
   accounts: OverrideItem[];
   history: HistoryItem[];
+  /** True when older events exist than the history lists. */
+  historyCut: boolean;
   explanations: Explanation[];
 };
 
@@ -101,7 +105,8 @@ function sourceText(source: ExplainSource, groupName: (id: string) => string): s
 const RUNG_OF: Record<ExplainSource["kind"], RungKey> = { account: "account", group: "group", app: "app", env: "env", kill: "env", parent: "needs" };
 
 export function switchPage(input: SwitchPageInput): SwitchPage {
-  const { name, env, overrides, verdicts, accounts, groups, events, viewerId } = input;
+  const { name, env, overrides, verdicts, accounts, groups, viewerId } = input;
+  const events = input.events.slice(0, input.historyLimit);
   const plumbing = switchKind(name) === "plumbing";
   const killed = env[name] === KILL;
   const parent = switchParent(name);
@@ -196,6 +201,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
       const what = e.kind === "override_cleared" ? copy.history.cleared(actor(e.actorId), scope, from) : copy.history.set(actor(e.actorId), scope, from, e.newValue ?? copy.history.notSet);
       return { when: fmtWhen(e.at), what, note: e.note };
     }),
+    historyCut: input.events.length > input.historyLimit,
     explanations: accounts.flatMap((a) => {
       const v = verdicts.get(a.id)?.[name];
       return v ? [{ id: a.id, label: accountName(a), on: v.on, source: sourceText(v.source, groupName), kill: v.source.kind === "kill" }] : [];

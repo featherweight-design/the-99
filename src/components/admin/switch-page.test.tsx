@@ -32,6 +32,7 @@ function draw(name: SwitchName, env: Env, overrides: OverrideDetail[] = [], even
     accounts: ACCOUNTS,
     groups: [],
     events,
+    historyLimit: 100,
     viewerId: "u1",
   });
   return render(<SwitchPageView page={page} overridesRead={opts.overridesRead ?? true} clerk={opts.clerk ?? "ok"} account={opts.account ?? null} />);

@@ -40,6 +40,7 @@ function page(name: SwitchName, env: Env, rows: (OverrideDetail & { name: Switch
     accounts: ACCOUNTS,
     groups: GROUPS,
     events,
+    historyLimit: 100,
     viewerId: "u1",
   });
 }
@@ -130,6 +131,15 @@ describe("switchPage", () => {
       { when: "11 Oct · 14:02", what: "You cleared group 01234567 (was on)", note: null },
       { when: "11 Oct · 14:02", what: "You set group friends: not set → off", note: null },
     ]);
+  });
+
+  it("lists at most the history limit, and says when older events were cut", () => {
+    const ev = (n: number): SwitchEvent => ({ at: AT, actorId: "u1", kind: "override_set", scope: "app", groupId: null, userId: null, oldValue: null, newValue: String(n), note: null });
+    const base = { name: "DECK_NOTES_ENABLED" as const, env: envValues({}), overrides: [], verdicts: new Map(), accounts: [], groups: [], viewerId: "u1", historyLimit: 2 };
+    expect(switchPage({ ...base, events: [ev(1), ev(2)] })).toMatchObject({ historyCut: false, history: { length: 2 } });
+    const cut = switchPage({ ...base, events: [ev(1), ev(2), ev(3)] });
+    expect(cut.historyCut).toBe(true);
+    expect(cut.history.map((h) => h.what)).toEqual(["You set app-wide: not set → 1", "You set app-wide: not set → 2"]);
   });
 
   it("formats times in UTC with a 24-hour clock", () => {

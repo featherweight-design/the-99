@@ -260,6 +260,7 @@ export const adminCopy = {
     checkPick: "Pick an account",
     historyHead: "History",
     historyCount: (n: number) => plural(n, "change", "changes"),
+    historyLatest: (n: number) => `latest ${n}`,
     historyFoot: "UTC. Env var changes ship with a deploy and aren’t listed.",
     noHistory: "No overrides yet.",
     refusedMeta: "refused, env var is off",

@@ -71,16 +71,20 @@ export async function loadSwitchPage(name: SwitchName, viewerId: string): Promis
       .from(adminEvents)
       .where(eq(adminEvents.switchName, name))
       .orderBy(desc(adminEvents.at), desc(adminEvents.id))
-      .limit(HISTORY_LIMIT),
+      // One past the limit, so the page can say the list is cut.
+      .limit(HISTORY_LIMIT + 1),
   ]);
   const page = switchPage({
     name,
     env: switchEnvValues(),
-    overrides: overrides as OverrideDetail[],
+    // A failed snapshot read resolves every account from the env var alone, so the rows are left out
+    // too: the page then draws one consistent world under its "Overrides didn't load" line.
+    overrides: snapshot ? (overrides as OverrideDetail[]) : [],
     verdicts: explainForAccounts(snapshot, accounts.map((a) => a.id)),
     accounts,
     groups,
     events,
+    historyLimit: HISTORY_LIMIT,
     viewerId,
   });
   return { page, overridesRead: snapshot !== null, clerk };

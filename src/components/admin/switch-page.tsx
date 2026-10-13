@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Banner, OverrideItem, Rung, SwitchPage } from "../../lib/admin/switch-page-rule";
 import { adminCopy } from "../../lib/copy/admin";
+import { PendingReporter } from "../shell/pending-reporter";
 import { CheckAccount } from "./check-account";
 import { SectionHead } from "./costs-detail";
 import { ResolvedDot } from "./switches-list";
@@ -69,6 +70,7 @@ function BannerBox({ banner }: { banner: Banner }) {
         {banner.kind === "compound" && (
           <Link href={`/admin/switches/${banner.parent}`} className="mt-[2px] self-start text-[13px] text-[color:var(--accent)]">
             {banner.link}
+            <PendingReporter href={`/admin/switches/${banner.parent}`} />
           </Link>
         )}
       </div>
@@ -161,7 +163,7 @@ export function SwitchPageView({
       <SectionHead title={copy.check} />
       <CheckAccount explanations={page.explanations} initial={account} />
 
-      <SectionHead title={copy.historyHead} meta={copy.historyCount(page.history.length)} />
+      <SectionHead title={copy.historyHead} meta={page.historyCut ? copy.historyLatest(page.history.length) : copy.historyCount(page.history.length)} />
       <div data-testid="switch-history" className="flex flex-col gap-[10px]">
         {page.history.length ? (
           <>
