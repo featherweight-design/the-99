@@ -256,6 +256,7 @@ export function ResolutionExpander({
             onChange={(e) => {
               setQuery(e.target.value);
             }}
+            onClear={() => setQuery("")}
             onKeyDown={handleKeyDown}
           />
 

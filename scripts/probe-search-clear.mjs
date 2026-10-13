@@ -25,6 +25,8 @@ const WIDTHS = [
 const SURFACES = [
   { route: "/commanders", name: "commanders rack", widths: ["phone", "desktop"] },
   { route: "/collection", name: "collection compact", widths: ["phone"] },
+  { route: "/collection", name: "collection wide", widths: ["desktop"] },
+  { route: "/collection/sets", name: "sets index", widths: ["phone", "desktop"] },
 ];
 
 async function signIn(page) {

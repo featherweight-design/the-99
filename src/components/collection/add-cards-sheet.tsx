@@ -328,6 +328,7 @@ function AddMode({
               disabled={searchDisabled}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery("")}
               onKeyDown={onSearchKey}
               containerClassName="h-[48px] py-0 md:h-[46px]"
               className="text-[16px] md:text-[14px]"
