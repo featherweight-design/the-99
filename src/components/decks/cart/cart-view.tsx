@@ -106,10 +106,10 @@ export function CartView({
     .map((l) => selectLine(l, selected))
     .filter((l): l is SelectedLine => l !== null)
     .sort(byCardOrder), [cart.lines, selected]);
-  // The page is one screen tall at both widths (Hugh, 2026-10-11), so the list scrolls in its own
-  // box and the sort, the decks and the checkout stay on screen. Its top is measured rather than
-  // assumed: the phone's shell header above it has no fixed height. Re-bound when the cart empties
-  // or fills, since the empty page draws no list to size.
+  // Desktop is one screen tall (Hugh, 2026-10-11), so the list scrolls in its own box and the sort, the
+  // decks and the checkout stay on screen; the phone's page scrolls as one (2026-10-13) and ignores the
+  // height. The top is measured rather than assumed, since the shell header above it has no fixed
+  // height. Re-bound when the cart empties or fills, since the empty page draws no list to size.
   const pageRef = useRef<HTMLDivElement>(null);
   const [top, setTop] = useState<number | null>(null);
   const hasList = cart.decks.length > 0;
