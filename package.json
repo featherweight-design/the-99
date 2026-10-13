@@ -64,6 +64,7 @@
     "probe:help-me-choose-screens": "node scripts/probe-help-me-choose-screens.mjs",
     "probe:help-me-choose-one-loading": "node scripts/probe-help-me-choose-one-loading.mjs",
     "probe:card-tag-box": "node scripts/probe-card-tag-box.mjs",
+    "probe:search-dismiss": "node scripts/probe-search-dismiss.mjs",
     "probe:help-me-choose-layout": "node scripts/probe-help-me-choose-layout.mjs",
     "probe:help-me-choose-doors": "node scripts/probe-help-me-choose-doors.mjs",
     "probe:analysis-load-order": "node scripts/probe-analysis-load-order.mjs",

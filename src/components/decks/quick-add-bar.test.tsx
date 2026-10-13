@@ -132,52 +132,55 @@ describe("QuickAddBar — combobox contract", () => {
   });
 });
 
-// Escape is two-stage on purpose: a user who mistypes wants the list gone, not
-// the eight characters they just typed.
-describe("QuickAddBar — the two-stage Escape", () => {
-  it("dismisses the list on the first Escape and keeps the query", async () => {
+// One rule for every pick-from-a-list field (DECK INPUT UX, Hugh 2026-10-12): Escape or a press
+// outside clears the text and closes the list in one step, and an add clears it for the next search.
+describe("QuickAddBar — dismissing and clearing", () => {
+  it("clears the query and closes the list on one Escape", async () => {
     mount();
     await search();
 
     fireEvent.keyDown(field(), { key: "Escape" });
     expect(screen.queryByRole("listbox")).toBeNull();
-    expect(field()).toHaveValue("stu");
-  });
-
-  // Widening the search is a request to see results, so it must not re-search
-  // into a list Escape left closed.
-  it("reopens the list when the owned filter is toggled after a dismissal", async () => {
-    mount();
-    await search();
-    fireEvent.keyDown(field(), { key: "Escape" });
-
-    fireEvent.click(toggle());
-    expect(await screen.findByRole("listbox")).toBeInTheDocument();
-  });
-
-  // Otherwise the same keystroke means "hide the list" or "clear what I typed"
-  // depending only on whether the debounce has fired yet.
-  it("dismisses rather than clearing while the search is still in flight", async () => {
-    let land: (r: SearchResult[]) => void = () => {};
-    searchCards.mockReturnValue(new Promise<SearchResult[]>((res) => { land = res; }));
-    mount();
-    fireEvent.change(field(), { target: { value: "stu" } });
-
-    fireEvent.keyDown(field(), { key: "Escape" });
-    expect(field()).toHaveValue("stu");
-
-    land([rhystic]);
-    await waitFor(() => expect(searchCards).toHaveBeenCalled());
-    expect(screen.queryByRole("listbox")).toBeNull();
-  });
-
-  it("clears the query on a second Escape", async () => {
-    mount();
-    await search();
-
-    fireEvent.keyDown(field(), { key: "Escape" });
-    fireEvent.keyDown(field(), { key: "Escape" });
     expect(field()).toHaveValue("");
+  });
+
+  it("clears the query on a press outside the bar", async () => {
+    mount();
+    await search();
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(field()).toHaveValue("");
+  });
+
+  // The owned toggle sits beside the field: pressing it is part of the search, not leaving it.
+  it("keeps the query when the owned filter is pressed", async () => {
+    mount();
+    await search();
+
+    fireEvent.pointerDown(toggle());
+    fireEvent.click(toggle());
+    expect(field()).toHaveValue("stu");
+  });
+
+  it("clears the query once an add lands", async () => {
+    mount();
+    await search();
+
+    fireEvent.click(screen.getAllByRole("option")[0]);
+    await waitFor(() => expect(addCardToDeck).toHaveBeenCalled());
+    await waitFor(() => expect(field()).toHaveValue(""));
+  });
+
+  // The row draws the refusal, so the list has to stay up to show it.
+  it("keeps the query when the add is refused", async () => {
+    addCardToDeck.mockResolvedValueOnce({ ok: false, message: "Nope." } as never);
+    mount();
+    await search();
+
+    fireEvent.click(screen.getAllByRole("option")[0]);
+    expect(await screen.findByText("Nope.")).toBeInTheDocument();
+    expect(field()).toHaveValue("stu");
   });
 });
 

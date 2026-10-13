@@ -2,7 +2,9 @@
 // The Theme field (Help me choose, HANDOFF §2 field 3): the picked themes as chips, then a text
 // input that filters the vocabulary. An ARIA combobox over a multiselectable listbox: the input
 // keeps focus throughout, the arrows move the active option, and Enter toggles it. Picking does
-// not close the list, since picking more than one is the point.
+// not close the list, since picking more than one is the point, but it clears the typed text so the
+// next theme can be searched for. Escape, or a press outside the field and its list, clears the
+// text and closes the list (`useSearchDismiss`).
 //
 // The phone's list is not drawn in the handoff; it is the same list, full width under the field.
 // No motion anywhere (STATES invariant).
@@ -12,6 +14,7 @@ import { useId, useMemo, useState } from "react";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import type { VocabularyTheme } from "../../lib/intake/vocabulary";
 import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
+import { useSearchDismiss } from "../../lib/ui/search-dismiss";
 
 export function ThemePicker({
   themes,
@@ -38,8 +41,16 @@ export function ThemePicker({
     return q ? themes.filter((t) => t.label.toLowerCase().includes(q)) : themes;
   }, [themes, query]);
 
-  const toggle = (slug: string) =>
+  const { ref: rootRef, onEscape } = useSearchDismiss<HTMLDivElement>(open || query !== "", () => {
+    setQuery("");
+    setOpen(false);
+  });
+
+  const toggle = (slug: string) => {
     onChange(value.includes(slug) ? value.filter((s) => s !== slug) : [...value, slug]);
+    setQuery("");
+    setActive(0);
+  };
 
   const activeIndex = Math.min(active, Math.max(0, shown.length - 1));
   const optionId = (i: number) => `${listId}-o${i}`;
@@ -49,7 +60,7 @@ export function ThemePicker({
     // `relative`: the list is a popover anchored under the field (Hugh, 2026-09-27; ruling Q2). It
     // opens OVER the fields below and pushes nothing, which is what its raised surface and shadow
     // always drew.
-    <div className="relative flex flex-col gap-[6px]">
+    <div ref={rootRef} className="relative flex flex-col gap-[6px]">
       <div
         // The chips' remove buttons ring themselves, so only the input's focus lights the field.
         className={`flex flex-wrap items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${AFFIX_FOCUS_INPUT}`}
@@ -103,11 +114,8 @@ export function ThemePicker({
                 e.preventDefault();
                 toggle(shown[activeIndex].slug);
               }
-            } else if (e.key === "Escape") {
-              if (open) {
-                e.preventDefault();
-                setOpen(false);
-              }
+            } else if (onEscape(e)) {
+              return;
             } else if (e.key === "Backspace" && query === "" && value.length > 0) {
               onChange(value.slice(0, -1));
             }
