@@ -88,7 +88,7 @@ export async function readManaHelpFor(deckId: string, color: string): Promise<Ma
   const { deckId: id, listKey, ...help } = read;
   // `listKey` is the write's precondition and History's key, never sent to the client.
   // The row, its hover preview and the card details it opens draw one printing: the deck's pick, then the
-  // one the player owns, else the catalog's (`chainArt`, as Suggested changes and Proposed cuts do).
+  // one the player owns, else the one an unowned card opens on (`chainArt`, as Suggested changes and Proposed cuts do).
   const art = await chainArt(userId, id, help.staples.map((s) => s.oracleId));
   const shown = art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
   // History's row for this help, once per list and color: it reopens with exactly what was shown here.

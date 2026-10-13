@@ -217,10 +217,10 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
       : new Map<string, LabelJob[]>(),
   ]);
 
-  // The sheet's hover preview draws these, and card details opens the deck's pick or the owned printing:
-  // the same chain (`chainArt`), for the original and for the stand-ins the player owns. An unowned
-  // stand-in keeps the catalog art it was read with.
-  const art = await chainArt(userId, deckId, [cutOracleId, ...ownedIds]);
+  // The sheet's hover preview draws these, and card details opens the deck's pick, the owned printing or, for a
+  // card the player does not own, the printing it opens on: the same chain (`chainArt`), for the original and for
+  // every stand-in.
+  const art = await chainArt(userId, deckId, [cutOracleId, ...candidates.map((r) => r.oracle_id)]);
   const draw = (card: CardRow): CardRow => ({ ...card, imageUri: art.get(card.oracleId) ?? card.imageUri });
   const drawnOriginal = draw(original);
   const pool: Candidate[] = candidates.map((r) => {

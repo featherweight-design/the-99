@@ -157,7 +157,7 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
     // the line names the set alone), else the one card details open the card on, else the catalog's newest.
     imageUri: ownedArt.get(r.oracle_id)?.imageUri ?? opening.get(r.oracle_id)?.imageUri ?? r.image_uri,
     setCode: ownedArt.get(r.oracle_id)?.setCode ?? opening.get(r.oracle_id)?.setCode ?? r.set_code,
-    rarity: ownedArt.has(r.oracle_id) ? null : opening.get(r.oracle_id)?.rarity ?? r.rarity,
+    rarity: ownedArt.has(r.oracle_id) ? null : opening.has(r.oracle_id) ? opening.get(r.oracle_id)!.rarity : r.rarity,
     decks: r.decks ?? [],
     commander: r.commander,
     price: prices.prices.get(r.oracle_id) ?? null,
