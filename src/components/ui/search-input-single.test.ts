@@ -19,7 +19,9 @@ function rawSearchInputs(file: string, text?: string): number[] {
   const visit = (n: ts.Node) => {
     if ((ts.isJsxSelfClosingElement(n) || ts.isJsxOpeningElement(n)) && n.tagName.getText() === "input") {
       const type = n.attributes.properties.find((a): a is ts.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText() === "type");
-      if (type?.initializer && ts.isStringLiteral(type.initializer) && type.initializer.text === "search") {
+      // `type="search"` and `type={"search"}` (or a template literal) are the same attribute.
+      const init = type?.initializer && ts.isJsxExpression(type.initializer) ? type.initializer.expression : type?.initializer;
+      if (init && (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) && init.text === "search") {
         lines.push(sf.getLineAndCharacterOfPosition(n.getStart()).line + 1);
       }
     }
@@ -41,6 +43,11 @@ describe("no hand-rolled search input", () => {
   it("finds a raw search input however far its type sits from the tag", () => {
     const pad = "data-x=\"" + "y".repeat(400) + "\" ";
     expect(rawSearchInputs("f.tsx", `export const A = () => <input ${pad} type="search" />;`)).toHaveLength(1);
+  });
+
+  it("finds the braced forms of the same attribute", () => {
+    expect(rawSearchInputs("f.tsx", `export const A = () => <input type={"search"} />;`)).toHaveLength(1);
+    expect(rawSearchInputs("f.tsx", "export const A = () => <input type={`search`} />;")).toHaveLength(1);
   });
 
   it("does not blame a SearchField that follows a plain input", () => {
