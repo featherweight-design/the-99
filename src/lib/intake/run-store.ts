@@ -302,8 +302,9 @@ export async function settleTheRead(
 ): Promise<boolean> {
   const useful = outcome.kind === "read" && outcome.result.picks.length > 0;
   const hash = opts.rehash ? { wordsHash: opts.rehash } : {};
-  const settledAt = new Date();
-  const set = outcome.kind === "failed"
+  // Built inside the transaction, after the lock: a press holding it can make this one wait, and the stamp
+  // is when the row stopped being pending, not when the outcome arrived.
+  const setAt = (settledAt: Date) => outcome.kind === "failed"
     ? { status: "failed", errorClass: outcome.errorClass, phase: null, settledAt }
     : useful
       ? { status: "ok", result: outcome.result, phase: null, settledAt, ...hash }
@@ -313,8 +314,9 @@ export async function settleTheRead(
   const reason: RefundReason = outcome.kind === "failed" ? "failed" : "nothing_valid";
   const { settled, charged } = await db.transaction(async (tx) => {
     await lockAsks(tx, userId);
+    const now = new Date();
     const rows = await tx.update(intakeReads)
-      .set(set)
+      .set(setAt(now))
       .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "pending")))
       .returning({ callId: intakeReads.modelCallId });
     const bill = billed.length > 0 ? billed : undefined;
@@ -322,7 +324,7 @@ export async function settleTheRead(
       if (bill) await recordModelUsage(tx, callId, bill);
       return { settled: false, charged: null };
     }
-    const charged = await settleModelCall(tx, rows[0].callId, useful ? "spent" : "refunded", bill, new Date(), reason);
+    const charged = await settleModelCall(tx, rows[0].callId, useful ? "spent" : "refunded", bill, now, reason);
     return { settled: true, charged };
   });
   // A read that ended ok whose credit was refunded is the case the ledger once left unexplained (two

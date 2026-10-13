@@ -60,11 +60,15 @@ const read = async (readId: string): Promise<Settled> =>
     select r.status as read_status, r.error_class, (r.settled_at is not null) as settled, m.status as call_status, m.refund_reason
     from intake_reads r join model_calls m on m.id = r.model_call_id where r.id = ${readId}::uuid`))[0];
 
+// Set once the target has been checked: a refused run writes nothing, so it deletes nothing either.
+let validated = false;
+
 async function main() {
   const [{ branch }] = await rows<{ branch: string | null }>(sql`select current_setting('neon.branch_id', true) as branch`);
   if (!branch || branch === "br-noisy-violet-a6vw4ess" || branch === "br-polished-pond-a6e63y0b") {
     throw new Error(`refusing: the target reports ${branch ?? "(unknown)"}; point PROBE_TARGET_URL at local-dev or a scratch branch`);
   }
+  validated = true;
   const { startRead, settleTheRead, reapAbandonedReads } = await import("../src/lib/intake/run-store");
 
   let n = 0;
@@ -131,8 +135,10 @@ async function run() {
   try {
     await main();
   } finally {
-    await fixture.execute(sql`delete from intake_reads where user_id = ${USER}`);
-    await fixture.execute(sql`delete from model_calls where user_id = ${USER}`);
+    if (validated) {
+      await fixture.execute(sql`delete from intake_reads where user_id = ${USER}`);
+      await fixture.execute(sql`delete from model_calls where user_id = ${USER}`);
+    }
     await pool.end();
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) FAILED.`);
