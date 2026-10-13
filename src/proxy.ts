@@ -33,7 +33,10 @@ import { switchBits } from "./lib/switches/resolve";
 // returns migration counts and tags only — never connection details. Listed as
 // the two exact forms rather than a prefix so a future /api/health-something
 // does not become public by accident.
-const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/"]);
+//
+// /api/clerk-webhook is public because Clerk calls it with no session; its route verifies the Svix
+// signature before doing anything. Exact forms again, for the same reason.
+const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader

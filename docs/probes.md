@@ -1872,6 +1872,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   line, and that a Cut collapses its row without the offer returning. The same flags must be given
   to the server and the probe (locks are in the fingerprint).
 
+- `pnpm probe:purge` proves the account purge (`purgeAccount`, run by the Clerk `user.deleted` webhook) against a real
+  database. It builds an account with friends (as inviter and as redeemer), a pod it owns with two members, a
+  membership of a friend's pod, spare grants, a folder, a deck with cards, a version, a game and a note, a
+  collection, preferences, a model call with a row pointing at it, and an admin event about it; purges it; and then
+  counts every column in `information_schema` that names an account, so a table the schema scan missed would still
+  show. It proves no column names the account afterwards, the deck's children went by cascade, the owned pod
+  passed to the longest-standing member, a friend's pod, friendship and collection stand, the friend's stamp
+  moved, the account's own stamp row did not come back at commit, and a second purge finds nothing. It WRITES and
+  DELETES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging,
+  production and local-dev are refused by id. Mutation-checked: without `set constraints all immediate` the stamp
+  row comes back and two checks fail.
 - `pnpm probe:social` proves the social foundation's queries (plan `boards/plan-social-foundation-2026-10-12.md`,
   PR 1): three made-up accounts plus a fourth, where the stranger gets nothing from any read or write; a token that
   is spent, declined, revoked or expired cannot be accepted, and two accepts at once let exactly one through; the

@@ -727,6 +727,23 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (the switch module aside) without it. `pnpm measure:friend-spares`
   times the per-friend cost (read-only).
 
+- **Deleting an account deletes everything the app holds for it** (Hugh's ruling Q8, 2026-10-12). Clerk's
+  `user.deleted` webhook (`POST /api/clerk-webhook`, public in `src/proxy.ts`, authorized only by the Svix signature
+  `verifyWebhook` checks against `CLERK_WEBHOOK_SIGNING_SECRET`) runs `purgeAccount` (`src/lib/account/purge.ts`) in
+  ONE transaction: the social half first (`purgeSocialIn`: every pod is LEFT the way a player leaves it, so an owned
+  pod passes to its longest-standing member; both directions of every friendship; every invite naming the account;
+  the profile), then every other table by `user_id` in `PURGE_ORDER` (children of `model_calls` before it), then
+  `set constraints all immediate` so the deferred stamp triggers fire before the account's own `user_data_stamps`
+  row is deleted, or commit would write it back. Kept on purpose: `admin_events.actor_id` and
+  `admin_settings.updated_by`, the admin's own audit trail. It runs whatever the switches say: deleting a deleted
+  account's data is never a feature to hide. It is idempotent, so a Clerk retry is harmless.
+
+  **Coverage is computed, not listed**: `src/lib/account/purge.test.ts` reads `schema.ts` and fails when a table
+  holding an account column is neither purged nor kept with a reason, and when a child of a purged table has no
+  `on delete` the order does not cover. A new per-user table therefore fails CI until the purge handles it.
+  `pnpm probe:purge` reads the DATABASE's own catalog for every account column and proves none names the account
+  afterwards, on a scratch branch.
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its
