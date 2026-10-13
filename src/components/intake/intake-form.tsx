@@ -142,7 +142,7 @@ export function IntakeForm({
   // null: not measured yet.
   const [listMax, setListMax] = useState<number | null>(null);
   useEffect(() => {
-    if (!picker.open) { setListMax(null); return; }
+    if (!picker.open) return;
     const place = () => {
       const el = wordsRef.current;
       if (!el) return;
@@ -362,7 +362,7 @@ export function IntakeForm({
                 written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
               ].join(" ")}
             />
-            {picker.open && <CardTagList {...picker.list} maxHeightPx={listMax ?? undefined} />}
+            {picker.open && <CardTagList {...picker.list} maxHeightPx={(picker.open ? listMax : null) ?? undefined} />}
           </div>
         </Field>
 
