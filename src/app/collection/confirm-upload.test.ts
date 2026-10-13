@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { requestSwitchEnv } from "../../lib/switches/request";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
@@ -112,6 +113,21 @@ describe("confirmUpload", () => {
     stub.apply.mockResolvedValue({ ...applied("upload_replace"), short: [deck] });
     await confirmUpload(UPLOAD, { confirmShort: [deck] });
     expect(stub.receipt.mock.calls[0][0].nowShort).toEqual([deck]);
+  });
+
+  it("tells the receipt the reader's resolved ADDED_COPY_ENABLED, not the environment's", async () => {
+    // The environment has it off and the reader's override turns it on: a receipt left to read the
+    // switch itself (`writeArrivalsReceipt` defaults to `process.env`) would say off.
+    vi.stubEnv("ADDED_COPY_ENABLED", "false");
+    vi.mocked(requestSwitchEnv).mockResolvedValueOnce({ ...process.env, ADDED_COPY_ENABLED: "true" });
+    stub.ledger = true;
+    stub.apply.mockResolvedValue(applied("upload_replace"));
+    try {
+      await confirmUpload(UPLOAD);
+      expect(stub.receipt.mock.calls[0][0].addedCopy).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("gives an Add's receipt the counts the write read under its lock, not the earlier snapshot", async () => {
