@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import { twMerge } from "tailwind-merge";
 import { searchFieldCopy } from "../../lib/copy/search-field";
 import { SearchIcon } from "./search-icon";
@@ -110,6 +110,22 @@ export function SearchField({
   dropStyle(rest);
   const input = useRef<HTMLInputElement | null>(null);
   // Hidden by value, not by the caller: an uncontrolled field has no value to read and gets no ✕.
+  // Stable across renders, so a caller's callback ref is not detached and re-attached on every keystroke. A
+  // React 19 callback ref may return its own cleanup, which React then runs in place of calling it with null;
+  // this one always returns a cleanup, so it does both on the caller's behalf.
+  const setRef = useCallback(
+    (el: HTMLInputElement) => {
+      input.current = el;
+      const cleanup = typeof callerRef === "function" ? callerRef(el) : callerRef ? ((callerRef.current = el), undefined) : undefined;
+      return () => {
+        input.current = null;
+        if (typeof cleanup === "function") cleanup();
+        else if (typeof callerRef === "function") callerRef(null);
+        else if (callerRef) callerRef.current = null;
+      };
+    },
+    [callerRef],
+  );
   // Any text at all earns the ✕, spaces included: a reader can always clear what they typed.
   const filled = typeof rest.value === "string" && rest.value !== "";
   return (
@@ -142,11 +158,7 @@ export function SearchField({
             "text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]",
           className,
         )}
-        ref={(el) => {
-          input.current = el;
-          if (typeof callerRef === "function") callerRef(el);
-          else if (callerRef) callerRef.current = el;
-        }}
+        ref={setRef}
         {...rest}
       />
       {trailing}

@@ -136,6 +136,18 @@ describe("SearchField's clear", () => {
     expect(container.querySelector("button")).toBeNull();
   });
 
+  it("keeps a callback ref attached across re-renders, and runs its cleanup on unmount", () => {
+    const cleanup = vi.fn();
+    const ref = vi.fn(() => cleanup);
+    const { rerender, unmount } = render(<SearchField aria-label="Search" value="" onChange={() => {}} ref={ref} />);
+    rerender(<SearchField aria-label="Search" value="a" onChange={() => {}} ref={ref} />);
+    rerender(<SearchField aria-label="Search" value="ab" onChange={() => {}} ref={ref} />);
+    expect(ref).toHaveBeenCalledTimes(1);
+    expect(cleanup).not.toHaveBeenCalled();
+    unmount();
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
   it("still hands the caller's ref the input", () => {
     const ref = { current: null as HTMLInputElement | null };
     render(<SearchField aria-label="Search" value="" onChange={() => {}} onClear={() => {}} ref={ref} />);
