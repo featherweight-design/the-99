@@ -78,11 +78,21 @@ jobs:
           node scripts/ci-calibrate.mjs mutate "$FILE" "$MODE"
           git commit -qam "calibration: break $FILE ($MODE)"
 
+      # GITHUB_* variables cannot be overridden through a step `env:` block (the runner ignores it), so
+      # the event is set on the command itself. Without it the selector sees `workflow_dispatch`, takes
+      # its non-PR branch, selects everything, and every case "passes" having tested nothing.
       - name: Ask the selector
+        id: select
+        run: GITHUB_EVENT_NAME=pull_request CI_BASE_REF=HEAD~1 node scripts/ci-select.mjs
+
+      - name: The selector made a real selection
         env:
-          GITHUB_EVENT_NAME: pull_request
-          CI_BASE_REF: HEAD~1
-        run: node scripts/ci-select.mjs
+          MODE: ${{ steps.select.outputs.mode }}
+        run: |
+          if [ "$MODE" != affected ]; then
+            echo "::error::the selector answered '$MODE', not 'affected': this leg would test nothing"
+            exit 1
+          fi
 
       - name: Run the whole suite
         run: pnpm exec vitest run --passWithNoTests --reporter=json --outputFile=calibration-results.json || true
