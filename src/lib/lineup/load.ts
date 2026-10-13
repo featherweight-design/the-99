@@ -172,10 +172,11 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
   return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every, collection };
 }
 
-export async function loadLineup(userId: string): Promise<LineupData> {
+/** `env` is the reader's resolved switches (`requestSwitchEnv`), the env the cached entry is keyed on. */
+export async function loadLineup(userId: string, env: NodeJS.ProcessEnv): Promise<LineupData> {
   // The bracket follows the tile's own switch: a bracket only the Analysis tab can explain is drawn
   // only while that tab exists.
-  const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: analysisTabEnabled() });
+  const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: analysisTabEnabled(env) });
   const ids = decks.map((d) => d.id);
   const brews = new Set(decks.filter((d) => d.lastCommittedAt === null).map((d) => d.id));
   const [rows, built] = await Promise.all([ids.length === 0

@@ -8,6 +8,7 @@ import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { preconsEnabled } from "../../../lib/precons/flag";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 import { MAX_SETS, MAX_THEMES } from "../../../lib/intake/answers";
 import { handOffFrom, resultsHref } from "../../../lib/intake/hand-off";
 import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-load";
@@ -20,10 +21,12 @@ export default async function NewDeckPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const userId = await requireUserId();
+  // The reader's resolved switches, once for the whole render.
+  const env = await requestSwitchEnv(userId);
   const raw = await searchParams;
   const commanderParam = typeof raw.commander === "string" ? raw.commander : undefined;
   const select = raw.select;
-  const helpMeChoose = helpMeChooseEnabled();
+  const helpMeChoose = helpMeChooseEnabled(env);
 
   // Pre-filled door: validate the ?commander= param server-side, and draw the copy the
   // reader owns. Both live in `loadPreFilledCommander` so they can be tested — a route
@@ -74,7 +77,7 @@ export default async function NewDeckPage({
   // Picker door: load all owned legal commanders.
   const legalCommanders = await listOwnedLegalCommanders(userId);
 
-  return <CreatePicker legalCommanders={legalCommanders} helpDoor={helpMeChoose} preconDoor={preconsEnabled()} />;
+  return <CreatePicker legalCommanders={legalCommanders} helpDoor={helpMeChoose} preconDoor={preconsEnabled(env)} />;
 }
 
 /** The page's params as the URL carried them; a repeated key keeps its first value, as `URLSearchParams.get` does. */

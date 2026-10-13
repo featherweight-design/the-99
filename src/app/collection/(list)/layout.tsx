@@ -16,6 +16,7 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
 import { formatLastUpdated } from "../../../lib/collection/browse";
 import { collectionHasHistory } from "../../../lib/collection/history";
@@ -28,7 +29,8 @@ export default async function CollectionListLayout({
   children: React.ReactNode;
 }) {
   const userId = await requireUserId();
-  const editEnabled = collectionEditEnabled();
+  // The reader's resolved switches (`requestSwitchEnv`), not the environment alone.
+  const editEnabled = collectionEditEnabled(await requestSwitchEnv(userId));
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     getCollectionLastUpdated(userId),

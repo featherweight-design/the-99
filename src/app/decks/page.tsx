@@ -21,6 +21,7 @@ import { DecksView } from "../../components/decks/decks-view";
 import { cookies } from "next/headers";
 import { lineupEnabled } from "../../lib/decks/lineup-flag";
 import { readLineupCached } from "../../lib/lineup/cached";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { DECKS_STATS_OPEN_COOKIE, DECKS_VIEW_COOKIE, parseDecksViewCookie } from "../../components/ui/view-cookie";
 
 
@@ -43,26 +44,29 @@ export default async function DecksPage({
   }
 
   const userId = await requireUserId();
+  // The reader's resolved switches, once for the whole render: every switch below, the cached
+  // payload's key and its load all decide from this one env.
+  const env = await requestSwitchEnv(userId);
   // Stats on /decks (`LINEUP_ENABLED`): off, no switch, no read, and `?view` is ignored. On, the page draws
   // Stats for `?view=stats`, or for a bare /decks when the reader last chose it (G7, the cookie the view
   // mirrors), and reads the Stats payload only then. It is its own cache entry, so Tiles pays nothing for it.
-  const statsOn = lineupEnabled();
+  const statsOn = lineupEnabled(env);
   const jar = statsOn ? await cookies() : null;
   const askedView = Array.isArray(params.view) ? params.view[0] : params.view;
   const view = !statsOn ? "tiles" : askedView === "stats" ? "stats" : askedView === undefined && parseDecksViewCookie(jar?.get(DECKS_VIEW_COOKIE)?.value) === "stats" ? "stats" : "tiles";
   const lineupData = view === "stats"
-    ? readLineupCached(userId)
+    ? readLineupCached(userId, env)
     : null;
   // The tile's bracket chip reads each deck's last analyzed bracket. Off with the Analysis tab's
   // flag, because a chip that lands on a tab nobody can open is a promise the page cannot keep.
-  const includeBracket = analysisTabEnabled();
+  const includeBracket = analysisTabEnabled(env);
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks");
   // The whole payload is cached for this reader, keyed on their data stamp: see page-cache.ts
   // for why that is correct after any write, from anywhere.
   // The precons line's meta is catalog data, the same for every reader, so it is read beside the
   // cached payload rather than inside it; a failed read keeps the line and drops the meta.
-  const preconSummary = preconsEnabled() ? readPreconSummary() : null;
+  const preconSummary = preconsEnabled(env) ? readPreconSummary() : null;
   const data = await cachePageForUser(userId, "decks", [], async () => {
     const [decks, shopping, folders] = await Promise.all([
       // The sort has no default in the reader, so no caller's order can move
@@ -83,7 +87,7 @@ export default async function DecksPage({
         includeCommanderArt: true,
         includeBracket,
         // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
-        includeNotice: includeBracket && noticesEnabled(),
+        includeNotice: includeBracket && noticesEnabled(env),
       })),
       // The tile's To buy figure reads its copies and its cost from the same
       // roll-up, so the count and the price always cover the same cards.
@@ -117,14 +121,14 @@ export default async function DecksPage({
       // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
       store: !ranked?.degraded,
     };
-  });
+  }, env);
 
   return (
     <DecksView
       decks={data.decks}
       folders={data.folders}
       shopping={data.shopping}
-      cartEnabled={allDecksCartEnabled()}
+      cartEnabled={allDecksCartEnabled(env)}
       precons={preconSummary ? { summary: await preconSummary } : null}
       buildable={data.buildable}
       cards={data.cards}

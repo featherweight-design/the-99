@@ -15,5 +15,5 @@ export async function readLineupStats(): Promise<LineupData | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!lineupEnabled(env)) return null;
-  return readLineupCached(userId);
+  return readLineupCached(userId, env);
 }

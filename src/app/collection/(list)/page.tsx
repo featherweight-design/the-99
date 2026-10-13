@@ -30,6 +30,7 @@ import {
 import { PrimaryButton } from "../../../components/ui/button";
 import { CollectionEmptyDoors } from "../../../components/collection/collection-empty-doors";
 import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 
 export default async function CollectionPage({
@@ -38,6 +39,8 @@ export default async function CollectionPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const userId = await requireUserId();
+  // The reader's resolved switches (`requestSwitchEnv`), once for the whole render.
+  const env = await requestSwitchEnv(userId);
   // The two layout hints a past visit left (`ui/view-cookie`), so the server draws the view the
   // reader will see. Parsed to a closed set; anything else is no hint.
   const jar = await cookies();
@@ -98,7 +101,7 @@ export default async function CollectionPage({
   // `FilterBar`, so the one entry point built ungated was absent for exactly the player it
   // was built for, whose cards are all printed.
   if (stats.uniqueCards === 0) {
-    const editEnabled = collectionEditEnabled();
+    const editEnabled = collectionEditEnabled(env);
     return (
       <section className="flex flex-col">
         <EmptyState className="md:p-[48px]">
@@ -139,7 +142,7 @@ export default async function CollectionPage({
         availabilityOk={availability !== null}
         pricesFailed={pricesFailed}
         viewHint={viewHint}
-        collectionEdit={collectionEditEnabled()}
+        collectionEdit={collectionEditEnabled(env)}
       />
     </section>
   );

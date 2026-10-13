@@ -1,4 +1,5 @@
-// Admin PR 5: a server action decides its switch from the READER's resolved env (`requestSwitchEnv`),
+// Admin PR 5 (actions and routes) and 6a (pages, layouts, the page cache): a server action decides its
+// switch from the READER's resolved env (`requestSwitchEnv`),
 // not from `process.env` alone. Proved on the notes actions, whose guard is `DECK_NOTES_ENABLED`: the
 // environment has it off and the reader's override turns it on, so an action reading the environment
 // would refuse and one reading the resolved env goes through.
@@ -68,13 +69,20 @@ async function isServerModule(src: string): Promise<boolean> {
   return !!first && ts.isExpressionStatement(first) && ts.isStringLiteral(first.expression) && first.expression.text === "use server";
 }
 
-describe("no Server Action or route handler reads a switch from the environment alone", () => {
+/**
+ * Pages that still decide a switch from the environment alone, left for the admin plan's later PRs
+ * (their readers take no env yet). The scan fails when one of these LOSES its last bare call, so the
+ * list only ever shrinks by being edited.
+ */
+const PENDING = ["src/app/decks/[id]/page.tsx", "src/app/decks/[id]/changes/page.tsx"];
+
+describe("no Server Action, route handler, page or layout reads a switch from the environment alone", () => {
   it("finds the directive after a header comment", async () => {
     expect(await isServerModule(`/** A header. */\n// and a line\n"use server";\nexport async function a() {}`)).toBe(true);
     expect(await isServerModule(`import x from "y";\n"use server";`)).toBe(false);
   });
 
-  it("names no bare `fooEnabled()` call in a \"use server\" module or a route handler", async () => {
+  it("names no bare `fooEnabled()` call in a \"use server\" module, a route handler, a page, a layout, the page cache or a module directly under lib/lineup", async () => {
     const { readFileSync, readdirSync, statSync } = await import("node:fs");
     const { join } = await import("node:path");
     const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
@@ -82,17 +90,24 @@ describe("no Server Action or route handler reads a switch from the environment 
       return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
     });
     let actions = 0;
-    const bare = (await Promise.all(walk("src").map(async (path) => {
+    let pages = 0;
+    const found = (await Promise.all(walk("src").map(async (path) => {
       const src = readFileSync(path, "utf8");
       const isAction = await isServerModule(src);
       const isRoute = /\/route\.ts$/.test(path);
+      const isPage = /\/(page|layout)\.tsx$/.test(path);
+      const isReader = path === "src/lib/cache/page-cache.ts" || path.startsWith("src/lib/lineup/");
       if (isAction) actions++;
-      if (!isAction && !isRoute) return [];
+      if (isPage) pages++;
+      if (!isAction && !isRoute && !isPage && !isReader) return [];
       const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-      return [...code.matchAll(/\b(\w+Enabled)\(\s*\)/g)].map((m) => `${path}: ${m[1]}()`);
+      return [...code.matchAll(/\b(\w+Enabled)\(\s*\)/g)].map((m) => ({ path, call: `${path}: ${m[1]}()` }));
     }))).flat();
-    // A scan that found no action module would pass over anything.
+    // A scan that found no action module, or no page, would pass over anything.
     expect(actions).toBeGreaterThan(20);
-    expect(bare).toEqual([]);
+    expect(pages).toBeGreaterThan(20);
+    expect(found.filter((f) => !PENDING.includes(f.path)).map((f) => f.call)).toEqual([]);
+    // A pending page converted is a page to take off the list.
+    expect(PENDING.filter((path) => !found.some((f) => f.path === path))).toEqual([]);
   });
 });

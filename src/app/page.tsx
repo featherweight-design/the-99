@@ -20,6 +20,7 @@ import { collectionEditEnabled } from "../lib/collection/edit-flag";
 import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
+import { requestSwitchEnv } from "../lib/switches/request";
 
 /** What the signed-in Home draws, cached whole. First run draws none of it. */
 type HomePayload =
@@ -105,6 +106,9 @@ export default async function HomePage() {
   // /decks/import. Showing them the three steps would hide the deck they have.
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/");
+  // The reader's resolved switches, once for the whole render: the cached payload's key, its load
+  // and the first-run checklist all decide from this one env.
+  const env = await requestSwitchEnv(userId);
   // ONE clock for the whole render. The rotation's day boundary and the
   // dashboard's stamp both read it, and two `new Date()` calls either side of an
   // await can straddle UTC midnight — which would draw yesterday's pair beside a
@@ -139,7 +143,7 @@ export default async function HomePage() {
         includeCommanderArt: true,
         // The bracket chip on the resume row (Home bracket-chip addendum), behind the same flag
         // `/decks` reads it under. 0.83ms on staging.
-        includeBracket: analysisTabEnabled(),
+        includeBracket: analysisTabEnabled(env),
       })),
     ]);
     if (stats.uniqueCards === 0 && decks.length === 0) {
@@ -191,8 +195,8 @@ export default async function HomePage() {
       // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
       store: !ranked.degraded,
     };
-  });
-  if (data.firstRun) return <FirstRunChecklist addByHand={collectionEditEnabled()} />;
+  }, env);
+  if (data.firstRun) return <FirstRunChecklist addByHand={collectionEditEnabled(env)} />;
 
   return (
     <Dashboard

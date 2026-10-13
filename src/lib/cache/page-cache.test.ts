@@ -15,12 +15,15 @@ vi.mock("./user-lists", () => ({
 vi.mock("./user-data-stamp", () => ({ userDataStamp: vi.fn(async () => stamp.value) }));
 const enabled = vi.hoisted(() => ({ value: true }));
 vi.mock("./list-cache-flag", () => ({ listCacheEnabled: () => enabled.value }));
-// The reader's resolved switches, as `resolveSwitchEnv` hands them over.
+// The reader's resolved switches, as `requestSwitchEnv` hands them over.
 const switchEnv = vi.hoisted(() => ({ value: {} as NodeJS.ProcessEnv }));
 // The environment, with any override a test lays over it, as the resolver hands it back.
-vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: vi.fn(async () => ({ ...process.env, ...switchEnv.value })) }));
+vi.mock("../switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ({ ...process.env, ...switchEnv.value })) }));
 
 import { cacheForUser } from "./user-lists";
+import { requestSwitchEnv } from "../switches/request";
+import { switchBits } from "../switches/resolve";
+import { analysisTabEnabled } from "../decks/analysis-flag";
 import { userDataStamp } from "./user-data-stamp";
 import { cachePageForUser } from "./page-cache";
 import { recordSoftFailure } from "./soft-failure";
@@ -38,6 +41,31 @@ describe("cachePageForUser", () => {
     switchEnv.value = {} as unknown as NodeJS.ProcessEnv;
     vi.mocked(cacheForUser).mockClear();
     vi.mocked(userDataStamp).mockClear();
+    vi.mocked(requestSwitchEnv).mockClear();
+    vi.unstubAllEnvs();
+  });
+
+  it("hands the loader the env its key was built from, so the reader's override wins over the environment", async () => {
+    vi.stubEnv("ANALYSIS_TAB_ENABLED", "false");
+    switchEnv.value = { ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    let seen: NodeJS.ProcessEnv | undefined;
+    const value = await cachePageForUser("u1", "decks", [], async (env) => {
+      seen = env;
+      return { value: { bracket: analysisTabEnabled(env) }, store: true };
+    });
+    expect(value).toEqual({ bracket: true });
+    expect(requestSwitchEnv).toHaveBeenCalledWith("u1");
+    // The key's switch bits are the loader's env, bit for bit.
+    expect(vi.mocked(cacheForUser).mock.calls[0][1][2]).toBe(switchBits(seen!));
+  });
+
+  it("uses an env the page already resolved, and resolves nothing of its own", async () => {
+    const env = { ...process.env, ANALYSIS_TAB_ENABLED: "true" } as NodeJS.ProcessEnv;
+    let seen: NodeJS.ProcessEnv | undefined;
+    await cachePageForUser("u1", "decks", [], async (e) => ((seen = e), { value: 1, store: true }), env);
+    expect(seen).toBe(env);
+    expect(requestSwitchEnv).not.toHaveBeenCalled();
+    expect(vi.mocked(cacheForUser).mock.calls[0][1][2]).toBe(switchBits(env));
   });
 
   it("serves a repeat from the cache while the reader's stamp stands", async () => {

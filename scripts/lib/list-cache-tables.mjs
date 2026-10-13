@@ -125,11 +125,15 @@ export function triggeredTables(sources = migrationSources()) {
  * `cachePageForUser` resolves the reader's switches before it opens an entry and puts every one in
  * the key: a flip asks for a different entry, and no stored payload outlives it. Only
  * `page-cache.ts` may read them on the pages' path (`switchReaders`), or the key would not be the
- * whole story.
+ * whole story. It reads them through `requestSwitchEnv` (the request's own resolver, which reaches the
+ * snapshot only when the proxy sent no header), and a page that resolves first passes that same env
+ * in: the key is built from the env handed to the load, so either way they are one snapshot.
  */
 export const KEYED_BY_SWITCHES = new Set(["flag_overrides", "flag_group_members"]);
 export const SWITCH_READER = "src/lib/cache/page-cache.ts";
 const SWITCH_MODULE = "src/lib/switches/snapshot.ts";
+// The request's resolver: the one way a page or `page-cache.ts` reaches the snapshot.
+const SWITCH_RESOLVER = "src/lib/switches/request.ts";
 
 /**
  * Every file on the pages' path that reads the overrides other than the one allowed to: by importing
@@ -140,9 +144,10 @@ export function switchReaders(files = loaderFiles(), tables = schemaTables()) {
   const bindings = [...tables].filter(([, t]) => KEYED_BY_SWITCHES.has(t.name)).map(([binding]) => binding);
   const named = new RegExp(`\\b(${[...bindings, ...KEYED_BY_SWITCHES].join("|")})\\b`);
   return files.filter((file) => {
-    // The snapshot itself, and the one file allowed to call it. Nothing else in its directory is
-    // exempt: a helper placed beside it reads the tables as surely as a loader anywhere else.
-    if (file === SWITCH_READER || file === SWITCH_MODULE) return false;
+    // The snapshot itself, the request's resolver over it, and the one file allowed to key on them.
+    // Nothing else in its directory is exempt: a helper placed beside it reads the tables as surely
+    // as a loader anywhere else.
+    if (file === SWITCH_READER || file === SWITCH_MODULE || file === SWITCH_RESOLVER) return false;
     const source = readFileSync(file, "utf8");
     if (named.test(source.replace(/^\s*(\/\/|\*).*$/gm, ""))) return true;
     return importsOf(source).some((spec) => resolveImport(resolve(file), spec) === resolve(SWITCH_MODULE));
