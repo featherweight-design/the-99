@@ -443,23 +443,47 @@ describe("loadCardDetail availability", () => {
 // both fields absent, which keeps the door shut. The wiring into both branches of `loadCardDetail`
 // is `probe:swap-fits-data`'s, against a real database.
 describe("fitsGate", () => {
+  // The reader's resolved switches, as sentinels: the gate decides from these and never the environment.
+  const ON = { SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const OFF = { SWAP_TOOLS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+  const READ = { SWAP_TOOLS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+
   it("reads both flags off one row", async () => {
     const { fitsGate } = await import("./card-detail");
     const on = { execute: async () => ({ rows: [{ commander_legal: true, has_decks: false }] }) };
-    expect(await fitsGate("user_1", "o-1", on, true)).toEqual({ commanderLegal: true, hasDecks: false });
+    expect(await fitsGate("user_1", "o-1", on, ON)).toEqual({ commanderLegal: true, hasDecks: false });
+    expect(await fitsGate("user_1", "o-1", on, READ)).toEqual({ commanderLegal: true, hasDecks: false, fitsRead: true });
   });
 
   it("reads nothing while the swap tools are off", async () => {
     const { fitsGate } = await import("./card-detail");
     const execute = vi.fn(async () => ({ rows: [{ commander_legal: true, has_decks: true }] }));
-    expect(await fitsGate("user_1", "o-1", { execute }, false)).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute }, OFF)).toEqual({});
     expect(execute).not.toHaveBeenCalled();
+  });
+
+  // Admin adoption 6d: the reader's resolved switches win over the environment, both ways round.
+  it("decides from the env it is handed, never the environment", async () => {
+    const { fitsGate } = await import("./card-detail");
+    const execute = vi.fn(async () => ({ rows: [{ commander_legal: true, has_decks: true }] }));
+    try {
+      vi.stubEnv("SWAP_TOOLS_ENABLED", "false");
+      vi.stubEnv("FIND_A_DECK_READ_ENABLED", "false");
+      expect(await fitsGate("user_1", "o-1", { execute }, READ)).toEqual({ commanderLegal: true, hasDecks: true, fitsRead: true });
+      vi.stubEnv("SWAP_TOOLS_ENABLED", "true");
+      vi.stubEnv("FIND_A_DECK_READ_ENABLED", "true");
+      execute.mockClear();
+      expect(await fitsGate("user_1", "o-1", { execute }, OFF)).toEqual({});
+      expect(execute).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("is absent for a card it cannot find, and when the read fails", async () => {
     const { fitsGate } = await import("./card-detail");
-    expect(await fitsGate("user_1", "o-1", { execute: async () => ({ rows: [] }) }, true)).toEqual({});
-    expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } }, true)).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute: async () => ({ rows: [] }) }, ON)).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } }, ON)).toEqual({});
   });
 });
 

@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { cards, deckCutItems, deckSuggestionItems, deckSuggestionRuns } from "../../db/schema";
 import { readCutSupport } from "../decks/cuts-read";
 import { loadDeckMix } from "../decks/deck-mix";
+import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { liveLockedIds } from "../decks/locks";
 import type { DeckDetail } from "../decks/read";
 import type { BalanceColor } from "./mana-balance";
@@ -37,7 +38,14 @@ async function readNamedCuts(deckId: string, userId: string): Promise<string[]> 
 
 /** "Help me add <color>" for a deck: the moves that survive a simulated recount, and the staples behind
  *  them. Null when a text read or the basics failed. Asked for by the player, never run unprompted. */
-export async function loadManaHelp(deck: DeckDetail, userId: string, color: BalanceColor): Promise<ManaHelp | null> {
+export async function loadManaHelp(
+  deck: DeckDetail,
+  userId: string,
+  color: BalanceColor,
+  /** The reader's resolved switches (`requestSwitchEnv`): the basis the mix's targets come from. An eval
+   *  script, outside a request, takes the environment. */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<ManaHelp | null> {
   const inputs = await loadManaInputs(deck);
   if (!inputs) return null;
   const found = await db.select({ id: cards.oracleId, name: cards.name }).from(cards).where(inArray(cards.name, Object.values(BASIC_NAMES)));
@@ -50,7 +58,7 @@ export async function loadManaHelp(deck: DeckDetail, userId: string, color: Bala
     readNamedCuts(deck.id, userId),
     // The rarest off-plan land goes first; with no list every one reads 0 and they go by name.
     readCutSupport(deck.commander.oracleId, deck.partner?.oracleId ?? null).catch(() => null),
-    loadDeckMix(deck.id, userId),
+    loadDeckMix(deck.id, userId, roleBasisFromEnv(env)),
   ]);
   if (!candidates) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);

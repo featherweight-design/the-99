@@ -156,6 +156,8 @@ export async function readSynopsisState(
   userId: string,
   deps?: StoredProfileDeps,
   now: Date = new Date(),
+  /** The reader's resolved switches (`requestSwitchEnv`); a probe, outside a request, takes the environment. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<SynopsisState | null> {
   const [owned] = await db.select({ id: decks.id }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   if (!owned) return null;
@@ -170,7 +172,7 @@ export async function readSynopsisState(
   const { live, synopsis, illegal } = await db.transaction(async (tx) => {
     const head = await readProfileHead(tx, deckId, userId);
     const list = head ? listFingerprint(head) : null;
-    const illegal = !!head && noticesEnabled()
+    const illegal = !!head && noticesEnabled(env)
       && (await liveOffendingIds(tx, deckId, [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])])).length > 0;
     return { live: list, synopsis: await readShownSynopsis(deckId, userId, list ?? undefined, tx), illegal };
   }, { isolationLevel: "repeatable read" });
@@ -186,7 +188,7 @@ export async function readSynopsisState(
 
   const status = synopsisStatus({
     reading: reading && row ? { fresh: reading.fresh, list: row.list } : null,
-    dataMoved: synopsis ? await overviewDataMovedFor(deckId, userId, synopsis.seenSeq ?? 0) : false,
+    dataMoved: synopsis ? await overviewDataMovedFor(deckId, userId, synopsis.seenSeq ?? 0, env) : false,
     synopsis,
     allowance,
     pending: newest?.status === "pending",
@@ -202,7 +204,7 @@ export async function readSynopsisState(
     ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
     : null;
   // Behind the switch, so a deployment on contract 7 reads nothing more.
-  const v2 = overviewV2Enabled();
+  const v2 = overviewV2Enabled(env);
   const [art, evidenceNames] = synopsis
     ? await Promise.all([namedArt(synopsis.content, userId, deckId, v2), v2 ? evidenceNamesOf(synopsis.content) : Promise.resolve({})])
     : [{}, {}];
@@ -243,6 +245,8 @@ async function evidenceNamesOf(content: CheckedSynopsis): Promise<Record<string,
 export async function readVersionSynopsis(
   versionId: string,
   userId: string,
+  /** As `readSynopsisState`'s. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; art: Record<string, string | null>; evidenceNames: Record<string, string> } | null> {
   const [row] = await db
     .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content })
@@ -253,7 +257,7 @@ export async function readVersionSynopsis(
   if (!row?.content) return null;
   // The art for every card it names, as the draft read carries: a version can name cards the deck
   // no longer holds, and the page's own art covers only the deck as it is now.
-  const v2 = overviewV2Enabled();
+  const v2 = overviewV2Enabled(env);
   const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, v2), v2 ? evidenceNamesOf(row.content) : {}]);
   return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, art, evidenceNames };
 }

@@ -4,6 +4,7 @@ import { MAX_DECK_SCOPE, sanitizeDeckScope } from "../../../lib/combos/deck-scop
 import { loadCardDetail } from "../../../lib/collection/card-detail";
 import { encodeCardDetail } from "../../../lib/cards/card-detail-wire";
 import { perfRoute } from "../../../lib/perf/timing";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -50,7 +51,8 @@ export async function GET(req: NextRequest) {
   const ids = scope ? scope.split(",") : undefined;
   if (ids && ids.length > MAX_DECK_SCOPE) return NextResponse.json(null, { status: 400 });
   const scoped = sanitizeDeckScope(ids);
-  const card = await perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped));
+  const env = await requestSwitchEnv(userId);
+  const card = await perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped, env));
   // Per reader and per moment: a card carries the reader's availability, which their own
   // writes move, so no shared or stored copy is ever right.
   // `encodeCardDetail`, not `NextResponse.json`: a price fact's `asOf` is a Date, and plain JSON

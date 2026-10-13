@@ -311,12 +311,14 @@ async function freshReading(deckId: string, userId: string, deps?: StoredProfile
 export async function factsFor(
   profile: Parameters<typeof buildSynopsisFacts>[0],
   /** Read the combos of any size, assembled or one card short (one query). Off unless the v2 method is on. */
-  v2: boolean = overviewV2Enabled(),
+  v2?: boolean,
   /** Quote the evidence benchmarks' interaction reading (plan PR 1b), so the Overview and the
    *  Analysis tab's grade agree. Off with the switch: the facts are exactly the classifier's. */
-  benchmarks: boolean = deckBenchmarksEnabled(),
+  benchmarks?: boolean,
+  /** The switches either flag left out is read from: the eval harness runs outside a request. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<SynopsisFacts> {
-  return (await factsWithSource(profile, v2, benchmarks)).facts;
+  return (await factsWithSource(profile, v2 ?? overviewV2Enabled(env), benchmarks ?? deckBenchmarksEnabled(env))).facts;
 }
 
 /** `factsFor`, saying whether the interaction figures are the benchmarks' (`shared`) or the
@@ -440,6 +442,8 @@ export async function startRun(
    * takes the PLAYER path, allowance check included.
    */
   method: "free" | "paid" | null = null,
+  /** The reader's resolved switches (`requestSwitchEnv`): the notices switch the lock re-checks. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "free_gone" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
@@ -459,7 +463,7 @@ export async function startRun(
       // THE LEGALITY CHECK, AGAIN, under the same lock (deck notices HANDOFF §6), and before the
       // list's: a card that makes the deck illegal also moves its list, and `illegal` is the answer
       // that says why. `run` checks first so a withheld write reads nothing.
-      if (noticesEnabled()
+      if (noticesEnabled(env)
         && (await liveOffendingIds(tx, deckId, [deck.commander, ...(deck.partner ? [deck.partner] : [])])).length > 0) {
         throw new IllegalDeckError();
       }
@@ -600,20 +604,21 @@ async function run(
   userId: string,
   deps: GenerateDeps,
   retry: SynopsisRow | null,
+  env: NodeJS.ProcessEnv,
 ): Promise<WriteResult> {
   // FIRST, before the reading, the reuse check and the reservation: a withheld overview spends
   // nothing and starts no run, a retry included.
   // Behind the notices switch: off, the check is not there and the write runs as before.
-  if (noticesEnabled() && (await holdsIllegalCard(deckId, userId))) return { kind: "illegal" };
+  if (noticesEnabled(env) && (await holdsIllegalCard(deckId, userId))) return { kind: "illegal" };
   // Read once: a write is made wholly under one contract, whatever the switch does mid-flight.
-  const v2 = overviewV2Enabled();
-  const benchmarks = deckBenchmarksEnabled();
+  const v2 = overviewV2Enabled(env);
+  const benchmarks = deckBenchmarksEnabled(env);
   const reading = await freshReading(deckId, userId, deps.profile);
   if (!reading) return { kind: "no_reading" };
   const current = await readShownSynopsis(deckId, userId, reading.list);
   if (retry && (!current || current.id !== retry.id || current.fingerprint !== reading.list)) return { kind: "nothing_to_retry" };
   const replacing = !retry && !!current && current.fingerprint === reading.list
-    && (await overviewDataMovedFor(deckId, userId, current.seenSeq ?? 0));
+    && (await overviewDataMovedFor(deckId, userId, current.seenSeq ?? 0, env));
   // THE METHOD-CHANGE REWRITE (free, then paid once both tries are spent), decided from eligibility and not from which button was pressed
   // (the audit's build rule 1): the notice's press, ruling D's, Re-analyze's chained write and a
   // section retry all reach here. Only with the switch on, so a deck on contract 7 reads nothing extra.
@@ -644,7 +649,7 @@ async function run(
 
   // The model this write runs on, which is what its run and its bill record.
   const modelName = v2 ? deps.modelNameV2 ?? deps.modelName : deps.modelName;
-  const started = await startRun(deckId, userId, reading.list, modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method);
+  const started = await startRun(deckId, userId, reading.list, modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method, env);
   if (started.kind !== "started") return started;
 
   // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog
@@ -717,9 +722,17 @@ async function run(
   }
 }
 
-/** Write the deck's synopsis, or return the one already written for this list. */
-export function writeSynopsisFor(deckId: string, userId: string, deps: GenerateDeps = defaultDeps()): Promise<WriteResult> {
-  return run(deckId, userId, deps, null);
+/**
+ * Write the deck's synopsis, or return the one already written for this list. `env` is the reader's
+ * resolved switches (`requestSwitchEnv`); a probe or a script, outside a request, takes the environment.
+ */
+export function writeSynopsisFor(
+  deckId: string,
+  userId: string,
+  deps: GenerateDeps = defaultDeps(),
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<WriteResult> {
+  return run(deckId, userId, deps, null, env);
 }
 
 /**
@@ -731,8 +744,10 @@ export async function retrySynopsisFor(
   userId: string,
   synopsisId: string,
   deps: GenerateDeps = defaultDeps(),
+  /** As `writeSynopsisFor`'s. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<WriteResult> {
   const current = await readShownSynopsis(deckId, userId);
   if (!current || current.id !== synopsisId) return { kind: "nothing_to_retry" };
-  return run(deckId, userId, deps, current);
+  return run(deckId, userId, deps, current, env);
 }

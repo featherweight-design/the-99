@@ -111,8 +111,9 @@ export async function writeArrivalsReceipt(args: {
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
   /**
-   * Write version 4's `went` (where each arrived card's copies went). Defaults to the switch, read
-   * per request; off, the receipt is the version 3 it always was.
+   * Write version 4's `went` (where each arrived card's copies went): the reader's resolved switch,
+   * which the confirm passes. Absent (a probe, outside a request), the environment decides. Off, the
+   * receipt is the version 3 it always was.
    */
   addedCopy?: boolean;
 }): Promise<ArrivalsSummary> {
@@ -130,7 +131,7 @@ export async function writeArrivalsReceipt(args: {
   // arrived copy to a deck the availability never saw holding it, or keep A's "No longer to buy"
   // row beside a line saying the copy went to B. Repeatable read fixes all three at the first
   // statement. Off, the money rows are read as they always were.
-  const addedCopyOn = args.addedCopy ?? addedCopyEnabled();
+  const addedCopyOn = args.addedCopy ?? addedCopyEnabled(process.env);
   type Reservations = Map<string, { deckId: string; copies: number }[]>;
   type Read = { buyAfter: Awaited<ReturnType<typeof loadDeckBuyRows>>; availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations };
   const read: Read = !addedCopyOn

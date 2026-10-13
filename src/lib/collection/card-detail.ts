@@ -175,14 +175,15 @@ export async function fitsGate(
   userId: string,
   oracleId: string,
   on?: GateReader,
-  enabled?: boolean,
+  /** The reader's resolved switches (`requestSwitchEnv`); a probe, outside a request, takes the environment. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<{ commanderLegal?: boolean; hasDecks?: boolean; fitsRead?: boolean }> {
-  // Nothing reads the gate while the swap tools are off, so a deployment without them pays no
+  // Nothing reads the gate while the swap tools are off, so a reader without them pays no
   // round trip for it: the fields stay absent, which is also the door's closed state.
   const flags = await import("../swaps/flag");
-  if (!(enabled ?? flags.swapToolsEnabled())) return {};
+  if (!flags.swapToolsEnabled(env)) return {};
   // Find a deck's read (its own switch): the door opens the in-dialog view rather than the stacked picker.
-  const read = flags.findADeckReadEnabled() ? { fitsRead: true } : {};
+  const read = flags.findADeckReadEnabled(env) ? { fitsRead: true } : {};
   try {
     const reader = on ?? ((await import("../../db")).db as unknown as GateReader);
     const { sql } = await import("drizzle-orm");
@@ -334,6 +335,8 @@ export const loadCardDetail = cache(async function loadCardDetail(
   oracleId: string,
   /** The deck the modal was opened from, if any. See `withComboPartners`. */
   deckOracleIds?: readonly string[],
+  /** The reader's resolved switches (`requestSwitchEnv`): the Fits door's gate. A probe takes the environment. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<BrowseCard | null> {
   // TWO STAGES, and never more. Every read below is keyed on (reader, oracle id) alone, so none
   // waits on another's answer. They used to run in serial stages, each a round trip to the
@@ -397,7 +400,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // Both branches, not only the owned one: a card the player owns no copy of is the
   // COMMONEST proxy — the Ozolith case the spec is written around.
   const proxiedBy = proxyingDecks(userId, oracleId);
-  const gate = fitsGate(userId, oracleId);
+  const gate = fitsGate(userId, oracleId, undefined, env);
   const flags = settle(async () => (await import("../bracket/flags-read")).loadBracketFlags([oracleId]));
   const partners = settle(async () =>
     (await import("../combos/near-miss")).loadCardComboPartners({ userId, oracleId, deckOracleIds }),

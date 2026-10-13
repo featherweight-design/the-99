@@ -45,7 +45,7 @@ describe("loadDeckMix", () => {
       },
     });
 
-    const mix = await loadDeckMix("d-1", "u-1");
+    const mix = await loadDeckMix("d-1", "u-1", "classifier");
 
     // The ARGUMENTS, because a mix built from the wrong commander is a plausible mix: it
     // draws five sensible integers and nothing downstream can tell they describe another
@@ -70,7 +70,7 @@ describe("loadDeckMix", () => {
     ]);
     loadSkeletonForCommanders.mockRejectedValue(new Error("chain down"));
 
-    const mix = await loadDeckMix("d-1", "u-1");
+    const mix = await loadDeckMix("d-1", "u-1", "classifier");
 
     // The pair bit was known before the throw, so the fallback carries it. 36, not 37 —
     // `landTarget` subtracts a slot for the second commander, and every other pair surface
@@ -85,7 +85,7 @@ describe("loadDeckMix", () => {
     ]);
     loadSkeletonForCommanders.mockRejectedValue(new Error("chain down"));
 
-    const mix = await loadDeckMix("d-1", "u-1");
+    const mix = await loadDeckMix("d-1", "u-1", "classifier");
 
     expect(mix.cells.land.target).toBe(37);
     expect(mix.measured).toBe(false);
@@ -93,7 +93,7 @@ describe("loadDeckMix", () => {
 
   it("returns the baseline rather than throwing when the deck is not the reader's", async () => {
     reads(null);
-    const mix = await loadDeckMix("d-1", "someone-else");
+    const mix = await loadDeckMix("d-1", "someone-else", "classifier");
 
     expect(mix.measured).toBe(false);
     expect(mix.cells.ramp.target).toBeGreaterThan(0);

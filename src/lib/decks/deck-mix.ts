@@ -19,7 +19,6 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, decks } from "../../db/schema";
 import { loadSkeletonForCommanders } from "../profile/load";
-import { roleBasisFromEnv } from "./label-counts-flag";
 import type { RoleBasis } from "../profile/build";
 import { recommendedMix, type RecommendedMix } from "./mix";
 
@@ -29,9 +28,10 @@ import { recommendedMix, type RecommendedMix } from "./mix";
 export async function loadDeckMix(
   deckId: string,
   userId: string,
-  /** The basis the targets come from. A caller whose label read failed asks for "classifier", so its
-   *  classifier counts are graded against classifier targets rather than `label_*` ones. */
-  basis: RoleBasis = roleBasisFromEnv(),
+  /** The basis the targets come from: `roleBasisFromEnv` of the reader's resolved switches. A caller
+   *  whose label read failed asks for "classifier", so its classifier counts are graded against
+   *  classifier targets rather than `label_*` ones. */
+  basis: RoleBasis,
 ): Promise<RecommendedMix> {
   // HOISTED, because the fallback needs it. `landTarget` subtracts a slot for a partner, so a
   // pair deck whose chain fails mid-read would otherwise fall back to 37 lands where every

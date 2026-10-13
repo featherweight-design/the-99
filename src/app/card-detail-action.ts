@@ -5,6 +5,7 @@ import type { BrowseCard } from "../lib/collection/browse";
 import { loadCardDetail } from "../lib/collection/card-detail";
 import { requireUserId } from "../lib/auth";
 import { perfRoute } from "../lib/perf/timing";
+import { requestSwitchEnv } from "../lib/switches/request";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -41,5 +42,6 @@ export async function getCardDetail(
   // `sanitizeDeckScope`, which is where the rule lives so a test can call it rather than
   // restate it.
   const scoped = sanitizeDeckScope(deckOracleIds);
-  return perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped));
+  const env = await requestSwitchEnv(userId);
+  return perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped, env));
 }
