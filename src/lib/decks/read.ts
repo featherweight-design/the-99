@@ -1171,8 +1171,10 @@ export async function listDecksWithStats(
      * it. Unset, every row's `bracket` is null, which is what a deck nobody has analyzed draws.
      */
     includeBracket?: boolean;
-    /** The reader's resolved switches (`requestSwitchEnv`), for the deck-state marks and the
-     *  commander art; the environment alone when omitted. */
+    /** The reader's resolved switches (`requestSwitchEnv`), for the deck-state marks, the commander
+     *  art and the claim model's seniority read; the environment alone when omitted. A names-only
+     *  caller still reaches the claim read through `canFlip`, so every app caller passes it
+     *  (`switch-adoption.test.ts` holds that), and PR 7 makes it required. */
     env?: NodeJS.ProcessEnv;
     /**
      * Read each deck's notice (`noticeSummarySql`). Its own option rather than riding on

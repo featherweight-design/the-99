@@ -205,7 +205,7 @@ export default async function DeckBuilderPage({
   const notesRead = deckNotesEnabled(env)
     ? early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null }, env)) : null)))
     : null;
-  const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name")));
+  const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name", { env })));
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
   // Not swallowed, unlike the price and availability reads below. Those degrade to a missing
   // ornament; a ledger that quietly vanished would tell the player their passes are gone, which is

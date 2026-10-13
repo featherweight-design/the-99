@@ -220,7 +220,19 @@ const CLAIM_PENDING = [
   "src/lib/tuning/owned-candidates.ts",
 ];
 
-const CLAIM_READERS = ["loadAvailability", "loadDeckBuyRows", "loadCart"] as const;
+/**
+ * The claim readers and where each takes its env: in an options object (`opts`, which must name `env`) or
+ * as a positional argument (`at`, which must be present). `listDecksWithStats` is a reader by way of its
+ * seniority read: its own `opts.env` is handed on to `loadDeckBuyRows`, so a call that names none passes
+ * `undefined` there and the claim model reads the environment (round 1 of #1635 found the deck page doing it).
+ */
+const CLAIM_ENV = {
+  loadAvailability: { opts: 1 },
+  loadDeckBuyRows: { at: 3 },
+  loadCart: { at: 1 },
+  listDecksWithStats: { opts: 2 },
+} as const satisfies Record<string, { opts: number } | { at: number }>;
+const CLAIM_READERS = Object.keys(CLAIM_ENV) as (keyof typeof CLAIM_ENV)[];
 type ClaimReader = (typeof CLAIM_READERS)[number];
 
 /**
@@ -263,16 +275,14 @@ async function claimCalls(path: string, code: string): Promise<{ call: string; e
     if (reader && ts.isCallExpression(node)) {
       const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
       const call = `${path}:${line}: ${node.expression.getText(file)} (${reader})`;
-      if (reader === "loadAvailability") {
-        const opts = node.arguments[1];
+      const where: { opts: number } | { at: number } = CLAIM_ENV[reader];
+      if ("opts" in where) {
+        const opts = node.arguments[where.opts];
         const env = !!opts && ts.isObjectLiteralExpression(opts) && opts.properties.some((p) =>
           (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && p.name.getText(file) === "env");
         out.push({ call, env });
-      } else if (reader === "loadDeckBuyRows") {
-        out.push({ call, env: node.arguments.length >= 4 });
       } else {
-        // The cart's whole read, inside the cached Shopping page's load: its env is the one the key holds.
-        out.push({ call, env: node.arguments.length >= 2 });
+        out.push({ call, env: node.arguments.length > where.at });
       }
     }
     ts.forEachChild(node, visit);
@@ -297,9 +307,13 @@ describe("every claim read is handed the reader's env (admin PR 6e)", () => {
       "function g(read: typeof loadDeckBuyRows) { read(u, ids); read(u, ids, tx, env); }",
       "const bill = loadCart; bill(u);",
       "deps.loadAvailability(u, { env });",
+      // The deck list hands its own opts.env to the seniority read.
+      "listDecksWithStats(u, \"name\");",
+      "listDecksWithStats(u, \"name\", { includeProxyStats: true });",
+      "listDecksWithStats(u, \"name\", { env });",
     ].join("\n");
     expect((await claimCalls("x.ts", code)).map((c) => c.env)).toEqual(
-      [false, false, true, true, false, true, false, true, false, false, true, false, true],
+      [false, false, true, true, false, true, false, true, false, false, true, false, true, false, false, true],
     );
   });
 
