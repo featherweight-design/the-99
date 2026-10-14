@@ -389,7 +389,7 @@ export const addPanelCopy = {
     selectedLabel: "Selected",
     submit: "Create deck →",
     submitPending: "Creating…",
-    failed: "We couldn’t create that. Your decks are unchanged.",
+    failed: "We couldn’t confirm that deck was created. Check your decks before you try again.",
   },
 } as const;
 
@@ -545,5 +545,5 @@ export const renameCopy = {
   cancel: "Cancel",
   errorLength: `A deck name is 1–${DECK_NAME_MAX} characters.`,
   errorControl: "That name can’t contain control characters.",
-  errorFailed: "We couldn’t save that. The deck name is unchanged.",
+  errorFailed: "We couldn’t confirm that saved. Reload to see what the deck has now.",
 } as const;
