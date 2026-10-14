@@ -6,6 +6,7 @@ const stub = vi.hoisted(() => ({ held: vi.fn(), joined: vi.fn(), open: vi.fn(), 
 
 vi.mock("../../app/decks/token-actions", () => ({ setTokenHeld: stub.held, setTokenJoined: stub.joined }));
 vi.mock("../cards/card-detail-provider", () => ({
+  cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
   useCardDetail: () => ({ open: stub.open }),
   useCardDetailIfAny: () => ({ open: stub.open }),
   useCardIntent: () => ({}),
@@ -13,6 +14,7 @@ vi.mock("../cards/card-detail-provider", () => ({
 }));
 
 import { DeckTokensProvider } from "./deck-tokens-context";
+import { landOnDeckTokens } from "./deck-tokens-landing";
 import { TokensGroup } from "./tokens-group";
 import { TokensShoppingGroup } from "./tokens-shopping-group";
 import { boxedOnDesktop, boxedOnPhone, makerColumns } from "./token-makers";
@@ -183,7 +185,8 @@ describe("the makers fold", () => {
     expect(toggles.map((t) => t.className.match(/\bmd:hidden\b|\bmd:flex\b/)?.[0])).toEqual(["md:hidden", "md:flex"]);
     // A press elsewhere on the row still unfolds it, for a pointer.
     fireEvent.click(screen.getByText("Token Creature — Goblin · 1/1"));
-    expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(2);
+    // (The group's own fold is a button too, and open: it is not a token's.)
+    expect(screen.getAllByRole("button", { expanded: true }).filter((b) => !b.closest("h3"))).toHaveLength(2);
   });
 
   it("opens the token's own card details from its name and its image, and folds nothing", () => {
@@ -204,7 +207,7 @@ describe("the makers fold", () => {
     // Intent on the name reads the token ahead of the press, as a card's trigger does.
     fireEvent.focus(name);
     expect(stub.prefetch).toHaveBeenCalledWith("t-goblin");
-    expect(screen.queryAllByRole("button", { expanded: true })).toHaveLength(0);
+    expect(screen.queryAllByRole("button", { expanded: true }).filter((b) => !b.closest("h3"))).toHaveLength(0);
   });
 
   it("hands card details every token of the deck in the group's order, with each one's art, from any row", () => {
@@ -463,5 +466,138 @@ describe("a token row's hover preview", () => {
     draw(ok([token({ oracleId: "a", name: "Ally", picture: null })]));
     hover(screen.getByRole("button", { name: "Ally" }));
     expect(screen.queryByTestId("hover-preview")).toBeNull();
+  });
+});
+
+describe("the fold", () => {
+  beforeEach(() => localStorage.clear());
+  const toggle = () => screen.getByRole("button", { name: /^Tokens · / });
+
+  it("is open until the browser says otherwise, and folds to the heading alone", () => {
+    draw(ok([token({ oracleId: "a", name: "Ally" })]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText("Token Artifact — Food")).toBeTruthy();
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Token Artifact — Food")).toBeNull();
+    // The header and the phone's sub-line stay: a folded group still says what it is.
+    expect(screen.getAllByText("not in the 99 · from 6 cards").length).toBeGreaterThan(0);
+  });
+
+  it("is one preference for every deck: a fold written for one deck folds the next", () => {
+    const first = draw(ok([token()]));
+    fireEvent.click(toggle());
+    expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
+    first.unmount();
+    render(
+      <DeckTokensProvider deckId="00000000-0000-4000-8000-0000000000d2" read={ok([token({ name: "Treasure" })])}>
+        <TokensGroup />
+      </DeckTokensProvider>,
+    );
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Treasure")).toBeNull();
+  });
+
+  it("opens for `Tokens ›` without writing the reader's preference, and folds again on a press", () => {
+    localStorage.setItem("the99:deck-tokens-fold", "closed");
+    draw(ok([token()]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    act(() => { window.dispatchEvent(new Event("the99:show-deck-tokens")); });
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("opens for a `Tokens ›` request made before the group existed (from Shopping, where it is not drawn)", () => {
+    localStorage.setItem("the99:deck-tokens-fold", "closed");
+    landOnDeckTokens();
+    draw(ok([token()]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
+  });
+
+  it("answers the request once: a fold made after it is not undone by the group mounting again", () => {
+    localStorage.setItem("the99:deck-tokens-fold", "closed");
+    landOnDeckTokens();
+    const first = draw(ok([token()]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(toggle());
+    expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
+    first.unmount();
+    draw(ok([token()]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("does not open for a request that is no longer fresh", () => {
+    vi.useFakeTimers();
+    try {
+      localStorage.setItem("the99:deck-tokens-fold", "closed");
+      landOnDeckTokens();
+      vi.advanceTimersByTime(3500);
+      draw(ok([token()]));
+      expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("the view", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("draws rows in List and tiles in Card, the deck's own stored choice", () => {
+    const { unmount } = draw(ok([token({ oracleId: "a", name: "Ally" }), token({ oracleId: "b", name: "Food" })]));
+    expect(document.querySelectorAll("[data-token-tile]")).toHaveLength(0);
+    expect(document.querySelectorAll("[data-token-state]")).toHaveLength(2);
+    unmount();
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([token({ oracleId: "a", name: "Ally" }), token({ oracleId: "b", name: "Food" })]));
+    expect(document.querySelectorAll("[data-token-tile]")).toHaveLength(2);
+  });
+
+  it("keeps a tile's two presses and its makers fold", async () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(3) })]));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Mark the Goblin token as in your collection" })); });
+    expect(stub.held).toHaveBeenCalledWith(DECK, "g", true);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Add the Goblin token to this deck’s Shopping list" })); });
+    expect(stub.joined).toHaveBeenCalledWith(DECK, "g", true);
+    const fold = screen.getByRole("button", { name: "Goblin token, made by 3 cards", expanded: false });
+    fireEvent.click(fold);
+    expect(screen.getByText("Maker 01")).toBeTruthy();
+  });
+
+  it("names a tile's art for what it does and its makers fold for what it folds, two controls with two names", () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(3) })]));
+    const art = screen.getByRole("button", { name: "View details for Goblin" });
+    fireEvent.click(art);
+    expect(stub.open.mock.calls[0][0]).toBe("g");
+    expect(art.hasAttribute("aria-expanded")).toBe(false);
+    expect(screen.getAllByRole("button", { name: "Goblin token, made by 3 cards" })).toHaveLength(1);
+  });
+
+  it("draws a tile's makers in one column with no row indent, boxed past the one-column cap", () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(7) })]));
+    fireEvent.click(screen.getByRole("button", { name: "Goblin token, made by 7 cards", expanded: false }));
+    const list = screen.getByText("Maker 01").closest("ul")!;
+    // Seven names in a 178px tile are one column (a row's would be two), and seven 30px rows overflow the
+    // 158px cap, so the box scrolls: the row's two-column count would have left it open.
+    expect(list.className).not.toMatch(/md:grid-cols-/);
+    expect(list.className).toContain("md:max-h-[158px]");
+    expect(list.parentElement!.className).not.toContain("md:ml-[54px]");
+  });
+
+  it("draws the rules text that tells colliding tokens apart, as a row does", () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([
+      token({ oracleId: "g1", name: "Goblin", oracleText: "Haste" }),
+      token({ oracleId: "g2", name: "Goblin", oracleText: "When this dies, draw a card." }),
+      token({ oracleId: "f", name: "Food" }),
+    ]));
+    expect(screen.getByText("Haste")).toBeTruthy();
+    expect(screen.getByText("When this dies, draw a card.")).toBeTruthy();
   });
 });

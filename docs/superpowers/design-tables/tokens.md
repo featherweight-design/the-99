@@ -12,7 +12,8 @@ Source: `design/design_handoff_the99_tokens/` (R2, approved by Hugh 2026-10-11).
 | sub-line | `tokens.group.note`, mono 10.5 `--fg-locked`, under the label | the header's right note |
 | rows | one column, gap 8 | same |
 | failed | header without count; `tokens.group.failed` mono 11 `--fg-locked`, pad 10 0 | same |
-| Card view | the group stays rows (a token has no card tile) | same |
+| fold | the header's heading is a button (`aria-expanded`, the app's chevron after it, 44px tall); open by default; one stored preference for every deck (`the99:deck-tokens-fold`), the way the deck's view is; folded, the heading, count and note stay and the rows or tiles go. `Tokens ›` from card details opens a folded group for the visit without writing the preference | same, the button is the heading's own height |
+| Card view | the tokens are tiles (`TokenTile`, 2026-10-14, Hugh): the deck tile's anatomy and grid (two across), the same two presses and the makers fold under each, the makers in one column | the deck's 178px floor grid; same tile |
 
 ## Component: UnknownBand
 
