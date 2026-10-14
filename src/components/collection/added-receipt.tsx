@@ -59,11 +59,13 @@ export function WhereItWentBlock({ lines, placed }: WentInputs) {
   );
 }
 
-export function AddedReceipt({ title, body, counts, went, historyHref, historyLabel, onNavigate, children }: {
+export function AddedReceipt({ title, body, counts, extra, went, historyHref, historyLabel, onNavigate, children }: {
   title: string;
   body: string;
   /** The `4,492 → 4,500` line, when the caller knows the collection's size before. */
   counts?: string | null;
+  /** Further lines between the counts and where it went (the precon receipt's foil and tokens lines). */
+  extra?: ReactNode;
   went: WentInputs | null;
   historyHref: string;
   historyLabel: string;
@@ -76,6 +78,7 @@ export function AddedReceipt({ title, body, counts, went, historyHref, historyLa
       <p className="m-0 font-display text-[19px] font-bold">{title}</p>
       <p className="m-0 text-[14px] text-[color:var(--fg-body)]">{body}</p>
       {counts ? <p className="m-0 font-mono text-[12px] text-[color:var(--fg-faint)]">{counts}</p> : null}
+      {extra}
       {went ? <WhereItWentBlock {...went} /> : null}
       {/* B8: the entry this write left, one tap away. */}
       <Link href={historyHref} onNavigate={onNavigate} className="text-[13.5px] text-[color:var(--accent)] underline underline-offset-2">

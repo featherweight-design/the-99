@@ -84,7 +84,7 @@ function commanderNote(cards: OpenPreconCard[]) {
   return copy.group.own(owned, cards.length);
 }
 
-export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: boolean }) {
+export function OpenPreconView({ precon, fromNew, canOwn = false }: { precon: Loaded; fromNew: boolean; /** Collection editing is on for this reader: the Start dialog offers "I own this precon". */ canOwn?: boolean }) {
   const { row } = precon;
   const [storedView, storeView] = useStoredView(PRECON_OPEN_VIEW_KEY, isDeckView);
   const view = storedView ?? "list";
@@ -165,6 +165,8 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
               illegal={[...new Set(cards.filter((c) => !c.legal && !c.isCommander).map((c) => c.name))]}
               dockSummary={linked[0] ? copy.link.linked.dock(row.name, linked[0].deckName) : undefined}
               dockBeside={linkDeck("h-[48px] min-w-0 flex-1 rounded-[10px] px-[12px] text-[13px]")}
+              addedOn={precon.addedOn}
+              canOwn={canOwn}
             />
           </div>
 

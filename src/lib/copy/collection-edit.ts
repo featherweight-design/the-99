@@ -181,6 +181,7 @@ export const collectionEditCopy = {
     andMore: (first: string, k: number) => `${first} and ${n(k)} more`,
     /** (new) An entry's title when the ledger holds no filename or card name for it. */
     untitled: "Untitled change",
+    addedFromPrecon: (name: string) => `Added from ${name}`,
     figures: (up: number, down: number, cards: number) =>
       // A change that moved no copies (a printing or condition swap, or a Replace that matched the
       // collection exactly) states its zero rather than leaving the figure blank.

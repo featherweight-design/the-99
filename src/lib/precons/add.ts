@@ -157,7 +157,7 @@ export async function addPreconForUser(
  * nothing has. The ledger knows a retry by player and kind alone, so an id reused from another write (a
  * card's add, another precon's) is refused: only an entry this precon wrote is this action's success.
  */
-async function committedAnswer(userId: string, fileName: string, actionId: string): Promise<PreconAddResult | null> {
+export async function committedAnswer(userId: string, fileName: string, actionId: string): Promise<PreconAddResult | null> {
   const [entry] = await db.select({ source: collectionHistory.source, kind: collectionHistory.kind, rows: collectionHistory.rows })
     .from(collectionHistory)
     .where(and(eq(collectionHistory.id, actionId), eq(collectionHistory.userId, userId)));

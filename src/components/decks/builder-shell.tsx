@@ -35,6 +35,8 @@ import type { Bracket } from "../../lib/bracket/types";
 import { useDeclaration } from "./use-declaration";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
+import { PreconAddedReceipt, StripAddedParam } from "./precons/precon-added-receipt";
+import type { PreconAddReceipt } from "../../lib/precons/add-receipt-read";
 import type { PreconArrival } from "../../lib/precons/arrival-read";
 import type { PreconMatch } from "../../lib/precons/link";
 import type { DeckOrigin } from "../../lib/precons/origin";
@@ -160,6 +162,10 @@ interface BuilderShellProps {
   arrivedFromImport: boolean;
   /** The precon a deck was started from, on the one navigation the start made; else null. */
   preconArrival?: PreconArrival | null;
+  /** The receipt of the collection add this precon start made, read from the ledger; null when there was none. */
+  preconAddReceipt?: PreconAddReceipt | null;
+  /** `?added=` was on the URL (whatever the read made of it): it is stripped once the page has seen it. */
+  preconAddedClaimed?: boolean;
   /** The import's printing counts for the strip's clauses (deck printings), or null. */
   arrivalPrintings?: ArrivalPrintings | null;
   /** An UNLINKED deck's precon link doors (precons R3): the shared rule's suggestions (K1, K15) and
@@ -301,6 +307,8 @@ export function BuilderShell({
   commanderIdentity,
   arrivedFromImport,
   preconArrival = null,
+  preconAddReceipt = null,
+  preconAddedClaimed = false,
   arrivalPrintings = null,
   preconLink = null,
   preconOrigin = null,
@@ -1624,6 +1632,7 @@ export function BuilderShell({
             {preconArrival && (
               <PreconArrivalBand deckId={deck.id} arrival={preconArrival} />
             )}
+            {preconAddReceipt ? <PreconAddedReceipt receipt={preconAddReceipt} stripParam /> : preconAddedClaimed ? <StripAddedParam /> : null}
             {preconLink && preconLink.suggestions.length > 0 && (
               <PreconSuggestion deckId={deck.id} deckName={deck.name} suggestions={preconLink.suggestions} />
             )}

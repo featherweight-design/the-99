@@ -16,17 +16,18 @@ import { validateDeckName } from "../../lib/decks/deck-name";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { writeImportedDeck } from "../../lib/decks/write-imported-deck";
-import { PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "../../lib/decks/arrival";
+import { PRECON_ADDED_PARAM, PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "../../lib/decks/arrival";
 import { preconsEnabled } from "../../lib/precons/flag";
 import { addPreconForUser, type PreconAddResult } from "../../lib/precons/add";
 import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
+import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { warmCommanderScores } from "../../lib/recs/warm";
 import { isUuid } from "../../lib/uuid";
 import { after } from "next/server";
 import { isCommanderCandidate } from "../../lib/recs/score";
 
-export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
+export async function createDeckFromPrecon(fileName: string, rawName: string, addedEntryId?: string): Promise<void> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!preconsEnabled(env)) throw new Error("precons are off");
@@ -77,7 +78,9 @@ export async function createDeckFromPrecon(fileName: string, rawName: string): P
     builtFromPrecon: source,
   }));
   revalidateClaims(deckId, userId);
-  redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}`);
+  // The add's entry rides the redirect so the deck page can draw its receipt; it is only a claim there (`readPreconAddReceipt`).
+  const added = typeof addedEntryId === "string" && isUuid(addedEntryId) ? `&${PRECON_ADDED_PARAM}=${addedEntryId}` : "";
+  redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}${added}`);
 }
 
 export type { PreconAddResult };
@@ -92,6 +95,8 @@ export async function addPreconToCollection(fileName: string, actionId: string):
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!preconsEnabled(env)) throw new Error("precons are off");
+  // A collection write, so it keeps the collection-edit rollout boundary every other write action keeps.
+  if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
   if (!isUuid(actionId)) throw new Error("bad action id");
   // A twin adds its OWN box, never its plain edition's: the cards are the same, the printings and

@@ -112,6 +112,8 @@ export type HistoryListEntry = {
   shoppingDeck: { id: string; name: string | null } | null;
   /** Bought from the all-decks cart (source `shopping:cart:<deck ids>`): no one deck to name. */
   shoppingCart: boolean;
+  /** The precon an add came from (source `precon:<file name>`), by its current name; null for any other entry, or a precon since dropped. */
+  preconName: string | null;
   /**
    * The decks a cart purchase was bought for (the ids its source records), resolved at read time: the
    * first `CART_DECKS_NAMED` living decks by name, the living ones past them, and those since deleted.
@@ -176,7 +178,7 @@ type ListRow = {
   reverts_id: string | null; reverted_by: string | null;
   reverts_visible: boolean; reverted_by_visible: boolean;
   upload_filename: string | null; first_name: string | null;
-  shopping_deck_id: string | null; shopping_deck_name: string | null;
+  shopping_deck_id: string | null; shopping_deck_name: string | null; precon_name: string | null;
   // The deck ids the rows' `wentTo` name, first appearance first, and whether EVERY placed row is a brew's read (one held row makes it false).
   went_decks: string[] | null; went_soft: boolean;
   rows?: HistoryRow[];
@@ -241,6 +243,12 @@ export const listColumns = sql`
     where d.user_id = h.user_id
       and d.id = case when h.source ~ '^shopping:${sql.raw(UUID)}$' then substr(h.source, 10)::uuid end
   ) as shopping_deck_name,
+  -- The precon an add came from: the source is precon:<file name>, written by the precon add. Read now, so
+  -- a re-ingested precon reads its current name; a precon since dropped from the feed reads null.
+  (
+    select p.name from precons p
+    where h.source like 'precon:%' and p.file_name = substr(h.source, 8)
+  ) as precon_name,
   -- The decks the rows' \`wentTo\` name (add and upload entries), distinct, in order of first appearance. A row
   -- with no \`wentTo\` yields nothing from the lateral set-returning call, so most entries cost one empty scan.
   (
@@ -279,6 +287,7 @@ function toListEntry(r: ListRow): HistoryListEntry {
     uploadFilename: r.upload_filename, firstName: r.first_name,
     shoppingDeck: r.shopping_deck_id ? { id: r.shopping_deck_id, name: r.shopping_deck_name } : null,
     shoppingCart: cartSourceDecks(r.source) !== null,
+    preconName: r.precon_name,
     cartDecks: null,
     wentTo: null,
   };

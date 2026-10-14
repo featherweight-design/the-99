@@ -3,7 +3,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { PreconRow } from "../../../lib/precons/list";
 
 const action = vi.hoisted(() => vi.fn());
-vi.mock("../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: action }));
+const addAction = vi.hoisted(() => vi.fn());
+vi.mock("../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: action, addPreconToCollection: addAction }));
+vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: "user_A" }) }));
 import { StartPrecon } from "./start-precon";
 
 const row: PreconRow = {
@@ -16,7 +18,7 @@ const row: PreconRow = {
 describe("StartPrecon", () => {
   const open = () => {
     render(<StartPrecon row={row} cards={100} body={99} illegal={["Dockside Extortionist"]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start a deck from this" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
   };
 
   it("names a card the start keeps that isn't legal, the deck it repeats, and the facts", () => {
@@ -30,7 +32,7 @@ describe("StartPrecon", () => {
 
   it("says what the catalog lacks rather than claiming the precon's whole list", () => {
     render(<StartPrecon row={{ ...row, unmapped: 1 }} cards={99} body={98} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start a deck from this" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     expect(screen.getByText("99; 1 isn’t in our catalog yet")).toBeInTheDocument();
     expect(screen.queryByText(/as the precon lists them/)).toBeNull();
   });
@@ -43,7 +45,7 @@ describe("StartPrecon", () => {
 
   it("speaks of several illegal cards in the plural", () => {
     render(<StartPrecon row={row} cards={100} body={99} illegal={["Dockside Extortionist", "Trade Secrets"]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start a deck from this" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     expect(screen.getByText(/2 cards aren’t legal in Commander: Dockside Extortionist, Trade Secrets\. They stay in/)).toBeInTheDocument();
   });
 
@@ -53,7 +55,7 @@ describe("StartPrecon", () => {
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "My Intellect" } });
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t start the deck. Nothing was saved."));
-    expect(action).toHaveBeenCalledWith("MysticIntellect_C19", "My Intellect");
+    expect(action).toHaveBeenCalledWith("MysticIntellect_C19", "My Intellect", undefined);
     expect(screen.getByRole("textbox")).toHaveValue("My Intellect");
   });
 
@@ -85,7 +87,7 @@ describe("StartPrecon, a redirecting action", () => {
     const { redirect } = await import("next/navigation");
     action.mockImplementationOnce(async () => redirect("/decks/d1?from=precon"));
     render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start a deck from this" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
     await waitFor(() => expect(action).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 20));
