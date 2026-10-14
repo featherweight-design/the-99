@@ -5,6 +5,7 @@ import { fetchDir, readFetchedJson } from "../catalog/fetch-dir";
 import { SCRYFALL_HEADERS, SETS_INDEX } from "./http";
 import { toSetRows } from "./transform-sets";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
+import { stampFirstSeen } from "../catalog/first-seen";
 
 
 /** The sets list: the file the `fetch` job saved under CATALOG_FETCH_DIR, or Scryfall itself. */
@@ -39,6 +40,7 @@ export async function seedSets(): Promise<{ upserted: number }> {
       },
     });
   }
+  await stampFirstSeen("set", rows.map((r) => r.code));
   // Set names and icons are drawn from every set surface, and those payloads are cached.
   await stampCatalogRefresh();
   return { upserted: rows.length };

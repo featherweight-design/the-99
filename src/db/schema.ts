@@ -2049,9 +2049,38 @@ export const userPrefs = pgTable(
      * account rather than per browser (Hugh, 2026-09-27), and never backfilled.
      */
     commandersAvail: text("commanders_avail"),
+    /**
+     * The upcoming Commander sets (`sets.code`) this reader has been shown, so a set reads as new
+     * only until they have seen it (`lib/precons/upcoming.ts`). Codes only ever accumulate: there
+     * are about fifty Commander sets in all, so it needs no pruning.
+     */
+    upcomingSeenCodes: text("upcoming_seen_codes").array().notNull().default(sql`'{}'::text[]`),
   },
   (t) => [
     check("user_prefs_commanders_avail_check", sql`${t.commandersAvail} in ('all', 'free')`),
+  ],
+);
+
+/**
+ * When the catalog first showed a set or a precon, written by the ingest that saw it (`lib/catalog/first-seen.ts`).
+ * Its own table because `precons` is REPLACED by every ingest, so a stamp on its rows would be lost on the
+ * next refresh, and a column on `sets` would fail an ingest that outran its migration.
+ *
+ * `baseline` marks the rows written by the first run to find none of that `kind`: they were already in
+ * the catalog before anything was stamped, so their `first_seen_at` is the day stamping began and says
+ * nothing about when they arrived. A reader must not describe one as an arrival.
+ */
+export const catalogFirstSeen = pgTable(
+  "catalog_first_seen",
+  {
+    kind: text("kind").notNull(),
+    key: text("key").notNull(),
+    firstSeenAt: timestamp("first_seen_at").notNull(),
+    baseline: boolean("baseline").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.kind, t.key] }),
+    check("catalog_first_seen_kind_check", sql`${t.kind} in ('set', 'precon')`),
   ],
 );
 

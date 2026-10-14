@@ -134,6 +134,14 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   for `precons` there, so a refresh that outruns a deploy stays green. `pnpm check:mtgjson` checks
   the contract daily in `Upstream contract checks`; `pnpm measure:precons` runs the planner against
   staging, read-only, and names every precon card a started deck would meet as illegal.
+- **When the catalog first showed a set or a precon** is `catalog_first_seen` (`src/lib/catalog/first-seen.ts`; upcoming-precons
+  engineering half, 2026-10-14), written at the end of `seed-sets` and `db:seed:precons` and skipped with a warning on a database the
+  migration has not reached. A table of its own because `precons` is REPLACED every run, and a column on `sets` would fail an ingest that
+  outran its migration. **The first run for a kind is a BASELINE** (`baseline: true`): everything it stamps was already there, so its
+  date is the day stamping began, and no reader may call it an arrival. `lib/precons/upcoming.ts` reads the upcoming Commander sets
+  (type `commander`, not digital, released after today's UTC day; an upcoming precon is a SET before it is a `precons` row, since MTGJSON
+  lists a deck at release) and `user_prefs.upcoming_seen_codes` holds which a reader has been shown. **It has no caller beyond its tests and
+  `pnpm probe:upcoming-precons`**: the screen is Design's to draw.
 - `pnpm db:build:index` rebuilds `commander_support` / `commander_support_cards` from EDHREC,
   about 4,750 rate-limited requests. Since the card-data replicate plan (2026-09-28) it is built
   ONCE, on staging, and copied to production. The `Commander index` workflow chains on every

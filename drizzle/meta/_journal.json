@@ -855,6 +855,13 @@
       "when": 1791997648144,
       "tag": "0121_account_tombstones",
       "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1792002669015,
+      "tag": "0122_upcoming_precons",
+      "breakpoints": true
     }
   ]
 }

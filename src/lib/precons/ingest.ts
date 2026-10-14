@@ -11,6 +11,7 @@ import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, preconCards, precons, preconTokens, printings, tokenPrintings } from "../../db/schema";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
+import { stampFirstSeen } from "../catalog/first-seen";
 import { MIN_PRECONS, PRECON_SIZE, type PreconFeed } from "./feed";
 
 /** Unmapped copies, as a share of every copy listed: 0 of 19,700 on 2026-10-11. */
@@ -189,6 +190,8 @@ export async function ingestPrecons(feed: PreconFeed): Promise<IngestResult> {
     for (let i = 0; i < plan.cards.length; i += BATCH) await tx.insert(preconCards).values(plan.cards.slice(i, i + BATCH));
     for (let i = 0; i < plan.tokens.length; i += BATCH) await tx.insert(preconTokens).values(plan.tokens.slice(i, i + BATCH));
   });
+  // Apart from the publish: the rows above are replaced every run, so when a precon first arrived lives in its own table.
+  await stampFirstSeen("precon", plan.precons.map((p) => p.fileName));
   await stampCatalogRefresh();
   return { published: true, plan };
 }

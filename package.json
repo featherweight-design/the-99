@@ -52,6 +52,7 @@
     "probe:social": "tsx scripts/probe-social.mts",
     "probe:purge": "tsx scripts/probe-purge.mts",
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
+    "probe:upcoming-precons": "tsx scripts/probe-upcoming-precons.mts",
     "probe:admin-switches": "tsx scripts/probe-admin-switches.mts",
     "probe:admin-groups": "tsx scripts/probe-admin-groups.mts",
     "probe:group-allowance": "tsx scripts/probe-group-allowance.mts",
