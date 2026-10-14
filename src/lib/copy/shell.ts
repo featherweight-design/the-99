@@ -2,7 +2,8 @@
 // design/design_handoff_the99_richness/The 99 - App Shell v2.dc.html.
 // Voice: Kitchen Table. Do not paraphrase; the wink is load-bearing. Punctuation
 // diverges from the handoff as of 2026-09-13 — rule 4 applies here and the handoff
-// has not been reissued.
+// has not been reissued. The collection status reads "matching your cards…" where the
+// handoff says "matching to Oracle…" (copy sweep, 2026-10-14): Oracle is a data term.
 
 export type LoadingCopy = { heading: string; status: string };
 
@@ -26,7 +27,7 @@ export const shellCopy = {
     },
     collection: {
       heading: "Reading your collection",
-      status: "matching to Oracle…",
+      status: "matching your cards…",
     },
     // The /about read is one primary-key lookup, so this boundary is almost
     // never seen — it exists because every segment that owns a page owns one,

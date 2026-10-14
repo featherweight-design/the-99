@@ -1999,7 +1999,7 @@ keep their own `loading.tsx` (`decks/[id]`, `decks/[id]/changes`, `decks/[id]/im
 | color | `var(--fg-faint)` (`#8E8269`) | `var(--fg-faint)` |
 | margin-top | `8px` | `8px` |
 | margin-bottom | `0` | `0` |
-| content | `"matching to Oracle…"` | `"matching to Oracle…"` |
+| content | `"matching your cards…"` | `"matching your cards…"` |
 
 ### Loading: Caption
 
@@ -2201,5 +2201,5 @@ keep their own `loading.tsx` (`decks/[id]`, `decks/[id]/changes`, `decks/[id]/im
 | **Nav active states** | Current route matches nav destination | Active item: `bg #2A241D`, `color #EDE6D8`, `font-weight 600`, brass diamond; Mobile: active tab gets brass diamond + brass label `font-weight 600`; all other items idle | Current route path |
 | **Nav locked state** | Authenticated + collection is empty (pre-upload) | Collection, Commanders, Decks rail items render at `color #8E8269` (token: **faint**); no hover state; lock caption shown below nav items. Note: lifted from `#6A6152` for WCAG AA contrast during richness pass Task 8. Two `--fg-locked` (`#6A6152`) sites intentionally remain and are SC 1.4.3-exempt: `caretColor` in `upload-entry.tsx` (non-text) and a disabled button in `issue-inspector.tsx` (inactive control). | `collection.isEmpty` boolean |
 | **Paste-list view (mobile)** | User taps "Paste a list instead" link in step 1 dropzone | Mobile only: replaces checklist content with paste view; back arrow (`‹`, brass), "Paste a list" heading; instructions; mono textarea; recognized-count label; "Import {n} cards" button; "Upload a CSV instead" link | Live recognized-count (client-side parsing: `{n} lines · {n} cards recognized`) |
-| **Global loading state** | Next.js Suspense fallback fires (any route data-fetching) | `app/loading.tsx`: crab (96px, bobbing) + LoaderDots absolute top-right; heading "Reading your collection"; mono status "matching to Oracle…"; body caption; warm vignette background | None |
+| **Global loading state** | Next.js Suspense fallback fires (any route data-fetching) | `app/loading.tsx`: crab (96px, bobbing) + LoaderDots absolute top-right; heading "Reading your collection"; mono status "matching your cards…"; body caption; warm vignette background | None |
 | **404 state** | User navigates to a non-existent route | `app/not-found.tsx`: brass "404" numeral (48px/64px, `--elevated`); crab (96px, mt -14px mb 18px); heading "There's no page here."; caption; "Back home" (primary brass) + "View decks" (secondary border) CTAs. Note: the "404" numeral (`--elevated` `#2A241D` on `--bg` `#14110E`, ~1.24:1) is SC 1.4.3-exempt — it carries `aria-hidden="true"` and is purely decorative; the `<h1>` beneath it carries the meaning. | None |
