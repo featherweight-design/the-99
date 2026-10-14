@@ -6,16 +6,18 @@
  *
  * A pin names a printing; the reads honor it only while the player holds that printing
  * (`deck_printings`'s own rule), so a player who did not add the box sees their own copies until they
- * hold the box's. Not a "use server" module: it takes a user id.
+ * hold the box's. Its tokens are pinned the same way, to the box's token printings (`deck_token_printings`).
+ * Not a "use server" module: it takes a user id.
  */
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, decks, preconCards, precons, printings } from "../../db/schema";
+import { cards, decks, preconCards, precons, preconTokens, printings, tokenPrintings } from "../../db/schema";
 import { canPair, partnerAbility } from "../decks/partner";
 import { commitVersion } from "../decks/versions";
 import { writeImportedDeck } from "../decks/write-imported-deck";
 import type { ImportPrintingPick } from "../decks/import-printings";
 import { isCommanderCandidate } from "../recs/score";
+import { deckMakesTokenIn, writeDeckTokenPrintingIn } from "../tokens/deck-printings";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PreconLine = { oracleId: string; quantity: number; isCommander: boolean; setCode: string | null; collectorNumber: string | null };
@@ -39,7 +41,19 @@ export type PreparedPreconDeck = {
   printings: ImportPrintingPick[];
   /** The plain edition, which the deck records as the precon it was built from. */
   builtFromPrecon: string;
+  /** One printing per token the box holds, at its first by id: the deck shows the box's own token. */
+  tokens: { tokenOracleId: string; tokenPrintingId: string }[];
 };
+
+/** One printing per token, the first by id, so no answer depends on a read's row order. */
+export function preconTokenPins(rows: readonly { tokenOracleId: string; tokenPrintingId: string }[]): PreparedPreconDeck["tokens"] {
+  const pins = new Map<string, string>();
+  for (const r of rows) {
+    const had = pins.get(r.tokenOracleId);
+    if (had === undefined || r.tokenPrintingId < had) pins.set(r.tokenOracleId, r.tokenPrintingId);
+  }
+  return [...pins].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([tokenOracleId, tokenPrintingId]) => ({ tokenOracleId, tokenPrintingId }));
+}
 
 /**
  * Reads and checks the deck `fileName` starts. `fileName` is the edition the reader chose: a Collector's
@@ -93,12 +107,18 @@ export async function preparePreconDeckIn(db: Tx, fileName: string): Promise<Pre
     if (l.isCommander) continue;
     body.set(l.oracleId, (body.get(l.oracleId) ?? 0) + l.quantity);
   }
+  const tokenRows = await db
+    .select({ tokenOracleId: tokenPrintings.tokenOracleId, tokenPrintingId: preconTokens.tokenPrintingId })
+    .from(preconTokens)
+    .innerJoin(tokenPrintings, eq(tokenPrintings.scryfallId, preconTokens.tokenPrintingId))
+    .where(eq(preconTokens.fileName, head.fileName));
   return {
     commanderOracleId: a.oracleId,
     partnerOracleId: b?.oracleId ?? null,
     cards: [...body].map(([oracleId, quantity]) => ({ oracleId, quantity })),
     printings: preconPins(lines),
     builtFromPrecon: head.twinOf ?? head.fileName,
+    tokens: preconTokenPins(tokenRows),
   };
 }
 
@@ -126,6 +146,15 @@ export async function writePreconDeckIn(
   });
   if (addEntryId) await tx.update(decks).set({ preconAddEntryId: addEntryId }).where(eq(decks.id, deckId));
   await commitVersion(deckId, null, tx, undefined, env);
+  // Each token the deck makes shows the box's own printing, through the ONE writer, which takes it only
+  // while the player holds that printing, from any source: a start with the box holds it (the add's
+  // `syncPreconTokens` ran earlier in this transaction); a plain start holds it only from an earlier add or
+  // an upload, and is otherwise refused and left to the deck's default, as a card's pin is honored only while
+  // held.
+  for (const t of deck.tokens) {
+    if (!(await deckMakesTokenIn(tx, deckId, userId, t.tokenOracleId))) continue;
+    await writeDeckTokenPrintingIn(tx, { deckId, userId, tokenOracleId: t.tokenOracleId, tokenPrintingId: t.tokenPrintingId });
+  }
   return deckId;
 }
 
