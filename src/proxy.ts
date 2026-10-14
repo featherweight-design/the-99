@@ -37,11 +37,13 @@ import { switchBits } from "./lib/switches/resolve";
 // /api/clerk-webhook is public because Clerk calls it with no session; its route verifies the Svix
 // signature before doing anything. Exact forms again, for the same reason.
 //
+// /offline is public because the service worker keeps a SIGNED-OUT copy of it to show when a page
+// load finds no network (`public/sw.js`): it is static and holds nothing of anyone's.
 // /api/csp-report is public because a browser sends a CSP report with no session; it only writes a
 // cut-down log line and answers 204 (`api/csp-report/route.ts`).
 // /api/stripe-webhook is public because Stripe calls it with no session; its route verifies Stripe's
 // signature on the raw body and refuses anything unsigned (`api/stripe-webhook/route.ts`).
-const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+const isPublic = createRouteMatcher(["/", "/offline", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader

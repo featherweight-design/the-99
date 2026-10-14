@@ -46,8 +46,56 @@ beforeEach(() => {
     skipWaiting: () => {},
     clients: { claim: async () => {} },
   };
-  runInNewContext(SOURCE, { self, caches, fetch: network, URL, Response, Request, Set, Math });
+  runInNewContext(SOURCE, { self, caches, fetch: network, URL, Response, Request, Set, Math, Date });
 });
+
+/** A response the way the network hands one back: with the URL it came from, and whether it redirected. */
+function answered(body: string, url: string, init: ResponseInit & { redirected?: boolean } = {}): Response {
+  const res = new Response(body, init);
+  Object.defineProperty(res, "url", { value: new URL(url, ORIGIN).href });
+  if (init.redirected) Object.defineProperty(res, "redirected", { value: true });
+  return res;
+}
+
+/** The network as the worker sees it: `/offline` signed out, its two assets, and a page per path. */
+function serve(page: (path: string) => Response | Promise<Response> = (path) => answered(`page ${path}`, path)) {
+  network.mockImplementation(async (input: Request | string) => {
+    const path = new URL(typeof input === "string" ? input : input.url, ORIGIN).pathname;
+    if (path === "/offline") {
+      return answered('<link href="/_next/static/css/o.css"><script src="/_next/static/chunks/o.js"></script>', "/offline");
+    }
+    if (path.startsWith("/_next/static/")) return answered(`asset ${path}`, path);
+    return page(path);
+  });
+}
+
+/** Dispatches a page load (`mode: "navigate"`, which a Request cannot be constructed with). */
+async function load(url: string): Promise<Response | null> {
+  let answer: Promise<Response> | null = null;
+  const waits: Promise<unknown>[] = [];
+  const request = new Request(new URL(url, ORIGIN));
+  Object.defineProperty(request, "mode", { value: "navigate" });
+  listeners.fetch({
+    request,
+    preloadResponse: Promise.resolve(undefined),
+    respondWith: (p: Promise<Response>) => (answer = p),
+    waitUntil: (p: Promise<unknown>) => waits.push(p),
+  });
+  const res = answer ? await answer : null;
+  await Promise.all(waits);
+  return res;
+}
+
+async function install(): Promise<void> {
+  let done: Promise<unknown> = Promise.resolve();
+  listeners.install({ waitUntil: (p: Promise<unknown>) => (done = p) });
+  await done;
+}
+
+/** Every URL any cache holds, so a test can say what was never kept. */
+function everythingKept(): string[] {
+  return [...stores.values()].flatMap((c) => [...c.entries.keys()]);
+}
 
 /** Dispatches a fetch; resolves to the worker's response, or null when it lets the request through. */
 async function fetchVia(url: string, init: RequestInit = {}): Promise<Response | null> {
@@ -98,7 +146,65 @@ describe("the service worker", () => {
     expect(kept[0]).toBe(`${ORIGIN}/_next/static/immutable/chunks/5.js`);
   });
 
+  it("keeps the signed-out /offline page at install, fetched with no credentials, and its assets", async () => {
+    serve();
+    await install();
+    const offlineCall = network.mock.calls.find(([input]) => input === "/offline");
+    expect(offlineCall?.[1]).toMatchObject({ credentials: "omit" });
+    expect(await stores.get("offline-v1")!.entries.get(`${ORIGIN}/offline`)?.clone().text()).toContain("o.css");
+    expect([...stores.get("static-v1")!.entries.keys()].sort()).toEqual([
+      `${ORIGIN}/_next/static/chunks/o.js`,
+      `${ORIGIN}/_next/static/css/o.css`,
+    ]);
+  });
+
+  it("keeps nothing for /offline when it is not that page: a redirect to sign-in, an error", async () => {
+    for (const offline of [
+      () => answered("sign in", "/sign-in", { redirected: true }),
+      () => answered("boom", "/offline", { status: 500 }),
+    ]) {
+      stores.clear();
+      network.mockImplementation(async (input: Request | string) => {
+        const path = new URL(typeof input === "string" ? input : input.url, ORIGIN).pathname;
+        return path === "/offline" ? offline() : answered(`page ${path}`, path);
+      });
+      await install();
+      expect(stores.get("offline-v1")?.entries.size ?? 0).toBe(0);
+    }
+  });
+
+  it("answers a page load from the network, and keeps no document, whoever's it is", async () => {
+    serve();
+    const res = await load("/decks/abc");
+    expect(await res!.text()).toBe("page /decks/abc");
+    // The only page any cache holds is the signed-out /offline the worker fetched itself.
+    expect(everythingKept().filter((u) => !u.includes("/_next/static/"))).toEqual([`${ORIGIN}/offline`]);
+  });
+
+  it("passes a server's own error through: only an unreachable network gets the fallback", async () => {
+    serve((path) => answered("broken", path, { status: 500 }));
+    await install();
+    const res = await load("/decks");
+    expect(res!.status).toBe(500);
+    expect(await res!.text()).toBe("broken");
+  });
+
+  it("shows the kept /offline when the network cannot be reached, at the address asked for", async () => {
+    serve((path) => Promise.reject(new TypeError(`no network for ${path}`)));
+    await install();
+    const res = await load("/decks/shopping");
+    expect(await res!.text()).toContain("o.css");
+    expect(everythingKept()).not.toContain(`${ORIGIN}/decks/shopping`);
+  });
+
+  it("answers an unreachable page load with a network error when no /offline was ever kept", async () => {
+    network.mockRejectedValue(new TypeError("offline"));
+    const res = await load("/decks");
+    expect(res!.type).toBe("error");
+  });
+
   it("drops its own older versions when it activates, and no other cache", async () => {
+    stores.set("offline-v0", new FakeCache());
     stores.set("static-v0", new FakeCache());
     stores.set("someone-else", new FakeCache());
     await fetchVia("/_next/static/immutable/chunks/a.js");
