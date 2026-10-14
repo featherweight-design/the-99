@@ -296,12 +296,12 @@ describe("DeckCardOverflow — the delete confirm", () => {
 });
 
 describe("DeckCardOverflow — in the deck page's header", () => {
-  it("carries Rename and Delete only: Update is the header's own button, and Move is the list's", () => {
+  it("carries Delete only: Update and Rename are the header's own controls, and Move is the list's", () => {
     render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement="header" />);
     fireEvent.click(trigger());
     const panel = trigger().parentElement!.querySelector('[id]')!;
     const rows = Array.from(panel.querySelectorAll("a, button")).map((el) => el.textContent);
-    expect(rows).toEqual(["Rename", "Delete"]);
+    expect(rows).toEqual(["Delete"]);
   });
 
   it("is flowed in the header at its button size, not pinned to a tile's corner", () => {

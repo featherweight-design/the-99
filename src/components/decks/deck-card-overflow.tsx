@@ -29,9 +29,10 @@ interface DeckCardOverflowProps {
   /**
    * Where the menu is drawn. On a `tile` it sits on the art's top-right corner over the tile's
    * link and carries every row. In the deck page's `header` it is flowed beside Export, at the
-   * header's own button size, and drops the Update row, since the header's own Update button sits
-   * beside it. The header passes no `move` (the shelf list and its create dialog are the Decks
-   * list's) and no `onAmong` (Stats is a list view), so Rename and Delete are what it carries.
+   * header's own button size, and drops Update and Rename, since the header draws its own Update
+   * button and rename pencil beside it. The header passes no `move` (the shelf list and its create
+   * dialog are the Decks list's) and no `onAmong` (Stats is a list view), so it carries Delete
+   * alone, kept as a menu so Move can join it.
    */
   placement: "tile" | "header";
   /** The Move row and its mode, with the list view that owns them. Absent, the row is too. */
@@ -223,8 +224,10 @@ export function DeckCardOverflow({
         // Omitted while closed: the panel is unmounted at rest, and a reference
         // to an absent id is worse than no reference at all.
         aria-controls={open ? panelId : undefined}
-        // A 44px target on a phone and the unchanged 26px control at desktop,
-        // with the 26px plate drawn inside either one. It was bare on a phone by ruling — "the
+        // On a tile: a 44px target on a phone and the unchanged 26px control at
+        // desktop, with the 26px plate drawn inside either one. In the header the
+        // button is its own plate, at the header's sizes (see the header branch).
+        // On the tile it was bare on a phone by ruling — "the
         // drawn plate is desktop-only" — and what made that safe was the top
         // scrim veiling the crop under it. That scrim is gone, so this glyph
         // would be `var(--fg)` on an unmodified crop: the one accessibility
@@ -297,6 +300,7 @@ export function DeckCardOverflow({
                   {refreshCopy.decks.menu.updateFromList}
                 </Link>
               )}
+              {!header ? (
               <button
                 type="button"
                 onClick={handleRename}
@@ -306,6 +310,7 @@ export function DeckCardOverflow({
               >
                 {refreshCopy.decks.menu.rename}
               </button>
+              ) : null}
               {/* Between Rename and Delete, whether or not the Update row above
                   rendered — it is gated on `built > 0`, so the shipped menu is
                   two rows on a brew (errata E9). */}
@@ -328,7 +333,7 @@ export function DeckCardOverflow({
                 ref={deleteRow}
                 type="button"
                 onClick={handleDelete}
-                className={`${ITEM} cursor-pointer bg-transparent text-[color:var(--danger)]`}
+                className={`${ITEM} first:border-t-0 cursor-pointer bg-transparent text-[color:var(--danger)]`}
               >
                 {refreshCopy.decks.menu.delete}
               </button>
