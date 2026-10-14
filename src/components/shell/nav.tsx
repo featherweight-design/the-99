@@ -11,6 +11,7 @@ import { useRailTag } from "./rail-tag";
 import { useAboutSheetUp } from "./about-sheet-presence";
 import { usePendingPush } from "./pending-push";
 import { OfflinePill } from "../pwa/offline-pill";
+import { InstallSlot } from "../pwa/install-slot";
 import { Crowned99 } from "../marks";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { nameList } from "../../lib/copy/deck-analysis";
@@ -716,6 +717,8 @@ export function MobileHeader({ theme, adminDoor, adminEnv }: { theme: ThemeKey }
       <div className="flex items-center">
         {/* Offline, left of the avatar (Concert Crawl's PWA cluster, right-side slots). */}
         <OfflinePill place="header" />
+        {/* Install, phone only: desktop browsers have their own install button (PWA plan, call 1). */}
+        <InstallSlot />
         {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
         <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} />
       </div>

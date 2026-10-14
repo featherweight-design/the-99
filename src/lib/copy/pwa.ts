@@ -6,9 +6,9 @@ export const pwaCopy = {
     pill: "Offline",
     pillAria: "You're offline. Pages load again when you're back.",
     page: {
-      title: "You're offline.",
+      title: "Your decks need a connection.",
       eyebrow: "No signal",
-      sub: "The 99 needs a connection to load your decks and collection, and keeps nothing on this device. It'll all be here when you're back.",
+      sub: "Nothing's saved on this device, so it'll all be here when you're back.",
       retry: "Try again",
     },
   },
