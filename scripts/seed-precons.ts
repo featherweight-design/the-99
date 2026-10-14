@@ -19,7 +19,8 @@ async function main(): Promise<number> {
   const r = plan.report;
   console.log(
     `${r.kept} of ${r.listed} Commander precons (${r.twins} twins), ${r.copies} copies; ` +
-    `${r.unmappedCopies} not in the catalog, ${r.printingsMissing} with no catalog printing.`,
+    `${r.unmappedCopies} not in the catalog, ${r.printingsMissing} with no catalog printing; ` +
+    `${plan.tokens.length} token rows, ${r.tokensMissing} token copies not in the token catalog.`,
   );
   for (const d of r.dropped) console.log(`dropped ${d}`);
   if (!published) {

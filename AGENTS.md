@@ -123,7 +123,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   move or the cached derived file is a week old (`canReuse`); the fetch job keeps it in the Actions
   cache. Cards map by `scryfallOracleId` and `scryfallId`, never by name: a card the catalog lacks
   is dropped and counted on its precon (`unmapped_count`), a printing it lacks keeps the card with
-  no printing. Twins are one set's decks with identical lists (16 Collector's Editions on
+  no printing. Each row also keeps how many of its copies the box holds in foil (`foil_quantity`, from
+  MTGJSON's `isFoil`), and `precon_tokens` keeps the deck's `tokens[]` at their token printings; a token the
+  token catalog lacks is dropped and counted in the run's line (1 of the feed's tokens on 2026-10-14, when only
+  31 of 197 decks listed any). A cached derived file without either field reads as no cache. Twins are one set's decks with identical lists (16 Collector's Editions on
   2026-10-11); a Commander Anthology reprint of an older list is its own row. The publish is one
   transaction under the `catalog-ingest` lock, stamps `catalog_refreshes`, and REFUSES (exit 2,
   nothing written) under 180 kept decks or over 1% unmapped copies. On a database the precon

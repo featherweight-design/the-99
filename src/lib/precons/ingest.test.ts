@@ -3,14 +3,14 @@ import type { FeedCard, PreconFeed, PreconFeedDeck } from "./feed";
 import { MAX_UNMAPPED_SHARE, planPrecons } from "./ingest";
 
 const c = (oracleId: string | null, count = 1, commander = false, scryfallId: string | null = `p-${oracleId}`): FeedCard =>
-  ({ oracleId, scryfallId, count, commander });
+  ({ oracleId, scryfallId, count, commander, foil: false });
 
 /** A 100-card deck: one commander, `filler` copies of a basic, and the cards given. */
 function deck(fileName: string, extra: FeedCard[] = [], over: Partial<PreconFeedDeck> = {}): PreconFeedDeck {
   const used = extra.reduce((n, x) => n + x.count, 0);
   return {
     fileName, name: fileName, code: "SET", releaseDate: "2024-01-01",
-    cards: [c(`cmd-${fileName}`, 1, true), ...extra, c("plains", 99 - used)],
+    cards: [c(`cmd-${fileName}`, 1, true), ...extra, c("plains", 99 - used)], tokens: [],
     ...over,
   };
 }
@@ -27,6 +27,23 @@ function known(f: PreconFeed) {
 }
 
 describe("planPrecons", () => {
+  it("counts each row's foil copies, and keeps the tokens the token catalog holds", () => {
+    const f = feed(many(181));
+    const [o, p] = known(f);
+    const d = f.decks[0];
+    d.cards[0] = { ...d.cards[0], foil: true };
+    // The feed can list one printing twice, a foil beside a non-foil: one row, foil counted on it.
+    d.cards.push({ ...c("plains", 2), foil: true });
+    d.cards[d.cards.length - 2].count -= 2;
+    d.tokens = [{ scryfallId: "t-goblin", count: 2 }, { scryfallId: "t-goblin", count: 1 }, { scryfallId: "t-monarch", count: 1 }, { scryfallId: null, count: 1 }];
+    const plan = planPrecons(f, o, p, new Set(["t-goblin"]));
+    const rows = plan.cards.filter((r) => r.fileName === "D0");
+    expect(rows.find((r) => r.isCommander)?.foilQuantity).toBe(1);
+    expect(rows.find((r) => r.oracleId === "plains")).toMatchObject({ quantity: 99, foilQuantity: 2 });
+    expect(plan.tokens).toEqual([{ fileName: "D0", tokenPrintingId: "t-goblin", quantity: 3 }]);
+    expect(plan.report.tokensMissing).toBe(2);
+  });
+
   it("publishes the feed's exact list, counts and commanders", () => {
     const f = feed([deck("A", [c("sol-ring")]), ...many(180)]);
     const plan = planPrecons(f, ...known(f));
@@ -130,7 +147,7 @@ describe("planPrecons", () => {
     const [o, p] = known(f);
     // 10 decks each miss 2 copies (20 of 18,100 kept), and one 500-card deck missing all 500 is dropped.
     for (const d of f.decks.slice(0, 10)) d.cards.push(c("gone", 2)), d.cards[d.cards.length - 2].count -= 2;
-    f.decks.push({ fileName: "Huge", name: "Huge", code: "X", releaseDate: "2024-01-01", cards: [c("cmd-huge", 1, true), c("gone", 499)] });
+    f.decks.push({ fileName: "Huge", name: "Huge", code: "X", releaseDate: "2024-01-01", cards: [c("cmd-huge", 1, true), c("gone", 499)], tokens: [] });
     const plan = planPrecons(f, o, p);
     expect(plan.report.unmappedCopies).toBe(520);
     expect(plan.refusals.join()).toMatch(/cap/);
@@ -142,7 +159,7 @@ describe("planPrecons", () => {
     // 190 unmapped copies across the kept decks: 190 of 18,100 is over 1%.
     for (const d of f.decks.slice(0, 95)) d.cards.push(c("gone", 2)), d.cards[d.cards.length - 2].count -= 2;
     // A 1,600-card deck, every card mapped, dropped for its size.
-    f.decks.push({ fileName: "Huge", name: "Huge", code: "X", releaseDate: "2024-01-01", cards: [c("cmd-huge", 1, true), c("plains", 1599)] });
+    f.decks.push({ fileName: "Huge", name: "Huge", code: "X", releaseDate: "2024-01-01", cards: [c("cmd-huge", 1, true), c("plains", 1599)], tokens: [] });
     o.add("cmd-huge");
     const plan = planPrecons(f, o, p);
     expect(plan.report.copies).toBe(18_100);
