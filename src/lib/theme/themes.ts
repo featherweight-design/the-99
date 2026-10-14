@@ -58,6 +58,15 @@ export function isRetiredThemeKey(value: string | undefined): value is RetiredTh
   return !!value && Object.hasOwn(RETIRED_THEMES, value);
 }
 
+/** The persisted theme id in a `document.cookie` string, as written; undefined when absent. */
+export function themeCookieValue(cookie: string): string | undefined {
+  return cookie
+    .split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${THEME_COOKIE}=`))
+    ?.slice(THEME_COOKIE.length + 1);
+}
+
 /** The theme to paint for a persisted value, retired ids included. */
 export function themeFor(persisted: string | undefined): ThemeKey {
   if (isThemeKey(persisted)) return persisted;

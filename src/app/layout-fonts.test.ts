@@ -1,7 +1,7 @@
 // @vitest-environment node
 //
 // The fonts are self-hosted, so the files are part of the repository and the
-// declarations in `layout.tsx` point at real paths. A typo'd path fails the
+// declarations in `fonts.ts` point at real paths. A typo'd path fails the
 // build, which is a slow way to learn it; these read the source and the
 // directory and answer in milliseconds.
 //
@@ -21,10 +21,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const layout = readFileSync(join(HERE, "layout.tsx"), "utf8");
+// The declarations live in `fonts.ts`, shared by the root layout and `global-error.tsx`.
+const layout = readFileSync(join(HERE, "fonts.ts"), "utf8");
 const fontFiles = readdirSync(join(HERE, "fonts"));
 
-/** Every `path:` the layout hands to `next/font/local`. */
+/** Every `path:` `fonts.ts` hands to `next/font/local`. */
 const declaredPaths = [...layout.matchAll(/path:\s*"\.\/fonts\/([^"]+)"/g)].map((m) => m[1]);
 
 describe("self-hosted fonts", () => {
@@ -42,11 +43,11 @@ describe("self-hosted fonts", () => {
   it("points every declaration at a file that exists", () => {
     expect(declaredPaths.length).toBeGreaterThan(0);
     for (const path of declaredPaths) {
-      expect(fontFiles, `layout.tsx declares fonts/${path}`).toContain(path);
+      expect(fontFiles, `fonts.ts declares fonts/${path}`).toContain(path);
     }
   });
 
-  it("ships no font file the layout does not declare", () => {
+  it("ships no font file fonts.ts does not declare", () => {
     const woff2 = fontFiles.filter((f) => f.endsWith(".woff2"));
     for (const file of woff2) {
       expect(declaredPaths, `fonts/${file} is committed but never declared`).toContain(file);
@@ -127,7 +128,7 @@ describe("self-hosted fonts", () => {
       "--font-plex-sans",
       "--font-plex-mono",
     ]) {
-      expect(layout, `${variable} is gone from layout.tsx`).toContain(`variable: "${variable}"`);
+      expect(layout, `${variable} is gone from fonts.ts`).toContain(`variable: "${variable}"`);
     }
   });
 

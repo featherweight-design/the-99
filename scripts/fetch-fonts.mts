@@ -1,4 +1,4 @@
-// Download the exact font files `src/app/layout.tsx` declares, for self-hosting.
+// Download the exact font files `src/app/fonts.ts` declares, for self-hosting.
 //
 // WHY THIS EXISTS AT ALL: `next/font/google` fetches from Google at BUILD time,
 // so a network blip fails the build. CI's Build step failed twice overnight
@@ -13,12 +13,12 @@
 //
 //   pnpm fetch:fonts
 //
-// Re-run it when a weight is added to `layout.tsx`, and commit what changes.
+// Re-run it when a weight is added to `fonts.ts`, and commit what changes.
 import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 /**
- * Exactly what `src/app/layout.tsx` asks for, family by family.
+ * Exactly what `src/app/fonts.ts` asks for, family by family.
  *
  * `dir` is the Google Fonts repository directory (`ofl/…` or `apache/…`), which
  * is where the licence text lives — the API serves the font bytes but never the
@@ -27,11 +27,11 @@ import { fileURLToPath } from "node:url";
 type Family = {
   /** The name Google's API answers to. */
   css: string;
-  /** The filename stem, and the prefix `layout.tsx` imports by. */
+  /** The filename stem, and the prefix `fonts.ts` imports by. */
   slug: string;
   /** Where the licence lives in google/fonts — `ofl/…` or `apache/…`. */
   dir: string;
-  /** Exactly the weights `layout.tsx` declares. */
+  /** Exactly the weights `fonts.ts` declares. */
   weights: number[];
   /** True when Google serves ONE variable file for the whole span. */
   range: boolean;

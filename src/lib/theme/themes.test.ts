@@ -10,6 +10,7 @@ import {
   THEME_COOKIE,
   THEME_COOKIE_MAX_AGE,
   THEMES,
+  themeCookieValue,
   themeFor,
 } from "./themes";
 
@@ -103,5 +104,17 @@ describe("theme registry", () => {
   it("names the cookie and keeps it for a year", () => {
     expect(THEME_COOKIE).toBe("the99_theme");
     expect(THEME_COOKIE_MAX_AGE).toBe(60 * 60 * 24 * 365);
+  });
+});
+
+describe("themeCookieValue", () => {
+  it("reads the persisted id from a cookie string, wherever it sits", () => {
+    expect(themeCookieValue("a=1; the99_theme=ixalan; b=2")).toBe("ixalan");
+    expect(themeCookieValue("the99_theme=ixalan")).toBe("ixalan");
+  });
+
+  it("is undefined when the cookie is absent", () => {
+    expect(themeCookieValue("")).toBeUndefined();
+    expect(themeCookieValue("other_the99_theme=ixalan")).toBeUndefined();
   });
 });
