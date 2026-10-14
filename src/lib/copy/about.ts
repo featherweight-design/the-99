@@ -678,6 +678,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'Tabs include “Your deck”, “Consider”, “Games”, and “Versions” once the deck is committed.',
       'The “Games” tab shows how many games you’ve logged with the deck.',
+      'A basic land has − and + beside its count: press either, or type a new number.',
     ],
     marksPending: true,
     since: 1,

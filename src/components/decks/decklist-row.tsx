@@ -4,8 +4,8 @@
 // §Decklist Row (design table), §3 #179 and §4 #185 (add-panel addendum table).
 
 import { hasFrontFaceCost } from "../../lib/cards/faces";
-import { useId } from "react";
-import { removeCardFromDeck } from "../../app/decks/actions";
+import { useId, useState } from "react";
+import { removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
@@ -23,6 +23,8 @@ import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_SHELL as SHARED_ROW_SHELL } from "../ui/row-shell";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { isBasicLand } from "../../lib/decks/grouping";
+import { CountStepper } from "../ui/count-stepper";
+import { useBasicCount } from "./use-basic-count";
 import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
@@ -178,6 +180,31 @@ export function DecklistRow({
   // pair whichever way the count went.
   const recounted = pendingMove && pendingMove.from > 0 && pendingMove.to > 0 ? pendingMove : null;
 
+  // THE BASICS STEPPER (handoff `design_handoff_the99_basic_lands_stepper`, R2): on a basic land's row,
+  // `− count +` takes the ✕'s place and the `×N`'s. Not on a commander (H28), a read-only precon list, or
+  // Shopping (no basic is ever there), and it yields to the lock toggle in Lock cards mode, as the ✕ does.
+  const basicRow = isBasicLand(card.typeLine) && !readOnly && card.commander !== true && !inShopping;
+  const lockModeOn = useLockCards()?.mode === true;
+  const stepperOn = basicRow && !lockModeOn;
+  const [settledLine, setSettledLine] = useState("");
+  const basic = useBasicCount({
+    oracleId: card.oracleId,
+    quantity: card.quantity,
+    save: (n) => setBasicQuantity(deckId, card.oracleId, n),
+    onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(printedFaceName(card), n)),
+  });
+  // `from N`: the committed figure, when the count on screen is not it. The stepper prints the new count, so the
+  // shipped `6 → 8` pair keeps only its left half (STATES rule 7). A card the version did not hold (`from` 0)
+  // has no pair to print and keeps the add mark alone. With no version there is nothing to compare against.
+  const committedCount = !stepperOn
+    ? null
+    : recounted
+      ? recounted.from
+      : pendingChange && !pendingMove
+        ? basic.base
+        : null;
+  const fromMarker = committedCount !== null && basic.count !== committedCount ? committedCount : null;
+
   // The standing bracket facts, inline after the count. `flex-none` in a name block that is
   // already `flex-auto min-w-0` with ellipsis, so the name shrinks and the marks never do —
   // and the row does not grow, because the glow is a filter and sits outside the box model.
@@ -194,12 +221,18 @@ export function DecklistRow({
   // Multi-copy count (addendum C5): one row per card, the count inline after
   // the name. aria-hidden because the ✕ beside it already speaks the same
   // figure in prose — a reader that voiced both would say the number twice.
-  const quantityGlyph = card.quantity > 1 && !recounted && (
+  const quantityGlyph = card.quantity > 1 && !recounted && !stepperOn && (
     <span
       aria-hidden
       className="flex-none font-mono text-[11px] tabular-nums text-[color:var(--fg-faint)]"
     >
       {addPanelCopy.row.quantity(card.quantity)}
+    </span>
+  );
+  // The stepper row's `from N`. aria-hidden: the name's description keeps the shipped recount strings.
+  const fromGlyph = fromMarker !== null && (
+    <span aria-hidden className="flex-none font-mono text-[11px] tabular-nums text-[color:var(--fg-faint)]">
+      {addPanelCopy.basicStepper.from(fromMarker)}
     </span>
   );
   // With no ✕ (a read-only row), nothing else speaks the count, so the row says it once, through
@@ -276,7 +309,7 @@ export function DecklistRow({
   // looking at `Sol Ring` cannot tell 1 → 2 from a card that was not there.
   // The accessible name stays `fullName`: the pair is about the deck's count,
   // not about which card this is.
-  const rowLabel = recounted
+  const rowLabel = recounted && !stepperOn
     ? deckImportCopy.update.diff.recountedItem(
         displayName,
         String(recounted.from),
@@ -368,7 +401,7 @@ export function DecklistRow({
   // 2px, the Component notes table's width, and behind the pass mark's 3px when
   // a row carries both — the first shadow listed paints on top, and the wider
   // rule is the one that would otherwise show a seam under the narrower.
-  if (isPendingChange) rowEdges.push("inset 2px 0 0 0 var(--accent)");
+  if (isPendingChange || fromMarker !== null) rowEdges.push("inset 2px 0 0 0 var(--accent)");
   if (availState === "over") rowEdges.push("inset 0 0 0 1px var(--avail-over-border)");
 
   function handleRemove() {
@@ -472,6 +505,27 @@ export function DecklistRow({
     />
   );
 
+  // The ✕. Its own slot on every other row; on a basic row it is the stepper's − slot at 1, so the press that
+  // removes the row looks like removal (STATES rule 3) and leaves #185's receipt as it always has.
+  const removeButton = (
+    <button
+      type="button"
+      onClick={handleRemove}
+      disabled={isPending}
+      className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto
+        rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
+        active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
+        md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors"
+      aria-label={
+        card.quantity > 1
+          ? addPanelCopy.row.removeCopyAria(displayName, card.quantity)
+          : addPanelCopy.row.removeAria(displayName)
+      }
+    >
+      {addPanelCopy.row.remove}
+    </button>
+  );
+
   return (
     // Wrapper keeps the row and any error message as a single grid item. A row an undo brought
     // back fades in where its held slot was (C3).
@@ -559,6 +613,7 @@ export function DecklistRow({
               </CardDetailTrigger>
               <TwoFacedMark layout={card.layout} />
               {quantityGlyph}
+              {fromGlyph}
               {quantitySpoken}
               {factMarks}
             </div>
@@ -622,6 +677,7 @@ export function DecklistRow({
             </CardDetailTrigger>
             <TwoFacedMark layout={card.layout} />
             {quantityGlyph}
+            {fromGlyph}
             {quantitySpoken}
             {factMarks}
             {overText ? (
@@ -833,27 +889,26 @@ export function DecklistRow({
         >
           {addPanelCopy.row.remove}
         </span>
+        ) : stepperOn ? (
+        <CountStepper
+          layout="row"
+          count={basic.count}
+          fewerLabel={addPanelCopy.basicStepper.fewerAria(displayName, basic.count - 1)}
+          moreLabel={addPanelCopy.basicStepper.moreAria(displayName, basic.count + 1)}
+          countLabel={addPanelCopy.basicStepper.countAria(displayName)}
+          onStep={basic.step}
+          onType={basic.type}
+          // The ✕ shrinks to its glyph on desktop; the slot keeps the −’s 22px so nothing moves at 1.
+          atOne={<span className="flex flex-none justify-center md:w-[22px]">{removeButton}</span>}
+        />
         ) : (
-        /* Remove ✕ — at both widths now. The glyph stays 13px at both: the
-            phone target is the padding around it. */
-        <button
-          type="button"
-          onClick={handleRemove}
-          disabled={isPending}
-          className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto
-            rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
-            active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
-            md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors"
-          aria-label={
-            card.quantity > 1
-              ? addPanelCopy.row.removeCopyAria(displayName, card.quantity)
-              : addPanelCopy.row.removeAria(displayName)
-          }
-        >
-          {addPanelCopy.row.remove}
-        </button>
+        removeButton
         )}
       </div>
+      {basic.error && <MutationError message={basic.error} />}
+      {stepperOn && (
+        <span className="sr-only" role="status" aria-live="polite">{settledLine}</span>
+      )}
       {error && !shellReportsFailure && <MutationError message={error} />}
       {/* A refused lock reverts and says why here, under its row (STATES, pending / refused). */}
       {lockError && <MutationError message={lockError} />}

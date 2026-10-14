@@ -321,6 +321,23 @@ export const addPanelCopy = {
       `Remove one copy of ${name}, ${quantity} in deck`,
   },
 
+  // ── Basic lands stepper (handoff `design_handoff_the99_basic_lands_stepper`, R2) ──
+  // On a basic land's row and tile, `− count +` takes the ✕'s place. At 1 the − slot is the ✕
+  // above (`removeAria`). Each label names the card and the count the press leaves.
+  basicStepper: {
+    fewerAria: (name: string, after: number) => `One fewer ${name}, ${after} in deck`,
+    moreAria: (name: string, after: number) => `One more ${name}, ${after} in deck`,
+    countAria: (name: string) => `${name} copies in deck`,
+    // Visual only: the shipped recount description carries the committed figure for a reader.
+    from: (n: number) => `from ${n}`,
+    // Spoken once per settled save, never per press.
+    settled: (name: string, n: number) => `${name}, ${n} in deck.`,
+    // The server returned a refusal before any write.
+    refused: "We couldn’t change that. The deck is unchanged.",
+    // The save threw, so it may have landed: the row re-reads the deck rather than reverting.
+    unconfirmed: "We couldn’t confirm that saved. Reload to see what the deck has now.",
+  },
+
   // ── Undo (#185) ───────────────────────────────────────────────────────
   // The removed row is replaced in place by this one. No toast, no timer —
   // see decision 5 in design/design_handoff_the99_add_panel/ADDENDUM-README.md.

@@ -446,6 +446,7 @@ export function BuilderShell({
     keepOptimisticCard,
     sweepOptimisticAuto,
     keepAllOptimisticAuto,
+    setOptimisticQuantity,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   // The page's live region. Declared this high because the lock state below speaks into it.
   const [announcement, setAnnouncement] = useState("");
@@ -1320,6 +1321,7 @@ export function BuilderShell({
     resolveRow: resolveOptimisticRow,
     deleteRow: deleteOptimisticRow,
     keep: keepOptimisticCard,
+    setQuantity: setOptimisticQuantity,
     undo: { restore: addOptimisticCard, reportFailure: reportUndoFailure, failure: undoFailure, removal },
   };
 

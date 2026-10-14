@@ -93,7 +93,16 @@ type DeckEdit =
   | { kind: "remove"; oracleId: string }
   | { kind: "keep"; oracleId: string }
   | { kind: "keepAll" }
-  | { kind: "sweep"; keep: ReadonlySet<string> };
+  | { kind: "sweep"; keep: ReadonlySet<string> }
+  | { kind: "setQuantity"; oracleId: string; quantity: number };
+
+/**
+ * The basics stepper's prediction (plan `2026-10-14-basic-lands-stepper.md`): a basic's count set
+ * to a figure, ABSOLUTE as the server's `setBasicQuantity` is, so the header, the tab counts and
+ * the group heading move with the row on every press rather than at the settle. Dispatched inside
+ * the stepper's own transition, which lasts until its save has answered.
+ */
+type SetOptimisticQuantity = (oracleId: string, quantity: number) => void;
 
 /**
  * A failed removal has nowhere to draw itself: the prediction has already taken
@@ -122,6 +131,7 @@ type DeckEdits = {
   resolveRow: ResolveOptimisticRow;
   deleteRow: DeleteOptimisticRow;
   keep: KeepOptimisticCard;
+  setQuantity?: SetOptimisticQuantity;
   undo?: UndoSpentSlot;
 };
 
@@ -146,6 +156,14 @@ export function useOptimisticDeckCards(
       // Passed in rather than read off `c.locked`, because a lock pressed on this visit lives in
       // the shell's override (`useCardLocks`), above this list.
       if (edit.kind === "sweep") return current.filter((c) => !c.auto || edit.keep.has(c.oracleId));
+      if (edit.kind === "setQuantity") {
+        // Never below one: the stepper reaches 0 only through the ✕ at 1, which is a removal.
+        const at = current.findIndex((c) => c.oracleId === edit.oracleId);
+        if (at === -1 || edit.quantity < 1) return current;
+        const next = [...current];
+        next[at] = { ...next[at], quantity: edit.quantity, auto: false };
+        return next;
+      }
       if (edit.kind === "keepAll")
         return current.map((c) => (c.auto ? { ...c, auto: false } : c));
       if (edit.kind === "keep") {
@@ -195,6 +213,8 @@ export function useOptimisticDeckCards(
   const keepOptimisticCard: KeepOptimisticCard = (oracleId) =>
     applyEdit({ kind: "keep", oracleId });
   const keepAllOptimisticAuto: KeepAllOptimisticAuto = () => applyEdit({ kind: "keepAll" });
+  const setOptimisticQuantity: SetOptimisticQuantity = (oracleId, quantity) =>
+    applyEdit({ kind: "setQuantity", oracleId, quantity });
   const sweepOptimisticAuto: SweepOptimisticAuto = (keep = NO_IDS) => applyEdit({ kind: "sweep", keep });
 
   return {
@@ -208,6 +228,7 @@ export function useOptimisticDeckCards(
     keepOptimisticCard,
     keepAllOptimisticAuto,
     sweepOptimisticAuto,
+    setOptimisticQuantity,
   };
 }
 
@@ -252,6 +273,11 @@ export function useDeleteOptimisticRow(): DeleteOptimisticRow {
 
 export function useKeepOptimisticCard(): KeepOptimisticCard {
   return useContext(DeckEditContext)?.keep ?? noop;
+}
+
+/** A no-op outside a provider, like the add and the remove: the stepper still saves, with no deck-wide prediction. */
+export function useSetOptimisticQuantity(): SetOptimisticQuantity {
+  return useContext(DeckEditContext)?.setQuantity ?? noop;
 }
 
 /**

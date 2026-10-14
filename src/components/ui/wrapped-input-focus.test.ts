@@ -17,6 +17,7 @@ const ROOT = join(process.cwd(), "src/components");
 const ALLOWED: Record<string, string> = {
   "decks/spine-desktop.tsx": "the rename field is a standalone input, drawn only while editing, whose accent border is its focus",
   "decks/spine-mobile.tsx": "the rename field is a standalone input, drawn only while editing, whose accent border is its focus",
+  "ui/count-stepper.tsx": "the basics stepper's count is a bare field with no box to wrap it, whose focus is its own 2px accent underline (R2 design table)",
 };
 
 function files(dir: string): string[] {
