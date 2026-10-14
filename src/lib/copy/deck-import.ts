@@ -184,6 +184,21 @@ export const deckImportCopy = {
       action: "Back to your list",
       retry: false,
     },
+    /**
+     * The update's comparison threw. It only reads, so nothing was written and the
+     * reader has no deck to go and check; the cap message passes through as above.
+     */
+    unexpectedCompare: {
+      heading: "That didn’t go through",
+      bodyMobile: (detail: string | null) =>
+        detail ? `${detail}. Your list is still here.` : "Something went wrong on our end. Your list is still here.",
+      body: (detail: string | null) =>
+        detail
+          ? `${detail}. Your list is still here. Trim it and try again.`
+          : "Something went wrong on our end, and nothing was changed. Your list is still here. Try it again.",
+      action: "Back to your list",
+      retry: false,
+    },
   },
 
   // ---- Commander -----------------------------------------------------------

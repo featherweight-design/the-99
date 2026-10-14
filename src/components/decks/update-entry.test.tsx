@@ -259,6 +259,9 @@ describe("failures on the list step", () => {
     compare();
     await screen.findByRole("alert");
     expect(screen.getByLabelText(deckImportCopy.entry.pasteLabel)).toHaveValue("1 Sol Ring");
+    // The compare only reads, so the banner must not send the player to check for a deck.
+    expect(screen.getByRole("alert").textContent).not.toMatch(/Check your decks/);
+    expect(screen.getByRole("alert").textContent).toContain("nothing was changed");
   });
 });
 

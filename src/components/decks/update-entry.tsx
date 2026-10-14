@@ -480,7 +480,7 @@ const FAILURE_ACTION: Record<FailureKind, string> = {
   noneMatched: copy.failures.noneMatched.action,
   empty: copy.failures.empty.action,
   badCsv: copy.failures.badCsv.action,
-  unexpected: copy.failures.unexpected.action,
+  unexpected: copy.failures.unexpectedCompare.action,
 };
 
 function failureText(failure: Failure): { heading: string; bodyMobile: string; body: string } {
@@ -511,9 +511,9 @@ function failureText(failure: Failure): { heading: string; bodyMobile: string; b
       };
     case "unexpected":
       return {
-        heading: copy.failures.unexpected.heading,
-        bodyMobile: copy.failures.unexpected.bodyMobile(failure.detail),
-        body: copy.failures.unexpected.body(failure.detail),
+        heading: copy.failures.unexpectedCompare.heading,
+        bodyMobile: copy.failures.unexpectedCompare.bodyMobile(failure.detail),
+        body: copy.failures.unexpectedCompare.body(failure.detail),
       };
   }
 }
