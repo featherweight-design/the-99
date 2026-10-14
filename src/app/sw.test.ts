@@ -167,6 +167,29 @@ describe("the service worker", () => {
     ]);
   });
 
+  it("keeps the copy it has when a refresh cannot fetch one of the new page's assets", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-10-14T12:00:00Z"));
+      start();
+      serve();
+      await install();
+      const before = await stores.get("offline-v1")!.entries.get(`${ORIGIN}/offline`)!.clone().text();
+      // An hour on, a deploy has moved the page to a new stylesheet that will not load.
+      vi.setSystemTime(new Date("2026-10-14T13:30:00Z"));
+      network.mockImplementation(async (input: Request | string) => {
+        const path = new URL(typeof input === "string" ? input : input.url, ORIGIN).pathname;
+        if (path === "/offline") return answered('<link href="/_next/static/css/new.css">', "/offline");
+        if (path === "/_next/static/css/new.css") return answered("gone", path, { status: 500 });
+        return answered(`page ${path}`, path);
+      });
+      await load("/decks");
+      expect(await stores.get("offline-v1")!.entries.get(`${ORIGIN}/offline`)!.clone().text()).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reads a path in the page's inline RSC payload without the escape before its closing quote", async () => {
     serve();
     await install();

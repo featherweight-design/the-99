@@ -113,12 +113,17 @@ async function keepOfflinePage() {
   // A path ends at a quote, a space, a bracket or a BACKSLASH: inside the page's inline RSC payload
   // the same paths are JSON-escaped (`\"/_next/static/...\"`), and the backslash is not part of one.
   const assets = new Set((html.match(/\/_next\/static\/[^"'\s<>)\\]+/g) ?? []).map((p) => p.replace(/&amp;/g, "&")));
+  // Every asset first: one that cannot be fetched abandons the refresh (a throw rejects it), so the
+  // copy already kept, which can still draw, is never replaced by one that cannot.
+  const fetched = [];
   for (const path of assets) {
     const request = new Request(new URL(path, self.location.origin));
     if (await statics.match(request)) continue;
     const asset = await fetch(request);
-    if (asset.ok) await statics.put(request, asset);
+    if (!asset.ok) return;
+    fetched.push([request, asset]);
   }
+  for (const [request, asset] of fetched) await statics.put(request, asset);
   await trim(statics, STATIC_LIMIT);
   const headers = new Headers(response.headers);
   headers.set(KEPT_AT, String(Date.now()));
