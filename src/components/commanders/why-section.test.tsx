@@ -93,7 +93,7 @@ describe("WhySection", () => {
 describe("WhySection committed-deck clause", () => {
   it("names the deck and spells out how many of the cards are in it", () => {
     renderSection({ committedSupport: { count: 12, topDeck: "Kess Storm" } });
-    expect(screen.getByText(/of those are already in your Kess Storm deck/)).toBeInTheDocument();
+    expect(screen.getByText(/of those are already in Kess Storm\./)).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
   });
 

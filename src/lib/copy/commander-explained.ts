@@ -102,7 +102,7 @@ export const explainedCopy = {
       committed: number,
       deck: Deck,
     ) =>
-      `You own ${n(owned)} of the ${n(total)} cards most played with this commander, and ${spellOut(committed)} of those are already in your ${deck.name} deck.`,
+      `You own ${n(owned)} of the ${n(total)} cards most played with this commander, and ${spellOut(committed)} of those are already in ${deck.name}.`,
 
     /** Sentence 3 — the single largest gap, naming the weakest role AND NOTHING ELSE.
         No price, no card names, no buy prompt (must-not 4). Omitted entirely when no role is
