@@ -295,7 +295,7 @@ describe("withoutUndecided", () => {
   });
 
   it("keeps an unmatched row, which is about the FILE rather than the allocation", () => {
-    // The issues line promises that any deck still billing an unparsed name is marked below, and
+    // The issues line promises that any deck still counting an unparsed name as a card to buy is marked below, and
     // the chooser draws no file-error marker — so this row is the only thing keeping that true.
     const s = withoutUndecided(buildArrivalsSummary(input({
       ownedBefore: {},
