@@ -2069,7 +2069,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   not read, a standing precon add's printing lands as a `precon` row and its revert takes it away, a deck keeps one pick per
   token, and the purge leaves neither. For a deck's pick (TP2) it proves the writer refuses another token's printing (held)
   and an unheld one, that `loadDeckTokens` pictures a held pick, that a row naming another token's printing written past
-  the writer reads as no pick, and that a pick the player stops holding is ignored and kept. It WRITES, so
+  the writer reads as no pick, that a pick the player stops holding is ignored and kept, and the action's two reads: the
+  deck makes a token only through its own cards, and a set and number shared with an unheld sibling variant names the held
+  printing. It WRITES, so
   it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by
   id. Mutation-checked four ways (the Replace's delete of upload printings, the precon re-derive, the writer's
   printing-of-token check, the reader's join on the token).

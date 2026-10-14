@@ -7,7 +7,7 @@ import { markTokenOwned, syncPreconTokens, unmarkTokenOwned } from "./ownership"
 export type TokenWrite = "done" | "notThisDeck";
 
 /** Whether this player's deck holds a card that makes this token. A deck that is not theirs holds none. */
-export async function deckMakesToken(deckId: string, userId: string, tokenOracleId: string): Promise<boolean> {
+async function deckMakesToken(deckId: string, userId: string, tokenOracleId: string): Promise<boolean> {
   const makerIds = await deckMakerIds(deckId, userId);
   if (!makerIds || makerIds.length === 0) return false;
   const [hit] = await db.select({ id: cardTokens.tokenOracleId }).from(cardTokens)

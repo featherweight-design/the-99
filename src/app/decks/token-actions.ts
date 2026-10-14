@@ -6,10 +6,9 @@ import { requestSwitchEnv } from "../../lib/switches/request";
 import { deckTokensEnabled } from "../../lib/decks/tokens-flag";
 import { requireDeck } from "../../lib/decks/read";
 import { db } from "../../db";
-import { tokenPrintings } from "../../db/schema";
-import { and, eq, sql } from "drizzle-orm";
-import { writeDeckTokenPrintingIn } from "../../lib/tokens/deck-printings";
-import { deckMakesToken, joinToken, leaveToken, markOwnedOnDeck, unmarkOwned } from "../../lib/tokens/joins";
+import { sql } from "drizzle-orm";
+import { deckMakesTokenIn, heldPrintingByNumber, writeDeckTokenPrintingIn } from "../../lib/tokens/deck-printings";
+import { joinToken, leaveToken, markOwnedOnDeck, unmarkOwned } from "../../lib/tokens/joins";
 import { isUuid } from "../../lib/uuid";
 
 export type TokenActionResult = { ok: true } | { ok: false; reason: "off" | "notThisDeck" };
@@ -107,18 +106,15 @@ export async function setDeckTokenPrinting(
   const deckId = rawDeckId.toLowerCase();
   const tokenId = rawTokenId.toLowerCase();
   await requireDeck(deckId, userId);
-  if (!(await deckMakesToken(deckId, userId, tokenId))) return { ok: false, reason: "notThisDeck" };
 
   const outcome = await db.transaction(async (tx) => {
-    // The deck's row, as a card's pick takes it, so a pick and the deck's delete never interleave.
+    // The deck's row first, as a card's pick takes it, and the membership read under it: a deck edit that
+    // removes the token's last maker cannot land between the check and the write.
     await tx.execute(sql`select 1 from decks where id = ${deckId} for update`);
-    const [p] = await tx.select({ id: tokenPrintings.scryfallId }).from(tokenPrintings).where(and(
-      eq(tokenPrintings.tokenOracleId, tokenId),
-      eq(sql`lower(${tokenPrintings.setCode})`, set),
-      eq(tokenPrintings.collectorNumber, collectorNumber),
-    )).limit(1);
+    if (!(await deckMakesTokenIn(tx, deckId, userId, tokenId))) return "notThisDeck" as const;
+    const p = await heldPrintingByNumber(tx, userId, tokenId, set, collectorNumber);
     if (!p) return "notHeld" as const;
-    const w = await writeDeckTokenPrintingIn(tx, { deckId, userId, tokenOracleId: tokenId, tokenPrintingId: p.id });
+    const w = await writeDeckTokenPrintingIn(tx, { deckId, userId, tokenOracleId: tokenId, tokenPrintingId: p });
     return w === "ok" ? "ok" as const : "notHeld" as const;
   });
   if (outcome !== "ok") return { ok: false, reason: outcome };

@@ -18,6 +18,8 @@
 //      printing of the token, which the deck's row then pictures (TP2)
 //   i  a row naming another token's printing, written past the writer, is read as no pick
 //   j  a pick the player stops holding is ignored and kept, and shows again once the printing is back
+//   k  the action's reads: the deck makes a token only through its own cards, and a set and number shared
+//      with an unheld sibling variant names the held printing
 //   g  the purge removes the account's printing rows and its deck's picks
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
@@ -42,7 +44,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { syncPreconTokens, writeUploadTokens, type TokenHolding } from "../src/lib/tokens/ownership";
 import { purgeAccount } from "../src/lib/account/purge";
-import { loadDeckTokenPicks, writeDeckTokenPrintingIn } from "../src/lib/tokens/deck-printings";
+import { deckMakesTokenIn, heldPrintingByNumber, loadDeckTokenPicks, writeDeckTokenPrintingIn } from "../src/lib/tokens/deck-printings";
 import { loadDeckTokens } from "../src/lib/tokens/read";
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
@@ -69,13 +71,15 @@ const A1 = randomUUID();
 const A2 = randomUUID();
 const B1 = randomUUID();
 const A3 = randomUUID();
+// A sibling variant of A1: the same set and number, a different printing.
+const A4 = randomUUID();
 let cardId: string | null = null;
 let deckId: string | null = null;
 
 const held = async () => rows<{ p: string; source: string; quantity: number }>(sql`
   select token_printing_id::text as p, source, quantity from token_printing_holdings
   where user_id = ${USER} order by source, token_printing_id`);
-const name = (id: string) => ({ [A1]: "A1", [A2]: "A2", [A3]: "A3", [B1]: "B1" })[id] ?? id;
+const name = (id: string) => ({ [A1]: "A1", [A2]: "A2", [A3]: "A3", [A4]: "A4", [B1]: "B1" })[id] ?? id;
 const shown = async () => (await held()).map((h) => `${h.source}:${name(h.p)}=${h.quantity}`).sort();
 const upload = (mode: "replace" | "add", holdings: TokenHolding[]) =>
   db.transaction(async (tx) => { await writeUploadTokens(tx, USER, randomUUID(), mode, holdings); });
@@ -89,7 +93,7 @@ async function run() {
   for (const [id, n] of [[A, "Probe Soldier"], [B, "Probe Treasure"]] as const) {
     await fixture.execute(sql`insert into tokens (oracle_id, name, type_line, colors, layout) values (${id}::uuid, ${n}, 'Token Creature', '{}', 'token')`);
   }
-  for (const [id, token, cn] of [[A1, A, "1"], [A2, A, "2"], [B1, B, "3"], [A3, A, "4"]] as const) {
+  for (const [id, token, cn] of [[A1, A, "1"], [A2, A, "2"], [B1, B, "3"], [A3, A, "4"], [A4, A, "1"]] as const) {
     // Each with art, so the deck's row chooses among the held printings rather than falling to the catalog's.
     await fixture.execute(sql`insert into token_printings (scryfall_id, token_oracle_id, set_code, collector_number, finishes, image_uri)
       values (${id}::uuid, ${token}::uuid, 'tprb', ${cn}, '{nonfoil}', ${`https://probe.invalid/${cn}.jpg`})`);
@@ -167,6 +171,14 @@ async function run() {
   await upload("replace", [{ tokenOracleId: A, quantity: 3, printings: [{ tokenPrintingId: A1, quantity: 1 }, { tokenPrintingId: A2, quantity: 2 }] }]);
   check("j · which shows again once the printing is back", await pictured(), "A1 (picked)");
 
+  // k · The action's two reads: whether the deck makes the token, and which held printing a set and number names.
+  check("k · the deck makes the token its card makes", await deckMakesTokenIn(db, deckId!, USER, A), true);
+  check("k · and not one no card of it makes", await deckMakesTokenIn(db, deckId!, USER, B), false);
+  check("k · nor for another player", await deckMakesTokenIn(db, deckId!, `${USER}-other`, A), false);
+  const named = await heldPrintingByNumber(db, USER, A, "TPRB", "1");
+  check("k · a set and number shared by a sibling names the held printing", named ? name(named) : null, "A1");
+  check("k · and none of another token's", await heldPrintingByNumber(db, USER, B, "tprb", "1"), null);
+
   // g · The purge.
   await purgeAccount(USER);
   check("g · the purge leaves no printing row", (await held()).length, 0);
@@ -185,7 +197,7 @@ async function cleanup() {
     ["reads", () => fixture.execute(sql`delete from token_reads where user_id = ${USER}`)],
     ["history", () => fixture.execute(sql`delete from collection_history where user_id = ${USER}`)],
     ["card tokens", () => fixture.execute(sql`delete from card_tokens where token_oracle_id in (${A}::uuid, ${B}::uuid)`)],
-    ["token printings", () => fixture.execute(sql`delete from token_printings where scryfall_id in (${A1}::uuid, ${A2}::uuid, ${A3}::uuid, ${B1}::uuid)`)],
+    ["token printings", () => fixture.execute(sql`delete from token_printings where scryfall_id in (${A1}::uuid, ${A2}::uuid, ${A3}::uuid, ${A4}::uuid, ${B1}::uuid)`)],
     ["tokens", () => fixture.execute(sql`delete from tokens where oracle_id in (${A}::uuid, ${B}::uuid)`)],
   ];
   for (const [name, step] of steps) {

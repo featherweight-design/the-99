@@ -89,6 +89,53 @@ export async function loadDeckTokenPicks(deckId: string, userId: string, runner:
 
 type Writer = Pick<typeof db, "select" | "insert">;
 
+/**
+ * Whether this player's deck holds a card (its commanders included) that makes the token, read through `tx` so
+ * a caller holding the deck's row lock reads it under that lock. A deck that is not theirs makes none.
+ */
+export async function deckMakesTokenIn(tx: Pick<typeof db, "execute">, deckId: string, userId: string, tokenOracleId: string): Promise<boolean> {
+  const { rows: [r] } = await tx.execute<{ made: boolean }>(sql`
+    select exists (
+      select 1 from card_tokens ct
+      where ct.token_oracle_id = ${tokenOracleId}::uuid
+        and ct.card_oracle_id in (
+          select d.commander_oracle_id from decks d where d.id = ${deckId}::uuid and d.user_id = ${userId}
+          union select d.partner_oracle_id from decks d where d.id = ${deckId}::uuid and d.user_id = ${userId}
+          union select dc.oracle_id from deck_cards dc join decks d on d.id = dc.deck_id
+            where dc.deck_id = ${deckId}::uuid and d.user_id = ${userId}
+        )
+    ) as made`);
+  return r?.made === true;
+}
+
+/**
+ * The printing of a token a picker's set and number names, among the printings the player HOLDS: a set and
+ * number is not unique (sibling variants share one), and the picker offered only held printings. Most copies
+ * first, then by id, the order the picker lists them in. Null when no held printing of the token matches.
+ */
+export async function heldPrintingByNumber(
+  tx: Reader,
+  userId: string,
+  tokenOracleId: string,
+  setCode: string,
+  collectorNumber: string,
+): Promise<string | null> {
+  const [p] = await tx.select({ id: tokenPrintings.scryfallId }).from(tokenPrintings)
+    .innerJoin(tokenPrintingHoldings, and(
+      eq(tokenPrintingHoldings.tokenPrintingId, tokenPrintings.scryfallId),
+      eq(tokenPrintingHoldings.userId, userId),
+    ))
+    .where(and(
+      eq(tokenPrintings.tokenOracleId, tokenOracleId),
+      eq(sql`lower(${tokenPrintings.setCode})`, setCode.toLowerCase()),
+      eq(tokenPrintings.collectorNumber, collectorNumber),
+    ))
+    .groupBy(tokenPrintings.scryfallId)
+    .orderBy(sql`sum(${tokenPrintingHoldings.quantity}) desc`, tokenPrintings.scryfallId)
+    .limit(1);
+  return p?.id ?? null;
+}
+
 export type DeckTokenPrintingWrite = "ok" | "notOfToken" | "notHeld";
 
 /**
