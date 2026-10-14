@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, type CSSProperties } from "react";
+import { useLayoutEffect, useRef, useSyncExternalStore, type CSSProperties } from "react";
 import { cssUrl } from "../../lib/collection/browse";
 import { useArrivalQueue } from "./arrival-queue";
 import { armArtArrival, useNearViewport } from "./hydrated-art";
@@ -35,19 +35,43 @@ const askedFor: Set<string> = ((globalThis as Record<symbol, Set<string>>)[ASKED
  * server HTML, and a crop already painted when the page hydrates is left as it is.
  */
 export function ArrivingArt({
-  src, className, style, defer = false, margin,
-}: { src: string; className: string; style: CSSProperties; defer?: boolean; margin?: string }) {
+  src, className, style, defer = false, margin, media,
+}: {
+  src: string; className: string; style: CSSProperties; defer?: boolean; margin?: string;
+  /**
+   * The media query under which the layer is drawn at all (a desktop-only face inside a `hidden sm:...` box). While
+   * it does not match, no preload Image is made: the browser fetches no background for a box that is not rendered,
+   * but a preload would fetch the art anyway. The background stays in the server HTML, so the art is not delayed
+   * where it does show.
+   */
+  media?: string;
+}) {
   const ref = useRef<HTMLDivElement | null>(null);
   const near = useNearViewport(ref, defer && !askedFor.has(src), margin);
   const shown = !defer || near || askedFor.has(src);
   const queue = useArrivalQueue();
+  const drawn = useMediaMatch(media);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!shown || !el) return;
+    if (!shown || !drawn || !el) return;
     askedFor.add(src);
     const image = new Image();
     image.src = src;
     return armArtArrival(el, image, queue);
-  }, [shown, src, queue]);
+  }, [shown, drawn, src, queue]);
   return <div ref={ref} className={className} style={shown ? { ...style, backgroundImage: cssUrl(src) } : style} />;
+}
+
+/** Whether `media` matches, tracking changes. No query, or no `matchMedia` (the server, a test), reads as a match. */
+function useMediaMatch(media: string | undefined): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      if (!media || typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
+      const mq = window.matchMedia(media);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => !media || typeof window.matchMedia !== "function" || window.matchMedia(media).matches,
+    () => true,
+  );
 }

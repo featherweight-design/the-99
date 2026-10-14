@@ -590,7 +590,8 @@ export function CommanderDetail({
               boxShadow: `${CARD_ART_RING}, 0 20px 50px rgba(0,0,0,0.5)`,
             }}
           >
-            {c.imageUri ? <ArtLayer src={c.imageUri} style={{ boxShadow: CARD_ART_RING }} /> : null}
+            {/* Desktop only (`hidden sm:grid` above): a phone fetches none of it. */}
+            {c.imageUri ? <ArtLayer src={c.imageUri} media="(min-width: 40rem)" style={{ boxShadow: CARD_ART_RING }} /> : null}
             <FullCardTrigger oracleId={c.oracleId} placement="commander-desktop" />
           </div>
 

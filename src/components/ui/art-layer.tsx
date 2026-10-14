@@ -16,10 +16,15 @@ import { ArrivingArt } from "./art-wash-near";
  * as it did when the art was the host's own background. Inside an `ArrivalOrder` list the fade waits its turn
  * in reading order; anywhere else it plays on landing. Reduced motion shows the art as it lands, unfaded.
  */
-export function ArtLayer({ src, className = "", style }: { src: string; className?: string; style?: CSSProperties }) {
+export function ArtLayer({ src, className = "", style, media }: {
+  src: string; className?: string; style?: CSSProperties;
+  /** Only fetched while this media query matches: for a layer inside a box hidden at some widths (`ArrivingArt`). */
+  media?: string;
+}) {
   return (
     <ArrivingArt
       src={src}
+      media={media}
       className={`pointer-events-none absolute inset-0 rounded-[inherit] ${className}`}
       style={{ backgroundSize: "cover", backgroundPosition: "center", ...style }}
     />

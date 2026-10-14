@@ -48,3 +48,21 @@ describe("ArtLayer", () => {
     expect(layer.dataset.arrival).toBe("done");
   });
 });
+
+describe("ArtLayer under a media query", () => {
+  it("makes no preload, and so fetches nothing, while its media query does not match", () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {} }));
+    const { container } = render(<div className="relative"><ArtLayer src={SRC} media="(min-width: 40rem)" /></div>);
+    const layer = container.firstElementChild!.firstElementChild as HTMLElement;
+    expect(probes).toHaveLength(0);
+    expect(layer.dataset.arrival).toBeUndefined();
+  });
+
+  it("arms as usual where it matches", () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: true, media: q, addEventListener: () => {}, removeEventListener: () => {} }));
+    const { container } = render(<div className="relative"><ArtLayer src={SRC} media="(min-width: 40rem)" /></div>);
+    const layer = container.firstElementChild!.firstElementChild as HTMLElement;
+    expect(probes).toHaveLength(1);
+    expect(layer.dataset.arrival).toBe("pending");
+  });
+});

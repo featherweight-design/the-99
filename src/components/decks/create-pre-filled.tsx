@@ -195,7 +195,8 @@ export function CreatePreFilled({
               boxShadow: `0 20px 50px rgba(0,0,0,0.5), ${CARD_ART_RING}`,
             }}
           >
-            {imageUri ? <ArtLayer src={imageUri} style={{ boxShadow: CARD_ART_RING }} /> : null}
+            {/* Desktop only (`hidden md:block`): a phone fetches none of it. */}
+            {imageUri ? <ArtLayer src={imageUri} media="(min-width: 48rem)" style={{ boxShadow: CARD_ART_RING }} /> : null}
           </div>
           {/* No pip inset on the art: the locked "Color identity" row to the
               right of it shows the same pips at the same moment, with a label
