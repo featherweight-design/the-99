@@ -58,3 +58,24 @@ Destiny Commander (2027-04-09, Gargantos, B G). "Today" is 2026-10-14 UTC unless
 6. **Shown is not seen.** Only ✕ or opening Precons writes the marker.
 7. **The banner is in the page.** It never overlays, never yields to the About sheet and never makes it yield.
 8. **Nothing is said about a failure.** A failed read draws the shipped page and no banner.
+
+## R2 · Collapsible group and quiet rows (`R2 - Precons.dc.html`)
+
+| # | State | What changes |
+|---|---|---|
+| C1 | **Closed (default)** | Heading row only: `Announced · 2 sets · next Nov 13 ▸`. Decklists start one row lower than shipped. |
+| C2 | **Open by itself** | A set unseen at load (`new`), or arrived by `#announced`. Blocks as R1 T5. |
+| C3 | **Focus on the heading** | 2px `--accent` ring around the heading button. |
+| Q1 | **Rows, closed** | As C1. |
+| Q2 | **Rows, open** | One precon-shaped dashed row per set: a thumb, name + countdown, first commander `and N more`, then dots + code and date. |
+| Q3 | **Rows, a set opened** | The row's cards under a dashed rule; wraps at 900 and scrolls at 390. |
+
+Rule 9 (R2): **the group never pushes the decklists down unasked.** It's closed unless it holds news.
+
+## R2 · About in the banner, proposal (`R2 - Home-About.dc.html`)
+
+| # | State | What it shows |
+|---|---|---|
+| A1 | **About bump only** | `2 new in About: {titles}.` · `Show me`. ✕ marks it seen. |
+| A2 | **About + arrival** | Heading `New in the app` + ✕; About's line first, each line with its own link. |
+| A3 | **First-run** | On the checklist page: `What The 99 does: … on one page.` · `Show me`. No precons lines. |

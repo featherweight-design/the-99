@@ -1,6 +1,6 @@
-# Readiness · Upcoming precons R1
+# Readiness · Upcoming precons R2
 
-**Amber. R1, for audit (Hugh).** Not for build until approved.
+**Amber. R2, for audit (Hugh).** R2 applies the three R1 notes; G8 (About on the banner) needs Hugh's call. Not for build until approved.
 
 | Check | State |
 |---|---|

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upcoming precons R2 · Hugh's three notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.call{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 14px;padding:16px 0;border-top:1px solid #1A1F2B}
+.n{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5C86C9;padding-top:2px}
+.q{font-size:12px;color:#7C8A8C;font-family:'IBM Plex Mono',monospace}
+.a{font-size:16px;font-weight:600;color:#C6D2D3;margin:2px 0 4px}
+.w{font-size:13.5px;line-height:1.6;color:#B3C0C2;margin:0;text-wrap:pretty}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1300px;box-sizing:border-box;padding:48px 56px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;align-items:center;gap:14px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#121217;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:.08em">R2</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Upcoming precons · Hugh’s R1 notes, 2026-10-14</span>
+  </div>
+  <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:32px;max-width:1000px">Fold the group, quiet the rows, and give About the same banner</h1>
+  <div style="display:flex;flex-direction:column;max-width:1060px">
+    <sc-for list="{{ calls }}" as="c" hint-placeholder-count="4">
+      <div class="call"><span class="n">{{ c.n }}</span><div style="display:flex;flex-direction:column"><span class="q">{{ c.q }}</span><span class="a">{{ c.a }}</span><p class="w">{{ c.w }}</p></div></div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { calls: [
+      { n: "01", q: "“Announced sections should be collapsible”", a: "The group’s heading is a disclosure, closed by default.",
+        w: "Closed, the group costs one heading row (34px at 900, 44px at 390), and its count says “2 sets · next Nov 13”. It opens by itself only when it holds a set this reader hasn’t seen, or when the reader arrives from the banner’s link. That visit marks the set seen, so the next visit is closed again. A press opens or closes it, and that choice is remembered per browser. Tiles and rows share it. Frames C1 to C3 and Q1." },
+      { n: "02", q: "“The row view … feels incredibly busy”", a: "A set row is a precon row: one thumb, three short lines, cards on demand.",
+        w: "R1 printed every name as one wrapping mono line, about five lines of text at 390 for Star Trek. R2 takes the precon row’s anatomy, so a set reads the way the rows below it read. The name and the countdown go where a precon has its name and “you own”. The first revealed commander “and 14 more” goes where a precon names its commanders. The dots, code and date go on line 3. The thumb is the first revealed card. Pressing the row shows its cards, each named. Frames Q2 and Q3." },
+      { n: "03", q: "“Should we update the About notification to use this banner?”", a: "Yes. One band on Home holds both, with About’s line first.",
+        w: "It removes the only hard question R1 had (two notices on one load), the foot card’s reserved height on a phone, and the tab-bar note that waits behind the sheet. ✕ marks the About line seen. That changes today’s Later, which writes nothing, because a dismissed banner that keeps coming back reads as a bug. The cost is reach: today the sheet appears on whatever page a document load opens, and the banner lives on Home (and the first-run checklist). Home is where the app opens, so I’d take that. Frames A1 to A3." },
+      { n: "04", q: "How it ships", a: "As its own small handoff and PR, after the banner lands with upcoming precons.",
+        w: "It changes a shipped feature (About R6’s sheet) that every account already sees, and upcoming precons is meant to ship on its own. The banner component lands with this release. About moves onto it in a follow-up, behind the existing ABOUT_SHEET_ENABLED switch, with no new About entry, because it’s a restyle of a notice. Until then R1’s H5 holds: both show, and neither yields." },
+    ] };
+  }
+}
+</script>
+</body>
+</html>

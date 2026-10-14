@@ -2,7 +2,38 @@
 
 `design/design_handoff_the99_upcoming_precons/` · 2026-10-14 · mirrors `design_handoff_the99_precons/`
 
-**Status: R1, for audit (Hugh).** Source of truth: `docs/superpowers/design-briefs/2026-10-14-upcoming-precons.md`
+**Status: R2, for audit (Hugh).** R2 applies Hugh's three R1 notes (2026-10-14): `The 99 - Upcoming Precons (R2).dc.html`
+(the notes and answers), `R2 - Precons.dc.html` (C1–C3, Q1–Q3), `R2 - Home-About.dc.html` (A1–A3, a proposal). R1's files
+are kept beside them, unchanged. R2 wins where they differ.
+
+## R2 changes (supersede R1 where they differ)
+
+1. **The Announced group folds (note 1).** Its `<h2>` holds a button with `aria-expanded`, a `▸`/`▾` at the right, and
+   a closed count of `2 sets · next Nov 13`. It's **closed by default**. It opens by itself only on a visit that
+   draws a set this reader hasn't seen, or one that arrives from the banner's `#announced` link. Otherwise the
+   reader's last press wins, stored per browser as `the99:precons:announced`. Closed, it costs one heading row (34px
+   at 900, 44px at 390). Tiles and rows share it. The open/close animation is 160ms, none under reduced motion.
+2. **Rows are precon rows (note 2).** R1's wrapping list of names is gone. A set is a precon row in a dashed shell:
+   - a thumb showing the first revealed card, or the empty plate when none is revealed;
+   - line 1: the name, with `in 30 days` where a precon has `you own`;
+   - line 2: `Christine Chapel, Combat Medic and 14 more` (every name when there are one or two; `No commanders
+     revealed yet` when there are none);
+   - line 3: the set's dots, then `TRC · Nov 13, 2026`.
+
+   Pressing the row opens its cards (the tile block's strip) under a dashed rule. Each row is its own disclosure,
+   closed every visit. A set with nothing revealed doesn't open.
+3. **About on the same banner (note 3), proposed.** The About sheet's announcement becomes a line in the Home banner:
+   - `2 new in About: …titles. Show me`, capped by `sheetTitles`, About's line first;
+   - one ✕ for the whole banner, which marks everything seen, the About line included (today's Later writes
+     nothing);
+   - the first-run sheet becomes a line on the checklist page.
+
+   The sheet, its reserved height and the tab-bar note that waits behind it all go. The cost is reach: the banner is
+   on Home only, while the sheet appeared on any page a document load opened. **Recommended: ship it as its own
+   follow-up handoff and PR**, behind `ABOUT_SHEET_ENABLED`, with no new About entry, once the banner component has
+   landed with this release. Until then R1 H5 holds. **Hugh to confirm (G8).**
+
+*R1 status:* R1, for audit. Source of truth: `docs/superpowers/design-briefs/2026-10-14-upcoming-precons.md`
 (branch `brief/upcoming-precons`). Canvas: `The 99 - Upcoming Precons (R1).dc.html` (the calls), frames
 `R1 - Precons-Tiles`, `R1 - Precons-Rows`, `R1 - Precons-Landing`, `R1 - Home-Banner`, each at 900 (Home: 1280) and
 390. About entry: `The 99 - About · Upcoming Precons Entry.dc.html`, `about · upcoming precons.ts`. STATES
@@ -104,6 +135,8 @@ per-entry artboard: `The 99 - About · Upcoming Precons Entry.dc.html`, slots in
   which needs a precon-level key.
 - **G6 · 30-day banner window.** A design choice so a reader back after a long break isn't shown stale news. It is
   a constant, not a lock.
+- **G8 · About on the banner.** R2 proposes it and recommends a separate follow-up (R2 change 3). Hugh to confirm,
+  and whether Home-only reach is acceptable.
 - **G7 · Switch name.** `UPCOMING_PRECONS_ENABLED` is a placeholder. One switch covers both surfaces, since the
   banner's link has nowhere to go without the group.
 
