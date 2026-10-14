@@ -4,7 +4,7 @@
 
 import { drawsMarker } from "../../lib/decks/availability";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { colorLabel } from "../../lib/decks/format";
 import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score";
@@ -31,6 +31,7 @@ import {
 } from "./synergy-selection";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { PRIMARY } from "../ui/button";
+import { ArtLayer } from "../ui/art-layer";
 
 // ─── Fit Hero (right column top section) ─────────────────────────────────────
 
@@ -581,16 +582,16 @@ export function CommanderDetail({
             className="relative rounded-[14px] overflow-hidden"
             style={{
               aspectRatio: "63/88",
-              background: c.imageUri ? undefined : gradient,
-              backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
+              // The ground, with the art fading in over it (`ArtLayer`).
+              background: c.imageUri ? "var(--elevated)" : gradient,
               // One ring alpha across every card face and thumb in the app: `.4`
               // is `IdentityPips`' own, and this face shipped `.3` while two
               // thumbs shipped `.35`.
               boxShadow: `${CARD_ART_RING}, 0 20px 50px rgba(0,0,0,0.5)`,
             }}
           >
+            {/* Desktop only (`hidden sm:grid` above): a phone fetches none of it. */}
+            {c.imageUri ? <ArtLayer src={c.imageUri} media="(min-width: 40rem)" style={{ boxShadow: CARD_ART_RING }} /> : null}
             <FullCardTrigger oracleId={c.oracleId} placement="commander-desktop" />
           </div>
 

@@ -481,13 +481,15 @@ const READ_THUMBS = `() => {
     .map((el) => {
       const s = getComputedStyle(el);
       const r = el.getBoundingClientRect();
+      // The art and its crop sit on the thumb's own layer since the card-art fades (\`ArtLayer\`), not the host.
+      const art = [el, ...el.querySelectorAll('*')].find((e) => getComputedStyle(e).backgroundImage.includes('url('));
       return {
         size: el.getAttribute('data-commander-thumb'),
         box: [Math.round(r.width), Math.round(r.height)],
         radius: s.borderTopLeftRadius,
         shadow: s.boxShadow,
-        position: s.backgroundPosition,
-        hasArt: s.backgroundImage.includes('url('),
+        position: art ? getComputedStyle(art).backgroundPosition : s.backgroundPosition,
+        hasArt: Boolean(art),
       };
     });
 }`;

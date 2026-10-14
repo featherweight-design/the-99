@@ -1,10 +1,11 @@
-import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
+import { ART_STRIPES } from "../../lib/collection/browse";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { HydratedImg } from "./hydrated-art";
+import { ArtLayer } from "./art-layer";
 
 /**
  * A commander's card face at thumb size. Five renders each invented one of
- * these — the deck rail's phone spine, the create picker's candidate row and its
+ * these — a phone spine since retired, the create picker's candidate row and its
  * selected summary, the pre-filled flow's phone thumb and the partner slot — at
  * five geometries and three ring alphas, which is the drift this round exists to
  * end.
@@ -102,6 +103,10 @@ export function CommanderThumb({
       </span>
     );
   }
+  // No art falls back to the identity, and an unknown identity falls back to the stripes: B6's two halves,
+  // which are two different facts rather than one with a threshold. With art, the plain ground shows while it
+  // travels and the art fades in over it (`ArtLayer`, card-art fades PR 3).
+  const ground = imageUri ? THUMB_GROUND : colorIdentity === null ? ART_STRIPES : commanderGradient(colorIdentity);
   return (
     <span
       // Decorative at every call site: each row names its commander in text
@@ -113,22 +118,18 @@ export function CommanderThumb({
       // and a probe matching on aspect alone reported those as commander thumbs
       // and failed them against a treatment they have nothing to do with.
       data-commander-thumb={size}
-      className={`block shrink-0 ${box.radius} ${className}`}
-      style={{
-        width: box.width,
-        height: box.height,
-        // `center top`, not `center`: the face is at the top of a card, and a
-        // centred crop of a 63/88 frame at this size is mostly type box.
- // No art falls back to the identity, and an unknown identity falls back to
-        // the stripes: B6's two halves, which are two different facts rather
-        // than one with a threshold.
-        background: imageUri
-          ? `${cssUrl(imageUri)} center top/cover, ${THUMB_GROUND}`
-          : colorIdentity === null
-            ? ART_STRIPES
-            : commanderGradient(colorIdentity),
-        boxShadow: CARD_ART_RING,
-      }}
-    />
+      className={`relative block shrink-0 overflow-hidden ${box.radius} ${className}`}
+      style={{ width: box.width, height: box.height, background: ground, boxShadow: CARD_ART_RING }}
+    >
+      {imageUri ? (
+        <>
+          {/* `center top`, not `center`: the face is at the top of a card, and a centred crop of a 63/88 frame at
+              this size is mostly type box. */}
+          <ArtLayer src={imageUri} style={{ backgroundPosition: "center top" }} />
+          {/* The ring, drawn OVER the art: an inset shadow on this box paints under its children. */}
+          <span className="pointer-events-none absolute inset-0 rounded-[inherit]" style={{ boxShadow: CARD_ART_RING }} />
+        </>
+      ) : null}
+    </span>
   );
 }

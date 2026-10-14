@@ -34,6 +34,8 @@ import { BuyTag } from "./buy-tag";
 import { MutationError } from "./mutation-error";
 import { ModalChrome } from "./receipt-modal";
 import { landOnReceipt } from "./swap-receipt";
+import { ArtLayer } from "../ui/art-layer";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const copy = swapToolsCopy.sheet;
 
@@ -54,14 +56,15 @@ function Thumb({ imageUri, side }: { imageUri: string | null; side: keyof typeof
   return (
     <span
       aria-hidden="true"
-      className="flex-none w-[22px] h-[31px] rounded-[3px]"
+      className="relative flex-none w-[22px] h-[31px] overflow-hidden rounded-[3px]"
       style={{
         border: `1px solid ${border}`,
-        background: imageUri
-          ? `center / cover no-repeat url("${imageUri}")`
-          : HATCH[side],
+        // The hatch where there is no art; with art, a plain ground it fades in over (`ArtLayer`).
+        background: imageUri ? "var(--surface-raised)" : HATCH[side],
       }}
-    />
+    >
+      {imageUri ? <ArtLayer src={imageUri} /> : null}
+    </span>
   );
 }
 
@@ -734,7 +737,7 @@ export function StandInsSheet({
           </p>
         ) : null}
 
-        {model?.groups.map((group) => (
+        <ArrivalOrder>{model?.groups.map((group) => (
           <StandInGroup
             key={group.heading}
             group={group}
@@ -757,7 +760,7 @@ export function StandInsSheet({
               )
             )}
           </StandInGroup>
-        ))}
+        ))}</ArrivalOrder>
 
         {model?.foot && provenance ? (
           <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>{copy.foot(provenance.when)}</p>
