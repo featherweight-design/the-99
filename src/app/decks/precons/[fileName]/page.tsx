@@ -10,6 +10,7 @@ import { preconsCopy } from "../../../../lib/copy/precons";
 import { preconsEnabled } from "../../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { loadOpenPrecon } from "../../../../lib/precons/open-read";
+import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
 import { OpenPreconView } from "../../../../components/decks/precons/open-precon-view";
 
 export const metadata: Metadata = { title: preconsCopy.list.title };
@@ -35,5 +36,5 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
   if (precon.kind === "twin") {
     redirect(`/decks/precons/${encodeURIComponent(precon.plainFileName)}${from === "new" ? "?from=new" : ""}`);
   }
-  return <OpenPreconView precon={precon} fromNew={from === "new"} />;
+  return <OpenPreconView precon={precon} fromNew={from === "new"} canOwn={collectionEditEnabled(env)} />;
 }

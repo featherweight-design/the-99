@@ -140,6 +140,8 @@ export const preconsCopy = {
       label: "I own this precon. Add its cards and tokens to my collection.",
       addedOn: (date: string) => `You added this precon on ${date}`,
       addFailed: "Couldn’t add the cards. Nothing was saved.",
+      /** The add threw, so it may have committed with its response lost: no claim of a rollback. */
+      addUnsure: "Couldn’t confirm the cards were added. Try again and they won’t be added twice.",
       /** The cards went in and the deck did not start: never `failed`, whose "Nothing was saved" would be false. */
       addedNotStarted: "The cards are in your collection, but we couldn’t start the deck.",
     },

@@ -6,7 +6,7 @@
  */
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
-import { collectionHistory, precons } from "../../db/schema";
+import { collectionHistory, decks, precons } from "../../db/schema";
 import { isUuid } from "../uuid";
 import { committedAnswer } from "./add";
 import { preconSource, standingPreconAdds } from "./added";
@@ -42,7 +42,15 @@ export function receiptEntryQuery(userId: string, entryId: string) {
     .where(and(eq(collectionHistory.id, entryId), eq(collectionHistory.userId, userId)));
 }
 
-export async function readPreconAddReceipt(userId: string, entryId: unknown): Promise<PreconAddReceipt | null> {
+/**
+ * Whether the deck was started from the precon the entry added: the deck's `built_from_precon` is the plain edition,
+ * and a Collector's Edition twin adds its OWN box, so the entry's file may be a twin of the deck's. Pure.
+ */
+export function sameBox(deckBuiltFrom: string | null | undefined, entryFile: string, entryFileTwinOf: string | null | undefined): boolean {
+  return deckBuiltFrom != null && (deckBuiltFrom === entryFile || deckBuiltFrom === entryFileTwinOf);
+}
+
+export async function readPreconAddReceipt(userId: string, entryId: unknown, deckId: string): Promise<PreconAddReceipt | null> {
   if (typeof entryId !== "string" || !isUuid(entryId)) return null;
   const [entry] = await receiptEntryQuery(userId, entryId);
   const fileName = receiptFileName(entry);
@@ -51,6 +59,9 @@ export async function readPreconAddReceipt(userId: string, entryId: unknown): Pr
   if (!standing.some((a) => a.id === entryId)) return null;
   const answer = await committedAnswer(userId, fileName, entryId);
   if (!answer || !answer.ok) return null;
-  const [head] = await db.select({ name: precons.name }).from(precons).where(eq(precons.fileName, fileName));
+  // Only on the deck the start made: an entry from some other box draws nothing here, Undo included.
+  const [deck] = await db.select({ builtFrom: decks.builtFromPrecon }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+  const [head] = await db.select({ name: precons.name, twinOf: precons.twinOf }).from(precons).where(eq(precons.fileName, fileName));
+  if (!sameBox(deck?.builtFrom, fileName, head?.twinOf)) return null;
   return { entryId, name: head?.name ?? fileName, cards: answer.cards, copies: answer.copies, foil: answer.foil, tokens: answer.tokens };
 }

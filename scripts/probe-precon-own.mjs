@@ -77,6 +77,13 @@ let fixtureIds = [];
 async function cleanup() {
   if (userId) {
     await sql`delete from decks where user_id = ${userId} and built_from_precon = ${FILE}`;
+    // The adds this probe wrote and the reverts that undid them: reverted_by first (an add points at its revert),
+    // then the reverts (which point back at the add), then the adds, so repeated runs leave the account's History as found.
+    const source = `precon:${FILE}`;
+    await sql`update collection_history set reverted_by = null where user_id = ${userId} and source = ${source}`;
+    await sql`delete from collection_history where user_id = ${userId} and kind = 'revert'
+      and reverts_id in (select id from collection_history where user_id = ${userId} and source = ${source})`;
+    await sql`delete from collection_history where user_id = ${userId} and source = ${source}`;
     if (fixtureIds.length > 0) await sql`delete from collection_items where user_id = ${userId} and oracle_id = any(${fixtureIds}::uuid[])`;
   }
   await sql`delete from precons where file_name = ${FILE}`;

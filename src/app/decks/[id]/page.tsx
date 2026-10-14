@@ -280,7 +280,7 @@ export default async function DeckBuilderPage({
   // URL: the read answers only for the reader's own unreverted precon entry, and draws nothing otherwise.
   const preconAddedParam = query[PRECON_ADDED_PARAM];
   const preconAddReceiptRead = preconsEnabled(env) && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]) && typeof preconAddedParam === "string"
-    ? early(perf.timed("preconAddReceipt", () => readPreconAddReceipt(userId, preconAddedParam)).catch(() => null))
+    ? early(perf.timed("preconAddReceipt", () => readPreconAddReceipt(userId, preconAddedParam, id)).catch(() => null))
     : null;
   // The precon link's doors (R3): an unlinked deck's suggestion and the Versions foot row's picker,
   // counted at read and never stored (lock 2). Owner-scoped in its own SQL. A failed read draws

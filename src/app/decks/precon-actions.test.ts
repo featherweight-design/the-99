@@ -9,7 +9,7 @@ vi.mock("../../lib/switches/request", async () => {
 
 const state = vi.hoisted(() => ({
   selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
-  enabled: true, addedCopy: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
+  enabled: true, collectionEdit: true, addedCopy: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
   invalidated: [] as string[], warmed: [] as string[],
 }));
 
@@ -30,6 +30,7 @@ vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => state.enabled }
 vi.mock("../../lib/precons/add", () => ({
   addPreconForUser: async (...args: unknown[]) => { state.addCalls.push(args); return state.addResult; },
 }));
+vi.mock("../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => state.collectionEdit }));
 vi.mock("../../lib/collection/added-copy-flag", () => ({ addedCopyEnabled: () => state.addedCopy }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: (id: string) => state.invalidated.push(id) }));
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async (id: string) => { state.warmed.push(id); } }));
@@ -51,7 +52,7 @@ const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}
 
 beforeEach(() => {
   state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = [];
-  state.enabled = true; state.addedCopy = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
+  state.enabled = true; state.collectionEdit = true; state.addedCopy = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
 
@@ -128,6 +129,12 @@ describe("addPreconToCollection", () => {
   it("refuses while precons are off, adding nothing", async () => {
     state.enabled = false;
     await expect(addPreconToCollection("MultiverseReforged_FRC", ACTION)).rejects.toThrow("precons are off");
+    expect(state.addCalls).toEqual([]);
+  });
+
+  it("refuses while collection editing is off, as every collection write does, adding nothing", async () => {
+    state.collectionEdit = false;
+    await expect(addPreconToCollection("MultiverseReforged_FRC", ACTION)).rejects.toThrow("collection editing is off");
     expect(state.addCalls).toEqual([]);
   });
 

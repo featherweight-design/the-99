@@ -20,6 +20,7 @@ import { PRECON_ADDED_PARAM, PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "
 import { preconsEnabled } from "../../lib/precons/flag";
 import { addPreconForUser, type PreconAddResult } from "../../lib/precons/add";
 import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
+import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { warmCommanderScores } from "../../lib/recs/warm";
 import { isUuid } from "../../lib/uuid";
@@ -94,6 +95,8 @@ export async function addPreconToCollection(fileName: string, actionId: string):
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!preconsEnabled(env)) throw new Error("precons are off");
+  // A collection write, so it keeps the collection-edit rollout boundary every other write action keeps.
+  if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
   if (!isUuid(actionId)) throw new Error("bad action id");
   // A twin adds its OWN box, never its plain edition's: the cards are the same, the printings and

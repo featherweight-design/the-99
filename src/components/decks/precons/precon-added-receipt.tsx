@@ -21,7 +21,7 @@ import { ArrivalBandShell } from "../arrival-strip";
 const add = collectionEditCopy.add;
 const copy = preconsCopy.arrival.receipt;
 
-export function PreconAddedReceipt({ receipt, went = null, note, stripParam = false, onClose }: {
+export function PreconAddedReceipt({ receipt, went = null, note, stripParam = false, onClose, onReverted }: {
   receipt: PreconAddReceipt;
   /** Where each copy went, when the add's own response is at hand (the dialog's fallback); the ledger read has none. */
   went?: WentInputs | null;
@@ -29,7 +29,10 @@ export function PreconAddedReceipt({ receipt, went = null, note, stripParam = fa
   note?: string;
   /** Take `?added=` off the address on the first draw (the deck page). */
   stripParam?: boolean;
+  /** The receipt was dismissed or undone. */
   onClose?: () => void;
+  /** The add was UNDONE (not merely dismissed): whatever remembered it as made must forget it. */
+  onReverted?: () => void;
 }) {
   const router = useRouter();
   const [gone, setGone] = useState(false);
@@ -88,7 +91,7 @@ export function PreconAddedReceipt({ receipt, went = null, note, stripParam = fa
           title={collectionEditCopy.history.addedFromPrecon(receipt.name)}
           when={collectionEditCopy.copies.undoWhen}
           onClose={() => setUndoing(false)}
-          onReverted={() => { setUndoing(false); setGone(true); onClose?.(); router.refresh(); }}
+          onReverted={() => { setUndoing(false); setGone(true); onReverted?.(); onClose?.(); router.refresh(); }}
         />
       )}
     </>

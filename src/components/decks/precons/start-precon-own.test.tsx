@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { PreconRow } from "../../../lib/precons/list";
 
 const create = vi.hoisted(() => vi.fn());
 const add = vi.hoisted(() => vi.fn());
 vi.mock("../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: create, addPreconToCollection: add }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }), unstable_rethrow: (e: unknown) => { if (String((e as Error)?.message).startsWith("NEXT_REDIRECT")) throw e; } }));
-vi.mock("../../collection/revert-confirm", () => ({ RevertConfirm: () => <div data-testid="revert" /> }));
+let reverted: () => void = () => {};
+vi.mock("../../collection/revert-confirm", () => ({ RevertConfirm: (p: { onReverted: () => void }) => { reverted = p.onReverted; return <div data-testid="revert" />; } }));
 vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 vi.mock("../../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 import { StartPrecon } from "./start-precon";
@@ -20,7 +21,7 @@ const ID = "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11";
 const added = { ok: true, entryId: ID, cards: 99, copies: 100, foil: 2, placed: [], tokens: { marked: 9, names: ["Soldier"] } };
 
 const open = (addedOn: string | null = null) => {
-  render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn={addedOn} />);
+  render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn={addedOn} canOwn />);
   fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
 };
 const own = () => screen.getByRole("checkbox", { name: /I own this precon/ });
@@ -114,5 +115,46 @@ describe("Start dialog: I own this precon", () => {
     await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
     expect(add).toHaveBeenCalledTimes(2);
     expect(add.mock.calls[0][1]).toBe(add.mock.calls[1][1]);
+  });
+
+  it("offers no box when collection editing is off for the reader", () => {
+    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn="2026-10-13T09:00:00.000Z" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.queryByText(/You added this precon on /)).toBeNull();
+    expect(screen.getByText("picked from the copies you hold")).toBeInTheDocument();
+  });
+
+  it("does not claim a rollback when the add THROWS, and retries it under the same id", async () => {
+    add.mockRejectedValueOnce(new Error("network")).mockResolvedValueOnce(added);
+    create.mockResolvedValueOnce(undefined);
+    open();
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t confirm the cards were added. Try again and they won’t be added twice."));
+    expect(screen.getByRole("alert")).not.toHaveTextContent("Nothing was saved");
+    expect(create).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(create).toHaveBeenCalled());
+    expect(add.mock.calls[0][1]).toBe(add.mock.calls[1][1]);
+  });
+
+  it("forgets the add once the fallback receipt's Undo has reverted it, so a new tick is a new add", async () => {
+    add.mockResolvedValue(added);
+    create.mockRejectedValueOnce(new Error("boom"));
+    open();
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(screen.getByText("100 copies added")).toBeInTheDocument());
+    const firstId = add.mock.calls[0][1];
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    act(() => reverted());
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    expect(screen.queryByText(/You added this precon on /)).toBeNull();
+    create.mockResolvedValueOnce(undefined);
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(2));
+    expect(add.mock.calls[1][1]).not.toBe(firstId);
   });
 });
