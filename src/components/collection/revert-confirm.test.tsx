@@ -97,7 +97,9 @@ describe("RevertConfirm", () => {
     expect(dialog.className).not.toMatch(/overflow-y-auto|max-h-/);
     expect(screen.getByTestId("revert-rows-loading")).toHaveClass("anim-skeleton");
     const cancel = screen.getByRole("button", { name: "Cancel" });
-    const body = () => screen.getByRole("heading").closest(".overflow-y-auto");
+    const body = () => (screen.queryByTestId("revert-rows-loading") ?? screen.getByText("Card 11")).closest(".overflow-y-auto");
+    // The title and the column heads stay pinned: the title is above the scroll box, the heads stick in it.
+    expect(screen.getByRole("heading").closest(".overflow-y-auto")).toBeNull();
     expect(body()).not.toBeNull();
     expect(body()!.contains(cancel)).toBe(false);
 
@@ -107,6 +109,8 @@ describe("RevertConfirm", () => {
     expect(screen.getByText("Card 11")).toBeTruthy();
     expect(heights()).toEqual(height);
     expect(body()!.contains(screen.getByText("Card 11"))).toBe(true);
+    expect(body()!.contains(screen.getByTestId("revert-columns"))).toBe(true);
+    expect(screen.getByTestId("revert-columns").className).toMatch(/\bsticky\b.*-top-\[4px\].*\bbg-\[color:var\(--surface-rail\)\]/);
     expect(body()!.contains(screen.getByRole("button", { name: "Revert" }))).toBe(false);
   });
 
