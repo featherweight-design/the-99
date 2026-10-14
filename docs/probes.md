@@ -2094,6 +2094,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   cleared, and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. Mutation-checked:
   dropping the viewer predicate from the friendship join makes the stranger see the list.
+- `pnpm probe:upcoming-precons` proves the upcoming-precons backend against a real database: that only a non-digital
+  Commander set released after today is upcoming (not one released today, a past one, a digital one or an
+  expansion), soonest first, with its parent set's name; that the first-seen stamp writes a kind's first run as a
+  BASELINE (arrival unknown, never claimed) and later runs as arrivals, never moving a stamp already written; and
+  that the per-reader seen marker accumulates each code once and belongs to one reader. It writes inside ONE
+  transaction it rolls back, so nothing survives, and still fails closed: `PROBE_DB_BRANCH` must name the branch
+  `DATABASE_URL` reports, and staging and production are refused by id. Mutation-checked five ways (the date
+  bound, the code tiebreak between two sets on one date, the baseline flag in the stamp, the baseline null in the read, the seen union's dedupe).
 - `pnpm probe:admin-switches` proves the admin's override writes (admin plan 8c) against a real database: the
   switch constraint takes every registry name and refuses another; a set writes one row and one `override_set`, and
   a second set on the same target updates it and records the old value; a no-op records nothing; a clear deletes the
