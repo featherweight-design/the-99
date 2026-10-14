@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Token tile · desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1700px;box-sizing:border-box;padding:40px 48px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:30px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Token tile · Card view · desktop · R2.1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">One 30px line under the tile</h2>
+    <p style="margin:0;max-width:860px;font-size:13px;line-height:1.55;color:#95A4A6">The deck's Tokens group at <code class="m" style="font-size:12px">minmax(178px, 1fr)</code>, 20px gap, tiles stretched to one height. The foot is one 30px line with a 24px press. The makers and I have one live in the token's details; a failed press is a toast at the deck pane's bottom left.</p>
+  </div>
+
+  <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:20px;align-items:stretch">
+    <sc-for list="{{tiles}}" as="t" hint-placeholder-count="6">
+      <li style="display:flex;flex-direction:column;gap:5px">
+        <span class="m" style="font-size:9.5px;color:#7C8A8C">{{t.label}}</span>
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;border-radius:10px;border:1px solid {{t.edge}};background:#1E1F26">
+          <span class="m" style="display:flex;align-items:center;justify-content:center;aspect-ratio:63/88;background:{{t.art}};border-radius:0 0 10px 10px;font-size:9px;color:#C6D2D3">{{t.name}}</span>
+          <span style="display:flex;flex-direction:column;gap:3px;padding:8px 10px 6px">
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;box-sizing:border-box;border-radius:50%;{{t.dot}}"></span><span style="width:12px;height:12px;border-radius:50%;background:{{t.pip}}"></span></span>
+            <span style="font-size:13px;color:#C6D2D3">{{t.name}}</span>
+            <span class="m" style="font-size:10.5px;color:#95A4A6">{{t.type}}</span>
+          </span>
+          <sc-if value="{{t.hasRules}}" hint-placeholder-val="{{false}}">
+            <span class="m" style="padding:0 10px 6px;font-size:10.5px;line-height:1.5;color:#95A4A6">{{t.rules}}</span>
+          </sc-if>
+          <span style="flex:1"></span>
+          <div style="border-top:1px solid #1A1F2B;height:30px;display:flex;align-items:center;padding:0 7px">
+            <sc-if value="{{t.isJoin}}" hint-placeholder-val="{{true}}">
+              <button type="button" class="m" style="flex:1;height:24px;padding:0 8px;background:transparent;border:1px solid #2E3340;border-radius:6px;font-size:11px;font-weight:500;color:#B3C0C2;opacity:{{t.op}}">Add to Shopping</button>
+            </sc-if>
+            <sc-if value="{{t.isJoined}}" hint-placeholder-val="{{false}}">
+              <button type="button" class="m" style="flex:1;height:24px;padding:0 8px;background:rgba(92,134,201,.14);border:1px solid #5C86C9;border-radius:6px;font-size:11px;font-weight:500;color:#C6D2D3">✓ In Shopping</button>
+            </sc-if>
+            <sc-if value="{{t.isUpload}}" hint-placeholder-val="{{false}}">
+              <span class="m" style="padding:0 3px;font-size:10.5px;color:#95A4A6">in your collection</span>
+            </sc-if>
+            <sc-if value="{{t.isHand}}" hint-placeholder-val="{{false}}">
+              <span class="m" style="padding:0 3px;font-size:10.5px;color:#95A4A6">✓ I have one</span>
+            </sc-if>
+          </div>
+        </div>
+      </li>
+    </sc-for>
+  </ul>
+
+  <div style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:32px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Token details · the In this deck box</span>
+      <div style="position:relative;height:560px;border-radius:12px;overflow:hidden;background:#0b0b0e;border:1px solid #1A1F2B;display:flex;align-items:center;justify-content:center">
+        <div style="width:640px;background:#22232B;border:1px solid #2E3340;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.5);display:flex;gap:20px;padding:20px">
+          <span class="m" style="flex:none;width:220px;aspect-ratio:63/88;border-radius:10px;background:#5A3E3A;display:flex;align-items:center;justify-content:center;font-size:10px">Goblin</span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:20px;font-weight:600">Goblin</span>
+            <span class="m" style="font-size:11.5px;color:#95A4A6">Token Creature — Goblin · 1/1</span>
+            <span class="m" style="font-size:11px;color:#7C8A8C;margin-top:6px">Set · TM2C 12</span>
+            <span class="m" style="font-size:11.5px;color:#B3C0C2;padding-bottom:6px">$0.25 · Mana Pool ↗</span>
+            <div style="border:1px solid #1A1F2B;border-radius:10px;background:#1E1F26;display:flex;flex-direction:column">
+              <span class="k" style="padding:10px 12px 2px;font-size:10px">In this deck</span>
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 12px 8px">
+                <button type="button" class="m" style="height:28px;padding:0 6px;background:transparent;border:0;font-size:11px;color:#95A4A6;text-decoration:underline dashed #424755;text-underline-offset:3px">I have one</button>
+              </div>
+              <div style="border-top:1px solid #1A1F2B;padding:8px 12px 4px">
+                <span class="m" style="font-size:10.5px;color:#7C8A8C">Generated by 3 cards</span>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px">
+                  <sc-for list="{{makers}}" as="mk" hint-placeholder-count="3">
+                    <span style="min-height:30px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#C6D2D3;text-decoration:underline;text-decoration-color:rgba(92,134,201,.55);text-underline-offset:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{mk}}</span>
+                  </sc-for>
+                </div>
+              </div>
+              <span class="m" style="padding:0 12px 10px;font-size:10px;color:#7C8A8C">pictured and sent: TM2C · $0.25 · cheapest of 4 printings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="margin:0;font-size:12.5px;line-height:1.55;color:#B3C0C2">The card's In this deck box, for a token, holding only what the tile has no room for: I have one, then today's <code class=\"m\" style=\"font-size:11.5px\">TokenMakers</code> in its row layout, two columns for 2 to 6 names, each opening that card's details stacked over this one. The Shopping press lives on the tile alone, as a card's does. Prev and Next still page the deck's tokens.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">A press that fails · deck toast</span>
+      <div style="position:relative;height:560px;border-radius:12px;overflow:hidden;background:#121217;border:1px solid #1A1F2B">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:56px;background:#181920;border-right:1px solid #1A1F2B"></div>
+        <div style="position:absolute;left:72px;right:16px;top:16px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;opacity:.55">
+          <span style="aspect-ratio:63/88;border-radius:10px;background:#3F4552"></span>
+          <span style="aspect-ratio:63/88;border-radius:10px;background:#4D4A3A"></span>
+          <span style="aspect-ratio:63/88;border-radius:10px;background:#3E4A4D"></span>
+        </div>
+        <div role="alert" style="position:absolute;left:72px;bottom:16px;width:400px;min-height:52px;display:flex;align-items:flex-start;gap:10px;padding-left:14px;padding-right:6px;border-radius:10px;border:1px solid #2E3340;background:#2D2E35;box-shadow:0 12px 30px rgba(0,0,0,.45)">
+          <span style="display:flex;flex-direction:column;gap:3px;padding:10px 0">
+            <span style="font-size:13.5px;line-height:1.35;color:#C6D2D3">We couldn’t save that. The token is unchanged.</span>
+            <span class="m" style="font-size:11px;color:#95A4A6">Spirit token</span>
+          </span>
+        </div>
+      </div>
+      <p style="margin:0;font-size:12.5px;line-height:1.55;color:#B3C0C2"><code class="m" style="font-size:11.5px">ToastFrame</code> at <code class="m" style="font-size:11.5px">placement="deck"</code>: bottom left of the deck pane from md, 440 wide. <code class="m" style="font-size:11.5px">role="alert"</code>, the copy unchanged (<code class="m" style="font-size:11.5px">tokensCopy.row.refused</code>), the token's name as the detail. No action and no Undo, since nothing changed; 8 seconds, held on hover and focus. The same toast serves the row view and the details box, so all three surfaces fail one way.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const owned = 'background:#6FA368';
+    const not = 'border:1px dashed #7C8A8C';
+    const unknown = 'background:transparent';
+    const base = { hasRules: false, rules: '', isJoin: false, isJoined: false, isUpload: false, isHand: false, op: 1, edge: '#1A1F2B' };
+    const t = (o) => Object.assign({}, base, o);
+    return {
+      tiles: [
+        t({ label: 'Unowned', name: 'Goblin', type: 'Creature · 1/1', art: '#5A3E3A', pip: '#D3202A', dot: not, isJoin: true }),
+        t({ label: 'Joined', name: 'Treasure', type: 'Artifact', art: '#4D4A3A', pip: '#8A8A8A', dot: not, isJoined: true }),
+        t({ label: 'Owned by upload', name: 'Clue', type: 'Artifact', art: '#3E4A4D', pip: '#8A8A8A', dot: owned, isUpload: true }),
+        t({ label: 'Owned by hand mark', name: 'Food', type: 'Artifact', art: '#4D433A', pip: '#8A8A8A', dot: owned, isHand: true }),
+        t({ label: 'Pending, hover', name: 'Soldier', type: 'Creature · 1/1', art: '#4D4D44', pip: '#F8F6D8', dot: unknown, isJoin: true, op: 0.6, edge: '#2E3340' }),
+        t({ label: 'Joined, no maker left', name: 'Spirit', type: 'Creature · 1/1', art: '#3F4552', pip: '#F8F6D8', dot: not, isJoined: true, hasRules: true, rules: 'Flying' })
+      ],
+      makers: ['Beetleback Chief', 'Goblin Instigator', 'Krenko, Mob Boss']
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Token tile · desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1700px;box-sizing:border-box;padding:40px 48px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:26px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Token tile · Card view · desktop · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">Same foot, 24px controls</h2>
+    <p style="margin:0;max-width:860px;font-size:13px;line-height:1.55;color:#95A4A6">The deck's Tokens group at <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">minmax(178px, 1fr)</code>, 20px gap. The foot's two lines are 28px from <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">md</code>, the join press 24px. Same order and same fold as the phone, so the tile is one component with one set of rules.</p>
+  </div>
+
+  <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:20px;align-items:stretch">
+    <sc-for list="{{tiles}}" as="t" hint-placeholder-count="8">
+      <li style="display:flex;flex-direction:column;gap:5px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#7C8A8C">{{t.label}}</span>
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;border-radius:10px;border:1px solid {{t.edge}};background:#1E1F26">
+          <span style="display:flex;align-items:center;justify-content:center;aspect-ratio:63/88;background:{{t.art}};border-radius:0 0 10px 10px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C6D2D3">{{t.name}}</span>
+          <span style="display:flex;flex-direction:column;gap:3px;padding:8px 10px 6px">
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;box-sizing:border-box;border-radius:50%;{{t.dot}}"></span><span style="width:12px;height:12px;border-radius:50%;background:{{t.pip}}"></span></span>
+            <span style="font-size:13px;color:#C6D2D3">{{t.name}}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A4A6">{{t.type}}</span>
+          </span>
+          <sc-if value="{{t.hasRules}}" hint-placeholder-val="{{false}}">
+            <span style="padding:0 10px 6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:#95A4A6">{{t.rules}}</span>
+          </sc-if>
+          <span style="flex:1"></span>
+          <div style="border-top:1px solid #1A1F2B;display:flex;flex-direction:column;padding:0 7px">
+            <div style="height:30px;display:flex;align-items:center">
+              <sc-if value="{{t.isJoin}}" hint-placeholder-val="{{true}}">
+                <button type="button" aria-pressed="false" style="height:24px;padding:0 9px;background:transparent;border:1px solid #2E3340;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;color:#B3C0C2;opacity:{{t.op}}">Add to Shopping</button>
+              </sc-if>
+              <sc-if value="{{t.isJoined}}" hint-placeholder-val="{{false}}">
+                <button type="button" aria-pressed="true" style="height:24px;padding:0 9px;background:rgba(92,134,201,.14);border:1px solid #5C86C9;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;color:#C6D2D3">✓ In Shopping</button>
+              </sc-if>
+              <sc-if value="{{t.isUpload}}" hint-placeholder-val="{{false}}">
+                <span style="padding:0 3px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A4A6">in your collection</span>
+              </sc-if>
+              <sc-if value="{{t.isHand}}" hint-placeholder-val="{{false}}">
+                <button type="button" aria-pressed="true" style="height:24px;padding:0 3px;background:transparent;border:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;color:#5C86C9">✓ I have one</button>
+              </sc-if>
+            </div>
+            <sc-if value="{{t.refused}}" hint-placeholder-val="{{false}}">
+              <span role="alert" style="padding:0 3px 6px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.45;color:#5F6D6E">We couldn’t save that. The token is unchanged.</span>
+            </sc-if>
+            <sc-if value="{{t.hasMaker}}" hint-placeholder-val="{{true}}">
+              <button type="button" aria-expanded="{{t.openAttr}}" style="height:28px;display:flex;align-items:center;gap:6px;padding:0 3px;background:transparent;border:0;border-top:1px solid #1A1F2B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C;text-align:left">
+                <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.from}}</span>
+                <span style="color:#95A4A6">{{t.chev}}</span>
+              </button>
+            </sc-if>
+            <sc-if value="{{t.orphan}}" hint-placeholder-val="{{false}}">
+              <span style="height:28px;display:flex;align-items:center;padding:0 3px;border-top:1px solid #1A1F2B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C">from no card in this deck</span>
+            </sc-if>
+            <sc-if value="{{t.open}}" hint-placeholder-val="{{false}}">
+              <div style="display:flex;flex-direction:column;padding:2px 0 8px">
+                <sc-if value="{{t.foldHave}}" hint-placeholder-val="{{true}}">
+                  <button type="button" aria-pressed="false" style="align-self:flex-start;height:24px;padding:0 3px;background:transparent;border:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A4A6;text-decoration:underline dashed #424755;text-underline-offset:3px">I have one</button>
+                </sc-if>
+                <span style="display:flex;align-items:center;gap:7px;height:28px;padding:0 3px"><span style="width:15px;height:21px;border-radius:2px;background:#5A3E3A"></span><span style="font-size:11.5px;color:#C6D2D3">Krenko, Mob Boss</span></span>
+                <span style="display:flex;align-items:center;gap:7px;height:28px;padding:0 3px"><span style="width:15px;height:21px;border-radius:2px;background:#4A3A3A"></span><span style="font-size:11.5px;color:#C6D2D3">Goblin Instigator</span></span>
+                <span style="display:flex;align-items:center;gap:7px;height:28px;padding:0 3px"><span style="width:15px;height:21px;border-radius:2px;background:#3E3A4A"></span><span style="font-size:11.5px;color:#C6D2D3">Beetleback Chief</span></span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </li>
+    </sc-for>
+  </ul>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px">
+    <div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">One height per row</span>
+      <p style="margin:0;font-size:12.5px;line-height:1.55;color:#B3C0C2">The grid goes from <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">items-start</code> to stretch, as the precon tiles already do. Rules text sits in the frame under the caption, at most three lines. The space a shorter tile gains goes above its foot, so feet line up along the row. An open fold grows its own row only.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">Matches the deck tile</span>
+      <p style="margin:0;font-size:12.5px;line-height:1.55;color:#B3C0C2">Nothing is drawn over the art, as on <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">DeckCardTile</code>. The art still opens card details. Hover lifts the border to <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">--border-strong</code> (the Pending tile shows it) and, with item 3, brightens the art.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">Pending and refused</span>
+      <p style="margin:0;font-size:12.5px;line-height:1.55;color:#B3C0C2">A pending press keeps its label, takes <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">aria-busy</code> and draws at 60%. A refusal is one line inside the foot, under the state line, in <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">--fg-locked</code> as today. Ownership never takes a warning color.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const owned = 'background:#6FA368';
+    const not = 'border:1px dashed #7C8A8C';
+    const unknown = 'background:transparent';
+    const base = { hasRules: false, rules: '', isJoin: false, isJoined: false, isUpload: false, isHand: false, refused: false, hasMaker: true, orphan: false, open: false, foldHave: false, op: 1, chev: '⌄', openAttr: 'false', from: 'from Krenko and 2 more', edge: '#1A1F2B' };
+    const t = (o) => Object.assign({}, base, o);
+    return {
+      tiles: [
+        t({ label: 'Unowned', name: 'Goblin', type: 'Creature · 1/1', art: '#5A3E3A', pip: '#D3202A', dot: not, isJoin: true }),
+        t({ label: 'Joined', name: 'Treasure', type: 'Artifact', art: '#4D4A3A', pip: '#8A8A8A', dot: not, isJoined: true, from: 'from Dockside Extortionist' }),
+        t({ label: 'Owned by upload', name: 'Clue', type: 'Artifact', art: '#3E4A4D', pip: '#8A8A8A', dot: owned, isUpload: true, from: 'from Tireless Tracker' }),
+        t({ label: 'Owned by hand mark', name: 'Food', type: 'Artifact', art: '#4D433A', pip: '#8A8A8A', dot: owned, isHand: true, from: 'from Gilded Goose' }),
+        t({ label: 'Pending press, hovered', name: 'Soldier', type: 'Creature · 1/1', art: '#4D4D44', pip: '#F8F6D8', dot: unknown, isJoin: true, op: 0.6, from: 'from Elspeth', edge: '#2E3340' }),
+        t({ label: 'Refused press, with rules text', name: 'Spirit', type: 'Creature · 1/1', art: '#3F4552', pip: '#F8F6D8', dot: unknown, isJoin: true, refused: true, hasRules: true, rules: 'Flying', from: 'from Lingering Souls' }),
+        t({ label: 'Orphan, no maker', name: 'Zombie', type: 'Creature · 2/2', art: '#3A4A3E', pip: '#2B2A2A', dot: not, isJoin: true, hasMaker: false, orphan: true }),
+        t({ label: 'Fold open', name: 'Goblin', type: 'Creature · 1/1', art: '#5A3E3A', pip: '#D3202A', dot: not, isJoin: true, open: true, foldHave: true, chev: '⌃', openAttr: 'true' })
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

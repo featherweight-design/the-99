@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Precon tile skeleton · desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+@keyframes breathe{50%{opacity:.55}}
+.breathe{animation:breathe 1.4s ease-in-out infinite}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1500px;box-sizing:border-box;padding:40px 0;background:#0C0C10;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:26px">
+  <div style="display:flex;flex-direction:column;gap:6px;padding:0 48px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Precon skeleton · desktop 1280 · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">Twelve tiles, the grid's own columns</h2>
+    <p style="margin:0;max-width:860px;font-size:13px;line-height:1.55;color:#95A4A6">The skeleton uses the loaded list's grid class unchanged (<code style="font-family:'IBM Plex Mono',monospace;font-size:12px">minmax(178px, 1fr)</code>, 12px gap), so it draws as many columns as the page will: six at 1280, four at 900. It draws two rows, the first screen.</p>
+  </div>
+
+  <div style="width:1280px;height:900px;overflow:hidden;background:#121217;display:flex">
+    <aside style="flex:none;width:62px;background:#181920;display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 0">
+      <span style="width:28px;height:28px;border-radius:7px;background:#22232B"></span>
+      <span style="width:22px;height:22px;border-radius:6px;border:1px solid #2E3340"></span>
+      <span style="width:22px;height:22px;border-radius:6px;border:1px solid #2E3340"></span>
+      <span style="width:22px;height:22px;border-radius:6px;border:1px solid #2E3340"></span>
+      <span style="width:22px;height:22px;border-radius:6px;background:#2E3340"></span>
+    </aside>
+    <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <header style="display:flex;flex-direction:column;gap:4px;padding:16px 22px;border-bottom:1px solid #1A1F2B">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">‹ Decks</span>
+        <h1 style="margin:0;font-family:'Metamorphous',serif;font-size:24px;font-weight:400;color:#C6D2D3">Commander precons</h1>
+        <span class="breathe" style="display:block;width:300px;height:11px;margin-top:3px;border-radius:3px;background:#22232B"></span>
+      </header>
+      <div class="breathe" style="display:flex;flex-direction:column;gap:12px;padding:12px 22px 0">
+        <div style="display:flex;align-items:center;gap:10px;height:40px">
+          <span style="width:340px;height:38px;box-sizing:border-box;border-radius:8px;background:#16171D;border:1px solid #2E3340"></span>
+          <span style="display:flex;gap:6px"><span style="width:24px;height:24px;border-radius:50%;background:#22232B"></span><span style="width:24px;height:24px;border-radius:50%;background:#22232B"></span><span style="width:24px;height:24px;border-radius:50%;background:#22232B"></span><span style="width:24px;height:24px;border-radius:50%;background:#22232B"></span><span style="width:24px;height:24px;border-radius:50%;background:#22232B"></span></span>
+          <span style="width:120px;height:30px;border-radius:7px;background:#22232B"></span>
+          <span style="flex:1"></span>
+          <span style="width:76px;height:30px;box-sizing:border-box;border-radius:7px;border:1px solid #2E3340"></span>
+        </div>
+        <span style="width:150px;height:9px;border-radius:3px;background:#22232B"></span>
+        <span style="width:48px;height:15px;margin-top:8px;border-radius:3px;background:#22232B"></span>
+        <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:12px">
+          <sc-for list="{{tiles}}" as="t" hint-placeholder-count="12">
+            <li style="display:flex;flex-direction:column;overflow:hidden;border-radius:10px;border:1px solid #1A1F2B;background:#1E1F26">
+              <span style="display:block;aspect-ratio:63/88;background:#22232B;border-radius:0 0 10px 10px"></span>
+              <span style="display:flex;flex-direction:column;gap:6px;padding:9px 10px 11px">
+                <span style="width:42%;height:8px;border-radius:3px;background:#22232B"></span>
+                <span style="width:{{t.w}};height:12px;border-radius:3px;background:#2D2E35"></span>
+                <span style="display:flex;gap:3px"><span style="width:9px;height:9px;border-radius:50%;background:#22232B"></span><span style="width:9px;height:9px;border-radius:50%;background:#22232B"></span></span>
+              </span>
+            </li>
+          </sc-for>
+        </ul>
+      </div>
+    </main>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:0 48px">
+    <div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">Shared, not one-off</span>
+      <p style="margin:0;font-size:12.5px;line-height:1.55;color:#B3C0C2"><code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">TileSkeleton</code> lives in <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">ui/</code> beside <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">CardTileCaption</code> and is built from <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">TILE_SHELL</code>, <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">TILE_ART_RATIO</code> and <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">TILE_ART_CLIP</code>, so it is any grid's tile. Precons adopt it now. Collection, Discover, Decks, Sets and Tokens adopt it when each route's loading is next touched, not in this round.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">Tiles or rows</span>
+      <p style="margin:0;font-size:12.5px;line-height:1.55;color:#B3C0C2">The skeleton follows the view this browser stored (the precons view cookie): rows when it says rows, else tiles. A URL carrying <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">view=rows</code> also means rows. So the loaded page lands on the same layout it was promised.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">Words</span>
+      <p style="margin:0;font-size:12.5px;line-height:1.55;color:#B3C0C2">No visible heading or status: the title already says where you are, and "counting the 99…" was wrong here. One <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">role="status"</code> line for screen readers, "Loading precons", for <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">/copy-review</code>. The decks overlay keeps its crown and words for <code style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">/decks</code>, import and shopping.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ws = ['86%', '70%', '78%', '62%', '82%', '68%', '74%', '90%', '66%', '80%', '72%', '60%'];
+    return { tiles: ws.map((w) => ({ w: w })) };
+  }
+}
+</script>
+</body>
+</html>
