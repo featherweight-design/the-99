@@ -35,7 +35,7 @@ describe("Start dialog: I own this precon", () => {
     create.mockResolvedValueOnce(undefined);
     open();
     expect(own()).not.toBeChecked();
-    expect(screen.getByText("picked from the copies you hold")).toBeInTheDocument();
+    expect(screen.getByText("this precon’s copies")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
     await waitFor(() => expect(create).toHaveBeenCalledWith("Multiverse_FRC", "Multiverse Reforged", undefined));
     expect(add).not.toHaveBeenCalled();
@@ -48,10 +48,10 @@ describe("Start dialog: I own this precon", () => {
     expect(own()).not.toBeChecked();
   });
 
-  it("says the printings come from the added copies once ticked", () => {
+  it("says the same printings fact ticked or not: the deck takes the precon's own copies either way", () => {
     open();
     fireEvent.click(own());
-    expect(screen.getByText("picked from the copies you hold, this box’s included")).toBeInTheDocument();
+    expect(screen.getByText("this precon’s copies")).toBeInTheDocument();
   });
 
   it("adds first, then creates the deck carrying the add's entry", async () => {
@@ -125,7 +125,7 @@ describe("Start dialog: I own this precon", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     expect(screen.queryByRole("checkbox")).toBeNull();
     expect(screen.queryByText(/You added this precon on /)).toBeNull();
-    expect(screen.getByText("picked from the copies you hold")).toBeInTheDocument();
+    expect(screen.getByText("this precon’s copies")).toBeInTheDocument();
   });
 
   it("does not claim a rollback when the add THROWS, and retries it under the same id", async () => {

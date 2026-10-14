@@ -17,17 +17,15 @@ export const preconDate = (isoDate: string) =>
 export const preconAddedDate = (isoTimestamp: string) =>
   new Date(isoTimestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-/** What the arrival strip says went in: the whole list, or what the catalog holds of it. */
-function cardsIn(cards: number, unmapped: number): string {
-  return unmapped === 0
-    ? `All ${n(cards)} cards are in, as the precon lists them.`
-    : `${n(cards)} cards are in. ${unmapped === 1 ? "1 more from the precon isn’t" : `${n(unmapped)} more from the precon aren’t`} in our catalog yet.`;
+/** The catalog gap the arrival band still owes: a leading space and a sentence, or nothing when every card mapped. */
+function catalogGap(unmapped: number): string {
+  return unmapped === 0 ? "" : ` ${unmapped === 1 ? "1 card isn’t" : `${n(unmapped)} cards aren’t`} in our catalog yet.`;
 }
 
 export const preconsCopy = {
   door: {
     head: "Start from a precon",
-    body: "Any Commander precon, with how many of its cards you already own. It starts as a draft you can change.",
+    body: "Any Commander precon, with how many of its cards you already own.",
     cta: "Browse precons →",
     line: "Commander precons",
     lineMeta: (count: number, newest: string) => `${plural(count, "decklist", "decklists")} · newest ${newest}`,
@@ -129,24 +127,18 @@ export const preconsCopy = {
     dock: (name: string, cards: number, owned: number, of: number) =>
       `${name} · ${n(cards)} cards · you own ${n(owned)} of ${n(of)}`,
     title: (name: string) => `Start a deck from ${name}`,
-    lead: (cards: number, unmapped: number) =>
-      unmapped === 0
-        ? `It starts as a draft with the precon’s ${n(cards)} cards. Change anything before you commit.`
-        : `It starts as a draft with the ${n(cards)} cards we have of the precon’s list. Change anything before you commit.`,
     beside: (ident: string, body: number, pair: boolean) => `${ident} · ${n(body)} cards beside ${pair ? "them" : "it"}`,
     nameLabel: "Deck name",
     facts: {
       cards: "Cards",
       cardsValue: (cards: number, unmapped: number) =>
         unmapped === 0
-          ? `all ${n(cards)}, as the precon lists them`
+          ? `all ${n(cards)}`
           : `${n(cards)}; ${unmapped === 1 ? "1 isn’t" : `${n(unmapped)} aren’t`} in our catalog yet`,
       own: "You own",
       ownValue: (owned: number, of: number) => `${n(owned)} of ${n(of)} · basic lands not counted`,
       printings: "Printings",
-      printingsValue: "picked from the copies you hold",
-      /** The box ticked: the deck still picks from the copies the reader holds, which now include this box's. */
-      printingsValueAdding: "picked from the copies you hold, this box’s included",
+      printingsValue: "this precon’s copies",
     },
     /** "I own this precon" (copy-reviewed 2026-10-13): the opt-in to add the precon's cards and tokens first. */
     owned: {
@@ -169,11 +161,16 @@ export const preconsCopy = {
   },
   arrival: {
     head: (name: string) => `Started from the ${name} precon`,
-    body: (cards: number, unmapped: number, owned: number, of: number, toBuy: number) =>
-      `${cardsIn(cards, unmapped)} You own ${n(owned)} of its ${n(of)}, and the ${n(toBuy)} you don’t are in Shopping. It’s a draft until you commit it.`,
-    bodyAll: (cards: number, unmapped: number) =>
-      `${cardsIn(cards, unmapped)} You own every one. It’s a draft until you commit it.`,
-    meta: (set: string) => `${set} · printings picked from the copies you hold`,
+    /** The start also added the precon to the collection (copy-reviewed 2026-10-14). */
+    added: (cards: number, unmapped: number) =>
+      unmapped === 0
+        ? `All ${n(cards)} cards added to your collection.`
+        : `${n(cards)} cards added to your collection.${catalogGap(unmapped)}`,
+    history: "History",
+    body: (unmapped: number, owned: number, of: number, toBuy: number) =>
+      `You own ${n(owned)} of its ${n(of)}. The ${n(toBuy)} you don’t are in Shopping.${catalogGap(unmapped)}`,
+    bodyAll: (unmapped: number) => `You own every card.${catalogGap(unmapped)}`,
+    meta: (set: string) => `${set} · printings: this precon’s copies`,
     /** The receipt of a start that also added the precon to the collection: the add's own title and body come from the Add cards sheet. */
     receipt: {
       foil: (foil: number) => `${n(foil)} of them foil`,

@@ -20,7 +20,10 @@ describe("preconArrivalQuery", () => {
     expect(params).toEqual(expect.arrayContaining(["user_1", "deck-1"]));
   });
 
-  it("answers nothing once the deck has a committed version", () => {
-    expect(sql).toContain(`not exists (select 1 from deck_versions dv where dv.deck_id = "decks".id)`);
+  it("answers nothing once the player has committed the deck after its start (the start's own version 1 shares the deck's transaction)", () => {
+    expect(sql).toContain(`dv.deck_id = "decks".id`);
+    // A later version is the player's whatever the clock says; a first version counts only when it came later than the start's own.
+    expect(sql).toContain(`(dv.number > 1 or dv.committed_at > "decks".created_at + interval '1 minute')`);
+    expect(sql).toMatch(/not exists \(\s*select 1 from deck_versions dv/);
   });
 });

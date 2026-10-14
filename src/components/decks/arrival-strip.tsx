@@ -6,6 +6,8 @@
 // There is no "import complete" screen anywhere in this flow: the deck is the
 // confirmation, and this one line is the only thing that says where it came from.
 
+import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { arrivalDismissKey, type ArrivalPrintings } from "../../lib/decks/arrival";
 import { useLocalFlag } from "./use-local-flag";
@@ -43,16 +45,17 @@ export function ArrivalStrip({ deckId, importedLineCount, printings = null }: Ar
  */
 export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
   | { phone: string; desktop: string }
-  | { lines: { head: string; body: string; meta: string } }
+  | { lines: { head: string; body: string; meta: string; /** A small link at the end of the body line (the precon start's History entry). */ link?: { href: string; label: string } } }
 )) {
   const [dismissed, dismiss] = useLocalFlag(arrivalDismissKey(deckId));
   if (dismissed) return null;
 
   return (
-    <ArrivalBandShell>
+    <ArrivalBandShell align={"lines" in text ? "start" : "center"}>
+      {/* The mark sits at the band's top-left, level with the head, when the band has several lines. */}
       <span
         aria-hidden
-        className="text-[12px] md:text-[14px] leading-none"
+        className={`text-[12px] md:text-[14px] leading-none ${"lines" in text ? "mt-[3px]" : ""}`}
         style={{ color: "var(--success)" }}
       >
         ✓
@@ -60,7 +63,18 @@ export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
       {"lines" in text ? (
         <div className="flex flex-1 flex-col gap-[3px]">
           <p className="m-0 text-[13.5px] font-semibold text-[color:var(--fg)]">{text.lines.head}</p>
-          <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{text.lines.body}</p>
+          <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+            {text.lines.body}
+            {text.lines.link ? (
+              <>
+                {" "}
+                <Link href={text.lines.link.href} prefetch={false} className="-my-[11px] inline-block py-[11px] text-[color:var(--accent)] underline underline-offset-2">
+                  {text.lines.link.label}
+                  <PendingReporter href={text.lines.link.href} />
+                </Link>
+              </>
+            ) : null}
+          </p>
           <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{text.lines.meta}</p>
         </div>
       ) : (
@@ -95,19 +109,27 @@ export function ArrivalBandShell({ children, align = "center" }: { children: Rea
   );
 }
 
-/** The strip after "Start a deck from this" (precons S2, S2b). Every card the reader does not own
- *  is in the deck's Shopping, since the deck holds the precon's whole list. */
-export function PreconArrivalBand({ deckId, arrival }: { deckId: string; arrival: PreconArrival }) {
+/** The strip after a precon start (precons S2, S2b): where the deck came from, what the cards are, and, when the
+ *  start also added the box to the collection, that it did and where History keeps it. One band, not two. */
+export function PreconArrivalBand({ deckId, arrival, added = null }: {
+  deckId: string;
+  arrival: PreconArrival;
+  /** The start's collection add, read from the ledger for this reader; null when it added nothing. */
+  added?: { entryId: string } | null;
+}) {
   const c = preconsCopy.arrival;
   return (
     <ArrivalBand
       deckId={deckId}
       lines={{
         head: c.head(arrival.name),
-        body: arrival.owned === arrival.of
-          ? c.bodyAll(arrival.cards, arrival.unmapped)
-          : c.body(arrival.cards, arrival.unmapped, arrival.owned, arrival.of, arrival.of - arrival.owned),
+        body: added
+          ? c.added(arrival.cards, arrival.unmapped)
+          : arrival.owned === arrival.of
+            ? c.bodyAll(arrival.unmapped)
+            : c.body(arrival.unmapped, arrival.owned, arrival.of, arrival.of - arrival.owned),
         meta: c.meta(arrival.setCode),
+        ...(added ? { link: { href: `/collection/history?entry=${added.entryId}`, label: c.history } } : {}),
       }}
     />
   );
