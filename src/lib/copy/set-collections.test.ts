@@ -29,7 +29,7 @@ describe("setsIndexCopy", () => {
   });
 
   it("has a not-indexed tag that is never a percentage", () => {
-    expect(setsIndexCopy.notIndexed.tag).toBe("not indexed yet");
+    expect(setsIndexCopy.notIndexed.tag).toBe("no checklist yet");
     expect(setsIndexCopy.notIndexed.tag).not.toMatch(/\d/);
   });
 });
@@ -152,14 +152,14 @@ describe("set-collections copy — counts of one", () => {
     expect(setPageCopy.head.ratioAria(1, 2)).toBe("You have 1 of 2 cards in the checklist");
   });
 
-  it("counts one cell as a cell", () => {
-    expect(setPageCopy.result.rest(1, 1, 0)).toBe("1 cell · 1 yours, 0 missing");
-    expect(setPageCopy.result.rest(2, 1, 1)).toBe("2 cells · 1 yours, 1 missing");
+  it("counts one cell as a card", () => {
+    expect(setPageCopy.result.rest(1, 1, 0)).toBe("1 card · 1 yours, 0 missing");
+    expect(setPageCopy.result.rest(2, 1, 1)).toBe("2 cards · 1 yours, 1 missing");
   });
 
-  it("counts a one-cell filtered population the same way", () => {
-    expect(setPageCopy.result.filtered(1, 1)).toBe("1 of 1 cell");
-    expect(setPageCopy.result.filtered(1, 2)).toBe("1 of 2 cells");
+  it("counts a one-card filtered population the same way", () => {
+    expect(setPageCopy.result.filtered(1, 1)).toBe("1 of 1 card");
+    expect(setPageCopy.result.filtered(1, 2)).toBe("1 of 2 cards");
   });
 
   it("sends one missing card, not one missing cards", () => {

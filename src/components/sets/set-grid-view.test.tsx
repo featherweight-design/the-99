@@ -328,7 +328,7 @@ describe("SetGridView — not indexed yet", () => {
     // sections. Without this branch the page read "no cards match", which blames the
     // reader for a catalog that has not been indexed.
     unindexed();
-    expect(screen.getByText(/has not been indexed yet/)).toBeInTheDocument();
+    expect(screen.getByText(/has no checklist yet/)).toBeInTheDocument();
     expect(screen.queryByText(/No cards that match/)).toBeNull();
   });
 
@@ -513,7 +513,7 @@ describe("SetGridView — phone and desktop are one document", () => {
 
   it("announces the result line, which is the only place the count changes", () => {
     view([p("1"), p("2")], ["1"]);
-    const status = screen.getAllByRole("status").find((el) => /cells/.test(el.textContent ?? ""));
+    const status = screen.getAllByRole("status").find((el) => /cards/.test(el.textContent ?? ""));
     expect(status).toHaveAttribute("aria-live", "polite");
   });
 
@@ -899,8 +899,8 @@ describe("SetGridView — the rack, chassis-conformant", () => {
       p("1", { rarity: "rare" }), p("2", { rarity: "common" }), p("3", { rarity: "common" }),
     ], []);
     fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
-    expect(screen.getByRole("option", { name: /^Rare, 1 cell/ })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /^Common, 2 cells/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /^Rare, 1 card/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /^Common, 2 cards/ })).toBeInTheDocument();
   });
 
   // ——— The pips ———
@@ -1619,7 +1619,7 @@ describe("SetGridView — the sheet's rarity group is Type's chip group", () => 
     stubDesktop(false);
     view([p("1", { rarity: "common" }), p("2", { rarity: "rare" })], []);
     openSheet();
-    const uncommon = screen.getByRole("switch", { name: /^Uncommon, no cells/ });
+    const uncommon = screen.getByRole("switch", { name: /^Uncommon, no cards/ });
     expect(uncommon).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(uncommon);
     expect(replaceState).not.toHaveBeenCalled();
@@ -1885,15 +1885,15 @@ describe("SetGridView — the result line under a query", () => {
   it("states the filtered form for a query with no other filter on", () => {
     search = "q=plains";
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
-    const status = screen.getAllByRole("status").find((el) => /cells/.test(el.textContent ?? ""));
-    expect(status?.textContent).toMatch(/1 of 2 cells/);
+    const status = screen.getAllByRole("status").find((el) => /cards/.test(el.textContent ?? ""));
+    expect(status?.textContent).toMatch(/1 of 2 cards/);
   });
 
   it("states the rest form when nothing is narrowing", () => {
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], ["1"]);
-    const status = screen.getAllByRole("status").find((el) => /cells/.test(el.textContent ?? ""));
-    expect(status?.textContent).toMatch(/2 cells/);
-    expect(status?.textContent).not.toMatch(/of 2 cells/);
+    const status = screen.getAllByRole("status").find((el) => /cards/.test(el.textContent ?? ""));
+    expect(status?.textContent).toMatch(/2 cards/);
+    expect(status?.textContent).not.toMatch(/of 2 cards/);
   });
 });
 
@@ -2083,10 +2083,10 @@ describe("SetGridView — a query narrows the rarity panel's counts too", () => 
     ], []);
     fireEvent.click(screen.getByRole("button", { name: /Filter by rarity/ }));
     // One Plains, not the two commons the set holds.
-    expect(screen.getByRole("option", { name: /^Common, 1 cell/ })).toBeInTheDocument();
-    expect(screen.queryByRole("option", { name: /^Common, 2 cells/ })).toBeNull();
+    expect(screen.getByRole("option", { name: /^Common, 1 card/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /^Common, 2 cards/ })).toBeNull();
     // And a rarity the query empties is offered as unavailable rather than as one card.
-    expect(screen.getByRole("option", { name: /^Rare, no cells/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /^Rare, no cards/ })).toBeInTheDocument();
   });
 });
 
@@ -2163,12 +2163,12 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
   it("drops the result line's redundant half", () => {
     stubDesktop(false);
     const status = () => screen.getAllByRole("status")
-      .find((el) => /cell/.test(el.textContent ?? ""));
+      .find((el) => /card/.test(el.textContent ?? ""));
     view(indexed(), ["1"]);
     const region = status();
     expect(region).toBeDefined();
     const shown = textOf(region as HTMLElement, "span", phoneOnlyHidden);
-    expect(shown).toMatch(/3 cells/);
+    expect(shown).toMatch(/3 cards/);
     expect(shown).not.toMatch(/yours/);
   });
 
@@ -2210,7 +2210,7 @@ describe("SetGridView — the phone head carries less than the desktop one", () 
     stubDesktop(false);
     view(indexed(), ["1"]);
     const regions = screen.getAllByRole("status")
-      .filter((el) => /cell/.test(el.textContent ?? ""));
+      .filter((el) => /card/.test(el.textContent ?? ""));
     expect(regions).toHaveLength(1);
   });
 });
@@ -2237,10 +2237,10 @@ describe("SetGridView — the desktop head is untouched by finding 6", () => {
     stubDesktop(true);
     view(indexed(), ["1"]);
     const status = screen.getAllByRole("status")
-      .find((el) => /cell/.test(el.textContent ?? ""));
+      .find((el) => /card/.test(el.textContent ?? ""));
     expect(status).toBeDefined();
     const shown = textOf(status as HTMLElement, "span", desktopOnlyHidden);
-    expect(shown).toMatch(/3 cells · 1 yours, 2 missing/);
+    expect(shown).toMatch(/3 cards · 1 yours, 2 missing/);
   });
 });
 
@@ -2676,7 +2676,7 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     const after = container.querySelector("[data-set-result]");
     expect(after).toBe(before);
     expect(after?.className).toBe("sr-only");
-    expect(screen.getAllByRole("status").filter((el) => /cell/.test(el.textContent ?? "")))
+    expect(screen.getAllByRole("status").filter((el) => /card/.test(el.textContent ?? "")))
       .toHaveLength(1);
   });
 
@@ -3292,7 +3292,7 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     scrollTo(2000);
     const result = container.querySelector("[data-set-result]");
     expect(result?.className).toBe("sr-only");
-    expect(screen.getAllByRole("status").filter((el) => /cell/.test(el.textContent ?? "")))
+    expect(screen.getAllByRole("status").filter((el) => /card/.test(el.textContent ?? "")))
       .toHaveLength(1);
     expect(container.querySelector("[data-set-chips]")?.className).toMatch(/hidden/);
   });

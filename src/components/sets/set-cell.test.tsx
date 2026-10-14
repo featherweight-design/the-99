@@ -176,7 +176,7 @@ describe("SetCell — the accessible name carries the state the tag shows", () =
         newestAsOf={NEWEST}
       />,
     );
-    expect(screen.getByRole("button", { name: /No price in this feed/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /No price from ManaPool/ })).toBeInTheDocument();
   });
 
   it("says a card is sold out rather than never stocked", () => {
