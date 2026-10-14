@@ -73,7 +73,7 @@ neither the heading nor the marker in earshot.
 | # | Property | Value | Source |
 |---|---|---|---|
 | 1.22 | Row variant | No added utterance — `buy` already sits in the row's reading order | R2RM (carried) |
-| 1.23 | Tile variant, priced | The shipped ownership sentence, then `$45.00 at ManaPool, last checked Monday` — **one utterance per price**, appended rather than added as a second sentence | R2RM:76–77 |
+| 1.23 | Tile variant, priced | The shipped ownership sentence, then `$45.00 at Mana Pool, last checked Monday` — **one utterance per price**, appended rather than added as a second sentence | R2RM:76–77 |
 | 1.24 | Tile variant, behind | The same sentence with `, these prices are behind` appended | R2RM:76–77 |
 | 1.25 | Tile variant, `sold out` / `absent` | The shipped sentence, unchanged. The visible tail stays readable, because the sentence never carries `sold out` | derived from 1.23 |
 
@@ -114,8 +114,8 @@ R3's structural correction: the price facts belong to the **Shopping filter**, w
 
 | # | Property | Value | Source |
 |---|---|---|---|
-| 2.19 | Fresh form | `prices from ManaPool · last checked Monday` | R3C:63 |
-| 2.20 | Behind form | `prices from ManaPool · last checked 12 August · these are behind` | R3C:137 |
+| 2.19 | Fresh form | `prices from Mana Pool · last checked Monday` | R3C:63 |
+| 2.20 | Behind form | `prices from Mana Pool · last checked 12 August · these are behind` | R3C:137 |
 | 2.21 | Behind clause position | Third and last | R3RM:70–71 |
 | 2.22 | Ink, both forms | `--fg-locked` | R2RM:105, R3C:139 |
 | 2.23 | Not a warning | No banner, no amber. Old prices are our operational problem, not the player's error | R2RM:72–74 |
@@ -182,7 +182,7 @@ The recomputed 82% column reproduces Design's to within 0.03, which is what lice
 | # | Rule | Source |
 |---|---|---|
 | 6.1 | The apostrophe is curly — `don’t` throughout, matching shipped | R3RM:150–151 |
-| 6.2 | `sold out` is a fact about the shop, never "unavailable" (spent on the availability block) and never "out of stock at ManaPool" | R2RM (carried) |
+| 6.2 | `sold out` is a fact about the shop, never "unavailable" (spent on the availability block) and never "out of stock at Mana Pool" | R2RM (carried) |
 | 6.3 | **There is no string for a missing price.** Not `—`, not `$0.00`, not "price unknown". Silence is the state | R3RM:140–141 |
 | 6.4 | The six themes are `amonkhet · kamigawa · innistrad · phyrexia · duskmourn · kaldheim`. "Neon Rain" is not among them and is withdrawn | R3RM:152–155 |
 

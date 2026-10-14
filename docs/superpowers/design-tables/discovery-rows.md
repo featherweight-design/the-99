@@ -521,7 +521,7 @@ Token contract, from the E2 frame:
 
 > **No new token, no new hex, no new motion class, no new component.** … the ownership pip is `RecCard`'s own diamond; the price dot is the availability dot.
 
-> **Stock is never colour alone.** Price reads as *"$18.40, in stock at ManaPool"*, and is
+> **Stock is never colour alone.** Price reads as *"$18.40, in stock at Mana Pool"*, and is
 > `aria-hidden` never.
 >
 > The OWNERSHIP half of this rule retired with the composition: the pip's two readings, the
