@@ -7,7 +7,7 @@ vi.mock("../tokens/deck-printings", () => ({
 }));
 vi.mock("../decks/write-imported-deck", () => ({ writeImportedDeck: async () => "deck-1" }));
 vi.mock("../decks/versions", () => ({ commitVersion: async () => ({ version: {}, cardCount: 0 }) }));
-import { preconPins, preconTokenPins, writePreconDeckIn, type PreparedPreconDeck } from "./start";
+import { preconPins, preconTokenPins, preparePreconDeckIn, writePreconDeckIn, type PreparedPreconDeck } from "./start";
 
 const deck: PreparedPreconDeck = {
   commanderOracleId: "c", partnerOracleId: null, cards: [], printings: [], builtFromPrecon: "P",
@@ -60,6 +60,38 @@ describe("preconPins", () => {
     ])).toEqual([
       { oracleId: "a", setCode: "frc", collectorNumber: "1" },
       { oracleId: "b", setCode: "frc", collectorNumber: "300" },
+    ]);
+  });
+});
+
+/** A transaction whose selects answer `answers` in order: the head, the list, the leads, then the box's tokens. */
+function reads(answers: unknown[][]) {
+  const chain = () => {
+    const rows = answers.shift() ?? [];
+    const q: Record<string, unknown> = {};
+    for (const k of ["from", "innerJoin", "leftJoin", "where", "orderBy"]) q[k] = () => q;
+    q.then = (res: (v: unknown) => unknown) => Promise.resolve(rows).then(res);
+    return q;
+  };
+  return { select: () => chain() } as unknown as Parameters<typeof preparePreconDeckIn>[0];
+}
+
+describe("preparePreconDeckIn's tokens", () => {
+  it("reads the box's token rows into the deck, one printing per token, which the start then pins", async () => {
+    const lead = { oracleId: "c", name: "Lead", typeLine: "Legendary Creature — Human", oracleText: "", manaCost: "{1}", layout: "normal", commanderLegal: true };
+    const prepared = await preparePreconDeckIn(reads([
+      [{ fileName: "P", twinOf: null }],
+      [{ oracleId: "c", quantity: 1, isCommander: true, setCode: "p", collectorNumber: "1" }],
+      [lead],
+      [{ tokenOracleId: "t1", tokenPrintingId: "p9" }, { tokenOracleId: "t1", tokenPrintingId: "p2" }, { tokenOracleId: "t2", tokenPrintingId: "p5" }],
+    ]), "P");
+    expect(prepared.tokens).toEqual([{ tokenOracleId: "t1", tokenPrintingId: "p2" }, { tokenOracleId: "t2", tokenPrintingId: "p5" }]);
+    calls.makes = new Set(["t1", "t2"]);
+    calls.writes = [];
+    await writePreconDeckIn(tx, "user_1", "Deck", prepared, process.env);
+    expect(calls.writes).toEqual([
+      { deckId: "deck-1", userId: "user_1", tokenOracleId: "t1", tokenPrintingId: "p2" },
+      { deckId: "deck-1", userId: "user_1", tokenOracleId: "t2", tokenPrintingId: "p5" },
     ]);
   });
 });
