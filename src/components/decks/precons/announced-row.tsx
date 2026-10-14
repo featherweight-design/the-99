@@ -92,7 +92,7 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
         )}
       </h3>
       {canOpen && (
-        <div id={regionId} hidden={!open} className="border-x-0 border-b-0 border-t-[1px] border-dashed border-t-[color:var(--border-strong)] p-[12px_0_12px_12px] md:mx-0 md:p-[12px_15px_14px_15px]">
+        <div id={regionId} hidden={!open} className="border-x-0 border-b-0 border-t-[1px] border-dashed border-t-[color:var(--border-strong)] p-[12px] md:mx-0 md:p-[12px_15px_14px_15px]">
           <RevealedStrip commanders={commanders} />
         </div>
       )}

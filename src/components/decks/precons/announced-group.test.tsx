@@ -58,6 +58,16 @@ describe("AnnouncedGroup", () => {
     expect(head()).toHaveAttribute("aria-expanded", "true");
   });
 
+  it("stays open after the link's fragment leaves the address (a search mirror, the decklist jump)", () => {
+    window.history.replaceState(null, "", "/decks/precons?sort=newest#announced");
+    draw();
+    window.history.replaceState(null, "", "/decks/precons?q=chapel");
+    fireEvent(window, new HashChangeEvent("hashchange"));
+    window.location.hash = "#precons-2026";
+    fireEvent(window, new HashChangeEvent("hashchange"));
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("holds this browser's last press when there is no news, and a press writes it", () => {
     window.localStorage.setItem(ANNOUNCED_KEY, "open");
     const { unmount } = draw();

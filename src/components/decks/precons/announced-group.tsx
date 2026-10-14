@@ -46,7 +46,11 @@ export type AnnouncedGroupProps = {
 
 export function AnnouncedGroup({ matches, today, newCodes, opensByItself, view, listed }: AnnouncedGroupProps) {
   const [stored, store] = useStoredView(ANNOUNCED_KEY, isPress);
-  const arrivedByLink = useSyncExternalStore(subscribeHash, () => window.location.hash === ANNOUNCED_HASH, () => false);
+  const onLink = useSyncExternalStore(subscribeHash, () => window.location.hash === ANNOUNCED_HASH, () => false);
+  // Latched for the visit: a search mirrors the URL without its fragment and the decklist jump replaces it,
+  // and neither should fold a group the reader came here to see.
+  const [arrivedByLink, setArrivedByLink] = useState(false);
+  if (onLink && !arrivedByLink) setArrivedByLink(true);
   // This visit's own press wins over everything; before one, news or the link opens it, else the stored press.
   const [pressed, setPressed] = useState<boolean | null>(null);
   const open = pressed ?? (opensByItself || arrivedByLink ? true : stored === "open");
