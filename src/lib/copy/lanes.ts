@@ -239,9 +239,9 @@ export const discoverCopy = {
   // are drawn without them.
   order: {
     bestFit: "Best fit",
-    bestFitGloss: "most of its support list already owned",
+    bestFitGloss: "most of the cards popular with it already owned",
     somethingNew: "Something new",
-    somethingNewGloss: "farthest from the archetypes you have built",
+    somethingNewGloss: "farthest from the themes you have built",
     popularity: "Popularity",
     popularityGloss: "most decks tracked first",
     name: "Name",

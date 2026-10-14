@@ -77,7 +77,7 @@ is why it folds into state 5 rather than becoming a sixth.
 
 ### The slots are independent, so the states multiply — and all of it is drawn
 
-| | Full gap | Top play styles | No tag data |
+| | Full gap | Top play styles | No theme data |
 |---|---|---|---|
 | **sentence present** | 1 | 4 | 3 |
 | **sentence absent** | 2 | 2 + 4 | 2 + 3 |

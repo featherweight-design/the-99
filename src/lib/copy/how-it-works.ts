@@ -127,7 +127,7 @@ export const howItWorksRowsCopy = {
       methods: ["decks", "rules"],
       verdict: "mixed",
       from:
-        `Two different things share the name. A commander’s themes are EDHREC’s tags. A card’s themes are ${THEME_ORDER.length} ` +
+        `Two different things share the name. A commander’s themes come from EDHREC. A card’s themes are ${THEME_ORDER.length} ` +
         "patterns we read from its rules text.",
       how:
         "Commander themes drive Discover’s line, Help me choose and Something new. What you’ve " +
