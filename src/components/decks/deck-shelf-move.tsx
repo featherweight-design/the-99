@@ -58,13 +58,19 @@ export function useDeckShelfMove(deckId: string, shelf: DeckShelf): {
   useEffect(() => {
     confirmed.current = { id: shelf.folderId, name: shelf.folderName };
   }, [shelf]);
+  // Moves are SENT in press order, one waiting behind the other (as `useDeclaration` queues its
+  // writes), so their answers land in that order too and a late `true` from an earlier move can never
+  // overwrite the confirmed shelf with one the database has already moved past.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
   const onMove = useCallback(
     (to: { id: string | null; name: string | null }, failed: string = folderCopy.move.failed) => {
       const seq = (latest.current += 1);
       setCurrent(to);
       setAnnounced(to.name ? folderCopy.move.announceFiled(to.name) : folderCopy.move.announceUnfiled);
       startMove(async () => {
-        const answer = await moveDeckAction(deckId, to.id).catch(() => "threw" as const);
+        const write = queue.current.then(() => moveDeckAction(deckId, to.id).catch(() => "threw" as const));
+        queue.current = write;
+        const answer = await write;
         // A rejection may have committed with its response lost, and no payload is coming for it.
         if (answer === "threw") router.refresh();
         if (answer === true) confirmed.current = to;

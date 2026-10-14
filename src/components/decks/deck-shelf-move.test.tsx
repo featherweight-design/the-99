@@ -144,6 +144,22 @@ describe("the deck page's Move", () => {
     expect(moveRowName()).toBe("Move · Cube night");
   });
 
+  it("sends a second move only once the first has answered, so answers land in press order", async () => {
+    let answerFirst!: (v: boolean) => void;
+    moveDeckAction.mockReturnValueOnce(new Promise<boolean>((r) => (answerFirst = r))).mockResolvedValueOnce(true);
+    render(<Header shelf={{ folders: [{ id: "f1", name: "Cube night" }, { id: "f2", name: "Pauper" }], folderId: null, folderName: null }} />);
+    openMove();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Cube night" })));
+    openMove();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Pauper" })));
+    expect(moveDeckAction).toHaveBeenCalledTimes(1);
+    await act(async () => answerFirst(true));
+    await flush();
+    expect(moveDeckAction).toHaveBeenCalledTimes(2);
+    expect(moveDeckAction.mock.calls.map((c) => c[1])).toEqual(["f1", "f2"]);
+    expect(moveRowName()).toBe("Move · Pauper");
+  });
+
   it("keeps every folder made in one visit until the server's list returns them", async () => {
     moveDeckAction.mockResolvedValue(true);
     createFolderAction
