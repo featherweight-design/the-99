@@ -220,6 +220,13 @@ export type ChangeOptions = {
    */
   placements?: boolean;
   /**
+   * Work an `add` does inside its own transaction, after its rows (and a precon's tokens) are written
+   * and BEFORE the placements read and the entry: a start with "I own this precon" writes, commits and
+   * reserves its deck here (`startPreconOwned`), so the copies are read as going to that deck and a
+   * failure anywhere rolls the whole start back. Takes the transaction; never called on a retry.
+   */
+  inside?: (tx: Tx) => Promise<void>;
+  /**
    * The reader's resolved switches (`requestSwitchEnv`), which every claim read inside the write
    * takes: the claim model's `locked` key (NEVER_CUT_ENABLED) and its pending clause
    * (CHANGE_COMMANDER_ENABLED). Required (admin PR 7b): a probe or a script, outside a request, passes
@@ -718,6 +725,8 @@ export async function applyCollectionChange(
         target = row;
         // A precon's tokens go with its cards, and come back with them when a revert is reverted.
         await syncPreconTokens(tx, userId);
+        // And the copies a start with "I own this precon" reserved to its deck: they are leaving.
+        await releasePreconReservations(tx, userId, change.entryId);
         if (change.ignoreDeckId !== undefined && row.source === `shopping:${change.ignoreDeckId}`) {
           ignoredDecks.add(change.ignoreDeckId);
         }
@@ -894,6 +903,7 @@ export async function applyCollectionChange(
       const tokensMarked = preconTokens
         ? await syncPreconTokens(tx, userId, opts.id)
         : undefined;
+      if (opts.inside && change.kind === "add") await opts.inside(tx);
 
       const moves = countMoves(rows);
       let short: ShortDeck[] = [];
@@ -943,6 +953,24 @@ export async function applyCollectionChange(
     if (error instanceof Refused) return error.result;
     throw error;
   }
+}
+
+/**
+ * Drops the reservations the deck started with add `entryId` holds (`startPreconOwned`), each card's
+ * claim lock first, sorted, as every reservation write takes it. Reverting that revert brings the copies
+ * back but not the reservations: they then go where the claim model's order sends them.
+ */
+async function releasePreconReservations(tx: Tx, userId: string, entryId: string): Promise<void> {
+  const held = await tx.select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId })
+    .from(cardAssignments)
+    .innerJoin(decks, eq(decks.id, cardAssignments.deckId))
+    .where(and(eq(cardAssignments.userId, userId), eq(decks.userId, userId), eq(decks.preconAddEntryId, entryId)));
+  if (held.length === 0) return;
+  for (const id of [...new Set(held.map((h) => h.oracleId))].sort()) await lockCardClaims(tx, userId, id);
+  await tx.delete(cardAssignments).where(and(
+    eq(cardAssignments.userId, userId),
+    inArray(cardAssignments.deckId, [...new Set(held.map((h) => h.deckId))]),
+  ));
 }
 
 /**
