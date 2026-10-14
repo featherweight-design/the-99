@@ -7,6 +7,10 @@ describe("the saved-mode upsert", () => {
   const { sql: text, params } = writeCommandersAvailQuery("user_1", "free").toSQL();
   const setClause = text.slice(text.indexOf("do update set"));
 
+  it("updates only when the mode changes, since a no-op update still moves the reader's stamp", () => {
+    expect(setClause).toMatch(/where "user_prefs"\."commanders_avail" is distinct from \$\d+/);
+  });
+
   it("sets the mode and nothing else on an existing row", () => {
     expect(setClause).toContain('"commanders_avail"');
     // The row also holds the About state, which this write must never move.

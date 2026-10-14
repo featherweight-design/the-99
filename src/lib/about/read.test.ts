@@ -16,6 +16,10 @@ import { markAboutSeenQuery, markAboutVisitedQuery } from "./read";
 const emitted = (version: number) => markAboutSeenQuery("user_1", version).toSQL();
 
 describe("the acknowledgement upsert", () => {
+  it("updates only when it raises the floor, since a no-op update moves the stamp", () => {
+    expect(emitted(2).sql).toMatch(/ where "user_prefs"\."about_version_seen" < \$\d+$/);
+  });
+
   it("takes the greater of the stored version and the incoming one", () => {
     const { sql: text } = emitted(2);
     expect(text).toContain("greatest");
@@ -39,6 +43,12 @@ describe("the acknowledgement upsert", () => {
 
 describe("the visit upsert (switched entries by id)", () => {
   const emittedVisit = (ids: string[]) => markAboutVisitedQuery("user_1", 9, ids).toSQL();
+
+  it("updates only when the visit raises the floor or adds an id, since a no-op update moves the stamp", () => {
+    const { sql: text } = emittedVisit(["locked-cards"]);
+    const where = text.slice(text.lastIndexOf(" where "));
+    expect(where).toMatch(/"user_prefs"\."about_version_seen" < \$\d+ or not \(array\[\$\d+\]::text\[\] <@ "user_prefs"\."about_seen_ids"\)/);
+  });
 
   it("unions the stored ids with the incoming ones rather than replacing them", () => {
     const { sql: text } = emittedVisit(["locked-cards"]);
