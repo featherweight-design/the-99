@@ -182,7 +182,7 @@ describe("runTheRead", () => {
       return loader;
     };
 
-    it("serves a stored repeat free to a player whose allowance is closed, whichever way it is closed", async () => {
+    it("serves a stored repeat free to a player out of credit, without reading the allowance at all", async () => {
       // Hugh, 2026-10-14: a repeat of the same read is free. The allowance is never read before the
       // pool: the stored answer is found under startRead's lock, before anything is reserved.
       const result = { picks: [{ oracleId: "a", reason: [{ text: "Fits." }] }], pool: 2, weighed: 1 };

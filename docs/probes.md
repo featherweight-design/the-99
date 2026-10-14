@@ -258,21 +258,21 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   phase while the shortlist runs (F2); a repeat answers from the store and reserves nothing; a read
   that finds nothing refunds and still records its cost. There is no Stop (removed 2026-10-12): a
   read always runs to its end.
-  Its hardening cases (2026-10-14): a burst of eight presses reads the pool once and reserves one
-  credit; a player with no credit left is served their own stored repeat free and reserves nothing,
-  while a fresh ask is refused for the allowance at the reservation; and a burst of eight DIFFERENT
-  asks at the last credit starts one read and leaves the player at exactly the limit.
   **Admission (hardening):** eight concurrent `beginTheRead` presses by one player read the pool
   ONCE (a counted loader, held 500ms so the presses overlap), admit one and answer the other seven
   `in_flight`, reserve one credit, and a press after them, while the read runs, is refused without
-  reading the pool; a player whose five credits are spent is refused `allowance` with the pool
-  never read and no read or reservation written; and a press that fails in the pool read does not
-  keep the admission (the next press is admitted); and a credit held by a read the process died under
-  (pending, seven minutes old: past the reaper's cutoff, inside the reservation's ten) is reaped by the gate, not held against the press. Needs migration 0090 on the target; refuses
-  staging and production by `neon.branch_id`. Its failure paths were run: a settle that spent on an
-  empty result fails it; with the admission removed the burst reads the pool 8 times, and with the
-  credit gate removed the spent player's press reads it once before the reservation refuses, and with
-  the reap removed the stranded credit refuses the press.
+  reading the pool. A player whose five credits are spent is served their own stored repeat FREE,
+  reserving nothing, and a fresh ask from them reads the pool once (the only way to its
+  fingerprint) and is refused `allowance` at the reservation, writing no read or reservation (Hugh,
+  2026-10-14: a repeat of the same read is free; no allowance gate stands before the pool read any
+  more). A burst of eight DIFFERENT asks at the last credit starts one read and leaves the player at
+  exactly the limit. A press that fails in the pool read does not keep the admission (the next press
+  is admitted), and a credit held by a read the process died under (pending, seven minutes old: past
+  the reaper's cutoff, inside the reservation's ten) is reaped by `startRead` before it reserves, not
+  held against the press. Needs migration 0090 on the target; refuses staging and production by
+  `neon.branch_id`. Its failure paths were run: a settle that spent on an empty result fails it; with
+  the admission removed the burst reads the pool 8 times; and with the old allowance gate restored
+  (main before 2026-10-14) the spent player's repeat is refused `allowance` and fails case 5.
 - `pnpm probe:synopsis` proves the deck synopsis's writes and reads against a real Postgres
   (sub-project 6) by calling the real `writeSynopsisFor`, `retrySynopsisFor`, `readSynopsisState`,
   `readVersionSynopsis` and `pinSynopsisToVersion`. Every rule those apply to what they READ is
