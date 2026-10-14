@@ -222,6 +222,8 @@ describe("Start dialog: I own this precon", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
     await waitFor(() => expect(screen.getByText("100 copies added")).toBeInTheDocument());
     expect(add.mock.calls[0][0]).toBe("MultiverseCE_FRC");
+    // The deck starts the chosen edition too, so its printings are that edition's.
+    expect(create.mock.calls[0][0]).toBe("MultiverseCE_FRC");
     fireEvent.click(screen.getByRole("button", { name: "Dismiss the receipt" }));
     // The reader switches to Regular: its box was never added, so the note is absent and a tick is a new add.
     view.rerender(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn={null} canOwn addFileName={row.fileName} />);

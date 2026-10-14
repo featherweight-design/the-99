@@ -38,8 +38,9 @@ export type StartPreconProps = {
   /** Collection editing is on: the dialog offers "I own this precon" (the action refuses without it). */
   canOwn?: boolean;
   /**
-   * The edition the add writes, by file: the precon's own (the default), or its Collector's Edition twin when the page's
-   * edition switch chose it. `addedOn` must be that edition's own, since each edition's box is its own entry.
+   * The edition the reader chose, by file: the precon's own (the default), or its Collector's Edition twin when the page's
+   * edition switch chose it. The deck starts that edition's printings, and the add writes that edition's box, so
+   * `addedOn` must be that edition's own, since each edition's box is its own entry.
    */
   addFileName?: string;
 };
@@ -156,9 +157,10 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
     startTransition(async () => {
       let added: PreconAddReceipt | null = null;
       try {
+        // The chosen edition: its box is the one added, and its printings are the ones the deck is pinned to.
+        const addFile = addFileName ?? row.fileName;
         if (own && canOwn) {
-          // The add goes first, so the draft picks the copies it just added (Hugh, 2026-10-13).
-          const addFile = addFileName ?? row.fileName;
+          // The add goes first, so the deck it starts holds the copies it just added (Hugh, 2026-10-13).
           addRef.current.id ??= readAttempt(account, addFile) ?? crypto.randomUUID();
           writeAttempt(account, addFile, addRef.current.id);
           let res: Awaited<ReturnType<typeof addPreconToCollection>>;
@@ -187,7 +189,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
           };
         }
         // Redirects to the new deck on success; a refusal or an outage throws.
-        await createDeckFromPrecon(row.fileName, trimmed, added?.entryId);
+        await createDeckFromPrecon(addFile, trimmed, added?.entryId);
       } catch (err) {
         // The redirect itself arrives here as a throw, before the router navigates: rethrown, or
         // every successful start would paint the failure for the frame the navigation takes.

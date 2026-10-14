@@ -22,10 +22,11 @@ import { clearPullReleases } from "./pull-release";
 import { commanderMoved } from "../commander-change/pending";
 import {
   readDeckOwnedPrintings, readHeldPricePicks, readRecordedPrintingArt, recordedColumns, recordedKey,
-  resolveDeckPrintings,
+  readDeckPrintings,
   type DeckPrinting, type RecordedPrinting,
 } from "./printings";
 import { deckPrintingsEnabled } from "./printings-flag";
+import { recordSoftFailure } from "../cache/soft-failure";
 import { loadPrices, pricesForDeck } from "./price-query";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import type { Availability } from "./availability";
@@ -237,13 +238,21 @@ async function commitVersionIn(
   // Collection's, then the catalog's, the chain every deck surface draws. Off, nothing is recorded,
   // and a null reads as today's resolver. Fail-soft: a failed read records nulls rather than
   // failing the commit, because the version's cards are the commit and the printing is a caption.
+  //
+  // Read inside the commit's own transaction, so a deck started and committed in one
+  // (`startPreconDeck`) is resolved against the printing pins it has only here until it commits. In a SAVEPOINT, so the read stays fail-soft: a failed statement would otherwise
+  // abort the whole transaction, where the savepoint rolls back alone and the version records nulls.
   const shown = deckPrintingsEnabled(env)
-    ? (await resolveDeckPrintings(
+    ? await tx.transaction((sp) => readDeckPrintings(
         deck.userId,
         deckId,
         [...rows.map((r) => r.oracleId), deck.commanderOracleId, ...(deck.partnerOracleId ? [deck.partnerOracleId] : [])],
         { usePicks: true },
-      )).printings
+        sp,
+      )).then((r) => r.printings).catch(() => {
+        recordSoftFailure();
+        return new Map<string, DeckPrinting>();
+      })
     : new Map<string, DeckPrinting>();
   const recorded = (oracleId: string | null) => recordedColumns(shown, oracleId);
   if (shown.size > 0) {

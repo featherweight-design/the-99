@@ -10,14 +10,14 @@ vi.mock("../../lib/switches/request", async () => {
 const state = vi.hoisted(() => ({
   selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
   enabled: true, collectionEdit: true, addedCopy: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
-  invalidated: [] as string[], warmed: [] as string[],
+  invalidated: [] as string[], warmed: [] as string[], committed: [] as unknown[],
 }));
 
 vi.mock("../../db", () => {
   const chain = () => {
     const rows = state.selects.shift() ?? [];
     const q: Record<string, unknown> = {};
-    for (const k of ["from", "innerJoin"]) q[k] = () => q;
+    for (const k of ["from", "innerJoin", "leftJoin"]) q[k] = () => q;
     q.orderBy = (o: unknown) => { state.orders.push(o); return q; };
     q.where = (w: unknown) => { state.wheres.push(w); return q; };
     q.then = (res: (v: unknown) => unknown) => Promise.resolve(rows).then(res);
@@ -36,6 +36,9 @@ vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders:
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async (id: string) => { state.warmed.push(id); } }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { state.after.push(fn); } }));
 vi.mock("../../lib/decks/revalidate-claims", () => ({ revalidateClaims: (id: string) => state.revalidated.push(id) }));
+vi.mock("../../lib/decks/versions", () => ({
+  commitVersion: async (deckId: string, note: unknown, tx: unknown) => { state.committed.push({ deckId, note, inTx: tx !== undefined }); return { version: {}, cardCount: 0 }; },
+}));
 vi.mock("../../lib/decks/write-imported-deck", () => ({
   writeImportedDeck: async (_tx: unknown, d: unknown) => { state.written.push(d); return "deck-1"; },
 }));
@@ -51,21 +54,21 @@ const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}
 });
 
 beforeEach(() => {
-  state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = [];
+  state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; state.committed = [];
   state.enabled = true; state.collectionEdit = true; state.addedCopy = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
 
 describe("createDeckFromPrecon", () => {
-  it("writes the precon's exact list with counts and no printings, and lands on the deck", async () => {
+  it("writes the precon's exact list with counts, pins each card to the box's printing, commits it, and lands on the deck", async () => {
     state.selects = [
       [{ fileName: "EldraziUnbound_CMM", twinOf: null }],
       [
-        { oracleId: "zhulodok", quantity: 1, isCommander: true },
-        { oracleId: "sol-ring", quantity: 1, isCommander: false },
-        { oracleId: "wastes", quantity: 10, isCommander: false },
-        { oracleId: "wastes", quantity: 5, isCommander: false },
-        { oracleId: "dockside", quantity: 1, isCommander: false },
+        { oracleId: "zhulodok", quantity: 1, isCommander: true, setCode: "CMM", collectorNumber: "2" },
+        { oracleId: "sol-ring", quantity: 1, isCommander: false, setCode: "cmm", collectorNumber: "400" },
+        { oracleId: "wastes", quantity: 10, isCommander: false, setCode: "cmm", collectorNumber: "450" },
+        { oracleId: "wastes", quantity: 5, isCommander: false, setCode: "cmm", collectorNumber: "451" },
+        { oracleId: "dockside", quantity: 1, isCommander: false, setCode: null, collectorNumber: null },
       ],
       [lead("zhulodok", "Zhulodok, Void Gorger")],
     ];
@@ -73,8 +76,16 @@ describe("createDeckFromPrecon", () => {
     expect(state.written).toEqual([{
       userId: "user_1", name: "My Eldrazi", commanderOracleId: "zhulodok", partnerOracleId: null,
       cards: [{ oracleId: "sol-ring", quantity: 1 }, { oracleId: "wastes", quantity: 15 }, { oracleId: "dockside", quantity: 1 }],
+      // The commander too; a basic at its first art; a card the catalog has no printing for, none.
+      printings: [
+        { oracleId: "zhulodok", setCode: "cmm", collectorNumber: "2" },
+        { oracleId: "sol-ring", setCode: "cmm", collectorNumber: "400" },
+        { oracleId: "wastes", setCode: "cmm", collectorNumber: "450" },
+      ],
       builtFromPrecon: "EldraziUnbound_CMM",
     }]);
+    // Committed as v1 inside the deck's own transaction: no draft is left to commit.
+    expect(state.committed).toEqual([{ deckId: "deck-1", note: null, inTx: true }]);
     expect(state.revalidated).toEqual(["deck-1"]);
     // The feed's order, so a pair's lead is the commander its page names first.
     expect(state.orders).toEqual([preconCards.position]);
@@ -95,12 +106,14 @@ describe("createDeckFromPrecon", () => {
     }
   });
 
-  it("starts a twin's plain edition", async () => {
-    state.selects = [[{ fileName: "X_CE", twinOf: "X" }], [{ oracleId: "c", quantity: 1, isCommander: true }], [lead("c", "C")]];
+  it("starts a twin in its own printings, recorded as built from its plain edition", async () => {
+    state.selects = [[{ fileName: "X_CE", twinOf: "X" }], [{ oracleId: "c", quantity: 1, isCommander: true, setCode: "xce", collectorNumber: "900" }], [lead("c", "C")]];
     await expect(createDeckFromPrecon("X_CE", "X")).rejects.toThrow(/REDIRECT/);
-    expect((state.written[0] as { builtFromPrecon: string }).builtFromPrecon).toBe("X");
-    // The list is read from the plain edition: a twin holds no `precon_cards` rows of its own.
-    expect(params(state.wheres[1])).toEqual(["X"]);
+    const written = state.written[0] as { builtFromPrecon: string; printings: unknown[] };
+    expect(written.builtFromPrecon).toBe("X");
+    expect(written.printings).toEqual([{ oracleId: "c", setCode: "xce", collectorNumber: "900" }]);
+    // The twin's OWN rows: the ingest keeps every edition's list, at that edition's printings.
+    expect(params(state.wheres[1])).toEqual(["X_CE"]);
   });
 
   it("refuses a pair the app's own rule does not form, and an illegal commander", async () => {

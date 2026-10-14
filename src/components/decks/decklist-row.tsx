@@ -50,6 +50,7 @@ import { gotItCopy } from "../../lib/copy/i-got-it";
 import { useSwapTools } from "../../lib/swaps/context";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { preconsCopy } from "../../lib/copy/precons";
 import { useLockCards } from "./lock-cards";
 import { useGotIt } from "./got-it";
 import { LockMark } from "./lock-mark";
@@ -713,7 +714,7 @@ export function DecklistRow({
         {readOnly ? (
           card.printedSetCode && card.printedCollectorNumber ? (
             <span className="flex-none whitespace-nowrap font-mono text-[10px] text-[color:var(--fg-faint)]">
-              {card.printedSetCode.toUpperCase()} {card.printedCollectorNumber}
+              {card.printedSetCode.toUpperCase()} {card.printedCollectorNumber}{card.printedFoil ? ` · ${preconsCopy.open.edition.foil}` : ""}
             </span>
           ) : null
         ) : pressable ? buyTag : overText ? (

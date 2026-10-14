@@ -34,8 +34,10 @@ export async function selectCollectionRows(
   // an empty array: `inArray` with no values is a SQL error in some drivers and
   // a full scan in others, so callers guard on length.
   oracleId?: string | string[],
+  /** A transaction to read inside (a commit reading the copies its own start just wrote); the shared pool otherwise. */
+  runner?: Pick<typeof import("../../db").db, "select">,
 ): Promise<RawCollectionRow[]> {
-  const { db } = await import("../../db");
+  const db = runner ?? (await import("../../db")).db;
   const { cardArtPreferences, cards, collectionItems, printings, sets } =
     await import("../../db/schema");
   const { alias } = await import("drizzle-orm/pg-core");
