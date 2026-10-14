@@ -362,6 +362,8 @@ export const deckImportCopy = {
     groupLabel: "Couldn't identify",
     groupNote: "counted in the 99, not in what's built",
     rowTag: "unmatched",
+    /** Said aloud beside the row's `?`, which is the only visual sign of what the row is. */
+    rowSpoken: "unmatched line",
     rowFix: "Fix",
     // Screen-reader name for the row button. The raw string is quoted so a
     // reader does not run it into the surrounding sentence.

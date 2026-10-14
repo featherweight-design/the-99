@@ -60,7 +60,7 @@ describe("FirstRunChecklist · Add cards by hand (collection edit B0c)", () => {
 
   it("the phone body names the new door", () => {
     render(<FirstRunChecklist addByHand />);
-    expect(screen.getByText(/Manabox, or add cards by hand\./)).toBeTruthy();
+    expect(screen.getByText(/ManaBox, or add cards by hand\./)).toBeTruthy();
   });
 });
 

@@ -6,6 +6,7 @@ import type { Step } from "../../lib/benchmarks/types";
 import type { RampWhy } from "../../lib/benchmarks/velocity";
 import type { BenchmarksWire, DependencyWire, LedgerWireCard, WinLineWire } from "../../lib/benchmarks/wire";
 import { deckBenchmarksCopy as copy } from "../../lib/copy/deck-benchmarks";
+import { ownedStateCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { SiblingCard } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
@@ -357,7 +358,7 @@ function LedgerRow({
   const points = graded && row.points !== undefined ? (row.points > 0 ? `+${trim(row.points)}` : "0") : null;
   // The trigger is named by the card, so nothing drawn inside it is heard: the row's description
   // says what the dot and the marker show, as the decklist row's does (the same words).
-  const owned = availability ? (availability.owned ? "Owned" : "Not owned") : null;
+  const owned = availability ? (availability.owned ? ownedStateCopy.owned : ownedStateCopy.notOwned) : null;
   const marker = availability?.availability ? markerAria(availability.availability, { selfExcluded: true, nameless: true, bareOne: true }) : null;
   const said = [owned, marker, why, points].filter(Boolean).join(", ");
   return (

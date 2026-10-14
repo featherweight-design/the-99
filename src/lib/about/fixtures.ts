@@ -2196,7 +2196,7 @@ export const EDIT_COPIES_LINES = [
   { id: "about-edit-3", oracleId: "about-sol-ring", name: "Sol Ring", imageUri: null, choices: SOL_RING_CHOICES, printing: SOL_RING_CHOICES[2], finish: "nonfoil" as const, quantity: 1, condition: null, origins: [], note: null },
 ];
 
-/** U2: a Manabox export that matches nearly everything already held. */
+/** U2: a ManaBox export that matches nearly everything already held. */
 export const UPLOAD_CHOICE = {
   filename: "manabox-oct.csv",
   rows: 4388,

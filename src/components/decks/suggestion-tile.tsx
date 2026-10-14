@@ -8,7 +8,7 @@
 import type { DeckSuggestion, DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, ownedStateCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -308,7 +308,7 @@ export function SuggestionTile({
                   committed={availState === "hard" || availState === "over"}
                   className="w-[8px] h-[8px] flex-none"
                 />
-                {suggestion.owned && <span className="sr-only">Owned</span>}
+                {suggestion.owned && <span className="sr-only">{ownedStateCopy.owned}</span>}
               </>
             )}
             {/* One slot. The chip stays on an applied tile — "already sleeved elsewhere" is

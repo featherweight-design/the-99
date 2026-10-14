@@ -15,7 +15,7 @@ import { TextField } from "@/components/ui/text-field";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 import { CommanderThumb, CARD_ART_RING } from "../ui/commander-thumb";
 import { HandOffAnswersBlock } from "../intake/hand-off-answers";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import type { CreateAnswers } from "../../lib/intake/answers";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
@@ -80,7 +80,7 @@ export function CreatePreFilled({
     e.preventDefault();
     const trimmed = deckName.trim();
     if (trimmed.length === 0 || trimmed.length > DECK_NAME_MAX) {
-      setError(`Name must be 1–${DECK_NAME_MAX} characters.`);
+      setError(renameCopy.errorLength);
       return;
     }
     setError(null);

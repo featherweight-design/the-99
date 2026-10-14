@@ -89,7 +89,7 @@ export function ChangeCommanderDoor({
         {hasCrop ? (<>
         <button
           type="button"
-          aria-label="View card details"
+          aria-label={copy.detailsAria}
           aria-busy={pending}
           onClick={(e) => open(oracleId, siblings, undefined, { opener: e.currentTarget })}
           {...intent}
@@ -166,7 +166,7 @@ export function ChangeCommanderDoor({
       </button>
       <button
         type="button"
-        aria-label="View card details"
+        aria-label={copy.detailsAria}
         aria-busy={pending}
         onClick={(e) => open(oracleId, siblings, undefined, { opener: e.currentTarget })}
         {...intent}

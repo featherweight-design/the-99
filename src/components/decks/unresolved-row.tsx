@@ -13,6 +13,7 @@
 
 import { useRef } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckUnresolvedRow } from "../../lib/decks/grouping";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { ROW_SHELL } from "../ui/row-shell";
@@ -74,7 +75,7 @@ export function UnresolvedRow({
         </span>
         {/* The `?` is the only visual marker of what this row is, so the reader
             gets it in words. */}
-        <span className="sr-only">unmatched line</span>
+        <span className="sr-only">{copy.rowSpoken}</span>
 
         <span
           className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis font-mono text-[11.5px] md:text-[12.5px]"
@@ -96,7 +97,7 @@ export function UnresolvedRow({
             </span>
             {/* Announced at every width — the visual multiplier is mobile-only, but
                 a desktop screen reader would otherwise never hear the copy count. */}
-            <span className="sr-only">{row.quantity} copies</span>
+            <span className="sr-only">{addPanelCopy.row.quantitySpoken(row.quantity)}</span>
           </>
         )}
 

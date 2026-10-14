@@ -601,6 +601,8 @@ export const deckAnalysisCopy = {
    * capital (R2-B; the-99-d9's ruling, 2026-09-24).
    */
   bracketsSheet: {
+    /** The table's name for assistive tech, the same on both widths. */
+    tableAria: "Cards allowed by bracket",
     open: "see all brackets",
     title: "All brackets",
     close: "Close all brackets",

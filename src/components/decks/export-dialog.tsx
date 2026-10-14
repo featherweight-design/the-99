@@ -21,10 +21,12 @@ import { GhostButton } from "@/components/ui/button";
 import { ExternalLink } from "../ui/external-link";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import {
+  exportDialogCopy,
   exportLinkOutCopy,
   exportShoppingCopy,
   exportTabCopy,
   overCopy,
+  ownedStateCopy,
 } from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
 import { deckBodySize } from "../../lib/decks/deck-size";
@@ -129,7 +131,7 @@ export function ExportDialog({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Export deck"
+        aria-label={exportDialogCopy.title}
         className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
       >
         {/* Desktop modal — centered in the viewport by the flex wrapper */}
@@ -255,7 +257,7 @@ function DialogContent({
               color: "var(--fg)",
             }}
           >
-            Export deck
+            {exportDialogCopy.title}
           </p>
           {/* Desktop-only subtitle */}
           {!isMobile && (
@@ -263,7 +265,7 @@ function DialogContent({
               className="font-mono m-0"
               style={{ fontSize: 11, color: "var(--fg-faint)", marginTop: 3 }}
             >
-              Plain text · Moxfield · Archidekt ready
+              {exportDialogCopy.sub}
             </p>
           )}
         </div>
@@ -274,7 +276,7 @@ function DialogContent({
             onClick={onClose}
             className="bg-transparent border-none text-[color:var(--fg-faint)]"
             style={{ fontSize: 17 }}
-            aria-label="Close export dialog"
+            aria-label={exportDialogCopy.closeAria}
           >
             ✕
           </button>
@@ -290,7 +292,7 @@ function DialogContent({
               fontSize: 14,
               cursor: "pointer",
             }}
-            aria-label="Close export dialog"
+            aria-label={exportDialogCopy.closeAria}
           >
             ✕
           </button>
@@ -400,7 +402,7 @@ function DialogContent({
             >
               {/* Preview-only comment header — not part of the copied text */}
               <span aria-hidden style={{ color: "var(--fg-faint)" }}>
-                {`// ${deckName} — ${totalCards} cards`}
+                {exportDialogCopy.previewHeader(deckName, totalCards)}
                 {"\n"}
               </span>
               {/* Commander lines: one per commander, both for a pair */}
@@ -527,7 +529,7 @@ function DialogContent({
                     <OwnershipDot
                       owned={card.owned}
                       className="w-[7px] h-[7px]"
-                      label={card.owned ? "Owned" : "Not owned"}
+                      label={card.owned ? ownedStateCopy.owned : ownedStateCopy.notOwned}
                     />
                   )}
                   {/* Card name */}
@@ -590,8 +592,8 @@ function DialogContent({
           className={`text-[14px] ${isMobile ? "px-[16px] py-[12px]" : "px-[18px] py-[11px]"}`}
         >
           {/* Mobile label: ".txt", desktop: "Download .txt" */}
-          <span className="md:hidden">.txt</span>
-          <span className="hidden md:inline">Download .txt</span>
+          <span className="md:hidden">{exportDialogCopy.downloadShort}</span>
+          <span className="hidden md:inline">{exportDialogCopy.download}</span>
         </GhostButton>
 
         {/* Desktop: "Moxfield · Archidekt ready" note (inline with footer, ml-auto) */}
@@ -600,7 +602,7 @@ function DialogContent({
             className="font-mono"
             style={{ fontSize: 11, color: "var(--fg-faint)", marginLeft: "auto" }}
           >
-            Moxfield · Archidekt ready
+            {exportDialogCopy.ready}
           </span>
         )}
       </div>

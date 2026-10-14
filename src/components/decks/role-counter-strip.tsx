@@ -1,5 +1,6 @@
 // Role Counter Strip — §Role Counter Strip — 5 cells.
 // Server component — recomputes role counts from detail.cards.
+import { roleStripCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { roleCounterFor } from "../../lib/decks/label-role-counts";
@@ -76,7 +77,7 @@ export function RoleCounterStrip({
     <section
       className="px-[16px] py-[10px] md:px-[30px] md:py-[14px]"
       style={{ borderBottom: "1px solid var(--border)" }}
-      aria-label="Recommended mix"
+      aria-label={roleStripCopy.mixLabel}
     >
       {/*
         §Strip header row
@@ -91,7 +92,7 @@ export function RoleCounterStrip({
         <span
           className="font-mono uppercase text-[9px] md:text-[11px] tracking-[0.1em] md:tracking-[0.12em] text-[color:var(--fg-faint)] md:text-[color:var(--fg-body)]"
         >
-          Recommended mix
+          {roleStripCopy.mixLabel}
         </span>
 
         {/* §Strip header — source copy (desktop). The phone had its own

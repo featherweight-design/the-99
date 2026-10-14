@@ -23,7 +23,7 @@ import type { OwnedLegalCommander } from "../../lib/decks/read";
 import { colorLabel } from "../../lib/decks/format";
 import { canPair, partnerAbility, partnerAbilityLabel } from "../../lib/decks/partner";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
+import { addPanelCopy, renameCopy, shortCommanderName } from "../../lib/copy/decks-builder";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { PartnerSlot } from "./partner-slot";
 import { PrimaryButton } from "@/components/ui/button";
@@ -111,7 +111,7 @@ function importRow(c: ImportCommanderCandidate): PickerRow {
 }
 
 function createRow(c: OwnedLegalCommander): PickerRow {
-  const meta = `${colorLabel(c.colorIdentity)} · ${c.poolCount} cards`;
+  const meta = addPanelCopy.createPicker.rowMeta(colorLabel(c.colorIdentity), c.poolCount);
   return {
     oracleId: c.oracleId,
     name: c.name,
@@ -319,7 +319,7 @@ export function CreatePicker(props: CreatePickerProps) {
     if (!selected || inFlight.current) return;
     const trimmed = deckName.trim();
     if (trimmed.length === 0 || trimmed.length > DECK_NAME_MAX) {
-      setError(`Name must be 1–${DECK_NAME_MAX} characters.`);
+      setError(renameCopy.errorLength);
       return;
     }
     setError(null);
@@ -392,7 +392,7 @@ export function CreatePicker(props: CreatePickerProps) {
             <>
               {/* The mobile title above is already "Pick a commander", so the sub
                   carries only the scope the title cannot. */}
-              <span className="md:hidden">From your collection.</span>
+              <span className="md:hidden">{addPanelCopy.createPicker.subPhone}</span>
               <span className="hidden md:inline" style={{ color: "var(--fg-muted)" }}>
                 {helpDoor && preconDoor ? addPanelCopy.createPicker.subDoors
                   : helpDoor ? addPanelCopy.createPicker.sub
@@ -447,14 +447,14 @@ export function CreatePicker(props: CreatePickerProps) {
               onClear={() => setQuery("")}
               onKeyDown={(e) => escapeDismisses(e, query !== "", () => setQuery(""))}
               placeholder={addPanelCopy.createPicker.searchPlaceholder}
-              aria-label="Search commanders"
+              aria-label={addPanelCopy.createPicker.searchAria}
               trailing={
                 /* §Search input — results count (desktop only) */
                 <span
                   className="hidden md:block font-mono ml-auto shrink-0"
                   style={{ fontSize: 11, color: "var(--fg-faint)" }}
                 >
-                  {visible.length} result{visible.length !== 1 ? "s" : ""}
+                  {addPanelCopy.createPicker.resultCount(visible.length)}
                 </span>
               }
             />
@@ -493,7 +493,7 @@ export function CreatePicker(props: CreatePickerProps) {
               maxLength={DECK_NAME_MAX}
               placeholder={addPanelCopy.createPicker.namePlaceholder}
               disabled={isPending}
-              aria-label={isImport ? undefined : "Deck name"}
+              aria-label={isImport ? undefined : renameCopy.fieldAria}
               // 16px on mobile: anything smaller makes iOS Safari zoom the field.
               className="block w-full p-[11px_13px] text-[16px]"
             />
@@ -551,7 +551,7 @@ export function CreatePicker(props: CreatePickerProps) {
               className="font-mono text-[12px] text-center py-[40px]"
               style={{ color: "var(--fg-faint)" }}
             >
-              No owned commanders found. Add cards to your collection first.
+              {addPanelCopy.createPicker.noOwned}
             </p>
           ) : visible.length === 0 ? (
             <p
@@ -567,7 +567,7 @@ export function CreatePicker(props: CreatePickerProps) {
               {pairing && primaryAbility && query.trim() === "" ? (
                 copy.partnerNoneOwned(partnerAbilityLabel(primaryAbility))
               ) : (
-                <>No commanders match &ldquo;{query}&rdquo;.</>
+                <>{addPanelCopy.createPicker.noMatch(query)}</>
               )}
             </p>
           ) : (
@@ -761,7 +761,7 @@ export function CreatePicker(props: CreatePickerProps) {
                   maxLength={DECK_NAME_MAX}
                   placeholder={addPanelCopy.createPicker.namePlaceholder}
                   disabled={isPending}
-                  aria-label={isImport ? undefined : "Deck name"}
+                  aria-label={isImport ? undefined : renameCopy.fieldAria}
                   className="block w-full p-[11px_13px] text-[14px] mb-[16px]"
                 />
               </div>
@@ -771,7 +771,7 @@ export function CreatePicker(props: CreatePickerProps) {
               className="font-mono text-[12px] mb-[16px]"
               style={{ color: "var(--fg-faint)" }}
             >
-              No commander selected.
+              {addPanelCopy.createPicker.noneSelected}
             </p>
           )}
 
