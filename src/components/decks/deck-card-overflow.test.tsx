@@ -223,7 +223,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("We couldn’t delete that deck. Try again.");
+    expect(alert).toHaveTextContent("We couldn’t confirm that deck was deleted. Reload to check.");
     // Re-enabled, because the reader's only move is to try again. Awaited rather
     // than read in the alert's own tick: `setError` runs inside the transition,
     // so the alert can commit while `pending` is still true — and while it is,

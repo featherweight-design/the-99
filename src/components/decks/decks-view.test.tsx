@@ -759,7 +759,7 @@ describe("DecksView", () => {
     await waitFor(() =>
       expect(
         [...container.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent),
-      ).toContain("Folder “Draft pile” created. That did not save. Try again."),
+      ).toContain("Folder “Draft pile” created. We couldn’t confirm that move. Reload to see where the deck is."),
     );
     // And the route is refetched, for the same reason the destination list
     // refetches on a throw: the action may have committed with its response
@@ -942,7 +942,7 @@ describe("DecksView", () => {
     moveFromCard("Unfiled one", "Commander night");
     expect(segment("Commander night", 2)).not.toBeNull();
     await act(async () => answer.reject(new Error("outage")));
-    expect(said()).toContain("That did not save. Try again.");
+    expect(said()).toContain("We couldn’t confirm that move. Reload to see where the deck is.");
     await waitFor(() => expect(segment("Commander night", 1)).not.toBeNull());
     expect(segment("Unfiled", 1)).not.toBeNull();
     expect(routerStub.refresh).toHaveBeenCalledTimes(1);

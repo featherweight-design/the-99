@@ -171,10 +171,10 @@ export const refreshCopy = {
       pending: 'Deleting…',
       /**
        * An outage, not a refusal: `deleteDeck` has no `false` to return — it
-       * either deletes and redirects or throws. So this names the one thing
-       * that can have happened and asks for the one thing that can be done.
+       * either deletes and redirects or throws. So this says the delete
+       * cannot be confirmed and asks for the one thing that can be done: look.
        */
-      failed: 'We couldn’t delete that deck. Try again.',
+      failed: 'We couldn’t confirm that deck was deleted. Reload to check.',
     },
 
     // Card label for screen readers: name, identity, status, count, and the

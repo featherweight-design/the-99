@@ -277,6 +277,6 @@ export const proxyCopy = {
     // DIRECTION-NEUTRAL. One string covers both presses, because the throw that
     // produces it does not know which one it interrupted — and "couldn't mark
     // that" over a failed UNMARK names the opposite of what the reader did.
-    refused: "That didn't save. Try again.",
+    refused: "That may not have saved. Reload to see the proxy mark.",
   },
 } as const;

@@ -144,7 +144,7 @@ export const preconsCopy = {
     owned: {
       label: "I own this precon. Add its cards and tokens to my collection.",
       addedOn: (date: string) => `You added this precon on ${date}`,
-      addFailed: "Couldn’t add the cards. Nothing was saved.",
+      addFailed: "We couldn’t add those. Your collection is unchanged.",
       /** The add threw, so it may have committed with its response lost: no claim of a rollback. */
       addUnsure: "Couldn’t confirm the cards were added. Try again and they won’t be added twice.",
     },
@@ -154,7 +154,7 @@ export const preconsCopy = {
     cancel: "Cancel",
     submit: "Start the deck",
     pending: "Starting…",
-    failed: "Couldn’t start the deck. Nothing was saved.",
+    failed: "We couldn’t confirm that deck was started. Check your decks before you try again.",
     nameInvalid: (max: number) => `Name must be 1–${max} characters, with no control characters.`,
   },
   arrival: {
@@ -211,7 +211,7 @@ export const preconsCopy = {
       cancel: "Cancel",
       submit: "Link",
       pending: "Linking…",
-      failed: "That didn’t link. Try again.",
+      failed: "We couldn’t confirm that linked. Reload to see where the deck stands.",
     },
     pickPrecon: {
       title: (deck: string) => `Which precon was ${deck} built from?`,
@@ -262,7 +262,7 @@ export const preconsCopy = {
       cancel: "Cancel",
       submit: "Unlink",
       pending: "Unlinking…",
-      failed: "That didn’t unlink. Try again.",
+      failed: "We couldn’t confirm that unlinked. Reload to see where the deck stands.",
     },
   },
   empty: {

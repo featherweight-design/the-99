@@ -15,7 +15,7 @@ export const deckPrintingsCopy = {
      *  everywhere in the Collection, which is false here; a token is named, since its details show no card. */
     triggerAria: (n: number, caption: string, tokenName?: string) =>
       `Set: ${caption}. ${count(n)} printings owned. Choose which one this deck uses${tokenName ? ` for ${tokenName}` : ""}.`,
-    failed: "That didn’t save. Try again.",
+    failed: "That may not have saved. Reload to see this deck’s pick.",
     /** The modal's one live region, on a pick. */
     announcePicked: (setName: string, collectorNumber: string) =>
       collectorNumber

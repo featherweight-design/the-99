@@ -161,7 +161,7 @@ export const deckImportCopy = {
      * Design rules on it — same standing as `entry.subMobileNoLink`.
      */
     unexpected: {
-      heading: "That didn't go through",
+      heading: "That didn’t go through",
       /**
        * `detail` is the thrown message when the server refused for a reason the
        * player can act on — the size cap most of all, which is theirs to fix and
@@ -173,14 +173,29 @@ export const deckImportCopy = {
       bodyMobile: (detail: string | null) =>
         detail
           ? `${detail}. Your list is still here.`
-          : "Something went wrong on our end. Your list is still here.",
+          : "Something went wrong on our end. Your list is still here. Check your decks before you try again.",
       body: (detail: string | null) =>
         detail
           ? `${detail}. Your list is still here. Trim it and try again.`
-          : "Something went wrong on our end and the deck wasn't made. Your list is still here. Try it again.",
+          : "Something went wrong on our end, and we can’t confirm the deck was made. Your list is still here. Check your decks before you try again.",
       // Not "Try again": the button dismisses the banner and hands the list back
       // for editing, and on the size cap an immediate retry cannot succeed. The
       // CTA names what it does. Ratification owed.
+      action: "Back to your list",
+      retry: false,
+    },
+    /**
+     * The update's comparison threw. It only reads, so nothing was written and the
+     * reader has no deck to go and check; the cap message passes through as above.
+     */
+    unexpectedCompare: {
+      heading: "That didn’t go through",
+      bodyMobile: (detail: string | null) =>
+        detail ? `${detail}. Your list is still here.` : "Something went wrong on our end. Your list is still here.",
+      body: (detail: string | null) =>
+        detail
+          ? `${detail}. Your list is still here. Trim it and try again.`
+          : "Something went wrong on our end, and nothing was changed. Your list is still here. Try it again.",
       action: "Back to your list",
       retry: false,
     },
@@ -617,8 +632,8 @@ export const deckImportCopy = {
       live: "Updating the deck.",
     },
     refused: {
-      heading: "That didn’t go through",
-      body: "Your deck is exactly as it was. Your list is still here. Try again.",
+      heading: "We couldn’t confirm that update",
+      body: "Open the deck in another tab to see where it stands. Your list is still here.",
       action: "Try again",
     },
 
