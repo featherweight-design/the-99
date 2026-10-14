@@ -351,7 +351,7 @@ export const topOffCopy = {
      *  both explain a list that is there to be ticked; this one is the only
      *  state where the rows are gone, so it names the way back instead. */
     nothingTickedAllDeclined: (cand: string) =>
-      `you've set all ${cand} aside: show any of them again to pick it up`,
+      `you’ve set all ${cand} aside: show any of them again to pick it up`,
 
     /** ADOPTED from recommendationsCopy.fill.fillingRows, which this key
      *  replaces: a 27-row write is exactly what that sentence was written for,

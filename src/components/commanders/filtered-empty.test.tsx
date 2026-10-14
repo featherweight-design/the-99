@@ -11,7 +11,7 @@ describe("FilteredEmpty", () => {
   it("names the single control whose removal returns the most rows", () => {
     render(
       <FilteredEmpty
-        nearest={{ name: "Yeva, Nature's Herald", control: "Red", rows: 3 }}
+        nearest={{ name: "Yeva, Nature’s Herald", control: "Red", rows: 3 }}
         onDrop={() => {}}
         onClearAll={() => {}}
       />,
@@ -20,7 +20,7 @@ describe("FilteredEmpty", () => {
       screen.getByText(
         (_, el) =>
           el?.textContent ===
-          "Yeva, Nature's Herald is in your commanders, but Red excludes it. Drop the color and you get 3 rows back.",
+          "Yeva, Nature’s Herald is in your commanders, but Red excludes it. Drop the color and you get 3 rows back.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Drop Red" })).toBeInTheDocument();
@@ -29,7 +29,7 @@ describe("FilteredEmpty", () => {
   it("says one row rather than 1 rows", () => {
     render(
       <FilteredEmpty
-        nearest={{ name: "Yeva, Nature's Herald", control: "Red", rows: 1 }}
+        nearest={{ name: "Yeva, Nature’s Herald", control: "Red", rows: 1 }}
         onDrop={() => {}}
         onClearAll={() => {}}
       />,
@@ -49,7 +49,7 @@ describe("FilteredEmpty", () => {
   it("always offers Clear all filters", () => {
     render(
       <FilteredEmpty
-        nearest={{ name: "Yeva, Nature's Herald", control: "Red", rows: 3 }}
+        nearest={{ name: "Yeva, Nature’s Herald", control: "Red", rows: 3 }}
         onDrop={() => {}}
         onClearAll={() => {}}
       />,
@@ -70,7 +70,7 @@ describe("OwnedSearchEmpty", () => {
   it("names the lane boundary rather than a spelling hint alone", () => {
     render(<OwnedSearchEmpty query="jodah" total={148} onClearSearch={() => {}} />);
     expect(screen.getByText("No commander by that name")).toBeInTheDocument();
-    expect(screen.getByText(/it's on Discover instead/)).toBeInTheDocument();
+    expect(screen.getByText(/it’s on Discover instead/)).toBeInTheDocument();
   });
 
   it("counts the lane it is speaking about", () => {

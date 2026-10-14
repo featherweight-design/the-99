@@ -62,7 +62,7 @@ export const filterCopy = {
     many: (codes: readonly string[]) => `Printed in ${codes.map((c) => c.toUpperCase()).join(", ")}`,
     manyShort: (count: number) => `Printed in ${count} sets`,
     // Shown once in the panel head. It is the whole reason the control is not called Set.
-    hint: "Matches any printing, including ones you don't own.",
+    hint: "Matches any printing, including ones you don’t own.",
     removeAria: "Clear the printed-in filter",
     // The sheet's row, which says what is CHOSEN; the legend above it names the dimension.
     rowAny: "Any set",
@@ -146,20 +146,20 @@ export const commandersCopy = {
     all: "All my cards",
     free: "Free cards only",
     freeShort: "Free only",
-    hint: "Free means not spoken for by a deck you've already built.",
+    hint: "Free means not spoken for by a deck you’ve already built.",
     // Appended to the result line, free mode only, only when it hid something.
     // The reader has just watched a count drop; this is the sentence that says
     // where those rows went without putting them back.
     sleevedAside: (hidden: number) =>
       hidden === 1
-        ? "1 more is sleeved into a deck you've built"
-        : `${n(hidden)} more are sleeved into decks you've built`,
+        ? "1 more is sleeved into a deck you’ve built"
+        : `${n(hidden)} more are sleeved into decks you’ve built`,
   },
 
   result: {
     // At rest: a statement, not a ratio.
     rest: (count: number) =>
-      `${n(count)} ${count === 1 ? "commander" : "commanders"} you own and haven't built`,
+      `${n(count)} ${count === 1 ? "commander" : "commanders"} you own and haven’t built`,
     filtered: (shown: number, total: number) => `${n(shown)} of ${n(total)} commanders match`,
   },
 
@@ -197,14 +197,14 @@ export const commandersCopy = {
   // fix here is the other half of one control. The button carries the segment's
   // own label, so pressing it lands the reader somewhere they can already name.
   emptyFree: {
-    heading: "They're all in decks already",
+    heading: "They’re all in decks already",
     body: "Nothing you own is free to lead a new deck right now.",
     // The same state reached through the search box. It must exist separately,
     // because the lane's other search-empty sentence says the commander may not
     // be owned and points at Discover — which is exactly false here: the reader
     // owns it, and a deck they built is holding it.
     searchBody: (q: string) =>
-      `Your commanders matching "${q}" are all sleeved into decks you've built.`,
+      `Your commanders matching "${q}" are all sleeved into decks you’ve built.`,
     fix: "All my cards",
   },
 
@@ -216,7 +216,7 @@ export const commandersCopy = {
     body: (q: string, total: number) =>
       `Nothing in your commanders matches "${q}". This lane lists the ${n(
         total,
-      )} you own. If you don't own it yet, it's on Discover instead.`,
+      )} you own. If you don’t own it yet, it’s on Discover instead.`,
     clearSearch: "Clear search",
     otherLane: "Search Discover",
   },
@@ -224,7 +224,7 @@ export const commandersCopy = {
 
 export const discoverCopy = {
   title: "Discover",
-  subtitle: "commanders you don't own",
+  subtitle: "commanders you don’t own",
   navLabel: "Discover",
   otherLane: "Your commanders",
 
@@ -270,7 +270,7 @@ export const discoverCopy = {
     body: (q: string, total: number) =>
       `Nothing here matches "${q}". This lane lists the ${n(
         total,
-      )} commanders you don't own. If you already own it, it's on your commanders instead.`,
+      )} commanders you don’t own. If you already own it, it’s on your commanders instead.`,
     clearSearch: "Clear search",
     otherLane: "Search your commanders",
   },

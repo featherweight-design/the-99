@@ -79,8 +79,8 @@ export const preconsCopy = {
     edition: {
       aria: "Edition",
       regular: "Regular",
-      collector: "Collector's Edition",
-      collectorNote: "Every card in the Collector's Edition is foil.",
+      collector: "Collector’s Edition",
+      collectorNote: "Every card in the Collector’s Edition is foil.",
       /** Beside a read-only row's `SET number` when its printing is foil. */
       foil: "foil",
     },

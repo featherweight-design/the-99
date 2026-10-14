@@ -154,7 +154,7 @@ describe("CommanderRow · the gap slot is never empty", () => {
   // each built deck's commander tag list, so a reader whose Kenrith deck is
   // Politics still has Group Hug in their played set. It names the commander's
   // own top themes instead.
-  it("names the commander's top play styles rather than claiming coverage", () => {
+  it("names the commander’s top play styles rather than claiming coverage", () => {
     const { container } = row({
       gapSlot: { kind: "allPlayed", labels: ["Group Hug", "Politics", "Reanimator"], capped: true },
     });
@@ -193,7 +193,7 @@ describe("CommanderRow · the gap slot is never empty", () => {
       gapSlot: { kind: "allPlayed", labels: ["Politics"], capped: false },
     });
 
-    expect(gapText(container)).toBe("This commander's play style is Politics.");
+    expect(gapText(container)).toBe("This commander’s play style is Politics.");
   });
 
   // State 3, and the ruling that keeps state 4 honest: a commander with no
@@ -418,11 +418,11 @@ describe("CommanderRow · nothing is read off ownership", () => {
   });
 });
 
-describe("the row's art and its position", () => {
+describe("the row’s art and its position", () => {
   const ART = "https://cards.scryfall.io/art_crop/front/a/b/ab.jpg";
   const art = (container: HTMLElement) => container.querySelector<HTMLElement>(".art-wash-art")!;
 
-  it("draws the first screen's art at once, never waiting on the viewport", () => {
+  it("draws the first screen’s art at once, never waiting on the viewport", () => {
     // An observer that never reports: with jsdom's missing one, every row would load at once and
     // this would pass over a gate that deferred the first screen too.
     class SilentObserver {
@@ -438,7 +438,7 @@ describe("the row's art and its position", () => {
     }
   });
 
-  it("holds a lower row's art until it nears the viewport, keeping the layer's box", () => {
+  it("holds a lower row’s art until it nears the viewport, keeping the layer’s box", () => {
     let fire: (() => void) | null = null;
     class FakeObserver {
       constructor(private cb: IntersectionObserverCallback) {}

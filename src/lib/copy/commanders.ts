@@ -31,7 +31,7 @@ export const commandersCopy = {
     line: (cardsRead: number, candidates: number) =>
       `${cardsRead.toLocaleString("en-US")} card${cardsRead === 1 ? "" : "s"} read. ${candidates.toLocaleString("en-US")} can lead. I ranked ${
         candidates === 1 ? "it" : "them"
-      }. You're welcome.`,
+      }. You’re welcome.`,
     // Not from the mock. The mock wrote this line for a crumb row; here it sits
     // in the guided-setup banner, whose job is to say what to do next. The v1
     // body it replaces carried this instruction, and the mock line carries no

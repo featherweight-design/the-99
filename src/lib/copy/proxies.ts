@@ -46,13 +46,13 @@ export const proxyCopy = {
     title: "Proxy",
     // The row's own reading order carries the card name, so the mark does not repeat it.
     // Stated as the deck's answer, not as a property of the card.
-    aria: "You're running a proxy for this one",
+    aria: "You’re running a proxy for this one",
     // The pair case, and ONLY the pair case: two commanders, two independent flags, one
     // caption row, so a bare glyph would be ambiguous about WHICH commander. Short name,
     // after a middot. Never "P×2" — ruling 5.
     pair: (shortName: string) => `P · ${shortName}`,
     pairTitle: (shortName: string) => `Proxy · ${shortName}`,
-    pairAria: (name: string) => `You're running a proxy for ${name}`,
+    pairAria: (name: string) => `You’re running a proxy for ${name}`,
   },
 
   // ── The key, under the decklist toolbar ───────────────────────────────
@@ -95,7 +95,7 @@ export const proxyCopy = {
     // Two clauses, and the second is the one that matters. "This deck's slot is filled"
     // alone invites the inference the whole feature exists to prevent.
     marked: (deck: string) =>
-      `${deck}'s slot is filled. No copy in your collection is used.`,
+      `${deck}’s slot is filled. No copy in your collection is used.`,
     // Ruling 2, said once, in both states. The reader's real question is "do I have to
     // commit this?" and it is cheaper to answer than to leave hanging.
     note: "Takes effect at once. A proxy is not part of a version.",
@@ -103,10 +103,10 @@ export const proxyCopy = {
     // toggle drawn over a state nobody knows invites the wrong press. Greyed in
     // place rather than absent: the control still belongs here, it just cannot
     // answer yet.
-    unknown: "Can't tell whether this one's a proxy right now.",
+    unknown: "Can’t tell whether this one’s a proxy right now.",
     // The membership validation can refuse: the card left the deck between render and tap.
     // Names what is true now rather than what failed.
-    refused: (card: string) => `${card} isn't in this deck any more, so there's nothing to proxy.`,
+    refused: (card: string) => `${card} isn’t in this deck any more, so there’s nothing to proxy.`,
     announceMarked: (card: string, deck: string) =>
       `${card} is now a proxy in ${deck}. No copy in your collection is used.`,
     // States the consequence, because it is the one that can surprise: the deck starts
@@ -201,7 +201,7 @@ export const proxyCopy = {
 
   // ── /collection/proxies ───────────────────────────────────────────────
   page: {
-    title: "What you're printing",
+    title: "What you’re printing",
     // The second clause is a clarification for a player who HAS a collection, so it drops
     // for one who does not — that reader needs no reassurance about a collection they
     // never made.
@@ -209,7 +209,7 @@ export const proxyCopy = {
       `${cards === 1 ? "1 card" : `${cards} cards`} across ${decks === 1 ? "1 deck" : `${decks} decks`}.`,
     subtitleWithCollection: (cards: number, decks: number) =>
       `${cards === 1 ? "1 card" : `${cards} cards`} across ${decks === 1 ? "1 deck" : `${decks} decks`}.`
-      + " Marking a proxy fills a deck's slot and uses no copy, so nothing here has moved in or out of your collection.",
+      + " Marking a proxy fills a deck’s slot and uses no copy, so nothing here has moved in or out of your collection.",
     tail: (remaining: number) =>
       remaining === 1 ? "… 1 more card" : `… ${remaining} more cards`,
   },
@@ -247,7 +247,7 @@ export const proxyCopy = {
     // Ruling 3's case is invisible in this list otherwise — a legend looks like any other
     // card here. Neutral hairline skin, never a colour.
     commander: "commander",
-    commanderAria: "This deck's commander",
+    commanderAria: "This deck’s commander",
     noStock: "no stock",
     noStockAria: "Never stocked at Mana Pool",
   },
@@ -257,15 +257,15 @@ export const proxyCopy = {
   // Neither mentions the collection, which is the rule this whole route is built on.
   empty: {
     // Has decks, proxies none of them.
-    heading: "You're not printing anything",
+    heading: "You’re not printing anything",
     body:
-      "When a card in a deck is too expensive to buy, or two decks want the one copy you have, mark one of them as a proxy from the card's sheet. It lands here.",
+      "When a card in a deck is too expensive to buy, or two decks want the one copy you have, mark one of them as a proxy from the card’s sheet. It lands here.",
     action: "Go to your decks",
     // No decks at all. The only branch with a filled button, because here there genuinely
     // is one next act.
     noDecksHeading: "Proxies start in a deck",
     noDecksBody:
-      "A proxy is one deck's answer about one slot, so there has to be a deck first. Build one and this page fills itself in.",
+      "A proxy is one deck’s answer about one slot, so there has to be a deck first. Build one and this page fills itself in.",
     noDecksAction: "Build a deck",
   },
 
@@ -273,7 +273,7 @@ export const proxyCopy = {
   // doing anything wrong — a card cut in another tab, a deck deleted — so
   // neither blames them and neither names a table.
   error: {
-    notInDeck: "That card isn't in this deck any more.",
+    notInDeck: "That card isn’t in this deck any more.",
     // DIRECTION-NEUTRAL. One string covers both presses, because the throw that
     // produces it does not know which one it interrupted — and "couldn't mark
     // that" over a failed UNMARK names the opposite of what the reader did.

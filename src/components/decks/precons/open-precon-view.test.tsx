@@ -320,9 +320,9 @@ describe("OpenPreconView edition switch", () => {
 
   it("starts on the edition the URL named, and draws that edition's printings", () => {
     render(<OpenPreconView precon={withCollector()} fromNew={false} edition="collector" />);
-    expect(screen.getByRole("radio", { name: "Collector's Edition" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Collector’s Edition" })).toHaveAttribute("aria-checked", "true");
     expect(viewed("Sol Ring")).toBe("cmc");
-    expect(screen.getByText("Every card in the Collector's Edition is foil.")).toBeInTheDocument();
+    expect(screen.getByText("Every card in the Collector’s Edition is foil.")).toBeInTheDocument();
   });
 
   it("draws the head's commander in the chosen edition's art", () => {
@@ -335,14 +335,14 @@ describe("OpenPreconView edition switch", () => {
     };
     render(<OpenPreconView precon={p} fromNew={false} />);
     expect(screen.getByTestId("thumb-open").dataset.src).toBe("plain-art");
-    fireEvent.click(screen.getByRole("radio", { name: "Collector's Edition" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Collector’s Edition" }));
     expect(screen.getByTestId("thumb-open").dataset.src).toBe("ce-art");
   });
 
   it("hands Start the chosen edition's own box and its own added date", () => {
     render(<OpenPreconView precon={withCollector()} fromNew={false} />);
     expect(startProps).toMatchObject({ addFileName: "EldraziUnbound_CMM", addedOn: "2026-10-01T00:00:00.000Z" });
-    fireEvent.click(screen.getByRole("radio", { name: "Collector's Edition" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Collector’s Edition" }));
     expect(startProps).toMatchObject({ addFileName: "EldraziUnboundCE_CMM", addedOn: null });
   });
 
@@ -350,7 +350,7 @@ describe("OpenPreconView edition switch", () => {
     render(<OpenPreconView precon={withCollector()} fromNew={false} />);
     expect(viewed("Sol Ring")).toBe("cmm");
     act(() => { window.history.pushState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new&edition=collector"); });
-    expect(screen.getByRole("radio", { name: "Collector's Edition" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Collector’s Edition" })).toHaveAttribute("aria-checked", "true");
     expect(viewed("Sol Ring")).toBe("cmc");
     act(() => { window.history.pushState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new"); });
     expect(viewed("Sol Ring")).toBe("cmm");
@@ -366,7 +366,7 @@ describe("OpenPreconView edition switch", () => {
   it("swaps the printings on a press, keeps the counts, and writes only its own parameter", () => {
     render(<OpenPreconView precon={withCollector()} fromNew={false} />);
     expect(viewed("Sol Ring")).toBe("cmm");
-    fireEvent.click(screen.getByRole("radio", { name: "Collector's Edition" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Collector’s Edition" }));
     expect(viewed("Sol Ring")).toBe("cmc");
     expect(screen.getByText("1 of 2")).toBeInTheDocument();
     expect(mirrored.urls.at(-1)).toBe("/decks/precons/EldraziUnbound_CMM?from=new&edition=collector");

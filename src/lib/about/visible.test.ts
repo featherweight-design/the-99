@@ -15,7 +15,7 @@ const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "CHANGE_
 const catalog = [plain, a, b];
 const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
 
-describe("all-decks-cart's press line", () => {
+describe("all-decks-cart’s press line", () => {
   it("drops the buy key while I got it is off, so the entry never promises an inert tag", () => {
     const cartOnly = visibleEntries({ ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
     const withBuy = visibleEntries({ ALL_DECKS_CART_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
@@ -25,7 +25,7 @@ describe("all-decks-cart's press line", () => {
   });
 });
 
-describe("with every switch off, nothing changes (the invariance Hugh's ruling requires)", () => {
+describe("with every switch off, nothing changes (the invariance Hugh’s ruling requires)", () => {
   // The entries a switch cannot hide. With every switch off they are the whole page, and the page
   // must behave exactly as the single-version model did over them.
   const unswitched = aboutEntries.filter((e) => !e.switch);
@@ -269,7 +269,7 @@ describe("every switched line names text its entry carries", () => {
 
 describe("a negated line switch, and `import`'s two warnings (collection edit)", () => {
   const imp = aboutEntries.find((e) => e.id === "import")!;
-  const REPLACES = "Heads up: an import replaces your whole Collection, it doesn't add to it.";
+  const REPLACES = "Heads up: an import replaces your whole Collection, it doesn’t add to it.";
   const ASKS = "Already have a Collection here? The 99 asks whether the file replaces it or adds to it.";
   const env = (v?: string) => (v === undefined ? {} : { COLLECTION_EDIT_ENABLED: v }) as unknown as NodeJS.ProcessEnv;
 
@@ -310,7 +310,7 @@ describe("deck-benchmarks follows DECK_BENCHMARKS_ENABLED", () => {
     expect(ids({ DECK_BENCHMARKS_ENABLED: "true" })).not.toContain("deck-benchmarks");
   });
 
-  it("is the evidence line's one bump", () => {
+  it("is the evidence line’s one bump", () => {
     const entry = aboutEntries.find((e) => e.id === "deck-benchmarks")!;
     expect(entry.since).toBe(13);
     expect(entry.chapter).toBe("03");
@@ -318,7 +318,7 @@ describe("deck-benchmarks follows DECK_BENCHMARKS_ENABLED", () => {
   });
 });
 
-describe("the collection home epic's two entries (one bump, 14)", () => {
+describe("the collection home epic’s two entries (one bump, 14)", () => {
   const ids = (env: Record<string, string>) => visibleEntries(env as unknown as NodeJS.ProcessEnv).map((e) => e.id);
 
   it("draws I got it only with both of its switches, after stand-ins", () => {
@@ -352,7 +352,7 @@ describe("the collection home epic's two entries (one bump, 14)", () => {
   });
 });
 
-describe("Help me choose's read (rework plan PR 5: the entry rewritten, no bump)", () => {
+describe("Help me choose’s read (rework plan PR 5: the entry rewritten, no bump)", () => {
   // A reader one version behind who never met the entry: production, where the switch is off.
   const behind = seen(ABOUT_VERSION - 1);
 
@@ -371,7 +371,7 @@ describe("Help me choose's read (rework plan PR 5: the entry rewritten, no bump)
     expect(unseenEntries(visibleEntries(on), seen(ABOUT_VERSION - 1, ["help-me-choose"]))).toEqual([]);
   });
 
-  it("names the read's credit in the credits entry only with the switch on", () => {
+  it("names the read’s credit in the credits entry only with the switch on", () => {
     const bullet = "- Each new “Help me choose” search where you fill in “Anything else?”";
     const credits = (env: Record<string, string>) =>
       visibleEntries(env as unknown as NodeJS.ProcessEnv).find((e) => e.id === "credits")!.caption;

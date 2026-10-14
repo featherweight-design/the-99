@@ -517,7 +517,7 @@ describe("DiscoveryView", () => {
 
   // The rows held on screen while a new ranking's rows arrive are the rows as DRAWN: resolved
   // against the new ranking's fields, the ones fetched for the old ranking would drop out.
-  it("keeps the rows it drew while another ranking's rows arrive", async () => {
+  it("keeps the rows it drew while another ranking’s rows arrive", async () => {
     const fields = vi.fn((url: string) => {
       const slugs = new URL(url, "http://x").searchParams.get("s")!.split(",");
       const byslug = new Map(many(60).map((r) => [r.slug, r]));
@@ -545,7 +545,7 @@ describe("DiscoveryView", () => {
 
   // A list too short to have been windowed has no window to count, and its rows
   // never receive the reveal's focus move, so they are not tab stops.
-  it("leaves an unwindowed list's rows out of the tab order", () => {
+  it("leaves an unwindowed list’s rows out of the tab order", () => {
     const { container } = render(
       <DiscoveryView basis="classifier" encoded={list({ items: many(10), candidateCount: 10 })} />,
     );
@@ -685,7 +685,7 @@ describe("DiscoveryView", () => {
     // between two navigations: `fit` filed under the classifier, the flip, an uncached `new` served
     // under labels, then back to the cached `fit`. Its withheld rows must be asked for under the
     // classifier, the basis they were counted by, not the latest payload's.
-    it("asks for a cached ranking's fields under the basis it was filed with", async () => {
+    it("asks for a cached ranking’s fields under the basis it was filed with", async () => {
       const urls: string[] = [];
       // Never answered, and rejected on abort as a real fetch is, so a batch the view gives up on
       // releases its rows to be asked for again.
@@ -931,7 +931,7 @@ describe("DiscoveryView", () => {
   // The same correction above a live list, where the aside draws it rather than
   // the zero state. Both call sites, because the link is the whole fix and a
   // button here would be the bug again.
-  it("links the aside's correction to the owned lane when a deck already holds the match", async () => {
+  it("links the aside’s correction to the owned lane when a deck already holds the match", async () => {
     findExcluded.mockResolvedValue([
       { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "built", pct: null },
     ]);
@@ -1016,7 +1016,7 @@ describe("DiscoveryView", () => {
 
   // A report is written about one query. Carrying it into the next would name a
   // commander the reader is no longer asking about.
-  it("drops the server's answer when the query changes", async () => {
+  it("drops the server’s answer when the query changes", async () => {
     findExcluded.mockResolvedValue([
       { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "built", pct: null },
     ]);
@@ -1036,7 +1036,7 @@ describe("DiscoveryView", () => {
   });
 
   // ── The exclusion line ────────────────────────────────────────────────
-  it("prints the list's receipt in tier order, and nothing when nothing was excluded", () => {
+  it("prints the list’s receipt in tier order, and nothing when nothing was excluded", () => {
     const items = [
       item({ slug: "a", colorIdentity: ["G"] }),
       item({ slug: "b", colorIdentity: ["U"], rank: 2 }),
@@ -1160,7 +1160,7 @@ describe("DiscoveryView Printed in", () => {
     window.history.replaceState(null, "", "/discover?c=g&p=cmm");
     render(<DiscoveryView basis="classifier" encoded={list({ items, candidateCount: 3 })} printedIn={printedIn} />);
     expect(screen.getByText(discoveryCopy.empty.filteredTogetherHeading)).toBeInTheDocument();
-    expect(screen.getByText("None of the 3 you don't own is green and printed in CMM.")).toBeInTheDocument();
+    expect(screen.getByText("None of the 3 you don’t own is green and printed in CMM.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: discoveryCopy.empty.filteredSetsCta }));
     expect(shown()).toEqual(["Alpha", "Beta"]);
   });
@@ -1184,7 +1184,7 @@ describe("DiscoveryView Printed in", () => {
 });
 
 describe("DiscoveryView — the rows' art and their place in the list", () => {
-  it("draws the first screen's art at once and holds the rows below it", () => {
+  it("draws the first screen’s art at once and holds the rows below it", () => {
     // An observer that never reports, so a held row stays held while the test reads it.
     vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
     try {

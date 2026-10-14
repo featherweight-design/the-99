@@ -162,7 +162,7 @@ describe("optimistic deck list", () => {
     });
 
     expect(screen.getByRole("alert")).toHaveTextContent("Forest");
-    expect(screen.getByRole("alert")).toHaveTextContent("It's still in the deck");
+    expect(screen.getByRole("alert")).toHaveTextContent("It’s still in the deck");
     // And the card comes back: the override expires with the transition.
     expect(screen.getByRole("button", { name: "Remove Forest" })).toBeInTheDocument();
   });
@@ -227,7 +227,7 @@ describe("optimistic deck list", () => {
     await act(async () => { pending.resolve({ ok: true }); });
   });
 
-  it("moves the spine's progress figure, not just the decklist", async () => {
+  it("moves the spine’s progress figure, not just the decklist", async () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
 

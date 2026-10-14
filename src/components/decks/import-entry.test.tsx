@@ -106,7 +106,7 @@ describe("state 1 — entry", () => {
     fireEvent.change(nameBox(), { target: { value: "Borrowed deck" } });
     submit();
     await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1"));
-    expect(screen.queryByText("Which one's the commander?")).toBeNull();
+    expect(screen.queryByText("Which one’s the commander?")).toBeNull();
     // No commanderOracleId is sent: the server action reads the declaration itself.
     expect(importDeck.mock.calls[0][0].commanderOracleId).toBeUndefined();
   });
@@ -160,7 +160,7 @@ describe("state 8 — file rejected", () => {
     pickFile(big);
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("We can't open that file");
+    expect(alert.textContent).toContain("We can’t open that file");
     expect(alert.textContent).toContain("2 MB");
     expect(alert.textContent).toContain(".csv");
     // One byte over, so the size must not read as the cap it broke.
@@ -185,7 +185,7 @@ describe("state 9 — nothing matched", () => {
     submit();
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("We couldn't find any of these cards");
+    expect(alert.textContent).toContain("We couldn’t find any of these cards");
     expect(alert.textContent).toContain("12 lines");
     expect(pasteBox()).toHaveProperty("value", "1 Sol Ring\n1 Cultivate");
     expect(screen.getByRole("button", { name: "Clear and start over" })).toBeTruthy();
@@ -282,7 +282,7 @@ describe("state 11 — commander picker", () => {
     fillPaste();
     submit();
 
-    await screen.findByText("Which one's the commander?");
+    await screen.findByText("Which one’s the commander?");
     expect(screen.getByText("3 legendary creatures in this import")).toBeTruthy();
     const rows = screen.getAllByRole("button", { pressed: false });
     expect(rows.map((r) => r.querySelector("p")?.textContent)).toEqual([
@@ -304,7 +304,7 @@ describe("state 11 — commander picker", () => {
     fillPaste();
     submit();
 
-    await screen.findByText("Which one's the commander?");
+    await screen.findByText("Which one’s the commander?");
     fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
     // Pre-filled from the entry surface, and editable.
     const nameField = screen.getByLabelText("Deck name") as HTMLInputElement;
@@ -333,7 +333,7 @@ describe("state 11 — commander picker", () => {
     fillPaste();
     submit();
 
-    await screen.findByText("Which one's the commander?");
+    await screen.findByText("Which one’s the commander?");
     fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
     fireEvent.change(screen.getByLabelText("Deck name"), {
       target: { value: "Atraxa, borrowed" },
@@ -342,8 +342,8 @@ describe("state 11 — commander picker", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("We couldn't find any of these cards");
-    expect(screen.queryByText("Which one's the commander?")).toBeNull();
+    expect(alert.textContent).toContain("We couldn’t find any of these cards");
+    expect(screen.queryByText("Which one’s the commander?")).toBeNull();
     // The name edited in the picker survives the trip back, or the player retypes it.
     expect(nameBox()).toHaveProperty("value", "Atraxa, borrowed");
     expect(push).not.toHaveBeenCalled();
@@ -355,7 +355,7 @@ describe("state 11 — commander picker", () => {
     fillPaste();
     submit();
 
-    await screen.findByText("Which one's the commander?");
+    await screen.findByText("Which one’s the commander?");
     for (const button of screen.getAllByRole("button", { name: "Make the deck →" })) {
       expect(button).toHaveProperty("disabled", true);
     }
@@ -370,11 +370,11 @@ describe("state 12 — no legendary creature", () => {
     submit();
 
     const dead = await screen.findByRole("alert");
-    expect(dead.textContent).toContain("There's no commander in here");
+    expect(dead.textContent).toContain("There’s no commander in here");
     expect(dead.textContent).toContain("none of these 99 lines is one");
     expect(dead.textContent).toContain("Nothing was created");
     // No picker, and above all no deck.
-    expect(screen.queryByText("Which one's the commander?")).toBeNull();
+    expect(screen.queryByText("Which one’s the commander?")).toBeNull();
     expect(screen.queryByRole("button", { name: "Make the deck →" })).toBeNull();
     expect(push).not.toHaveBeenCalled();
     expect(importDeck).toHaveBeenCalledTimes(1);

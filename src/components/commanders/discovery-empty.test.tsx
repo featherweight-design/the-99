@@ -9,7 +9,7 @@ describe("DiscoveryEmpty", () => {
   it("names the lane boundary rather than a spelling hint alone", () => {
     render(<DiscoveryEmpty query="jodah" total={3301} onClearSearch={() => {}} />);
     expect(screen.getByText("No commander by that name")).toBeTruthy();
-    expect(screen.getByText(/it's on your commanders instead/)).toBeTruthy();
+    expect(screen.getByText(/it’s on your commanders instead/)).toBeTruthy();
   });
 
   it("offers the other lane, carrying the same query", () => {

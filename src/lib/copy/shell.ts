@@ -23,7 +23,7 @@ export const shellCopy = {
   loading: {
     home: {
       heading: "Setting the table",
-      status: "counting what you've got…",
+      status: "counting what you’ve got…",
     },
     collection: {
       heading: "Reading your collection",
@@ -48,7 +48,7 @@ export const shellCopy = {
     // status naming what the wait is actually spent on.
     sets: {
       heading: "Laying out the sets",
-      status: "counting what you're missing…",
+      status: "counting what you’re missing…",
     },
     setGrid: {
       heading: "Dealing the set",
@@ -64,7 +64,7 @@ export const shellCopy = {
     // commanders with "counting what you've got".
     discover: {
       heading: "Casting a wider net",
-      status: "ranking what you don't own…",
+      status: "ranking what you don’t own…",
     },
     decks: {
       heading: "Shuffling up",
@@ -79,12 +79,12 @@ export const shellCopy = {
     // at — so the status names the list being fetched, not the paste to come.
     deckUpdate: {
       heading: "Fetching the list",
-      status: "reading what's in the deck…",
+      status: "reading what’s in the deck…",
     },
   },
   notFound: {
     numeral: "404",
-    heading: "There's no page here.",
+    heading: "There’s no page here.",
     caption: "I checked. Twice. Probably a typo in the URL.",
     primaryCta: "Back home",
     secondaryCta: "View decks",

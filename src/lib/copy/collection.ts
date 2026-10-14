@@ -555,7 +555,7 @@ export const printingPickerCopy = {
     // Shown only inside the region, only on the affected card. Never on the
     // review screen, never as a toast. Reactivation is silent — no strings.
     dormantNote: (setName: string) =>
-      `You picked the ${setName} printing before. It's not in your collection right now, so we're showing another one you own.`,
+      `You picked the ${setName} printing before. It’s not in your collection right now, so we’re showing another one you own.`,
     dormantBadge: "Your pick · not owned now",
     dormantQty: "×0",
     dormantAria: (setName: string) =>

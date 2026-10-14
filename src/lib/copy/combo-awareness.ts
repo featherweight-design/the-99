@@ -108,7 +108,7 @@ export const comboAwarenessCopy = {
     state: {
       inDeck: 'in this deck',
       owned: 'you own it',
-      notOwned: "you don't own it",
+      notOwned: "you don’t own it",
     },
     /**
      * The closed row's summary. The block is closed by default at EVERY count, so this is what

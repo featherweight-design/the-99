@@ -107,7 +107,7 @@ describe("CommanderDetail synergy states", () => {
 
   it("says the commander is not indexed, with no Retry, when the state is absent", () => {
     render(<CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
-    expect(screen.getAllByText(/EDHREC doesn't track this commander/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/EDHREC doesn’t track this commander/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();
   });
@@ -181,7 +181,7 @@ describe("CommanderDetail fit hero", () => {
   // The legend used to print each segment's share of the achieved total, which always
   // summed to 100% and taught nothing about the weights. Points over weight makes the
   // headline auditable by addition.
-  it("prints each segment's points over its weight", () => {
+  it("prints each segment’s points over its weight", () => {
     render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     expect(screen.getAllByLabelText("Pool, 12 of 15 points").length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText("Roles, 8 of 25 points").length).toBeGreaterThan(0);

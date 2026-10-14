@@ -93,7 +93,7 @@ export const deckAnalysisCopy = {
     idle: {
       heading: "Five brackets. Your cards pick which.",
       body:
-        "One pass over your list against the Commander Format Panel's rules, and we'll tell you "
+        "One pass over your list against the Commander Format Panel’s rules, and we’ll tell you "
         + "which brackets your cards permit, and which cards put it there.",
       bodyPersist: "The reading is kept with the deck. Edit the list and it waits for you to ask again.",
       /** No cost line: the handoff cut "about two seconds" with the rest of Round 4's t1. */
@@ -106,7 +106,7 @@ export const deckAnalysisCopy = {
      */
     loading: {
       heading: "Working out your bracket\u2026",
-      body: "Checking your list against each bracket's rules.",
+      body: "Checking your list against each bracket’s rules.",
     },
     /**
      * A first press that also writes the overview, past the bracket and holding for the overview
@@ -494,7 +494,7 @@ export const deckAnalysisCopy = {
     foundByNone: "nothing in this deck searches for it",
     foundByCommandZone: "the command zone, every game",
     tutorsAreNotALimit:
-      "The threshold is this combo's own two halves. How many tutors a deck runs is a fact and "
+      "The threshold is this combo’s own two halves. How many tutors a deck runs is a fact and "
       + "never a limit. The count is in the findings, with the rest of what is in this deck.",
   },
 
@@ -524,7 +524,7 @@ export const deckAnalysisCopy = {
      */
     lead:
       "Four things decide a bracket. One of them is a published list, so we can be exact. The "
-      + "other three we work out from your cards, with Commander Spellbook's index and our own "
+      + "other three we work out from your cards, with Commander Spellbook’s index and our own "
       + "reading of the rules text. Tutors set no limit, but they decide whether a combo is in "
       + "reach, so they are here too. Here is where each answer comes from, and what it might miss.",
     /** The source a row links to, where one exists to link. */
@@ -544,8 +544,8 @@ export const deckAnalysisCopy = {
     gameChangers: {
       // Scryfall is named because it is what we actually read: its card data carries Wizards'
       // list as a flag on each card (`scryfall/transform.ts`). Brief §5.1, 2026-09-28.
-      from: "Wizards publishes the list, and we check your 99 against Scryfall's copy of it. This count is exact.",
-      source: "the Commander Format Panel's bracket rules",
+      from: "Wizards publishes the list, and we check your 99 against Scryfall’s copy of it. This count is exact.",
+      source: "the Commander Format Panel’s bracket rules",
     },
     landDenial: {
       // NAMED, never counted. The previous form said we read the rules text against
@@ -560,7 +560,7 @@ export const deckAnalysisCopy = {
       // and refuses to compile. If the list is ever emptied this reads as null rather than as
       // "We miss , which wreck…".
       misses: mldMisses
-        ? `We miss ${mldMisses}, which wreck everyone's lands without saying so in words we ` +
+        ? `We miss ${mldMisses}, which wreck everyone’s lands without saying so in words we ` +
           `can match.`
         : null,
     },

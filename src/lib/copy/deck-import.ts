@@ -41,7 +41,7 @@ export const deckImportCopy = {
     // Names both doors. The drawn line was mode-agnostic ("Point us at it")
     // because a link was one of three; with two left, naming them is clearer
     // than a phrase that fits neither exactly.
-    sub: "You built it somewhere else. Paste it in or drop a file and we'll set it up here.",
+    sub: "You built it somewhere else. Paste it in or drop a file and we’ll set it up here.",
 
     modePaste: "Paste a list",
     modePasteShort: "Paste",
@@ -68,13 +68,13 @@ export const deckImportCopy = {
     submitPasteCount: (n: number) =>
       n === 0 ? "Import deck →" : n === 1 ? "Import 1 card" : `Import ${n} cards`,
 
-    footnoteMobile: "We'll leave the sideboard behind: Commander doesn't have one.",
+    footnoteMobile: "We’ll leave the sideboard behind: Commander doesn’t have one.",
     aboutWhatComesHeading: "What comes over",
     aboutWhatComes:
-      "The commander and the 99. Sideboard and maybeboard stay behind: Commander doesn't have either.",
-    aboutFailureHeading: "If a line won't match",
+      "The commander and the 99. Sideboard and maybeboard stay behind: Commander doesn’t have either.",
+    aboutFailureHeading: "If a line won’t match",
     aboutFailure:
-      "The deck still gets made. We'll flag the line inside it and you can sort it out there.",
+      "The deck still gets made. We’ll flag the line inside it and you can sort it out there.",
   },
 
   // ---- Waiting state -------------------------------------------------------
@@ -97,7 +97,7 @@ export const deckImportCopy = {
   // private, 404, upstream down — went with the mode.
   failures: {
     fileRejected: {
-      heading: "We can't open that file",
+      heading: "We can’t open that file",
       // Both numbers are interpolated so the message names the actual file.
       bodyMobile: (ext: string, size: string) =>
         `We need a .csv or .txt under ${DECK_IMPORT_FILE_MAX_LABEL}. That one is a ${ext} at ${size}.`,
@@ -117,7 +117,7 @@ export const deckImportCopy = {
     // after parse → `empty` below. The copy must not tell the player their paste
     // is malformed, because that is not what this state means.
     noneMatched: {
-      heading: "We couldn't find any of these cards",
+      heading: "We couldn’t find any of these cards",
       bodyMobile: (lines: number) =>
         `All ${lines} lines read fine: none of them matched a card we know.`,
       body: (lines: number) =>
@@ -128,7 +128,7 @@ export const deckImportCopy = {
     // A success that produced nothing, so the copy does not apologise.
     empty: {
       heading: "That deck is empty",
-      bodyMobile: "It read fine: there just aren't any cards in it yet.",
+      bodyMobile: "It read fine: there just aren’t any cards in it yet.",
       body:
         "It read fine: there just aren’t any cards in it yet. Add some where you built it and bring it back.",
       action: "Try a different deck",
@@ -147,7 +147,7 @@ export const deckImportCopy = {
      * for them. Same standing as `unexpected` below — ratification owed.
      */
     badCsv: {
-      heading: "We can't read that",
+      heading: "We can’t read that",
       bodyMobile: (detail: string) => `${detail}. Fix it and try again.`,
       body: (detail: string) => `${detail}. Fix it and try again. Nothing was changed.`,
       action: "Try again",
@@ -205,15 +205,15 @@ export const deckImportCopy = {
   // Nothing here renders when the source declares a commander. §Commander:
   // "use it and say nothing."
   commander: {
-    heading: "Which one's the commander?",
-    subMobile: "The list doesn't say, so you tell us.",
+    heading: "Which one’s the commander?",
+    subMobile: "The list doesn’t say, so you tell us.",
     sub:
-      "This list doesn't say. Pick the one you're building around: it sets the colors and anchors everything we suggest.",
+      "This list doesn’t say. Pick the one you’re building around: it sets the colors and anchors everything we suggest.",
     // A list with exactly one unmarked legendary still opens the picker — only a
     // list with none is the dead end — so the singular is reachable, not
     // theoretical.
     introMobile: (n: number) =>
-      `${n === 1 ? "1 legendary creature" : `${n} legendary creatures`} came over. Pick the one you're building around: it sets the colors and anchors everything we suggest.`,
+      `${n === 1 ? "1 legendary creature" : `${n} legendary creatures`} came over. Pick the one you’re building around: it sets the colors and anchors everything we suggest.`,
     count: (n: number) =>
       n === 1
         ? "1 legendary creature in this import"
@@ -227,14 +227,14 @@ export const deckImportCopy = {
     nameLabelFromSource: "Deck name: from your list",
     submit: "Make the deck →",
     footnote:
-      "Only legendary creatures from this import are listed. If the one you want isn't here, it didn't come over. Make the deck and add it from the builder.",
+      "Only legendary creatures from this import are listed. If the one you want isn’t here, it didn’t come over. Make the deck and add it from the builder.",
 
     // The dead end. No deck is created.
-    noneHeading: "There's no commander in here",
+    noneHeading: "There’s no commander in here",
     noneBody: (total: string) =>
-      `Every Commander deck needs a legendary creature to lead it, and none of these ${total} lines is one. If yours is in there under a name we couldn't read, that's the line to fix.`,
+      `Every Commander deck needs a legendary creature to lead it, and none of these ${total} lines is one. If yours is in there under a name we couldn’t read, that’s the line to fix.`,
     noneBodyDesktop: (total: string) =>
-      `Every Commander deck needs a legendary creature to lead it, and none of these ${total} lines is one. If yours is in there under a name we couldn't read, that's the line to fix before you bring it over.`,
+      `Every Commander deck needs a legendary creature to lead it, and none of these ${total} lines is one. If yours is in there under a name we couldn’t read, that’s the line to fix before you bring it over.`,
     noneCta: "Start from a commander instead →",
     noneBack: "Back to the list",
     // "still here", the phrasing `failures.unexpected` already uses for the same
@@ -351,16 +351,16 @@ export const deckImportCopy = {
     // from desktop rather than invented. Design asked to ratify.
     bannerMobile: (n: number) =>
       n === 1
-        ? "1 line came over that we couldn't put a card to. It's at the bottom, it's not in the mix or either tab below, and it'll keep the deck off Complete until you sort it out."
-        : `${n} lines came over that we couldn't put a card to. They're at the bottom, they're not in the mix or either tab below, and they'll keep the deck off Complete until you sort them out.`,
+        ? "1 line came over that we couldn’t put a card to. It’s at the bottom, it’s not in the mix or either tab below, and it’ll keep the deck off Complete until you sort it out."
+        : `${n} lines came over that we couldn’t put a card to. They’re at the bottom, they’re not in the mix or either tab below, and they’ll keep the deck off Complete until you sort them out.`,
     banner: (n: number) =>
       n === 1
-        ? "1 line came over that we couldn't put a card to. It's sitting at the bottom of the list, it isn't counted in the mix or in either tab below, and it'll keep the deck off Complete until you sort it out."
-        : `${n} lines came over that we couldn't put a card to. They're sitting at the bottom of the list, they aren't counted in the mix or in either tab below, and they'll keep the deck off Complete until you sort them out.`,
+        ? "1 line came over that we couldn’t put a card to. It’s sitting at the bottom of the list, it isn’t counted in the mix or in either tab below, and it’ll keep the deck off Complete until you sort it out."
+        : `${n} lines came over that we couldn’t put a card to. They’re sitting at the bottom of the list, they aren’t counted in the mix or in either tab below, and they’ll keep the deck off Complete until you sort them out.`,
     bannerAction: "Take a look →",
 
-    groupLabel: "Couldn't identify",
-    groupNote: "counted in the 99, not in what's built",
+    groupLabel: "Couldn’t identify",
+    groupNote: "counted in the 99, not in what’s built",
     rowTag: "unmatched",
     /** Said aloud beside the row's `?`, which is the only visual sign of what the row is. */
     rowSpoken: "unmatched line",
@@ -371,7 +371,7 @@ export const deckImportCopy = {
       quantity > 1
         ? `Unmatched line: “${raw}”, quantity ${quantity}. Choose the card this was meant to be.`
         : `Unmatched line: “${raw}”. Choose the card this was meant to be.`,
-    footnoteMobile: "These count toward the 99 but not toward what's built.",
+    footnoteMobile: "These count toward the 99 but not toward what’s built.",
     // The second half of Design's mobile footnote, held back until the rows are
     // actually tappable. Promising a gesture the surface does not yet offer is
     // worse than saying less.
@@ -383,11 +383,11 @@ export const deckImportCopy = {
     // carries the signal outside the builder too. It counts cards, matching the
     // group header beside it in the builder rather than the banner's lines.
     deckCardBadge: (n: number) =>
-      n === 1 ? "1 card we couldn't name" : `${n} cards we couldn't name`,
+      n === 1 ? "1 card we couldn’t name" : `${n} cards we couldn’t name`,
     footnote: (n: number) =>
       n === 1
-        ? "That line is still in the deck's total of 99. It's a card the deck wants. It just isn't a card we can name yet, so it doesn't count as built or owned, and it stays out of the shopping list."
-        : `All ${n} lines are still in the deck's total of 99. They're cards the deck wants. They just aren't cards we can name yet, so they don't count as built or owned, and they stay out of the shopping list.`,
+        ? "That line is still in the deck’s total of 99. It’s a card the deck wants. It just isn’t a card we can name yet, so it doesn’t count as built or owned, and it stays out of the shopping list."
+        : `All ${n} lines are still in the deck’s total of 99. They’re cards the deck wants. They just aren’t cards we can name yet, so they don’t count as built or owned, and they stay out of the shopping list.`,
   },
 
   // ---- Resolution ----------------------------------------------------------
@@ -402,9 +402,9 @@ export const deckImportCopy = {
     // The count and the caption are separate strings now: the count sits beside
     // the scoped owned toggle, the caption sits under both.
     resultsCount: (n: number) => `${n} result${n === 1 ? "" : "s"}`,
-    filterCaptionMobile: "every card, owned or not: you're naming a line, not shopping",
+    filterCaptionMobile: "every card, owned or not: you’re naming a line, not shopping",
     filterCaption:
-      "every card, owned or not, in every color: you're naming a line that's already in the deck, not shopping for a new one",
+      "every card, owned or not, in every color: you’re naming a line that’s already in the deck, not shopping for a new one",
     ownedToggleLabel: "Owned only",
     keyboardHint: "↑↓ to move · ↵ to use the top match · Esc to collapse",
     // Right slot of the active row. The bar says '↵ add'; here it never adds.
@@ -420,7 +420,7 @@ export const deckImportCopy = {
 
     noResultsHeading: "Nothing by that name",
     noResultsBody:
-      "Try a shorter piece of it: we match on any part of a card's name. If it isn't a real card, the line can go.",
+      "Try a shorter piece of it: we match on any part of a card’s name. If it isn’t a real card, the line can go.",
     // NOTE: no 'turn off the owned filter' escape here, unlike quick-add-bar's
     // no-results copy — that filter is already off in this scope, so an empty
     // result really does mean there is no card by that name.
@@ -433,12 +433,12 @@ export const deckImportCopy = {
     // resolving to one puts it on the shopping list rather than into what's built.
     // Split on Design's own `rowMetaOwned` / `rowMetaUnowned` precedent, which
     // draws exactly this distinction a few states earlier. Ratification owed.
-    resolvedMobile: (name: string, built: string) => `That's ${name}. ${built} built now.`,
-    resolvedUnownedMobile: (name: string) => `That's ${name}. It's on the shopping list.`,
+    resolvedMobile: (name: string, built: string) => `That’s ${name}. ${built} built now.`,
+    resolvedUnownedMobile: (name: string) => `That’s ${name}. It’s on the shopping list.`,
     resolved: (name: string, built: string, remaining: number, role?: string) =>
-      `That line was ${name}. It's in with the rest now, and you own it. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
+      `That line was ${name}. It’s in with the rest now, and you own it. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
     resolvedUnowned: (name: string, built: string, remaining: number, role?: string) =>
-      `That line was ${name}. It's in with the rest now, but you don't own it yet, so it's on the shopping list. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
+      `That line was ${name}. It’s in with the rest now, but you don’t own it yet, so it’s on the shopping list. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
     // roleClause('Removal', 7, 10) → 'Removal is 7 of 10'. Passed into `resolved`
     // only when the resolved card lands in a tracked role — until this moment an
     // unresolved row had no oracle ID and so counted toward no role at all.
@@ -502,7 +502,7 @@ export const deckImportCopy = {
         "The list becomes the deck. Cards in it that you do not have here get added; cards here that it does not name get removed, and you can keep any of those on the next screen.",
       aboutKeepsHeading: "What stays put",
       aboutKeeps:
-        "The deck's name and its commander. A list naming a different commander is a different deck, and we will say so rather than swap it.",
+        "The deck’s name and its commander. A list naming a different commander is a different deck, and we will say so rather than swap it.",
     },
 
     diff: {
@@ -549,10 +549,10 @@ export const deckImportCopy = {
       // player could not have predicted from the group headings.
       unnamedBody: (existing: string) =>
         existing === "0"
-          ? "They come across as lines you can resolve on the deck, exactly as an import's do."
+          ? "They come across as lines you can resolve on the deck, exactly as an import’s do."
           : existing === "1"
-            ? "They come across as lines you can resolve on the deck, exactly as an import's do, and they replace the 1 unresolved line this deck is carrying now."
-            : `They come across as lines you can resolve on the deck, exactly as an import's do, and they replace the ${existing} unresolved lines this deck is carrying now.`,
+            ? "They come across as lines you can resolve on the deck, exactly as an import’s do, and they replace the 1 unresolved line this deck is carrying now."
+            : `They come across as lines you can resolve on the deck, exactly as an import’s do, and they replace the ${existing} unresolved lines this deck is carrying now.`,
 
       // A count that moves is reconciled in silence — the ruling that keeps a
       // basic's 12 → 9 from burying the cards that actually left the deck.
