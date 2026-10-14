@@ -173,7 +173,7 @@ export const deckImportCopy = {
       bodyMobile: (detail: string | null) =>
         detail
           ? `${detail}. Your list is still here.`
-          : "Something went wrong on our end. Your list is still here.",
+          : "Something went wrong on our end. Your list is still here. Check your decks before you try again.",
       body: (detail: string | null) =>
         detail
           ? `${detail}. Your list is still here. Trim it and try again.`
@@ -618,7 +618,7 @@ export const deckImportCopy = {
     },
     refused: {
       heading: "We couldn’t confirm that update",
-      body: "Reload to see where the deck stands. Your list is still here.",
+      body: "Open the deck in another tab to see where it stands. Your list is still here.",
       action: "Try again",
     },
 
