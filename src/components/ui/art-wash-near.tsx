@@ -54,11 +54,14 @@ export function ArrivingArt({
   useLayoutEffect(() => {
     const el = ref.current;
     if (!shown || !drawn || !el) return;
+    // The live query, not only the hook's answer: while hydrating, the hook reads the server's snapshot (a match),
+    // and a preload started here would fetch the hidden art before it corrects.
+    if (media && typeof window.matchMedia === "function" && !window.matchMedia(media).matches) return;
     askedFor.add(src);
     const image = new Image();
     image.src = src;
     return armArtArrival(el, image, queue);
-  }, [shown, drawn, src, queue]);
+  }, [shown, drawn, media, src, queue]);
   return <div ref={ref} className={className} style={shown ? { ...style, backgroundImage: cssUrl(src) } : style} />;
 }
 

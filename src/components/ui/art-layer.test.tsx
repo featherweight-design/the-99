@@ -1,4 +1,6 @@
 import { act, render } from "@testing-library/react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ArtLayer } from "./art-layer";
@@ -64,5 +66,18 @@ describe("ArtLayer under a media query", () => {
     const layer = container.firstElementChild!.firstElementChild as HTMLElement;
     expect(probes).toHaveLength(1);
     expect(layer.dataset.arrival).toBe("pending");
+  });
+});
+
+describe("ArtLayer under a media query, hydrating", () => {
+  it("makes no preload while hydrating server HTML where the query does not match", async () => {
+    const tree = <div className="relative"><ArtLayer src={SRC} media="(min-width: 40rem)" /></div>;
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(tree);
+    document.body.appendChild(container);
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {} }));
+    await act(async () => { hydrateRoot(container, tree); });
+    expect(probes).toHaveLength(0);
+    container.remove();
   });
 });

@@ -46,7 +46,9 @@ async function signIn(page) {
 
 /** Every element in the page's content painting card art as a background, with its arrival mark. */
 const READ = () => [...document.querySelectorAll("main *")]
-  .filter((e) => getComputedStyle(e).backgroundImage.includes("cards.scryfall.io"))
+  // Drawn boxes only: art under a `display: none` box (the desktop face on a phone) keeps its computed background
+  // but is never fetched or seen, and its layer deliberately arms nothing there.
+  .filter((e) => e.getClientRects().length > 0 && getComputedStyle(e).backgroundImage.includes("cards.scryfall.io"))
   .map((e) => ({ mark: e.dataset.arrival ?? null, tag: e.tagName.toLowerCase(), cls: String(e.className).slice(0, 80) }));
 
 let detail = null;
