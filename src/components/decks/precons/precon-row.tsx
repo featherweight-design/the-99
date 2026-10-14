@@ -35,7 +35,7 @@ export function PreconRow({ row, href, eager = false }: {
   const built = row.built;
   return (
     <li className="relative flex min-h-[44px] items-center gap-[11px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)] p-[10px_8px_10px_12px] md:gap-[14px] md:rounded-[11px] md:p-[11px_12px_11px_15px]">
-      <CommanderThumb imageUri={lead?.imageUri ?? null} colorIdentity={row.identity} size="list" lazy eager={eager} />
+      <CommanderThumb imageUri={lead?.imageUriSmall ?? lead?.imageUri ?? null} colorIdentity={row.identity} size="list" lazy eager={eager} />
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <div className="flex items-baseline justify-between gap-[10px]">
           <Link

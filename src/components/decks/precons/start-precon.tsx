@@ -214,7 +214,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
         </div>
 
         <div className="flex items-center gap-[11px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[10px_12px]">
-          <CommanderThumb imageUri={row.commanders[0]?.imageUri ?? null} colorIdentity={row.identity} size="list" />
+          <CommanderThumb imageUri={row.commanders[0]?.imageUriSmall ?? row.commanders[0]?.imageUri ?? null} colorIdentity={row.identity} size="list" />
           <div className="flex min-w-0 flex-col gap-[2px]">
             <span className="font-display text-[15px] text-[color:var(--fg)]">{row.commanders.map((c) => c.name).join(" + ")}</span>
             <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.beside(ident, body, pair)}</span>

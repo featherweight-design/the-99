@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assembleCollector, assembleDeckChoices } from "./open-read";
+import { assembleCollector, assembleDeckChoices, sourceCard } from "./open-read";
 import type { ReaderDeck } from "./list";
 
 // The picker's read path, from the reader's decks: the K7 component test builds the finished
@@ -39,7 +39,7 @@ describe("assembleCollector", () => {
   const line = (oracleId: string, over: Record<string, unknown> = {}) => ({
     oracleId, quantity: 1, foilQuantity: 1, isCommander: false, name: oracleId, typeLine: "Artifact", manaCost: null, layout: "normal",
     colorIdentity: [], imageUri: `art-${oracleId}`, legal: true, scryfallId: `ce-${oracleId}`, setCode: "cmc", collectorNumber: "9",
-    printingImage: `ce-art-${oracleId}`, printingBack: null, ...over,
+    printingImage: `ce-art-${oracleId}`, printingBack: null, imageUriSmall: `small-${oracleId}`, ...over,
   });
 
   it("carries the twin's own file, printings, foil counts and added date, and the plain edition's ownership", () => {
@@ -50,5 +50,13 @@ describe("assembleCollector", () => {
       ["sol", 1, true, false, "CMC 9"],
       ["plains", 10, false, true, "CMC 9"],
     ]);
+  });
+});
+
+describe("sourceCard", () => {
+  it("keeps the small render beside the full one, for the Start dialog's thumb", () => {
+    const l = { oracleId: "k", quantity: 1, foilQuantity: 0, isCommander: true, name: "K", typeLine: "Legendary Creature", manaCost: null, layout: "normal",
+      colorIdentity: ["G"], imageUri: "full", legal: true, scryfallId: "s", setCode: "x", collectorNumber: "1", printingImage: "p", printingBack: null, imageUriSmall: "small" };
+    expect(sourceCard(l)).toMatchObject({ imageUri: "full", imageUriSmall: "small", isCommander: true });
   });
 });
