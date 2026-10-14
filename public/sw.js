@@ -45,7 +45,16 @@ let refreshing = null;
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(keepOfflinePage().catch(() => {}));
+  // A worker installs only once ITS cache holds the offline page (a copy this version already kept
+  // counts). A failed fetch fails the install, so the worker before it, and the cache it reads, stay
+  // until the browser tries again, rather than a new version activating with nothing to fall back on
+  // and deleting the old one.
+  event.waitUntil(
+    (async () => {
+      if (await (await caches.open(OFFLINE)).match(offlineRequest())) return;
+      if (!(await keepOfflinePage().catch(() => false))) throw new Error("the offline page could not be kept");
+    })(),
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -107,11 +116,11 @@ async function refreshOfflinePageIfOld() {
 /**
  * Fetches `/offline` with NO credentials, so the copy is the signed-out render, and keeps it only
  * when it is that page (not a redirect to sign-in, not an error). Its own stylesheet and scripts
- * are kept beside the build's other static files, so it draws with no network.
+ * are kept with it, so it draws with no network. Answers whether a copy was kept.
  */
 async function keepOfflinePage() {
   const response = await fetch(OFFLINE_PATH, { credentials: "omit", cache: "no-store", redirect: "follow" });
-  if (!response.ok || response.redirected || new URL(response.url, self.location.origin).pathname !== OFFLINE_PATH) return;
+  if (!response.ok || response.redirected || new URL(response.url, self.location.origin).pathname !== OFFLINE_PATH) return false;
   const html = await response.clone().text();
   const statics = await caches.open(STATIC);
   // A path ends at a quote, a space, a bracket or a BACKSLASH: inside the page's inline RSC payload
@@ -124,7 +133,7 @@ async function keepOfflinePage() {
   for (const path of assets) {
     const request = new Request(new URL(path, self.location.origin));
     const asset = (await statics.match(request)) ?? (await fetch(request));
-    if (!asset.ok) return;
+    if (!asset.ok) return false;
     kept.push([request, asset]);
   }
   // The page and its assets are kept TOGETHER, in their own cache, which no trim touches: the static
@@ -146,6 +155,7 @@ async function keepOfflinePage() {
   const names = (header) => (current?.headers.get(header) ?? "").split(" ").filter(Boolean);
   const wanted = new Set([offlineRequest().url, ...names(KEPT_ASSETS), ...names(KEPT_PREVIOUS)]);
   for (const key of await offline.keys()) if (!wanted.has(key.url)) await offline.delete(key);
+  return true;
 }
 
 async function cacheFirst(request, event) {

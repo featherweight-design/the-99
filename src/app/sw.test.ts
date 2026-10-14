@@ -316,9 +316,18 @@ describe("the service worker", () => {
         const path = new URL(typeof input === "string" ? input : input.url, ORIGIN).pathname;
         return path === "/offline" ? offline() : answered(`page ${path}`, path);
       });
-      await install();
+      // And the install fails, so the worker before it stays in charge.
+      await expect(install()).rejects.toThrow("could not be kept");
       expect(stores.get("offline-v1")?.entries.size ?? 0).toBe(0);
     }
+  });
+
+  it("installs over a copy this version already kept, with no network", async () => {
+    serve();
+    await install();
+    network.mockRejectedValue(new TypeError("offline"));
+    start();
+    await expect(install()).resolves.toBeUndefined();
   });
 
   it("answers a page load from the network, and keeps no document, whoever's it is", async () => {
