@@ -117,8 +117,8 @@ export const collectionEditCopy = {
     confirmSave: "Save anyway",
     /** (new) The body for one card, as the R2 D2 specimen draws it. */
     bodyCard: (card: string) =>
-      `Nothing about these decks changes. Each will show ${card} as short and put it on its Shopping list.`,
-    body: "Nothing about these decks changes. Each will show what it’s short of and put it on its Shopping list.",
+      `Nothing about these decks changes. Each will show ${card} as short and put it on its shopping list.`,
+    body: "Nothing about these decks changes. Each will show what it’s short of and put it on its shopping list.",
     figureOne: (k: number) => `short ${n(k)}`,
     figureMany: (k: number) => (k === 1 ? "1 card short" : `${n(k)} cards short`),
     more: (k: number) => `and ${n(k)} more ${k === 1 ? "deck" : "decks"}`,
