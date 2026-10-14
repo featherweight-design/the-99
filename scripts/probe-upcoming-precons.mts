@@ -40,6 +40,7 @@ async function main() {
       await tx.execute(sql`
         insert into sets (code, name, set_type, released_at, card_count, digital, parent_set_code) values
           ('zpp', 'Probe Parent',          'expansion', '2026-11-13', 100, false, null),
+          ('zpg', 'Probe Commander G',     'commander', '2026-11-13',  12, false, null),
           ('zpa', 'Probe Commander A',     'commander', '2026-11-13',  41, false, 'zpp'),
           ('zpe', 'Probe Commander E',     'commander', '2027-04-09',   1, false, null),
           ('zpb', 'Probe Commander Past',  'commander', '2026-10-02', 103, false, null),
@@ -59,7 +60,7 @@ async function main() {
 
       const list = await loadUpcomingSets(A, NOW, tx);
       const mine = list.filter((s) => s.code.startsWith("zp"));
-      check("only non-digital Commander sets after today, soonest first", mine.map((s) => s.code).join() === "zpa,zpe", mine.map((s) => s.code).join());
+      check("only non-digital Commander sets after today, soonest first", mine.map((s) => s.code).join() === "zpa,zpg,zpe", mine.map((s) => s.code).join());
       check("a set released today is not upcoming", !mine.some((s) => s.code === "zpf"));
       check("a past, a digital and a non-Commander set are not upcoming", !mine.some((s) => ["zpb", "zpc", "zpd"].includes(s.code)));
       const a = mine.find((s) => s.code === "zpa");
@@ -67,18 +68,19 @@ async function main() {
       check("zpa arrived on the second run", a?.arrivedAt?.toISOString().startsWith("2026-10-14") === true, String(a?.arrivedAt));
       check("zpe was in the baseline: its arrival is unknown, never claimed", mine.find((s) => s.code === "zpe")?.arrivedAt === null);
       check("nothing is seen before it is marked", mine.every((s) => !s.seen));
-      check("the sort is stable by date then code", list.every((s, i) => i === 0 || list[i - 1].releasesOn <= s.releasesOn));
+      check("two sets on one date come back by code", mine.map((s) => s.code).slice(0, 2).join() === "zpa,zpg");
+      check("the list is in date order", list.every((s, i) => i === 0 || list[i - 1].releasesOn <= s.releasesOn));
 
       await markUpcomingSeen(A, ["zpa", "NOT A CODE"], tx);
       let seen = (await loadUpcomingSets(A, NOW, tx)).filter((s) => s.code.startsWith("zp"));
       check("A has seen zpa and not zpe", seen.find((s) => s.code === "zpa")?.seen === true && seen.find((s) => s.code === "zpe")?.seen === false);
       await markUpcomingSeen(A, ["zpe", "zpa"], tx);
       seen = (await loadUpcomingSets(A, NOW, tx)).filter((s) => s.code.startsWith("zp"));
-      check("a second mark adds zpe", seen.every((s) => s.seen));
+      check("a second mark adds zpe", seen.find((s) => s.code === "zpe")?.seen === true && seen.find((s) => s.code === "zpa")?.seen === true && seen.find((s) => s.code === "zpg")?.seen === false);
       const { rows: codes } = await tx.execute<{ c: string[] }>(sql`select upcoming_seen_codes c from user_prefs where user_id = ${A}`);
       check("each code is held once", codes[0]?.c.slice().sort().join() === "zpa,zpe", JSON.stringify(codes[0]?.c));
       const others = (await loadUpcomingSets(B, NOW, tx)).filter((s) => s.code.startsWith("zp"));
-      check("B, who marked nothing, has seen none", others.length === 2 && others.every((s) => !s.seen));
+      check("B, who marked nothing, has seen none", others.length === 3 && others.every((s) => !s.seen));
 
       throw ROLLBACK;
     });
