@@ -24,15 +24,12 @@ import { identityGradient } from "../../lib/collection/gradients";
 import type { CatalogCardResult, PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PendingReporter } from "../shell/pending-reporter";
-import { whereItWent, type AddedPlacement } from "../../lib/collection/add-placements";
-import type { ContestedCard } from "../../lib/collection/summary-read";
-import { addedCopyCopy } from "../../lib/copy/added-copy";
-import { CopyLine } from "../decks/copy-line";
 import { PRIMARY } from "../ui/button";
 import { useSheetHost } from "../ui/sheet-host";
 import { SearchField } from "../ui/text-field";
 import { escapeDismisses } from "../../lib/ui/search-dismiss";
 import { useIsDesktop } from "../ui/use-is-desktop";
+import { AddedReceipt, type WentInputs } from "./added-receipt";
 import { AddLine } from "./add-line";
 import { ReplaceIcon } from "./replace-icon";
 import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
@@ -353,25 +350,15 @@ function AddMode({
           )}
 
           {phase === "saved" && saved ? (
-            <div className="flex flex-col items-start gap-[10px] py-[16px]">
-              <p className="m-0 font-display text-[19px] font-bold">{copy.savedTitle(saved.copies)}</p>
-              <p className="m-0 text-[14px] text-[color:var(--fg-body)]">{copy.savedBody(saved.cards)}</p>
-              {baseline !== undefined && (
-                <p className="m-0 font-mono text-[12px] text-[color:var(--fg-faint)]">
-                  {copy.countsAfter(baseline, baseline + saved.copies)}
-                </p>
-              )}
-              {saved.went ? <WhereItWentBlock {...saved.went} /> : null}
-              {/* B8: the entry this save wrote, one tap away. The sheet closes on the way, since
-                  the head that hosts it stays mounted across the route change. */}
-              <Link
-                href={`/collection/history?entry=${saved.entryId}`}
-                onNavigate={onClose}
-                className="text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
-              >
-                {copy.seeInHistory}
-                <PendingReporter href={`/collection/history?entry=${saved.entryId}`} />
-              </Link>
+            <AddedReceipt
+              title={copy.savedTitle(saved.copies)}
+              body={copy.savedBody(saved.cards)}
+              counts={baseline !== undefined ? copy.countsAfter(baseline, baseline + saved.copies) : null}
+              went={saved.went}
+              historyHref={`/collection/history?entry=${saved.entryId}`}
+              historyLabel={copy.seeInHistory}
+              onNavigate={onClose}
+            >
               <div className="mt-[8px] flex w-full flex-col gap-[8px] md:flex-row">
                 <button type="button" onClick={addMore} className="min-h-[44px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] px-[16px] text-[14px] md:min-h-[38px]">
                   {copy.addMore}
@@ -380,7 +367,7 @@ function AddMode({
                   {copy.done}
                 </button>
               </div>
-            </div>
+            </AddedReceipt>
           ) : showResults ? (
             failed ? (
               <div role="alert" className="flex flex-col items-center gap-[10px] py-[26px] text-center">
@@ -557,52 +544,5 @@ function ResultRow({
       </span>
       {active && <span aria-hidden className="text-[11px] text-[color:var(--fg-muted)]">{collectionEditCopy.add.resultAdd}</span>}
     </li>
-  );
-}
-
-/** What the `Where it went` block is built from: the save's lines and where the write put them. */
-type WentInputs = { lines: Parameters<typeof whereItWent>[0]; placed: AddedPlacement[] };
-
-/**
- * Where an added copy goes, in the saved state (design table, CopyLine): after the counts, before
- * History. A row per card a deck took or read, each with Change; the cards no deck needed in one
- * faint foot line.
- */
-function WhereItWentBlock({ lines, placed }: WentInputs) {
-  // Each row's last Change read-back, by card, so the foot says what is free now.
-  const [live, setLive] = useState<Record<string, ContestedCard | null>>({});
-  const went = whereItWent(lines, placed, live);
-  if (went.rows.length === 0 && !went.foot) return null;
-  return (
-    <div className="w-full">
-      {went.rows.length > 0 ? (
-        <>
-          <p className="m-0 pb-[6px] font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
-            {addedCopyCopy.line.head(went.rows.length)}
-          </p>
-          <ul className="m-0 list-none p-0">
-            {went.rows.map((r) => (
-              <CopyLine
-                key={r.oracleId}
-                form="line"
-                cardName={r.cardName}
-                sentence={r.sentence}
-                parts={r.parts}
-                chooser={r.chooser}
-                onLive={(card) => setLive((m) => ({ ...m, [r.oracleId]: card }))}
-              />
-            ))}
-          </ul>
-        </>
-      ) : null}
-      {went.foot ? (
-        <p
-          className="m-0 pt-[9px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]"
-          style={went.rows.length > 0 ? { borderTop: "1px solid var(--border)" } : undefined}
-        >
-          {went.foot}
-        </p>
-      ) : null}
-    </div>
   );
 }
