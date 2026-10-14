@@ -141,10 +141,10 @@ export const synergyCopy = {
 
   // ── Surface A · selection into the build ──────────────────────────────
   select: {
-    add: 'Add to the build',
-    addAria: (name: string) => `Add ${name} to the build`,
-    remove: 'Remove from the build',
-    removeAria: (name: string) => `Remove ${name} from the build`,
+    add: 'Add to the deck',
+    addAria: (name: string) => `Add ${name} to the deck`,
+    remove: 'Remove from the deck',
+    removeAria: (name: string) => `Remove ${name} from the deck`,
     // The promise line. NOT an edit to recommendationsCopy.build.stickyPromise
     // or .seedNote — those two are ruling 6's locked zero-selection copy and
     // stay exactly as they are. This is the branch taken when selection is

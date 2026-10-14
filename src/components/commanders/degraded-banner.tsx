@@ -39,12 +39,12 @@ export function DegradedBanner({
   // and unselectable, while EDHREC being unreachable changes no affordance.
   const heading = synergy ? "Synergy data unavailable" : degraded.heading;
   const mobileBody = synergy
-    ? "EDHREC is unreachable. Scores shown are based on pool and role coverage only."
+    ? "EDHREC is unreachable, so scores count only your cards and the roles they fill."
     : variant === "both"
       ? degraded.bodyWithSynergy
       : degraded.body;
   const desktopBody = synergy
-    ? "EDHREC is unreachable. Fit scores reflect pool and role coverage only: synergy receipts are hidden until the connection is restored."
+    ? "EDHREC is unreachable, so fit scores count only your cards and the roles they fill. Synergy details come back when it does."
     : variant === "both"
       ? degraded.bodyWithSynergy
       : degraded.body;

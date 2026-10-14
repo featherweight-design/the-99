@@ -233,7 +233,7 @@ export const availabilityCopy = {
       "Free cards only is unavailable. We can’t read your decks right now",
     // Both reads down: ONE banner, two sentences, one Retry. Never two banners.
     bodyWithSynergy:
-      "Synergy data and deck contents are both unavailable. Ranking continues on pool and role coverage, and Free cards only is unavailable until they come back.",
+      "Synergy data and deck contents are both unavailable. Ranking continues on your cards and the roles they fill, and Free cards only is unavailable until they come back.",
     // /collection has no ranking to mislead, so it fails QUIET — markers absent,
     // Availability trigger disabled with this reason. No banner there.
     collectionFilterDisabledAria:

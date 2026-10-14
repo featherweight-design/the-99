@@ -102,7 +102,7 @@ export const explainedCopy = {
       committed: number,
       deck: Deck,
     ) =>
-      `You own ${n(owned)} of the ${n(total)} cards most played with this commander, and ${spellOut(committed)} of those are already in your ${deck.name} list.`,
+      `You own ${n(owned)} of the ${n(total)} cards most played with this commander, and ${spellOut(committed)} of those are already in ${deck.name}.`,
 
     /** Sentence 3 — the single largest gap, naming the weakest role AND NOTHING ELSE.
         No price, no card names, no buy prompt (must-not 4). Omitted entirely when no role is
@@ -295,7 +295,7 @@ export const explainedCopy = {
     /** The shipped order, named for what byInclusionThenName does. */
     mostPlayed: {
       label: "Most played",
-      sub: "Highest EDHREC inclusion first. The order that ships.",
+      sub: "Highest EDHREC inclusion first.",
       /** Same option, no figures to sort by: the panel is in pool order and says so, rather
           than claiming a ranking it does not have. Selectable (it is the default and the
           shipped behaviour) — only its sub-line changes. */
@@ -370,9 +370,9 @@ export const heroNoteEdits = {
     heading: "No synergy data",
     /** WAS: "\u2014 EDHREC doesn't track this commander, so fit comes from pool and roles alone." */
     body: (max: number) =>
-      `\u2014 EDHREC doesn't track this commander, so fit comes from pool and roles alone. ${n(max)} is the whole score available here, and every commander in this state is measured the same way.`,
+      `\u2014 EDHREC doesn't track this commander, so fit comes from your cards and roles alone. ${n(max)} is the whole score available here, and every commander in this state is measured the same way.`,
     bodyMobile: (max: number) =>
-      `\u2014 EDHREC doesn't track this commander, so fit is pool and roles alone. ${n(max)} is the whole score here.`,
+      `\u2014 EDHREC doesn't track this commander, so fit is your cards and roles alone. ${n(max)} is the whole score here.`,
   },
   degraded: {
     heading: "Synergy data unavailable",
