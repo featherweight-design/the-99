@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upcoming precons · Precons in tiles · 900 and 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Metamorphous',serif;font-weight:400}
+.cap{margin:0;font-size:13px;line-height:1.55;color:#95A4A6;text-wrap:pretty}
+.yh{margin:0;display:flex;align-items:baseline;gap:8px;border-bottom:1px solid #1A1F2B;padding-bottom:7px;font-family:'Metamorphous',serif;font-weight:400;font-size:17px;color:#C6D2D3}
+.cnt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C}
+.new{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#5C86C9;border:1px solid rgba(92,134,201,.45);border-radius:4px;padding:0 5px;line-height:16px}
+.nm2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;color:#B3C0C2}
+.dot{display:inline-block;border-radius:50%}
+.shell{display:flex;flex-direction:column;overflow:hidden;border:1px solid #1A1F2B;background:#1E1F26;border-radius:10px}
+.arttl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#5F6D6E}
+</style>
+</helmet>
+<div style="width:1460px;min-height:6700px;box-sizing:border-box;padding:44px 40px 60px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:44px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1100px">
+    <span class="lbl">Precons page · tiles (the default) · 900 and 390 · R1</span>
+    <h2 class="disp" style="margin:0;font-size:26px">The Announced group, every state</h2>
+    <p class="cap">One group above the newest year, one dashed block per set, soonest first. The rest of the page is as shipped: header, chassis, result line, year groups. Art boxes are labelled plates. Star Trek names other than Christine Chapel are bracketed placeholders, and its color dots are illustrative.</p>
+  </div>
+
+  <sc-for list="{{ states }}" as="st" hint-placeholder-count="6">
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:4px;max-width:1100px;border-top:1px solid #2E3340;padding-top:16px">
+        <div style="display:flex;align-items:baseline;gap:12px"><span class="mono" style="font-size:13px;color:#5C86C9">{{ st.id }}</span><span style="font-size:17px;font-weight:600">{{ st.title }}</span></div>
+        <p class="cap">{{ st.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <sc-for list="{{ st.widths }}" as="w" hint-placeholder-count="2">
+          <div style="{{ w.frame }}">
+            <div style="{{ w.head }}">
+              <span class="mono" style="font-size:11px;color:#7C8A8C">‹ Decks</span>
+              <h1 class="disp" style="margin:0;font-size:24px;color:#C6D2D3">Commander precons</h1>
+              <span class="mono" style="font-size:11px;color:#7C8A8C">{{ w.sub }}</span>
+            </div>
+            <div style="{{ w.body }}">
+              <sc-if value="{{ w.isDesk }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="flex:1;min-width:0;height:36px;border:1px solid #2E3340;border-radius:8px;background:#16171D;display:flex;align-items:center;padding:0 12px;box-sizing:border-box"><span style="{{ w.searchText }}">{{ st.search }}</span></div>
+                  <span style="display:flex;gap:5px"><sc-for list="{{ pips }}" as="p" hint-placeholder-count="5"><span class="dot" style="{{ p }}"></span></sc-for></span>
+                  <span class="mono" style="font-size:11px;color:#95A4A6;border:1px solid #2E3340;border-radius:8px;padding:0 10px;line-height:34px">Sort · newest</span>
+                  <span class="mono" style="font-size:13px;color:#95A4A6;border:1px solid #2E3340;border-radius:8px;line-height:34px;padding:0 6px">≣ <span style="color:#C6D2D3">▦</span></span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ w.isPhone }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="flex:1;min-width:0;height:40px;border:1px solid #2E3340;border-radius:8px;background:#16171D;display:flex;align-items:center;padding:0 12px;box-sizing:border-box"><span style="{{ w.searchText }}">{{ st.search }}</span></div>
+                    <span class="mono" style="font-size:13px;color:#95A4A6;border:1px solid #2E3340;border-radius:8px;line-height:38px;padding:0 6px">≣ <span style="color:#C6D2D3">▦</span></span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <span style="display:flex;gap:6px"><sc-for list="{{ pips }}" as="p" hint-placeholder-count="5"><span class="dot" style="{{ p }}"></span></sc-for></span>
+                    <span class="mono" style="font-size:11px;color:#95A4A6;border:1px solid #2E3340;border-radius:8px;padding:0 10px;line-height:34px">Sort · newest</span>
+                  </div>
+                </div>
+              </sc-if>
+              <span class="mono" style="font-size:11px;color:#7C8A8C">{{ st.result }}</span>
+
+              <sc-if value="{{ st.hasGroup }}" hint-placeholder-val="{{ true }}">
+                <section style="display:flex;flex-direction:column;gap:10px">
+                  <h2 class="yh">Announced <span class="cnt">{{ st.groupCount }}</span></h2>
+                  <sc-for list="{{ w.sets }}" as="s" hint-placeholder-count="2">
+                    <div style="{{ w.block }}">
+                      <div style="display:flex;flex-direction:column;gap:3px">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                          <h3 class="disp" style="{{ w.setName }}">{{ s.name }}</h3>
+                          <sc-if value="{{ s.isNew }}" hint-placeholder-val="{{ false }}"><span class="new">new</span></sc-if>
+                        </div>
+                        <sc-for list="{{ s.meta }}" as="m" hint-placeholder-count="1">
+                          <span class="mono" style="font-size:11px;line-height:1.5;color:#7C8A8C">{{ m }}</span>
+                        </sc-for>
+                      </div>
+                      <div style="{{ w.strip }}">
+                        <sc-if value="{{ s.none }}" hint-placeholder-val="{{ false }}">
+                          <div style="{{ w.nonePlate }}"><span class="mono" style="font-size:9px;line-height:1.4;color:#5F6D6E;text-align:center">none revealed yet</span></div>
+                        </sc-if>
+                        <sc-for list="{{ s.cards }}" as="c" hint-placeholder-count="3">
+                          <div style="{{ w.card }}">
+                            <div style="{{ w.cardArt }}"><span class="arttl">{{ c.cn }}</span></div>
+                            <span class="nm2" style="{{ w.cardName }}">{{ c.nm }}</span>
+                            <span style="display:flex;gap:3px">
+                              <sc-for list="{{ c.dots }}" as="d" hint-placeholder-count="1"><span class="dot" style="{{ d }}"></span></sc-for>
+                            </span>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </section>
+              </sc-if>
+
+              <section style="display:flex;flex-direction:column;gap:10px">
+                <h2 class="yh">2026 <span class="cnt">12 decklists</span></h2>
+                <div style="{{ w.grid }}">
+                  <sc-for list="{{ w.tiles }}" as="t" hint-placeholder-count="2">
+                    <div class="shell">
+                      <div style="{{ w.tileArt }}"><span class="arttl">commander art</span></div>
+                      <div style="{{ w.caption }}">
+                        <span class="mono" style="font-size:11px;color:#7C8A8C">you own <span style="font-weight:600;color:#C6D2D3">{{ t.own }}</span></span>
+                        <span style="font-size:12.5px;color:#C6D2D3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.nm }}</span>
+                        <span class="mono" style="display:flex;align-items:center;gap:5px;font-size:10px;color:#7C8A8C"><sc-for list="{{ t.dots }}" as="d" hint-placeholder-count="2"><span class="dot" style="{{ d }}"></span></sc-for>{{ t.meta }}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </section>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1460,"height":6700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const C = { W: "#F4E9C4", U: "#3A6AA5", B: "#98748F", R: "#C05A3E", G: "#4B7A46" };
+    const dots = (ids, px) => ids.map((k) => ({ width: px + "px", height: px + "px", background: C[k] }));
+    const pips = ["W", "U", "B", "R", "G"].map((k) => ({ width: "14px", height: "14px", background: C[k], opacity: 0.85 }));
+
+    // Star Trek: 16 printings, 15 cards. Chapel is spoiled at 78 and 300 and drawn once, from 78.
+    const trcIds = ["W", "U", "W", "R", "U", "B", "G", "W", "U", "R", "B", "G", "W", "U", "R"];
+    const trc = trcIds.map((k, i) => ({
+      nm: i === 0 ? "Christine Chapel, Combat Medic" : `[TRC commander ${String(i + 1).padStart(2, "0")}]`,
+      cn: i === 0 ? "TRC 78" : `TRC ${String(i * 7 + 2)}`,
+      k: [k],
+    }));
+    const gargantos = { nm: "Gargantos, the Endbringer", cn: "MDC art", k: ["B", "G"] };
+
+    const set = (o) => o;
+    const ST = (cards) => set({ name: "Star Trek Commander", isNew: false, none: false, cards,
+      metaDesk: ["TRC · Nov 13, 2026 · in 30 days · 15 commanders revealed"],
+      metaPhone: ["Nov 13, 2026 · in 30 days", "TRC · 15 commanders revealed"] });
+    const DH = set({ name: "Darkhold Destiny Commander", isNew: false, none: false, cards: [gargantos],
+      metaDesk: ["MDC · Apr 9, 2027 · in 6 months · 1 commander revealed"],
+      metaPhone: ["Apr 9, 2027 · in 6 months", "MDC · 1 commander revealed"] });
+    const DH0 = set({ name: "Darkhold Destiny Commander", isNew: false, none: true, cards: [],
+      metaDesk: ["MDC · Apr 9, 2027 · in 6 months · no commanders revealed yet"],
+      metaPhone: ["Apr 9, 2027 · in 6 months", "MDC · no commanders revealed yet"] });
+
+    const tilesAll = [
+      { nm: "Keen Engineering", own: "31 of 66", k: ["U", "R"] },
+      { nm: "Reign of Dragons", own: "18 of 67", k: ["B", "R", "G"] },
+      { nm: "Calling All Angels", own: "44 of 70", k: ["W"] },
+      { nm: "Tramplesaurus Rex", own: "22 of 64", k: ["R", "G"] },
+    ];
+
+    const widths = (st) => [false, true].map((phone) => {
+      const artW = phone ? 76 : 84, artH = Math.round((artW * 88) / 63);
+      const tileW = phone ? 174 : 205, tileH = Math.round((tileW * 88) / 63);
+      const cardsOf = (s) => s.cards.map((c) => ({ ...c, dots: dots(c.k, phone ? 7 : 8) }));
+      return {
+        isPhone: phone,
+        isDesk: !phone,
+        frame: { width: phone ? "390px" : "900px", flex: "none", background: "#121217", border: "1px solid #2E3340", borderRadius: "12px", overflow: "hidden" },
+        head: { display: "flex", flexDirection: "column", gap: "4px", borderBottom: "1px solid #1A1F2B", padding: phone ? "12px 16px" : "16px 22px" },
+        sub: phone ? "197 decklists · 2011 to 2026 · basic lands not counted" : "197 decklists, 2011 to 2026 · the count is the cards you own, basic lands not counted",
+        body: { display: "flex", flexDirection: "column", gap: "14px", padding: phone ? "12px 16px 24px" : "14px 22px 24px" },
+        searchText: { fontSize: "12.5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: st.search === "Search by name, commander or set" ? "#5F6D6E" : "#C6D2D3" },
+        block: { border: "1px dashed #424755", borderRadius: "10px", padding: phone ? "11px 12px 12px" : "12px 14px 14px", display: "flex", flexDirection: "column", gap: "10px" },
+        setName: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? "15px" : "16px", color: "#C6D2D3" },
+        strip: phone
+          ? { display: "flex", flexWrap: "nowrap", gap: "8px", overflowX: "hidden", marginRight: "-12px" }
+          : { display: "flex", flexWrap: "wrap", gap: "12px 8px" },
+        card: { flex: "none", width: artW + "px", display: "flex", flexDirection: "column", gap: "5px" },
+        cardArt: { width: artW + "px", height: artH + "px", borderRadius: "4px", background: "#2D2E35", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.25)", display: "flex", alignItems: "center", justifyContent: "center" },
+        cardName: { fontSize: phone ? "10.5px" : "11px", minHeight: phone ? "27px" : "28px" },
+        nonePlate: { width: artW + "px", height: artH + "px", borderRadius: "4px", background: "#16171D", border: "1px solid #1A1F2B", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 8px" },
+        grid: { display: "grid", gridTemplateColumns: phone ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))", gap: phone ? "10px" : "12px" },
+        tileArt: { height: tileH + "px", background: "#16171D", borderRadius: phone ? "0 0 9px 9px" : "0 0 10px 10px", display: "flex", alignItems: "center", justifyContent: "center" },
+        caption: { display: "flex", flexDirection: "column", gap: "3px", padding: "7px 9px 9px", minHeight: phone ? "70px" : "65px", boxSizing: "border-box" },
+        tiles: (phone ? tilesAll.slice(0, 2) : tilesAll).map((t) => ({ ...t, meta: "[SET] · Oct 2026", dots: dots(t.k, phone ? 8 : 9) })),
+        sets: st.sets.map((s) => ({ ...s, meta: phone ? s.metaPhone : s.metaDesk, cards: cardsOf(s) })),
+      };
+    });
+
+    const mk = (o) => {
+      const base = { search: "Search by name, commander or set", result: "197 decklists · newest first", sets: [], ...o };
+      base.hasGroup = base.sets.length > 0;
+      const ws = widths(base);
+      // Each width carries its own sets, with that width's meta lines and card sizes.
+      base.widths = ws;
+      return base;
+    };
+
+    const states = [
+      mk({ id: "T1 · T9", title: "No upcoming sets, and a failed read", note: "The page exactly as shipped: no Announced heading, no empty group. A read that throws draws this same frame (T9). An empty list isn’t an error, and neither case says anything." }),
+      mk({ id: "T2", title: "One set, nothing revealed", sets: [DH0], groupCount: "1 set", note: "Hand-built: Darkhold before Gargantos was spoiled. One plate in the shipped no-art language (sunken fill, mono line), sized as one revealed card, so the block keeps its shape when the first card arrives." }),
+      mk({ id: "T3", title: "One set, one commander revealed", sets: [DH], groupCount: "1 set", note: "Darkhold today, the thinnest real case. The block is as wide as the list, and one card sits at its left. It isn’t stretched to fill." }),
+      mk({ id: "T4", title: "One set, many revealed", sets: [{ ...ST(trc), isNew: true }], groupCount: "1 set", note: "Star Trek alone, fifteen cards. 900: two rows, all of them. 390: one row that scrolls sideways; the cut card at the edge is the cue, and the header already says 15. Chapel’s two printings are one card (TRC 78). “new” shows on this reader’s first visit after the set arrived, and the visit marks it seen." }),
+      mk({ id: "T5", title: "Two sets at once: the live state", sets: [ST(trc), DH], groupCount: "2 sets", note: "Soonest first. The dates line up because each sits in the same place in its block, and “in 30 days” beside “in 6 months” says the difference without a bar or a timeline." }),
+      mk({ id: "T6", title: "Search or color filter on", search: "chapel", result: "0 of 197 decklists · 1 announced set", sets: [{ ...ST(trc.slice(0, 1)), metaDesk: ["TRC · Nov 13, 2026 · in 30 days · 1 of 15 revealed matches"], metaPhone: ["Nov 13, 2026 · in 30 days", "TRC · 1 of 15 revealed matches"] }], groupCount: "1 set", note: "Announced sets filter with the list. Search matches the set’s name, its code or a revealed commander’s name; colors match a commander’s identity, as for precons (contains). A block shows only its matching commanders and says “1 of 15”. A set with none leaves. The result line counts decklists, then adds the sets. The no-match state draws only when both are empty, so a search for “chapel” isn’t told nothing matched." }),
+    ];
+    // Most owned: not drawn. The group hides, as the year heads do, since there is nothing to own.
+    return { states, pips };
+  }
+}
+</script>
+</body>
+</html>

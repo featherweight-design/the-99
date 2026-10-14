@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upcoming precons · Home banner · desktop and 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Metamorphous',serif;font-weight:400}
+.cap{margin:0;font-size:13px;line-height:1.55;color:#95A4A6;text-wrap:pretty}
+.mark{flex:none;width:22px;height:22px;border-radius:6px;background:rgba(92,134,201,.16);border:1px solid rgba(92,134,201,.45);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.mark i{display:block;width:7px;height:7px;transform:rotate(45deg);background:#5C86C9}
+.blink{color:#C6D2D3;text-decoration:underline;text-decoration-color:rgba(92,134,201,.55);text-underline-offset:3px}
+.x{flex:none;background:transparent;border:0;padding:0;color:#7C8A8C;font-size:13px;cursor:pointer;border-radius:6px}
+.stub{border:1px solid #1A1F2B;background:#18191F;border-radius:12px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box}
+.ph{background:#1E1F26;border-radius:6px}
+.ring{outline:2px solid #5C86C9;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:7100px;box-sizing:border-box;padding:44px 40px 60px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:44px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+    <span class="lbl">Home · New in the app · desktop 1280 and 390 · R1</span>
+    <h2 class="disp" style="margin:0;font-size:26px">One band in the page, under the header</h2>
+    <p class="cap">The banner is part of Home’s flow, between the header and Ready to build. It isn’t fixed and it isn’t a card over the page, so it can’t collide with the About sheet. No entrance motion: the server draws it, so it’s there when the page is. ✕ closes it and marks what it named as seen; opening Precons does too. Ready to build, your decks and Commitments are grey stubs here, unchanged.</p>
+  </div>
+
+  <sc-for list="{{ states }}" as="st" hint-placeholder-count="7">
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:4px;max-width:1200px;border-top:1px solid #2E3340;padding-top:16px">
+        <div style="display:flex;align-items:baseline;gap:12px"><span class="mono" style="font-size:13px;color:#5C86C9">{{ st.id }}</span><span style="font-size:17px;font-weight:600">{{ st.title }}</span></div>
+        <p class="cap">{{ st.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <sc-for list="{{ st.widths }}" as="w" hint-placeholder-count="2">
+          <div style="{{ w.frame }}">
+            <sc-if value="{{ w.desk }}" hint-placeholder-val="{{ true }}">
+              <div style="width:62px;flex:none;border-right:1px solid #1A1F2B;background:#121217;display:flex;flex-direction:column;align-items:center;gap:18px;padding-top:18px">
+                <span class="disp" style="font-size:15px;color:#C6D2D3">99</span>
+                <span class="ph" style="width:22px;height:22px"></span><span class="ph" style="width:22px;height:22px"></span><span class="ph" style="width:22px;height:22px"></span><span class="ph" style="width:22px;height:22px"></span>
+              </div>
+            </sc-if>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative">
+              <sc-if value="{{ w.phone }}" hint-placeholder-val="{{ false }}">
+                <div style="height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #1A1F2B"><span class="disp" style="font-size:16px">The 99</span><span class="ph" style="width:28px;height:28px;border-radius:50%"></span></div>
+              </sc-if>
+              <sc-if value="{{ st.firstRun }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ w.firstRun }}">
+                  <span class="mono" style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Getting started</span>
+                  <h1 style="{{ w.h1 }}">Set up The 99</h1>
+                  <div class="stub" style="padding:14px 16px">
+                    <span class="ph" style="height:40px"></span><span class="ph" style="height:40px"></span><span class="ph" style="height:40px"></span>
+                  </div>
+                  <span class="mono" style="font-size:10.5px;color:#7C8A8C">FirstRunChecklist, as shipped · no banner on this page</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ st.dash }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ w.header }}">
+                  <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0">
+                    <span class="mono" style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">4,812 cards · read today</span>
+                    <h1 style="{{ w.h1 }}">Welcome back</h1>
+                  </div>
+                  <div style="{{ w.actions }}">
+                    <span style="{{ w.ghost }}">Update collection</span>
+                    <span style="{{ w.primary }}">New deck</span>
+                  </div>
+                </div>
+
+                <sc-if value="{{ st.one }}" hint-placeholder-val="{{ true }}">
+                  <div role="region" aria-label="New in the app" style="{{ w.banner }}">
+                    <span class="mark" style="{{ w.markPos }}"><i></i></span>
+                    <div style="{{ w.textCol }}">
+                      <span style="font-size:14px;line-height:1.45;color:#B3C0C2"><span style="color:#C6D2D3">{{ st.one.name }}</span>{{ st.one.rest }}</span>
+                      <a href="#" class="blink" style="{{ w.linkStyle }}">{{ st.one.link }}</a>
+                    </div>
+                    <button type="button" class="x" aria-label="Dismiss" style="{{ w.xStyle }}">✕</button>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ st.many }}" hint-placeholder-val="{{ false }}">
+                  <div role="region" aria-label="New in the app" style="{{ w.bannerMany }}">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span class="mark"><i></i></span>
+                      <h2 style="margin:0;flex:1;min-width:0;font-size:14.5px;font-weight:600;color:#C6D2D3">{{ st.manyHead }}</h2>
+                      <sc-if value="{{ w.desk }}" hint-placeholder-val="{{ true }}"><a href="#" class="blink" style="font-size:13.5px">See them in Precons</a></sc-if>
+                      <button type="button" class="x" aria-label="Dismiss" style="{{ w.xStyle }}">✕</button>
+                    </div>
+                    <ul style="{{ w.lines }}">
+                      <sc-for list="{{ st.many }}" as="l" hint-placeholder-count="3">
+                        <li style="{{ l.style }}"><span style="color:#C6D2D3">{{ l.name }}</span>{{ l.rest }}</li>
+                      </sc-for>
+                    </ul>
+                    <sc-if value="{{ w.phone }}" hint-placeholder-val="{{ false }}"><a href="#" class="blink" style="font-size:14px;min-height:44px;display:flex;align-items:center;padding-left:32px">See them in Precons</a></sc-if>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ st.focus }}" hint-placeholder-val="{{ false }}">
+                  <div role="region" aria-label="New in the app" style="{{ w.banner }}">
+                    <span class="mark" style="{{ w.markPos }}"><i></i></span>
+                    <div style="{{ w.textCol }}">
+                      <span style="font-size:14px;line-height:1.45;color:#B3C0C2"><span style="color:#C6D2D3">Star Trek Commander</span> is announced, with 15 commanders revealed.</span>
+                      <a href="#" class="blink" style="{{ w.focusLink }}">See it in Precons</a>
+                    </div>
+                    <button type="button" class="x" aria-label="Dismiss" style="{{ w.focusX }}">✕</button>
+                  </div>
+                </sc-if>
+
+                <div style="{{ w.bodyRow }}">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px">
+                    <div class="stub" style="{{ w.stubPad }}"><span style="font-size:15px;font-weight:600">Ready to build</span><span class="ph" style="{{ w.stubA }}"></span></div>
+                    <div class="stub" style="{{ w.stubPad }}"><span style="font-size:15px;font-weight:600">Your decks</span><span class="ph" style="height:44px"></span><span class="ph" style="height:44px"></span></div>
+                  </div>
+                  <sc-if value="{{ w.wide }}" hint-placeholder-val="{{ true }}">
+                    <div class="stub" style="width:316px;flex:none;padding:16px 18px"><span style="font-size:15px;font-weight:600">Commitments</span><span class="ph" style="height:140px"></span></div>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ st.sheet }}" hint-placeholder-val="{{ false }}">
+                <div role="region" aria-label="New in About" style="{{ w.sheet }}">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="flex:none;width:28px;height:28px;border-radius:8px;background:rgba(92,134,201,.16);border:1px solid rgba(92,134,201,.45);display:flex;align-items:center;justify-content:center;box-sizing:border-box"><span style="width:9px;height:9px;transform:rotate(45deg);background:#5C86C9"></span></span>
+                    <h2 class="disp" style="margin:0;font-size:17px;line-height:1.2;color:#C6D2D3">1 new in About</h2>
+                  </div>
+                  <ul style="margin:8px 0 0;padding:0;list-style:none">
+                    <li style="border-top:1px solid #1A1F2B;padding:8px 0;font-size:13.5px;line-height:1.4;color:#B3C0C2">Commander sets on the way</li>
+                  </ul>
+                  <div style="margin-top:12px;display:flex;gap:8px">
+                    <span style="{{ w.sheetPrimary }}">Show me</span>
+                    <span style="{{ w.sheetGhost }}">Later</span>
+                  </div>
+                  <p class="mono" style="margin:10px 0 0;font-size:10.5px;color:#7C8A8C">Always in your account menu, under About The 99.</p>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ w.phone }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:0;right:0;bottom:0;height:64px;border-top:1px solid #1A1F2B;background:#121217;display:flex;justify-content:space-around;align-items:center">
+                  <span class="mono" style="font-size:10px;color:#C6D2D3">Home</span><span class="mono" style="font-size:10px;color:#7C8A8C">Collection</span><span class="mono" style="font-size:10px;color:#7C8A8C">Commanders</span><span class="mono" style="font-size:10px;color:#7C8A8C">Decks</span>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":7100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ring = { outline: "2px solid #5C86C9", outlineOffset: "2px" };
+    const line = (phone, first) => ({ borderTop: "1px solid #1A1F2B", padding: phone ? "9px 0" : "7px 0", fontSize: phone ? "14px" : "13.5px", lineHeight: 1.4, color: "#B3C0C2", ...(first ? {} : {}) });
+    const widthsFor = (st) => [false, true].map((phone) => {
+      const desk = !phone;
+      return {
+        phone, desk, wide: desk,
+        frame: { width: phone ? "390px" : "1280px", height: phone ? "844px" : "640px", flex: "none", display: "flex", background: "#121217", border: "1px solid #2E3340", borderRadius: "12px", overflow: "hidden", position: "relative", boxSizing: "border-box" },
+        header: phone ? { display: "flex", flexDirection: "column", gap: "12px", padding: "14px 16px 0" } : { display: "flex", alignItems: "flex-end", gap: "16px", padding: "22px 26px 0" },
+        h1: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 700, fontSize: phone ? "23px" : "28px", lineHeight: phone ? 1.15 : 1, color: "#C6D2D3" },
+        actions: phone ? { display: "flex", flexDirection: "row-reverse", gap: "8px" } : { display: "flex", gap: "8px" },
+        ghost: { display: "flex", alignItems: "center", justifyContent: "center", height: phone ? "44px" : "32px", flex: phone ? "1 1 0" : "none", padding: phone ? "0" : "0 12px", borderRadius: phone ? "10px" : "8px", border: "1px solid #2E3340", fontSize: phone ? "14px" : "12.5px", color: "#B3C0C2" },
+        primary: { display: "flex", alignItems: "center", justifyContent: "center", height: phone ? "44px" : "32px", flex: phone ? "1 1 0" : "none", padding: phone ? "0" : "0 14px", borderRadius: phone ? "10px" : "8px", background: "#D9D3C4", fontSize: phone ? "14px" : "12.5px", color: "#121217", fontWeight: 500 },
+        banner: phone
+          ? { margin: "14px 16px 0", display: "flex", alignItems: "flex-start", gap: "10px", background: "#18191F", border: "1px solid #2E3340", borderRadius: "10px", padding: "10px 4px 10px 14px" }
+          : { margin: "18px 26px 0", display: "flex", alignItems: "center", gap: "12px", background: "#18191F", border: "1px solid #2E3340", borderRadius: "10px", padding: "7px 8px 7px 14px", minHeight: "46px", boxSizing: "border-box" },
+        markPos: phone ? { marginTop: "2px" } : {},
+        textCol: phone ? { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "4px", paddingTop: "2px" } : { flex: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: "14px", flexWrap: "wrap" },
+        linkStyle: phone ? { fontSize: "14px", lineHeight: 1.45, minHeight: "24px" } : { fontSize: "13.5px" },
+        xStyle: phone ? { width: "44px", height: "44px", marginTop: "-8px", fontSize: "14px" } : { width: "32px", height: "32px" },
+        focusLink: { ...(phone ? { fontSize: "14px", lineHeight: 1.45 } : { fontSize: "13.5px" }), ...(phone ? {} : ring), borderRadius: "3px" },
+        focusX: { ...(phone ? { width: "44px", height: "44px", marginTop: "-8px", fontSize: "14px" } : { width: "32px", height: "32px" }), ...(phone ? ring : {}) },
+        bannerMany: phone
+          ? { margin: "14px 16px 0", display: "flex", flexDirection: "column", background: "#18191F", border: "1px solid #2E3340", borderRadius: "10px", padding: "6px 4px 4px 14px" }
+          : { margin: "18px 26px 0", display: "flex", flexDirection: "column", background: "#18191F", border: "1px solid #2E3340", borderRadius: "10px", padding: "7px 8px 6px 14px" },
+        lines: { margin: phone ? "2px 10px 0 32px" : "4px 0 0 32px", padding: 0, listStyle: "none", ...(phone ? {} : { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", columnGap: "28px" }) },
+        bodyRow: phone ? { display: "flex", flexDirection: "column", gap: "12px", padding: "14px 16px 16px" } : { display: "flex", gap: "20px", padding: "20px 26px 26px" },
+        stubPad: { padding: phone ? "14px 16px" : "16px 18px" },
+        stubA: { height: phone ? "150px" : "120px" },
+        firstRun: { display: "flex", flexDirection: "column", gap: "12px", padding: phone ? "14px 16px" : "26px 26px", maxWidth: "640px" },
+        sheet: phone
+          ? { position: "absolute", left: "12px", right: "12px", bottom: "74px", boxSizing: "border-box", borderRadius: "14px", border: "1px solid #2E3340", background: "#18191F", padding: "16px 18px 14px", boxShadow: "0 20px 50px rgba(0,0,0,.5)" }
+          : { position: "absolute", left: "20px", bottom: "20px", width: "340px", boxSizing: "border-box", borderRadius: "14px", border: "1px solid #2E3340", background: "#18191F", padding: "16px 18px 14px", boxShadow: "0 20px 50px rgba(0,0,0,.5)" },
+        sheetPrimary: { display: "flex", alignItems: "center", justifyContent: "center", height: phone ? "44px" : "36px", flex: phone ? "1 1 0" : "none", padding: "0 18px", borderRadius: "8px", background: "#D9D3C4", color: "#121217", fontSize: "13px", fontWeight: 500 },
+        sheetGhost: { display: "flex", alignItems: "center", justifyContent: "center", height: phone ? "44px" : "36px", flex: phone ? "1 1 0" : "none", padding: "0 18px", borderRadius: "8px", border: "1px solid #2E3340", color: "#B3C0C2", fontSize: "13px" },
+      };
+    });
+    const mk = (o) => {
+      const st = { dash: true, one: null, many: null, focus: false, sheet: false, firstRun: false, ...o };
+      if (st.firstRun) st.dash = false;
+      if (st.many) st.many = st.many.map((l, i) => ({ ...l, style: { borderTop: "1px solid #1A1F2B", padding: "8px 0", fontSize: "13.5px", lineHeight: 1.4, color: l.more ? "#95A4A6" : "#B3C0C2", fontFamily: l.more ? "'IBM Plex Mono',monospace" : "inherit", ...(l.more ? { fontSize: "11px" } : {}) } }));
+      st.widths = widthsFor(st);
+      return st;
+    };
+    const ST = { name: "Star Trek Commander", rest: " is announced, with 15 commanders revealed.", link: "See it in Precons" };
+    const states = [
+      mk({ id: "H1 · H6", title: "No banner, and seen", note: "Nothing has arrived in the last 30 days, or everything that did is seen: Home as shipped, with no slot held. Seen after ✕ and seen after opening Precons look the same, so H6 is this frame. A failed read draws this too." }),
+      mk({ id: "H2", title: "One arrival, unseen: a set announced", one: ST, note: "One sentence that names the set and says what’s there, then where to see it. The link goes to /decks/precons#announced. Desktop: one line, with the link after the sentence and ✕ at the end. 390: the link takes its own line, and ✕ is 44 × 44 in the corner." }),
+      mk({ id: "H3", title: "One arrival, unseen: decklists listed", one: { name: "Star Trek Commander", rest: ": 4 decklists listed.", link: "See them in Precons" }, note: "A set’s lists roll up into one line, however many precons it brings. The link goes to the year group. A reader who never saw the announcement gets only this, and ✕ marks the set and its lists seen together." }),
+      mk({ id: "H4", title: "Several arrivals, unseen", manyHead: "5 new in Commander precons", many: [
+          { name: "Star Trek Commander", rest: " is announced, with 15 commanders revealed." },
+          { name: "Darkhold Destiny Commander", rest: " is announced, with 1 commander revealed." },
+          { name: "[Commander set C]", rest: ": 4 decklists listed." },
+          { name: "", rest: "and 2 more", more: true },
+        ], note: "Hand-built: five arrivals after a big announcement. A heading with the count, then the About sheet’s cap: all of them up to four, otherwise three and “and N more”, so “and 1 more” never prints. Soonest release first, as on Precons. One link for all, one ✕ for all. Desktop lays the lines two across so the band stays short." }),
+      mk({ id: "H5", title: "Beside the About sheet", one: ST, sheet: true, note: "Both due on one load, for example the load after the switch flips, which also announces this feature’s About entry. Both show, and neither yields. The banner is in the page’s flow and the sheet is fixed: at 390 it’s the foot card above the tab bar, and the page reserves its height. At desktop it sits beside the rail. The sheet keeps its polite announcement and the banner has none, so a screen reader hears one thing." }),
+      mk({ id: "H7", title: "First-run account", firstRun: true, note: "The checklist is the page, and the banner isn’t drawn on it. Nothing is marked seen. An arrival still inside its 30 days shows once Home is the dashboard." }),
+      mk({ id: "H8", title: "Focus", focus: true, note: "Tab order: the link, then ✕. Each gets the 2px accent ring at a 2px offset (desktop shows the link focused, 390 shows ✕). ✕ is a real button named “Dismiss”. Enter or Space closes the banner, and focus moves to the page’s heading. The region is labelled “New in the app” and is not an alert. Under reduced motion the close is instant; otherwise the band collapses over 160ms." }),
+    ];
+    return { states };
+  }
+}
+</script>
+</body>
+</html>
