@@ -145,7 +145,13 @@ passes ~800 lines.
   - The cached `precons` payload gains the upcoming sets and revealed commanders, both catalog data keyed on the
     catalog generation, and the UTC day enters its key for `new ·` and the countdown.
   - Seen is read inside the payload, which the stamp now retires (PR 1).
-  - The visit writes `markUpcomingSeen` in `after()` for every set it drew, behind the switch.
+  - The visit writes `markUpcomingSeen` in `after()`, behind the switch, and acknowledges every arrival the banner
+    could show, not only what this visit drew.
+    - The keys come from the same unfiltered read as the banner, through `seenKeysFor(arrivalsFor(...))`.
+    - That covers the bare code of every announced set and `lists:<code>` for every set whose decklists arrived.
+    - It is written whatever the filters, the order (Most owned hides the group) or the disclosure state. A set whose
+      lists have landed has left the group under E1, so a write of only the drawn sets would leave its lists line
+      on Home.
   - A failed upcoming read draws the list as shipped (T9).
 - **Copy:**
   - in `src/lib/copy/precons.ts`;
@@ -165,7 +171,14 @@ passes ~800 lines.
     `sheetTitles`.
   - ✕ is 32×32 at desktop and 44×44 at 390. It runs a server action that writes `seenKeysFor(lines)`, then collapses
     the banner in 160ms (instant under reduced motion) and moves focus to the page's `<h1>`.
-  - Links go to `/decks/precons#announced`, or to the year group for a lists line.
+  - Links go to `/decks/precons?sort=newest#announced`, or `?sort=newest#precons-<year>` for a lists line.
+    - The explicit `sort=newest` matters because `PreconListView` restores a Most owned order the browser saved
+      when the URL names none (`urlOrder ?? storedOrder`).
+    - Under Most owned the group is hidden and the list has no year sections, so either link would land with no
+      target.
+    - PR 2 makes `parsePreconParams` read `sort=newest` as an explicit Newest, which beats the saved order on that
+      visit.
+    - PR 3's probe follows both links with Most owned saved first.
   - It is absent on the first-run checklist, when the switch is off, when the read failed and when there is nothing
     to show.
 - **E5 on Home.**
