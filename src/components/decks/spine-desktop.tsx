@@ -13,6 +13,7 @@ import { useCommanderSiblings } from "./deck-siblings";
 import { IdentityPips } from "../commanders/commander-art";
 import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash } from "../ui/art-wash";
+import { DeckCardOverflow } from "./deck-card-overflow";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
@@ -757,6 +758,9 @@ export function SpineDesktop({
                   {deckHeaderCopy.export}
                 </PrimaryButton>
               )}
+              {/* The Decks tile's own ⋯, beside Export: Rename and Delete from inside the deck. A delete
+                  lands on /decks, which `deleteDeck`'s redirect does. */}
+              <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" />
               {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
             </div>
           )}

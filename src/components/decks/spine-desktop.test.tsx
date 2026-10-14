@@ -452,3 +452,15 @@ describe("SpineDesktop — the rename glyph", () => {
     expect((description as HTMLTextAreaElement).value).toContain("Sol Ring");
   });
 });
+
+describe("SpineDesktop — the deck's ⋯ beside Export", () => {
+  it("carries the Decks tile's menu, with Rename and Delete", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    const trigger = screen.getByRole("button", { name: "Actions for Atraxa Superfriends" });
+    const exportButton = screen.getByRole("button", { name: /Export/ });
+    expect(trigger.parentElement!.parentElement).toBe(exportButton.parentElement);
+    fireEvent.click(trigger);
+    expect(screen.getByRole("button", { name: "Rename" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
+  });
+});

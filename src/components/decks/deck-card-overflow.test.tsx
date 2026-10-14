@@ -28,12 +28,7 @@ describe("DeckCardOverflow", () => {
         deckId="d1"
         deckName="Atraxa"
         built={99}
-        folders={[{ id: "f1", name: "Cube night" }]}
-        folderId={null}
-        folderName={null}
-        onCreateFolder={() => {}}
-        onMove={onMove}
-        keepsFocus closeAfterCreate={null}
+        placement="tile" move={{ folders: [{ id: "f1", name: "Cube night" }], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: onMove, keepsFocus: true, closeAfterCreate: null }}
       />,
     );
     fireEvent.click(trigger());
@@ -51,11 +46,7 @@ describe("DeckCardOverflow", () => {
         deckId="d1"
         deckName="Atraxa"
         built={99}
-        folders={[{ id: "f1", name: "Cube night" }]}
-        folderId="f1"
-        folderName="Cube night"
-        onCreateFolder={() => {}}
-        onMove={() => {}} keepsFocus closeAfterCreate={null}
+        placement="tile" move={{ folders: [{ id: "f1", name: "Cube night" }], folderId: "f1", folderName: "Cube night", onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }}
       />,
     );
     fireEvent.click(trigger());
@@ -69,11 +60,7 @@ describe("DeckCardOverflow", () => {
         deckId="d1"
         deckName="Atraxa"
         built={99}
-        folders={[]}
-        folderId={null}
-        folderName={null}
-        onCreateFolder={() => {}}
-        onMove={() => {}} keepsFocus closeAfterCreate={null}
+        placement="tile" move={{ folders: [], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }}
       />,
     );
     fireEvent.click(trigger());
@@ -85,12 +72,12 @@ describe("DeckCardOverflow", () => {
   // value names a pattern this panel does not implement either. Its rename mode
   // is a form, not a list of actions, so no value is honest here.
   it("claims no popup pattern it does not implement", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement="tile" move={{ folders: [], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }} />);
     expect(trigger()).not.toHaveAttribute("aria-haspopup");
   });
 
   it("points aria-controls at the panel only while it is open", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement="tile" move={{ folders: [], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }} />);
     expect(trigger()).toHaveAttribute("aria-expanded", "false");
     expect(trigger()).not.toHaveAttribute("aria-controls");
 
@@ -105,8 +92,8 @@ describe("DeckCardOverflow", () => {
   it("gives each instance its own panel id", () => {
     render(
       <>
-        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />
-        <DeckCardOverflow deckId="d2" deckName="Krenko" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />
+        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement="tile" move={{ folders: [], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }} />
+        <DeckCardOverflow deckId="d2" deckName="Krenko" built={99} placement="tile" move={{ folders: [], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }} />
       </>,
     );
     fireEvent.click(trigger("Atraxa"));
@@ -125,7 +112,7 @@ describe("DeckCardOverflow — THE PLATE on phone", () => {
   // the crop beneath it. That scrim is gone from this tile, so the glyph would be
   // `var(--fg)` on an unmodified crop.
   it("draws the 26px plate inside the 44px target, at both widths", () => {
-    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} folders={[]} folderId={null} folderName={null} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} />);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement="tile" move={{ folders: [], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }} />);
     const button = screen.getByRole("button");
     // Target unchanged: 44 on a phone, 26 from `sm:` up, where the plate fills it.
     expect(button.className).toContain("h-[44px]");
@@ -170,13 +157,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
         deckId="d1"
         deckName={name}
         built={99}
-        folders={[]}
-        folderId={null}
-        folderName={null}
-        onCreateFolder={() => {}}
-        onMove={() => {}}
-        keepsFocus
-        closeAfterCreate={null}
+        placement="tile" move={{ folders: [], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }}
       />,
     );
     fireEvent.click(trigger(name));
@@ -311,5 +292,33 @@ describe("DeckCardOverflow — the delete confirm", () => {
       window.removeEventListener("unhandledrejection", swallowRedirect);
       window.removeEventListener("error", swallowRedirect);
     }
+  });
+});
+
+describe("DeckCardOverflow — in the deck page's header", () => {
+  it("carries Rename and Delete only: Update is the header's own button, and Move is the list's", () => {
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement="header" />);
+    fireEvent.click(trigger());
+    const panel = trigger().parentElement!.querySelector('[id]')!;
+    const rows = Array.from(panel.querySelectorAll("a, button")).map((el) => el.textContent);
+    expect(rows).toEqual(["Rename", "Delete"]);
+  });
+
+  it("is flowed in the header at its button size, not pinned to a tile's corner", () => {
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement="header" />);
+    expect(trigger().parentElement!.className).toBe("relative");
+    expect(trigger().className).toMatch(/\bh-\[44px\].*\bmd:h-\[32px\]/);
+  });
+
+  it("deletes the deck through the same confirm the tile uses", async () => {
+    deleteDeck.mockReset();
+    deleteDeck.mockResolvedValue(undefined);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement="header" />);
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    expect(screen.getByText("Delete “Atraxa”?")).toBeInTheDocument();
+    expect(deleteDeck).not.toHaveBeenCalled();
+    fireEvent.click(screen.getAllByRole("button", { name: /^Delete/ }).at(-1)!);
+    await waitFor(() => expect(deleteDeck).toHaveBeenCalledWith("d1"));
   });
 });

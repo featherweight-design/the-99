@@ -26,6 +26,22 @@ interface DeckCardOverflowProps {
   /** Cards in the deck. At zero there is nothing to diff, so the update entry
    *  is absent rather than disabled — #277 state 3. */
   built: number;
+  /**
+   * Where the menu is drawn. On a `tile` it sits on the art's top-right corner over the tile's
+   * link and carries every row. In the deck page's `header` it is flowed beside Export, at the
+   * header's own button size, and drops the Update row, since the header's own Update button sits
+   * beside it. The header passes no `move` (the shelf list and its create dialog are the Decks
+   * list's) and no `onAmong` (Stats is a list view), so Rename and Delete are what it carries.
+   */
+  placement: "tile" | "header";
+  /** The Move row and its mode, with the list view that owns them. Absent, the row is too. */
+  move?: DeckMove;
+  /** Stats with this deck chosen (`LINEUP_ENABLED`): absent while the switch is off, and the row with it. */
+  onAmong?: () => void;
+}
+
+/** What the Move row needs from the Decks list, which owns the shelves and the create dialog. */
+export interface DeckMove {
   /** Every shelf this deck can be filed on, in the line's own order. */
   folders: readonly { id: string; name: string }[];
   /** The folder it is on now, or null for unfiled. */
@@ -59,8 +75,6 @@ interface DeckCardOverflowProps {
    * every other card.
    */
   closeAfterCreate: { seq: number } | null;
-  /** Stats with this deck chosen (`LINEUP_ENABLED`): absent while the switch is off, and the row with it. */
-  onAmong?: () => void;
 }
 
 /**
@@ -73,15 +87,13 @@ export function DeckCardOverflow({
   deckId,
   deckName,
   built,
-  folders,
-  folderId,
-  folderName,
-  onCreateFolder,
-  onMove,
-  keepsFocus,
-  closeAfterCreate,
+  placement,
+  move,
   onAmong,
 }: DeckCardOverflowProps) {
+  const header = placement === "header";
+  const closeAfterCreate = move?.closeAfterCreate ?? null;
+  const keepsFocus = move?.keepsFocus ?? true;
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "rename" | "move" | "delete">("menu");
   // Raised by the delete pane while its action is in flight. The pane's own
@@ -140,8 +152,7 @@ export function DeckCardOverflow({
   const deleteRow = useRef<HTMLButtonElement>(null);
   // No override of its own: the view's optimistic list hands the new shelf down
   // on the press, and drops it again on a refusal.
-  const shelf = { id: folderId, name: folderName };
-  const shelfLabel = shelf.name ?? folderCopy.shelves.unfiled;
+  const shelfLabel = move?.folderName ?? folderCopy.shelves.unfiled;
 
   // The seq already acted on. A ref because this is a one-shot instruction
   // after a commit, and holding it in state would set state inside the effect
@@ -190,7 +201,8 @@ export function DeckCardOverflow({
     // z-10 so this sits above the absolute-inset Link overlay. Placed against
     // the art header's top-right corner rather than flowed, because the tile's
     // body is a grid of figures and this is not one of them.
-    <div className="absolute top-[8px] right-[8px] z-10 sm:top-[10px] sm:right-[10px]">
+    // In the header it is flowed, so it is only the anchor for the panel's absolute fallback.
+    <div className={header ? "relative" : "absolute top-[8px] right-[8px] z-10 sm:top-[10px] sm:right-[10px]"}>
       {/* §Deck card — "⋯" overflow button */}
       <button
         ref={buttonRef}
@@ -223,13 +235,22 @@ export function DeckCardOverflow({
         // untouched. The open state is a class, not an inline style: an inline
         // background outranks the hover: utilities beside it and the control
         // stops highlighting the moment the panel is open.
-        className="flex h-[44px] w-[44px] cursor-pointer items-center justify-center bg-transparent p-0 sm:h-[26px] sm:w-[26px]"
+        className={
+          header
+            ? // The header's own button: the phone row's 44px target, and Export's 32px at desktop.
+              `flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[7px] border border-[color:var(--border-strong)] p-0 font-mono text-[13px] tracking-[1px] transition-colors md:h-[32px] md:w-[32px] md:rounded-[8px] ${
+                open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "bg-transparent text-[color:var(--fg-body)] hover:bg-[color:var(--elevated)]"
+              }`
+            : "flex h-[44px] w-[44px] cursor-pointer items-center justify-center bg-transparent p-0 sm:h-[26px] sm:w-[26px]"
+        }
       >
         {/* THE PLATE, as `full-card-trigger.tsx` draws it: opaque `var(--bg)`
             under one hairline at radius 7. Opaque rather than measured per
             theme — ink on `--bg` is the page's own body contrast — which is what
             lets the band underneath carry no scrim at all. Decision 3's
-            treatment, now at both widths. */}
+            treatment, now at both widths. In the header the button is its own
+            plate, so the glyph sits in it bare. */}
+        {header ? "…" : (
         <span
           className={`flex h-[26px] w-[26px] items-center justify-center rounded-[7px] border font-mono text-[13px] tracking-[1px] transition-colors sm:h-full sm:w-full sm:text-[11px] ${
             open
@@ -239,6 +260,7 @@ export function DeckCardOverflow({
         >
           …
         </span>
+        )}
       </button>
 
       {open && (
@@ -266,7 +288,7 @@ export function DeckCardOverflow({
             // clips its own corners, so `first:border-t-0` is the whole
             // separator rule and it survives the Update row being absent.
             <div className="flex flex-col">
-              {built > 0 && (
+              {!header && built > 0 && (
                 <Link
                   href={`/decks/${deckId}/import`}
                   aria-label={deckImportCopy.update.entryAria(deckName)}
@@ -287,6 +309,7 @@ export function DeckCardOverflow({
               {/* Between Rename and Delete, whether or not the Update row above
                   rendered — it is gated on `built > 0`, so the shipped menu is
                   two rows on a brew (errata E9). */}
+              {move ? (
               <button
                 type="button"
                 onClick={handleMove}
@@ -300,6 +323,7 @@ export function DeckCardOverflow({
                   {folderCopy.move.row(shelfLabel)}
                 </span>
               </button>
+              ) : null}
               <button
                 ref={deleteRow}
                 type="button"
@@ -320,12 +344,12 @@ export function DeckCardOverflow({
                 </button>
               ) : null}
             </div>
-          ) : mode === "move" ? (
+          ) : mode === "move" && move ? (
             <MoveMode
               deckName={deckName}
-              folders={folders}
-              currentId={shelf.id}
-              onCreate={onCreateFolder}
+              folders={move.folders}
+              currentId={move.folderId}
+              onCreate={move.onCreateFolder}
               onMove={(next) => {
                 // THE MENU CLOSES, ON THE PRESS. Waiting for the action left
                 // the panel open over a deck that had not moved for a round
@@ -345,7 +369,7 @@ export function DeckCardOverflow({
                 else setOpen(false);
                 // The list, its counts and both denominators live in the view,
                 // and so does the move that changes them.
-                onMove(next);
+                move.onMove(next);
               }}
             />
           ) : mode === "delete" ? (

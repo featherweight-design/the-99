@@ -15,6 +15,7 @@ import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash, BlockScrim, COVER_INK_SHADOW } from "../ui/art-wash";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
+import { DeckCardOverflow } from "./deck-card-overflow";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
@@ -667,6 +668,9 @@ export function SpineMobile({
               {deckHeaderCopy.export}
             </button>
           )}
+          {/* The Decks tile's own ⋯, beside Export: Rename and Delete from inside the deck. A delete
+              lands on /decks, which `deleteDeck`'s redirect does. */}
+          <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" />
           {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
         </div>
       )}

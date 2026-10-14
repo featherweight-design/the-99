@@ -435,13 +435,16 @@ export function DeckCard({
           deckId={deck.id}
           deckName={deck.name}
           built={deck.built}
-          folders={folders}
-          folderId={deck.folderId}
-          folderName={deck.folderName}
-          onCreateFolder={onCreateFolder}
-          onMove={onMove}
-          keepsFocus={keepsFocus}
-          closeAfterCreate={closeAfterCreate}
+          placement="tile"
+          move={{
+            folders,
+            folderId: deck.folderId,
+            folderName: deck.folderName,
+            onCreateFolder,
+            onMove,
+            keepsFocus,
+            closeAfterCreate,
+          }}
           onAmong={onAmong}
         />
         {/* The block at the foot, carrying identity alone: the deck's name, its
