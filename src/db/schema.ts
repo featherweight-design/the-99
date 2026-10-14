@@ -293,12 +293,14 @@ export const tokenOwnership = pgTable("token_ownership", {
  */
 export const tokenPrintingHoldings = pgTable("token_printing_holdings", {
   userId: text("user_id").notNull(),
-  tokenPrintingId: uuid("token_printing_id").notNull().references(() => tokenPrintings.scryfallId),
+  tokenPrintingId: uuid("token_printing_id").notNull(),
   source: text("source", { enum: ["upload", "precon"] }).notNull(),
   quantity: integer("quantity").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.tokenPrintingId, t.source] }),
+  // Named: the generated name is 72 bytes, past Postgres's 63.
+  foreignKey({ name: "token_printing_holdings_printing_fk", columns: [t.tokenPrintingId], foreignColumns: [tokenPrintings.scryfallId] }),
   check("token_printing_holdings_quantity_positive", sql`${t.quantity} > 0`),
   check("token_printing_holdings_source_check", sql`${t.source} in ('upload', 'precon')`),
 ]);
@@ -319,12 +321,14 @@ export const tokenPrintingHoldings = pgTable("token_printing_holdings", {
 export const deckTokenPrintings = pgTable("deck_token_printings", {
   deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
   tokenOracleId: uuid("token_oracle_id").notNull().references(() => tokens.oracleId),
-  tokenPrintingId: uuid("token_printing_id").notNull().references(() => tokenPrintings.scryfallId),
+  tokenPrintingId: uuid("token_printing_id").notNull(),
   userId: text("user_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.deckId, t.tokenOracleId] }),
+  // Named: the generated name is 69 bytes, past Postgres's 63.
+  foreignKey({ name: "deck_token_printings_printing_fk", columns: [t.tokenPrintingId], foreignColumns: [tokenPrintings.scryfallId] }),
   index("deck_token_printings_user_idx").on(t.userId),
 ]);
 

@@ -1,5 +1,5 @@
 {
-  "id": "de1e4009-e695-4df5-aa9e-9fed028848a4",
+  "id": "79268765-cf7f-47ad-b740-3dc72e96224f",
   "prevId": "1ed397f4-4eef-4325-95ce-f6d5b5bffa84",
   "version": "7",
   "dialect": "postgresql",
@@ -4510,8 +4510,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "deck_token_printings_token_printing_id_token_printings_scryfall_id_fk": {
-          "name": "deck_token_printings_token_printing_id_token_printings_scryfall_id_fk",
+        "deck_token_printings_printing_fk": {
+          "name": "deck_token_printings_printing_fk",
           "tableFrom": "deck_token_printings",
           "tableTo": "token_printings",
           "columnsFrom": [
@@ -8791,8 +8791,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "token_printing_holdings_token_printing_id_token_printings_scryfall_id_fk": {
-          "name": "token_printing_holdings_token_printing_id_token_printings_scryfall_id_fk",
+        "token_printing_holdings_printing_fk": {
+          "name": "token_printing_holdings_printing_fk",
           "tableFrom": "token_printing_holdings",
           "tableTo": "token_printings",
           "columnsFrom": [

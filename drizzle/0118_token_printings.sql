@@ -21,6 +21,6 @@ CREATE TABLE "token_printing_holdings" (
 --> statement-breakpoint
 ALTER TABLE "deck_token_printings" ADD CONSTRAINT "deck_token_printings_deck_id_decks_id_fk" FOREIGN KEY ("deck_id") REFERENCES "public"."decks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deck_token_printings" ADD CONSTRAINT "deck_token_printings_token_oracle_id_tokens_oracle_id_fk" FOREIGN KEY ("token_oracle_id") REFERENCES "public"."tokens"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "deck_token_printings" ADD CONSTRAINT "deck_token_printings_token_printing_id_token_printings_scryfall_id_fk" FOREIGN KEY ("token_printing_id") REFERENCES "public"."token_printings"("scryfall_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "token_printing_holdings" ADD CONSTRAINT "token_printing_holdings_token_printing_id_token_printings_scryfall_id_fk" FOREIGN KEY ("token_printing_id") REFERENCES "public"."token_printings"("scryfall_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "deck_token_printings" ADD CONSTRAINT "deck_token_printings_printing_fk" FOREIGN KEY ("token_printing_id") REFERENCES "public"."token_printings"("scryfall_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "token_printing_holdings" ADD CONSTRAINT "token_printing_holdings_printing_fk" FOREIGN KEY ("token_printing_id") REFERENCES "public"."token_printings"("scryfall_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "deck_token_printings_user_idx" ON "deck_token_printings" USING btree ("user_id");

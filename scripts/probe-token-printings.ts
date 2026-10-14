@@ -1,7 +1,7 @@
 // WHICH PRINTINGS OF A TOKEN A PLAYER HOLDS (token printings TP1), proved against a real Postgres by
 // calling the real `writeUploadTokens`, `syncPreconTokens` and `purgeAccount`. The sums are unit tested
 // in `ownership.test.ts`; only a database can say the rows land, follow Replace, Add and a precon's
-// revert, and that a deck's pick can only ever name a printing OF its token.
+// revert, and that a deck keeps one pick per token.
 //
 // Its own fixtures: two tokens and three printings under per-run ids (local-dev holds no token catalog),
 // one account, one deck. Everything is deleted in a `finally`.
