@@ -15,7 +15,6 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { CostPips } from "../ui/cost-pips";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { CardDetailTrigger, type Sibling } from "../cards/card-detail-provider";
-import { cssUrl } from "../../lib/collection/browse";
 import { guildLabel } from "../../lib/copy/color-labels";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
 import { changeCommander, readChangeCandidates } from "../../lib/commander-change/actions";
@@ -25,6 +24,8 @@ import { tradeShape, type TradeShape } from "../../lib/commander-change/pending"
 import { useChangeCommander } from "./change-commander-context";
 import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
 import { Chevron } from "../ui/chevron";
+import { ArtLayer } from "../ui/art-layer";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 /** Each group's first screen, the swap sheet's own (Hugh's staging walk, 2026-09-25). */
 const GROUP_SHOWN = 5;
@@ -273,7 +274,8 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
   );
 
   return (
-    <>
+    // One reading order across both groups (`ArrivalOrder`): the group you own fills before the one to buy.
+    <ArrivalOrder>
       <Lede pair={pair} counted={data.counted} />
       {data.yours.length > 0 ? (
         <section className="flex flex-col" aria-label={copy.sheet.groupYours(data.yours.length)}>
@@ -294,7 +296,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
           <GroupToggle total={data.toBuy.length} all={allBuy} onToggle={() => setAllBuy((v) => !v)} />
         </section>
       ) : null}
-    </>
+    </ArrivalOrder>
   );
 }
 
@@ -355,15 +357,16 @@ function Thumb({ halves }: { halves: CandidateHalf[] }) {
       {halves.map((h, i) => (
         <span
           key={h.oracleId}
-          className="block h-full bg-cover bg-center"
+          className="relative block h-full overflow-hidden"
           style={{
             // A pair splits the thumb 28/28, the seam a 1px `--bg` rule on the second half.
             width: halves.length > 1 ? 28 : "100%",
             borderLeft: i > 0 ? "1px solid var(--bg)" : undefined,
             backgroundColor: "var(--elevated)",
-            backgroundImage: h.artCropUri ? cssUrl(h.artCropUri) : undefined,
           }}
-        />
+        >
+          {h.artCropUri ? <ArtLayer src={h.artCropUri} /> : null}
+        </span>
       ))}
     </span>
   );
@@ -518,13 +521,14 @@ function Plate({
             className={"flex flex-col items-center gap-[6px] " + (one ? "w-[104px] md:w-[120px]" : "w-[68px] md:w-[84px]")}
           >
             <span
-              className="block w-full rounded-[8px] border border-[color:var(--border-strong)] bg-cover bg-center"
+              className="relative block w-full overflow-hidden rounded-[8px] border border-[color:var(--border-strong)]"
               style={{
                 aspectRatio: "63 / 88",
                 backgroundColor: "var(--elevated)",
-                backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
               }}
-            />
+            >
+              {c.imageUri ? <ArtLayer src={c.imageUri} /> : null}
+            </span>
             <span className="text-center text-[11.5px] leading-[1.3]" style={{ color: "var(--fg-body)" }}>
               {pair ? shortName(c.name) : c.name}
             </span>

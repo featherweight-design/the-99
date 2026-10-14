@@ -3,11 +3,11 @@
 // strip, when the draft moved its commander. Two rows, `was` and `now`, with the new commander's
 // buy tag when it is to buy. Drawn only when the draft's commander moved.
 
-import { cssUrl } from "../../lib/collection/browse";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
 import type { CommanderRow } from "../../lib/commander-change/draft-rows";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { BuyTag } from "./buy-tag";
+import { ArtLayer } from "../ui/art-layer";
 
 const short = (name: string) => name.split(" // ")[0].split(",")[0].trim();
 /** The name printed on the copy the row pictures, where it has its own. */
@@ -24,14 +24,15 @@ function Row({ label, rows, now, newestAsOf }: { label: string; rows: CommanderR
         {rows.map((r, i) => (
           <span
             key={r.oracleId}
-            className="block h-full bg-cover bg-center"
+            className="relative block h-full overflow-hidden"
             style={{
               width: rows.length > 1 ? 24 : "100%",
               borderLeft: i > 0 ? "1px solid var(--bg)" : undefined,
               backgroundColor: "var(--elevated)",
-              backgroundImage: r.artCropUri ? cssUrl(r.artCropUri) : undefined,
             }}
-          />
+          >
+            {r.artCropUri ? <ArtLayer src={r.artCropUri} /> : null}
+          </span>
         ))}
       </span>
       <span className="min-w-0 flex-1 text-[13.5px] leading-[1.35]" style={{ color: now ? "var(--fg)" : "var(--fg-muted)" }}>

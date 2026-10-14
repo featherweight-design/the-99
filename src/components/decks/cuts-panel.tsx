@@ -11,7 +11,6 @@ import {
   runProposedCuts,
   undoProposedCut,
 } from "../../app/decks/cuts-actions";
-import { cssUrl } from "../../lib/collection/browse";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { overCopy } from "../../lib/copy/decks-builder";
@@ -31,6 +30,8 @@ import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { CreditButton, FailMark } from "../ui/credit-button";
 import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
+import { ArtLayer } from "../ui/art-layer";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -465,9 +466,9 @@ function ResultBlock({ panel, deps, standing, onSettled }: {
         <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{d.resultRead}</span>
       </div>
       <ul className="mt-[10px] flex flex-col gap-[8px]">
-        {items.map((item) => (
+        <ArrivalOrder>{items.map((item) => (
           <li key={item.id}><CutRow item={item} panel={panel} deps={deps} items={items} onSettled={onSettled} /></li>
-        ))}
+        ))}</ArrivalOrder>
         {slots.map((n) => (
           <li key={`short-${n}`} data-testid="short-slot"
             className="flex flex-col gap-[3px] rounded-[9px] px-[12px] py-[10px] md:flex-row md:items-baseline md:justify-between"
@@ -586,8 +587,9 @@ function CutRow({ item, panel, deps, items, onSettled }: {
         <span className="flex min-w-0 items-center gap-[10px]">
           <span className="w-[86px] flex-none rounded-full px-[8px] py-[2px] text-center font-mono text-[9px] uppercase tracking-[0.1em]"
             style={{ color: "var(--accent)", border: "1px solid var(--accent-dim)" }}>{copy.suggestion}</span>
-          <span aria-hidden {...previewHandlers} className="h-[31px] w-[22px] flex-none rounded-[3px] bg-cover bg-center [border:1px_solid_var(--border-strong)]"
-            style={item.cutImageUri ? { backgroundImage: cssUrl(item.cutImageUri) } : undefined} />
+          <span aria-hidden {...previewHandlers} className="relative h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] [border:1px_solid_var(--border-strong)]">
+            {item.cutImageUri ? <ArtLayer src={item.cutImageUri} /> : null}
+          </span>
           <button type="button" onClick={openCard} {...previewHandlers} {...intent} aria-label={item.cutName}
             className="min-w-0 text-left text-[13px] font-semibold text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]">
             {item.cutName}

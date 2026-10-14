@@ -165,7 +165,8 @@ async function walk(page, label, width) {
     const bodyQ = m.querySelector('[data-testid="reasoning-qualifier"]');
     const pieces = [...m.querySelectorAll('[data-testid="reasoning-piece"]')];
     const plates = pieces.map((p) => { const plate = p.querySelector("button span"); const r = plate.getBoundingClientRect();
-      return { w: Math.round(r.width), h: Math.round(r.height), art: getComputedStyle(plate).backgroundImage.startsWith("url(") }; });
+      // The art is the plate's own layer since the card-art fades (`ArtLayer`).
+      return { w: Math.round(r.width), h: Math.round(r.height), art: [plate, ...plate.querySelectorAll("*")].some((e) => getComputedStyle(e).backgroundImage.startsWith("url(")) }; });
     return {
       // What the header HOLDS against the box it is pinned to. Its own height reads 43 on every
       // build, because a class sets it, so a height check passes on anything. What the stacked

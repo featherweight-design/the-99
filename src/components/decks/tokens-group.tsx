@@ -12,6 +12,7 @@ import { HoverPreviewProvider } from "./hover-preview";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { TokenRow } from "./token-row";
 import { TokenTile } from "./token-tile";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const HEADING = "deck-tokens-heading";
 const PANEL = "deck-tokens-panel";
@@ -94,6 +95,8 @@ export function TokensGroup() {
             </div>
           )}
           <HoverPreviewProvider>
+            {/* One reading order for the tokens' art, rows or tiles (`ArrivalOrder`). */}
+            <ArrivalOrder>
             {cards ? (
               // The deck's own Card view declaration (`DecklistGroup`): the column count falls out of the width.
               <ul className="m-0 grid list-none grid-cols-2 items-start gap-[12px] p-0 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[20px]">
@@ -108,6 +111,7 @@ export function TokensGroup() {
                 ))}
               </ul>
             )}
+            </ArrivalOrder>
           </HoverPreviewProvider>
         </div>
       ) : null}

@@ -47,6 +47,7 @@ import { TagHelpRow } from "../cards/tag-help-row";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { CreditsText } from "../ui/credits-text";
 import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 /**
  * Suggested changes (placement addendum v2): the last section of the Analysis tab, mounted only
@@ -986,7 +987,7 @@ export function TuningPanel({
         ) : null}
         {pairs.length > 0 ? (
           <ul className={`mt-[14px] flex flex-col ${answered ? "gap-[6px]" : "gap-[12px] md:gap-[8px]"}`}>
-            {pairs.map((item) => (
+            <ArrivalOrder>{pairs.map((item) => (
               <li key={item.id}>
                 <SuggestionCard
                   item={item as PairItem}
@@ -996,7 +997,7 @@ export function TuningPanel({
                   onSettled={settled}
                 />
               </li>
-            ))}
+            ))}</ArrivalOrder>
           </ul>
         ) : null}
         {lists ? (

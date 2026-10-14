@@ -16,6 +16,7 @@ import { ROW_SHELL } from "../ui/row-shell";
 import { STEP_INK, StrengthTag, type LedgerKey } from "./benchmarks-block";
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { ComboBody, ModalChrome, type FindingArt } from "./receipt-modal";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const L = copy.ledger;
 
@@ -286,7 +287,7 @@ export function BenchmarkLedger({
           </section>
         ))}
 
-        {ledger.lines.map((line) => (
+        <ArrivalOrder>{ledger.lines.map((line) => (
           <ComboBody
             key={line.variantId}
             combo={line}
@@ -307,7 +308,7 @@ export function BenchmarkLedger({
               </div>
             }
           />
-        ))}
+        ))}</ArrivalOrder>
       </HoverPreviewProvider>
     </ModalChrome>
   );
