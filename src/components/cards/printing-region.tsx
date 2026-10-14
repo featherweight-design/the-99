@@ -568,6 +568,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
                       shownNow={shownNow}
                       checked={selectMode ? key === selectedKey : undefined}
                       confirmTiles={confirmTiles}
+                      deckScope={deckScope}
                       colorIdentity={colorIdentity}
                       tabStop={key === tabStopKey}
                       onSelect={() => pick(p)}
@@ -625,6 +626,7 @@ function PrintingTile({
   shownNow,
   checked,
   confirmTiles = false,
+  deckScope = false,
   colorIdentity,
   tabStop,
   onSelect,
@@ -640,6 +642,8 @@ function PrintingTile({
   checked?: boolean;
   /** I got it's confirm size: 100/104px wide, art radius 9px. */
   confirmTiles?: boolean;
+  /** Deck scope names the pick `For this deck`, the Set field's own phrase, not `Your pick`. */
+  deckScope?: boolean;
   colorIdentity: string[];
   tabStop: boolean;
   onSelect: () => void;
@@ -655,7 +659,7 @@ function PrintingTile({
   const setAria = setHint ? `${setLabel} (${setHint})` : setLabel;
   // The choose role says what the player holds of the printing, or nothing at all.
   const qty = choose ? (entry.quantity > 0 ? chooseCopy.tileOwned(entry.quantity) : "") : quantityLabel(entry);
-  const state = picked ? "picked" : shownNow ? "shown-now" : "plain";
+  const state = picked ? (deckScope ? "pinned" : "picked") : shownNow ? "shown-now" : "plain";
   // The identity is the ground; the printing's art, when it has one, fades in over it (`ArtLayer`).
   const artStyle: React.CSSProperties = { background: identityGradient(colorIdentity) };
 
@@ -776,7 +780,7 @@ function PrintingTile({
           {(picked || entry.dormant) && (
             <span aria-hidden className="rotate-45" style={{ width: 7, height: 7, background: "var(--accent)" }} />
           )}
-          {picked ? copy.badgePicked : entry.dormant ? copy.dormantBadge : copy.badgeShownNow}
+          {picked ? (deckScope ? deckCopy.pinned : copy.badgePicked) : entry.dormant ? copy.dormantBadge : copy.badgeShownNow}
         </div>
       )}
     </button>

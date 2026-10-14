@@ -529,7 +529,7 @@ export const printingPickerCopy = {
       setName: string,
       collectorNumber: string,
       qty: string,
-      state: "picked" | "shown-now" | "plain",
+      state: "picked" | "pinned" | "shown-now" | "plain",
     ) =>
       [
         setName,
@@ -537,9 +537,11 @@ export const printingPickerCopy = {
         qty,
         state === "picked"
           ? "your pick"
-          : state === "shown-now"
-            ? "shown now, not chosen"
-            : "",
+          : state === "pinned"
+            ? "for this deck"
+            : state === "shown-now"
+              ? "shown now, not chosen"
+              : "",
       ]
         .filter(Boolean)
         .join(", "),

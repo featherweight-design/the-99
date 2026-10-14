@@ -74,6 +74,19 @@ describe("a deck's token printing picker", () => {
     expect(setCardArtPreference).not.toHaveBeenCalled();
   });
 
+  it("names the token and the deck on the button, and `For this deck` on the picked tile", async () => {
+    mount(ok(row({ printingPick: { setCode: "TCLB", collectorNumber: "4" } })));
+    await act(async () => { fireEvent.click(screen.getByText("open token")); });
+    const label = pickerTriggers()[0].getAttribute("aria-label");
+    expect(label).toContain("Choose which one this deck uses for Soldier.");
+    expect(label).not.toContain("represents this card");
+    await act(async () => { fireEvent.click(pickerTriggers()[0]); });
+    const picked = screen.getAllByRole("radio", { name: /TCLB/ })[0];
+    expect(picked.getAttribute("aria-label")).toContain("for this deck");
+    expect(picked.textContent).toContain(deckPrintingsCopy.picker.pinned);
+    expect(picked.textContent).not.toContain("Your pick");
+  });
+
   it("opens on the deck's own pick", async () => {
     mount(ok(row({ printingPick: { setCode: "TCLB", collectorNumber: "4" } })));
     await act(async () => { fireEvent.click(screen.getByText("open token")); });

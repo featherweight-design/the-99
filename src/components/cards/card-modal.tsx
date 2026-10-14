@@ -1598,6 +1598,10 @@ export function CardModal({
   // The base resolves off `preview`, so it names the printing actually on screen; the count
   // is of what the reader OWNS, so an injected row is art and not a holding.
   const caption = printingCaption(preview, ownedPrintings);
+  // A token's details show no card, so the button names the token; in a deck the pick is the deck's.
+  const triggerAria = deckScope
+    ? deckPrintingsCopy.picker.triggerAria(ownedPrintings.length, caption, isToken ? card.name : undefined)
+    : pickerCopy.triggerAria(ownedPrintings.length, caption);
   // A token whose printing read failed has no set to name, and so no meta block at all.
   const tokenNoSet = card.kind === "token" && caption === "";
 
@@ -2652,6 +2656,7 @@ export function CardModal({
                     count={ownedPrintings.length}
                     picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
                     expanded={expanded}
+                    expandAria={triggerAria}
                     imageUri={resolved?.imageUri ?? null}
                     colorIdentity={card.colorIdentity}
                     onClick={toggleExpanded}
@@ -2670,6 +2675,7 @@ export function CardModal({
                     count={ownedPrintings.length}
                     picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
                     expanded={expanded}
+                    expandAria={triggerAria}
                     onClick={toggleExpanded}
                   />
                 ) : tokenNoSet ? null : (
@@ -3202,7 +3208,7 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: strin
  * cancels the padding so the meta row's 26px gap rhythm is unchanged.
  */
 function PickerTrigger({
-  ref, controls, caption, count, picked, expanded, onClick,
+  ref, controls, caption, count, picked, expanded, onClick, expandAria,
 }: {
   ref: React.Ref<HTMLButtonElement>;
   controls: string;
@@ -3212,6 +3218,8 @@ function PickerTrigger({
   picked: string | null;
   expanded: boolean;
   onClick: () => void;
+  /** The button's label while the region is closed. */
+  expandAria: string;
 }) {
   return (
     <button
@@ -3222,7 +3230,7 @@ function PickerTrigger({
       // The region is unmounted while collapsed, so the reference goes with it — a trigger
       // pointing at a missing element is a broken relationship, not an empty one.
       aria-controls={expanded ? controls : undefined}
-      aria-label={expanded ? pickerCopy.triggerCollapseAria : pickerCopy.triggerAria(count, caption)}
+      aria-label={expanded ? pickerCopy.triggerCollapseAria : expandAria}
       className="cursor-pointer text-left rounded-[8px] p-[8px_12px] m-[-8px_-12px] bg-[color:var(--elevated)] border border-[color:var(--border-dashed)]"
     >
       <div className="font-mono uppercase text-[10px] tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
@@ -3240,7 +3248,7 @@ function PickerTrigger({
  * substitute for the art panel.
  */
 function MobileSetRow({
-  ref, controls, caption, count, picked, expanded, imageUri, colorIdentity, onClick,
+  ref, controls, caption, count, picked, expanded, imageUri, colorIdentity, onClick, expandAria,
 }: {
   ref: React.Ref<HTMLButtonElement>;
   controls: string;
@@ -3252,6 +3260,7 @@ function MobileSetRow({
   imageUri: string | null;
   colorIdentity: string[];
   onClick: () => void;
+  expandAria: string;
 }) {
   // The identity is the ground; the art, when there is one, fades in over it (`ArtLayer`).
   const thumbStyle: React.CSSProperties = { background: identityGradient(colorIdentity) };
@@ -3264,7 +3273,7 @@ function MobileSetRow({
       // The region is unmounted while collapsed, so the reference goes with it — a trigger
       // pointing at a missing element is a broken relationship, not an empty one.
       aria-controls={expanded ? controls : undefined}
-      aria-label={expanded ? pickerCopy.triggerCollapseAria : pickerCopy.triggerAria(count, caption)}
+      aria-label={expanded ? pickerCopy.triggerCollapseAria : expandAria}
       className="cursor-pointer w-full text-left flex items-center gap-[12px] p-[11px_14px] bg-[color:var(--elevated)] border border-[color:var(--border-dashed)]"
       style={{
         minHeight: 62,
