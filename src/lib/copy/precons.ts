@@ -147,8 +147,6 @@ export const preconsCopy = {
       addFailed: "Couldn’t add the cards. Nothing was saved.",
       /** The add threw, so it may have committed with its response lost: no claim of a rollback. */
       addUnsure: "Couldn’t confirm the cards were added. Try again and they won’t be added twice.",
-      /** The cards went in and the deck did not start: never `failed`, whose "Nothing was saved" would be false. */
-      addedNotStarted: "The cards are in your collection, but we couldn’t start the deck.",
     },
     illegal: (names: string[]) =>
       `${names.length === 1 ? "1 card isn’t" : `${n(names.length)} cards aren’t`} legal in Commander: ${names.join(", ")}. ${names.length === 1 ? "It stays" : "They stay"} in, so the deck matches the box.`,
@@ -171,12 +169,6 @@ export const preconsCopy = {
       `You own ${n(owned)} of its ${n(of)}. The ${n(toBuy)} you don’t are in Shopping.${catalogGap(unmapped)}`,
     bodyAll: (unmapped: number) => `You own every card.${catalogGap(unmapped)}`,
     meta: (set: string) => `${set} · printings: this precon’s copies`,
-    /** The receipt of a start that also added the precon to the collection: the add's own title and body come from the Add cards sheet. */
-    receipt: {
-      foil: (foil: number) => `${n(foil)} of them foil`,
-      tokens: (marked: number) => `${n(marked)} ${marked === 1 ? "token" : "tokens"} marked owned`,
-      dismissAria: "Dismiss the receipt",
-    },
   },
   // R3 addendum: the built-from link (`precons-link · copy strings.ts`, placeholders until
   // /copy-review). No verdict word on any share; selection says select / unselect. Every card count
