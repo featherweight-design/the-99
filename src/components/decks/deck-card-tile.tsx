@@ -173,10 +173,11 @@ export function DeckCardTile({
         ? basic.base
         : null;
   const fromMarker = committedCount !== null && basic.count !== committedCount ? committedCount : null;
-  // Spoken while no pending move exists yet to describe it (as the row does).
+  // Spoken from the committed count and the count on screen, in place of the draft's description (as the row).
+  const stepperSpeaks = committedCount !== null;
   const fromDescriptionId = useId();
   const fromSpoken =
-    fromMarker !== null && !pendingMove
+    fromMarker !== null
       ? basic.count > fromMarker
         ? deckVersioningCopy.pending.addMarkRecountedA11y(fromMarker, basic.count)
         : deckVersioningCopy.pending.cutMarkRecountedA11y(fromMarker, basic.count)
@@ -185,7 +186,7 @@ export function DeckCardTile({
   // Said in the mode too, where the drawn mark gives way to the toggle but the card is no less
   // locked.
   const describedBy =
-    [locked ? lockDescriptionId : null, pendingMove ? draftDescriptionId : null, fromSpoken ? fromDescriptionId : null]
+    [locked ? lockDescriptionId : null, pendingMove && !stepperSpeaks ? draftDescriptionId : null, fromSpoken ? fromDescriptionId : null]
       .filter(Boolean)
       .join(" ") ||
     undefined;

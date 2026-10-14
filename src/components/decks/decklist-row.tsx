@@ -204,12 +204,14 @@ export function DecklistRow({
         ? basic.base
         : null;
   const fromMarker = committedCount !== null && basic.count !== committedCount ? committedCount : null;
-  // Spoken where the draft's own description is not yet: a burst on a row the draft had not touched has no
-  // pending move until its save lands, so the `from N` it draws needs words of its own (the shipped recount
-  // strings, up or down). Once the move exists, the row's pending description says it.
+  // A stepper row speaks its recount from the committed count and the count ON SCREEN, in place of the draft's
+  // pending description, which describes the last SAVED move and goes stale the moment a press moves the count
+  // (the shipped recount strings, up or down). Back at the committed figure it says nothing, as it draws nothing.
+  // A basic new to the deck (`from` 0) has no committed count, and keeps the shipped add description.
+  const stepperSpeaks = committedCount !== null;
   const fromDescriptionId = useId();
   const fromSpoken =
-    fromMarker !== null && !pendingMove
+    fromMarker !== null
       ? basic.count > fromMarker
         ? deckVersioningCopy.pending.addMarkRecountedA11y(fromMarker, basic.count)
         : deckVersioningCopy.pending.cutMarkRecountedA11y(fromMarker, basic.count)
@@ -400,7 +402,7 @@ export function DecklistRow({
       // owned, that it is locked, then what the deck has done with it.
       locked ? lockDescriptionId : null,
       marked ? markDescriptionId : null,
-      isPendingChange ? pendingDescriptionId : null,
+      isPendingChange && !stepperSpeaks ? pendingDescriptionId : null,
       fromSpoken ? fromDescriptionId : null,
     ]
       .filter(Boolean)

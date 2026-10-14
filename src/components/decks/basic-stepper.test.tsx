@@ -172,6 +172,33 @@ describe("the basics stepper on a decklist row", () => {
     await settle();
   });
 
+  // A saved move 6 → 8, then the count moves again: the row speaks the count ON SCREEN against the committed 6,
+  // never the stale saved pair, and says nothing once it is back at 6.
+  it("speaks the live recount in place of the saved move's", async () => {
+    const spoken = () => {
+      const trigger = screen.getAllByRole("button").find((b) => b.getAttribute("aria-describedby")?.length);
+      return (trigger?.getAttribute("aria-describedby") ?? "").split(" ").map((id) => document.getElementById(id)?.textContent ?? "");
+    };
+    wrap(
+      <PendingChangeProvider value={{ moves: new Map([["o-island", { from: 6, to: 8 }]]) }}>
+        <DecklistRow deckId="d1" card={{ ...island, quantity: 8 }} newestAsOf={null} />
+      </PendingChangeProvider>,
+    );
+    expect(spoken()).toContain(deckVersioningCopy.pending.addMarkRecountedA11y(6, 8));
+    await act(async () => {
+      fireEvent.change(field(), { target: { value: "4" } });
+      fireEvent.keyDown(field(), { key: "Enter" });
+    });
+    expect(spoken()).toContain(deckVersioningCopy.pending.cutMarkRecountedA11y(6, 4));
+    expect(spoken()).not.toContain(deckVersioningCopy.pending.addMarkRecountedA11y(6, 8));
+    await act(async () => {
+      fireEvent.change(field(), { target: { value: "6" } });
+      fireEvent.keyDown(field(), { key: "Enter" });
+    });
+    expect(spoken().filter((t) => /6/.test(t) && t !== "")).toEqual([]);
+    await settle();
+  });
+
   describe("the typed count", () => {
     const type = (text: string, key = "Enter") =>
       act(async () => {

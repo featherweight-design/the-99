@@ -438,10 +438,12 @@ function QuickAddRow({
   // while the optimistic row is showing but deckOracleIds has not caught up.
   const handleAdd = useCallback(async () => {
     if (applied) return;
+    // At the press, not after the flush: a search typed while the queue drains is a newer generation, and
+    // completing this add must not clear it.
+    const added = beginAdd();
     // Settled BEFORE the add's own prediction: a step pressed while the queue drains then lands in the
     // stepper's figure, and the one copy this adds is counted once, on top of it.
     if (isBasicLand(result.typeLine)) await flushBasicCounts();
-    const added = beginAdd();
     run(
       async () => {
         const outcome = await addCardToDeck(deckId, result.oracleId);
