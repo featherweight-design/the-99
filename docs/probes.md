@@ -2023,6 +2023,22 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   It WRITES decks under a per-run account it purges, after the same branch guard as `probe:precon-add`.
   Mutation-checked: without the pins it fails d and e, without the commit it fails c, and with the commit's
   printing read on the shared pool rather than its transaction it fails c.
+- `pnpm probe:precon-start-owned` proves "Start with this precon" with "I own this precon" selected, against a real
+  database, through the real `startPreconOwned`, `loadDeckBuyRows` and `applyCollectionChange` (revert), on Hugh's own
+  overlap: two older committed decks list Arcane Signet, Command Tower, Sol Ring and Swords to Plowshares and hold none,
+  then Multiverse Reforged is started with the box:
+  - one transaction writes the box's 100 copies, the deck (committed as v1, linked to the add) and one History entry;
+  - the new deck owes nothing, and the older decks stay short of all four: the box's copies are reserved to the new
+    deck, a copy each, so seniority never hands them to an older deck;
+  - History's "Went to" for each of the four names the new deck alone;
+  - a retry under the same action id lands on the same deck and writes nothing more, and an id another add used is
+    refused;
+  - reverting the add (after its short warning is confirmed) releases the reservations, and the older decks are
+    still short.
+
+  It WRITES under a per-run account it purges, after the same branch guard as `probe:precon-add`, on a branch
+  migrated to 0118. Mutation-checked: without the reservations the new deck owes 16 cards and "Went to" names the
+  older decks (Hugh's symptom), failing b to e; without the revert's release it fails h.
 - `pnpm probe:payments-webhook` proves the Stripe webhook's grant transaction (payments K1a) against a real database,
   through the real `fulfilCheckoutSession`, `readAllowance` and `purgeAccount`, with Stripe a stand-in whose
   `checkout.sessions.retrieve` serves a crafted Session and counts its calls: a paid Session for its own account
