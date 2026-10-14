@@ -91,9 +91,9 @@ export const synopsisCopy = {
   /** Refused, in the tab (the Overview section itself) and in the modal (any one section). */
   notWritten: "not written",
   overviewRefused:
-    "We wrote an overview and it did not check out against your list, so we are not showing it. Nothing about your deck changed.",
+    "We wrote an overview and it didn’t check out against your list, so we’re not showing it. Nothing about your deck changed.",
   sectionRefused:
-    "We wrote this section and it did not check out against your list, so we are not showing it. The rest did. Nothing about your deck changed.",
+    "We wrote this section and it didn’t check out against your list, so we’re not showing it. The rest did. Nothing about your deck changed.",
   failedCount: (failed: number, total: number) =>
     `${failed} of ${total} ${total === 1 ? "card" : "cards"} failed checking`,
 

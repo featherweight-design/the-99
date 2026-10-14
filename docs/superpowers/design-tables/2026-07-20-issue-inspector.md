@@ -141,7 +141,7 @@ Token map (`src/app/globals.css`): `--bg`=`#14110E`, `--surface`=`#1E1A15`, `--s
 | meta font | Plex Mono → `font-mono` | same | ✅ |
 | meta font-size | 10.5px → `text-[10px]` mobile, `md:text-[10.5px]` desktop | 10.5px → `md:text-[10.5px]` | ⚠️ mobile 10px is 0.5px smaller than spec's 10.5; acceptable |
 | meta color | `#8E8269` → `var(--fg-faint)` | same | ✅ |
-| meta text | `line X · set Y · no Oracle match` (long) / `L{line} · {set} · no match` (compact) | (long) | ✅ (copy helpers) |
+| meta text | `line X · set Y · no match` (long) / `L{line} · {set} · no match` (compact) | (long) | ✅ (copy helpers) |
 | quantity font | Plex Mono → `font-mono` | same | ✅ |
 | quantity color | `#8E8269` → `var(--fg-faint)` | same | ✅ |
 | quantity text | `×{qty}` | same | ✅ (copy helper) |

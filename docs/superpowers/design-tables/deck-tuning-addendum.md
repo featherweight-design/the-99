@@ -990,7 +990,7 @@ answered) draws inline "✓ applied" and `9px 12px`. Both are recorded. No 390 f
 |---|---|---|---|
 | font-size | not drawn | 12.5px | V2:543 |
 | color | not drawn | var(--fg-faint) | V2:543 |
-| cut-gone form | not drawn | "{cut} has left the deck, so this swap cannot be applied." | V2:762 |
+| cut-gone form | not drawn | "{cut} has left the deck, so this swap can’t be applied." | V2:762 |
 | add-already-in form | not drawn | not drawn | spec §9.14 |
 
 ---

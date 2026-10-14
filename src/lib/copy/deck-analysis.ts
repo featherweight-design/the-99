@@ -122,7 +122,7 @@ export const deckAnalysisCopy = {
      * button is owed what is and is not affected, and the counted figures are unaffected.
      */
     failed: {
-      heading: "We could not finish reading this deck.",
+      heading: "We couldn’t finish reading this deck.",
       body: "The mix below is counted from your list and is true now. Nothing about your deck changed.",
       cta: "Try again",
     },
@@ -149,7 +149,7 @@ export const deckAnalysisCopy = {
   banner: {
     stale: "Your deck has changes since it was analyzed, so this bracket might not be accurate.",
     reanalyze: "Re-analyze",
-    failedHeld: "We could not re-analyze your changes. The bracket below is from before them.",
+    failedHeld: "We couldn’t re-analyze your changes. The bracket below is from before them.",
     tryAgain: "Try again",
   },
 
@@ -404,7 +404,7 @@ export const deckAnalysisCopy = {
      *  alarming reading — a blank slot would throw it away. */
     manaFree: "No mana needed",
     /** Null upstream, which is rare and is genuinely unknown rather than free. */
-    manaUnknown: "Commander Spellbook does not say",
+    manaUnknown: "Commander Spellbook doesn’t say",
     steps: "Steps",
     /** Spellbook's `notablePrerequisites`, drawn under the steps. Absent on 36% of combos. */
     prerequisites: "Needs",

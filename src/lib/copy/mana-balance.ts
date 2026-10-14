@@ -15,7 +15,7 @@ export const manaBalanceCopy = {
   title: "Mana Balance",
   sub: (pips: number, sources: number) =>
     `free · counted just now · ${pips} ${pips === 1 ? "pip" : "pips"} · ${sources} ${sources === 1 ? "source" : "sources"}, as on Deck stats`,
-  lead: "Pips and sources for each color, counted the way the Colors card counts them, beside what each color’s tightest cost needs.",
+  lead: "Pips and sources for each color, counted the way the Mana colors card counts them, beside what each color’s tightest cost needs.",
   table: {
     head: { color: "Color", pips: "Pips", sources: "Sources", needed: "Needed" },
     share: (n: number, pct: number) => `${n} · ${pct}%`,
