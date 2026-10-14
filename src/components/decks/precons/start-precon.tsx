@@ -38,8 +38,9 @@ export type StartPreconProps = {
   /** Collection editing is on: the dialog offers "I own this precon" (the action refuses without it). */
   canOwn?: boolean;
   /**
-   * The edition the add writes, by file: the precon's own (the default), or its Collector's Edition twin when the page's
-   * edition switch chose it. `addedOn` must be that edition's own, since each edition's box is its own entry.
+   * The edition the reader chose, by file: the precon's own (the default), or its Collector's Edition twin when the page's
+   * edition switch chose it. The deck starts that edition's printings, and the add writes that edition's box, so
+   * `addedOn` must be that edition's own, since each edition's box is its own entry.
    */
   addFileName?: string;
 };

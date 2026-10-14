@@ -69,14 +69,18 @@ export type DeckPrintings = {
  * commander column), like every proxy read: a pick whose card has left the deck names nothing.
  * `pruneOrphanProxies` deletes such a row; this is the reading half of that pair.
  */
+/** What a deck's printing reads run on: the shared pool, or a transaction whose own writes they must see. */
+export type PrintingsRunner = Pick<typeof db, "execute" | "select">;
+
 export async function readDeckPicks(
   userId: string,
   deckIds: string[],
+  runner: Pick<typeof db, "execute"> = db,
 ): Promise<Map<string, Map<string, DeckPick>>> {
   const out = new Map<string, Map<string, DeckPick>>();
   const ids = [...new Set(deckIds)];
   if (ids.length === 0) return out;
-  const { rows } = await db.execute<{
+  const { rows } = await runner.execute<{
     deck_id: string;
     oracle_id: string;
     set_code: string;
@@ -136,6 +140,7 @@ export async function readDeckPrintings(
    * helpers below, which would otherwise pay a catalog read only to throw its answer away.
    */
   opts: { usePicks: boolean; ownedOnly?: boolean },
+  runner: PrintingsRunner = db,
 ): Promise<DeckPrintings> {
   const printings = new Map<string, DeckPrinting>();
   const heldPicks = new Map<string, DeckPick>();
@@ -143,8 +148,8 @@ export async function readDeckPrintings(
   if (ids.length === 0) return { printings, heldPicks };
 
   const [picksByDeck, rows] = await Promise.all([
-    opts.usePicks ? readDeckPicks(userId, [deckId]) : Promise.resolve(new Map<string, Map<string, DeckPick>>()),
-    selectCollectionRows(userId, ids),
+    opts.usePicks ? readDeckPicks(userId, [deckId], runner) : Promise.resolve(new Map<string, Map<string, DeckPick>>()),
+    selectCollectionRows(userId, ids, runner),
   ]);
   const picks = picksByDeck.get(deckId) ?? new Map<string, DeckPick>();
 
@@ -174,7 +179,7 @@ export async function readDeckPrintings(
     // a row in `printings` (a printing the ingest skipped), so the lateral takes it when it is and
     // otherwise the card's first printing with art; a card with no printing at all keeps its
     // oracle-level art and names no printing (`""`), which a version records as unknown.
-    const { rows: catalog } = await db.execute<{
+    const { rows: catalog } = await runner.execute<{
       oracle_id: string;
       name: string;
       set_code: string | null;

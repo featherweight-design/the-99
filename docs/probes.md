@@ -2011,13 +2011,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   - the edition switch's lists differ where the editions' printings do (Avengers Tower is MSH 260 in Regular and
     MSH 452 in the Collector's Edition), and where a Collector's Edition shares its plain printing (Final Fantasy's
     Cid, FIC 13) it reads that printing with every copy foil;
-  - a started deck is committed as v1, holding the 99, with no draft left over;
+  - a started deck is committed as v1, holding the 99, whose list is the live one (no draft left over), and v1
+    records the pinned printing of a card held in two printings (Chromatic Lantern at FRC 54, never the MBC 73 the
+    player prefers), which only a read inside the start's own transaction can see;
   - every card the box prints, commanders included, is pinned in `deck_printings` to the box's printing (Brainstorm
     and Arcane Signet at Multiverse Reforged's);
   - a Collector's Edition start pins the Collector's Edition's printings and records the plain edition.
 
   It WRITES decks under a per-run account it purges, after the same branch guard as `probe:precon-add`.
-  Mutation-checked: without the pins it fails d and e, and without the commit it fails c.
+  Mutation-checked: without the pins it fails d and e, without the commit it fails c, and with the commit's
+  printing read on the shared pool rather than its transaction it fails c.
 - `pnpm probe:payments-webhook` proves the Stripe webhook's grant transaction (payments K1a) against a real database,
   through the real `fulfilCheckoutSession`, `readAllowance` and `purgeAccount`, with Stripe a stand-in whose
   `checkout.sessions.retrieve` serves a crafted Session and counts its calls: a paid Session for its own account

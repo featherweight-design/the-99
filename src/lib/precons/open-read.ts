@@ -1,6 +1,7 @@
 /**
  * One precon, as `/decks/precons/[fileName]` draws it: its cards with the precon's own printing
- * (shown read-only, never carried into a deck), which of them the reader owns (any printing), and
+ * (shown read-only here; a deck started from it is pinned to those printings, `startPreconDeck`), which
+ * of them the reader owns (any printing), and
  * the reader's decks that share its list. A Collector's Edition twin answers with the plain
  * edition it folds into, so the page can redirect to it (design call 4).
  */
