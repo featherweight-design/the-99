@@ -1,9 +1,8 @@
 "use client";
-// The saved state of a collection write, shared (precon ownership plan, PR A): the Add cards sheet's `N added`
-// panel and the precon Start dialog's receipt draw the same thing: a title, a body line, the counts, where each
-// copy went, and the History entry the write left. What differs rides in as props, never as a second copy of the
-// layout. The action buttons are the caller's (`children`), since the sheet offers Add more and Done where the
-// precon receipt offers Undo.
+// The saved state of a collection write, drawn from props: a title, a body line, the counts, where each copy
+// went, and the History entry the write left. The Add cards sheet draws it for its `N added` panel; the precon
+// ownership receipt is the next caller. The action buttons are the caller's (`children`), since the sheet offers
+// Add more and Done.
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
@@ -60,13 +59,11 @@ export function WhereItWentBlock({ lines, placed }: WentInputs) {
   );
 }
 
-export function AddedReceipt({ title, body, counts, extra, went, historyHref, historyLabel, onNavigate, children }: {
+export function AddedReceipt({ title, body, counts, went, historyHref, historyLabel, onNavigate, children }: {
   title: string;
   body: string;
   /** The `4,492 → 4,500` line, when the caller knows the collection's size before. */
   counts?: string | null;
-  /** Further lines of the receipt, between the counts and where it went (the precon receipt's tokens line). */
-  extra?: ReactNode;
   went: WentInputs | null;
   historyHref: string;
   historyLabel: string;
@@ -79,7 +76,6 @@ export function AddedReceipt({ title, body, counts, extra, went, historyHref, hi
       <p className="m-0 font-display text-[19px] font-bold">{title}</p>
       <p className="m-0 text-[14px] text-[color:var(--fg-body)]">{body}</p>
       {counts ? <p className="m-0 font-mono text-[12px] text-[color:var(--fg-faint)]">{counts}</p> : null}
-      {extra}
       {went ? <WhereItWentBlock {...went} /> : null}
       {/* B8: the entry this write left, one tap away. */}
       <Link href={historyHref} onNavigate={onNavigate} className="text-[13.5px] text-[color:var(--accent)] underline underline-offset-2">
