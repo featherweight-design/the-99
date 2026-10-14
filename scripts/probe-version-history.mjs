@@ -454,7 +454,7 @@ try {
   );
   check(
     "it draws the not-found page",
-    /There's no page here\./.test(retiredBody),
+    /There’s no page here\./.test(retiredBody),
     retiredUrl,
   );
   // Asserted here, unlike the ownership guard below, and the difference is the
@@ -482,7 +482,7 @@ try {
   const refusedStatus = refused?.status() ?? null;
   const refusedBody = await page.evaluate(() => document.body.innerText);
   const leaked = /v1|committed/i.test(refusedBody);
-  const notFoundPage = /There's no page here\./.test(refusedBody);
+  const notFoundPage = /There’s no page here\./.test(refusedBody);
   console.log(`\n########## another player's deck · /decks/<id>`);
   check("no rail drawn for a deck the reader does not own", !leaked);
   check("the not-found page is drawn instead", notFoundPage);

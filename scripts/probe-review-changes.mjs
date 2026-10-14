@@ -357,7 +357,7 @@ const readReview = (page) =>
         const drawn = cells.map((c) => c.label);
         const missing = labels.filter((l) => !drawn.includes(l));
         const section = [...document.querySelectorAll("section")].find(
-          (s) => text(s.querySelector("h2")) === "How the deck's shape moves",
+          (s) => text(s.querySelector("h2")) === "How the deck’s shape moves",
         );
         const moves = section
           ? [...section.querySelectorAll(":scope > div > div")].map((row) => {

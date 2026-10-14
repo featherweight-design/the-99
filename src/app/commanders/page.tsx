@@ -50,7 +50,7 @@ export default async function CommandersPage({
         </EmptyStateTitle>
 
         <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
-          Upload your cards and we&apos;ll rank every commander you can build.
+          Upload your cards and we’ll rank every commander you can build.
         </EmptyStateBody>
 
         <PrimaryButton
@@ -158,12 +158,12 @@ export default async function CommandersPage({
             <span className="sm:hidden">
               We scanned all {uniqueCardsRead.toLocaleString()} cards and none
               can helm a legal 99 on their own. Add a legendary creature and
-              they&apos;ll show up here.
+              they’ll show up here.
             </span>
             <span className="hidden sm:inline">
               We scanned all {uniqueCardsRead.toLocaleString()} cards and none
               can helm a legal 99 on their own. Add a legendary creature, or a
-              planeswalker that can command, and they&apos;ll appear here, ranked.
+              planeswalker that can command, and they’ll appear here, ranked.
             </span>
           </p>
 

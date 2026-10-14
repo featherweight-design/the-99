@@ -95,7 +95,7 @@ export const cardNote = {
      * its key say a reading is present, the modal spells all three detections out in full, and
      * both name the detection as ours.
      */
-    disclaimer: "If that’s wrong for how you play it, the reading is ours, not the rules'.",
+    disclaimer: "If that’s wrong for how you play it, the reading is ours, not the rules’.",
   },
 
   /**

@@ -606,10 +606,10 @@ export const deckAnalysisCopy = {
     open: "see all brackets",
     title: "All brackets",
     close: "Close all brackets",
-    lead: "What each bracket allows in a deck, then how we read each rule, with one line of Wizards' own under it.",
+    lead: "What each bracket allows in a deck, then how we read each rule, with one line of Wizards’ own under it.",
     corner: "cards allowed",
     readings: {
-      gameChangers: "Counted card by card against Wizards' published Game Changer list.",
+      gameChangers: "Counted card by card against Wizards’ published Game Changer list.",
       massLandDenial: null,
       extraTurns:
         "At Core and Upgraded the rule is about chaining extra turns, and a decklist cannot show that. We count " +

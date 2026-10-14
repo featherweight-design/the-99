@@ -54,7 +54,7 @@ export const changeCommanderCopy = {
     choose: "Choose",
     chooseAria: (name: string) => `Choose ${name}`,
     expandCaption: (n: number, short: string) => `The ${n} ${short}’s decks run`,
-    loading: "Reading which commanders' decks run your cards…",
+    loading: "Reading which commanders’ decks run your cards…",
     // The Analysis tab's error composition (2c): heading + body + bone Try again.
     failed: { heading: "We couldn’t read the candidates.", body: "Nothing about your deck changed.", cta: "Try again" },
     none: {
