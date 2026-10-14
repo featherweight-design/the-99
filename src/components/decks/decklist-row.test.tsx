@@ -1595,6 +1595,11 @@ describe("DecklistRow readOnly", () => {
     expect(document.body.textContent).not.toMatch(/buy/i);
   });
 
+  it("says foil beside the printing when the box's copies are foil", () => {
+    renderRow(<DecklistRow deckId="" card={{ ...precon, printedFoil: true }} readOnly newestAsOf={null} />);
+    expect(screen.getByText("CMM 712 · foil")).toBeInTheDocument();
+  });
+
   it("is what removes them: the same card in a deck has all three", () => {
     renderRow(<DecklistRow deckId="d1" card={precon} newestAsOf={null} />);
     expect(screen.queryByText("CMM 712")).toBeNull();

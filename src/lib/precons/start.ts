@@ -1,0 +1,92 @@
+/**
+ * "Start with this precon" (Hugh, 2026-10-14): the deck a precon starts is the box as printed, and a
+ * finished deck. Its list is the edition's own rows, every card (commanders included) is pinned to the
+ * edition's printing in `deck_printings`, and it is committed as v1 in the same transaction as the deck,
+ * so there is no draft to commit and no moment the deck exists without its list or its printings.
+ *
+ * A pin names a printing; the reads honor it only while the player holds that printing
+ * (`deck_printings`'s own rule), so a player who did not add the box sees their own copies until they
+ * hold the box's. Not a "use server" module: it takes a user id.
+ */
+import { eq, inArray } from "drizzle-orm";
+import { db } from "../../db";
+import { cards, preconCards, precons, printings } from "../../db/schema";
+import { canPair, partnerAbility } from "../decks/partner";
+import { commitVersion } from "../decks/versions";
+import { writeImportedDeck } from "../decks/write-imported-deck";
+import type { ImportPrintingPick } from "../decks/import-printings";
+import { isCommanderCandidate } from "../recs/score";
+
+type PreconLine = { oracleId: string; quantity: number; isCommander: boolean; setCode: string | null; collectorNumber: string | null };
+
+/** One pin per card, at its first printing in the feed's order: the feed lists a basic once per art. */
+export function preconPins(lines: readonly PreconLine[]): ImportPrintingPick[] {
+  const pins = new Map<string, ImportPrintingPick>();
+  for (const l of lines) {
+    if (pins.has(l.oracleId) || !l.setCode || !l.collectorNumber) continue;
+    pins.set(l.oracleId, { oracleId: l.oracleId, setCode: l.setCode.toLowerCase(), collectorNumber: l.collectorNumber });
+  }
+  return [...pins.values()];
+}
+
+/**
+ * Writes and commits the deck `fileName` starts, for `userId`, and returns its id. `fileName` is the
+ * edition the reader chose: a Collector's Edition twin starts its own printings, and the deck records the
+ * plain edition as the precon it was built from (the two are one list, design call 4).
+ */
+export async function startPreconDeck(userId: string, fileName: string, name: string, env: NodeJS.ProcessEnv): Promise<string> {
+  const [head] = await db.select({ fileName: precons.fileName, twinOf: precons.twinOf }).from(precons).where(eq(precons.fileName, fileName));
+  if (!head) throw new Error("precon not found");
+
+  const lines: PreconLine[] = await db
+    .select({
+      oracleId: preconCards.oracleId,
+      quantity: preconCards.quantity,
+      isCommander: preconCards.isCommander,
+      setCode: printings.setCode,
+      collectorNumber: printings.collectorNumber,
+    })
+    .from(preconCards)
+    .leftJoin(printings, eq(printings.scryfallId, preconCards.scryfallId))
+    .where(eq(preconCards.fileName, head.fileName))
+    // The feed's order, as the open precon reads it, so a pair's lead is the one its page names first.
+    .orderBy(preconCards.position);
+  const commanderIds = [...new Set(lines.filter((l) => l.isCommander).map((l) => l.oracleId))];
+  if (commanderIds.length < 1 || commanderIds.length > 2) throw new Error("precon has no single commander or pair");
+
+  // The same checks `createDeck` makes: the feed is trusted for its list, not for the app's rules.
+  const leads = await db.select().from(cards).where(inArray(cards.oracleId, commanderIds));
+  for (const id of commanderIds) {
+    const c = leads.find((x) => x.oracleId === id);
+    if (!c || !c.commanderLegal || !isCommanderCandidate(c)) throw new Error("card is not a legal commander");
+  }
+  const [a, b] = commanderIds.map((id) => leads.find((x) => x.oracleId === id)!);
+  if (b && !canPair(
+    { name: a.name, ability: partnerAbility(a.oracleText, a.typeLine) },
+    { name: b.name, ability: partnerAbility(b.oracleText, b.typeLine) },
+  )) {
+    throw new Error("commanders cannot be paired");
+  }
+
+  // One row per card: the feed can list one card under two printings.
+  const body = new Map<string, number>();
+  for (const l of lines) {
+    if (l.isCommander) continue;
+    body.set(l.oracleId, (body.get(l.oracleId) ?? 0) + l.quantity);
+  }
+
+  return db.transaction(async (tx) => {
+    const deckId = await writeImportedDeck(tx, {
+      userId,
+      name,
+      commanderOracleId: a.oracleId,
+      partnerOracleId: b?.oracleId ?? null,
+      cards: [...body].map(([oracleId, quantity]) => ({ oracleId, quantity })),
+      printings: preconPins(lines),
+      builtFromPrecon: head.twinOf ?? head.fileName,
+    });
+    // v1, in the deck's own transaction: no snapshot (the deck has declared no bracket to carry).
+    await commitVersion(deckId, null, tx, undefined, env);
+    return deckId;
+  });
+}

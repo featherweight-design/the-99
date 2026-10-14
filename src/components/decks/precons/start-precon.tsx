@@ -156,9 +156,10 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
     startTransition(async () => {
       let added: PreconAddReceipt | null = null;
       try {
+        // The chosen edition: its box is the one added, and its printings are the ones the deck is pinned to.
+        const addFile = addFileName ?? row.fileName;
         if (own && canOwn) {
-          // The add goes first, so the draft picks the copies it just added (Hugh, 2026-10-13).
-          const addFile = addFileName ?? row.fileName;
+          // The add goes first, so the deck it starts holds the copies it just added (Hugh, 2026-10-13).
           addRef.current.id ??= readAttempt(account, addFile) ?? crypto.randomUUID();
           writeAttempt(account, addFile, addRef.current.id);
           let res: Awaited<ReturnType<typeof addPreconToCollection>>;
@@ -187,7 +188,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
           };
         }
         // Redirects to the new deck on success; a refusal or an outage throws.
-        await createDeckFromPrecon(row.fileName, trimmed, added?.entryId);
+        await createDeckFromPrecon(addFile, trimmed, added?.entryId);
       } catch (err) {
         // The redirect itself arrives here as a throw, before the router navigates: rethrown, or
         // every successful start would paint the failure for the frame the navigation takes.

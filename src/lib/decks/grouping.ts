@@ -98,6 +98,11 @@ export type DeckDetailCard = {
   printedSetCode: string | null;
   printedCollectorNumber: string | null;
   /**
+   * The printing is foil: a precon's read-only list says so beside its `SET number`, because a
+   * Collector's Edition can be the same printing as its plain edition in foil alone. Absent elsewhere.
+   */
+  printedFoil?: boolean;
+  /**
    * Scryfall's layout word, for the `//` mark (#363). Optional for the same
    * reason the three above are; absent means no mark, which is the right way
    * for this to fail — see `lib/cards/faces.ts`.

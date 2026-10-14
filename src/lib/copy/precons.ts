@@ -83,6 +83,8 @@ export const preconsCopy = {
       regular: "Regular",
       collector: "Collector's Edition",
       collectorNote: "Every card in the Collector's Edition is foil.",
+      /** Beside a read-only row's `SET number` when its printing is foil. */
+      foil: "foil",
     },
     back: "‹ Commander precons",
     backNew: "‹ New deck",

@@ -52,6 +52,8 @@ function toDetail(c: OpenPreconCard): DeckDetailCard {
     printedName: null,
     printedSetCode: c.printing ? c.printing.label.split(" ")[0] : null,
     printedCollectorNumber: c.printing ? c.printing.label.split(" ").slice(1).join(" ") : null,
+    // Every copy foil: the label says so, since a Collector's Edition can share its plain edition's printing.
+    printedFoil: c.foil > 0 && c.foil === c.quantity,
     manaCost: c.manaCost ?? undefined,
     layout: c.layout,
     // `preconArt`: the precon's printing where the catalog has it, as the thumbs and card details.
