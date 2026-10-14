@@ -24,6 +24,9 @@ vi.mock("./start-precon", () => ({
 }));
 const linkActions = vi.hoisted(() => ({ linkPrecon: vi.fn(), unlinkPrecon: vi.fn() }));
 const mirrored = vi.hoisted(() => ({ urls: [] as string[] }));
+vi.mock("../../ui/commander-thumb", () => ({
+  CommanderThumb: ({ imageUri, size }: { imageUri: string | null; size: string }) => <span data-testid={`thumb-${size}`} data-src={imageUri ?? ""} />,
+}));
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: (u: string) => { mirrored.urls.push(u); } }));
 vi.mock("../../../app/decks/precon-link-actions", () => linkActions);
 vi.mock("../decklist-group", () => ({
@@ -320,6 +323,20 @@ describe("OpenPreconView edition switch", () => {
     expect(screen.getByRole("radio", { name: "Collector's Edition" })).toHaveAttribute("aria-checked", "true");
     expect(viewed("Sol Ring")).toBe("cmc");
     expect(screen.getByText("Every card in the Collector's Edition is foil.")).toBeInTheDocument();
+  });
+
+  it("draws the head's commander in the chosen edition's art", () => {
+    const base = withCollector();
+    const p = {
+      ...base,
+      row: { ...base.row, commanders: [{ oracleId: "Zhulodok", name: "Zhulodok", imageUri: "plain-art", colorIdentity: ["C"] }] },
+      cards: base.cards.map((c) => (c.isCommander ? { ...c, imageUri: "plain-art" } : c)),
+      collector: { ...base.collector, cards: base.collector.cards.map((c) => (c.isCommander ? { ...c, imageUri: "ce-art" } : c)) },
+    };
+    render(<OpenPreconView precon={p} fromNew={false} />);
+    expect(screen.getByTestId("thumb-open").dataset.src).toBe("plain-art");
+    fireEvent.click(screen.getByRole("radio", { name: "Collector's Edition" }));
+    expect(screen.getByTestId("thumb-open").dataset.src).toBe("ce-art");
   });
 
   it("hands Start the chosen edition's own box and its own added date", () => {

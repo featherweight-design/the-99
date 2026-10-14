@@ -115,6 +115,9 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
   // SET number and the foil move, and the counts, ownership and groups stay as they are.
   const cards = byCard(edition === "collector" && precon.collector ? precon.collector.cards : precon.cards);
   const commanders = cards.filter((c) => c.isCommander);
+  // The head's thumbs follow the edition too: a commander's art is its chosen edition's printing.
+  const editionArt = new Map(commanders.map((c) => [c.oracleId, c.imageUri]));
+  const headCommanders = row.commanders.map((c) => ({ ...c, imageUri: editionArt.get(c.oracleId) ?? c.imageUri }));
   const body = cards.filter((c) => !c.isCommander);
   const basics = body.filter((c) => c.basic);
   const listed = body.filter((c) => !c.basic);
@@ -160,7 +163,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
           </Link>
           <div className="flex items-start gap-[12px]">
             <div className="flex flex-none gap-[6px]">
-              {row.commanders.map((c) => (
+              {headCommanders.map((c) => (
                 <span key={c.oracleId}>
                   <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size="open" className="md:hidden" />
                   <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size="openWide" className="hidden md:block" />
