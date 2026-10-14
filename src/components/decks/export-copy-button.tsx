@@ -53,7 +53,7 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
       if (ok) {
         onSuccess();
       } else {
-        onStatus("Copy failed. Select the text and copy manually.");
+        onStatus("Couldn’t copy. Select the text and copy it yourself.");
       }
     }
 

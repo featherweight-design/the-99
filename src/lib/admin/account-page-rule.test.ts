@@ -103,7 +103,7 @@ describe("accountTiles (A4, A6, A7)", () => {
     expect(tiles.map((t) => [t.label, t.figure, t.sub])).toEqual([
       ["Credits now", "3 of 5 left", null],
       ["Spent in October", "$1.420", null],
-      ["Presses", "34", null],
+      ["Runs", "34", null],
       ["Tuning hub", "Drawn", "2 of its tools on"],
     ]);
   });

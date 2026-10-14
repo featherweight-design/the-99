@@ -617,7 +617,7 @@ export const deckImportCopy = {
       live: "Updating the deck.",
     },
     refused: {
-      heading: "That did not go through",
+      heading: "That didn’t go through",
       body: "Your deck is exactly as it was. Your list is still here. Try again.",
       action: "Try again",
     },
