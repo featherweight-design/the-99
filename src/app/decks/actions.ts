@@ -1604,7 +1604,7 @@ export async function discardDeckDraft(
   revalidateClaims(deckId, userId);
   for (const id of askers) revalidateClaims(id, userId);
   if (outcome === "moved") {
-    return { ok: false, message: "We couldn't discard those changes. Nothing has changed." };
+    return { ok: false, message: "We couldn’t discard those. The draft is unchanged." };
   }
   return { ok: true };
 }

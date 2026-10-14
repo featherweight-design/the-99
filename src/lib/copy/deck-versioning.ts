@@ -396,7 +396,7 @@ export const deckVersioningCopy = {
     footerUnknown: (cards: number, released: number) =>
       `${plural(cards, "card")} · ${released} released`,
 
-    refused: "We couldn't commit that version. Your changes are still here.",
+    refused: "We couldn’t commit that. The draft is unchanged.",
     // A transport failure, which is not a refusal: the write may have landed and
     // the reply may have been what was lost. `refused` promises the draft is
     // intact, and this is the one path that cannot promise it, so it says what is
@@ -455,7 +455,7 @@ export const deckVersioningCopy = {
     pending: "Discarding…",
     announced: (n: number, version: number) =>
       `${plural(n, "change")} discarded. Back to v${version}.`,
-    refused: "We couldn't discard those changes. Nothing has changed.",
+    refused: "We couldn’t discard those. The draft is unchanged.",
     // The same distinction the commit sheet draws, and it matters more here: the
     // restore may have committed before the reply was lost, so "nothing has
     // changed" could be the opposite of the truth about a list that is gone.
