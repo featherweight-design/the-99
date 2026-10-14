@@ -15,6 +15,7 @@ import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash, BlockScrim, COVER_INK_SHADOW } from "../ui/art-wash";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
+import { DeckCardOverflow } from "./deck-card-overflow";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
@@ -65,6 +66,7 @@ export function SpineMobile({
   notice = null,
   onOpenNotices,
   onProposedCuts,
+  move,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   // No measurement, and no clamp. `-webkit-line-clamp` requires
@@ -667,6 +669,9 @@ export function SpineMobile({
               {deckHeaderCopy.export}
             </button>
           )}
+          {/* The Decks tile's own ⋯, beside Export: Move and Delete from inside the deck. A delete
+              lands on /decks, which `deleteDeck`'s redirect does. */}
+          <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" move={move} />
           {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
         </div>
       )}

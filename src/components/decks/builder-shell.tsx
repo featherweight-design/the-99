@@ -17,6 +17,7 @@ import { availabilityState, hardDecks } from "../../lib/decks/availability";
 import { commanderShoppingRows, isShoppingCard } from "../../lib/decks/shopping";
 import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
+import type { DeckShelf } from "./deck-shelf-move";
 import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
 import { CutsPanelView } from "./cuts-panel";
@@ -152,6 +153,9 @@ interface BuilderShellProps {
    *  constant would draw one deck's recommendation on every deck. */
   mix: RecommendedMix;
   deck: DeckDetail;
+  /** The deck's shelf and the reader's shelves, for the header menu's Move. The route always reads
+   *  it; the shell's tests, which draw no menu, leave it out. */
+  shelf?: DeckShelf;
   /** "Kept for this deck"'s Set picker (H35, PR 2) — every set that printed a commander. */
   printedInSets?: readonly PrintedInSet[];
   suggestions: DeckSuggestionWithFacts[];
@@ -300,6 +304,7 @@ const NO_GAMES: GameSummary = {
 export function BuilderShell({
   mix,
   deck,
+  shelf,
   printedInSets = [],
   suggestions,
   degraded,
@@ -1468,6 +1473,7 @@ export function BuilderShell({
                 the exception lives in the prose below it. */}
             <BuilderSpine
               deck={deck}
+              shelf={shelf}
               counts={{ ...counts, proxiedCount }}
               onExport={openExport}
               // The server status, the same one the tab strip names. Passed

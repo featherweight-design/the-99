@@ -538,3 +538,14 @@ describe("SpineMobile — a press on the art opens the commander", () => {
     expect(container.querySelector("[data-band-tap-target]")).toBeNull();
   });
 });
+
+describe("SpineMobile — the deck's ⋯ beside Export", () => {
+  it("carries the Decks tile's menu, with Delete", () => {
+    renderSpine(<SpineMobile {...props} />);
+    const trigger = screen.getByRole("button", { name: "Actions for Atraxa Superfriends" });
+    const exportButton = screen.getByRole("button", { name: /Export/ });
+    expect(trigger.parentElement!.parentElement).toBe(exportButton.parentElement);
+    fireEvent.click(trigger);
+    expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
+  });
+});
