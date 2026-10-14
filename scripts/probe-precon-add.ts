@@ -128,6 +128,8 @@ async function run() {
   check("b · a retry answers the same entry", retry.ok && retry.entryId, first);
   check("b · and names the tokens the entry marked", retry.ok && [...retry.tokens.names].sort(), [...a.tokens.names].sort());
   check("b · eight of them", retry.ok && retry.tokens.marked, 8);
+  check("b · and the same counts, read from the entry", retry.ok && { cards: retry.cards, copies: retry.copies, foil: retry.foil },
+    { cards: a.cards, copies: 100, foil: 2 });
   const otherId = randomUUID();
   await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: (await rows<{ id: string }>(sql`
     select oracle_id::text as id from precon_cards where file_name = ${FILE} limit 1`))[0].id, setCode: "", condition: null, quantity: 1 }] }, { id: otherId, env: ENV });
