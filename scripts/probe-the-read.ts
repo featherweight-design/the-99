@@ -132,7 +132,7 @@ async function main() {
     check("it failed as nothing_valid, its unit refunded", [nothing.status, nothing.error_class, nothing.unit], ["failed", "nothing_valid", "refunded"]);
     check("its calls' cost is recorded", (nothing.cost ?? 0) > 0, true);
 
-    // ---- hardening: nothing is read for a press that cannot be served -------------------------
+    // ---- hardening: one press at a time, a free repeat, and a limit a burst cannot pass ----------
     const { beginTheRead } = await import("../src/lib/intake/the-read-run");
     const SPENT = `${USER}-spent`;
     // A loader the probe can count and slow, so presses overlap inside the pool read.
@@ -158,17 +158,42 @@ async function main() {
     if (winner && winner.kind === "started") await winner.finish();
     check("the admitted read settled", (await readRow(winner && winner.kind === "started" ? winner.readId : "")).status, "ok");
 
-    console.log("\n5. A player with no credit left reads no pool");
-    for (let i = 0; i < 5; i++) {
+    console.log("\n5. A player with no credit left: a repeat is free, a fresh ask is refused at the reservation");
+    // Hugh, 2026-10-14: a repeat of the same read is free. The player reads once while they have
+    // credit, spends the rest of the allowance, and asks the same thing again.
+    const spentCount = async () => Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${SPENT}`)).rows[0] as { n: number }).n);
+    const first = await begin(SPENT, counted("fp-spent"));
+    if (first.kind === "started") await first.finish();
+    check("the first ask was read and settled", first.kind === "started" ? (await readRow(first.readId)).status : first.kind, "ok");
+    for (let i = 0; i < 4; i++) {
       await fixture.execute(sql`insert into model_calls (user_id, feature, model, origin, status) values (${SPENT}, 'intake', 'stub', 'player', 'spent')`);
     }
-    const spentLoader = counted("fp-spent");
-    const spentUnits = Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${SPENT}`)).rows[0] as { n: number }).n);
-    check("the press is refused for the allowance, and the pool was never read", [(await begin(SPENT, spentLoader)).kind, spentLoader.calls], ["allowance", 0]);
-    check("and no read or reservation was written", [
+    const spentUnits = await spentCount();
+    const repeatLoader = counted("fp-spent");
+    const repeat = await begin(SPENT, repeatLoader);
+    check("the same ask again is answered from the store, with the allowance spent", [repeat.kind, "repeat" in repeat ? repeat.repeat : null], ["read", true]);
+    check("and reserves nothing", await spentCount(), spentUnits);
+    const freshLoader = counted("fp-spent-fresh");
+    check("a fresh ask is refused for the allowance at the reservation", (await begin(SPENT, freshLoader)).kind, "allowance");
+    check("it read the pool (the only way to its fingerprint) and wrote no read or reservation", [
+      freshLoader.calls,
       Number(((await fixture.execute(sql`select count(*)::int as n from intake_reads where user_id = ${SPENT}`)).rows[0] as { n: number }).n),
-      Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${SPENT}`)).rows[0] as { n: number }).n),
-    ], [0, spentUnits]);
+      await spentCount(),
+    ], [1, 1, spentUnits]);
+
+    console.log("\n5b. A burst at the last credit charges once and never passes the limit");
+    const LAST = `${USER}-last`;
+    for (let i = 0; i < 4; i++) {
+      await fixture.execute(sql`insert into model_calls (user_id, feature, model, origin, status) values (${LAST}, 'intake', 'stub', 'player', 'spent')`);
+    }
+    // Eight presses at once, each a DIFFERENT ask, so no stored answer and no shared fingerprint helps.
+    const lastBurst = await Promise.all(Array.from({ length: 8 }, (_, i) => begin(LAST, counted(`fp-last-${i}`, 200))));
+    const lastKinds = lastBurst.map((b) => b.kind);
+    check("one press started; none was charged beyond it", [lastKinds.filter((k) => k === "started").length, lastKinds.filter((k) => k !== "started" && k !== "in_flight" && k !== "allowance").length], [1, 0]);
+    check("the player holds exactly the five-credit limit", Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${LAST} and status in ('reserved','spent')`)).rows[0] as { n: number }).n), 5);
+    const lastWinner = lastBurst.find((b) => b.kind === "started");
+    if (lastWinner && lastWinner.kind === "started") await lastWinner.finish();
+    check("and a press after it settles is refused for the allowance", (await begin(LAST, counted("fp-last-after"))).kind, "allowance");
 
     console.log("\n6. A press that fails in the pool read does not keep the admission");
     const failing = Object.assign(async () => { failing.calls += 1; throw new Error("pool read failed"); }, { calls: 0 });
