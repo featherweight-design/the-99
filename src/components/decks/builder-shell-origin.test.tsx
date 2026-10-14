@@ -42,7 +42,7 @@ const DECK = {
 const ORIGIN: DeckOrigin = {
   fileName: "EldraziUnbound_CMM", name: "Eldrazi Unbound", setCode: "CMM", releaseDate: "2023-08-04",
   cardCount: 99, commanderOracleId: "ulalek", partnerOracleId: null, commanderName: "Ulalek, Fused Atrocity",
-  partnerName: null, manaValue: 3.4,
+  partnerName: null, manaValue: 3.4, startVersionId: null,
 };
 
 function shell(preconOrigin: DeckOrigin | null) {

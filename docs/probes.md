@@ -699,6 +699,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   stamps do not share a vertical, because the meta cell to their left sizes to its date text below
   `md:` — the game log's existing behaviour, not this surface's.
 
+  It also writes three precon-linked decks from the first local precon whose every card is in the
+  catalog (it needs `PRECONS_ENABLED` on the server), and reads each rail at both widths: a start
+  committed as v0 draws ONE row, `v0`, with the precon's note, its card count the precon's 99 and,
+  opened, the Open and Unlink line, and no virtual v0 or divider; a start from before v0 (a v1
+  committed with its deck, holding exactly the box's list) draws its `v1` the same way; and a brew
+  linked later (its v1 committed two minutes on, one card short) keeps its virtual v0 below the
+  divider, counting the 99 without its commander.
+
 - `pnpm probe:games-empty` walks the Games tab's empty state in a real browser at 1440x900
   and 390x844, because its three rulings are facts about laid-out geometry rather than
   markup: that the desktop group is centred, that the card-fan mark sits level with the top

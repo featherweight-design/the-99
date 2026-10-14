@@ -454,7 +454,7 @@ vi.mock("../../lib/profile/load", () => ({ cachedDeckProfile: vi.fn() }));
 const PIN_DEPS = vi.hoisted(() => ({ pinDeps: true }));
 vi.mock("../../lib/profile/stored", () => ({ pinAnalysisToVersion: vi.fn(), requestProfileDeps: vi.fn(() => PIN_DEPS) }));
 vi.mock("../../lib/synopsis/pin", () => ({ pinSynopsisToVersion: vi.fn() }));
-vi.mock("../../lib/precons/origin-read", () => ({ readDeckOrigin: vi.fn(async () => null) }));
+vi.mock("../../lib/precons/start-version", () => ({ readDeckOriginAndStart: vi.fn(async () => null) }));
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => stub.state.afters.push(fn) }));
 vi.mock("../../lib/bracket/slot", () => ({ slotDeck: vi.fn(() => ({ permits: [1, 2] })) }));
 
@@ -493,7 +493,7 @@ import {
   commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt,
 } from "../../lib/decks/versions";
-import { readDeckOrigin } from "../../lib/precons/origin-read";
+import { readDeckOriginAndStart } from "../../lib/precons/start-version";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { placedCardsOf } from "../../lib/decks/costs-of";
 import { writePullRelease } from "../../lib/decks/pull-release";
@@ -2054,16 +2054,33 @@ describe("getVersionDiff", () => {
     ENV.PRECONS_ENABLED = "true";
     try {
       stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID, commanderOracleId: CMD, partnerOracleId: null });
-      vi.mocked(readDeckOrigin).mockResolvedValueOnce({
-        summary: {} as never,
+      vi.mocked(readDeckOriginAndStart).mockResolvedValueOnce({
+        summary: { startVersionId: null } as never,
         cards: [],
         nonBasic: ["a", "b"],
       });
       await getVersionDiff(DECK_ID, VERSION_ID);
-      expect(readDeckOrigin).toHaveBeenCalledWith(USER_ID, DECK_ID);
+      expect(readDeckOriginAndStart).toHaveBeenCalledWith(USER_ID, DECK_ID);
       expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([
         VERSION_ID, null, USER_ID, DECK_ID, { cards: [], nonBasic: ["a", "b"], commanders: [CMD] }, ENV,
       ]);
+    } finally {
+      delete ENV.PRECONS_ENABLED;
+    }
+  });
+
+  // A started deck's first version IS v0, the precon's list: it has nothing to diff against.
+  it("hands a started deck's first version no predecessor", async () => {
+    ENV.PRECONS_ENABLED = "true";
+    try {
+      stub.state.deckVersions.push({ id: VERSION_ID, number: 0, deckId: DECK_ID, commanderOracleId: CMD, partnerOracleId: null });
+      vi.mocked(readDeckOriginAndStart).mockResolvedValueOnce({
+        summary: { startVersionId: VERSION_ID } as never,
+        cards: [],
+        nonBasic: ["a", "b"],
+      });
+      await getVersionDiff(DECK_ID, VERSION_ID);
+      expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null, ENV]);
     } finally {
       delete ENV.PRECONS_ENABLED;
     }

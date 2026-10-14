@@ -76,7 +76,7 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { neverCutEnabled } from "../../lib/decks/never-cut-flag";
 import { addCardToDeckFor, deckValidationContext, revalidateAdd } from "../../lib/decks/add-card";
 import { preconsEnabled } from "../../lib/precons/flag";
-import { readDeckOrigin } from "../../lib/precons/origin-read";
+import { readDeckOriginAndStart } from "../../lib/precons/start-version";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -1672,9 +1672,11 @@ export async function getVersionDiff(
     .orderBy(desc(deckVersions.number))
     .limit(1);
   if (previous) return loadVersionDiff(versionId, previous.id, userId, deckId, null, env);
-  // A v1 has none: a linked deck's v1 diffs against v0, the precon's list (precons R3 K10), read
-  // from the precon and never from a version. An unlinked one answers two empty lists.
-  const origin = preconsEnabled(env) ? await readDeckOrigin(userId, deckId) : null;
+  // The first has none: a linked deck's v1 diffs against v0, the precon's list (precons R3 K10), read
+  // from the precon and never from a version. An unlinked one answers two empty lists, and so does a
+  // started deck's first version, which IS the precon's list (`readDeckOriginAndStart`).
+  const read = preconsEnabled(env) ? await readDeckOriginAndStart(userId, deckId) : null;
+  const origin = read && read.summary.startVersionId === null ? read : null;
   return loadVersionDiff(versionId, null, userId, deckId, origin && {
     cards: origin.cards,
     nonBasic: origin.nonBasic,

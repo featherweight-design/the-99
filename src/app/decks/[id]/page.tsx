@@ -10,7 +10,7 @@ import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
-import { readDeckOrigin } from "../../../lib/precons/origin-read";
+import { readDeckOriginAndStart } from "../../../lib/precons/start-version";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
@@ -225,15 +225,17 @@ export default async function DeckBuilderPage({
   // Started here with no test of the link first, because the read IS the test: owner-scoped, and an
   // unlinked deck joins no row. A failed read draws no v0, rather than failing the deck.
   const originRead = preconsEnabled(env)
-    ? early(perf.timed("preconOrigin", () => readDeckOrigin(userId, id)).catch((error) => {
+    ? early(perf.timed("preconOrigin", () => readDeckOriginAndStart(userId, id)).catch((error) => {
       // not a fallback: v0 is drawn beside the history, never part of it.
       console.error("precons: the deck's v0 could not be read", error);
       return null;
     }))
     : null;
   // The rail rides the deck's own `Versions` tab, so its rows are part of this page. v1's delta is
-  // counted against v0 when there is one.
-  const versionsRead = early(perf.timed("versions", () => listVersions(id, userId, originRead?.then((o) => o?.cards ?? null) ?? null)));
+  // counted against v0 when v0 is drawn apart; a started deck's first version IS v0, and has none.
+  const versionsRead = early(perf.timed("versions", () => listVersions(
+    id, userId, originRead?.then((o) => (o && o.summary.startVersionId === null ? o.cards : null)) ?? null,
+  )));
   // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
   // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
   // Tuning-only: the Set picker lives inside the tuning panel alone (`builder-shell.tsx`), so
@@ -708,7 +710,7 @@ export default async function DeckBuilderPage({
       initialView={initialBuilderView(
         readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.
-        versions.length + (originRead && (await originRead) ? 1 : 0),
+        versions.length + ((originRead && (await originRead)?.summary.startVersionId === null) ? 1 : 0),
         analysisEnabled,
       )}
     />

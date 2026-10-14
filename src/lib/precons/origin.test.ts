@@ -21,8 +21,8 @@ describe("assembleOrigin", () => {
   ];
   const v0 = assembleOrigin(rows)!;
 
-  it("counts every card the precon lists, commanders included, from its rows", () => {
-    expect(v0.summary.cardCount).toBe(9);
+  it("counts the precon's 99, commanders apart, as a version counts its cards", () => {
+    expect(v0.summary.cardCount).toBe(7);
   });
 
   it("holds the 99 as a version does: commanders apart, quantities summed", () => {

@@ -3,7 +3,7 @@
  * into the collection AND to the deck they came in, in ONE transaction, in this order:
  *
  *   1. the add writes the copies (the ledger's own write, `applyCollectionChange`);
- *   2. inside it, the deck is written, pinned to the box's printings and committed as v1;
+ *   2. inside it, the deck is written, pinned to the box's printings and committed as v0;
  *   3. the copies the box brought are RESERVED to that deck (`card_assignments`), so the claim model
  *      hands them to it and not, by seniority, to an older deck that was short of the same card;
  *   4. only then does the add read where its copies went and write its History entry, so "Went to"

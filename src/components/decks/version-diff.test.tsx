@@ -502,8 +502,8 @@ describe("VersionDiff against v0", () => {
   beforeEach(() => getVersionDiff.mockClear());
   const origin: DeckOrigin = {
     fileName: "CounterIntelligence_ONC", name: "Counter Intelligence", setCode: "ONC", releaseDate: "2023-02-03",
-    cardCount: 100, commanderOracleId: "kilo", partnerOracleId: null, commanderName: "Kilo, Apogee Mind",
-    partnerName: null, manaValue: 2.9,
+    cardCount: 99, commanderOracleId: "kilo", partnerOracleId: null, commanderName: "Kilo, Apogee Mind",
+    partnerName: null, manaValue: 2.9, startVersionId: null,
   };
   const v1 = () => version({ number: 1, commanderName: "Prosper", commanderOracleId: "prosper", manaValue: 3.1 });
 

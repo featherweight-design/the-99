@@ -355,14 +355,17 @@ export function BuilderShell({
   // Which body the deck list shows (list or Stats). Held here, not in the list: the list remounts on
   // a tab switch, and a deck opened afresh must open on its list.
   const deckPanel = useState<DeckPanel>("list");
+  // v0 drawn as a row of its own: a linked deck's, unless the deck was started from the precon and its
+  // first version IS v0 (`startVersionId`).
+  const originApart = preconOrigin !== null && preconOrigin.startVersionId === null;
   const [view, setView] = useState<BuilderView>(
-    initialBuilderView(initialView, versions.length + (preconOrigin ? 1 : 0), analysisEnabled),
+    initialBuilderView(initialView, versions.length + (originApart ? 1 : 0), analysisEnabled),
   );
   // The benchmark ledger's Stats link (audit build rule 6): Your deck, its Stats panel, and the
   // card the ledger is built on. The Decklist opens the panel and scrolls once per request.
   // Unlinking a brew from v0's panel takes the Versions tab away with v0: fall back to the deck
   // during render, so no frame draws an empty rail under no selected tab.
-  if (view === "versions" && versions.length === 0 && preconOrigin === null) setView("deck");
+  if (view === "versions" && versions.length === 0 && !originApart) setView("deck");
   const [statsFocus, setStatsFocus] = useState<{ card: "curve" | "jobs"; n: number } | null>(null);
   const clearStatsFocus = useCallback(() => setStatsFocus(null), []);
   const openStatsAt = useCallback((card: "curve" | "jobs") => {
@@ -1707,7 +1710,7 @@ export function BuilderShell({
                 suggestionCount: suggestions.length,
                 gameCount: games.length,
                 versionCount: versions.length,
-                hasOrigin: preconOrigin !== null,
+                hasOrigin: originApart,
                 analysisEnabled,
               })}
               view={view}
