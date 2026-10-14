@@ -11,6 +11,10 @@ const stub = vi.hoisted(() => ({
 }));
 
 vi.mock("./read", () => ({ deckMakerIds: async () => stub.makers }));
+vi.mock("./ownership", async (actual) => ({
+  ...(await actual<typeof import("./ownership")>()),
+  syncPreconTokens: async () => { stub.log.push({ op: "sync", table: "precon" }); return []; },
+}));
 vi.mock("../../db", () => {
   const tx = {
     execute: async () => { stub.log.push({ op: "lock", table: "user" }); },
@@ -102,7 +106,7 @@ describe("unmarkOwned", () => {
 
   it("deletes the hand mark only, for a token the deck makes, and clears any join left from before the rule", async () => {
     expect(await unmarkOwned("u1", "d1", T)).toBe("done");
-    expect(stub.log.map((l) => `${l.op}:${l.table}`)).toEqual(["lock:user", "delete:deck_token_joins", "delete:token_ownership"]);
+    expect(stub.log.map((l) => `${l.op}:${l.table}`)).toEqual(["lock:user", "delete:deck_token_joins", "delete:token_ownership", "sync:precon"]);
     expect(dialect.sqlToQuery(stub.log[1].where as SQL).params).toEqual([T, "u1"]);
     expect(dialect.sqlToQuery(stub.log[2].where as SQL).params).toEqual(["u1", T, "manual"]);
   });

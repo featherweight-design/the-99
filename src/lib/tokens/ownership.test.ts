@@ -166,13 +166,24 @@ describe("writeUploadTokens", () => {
 describe("recordUploadTokens", () => {
   const withTables = (ok: boolean) => {
     const { tx, log } = recorder();
-    return { tx: { ...(tx as object), execute: async () => ({ rows: [{ ok }] }) } as never, log };
+    const select = () => ({ from: (table: object) => ({ where: async () => { log.push({ op: "select", table: getTableName(table as never) }); return []; } }) });
+    return { tx: { ...(tx as object), execute: async () => ({ rows: [{ ok }] }), select } as never, log };
   };
 
   it("writes the holdings and the marker for an upload that read tokens", async () => {
     const { tx, log } = withTables(true);
     await recordUploadTokens(tx, "u1", "up1", "replace", [{ tokenOracleId: T1, quantity: 2 }]);
     expect(log.some((l) => (l as { table?: string }).table === "token_reads")).toBe(true);
+  });
+
+  it("lets a standing precon add claim back what a Replace dropped, after the upload's own writes; an Add does not", async () => {
+    const replace = withTables(true);
+    await recordUploadTokens(replace.tx, "u1", "up1", "replace", []);
+    const reads = replace.log.map((l) => `${l.op}:${l.table}`);
+    expect(reads.indexOf("select:collection_history")).toBeGreaterThan(reads.indexOf("upsert:token_reads"));
+    const add = withTables(true);
+    await recordUploadTokens(add.tx, "u1", "up1", "add", []);
+    expect(add.log.some((l) => l.op === "select")).toBe(false);
   });
 
   it("writes the marker for an upload that read an EMPTY list", async () => {

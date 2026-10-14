@@ -137,10 +137,11 @@ export async function writeUploadTokens(
  * ones it read and kept on its entry, never the catalog's current list, which an ingest replaces. Each token a standing add
  * names is owned, attributed to the OLDEST such add and counted over all of them; a precon row no
  * standing add names goes. A token the player holds by any other source is left as it stands and is
- * never taken over. Joins first, as every write that makes a token held does (`writeUploadTokens`).
+ * never taken over; when that other row goes (an unmark, a Replace), this runs again and the precon's
+ * claim comes back. Joins first, as every write that makes a token held does (`writeUploadTokens`).
  * Never writes the read marker: a precon says nothing about the tokens it does not hold.
  *
- * Runs inside the ledger's transaction, under the per-user lock. Returns the token oracle ids it newly
+ * Runs under the per-user lock: the ledger's transaction, a Replace's, or an unmark's. Returns the token oracle ids it newly
  * marked owned for entry `entryId`, which is what an add reports.
  */
 export async function syncPreconTokens(tx: Runner, userId: string, entryId?: string): Promise<string[]> {
@@ -157,6 +158,13 @@ export async function syncPreconTokens(tx: Runner, userId: string, entryId?: str
 
   const have = await tx.select({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId, quantity: tokenOwnership.quantity })
     .from(tokenOwnership).where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "precon")));
+  const held = new Set(have.map((h) => h.id));
+  const fresh = [...want].filter(([id]) => !held.has(id));
+  // Joins first, before any ownership row is touched (`writeUploadTokens`, `markOwnedOnDeck`, the purge).
+  // A token another source already holds has no join left, so clearing its joins here is a no-op.
+  if (fresh.length > 0) {
+    await tx.delete(deckTokenJoins).where(and(eq(deckTokenJoins.userId, userId), inArray(deckTokenJoins.tokenOracleId, fresh.map(([id]) => id))));
+  }
   const gone = have.filter((h) => !want.has(h.id)).map((h) => h.id);
   if (gone.length > 0) {
     await tx.delete(tokenOwnership).where(and(
@@ -170,16 +178,11 @@ export async function syncPreconTokens(tx: Runner, userId: string, entryId?: str
         .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.tokenOracleId, h.id), eq(tokenOwnership.source, "precon")));
     }
   }
-  const held = new Set(have.map((h) => h.id));
-  const fresh = [...want].filter(([id]) => !held.has(id));
   if (fresh.length === 0) return [];
   const marked = await tx.insert(tokenOwnership)
     .values(fresh.map(([id, w]) => ({ userId, tokenOracleId: id, quantity: w.quantity, source: "precon" as const, entryId: w.entryId })))
     .onConflictDoNothing()
     .returning({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId });
-  if (marked.length > 0) {
-    await tx.delete(deckTokenJoins).where(and(eq(deckTokenJoins.userId, userId), inArray(deckTokenJoins.tokenOracleId, marked.map((m) => m.id))));
-  }
   return marked.filter((m) => m.entryId === entryId).map((m) => m.id);
 }
 
@@ -225,4 +228,6 @@ export async function recordUploadTokens(
 ): Promise<void> {
   if (!uploadId || !tokens || !(await tokenOwnershipTablesExist(tx))) return;
   await writeUploadTokens(tx, userId, uploadId, mode, tokens);
+  // A Replace dropped every upload row, and with it any token a standing precon add claims beneath one.
+  if (mode === "replace") await syncPreconTokens(tx, userId);
 }
