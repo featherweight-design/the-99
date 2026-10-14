@@ -95,7 +95,22 @@ No stacked PRs. Each one is under ~20 files and ~800 lines; PR 2 is pre-split be
   - an announced set later listed, unseen.
 
   Each prints the shapes PR 2 and PR 3 receive.
-- No migration: `upcoming_seen_codes` is already a `text[]`.
+- **One migration, two parts.**
+  - It drops and re-adds `flag_overrides_switch_check` with the new switch name, as `0120_nav_stall_switch.sql`
+    did. The constraint is built from `SWITCH_NAMES`, so without it `drizzle-kit check` drifts and an app-wide
+    override of the new switch is refused.
+  - It adds the deferred `user_data_touch` trigger to `user_prefs` (E5). `upcoming_seen_codes` itself is already a
+    `text[]`.
+- **E5, the stamp.**
+  - `user_prefs` carries no stamp trigger today, and once Home or Precons imports `lib/precons/upcoming.ts`,
+    `check:list-cache` reports `MISSING user_prefs`. That is right: a ✕ or a Precons visit would not retire a
+    cached banner.
+  - So `user_prefs` gets the trigger, and the seen state rides inside the cached payloads like every other per-user
+    read.
+  - `markUpcomingSeen` writes only when it adds a key (`not (codes <@ upcoming_seen_codes)`), so a repeat visit
+    does not move the stamp and retire Home's cache for nothing.
+  - The table's other two writers, the commanders' availability preference and the About visit, are a press and a
+    once-per-bump visit. Neither is frequent.
 
 ### PR 2: The Announced group on Precons (first UI)
 
@@ -129,7 +144,7 @@ passes ~800 lines.
 - **E5, the cache.**
   - The cached `precons` payload gains the upcoming sets and revealed commanders, both catalog data keyed on the
     catalog generation, and the UTC day enters its key for `new ·` and the countdown.
-  - Seen is read OUTSIDE the cached payload, per request, because `user_prefs` moves no stamp.
+  - Seen is read inside the payload, which the stamp now retires (PR 1).
   - The visit writes `markUpcomingSeen` in `after()` for every set it drew, behind the switch.
   - A failed upcoming read draws the list as shipped (T9).
 - **Copy:**
@@ -154,9 +169,9 @@ passes ~800 lines.
   - It is absent on the first-run checklist, when the switch is off, when the read failed and when there is nothing
     to show.
 - **E5 on Home.**
-  - Home's cached payload is untouched. The banner reads its lines per request, outside `cachePageForUser`, from
+  - The banner's lines are part of Home's cached payload, built from
     the catalog reads plus the reader's seen state.
-  - `check:list-cache` must stay green, since `user_prefs` is not among the tables it covers.
+  - `user_prefs` is stamped since PR 1, so `check:list-cache` stays green and a ✕ retires the entry.
 - **The About entry `upcoming-precons`**, `Commander sets on the way`.
   - It sits in chapter 03 after `precons`, with its specimen from the §G artboard, through `AboutSwitch` on the new
     switch.
@@ -195,7 +210,7 @@ Because it changes what every account sees on every page, it gets its own approv
 | `/decks/precons` tiles | C1 closed, C2 open (unseen), T2, T4, T5, T6 (`chapel`), T9, L1, L2, L3 | ✓ | ✓ |
 | `/decks/precons` rows | Q1, Q2, Q3, R2 | ✓ | ✓ |
 | `/decks/precons#announced` | opens by itself | ✓ | ✓ |
-| `/decks/precons?order=owned` | group hidden (T7) | ✓ | ✓ |
+| `/decks/precons?sort=owned` | group hidden (T7) | ✓ | ✓ |
 | `/` | H1, H2, H3, H4, H5 (with the sheet), H6 after ✕ and after a Precons visit, H8 focus | ✓ | ✓ |
 | `/` first run | H7, no banner | ✓ | ✓ |
 | `/about` | the new entry in chapter 03 | ✓ | ✓ |
@@ -209,7 +224,8 @@ Because it changes what every account sees on every page, it gets its own approv
 ## Risks and decisions I took
 
 - **E5 is the one that would ship a bug silently.** A banner inside Home's cached payload would survive its own ✕
-  until the next stamp-moving write. So the seen read stays outside the cache, and PR 3's probe presses ✕ and reloads.
+  until the next stamp-moving write. So `user_prefs` is stamped in PR 1, `check:list-cache` holds it, and PR 3's
+  probe presses ✕ and reloads.
 - **Release-day sets (E1) widen a read the data half shipped.** The probe covers a set released today with no
   `precons` row, and one with a row.
 - **No banner exists on staging until a real arrival lands after the baseline.** The UI is proved on probe fixtures.
