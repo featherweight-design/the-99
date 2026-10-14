@@ -229,6 +229,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   deck). The tile's root carries `TILE_FIELD`, a size container, and the corners round by `max(9px, 3.4cqw)`, so the
   fixed 9px that let the matte through at 480-767px (a ~361px tile wants 11px) no longer does. Needs
   `PRECONS_ENABLED` and seeded precons; writes nothing.
+- `pnpm probe:art-layer` proves card art drawn as a CSS background fades in (card-art fades plan), on deployed
+  staging only (`MEASURE_DEPLOYED=1`, signed in as `THE_99_E2E_AUDIT_USER_EMAIL` with a ticket from
+  `THE_99_CLERK_SECRET_KEY_STAGING`; it reads pages and writes nothing). On a deck (`MEASURE_DECK_ID`, else the first
+  `/decks` links to), `/decks`, `/commanders` and the first commander page, at 1300 and 390, every element in `main`
+  painting Scryfall art as a background must carry `data-arrival` (an `ArtLayer`), and none may still be `pending` after
+  the page is scrolled through and settled. Its failure path is on record: against staging before PR 3 deployed, it
+  failed exactly the commander page's card face, which PR 3 converts. The card details sheet's main faces and the
+  hover preview are left unfaded on purpose and are not opened. `art-layer-guard.test.ts` is the static half.
 - `pnpm probe:precon-arrival` proves the precon list's art (/decks/precons) arrives top down, row by row, at 1300x900
   and 390x844 in both views: every art `data-arrival` turning `in` is stamped with its page-relative top, and an
   inversion is a lower row released before an upper one (more than 4px above). Rows (34x48 thumbs) may not exceed 1%
