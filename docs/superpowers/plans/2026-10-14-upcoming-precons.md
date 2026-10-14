@@ -99,7 +99,10 @@ No stacked PRs. Each one is under ~20 files and ~800 lines; PR 2 is pre-split be
   - It drops and re-adds `flag_overrides_switch_check` with the new switch name, as `0120_nav_stall_switch.sql`
     did. The constraint is built from `SWITCH_NAMES`, so without it `drizzle-kit check` drifts and an app-wide
     override of the new switch is refused.
-  - It adds the deferred `user_data_touch` trigger to `user_prefs` (E5). `upcoming_seen_codes` itself is already a
+  - It adds the `user_data_touch` trigger to `user_prefs` (E5), `DEFERRABLE INITIALLY DEFERRED` like every other,
+    so it fires at commit and cannot deadlock through the stamp. `check:list-cache` counts no other kind.
+    `probe:list-stamp` gains a `user_prefs` case: a seen write moves the reader's stamp, a repeat write of a key
+    already held moves nothing, and the deadlock interleaving still commits. `upcoming_seen_codes` itself is already a
     `text[]`.
 - **E5, the stamp.**
   - `user_prefs` carries no stamp trigger today, and once Home or Precons imports `lib/precons/upcoming.ts`,
@@ -196,17 +199,26 @@ passes ~800 lines.
     sheet (H5).
   - A contact sheet.
 
-### Phase 2, HELD: About on the banner (R2 A1–A3)
+### Phase 2, a FOLLOW-UP: About on the banner (R2 A1–A3)
 
-Not planned in detail until Hugh answers the readiness audit's Q1–Q4:
+**Not this round.** It is planned and approved separately once PR 3 has merged, as the handoff's G8 says.
 
-- reach, and overturning the About rethink's H1;
-- whether ✕ writes About's `seen`;
-- where the How it works appendix line goes;
-- whether the bump keeps its live announcement.
+Hugh's answers to the readiness audit, 2026-10-14 (relayed by the orchestrator):
 
-R2 recommends a small follow-up handoff of its own; Design decides whether A1–A3 is enough to build from once those
-answers are in.
+- **Q1, reach.** Home-only reach is fine, with no deep-link fallback. This overturns the About rethink's H1 ("nothing on
+  Home: the sheet is the notice") for this notice.
+- **Q2, ✕.** ✕ counts as seen. It writes About's `seen`, so it also clears `/about`'s new marks and its what's-new index.
+- **Q3, the How it works line.** It is dropped from the banner. The appendix id `sheetDecision` adds today has no
+  carrier after the sheet goes.
+- **Q4, the announcement.** Losing the sheet's polite live announcement is accepted. The banner keeps the pattern this
+  plan builds in PR 3 and adds no live region:
+  - it is a labelled region (`<section aria-label>`), not an alert;
+  - the server draws it, so it is in the document when the page loads;
+  - a screen reader meets it in reading order, between Home's `<h1>` and Ready to build, and reaches it by landmark
+    navigation.
+
+R2 recommends a small follow-up handoff of its own. Design decides whether A1–A3 with these answers is enough to build
+from.
 
 The shape it would take is one PR behind `ABOUT_SHEET_ENABLED`, with no new About entry (a restyle of a notice).
 
