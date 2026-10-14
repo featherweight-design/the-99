@@ -437,11 +437,18 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   first, Add accumulates) and `syncPreconTokens` re-derives the `precon` rows whole from the standing adds, in the
   transactions they already run. A hand mark names no printing and writes none; a payload or an entry from before
   this names none either. `deck_token_printings` holds one chosen printing per token per deck, with no `card_tokens`
-  maker join (a token only the commander makes is a deck's token too). Nothing writes it yet: its writers are to be the
-  deck's picker (TP2, offering only printings the player holds) and a precon start. That a pick's printing is OF its
+  maker join (a token only the commander makes is a deck's token too). That a pick's printing is OF its
   token is checked by the writer and the reader, never by a pair key: the token ingest upserts a printing's
   `token_oracle_id`, and such a key would roll back the whole catalog publish the day Scryfall re-filed a picked
   printing. `pnpm probe:token-printings` proves the writes on a scratch branch.
+  **A deck's token printing** (TP2, behind `DECK_TOKENS_ENABLED`) follows a card's chain (`src/lib/tokens/deck-printings.ts`):
+  the deck's pick while the player holds that printing, else the printing they hold most copies of, else the catalog's
+  art; a pick no longer held is ignored, never deleted. `writeDeckTokenPrintingIn` is the ONE writer (today the picker's
+  `setDeckTokenPrinting`; a precon start is to call it too, after writing its holdings): it refuses a printing not of that token and one the player holds no
+  copy of, and `loadDeckTokenPicks` joins on the token as well, so a row written past it reads as no pick. The picker
+  is the card's own, opened from the token row's details: `loadTokenDetail` lists the held printings (with the switch
+  on), the provider gives a deck token the deck's scope from the deck tokens context, and the modal draws a token's
+  picker only where that scope can save, since a token has no Collection-wide preference.
 - **A deck's tokens are read by `loadDeckTokens` and written by two actions** (`DECK_TOKENS_ENABLED`, staging on, production off;
   plan `2026-10-11-tokens-for-my-deck.md`, PR 4a). The makers are the deck's `deck_cards` UNION both commanders (a commander
   makes tokens too), joined through `card_tokens`; `assembleDeckTokens` is the pure half. **A held token is never drawn as joined**

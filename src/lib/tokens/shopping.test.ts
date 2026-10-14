@@ -11,7 +11,7 @@ const fact = (cents: number | null, over: Partial<TokenPriceFact> = {}): TokenPr
 });
 const token = (over: Partial<DeckToken> = {}): DeckToken => ({
   oracleId: "t1", name: "Soldier", typeLine: "Token Creature — Soldier", colors: ["W"], power: "1", toughness: "1",
-  oracleText: null, makers: [], state: "not", source: null, joined: true, picture: null, price: null, ...over,
+  oracleText: null, makers: [], state: "not", source: null, joined: true, picture: null, printingPick: null, price: null, ...over,
 });
 const ok = (tokens: DeckToken[]): DeckTokensRead =>
   ({ status: "ok", read: true, tokens, makerCount: 1, newestPriceAsOf: NEWEST });

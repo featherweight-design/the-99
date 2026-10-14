@@ -173,3 +173,44 @@ describe("userTokenStateQuery", () => {
     expect(q.sql).not.toContain("deck_token_joins");
   });
 });
+
+describe("assembleDeckTokens: the deck's printing (token printings TP2)", () => {
+  const P1 = "20000000-0000-4000-8000-000000000001";
+  const P2 = "20000000-0000-4000-8000-000000000002";
+  const P3 = "20000000-0000-4000-8000-000000000003";
+  const three = [printing(P1, A, "aaa", "1"), printing(P2, A, "bbb", "2"), printing(P3, A, "ccc", "3")];
+
+  it("pictures the deck's pick while the player holds it, and says so", () => {
+    const r = ok(assembleDeckTokens(base({
+      printings: three,
+      heldPrintings: new Map([[A, [{ tokenPrintingId: P2, quantity: 1 }, { tokenPrintingId: P3, quantity: 4 }]]]),
+      picks: new Map([[A, P2]]),
+    })));
+    expect(r.tokens[0].picture?.scryfallId).toBe(P2);
+    expect(r.tokens[0].printingPick).toEqual({ setCode: "BBB", collectorNumber: "2" });
+  });
+
+  it("ignores a pick the player no longer holds, for the printing they hold most", () => {
+    const r = ok(assembleDeckTokens(base({
+      printings: three,
+      heldPrintings: new Map([[A, [{ tokenPrintingId: P2, quantity: 1 }, { tokenPrintingId: P3, quantity: 4 }]]]),
+      picks: new Map([[A, P1]]),
+    })));
+    expect(r.tokens[0].picture?.scryfallId).toBe(P3);
+    expect(r.tokens[0].printingPick).toBeNull();
+  });
+
+  it("keeps the catalog's printing when the player holds none", () => {
+    const r = ok(assembleDeckTokens(base({ printings: three, prices: new Map([[A, fact(P3)]]) })));
+    expect(r.tokens[0].picture?.scryfallId).toBe(P3);
+    expect(r.tokens[0].printingPick).toBeNull();
+  });
+
+  it("never pictures a held printing that is not one of the token's own", () => {
+    const r = ok(assembleDeckTokens(base({
+      printings: three,
+      heldPrintings: new Map([[A, [{ tokenPrintingId: "elsewhere", quantity: 9 }]]]),
+    })));
+    expect(r.tokens[0].picture?.scryfallId).toBe(P1);
+  });
+});

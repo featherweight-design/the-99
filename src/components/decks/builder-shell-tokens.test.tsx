@@ -39,7 +39,7 @@ const read: DeckTokensRead = {
   tokens: [{
     oracleId: "t-ally", name: "Ally", typeLine: "Token Creature — Ally", colors: ["W"], power: "1", toughness: "1",
     oracleText: null, makers: [{ oracleId: "aang", name: "Avatar Aang", imageUri: null }], state: "not", source: null,
-    joined: false, picture: null, price: null,
+    joined: false, picture: null, printingPick: null, price: null,
   }],
 };
 

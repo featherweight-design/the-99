@@ -94,7 +94,7 @@ describe("the tokens line in the deck box", () => {
   const food = (over: Partial<DeckToken> = {}): DeckToken => ({
     oracleId: "t1", name: "Food", typeLine: "Token Artifact — Food", colors: [], power: null, toughness: null,
     oracleText: null, makers: [{ oracleId: "held", name: "The Ozolith", imageUri: null }], state: "not", source: null,
-    joined: false, picture: null, price: null, ...over,
+    joined: false, picture: null, printingPick: null, price: null, ...over,
   });
   const readOf = (tokens: DeckToken[]): DeckTokensRead =>
     ({ status: "ok", read: true, tokens, makerCount: 1, newestPriceAsOf: null });

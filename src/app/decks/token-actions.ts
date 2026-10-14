@@ -1,11 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { deckTokensEnabled } from "../../lib/decks/tokens-flag";
 import { requireDeck } from "../../lib/decks/read";
-import { joinToken, leaveToken, markOwnedOnDeck, unmarkOwned } from "../../lib/tokens/joins";
+import { db } from "../../db";
+import { tokenPrintings } from "../../db/schema";
+import { and, eq, sql } from "drizzle-orm";
+import { writeDeckTokenPrintingIn } from "../../lib/tokens/deck-printings";
+import { deckMakesToken, joinToken, leaveToken, markOwnedOnDeck, unmarkOwned } from "../../lib/tokens/joins";
 import { isUuid } from "../../lib/uuid";
 
 export type TokenActionResult = { ok: true } | { ok: false; reason: "off" | "notThisDeck" };
@@ -64,5 +68,60 @@ export async function setTokenHeld(deckId: string, tokenOracleId: string, held: 
     if ((await unmarkOwned(g.userId, g.deckId, g.tokenId)) === "notThisDeck") return { ok: false, reason: "notThisDeck" };
   }
   revalidateTokenSurfaces(g.deckId, true);
+  return { ok: true };
+}
+
+export type SetDeckTokenPrintingResult =
+  | { ok: true }
+  /**
+   * `off`: the switch is off. `refused`: the wire input is malformed. `notThisDeck`: no card of the deck makes
+   * the token. `notHeld`: the player holds no copy of that printing of it; the picker offers only held ones.
+   */
+  | { ok: false; reason: "off" | "refused" | "notThisDeck" | "notHeld" };
+
+const COLLECTOR_NUMBER = /^[^\s\p{C}]{0,24}$/u;
+const SET_CODE = /^[a-z0-9]{2,8}$/;
+
+/**
+ * The printing a deck shows for one of its tokens (token printings TP2), from the card details sheet's picker,
+ * which names a printing by set and number as it does for a card. The printing is looked up AMONG THAT TOKEN'S
+ * OWN, so a set and number belonging to another token names nothing; `writeDeckTokenPrintingIn` checks it again
+ * with the holding. The page refreshes itself, as a card's pick does, so the row and its art move together.
+ */
+export async function setDeckTokenPrinting(
+  rawDeckId: unknown,
+  rawTokenId: unknown,
+  printing: unknown,
+): Promise<SetDeckTokenPrintingResult> {
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!deckTokensEnabled(env)) return { ok: false, reason: "off" };
+  if (typeof rawDeckId !== "string" || typeof rawTokenId !== "string" || !isUuid(rawDeckId) || !isUuid(rawTokenId)) {
+    return { ok: false, reason: "refused" };
+  }
+  if (typeof printing !== "object" || printing === null) return { ok: false, reason: "refused" };
+  const { setCode, collectorNumber } = printing as Record<string, unknown>;
+  if (typeof setCode !== "string" || typeof collectorNumber !== "string") return { ok: false, reason: "refused" };
+  const set = setCode.toLowerCase();
+  if (!SET_CODE.test(set) || !COLLECTOR_NUMBER.test(collectorNumber)) return { ok: false, reason: "refused" };
+  const deckId = rawDeckId.toLowerCase();
+  const tokenId = rawTokenId.toLowerCase();
+  await requireDeck(deckId, userId);
+  if (!(await deckMakesToken(deckId, userId, tokenId))) return { ok: false, reason: "notThisDeck" };
+
+  const outcome = await db.transaction(async (tx) => {
+    // The deck's row, as a card's pick takes it, so a pick and the deck's delete never interleave.
+    await tx.execute(sql`select 1 from decks where id = ${deckId} for update`);
+    const [p] = await tx.select({ id: tokenPrintings.scryfallId }).from(tokenPrintings).where(and(
+      eq(tokenPrintings.tokenOracleId, tokenId),
+      eq(sql`lower(${tokenPrintings.setCode})`, set),
+      eq(tokenPrintings.collectorNumber, collectorNumber),
+    )).limit(1);
+    if (!p) return "notHeld" as const;
+    const w = await writeDeckTokenPrintingIn(tx, { deckId, userId, tokenOracleId: tokenId, tokenPrintingId: p.id });
+    return w === "ok" ? "ok" as const : "notHeld" as const;
+  });
+  if (outcome !== "ok") return { ok: false, reason: outcome };
+  refresh();
   return { ok: true };
 }

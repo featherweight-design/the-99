@@ -27,7 +27,7 @@ const makers = (n: number) => Array.from({ length: n }, (_, i) => maker(i + 1));
 
 const token = (over: Partial<DeckToken> = {}): DeckToken => ({
   oracleId: "t1", name: "Food", typeLine: "Token Artifact — Food", colors: [], power: null, toughness: null,
-  oracleText: null, makers: makers(1), state: "not", source: null, joined: false, picture: null, price: null, ...over,
+  oracleText: null, makers: makers(1), state: "not", source: null, joined: false, picture: null, printingPick: null, price: null, ...over,
 });
 
 const ok = (tokens: DeckToken[], over: Partial<Extract<DeckTokensRead, { status: "ok" }>> = {}): DeckTokensRead =>

@@ -2067,9 +2067,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   printings under per-run ids, since local-dev holds no token catalog): a Replace upload writes each printing it read as an
   `upload` row beside the token's ownership row, an Add accumulates and adds, a later Replace removes every printing it does
   not read, a standing precon add's printing lands as a `precon` row and its revert takes it away, a deck keeps one pick per
-  token, and the purge leaves neither. It WRITES, so
+  token, and the purge leaves neither. For a deck's pick (TP2) it proves the writer refuses another token's printing (held)
+  and an unheld one, that `loadDeckTokens` pictures a held pick, that a row naming another token's printing written past
+  the writer reads as no pick, and that a pick the player stops holding is ignored and kept. It WRITES, so
   it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by
-  id. Mutation-checked two ways (the Replace's delete of upload printings, the precon re-derive).
+  id. Mutation-checked four ways (the Replace's delete of upload printings, the precon re-derive, the writer's
+  printing-of-token check, the reader's join on the token).
 - `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
   count and GOT state (summed across printings), that a write moves the owner's data stamp, that an unknown card
   and a quantity outside 1 to 99 write nothing, that a friend reads the lines with only the wanted count and got,
