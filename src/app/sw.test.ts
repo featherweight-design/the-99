@@ -38,6 +38,7 @@ beforeEach(() => {
   const caches = {
     open: async (name: string) => stores.get(name) ?? (stores.set(name, new FakeCache()), stores.get(name)!),
     keys: async () => [...stores.keys()],
+    has: async (name: string) => stores.has(name),
     delete: async (name: string) => stores.delete(name),
   };
   const self = {
@@ -160,11 +161,23 @@ describe("the service worker", () => {
     const offlineCall = network.mock.calls.find(([input]) => input === "/offline");
     expect(offlineCall?.[1]).toMatchObject({ credentials: "omit" });
     expect(await stores.get("offline-v1")!.entries.get(`${ORIGIN}/offline`)?.clone().text()).toContain("o.css");
-    expect([...stores.get("static-v1")!.entries.keys()].sort()).toEqual([
+    expect([...stores.get("offline-v1")!.entries.keys()].sort()).toEqual([
       `${ORIGIN}/_next/static/chunks/f.js`,
       `${ORIGIN}/_next/static/chunks/o.js`,
       `${ORIGIN}/_next/static/css/o.css`,
+      `${ORIGIN}/offline`,
     ]);
+  });
+
+  it("keeps the offline page's assets out of the static trim: they load offline after 600 newer files", async () => {
+    serve();
+    await install();
+    for (let i = 0; i < 605; i++) await fetchVia(`/_next/static/immutable/chunks/${i}.js`);
+    network.mockRejectedValue(new TypeError("offline"));
+    for (const path of ["/_next/static/css/o.css", "/_next/static/chunks/o.js", "/_next/static/chunks/f.js"]) {
+      const res = await fetchVia(path);
+      expect(await res!.text(), path).toBe(`asset ${path}`);
+    }
   });
 
   it("keeps the copy it has when a refresh cannot fetch one of the new page's assets", async () => {

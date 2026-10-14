@@ -113,26 +113,33 @@ async function keepOfflinePage() {
   // A path ends at a quote, a space, a bracket or a BACKSLASH: inside the page's inline RSC payload
   // the same paths are JSON-escaped (`\"/_next/static/...\"`), and the backslash is not part of one.
   const assets = new Set((html.match(/\/_next\/static\/[^"'\s<>)\\]+/g) ?? []).map((p) => p.replace(/&amp;/g, "&")));
-  // Every asset first: one that cannot be fetched abandons the refresh (a throw rejects it), so the
-  // copy already kept, which can still draw, is never replaced by one that cannot.
-  const fetched = [];
+  // Every asset first, from the static cache when it has one: one that cannot be had abandons the
+  // refresh (a throw rejects it), so the copy already kept, which can still draw, is never replaced
+  // by one that cannot.
+  const kept = [];
   for (const path of assets) {
     const request = new Request(new URL(path, self.location.origin));
-    if (await statics.match(request)) continue;
-    const asset = await fetch(request);
+    const asset = (await statics.match(request)) ?? (await fetch(request));
     if (!asset.ok) return;
-    fetched.push([request, asset]);
+    kept.push([request, asset]);
   }
-  for (const [request, asset] of fetched) await statics.put(request, asset);
-  await trim(statics, STATIC_LIMIT);
+  // The page and its assets are kept TOGETHER, in their own cache, which no trim touches, and
+  // replaced as a set: the static cache's trim can then never take a file the kept page needs.
+  const offline = await caches.open(OFFLINE);
+  const wanted = new Set([offlineRequest().url, ...kept.map(([request]) => request.url)]);
+  for (const [request, asset] of kept) await offline.put(request, asset);
   const headers = new Headers(response.headers);
   headers.set(KEPT_AT, String(Date.now()));
-  await (await caches.open(OFFLINE)).put(offlineRequest(), new Response(html, { status: response.status, headers }));
+  await offline.put(offlineRequest(), new Response(html, { status: response.status, headers }));
+  for (const key of await offline.keys()) if (!wanted.has(key.url)) await offline.delete(key);
 }
 
 async function cacheFirst(request, event) {
   const cache = await caches.open(STATIC);
-  const hit = await cache.match(request);
+  // The offline page's own assets are kept with it, out of reach of the static cache's trim.
+  // `has` before `open`, which would create the cache on a miss.
+  const hit =
+    (await cache.match(request)) ?? ((await caches.has(OFFLINE)) ? await (await caches.open(OFFLINE)).match(request) : undefined);
   if (hit) return hit;
   const response = await fetch(request);
   if (response.ok) {

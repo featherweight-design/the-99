@@ -1271,7 +1271,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `credentials: "omit"` (so the copy is the signed-out render, with no shell and nothing of anyone's;
   `/offline` is public in `src/proxy.ts`), keeps only when the answer really is `/offline` (a redirect
   to sign-in or an error is thrown away), and fetches again at install and after a page load at most
-  hourly, with its stylesheet and scripts, so it draws with no network after a deploy. A server's own
+  hourly, with its stylesheet and scripts, so it draws with no network after a deploy. Those assets are
+  kept WITH the page, in its own `offline-*` cache, which no trim touches and which is replaced as a set
+  only when every asset of the new page was had, so the static cache's 600-file trim never takes one. A server's own
   error (a 500) is passed through as it is. `src/app/sw.test.ts` runs the file against a fake worker scope and pins every one of those, the
   hourly re-fetch included. **To retire it**, ship a
   `sw.js` that unregisters itself (`self.registration.unregister()` in `activate`) rather than deleting
