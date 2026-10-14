@@ -6,7 +6,7 @@ import { tokensCopy } from "../../lib/copy/tokens";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useStoredView } from "../ui/use-stored-view";
 import { useDeckTokens } from "./deck-tokens-context";
-import { landingRequestedRecently, SHOW_DECK_TOKENS } from "./deck-tokens-landing";
+import { consumeLandingRequest, landingRequestedRecently, SHOW_DECK_TOKENS } from "./deck-tokens-landing";
 import { DECK_VIEW_KEY, isDeckView } from "./group-toggle";
 import { HoverPreviewProvider } from "./hover-preview";
 import { DecklistGroupHeader } from "./decklist-group-header";
@@ -41,7 +41,12 @@ export function TokensGroup() {
   // whether one is still fresh.
   const [landed, setLanded] = useState(() => landingRequestedRecently());
   useEffect(() => {
-    const land = () => setLanded(true);
+    // Answered once, whichever way it arrived (mounted before the request, or in answer to it).
+    consumeLandingRequest();
+    const land = () => {
+      setLanded(true);
+      consumeLandingRequest();
+    };
     window.addEventListener(SHOW_DECK_TOKENS, land);
     return () => window.removeEventListener(SHOW_DECK_TOKENS, land);
   }, []);

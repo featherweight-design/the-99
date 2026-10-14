@@ -517,6 +517,18 @@ describe("the fold", () => {
     expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
   });
 
+  it("answers the request once: a fold made after it is not undone by the group mounting again", () => {
+    localStorage.setItem("the99:deck-tokens-fold", "closed");
+    landOnDeckTokens();
+    const first = draw(ok([token()]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(toggle());
+    expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
+    first.unmount();
+    draw(ok([token()]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+  });
+
   it("does not open for a request that is no longer fresh", () => {
     vi.useFakeTimers();
     try {

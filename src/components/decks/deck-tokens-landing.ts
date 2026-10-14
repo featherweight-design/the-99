@@ -20,6 +20,11 @@ export function landingRequestedRecently(): boolean {
   return Date.now() - requestedAt < FRESH_MS;
 }
 
+/** The request is answered once: the group that opened for it clears it, so a fold the reader makes next is not undone. */
+export function consumeLandingRequest(): void {
+  requestedAt = Number.NEGATIVE_INFINITY;
+}
+
 export function landOnDeckTokens(): void {
   requestedAt = Date.now();
   window.dispatchEvent(new Event(SHOW_DECK_TOKENS));
