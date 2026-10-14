@@ -75,6 +75,68 @@ export function useTokenPress() {
 }
 
 /**
+ * The two presses a token carries, in the row and in the tile alike: the hand mark (`I have one`, or the plain
+ * `in your collection` an upload wrote) and the Shopping join. `press` and `pending` are the host's own
+ * (`useTokenPress`), so its refusal line sits under whatever drew these.
+ */
+export function TokenControls({
+  deckId, token, press, pending,
+}: {
+  deckId: string; token: DeckToken; press: ReturnType<typeof useTokenPress>["press"]; pending: boolean;
+}) {
+  const upload = token.state === "owned" && (token.source === "upload" || token.source === "precon");
+  const byHand = token.state === "owned" && token.source === "manual";
+  // An orphan (no card makes it) is refused by the hand mark both ways, so it offers neither.
+  const canOpen = token.makers.length > 0;
+  return (
+    <>
+    {upload ? (
+      <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{tokensCopy.row.owned}</span>
+    ) : null}
+    {/* An orphan (no card makes it) is refused by the hand mark both ways, so it offers neither. */}
+    {upload || !canOpen ? null : (
+      <button
+        type="button"
+        disabled={pending}
+        aria-busy={pending}
+        aria-describedby={`token-${token.oracleId}-face`}
+        aria-pressed={byHand}
+        aria-label={byHand ? tokensCopy.row.haveOffAria(token.name) : tokensCopy.row.haveAria(token.name)}
+        onClick={() => press(() => setTokenHeld(deckId, token.oracleId, !byHand))}
+        // 44 on a phone, 24 from md up; regular weight until it is held.
+        className={`${CONTROL} h-[44px] bg-transparent px-[8px] md:h-[24px] ${
+          byHand
+            ? "font-medium text-[color:var(--accent)]"
+            : "font-normal text-[color:var(--fg-muted)] underline decoration-dashed decoration-[color:var(--border-dashed)] underline-offset-[3px]"
+        }`}
+      >
+        {byHand ? tokensCopy.row.haveOn : tokensCopy.row.have}
+      </button>
+    )}
+    {token.state === "owned" ? null : (
+      <button
+        type="button"
+        disabled={pending}
+        aria-busy={pending}
+        aria-describedby={`token-${token.oracleId}-face`}
+        aria-pressed={token.joined}
+        aria-label={token.joined ? tokensCopy.row.leaveAria(token.name) : tokensCopy.row.joinAria(token.name)}
+        onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined))}
+        // 32 tall with a 44 hit area on a phone (the pseudo-element), 24 from md up.
+        className={`${CONTROL} relative h-[32px] border px-[10px] font-medium max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-[6px] max-md:after:content-[''] md:h-[24px] ${
+          token.joined
+            ? "border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_14%,transparent)] text-[color:var(--fg)]"
+            : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"
+        }`}
+      >
+        {token.joined ? tokensCopy.row.joined : tokensCopy.row.join}
+      </button>
+    )}
+    </>
+  );
+}
+
+/**
  * One token of the deck: ownership as the dot and one fact, the two controls, and the cards that
  * make it folded behind the row. Never a verdict word, never a warning color on ownership.
  */
@@ -88,9 +150,6 @@ export function TokenRow({
   const [open, setOpen] = useState(false);
   const { press, pending, refused } = useTokenPress();
 
-  // Held by the collection (an upload, or an added precon): drawn as owned, with no hand mark to press.
-  const upload = token.state === "owned" && (token.source === "upload" || token.source === "precon");
-  const byHand = token.state === "owned" && token.source === "manual";
   const pt = tokenPT(token);
   const first = token.makers[0];
   // A joined token whose maker has left the deck has nothing to unfold: it says so and draws no chevron.
@@ -218,48 +277,7 @@ export function TokenRow({
         </div>
 
         <div className="order-3 flex basis-full items-center gap-[10px] pl-[56px] md:order-none md:basis-auto md:pl-0">
-          {upload ? (
-            <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{tokensCopy.row.owned}</span>
-          ) : null}
-          {/* An orphan (no card makes it) is refused by the hand mark both ways, so it offers neither. */}
-          {upload || !canOpen ? null : (
-            <button
-              type="button"
-              disabled={pending}
-              aria-busy={pending}
-              aria-describedby={`token-${token.oracleId}-face`}
-              aria-pressed={byHand}
-              aria-label={byHand ? tokensCopy.row.haveOffAria(token.name) : tokensCopy.row.haveAria(token.name)}
-              onClick={() => press(() => setTokenHeld(deckId, token.oracleId, !byHand))}
-              // 44 on a phone, 24 from md up; regular weight until it is held.
-              className={`${CONTROL} h-[44px] bg-transparent px-[8px] md:h-[24px] ${
-                byHand
-                  ? "font-medium text-[color:var(--accent)]"
-                  : "font-normal text-[color:var(--fg-muted)] underline decoration-dashed decoration-[color:var(--border-dashed)] underline-offset-[3px]"
-              }`}
-            >
-              {byHand ? tokensCopy.row.haveOn : tokensCopy.row.have}
-            </button>
-          )}
-          {token.state === "owned" ? null : (
-            <button
-              type="button"
-              disabled={pending}
-              aria-busy={pending}
-              aria-describedby={`token-${token.oracleId}-face`}
-              aria-pressed={token.joined}
-              aria-label={token.joined ? tokensCopy.row.leaveAria(token.name) : tokensCopy.row.joinAria(token.name)}
-              onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined))}
-              // 32 tall with a 44 hit area on a phone (the pseudo-element), 24 from md up.
-              className={`${CONTROL} relative h-[32px] border px-[10px] font-medium max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-[6px] max-md:after:content-[''] md:h-[24px] ${
-                token.joined
-                  ? "border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_14%,transparent)] text-[color:var(--fg)]"
-                  : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"
-              }`}
-            >
-              {token.joined ? tokensCopy.row.joined : tokensCopy.row.join}
-            </button>
-          )}
+          <TokenControls deckId={deckId} token={token} press={press} pending={pending} />
         </div>
 
         {canOpen ? (

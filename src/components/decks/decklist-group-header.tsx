@@ -5,6 +5,7 @@
 // src/lib/copy/recommendations is imported here so the auto-count clause
 // ("9 · 9 auto") comes from the copy module rather than a bare inline string.
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { Chevron } from "../ui/chevron";
 
 interface DecklistGroupHeaderProps {
   label: string;
@@ -36,6 +37,12 @@ interface DecklistGroupHeaderProps {
    * the player has already kept or removed everything.
    */
   autoCount?: number;
+  /**
+   * A group the reader can fold: the heading becomes the control (`aria-expanded`, naming the panel it
+   * hides), with the app's chevron after it, as the Stats cards draw theirs. 44px tall on a phone. Omit
+   * for a group that never folds, which is every other.
+   */
+  toggle?: { open: boolean; onToggle: () => void; panelId: string };
 }
 
 export function DecklistGroupHeader({
@@ -48,6 +55,7 @@ export function DecklistGroupHeader({
   focusable = false,
   gapClause,
   autoCount = 0,
+  toggle,
 }: DecklistGroupHeaderProps) {
   // The mobile gap was absent, not zero by intent: "Lands 1" rendered as
   // "Lands1". 6px matches the tab's own label/count pairing.
@@ -72,7 +80,19 @@ export function DecklistGroupHeader({
             className={labelClass}
             style={{ color: labelColor }}
           >
-            {label}
+            {toggle ? (
+              <button
+                type="button"
+                aria-expanded={toggle.open}
+                aria-controls={toggle.open ? toggle.panelId : undefined}
+                aria-label={count === null ? label : `${label} · ${count}`}
+                onClick={toggle.onToggle}
+                className="inline-flex min-h-[44px] cursor-pointer items-center gap-[8px] border-0 bg-transparent p-0 text-left text-inherit [font:inherit] md:min-h-0"
+              >
+                {label}
+                <Chevron open={toggle.open} className="text-[color:var(--fg-muted)]" />
+              </button>
+            ) : label}
           </h3>
         ) : (
           <span className={labelClass} style={{ color: labelColor }}>

@@ -183,7 +183,8 @@ describe("the makers fold", () => {
     expect(toggles.map((t) => t.className.match(/\bmd:hidden\b|\bmd:flex\b/)?.[0])).toEqual(["md:hidden", "md:flex"]);
     // A press elsewhere on the row still unfolds it, for a pointer.
     fireEvent.click(screen.getByText("Token Creature — Goblin · 1/1"));
-    expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(2);
+    // (The group's own fold is a button too, and open: it is not a token's.)
+    expect(screen.getAllByRole("button", { expanded: true }).filter((b) => !b.closest("h3"))).toHaveLength(2);
   });
 
   it("opens the token's own card details from its name and its image, and folds nothing", () => {
@@ -204,7 +205,7 @@ describe("the makers fold", () => {
     // Intent on the name reads the token ahead of the press, as a card's trigger does.
     fireEvent.focus(name);
     expect(stub.prefetch).toHaveBeenCalledWith("t-goblin");
-    expect(screen.queryAllByRole("button", { expanded: true })).toHaveLength(0);
+    expect(screen.queryAllByRole("button", { expanded: true }).filter((b) => !b.closest("h3"))).toHaveLength(0);
   });
 
   it("hands card details every token of the deck in the group's order, with each one's art, from any row", () => {
@@ -463,5 +464,72 @@ describe("a token row's hover preview", () => {
     draw(ok([token({ oracleId: "a", name: "Ally", picture: null })]));
     hover(screen.getByRole("button", { name: "Ally" }));
     expect(screen.queryByTestId("hover-preview")).toBeNull();
+  });
+});
+
+describe("the fold", () => {
+  beforeEach(() => localStorage.clear());
+  const toggle = () => screen.getByRole("button", { name: /^Tokens · / });
+
+  it("is open until the browser says otherwise, and folds to the heading alone", () => {
+    draw(ok([token({ oracleId: "a", name: "Ally" })]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText("Token Artifact — Food")).toBeTruthy();
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Token Artifact — Food")).toBeNull();
+    // The header and the phone's sub-line stay: a folded group still says what it is.
+    expect(screen.getAllByText("not in the 99 · from 6 cards").length).toBeGreaterThan(0);
+  });
+
+  it("is one preference for every deck: a fold written for one deck folds the next", () => {
+    const first = draw(ok([token()]));
+    fireEvent.click(toggle());
+    expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
+    first.unmount();
+    render(
+      <DeckTokensProvider deckId="00000000-0000-4000-8000-0000000000d2" read={ok([token({ name: "Treasure" })])}>
+        <TokensGroup />
+      </DeckTokensProvider>,
+    );
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Treasure")).toBeNull();
+  });
+
+  it("opens for `Tokens ›` without writing the reader's preference, and folds again on a press", () => {
+    localStorage.setItem("the99:deck-tokens-fold", "closed");
+    draw(ok([token()]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    act(() => { window.dispatchEvent(new Event("the99:show-deck-tokens")); });
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+  });
+});
+
+describe("the view", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("draws rows in List and tiles in Card, the deck's own stored choice", () => {
+    const { unmount } = draw(ok([token({ oracleId: "a", name: "Ally" }), token({ oracleId: "b", name: "Food" })]));
+    expect(document.querySelectorAll("[data-token-tile]")).toHaveLength(0);
+    expect(document.querySelectorAll("[data-token-state]")).toHaveLength(2);
+    unmount();
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([token({ oracleId: "a", name: "Ally" }), token({ oracleId: "b", name: "Food" })]));
+    expect(document.querySelectorAll("[data-token-tile]")).toHaveLength(2);
+  });
+
+  it("keeps a tile's two presses and its makers fold", async () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(3) })]));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Mark the Goblin token as in your collection" })); });
+    expect(stub.held).toHaveBeenCalledWith(DECK, "g", true);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Add the Goblin token to this deck’s Shopping list" })); });
+    expect(stub.joined).toHaveBeenCalledWith(DECK, "g", true);
+    const fold = screen.getByRole("button", { name: "Goblin token, made by 3 cards", expanded: false });
+    fireEvent.click(fold);
+    expect(screen.getByText("Maker 01")).toBeTruthy();
   });
 });

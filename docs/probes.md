@@ -233,6 +233,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Tiles keep the LCP caps (80/150ms), so a slow first row lets lower ones go: 0 inversions in most runs and a few pairs
   in some, before and after. Reads only; needs `PRECONS_ENABLED=true` and `pnpm db:seed:precons` on local-dev, or
   `MEASURE_DEPLOYED=1` against staging.
+- `pnpm probe:tokens-group` proves the deck's Tokens group (2026-10-14) at 1300x900 and 390x844: open by default as rows in
+  List view; the heading folds it and writes ONE preference (`the99:deck-tokens-fold`) that folds the group on another
+  deck too, leaving the header and its note; in Card view the tokens are tiles in the deck's own grid (two across on a
+  phone, the 178px floor from md) with loaded art, names, both presses and the makers fold, nothing wider than the page;
+  `Tokens ›` from card details opens a folded group for the visit, focuses its heading and leaves the stored fold
+  alone; Shopping still draws its own Tokens group. The fixture is three tokens, their printings and `card_tokens` links
+  to cards two of the account's decks share, one join on the first deck, and a `token_reads` marker if the account
+  has none, all deleted in a `finally`. Needs `DECK_TOKENS_ENABLED=true`; refuses staging and production.
 - `pnpm probe:run-after` proves that leaving the page never cancels a Suggested changes or Proposed
   cuts run: it presses the tool, waits for the pending row, CLOSES the browser context while the model
   call is held, and watches the run settle on its own, refunded, and later than the close. The model
