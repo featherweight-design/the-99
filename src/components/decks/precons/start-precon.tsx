@@ -69,9 +69,11 @@ export function StartPrecon(props: StartPreconProps) {
   // a reopened one must not add the box twice. The id makes a ticked retry the same write; the date draws "you added this".
   // Per edition: each edition's box is its own entry, so an add of one never reads as the other's.
   const addFile = props.addFileName ?? row.fileName;
-  const adds = useRef(new Map<string, { id: string | null; at: string | null }>());
-  if (!adds.current.has(addFile)) adds.current.set(addFile, { id: null, at: null });
-  const add = { current: adds.current.get(addFile)! };
+  // A plain map held in state (never replaced): the dialog writes an add's id into its edition's slot.
+  const [adds] = useState(() => new Map<string, { id: string | null; at: string | null }>());
+  let slot = adds.get(addFile);
+  if (!slot) { slot = { id: null, at: null }; adds.set(addFile, slot); }
+  const add = { current: slot };
   const [addedAtBy, setAddedAtBy] = useState<Record<string, string | null>>({});
   return (
     <>
@@ -98,7 +100,7 @@ export function StartPrecon(props: StartPreconProps) {
           addedOn={addedAtBy[addFile] ?? props.addedOn ?? null}
           addRef={add}
           onAdded={() => setAddedAtBy((by) => ({ ...by, [addFile]: new Date().toISOString() }))}
-          onAddReverted={() => { adds.current.set(addFile, { id: null, at: null }); setAddedAtBy((by) => ({ ...by, [addFile]: null })); }}
+          onAddReverted={() => { adds.set(addFile, { id: null, at: null }); setAddedAtBy((by) => ({ ...by, [addFile]: null })); }}
           onDismiss={() => setOpen(false)}
         />
       )}
