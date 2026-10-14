@@ -5,11 +5,12 @@ import { useState } from "react";
 import { SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
 import type { BracketLean } from "../../lib/bracket/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
-import { cssUrl } from "../../lib/collection/browse";
 import type { CardRef } from "../../lib/profile/types";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { CardDetailTrigger, type Sibling } from "../cards/card-detail-provider";
 import { ModalChrome, type FindingArt } from "./receipt-modal";
+import { ArtLayer } from "../ui/art-layer";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const copy = deckAnalysisCopy;
 
@@ -211,7 +212,7 @@ function ReasoningModal({
             : null}
         </p>
         <ul className="m-0 p-0 list-none grid grid-cols-1 md:grid-cols-2 gap-[14px]" data-testid="reasoning-pieces">
-          {receipt.pieces.map(({ piece, tutors }, i) => {
+          <ArrivalOrder>{receipt.pieces.map(({ piece, tutors }, i) => {
             const commander = commanderOracleIds.includes(piece.oracleId);
             return (
               <li
@@ -229,14 +230,11 @@ function ReasoningModal({
                   className="flex-none"
                 >
                   <span
-                    className="block w-[100px] h-[140px] rounded-[6px] border border-[color:var(--border-strong)] bg-cover bg-center"
-                    style={{
-                      backgroundColor: "var(--surface-raised)",
-                      backgroundImage: art.get(piece.oracleId)?.imageUri
-                        ? cssUrl(art.get(piece.oracleId)!.imageUri!)
-                        : undefined,
-                    }}
-                  />
+                    className="relative block w-[100px] h-[140px] overflow-hidden rounded-[6px] border border-[color:var(--border-strong)]"
+                    style={{ backgroundColor: "var(--surface-raised)" }}
+                  >
+                    {art.get(piece.oracleId)?.imageUri ? <ArtLayer src={art.get(piece.oracleId)!.imageUri!} /> : null}
+                  </span>
                 </CardDetailTrigger>
                 <span className="flex min-w-0 flex-col gap-[8px]">
                   <span className="flex flex-col gap-[3px]">
@@ -283,7 +281,7 @@ function ReasoningModal({
                 </span>
               </li>
             );
-          })}
+          })}</ArrivalOrder>
         </ul>
         <div className="flex flex-col gap-[6px] border-t border-[color:var(--border)] pt-[12px]">
           <p className="m-0 text-[12px] leading-[1.6]" style={{ color: "var(--fg-faint)" }}>

@@ -9,7 +9,6 @@ const TARGET = { apply: "accepted", reject: "dismissed", undo: "pending", restor
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import { cssUrl } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import { suggestionNeedsBuy } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -24,6 +23,7 @@ import { BracketChip } from "./bracket-chip";
 import { BuyTag } from "./buy-tag";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
+import { ArtLayer } from "../ui/art-layer";
 
 /**
  * One suggested swap (placement addendum v2, A1/A2, B1, C3-C5, E1). A card out, a card in, the
@@ -279,11 +279,11 @@ function Thumb({ item, side }: { item: TuningItem; side: "cut" | "add" }) {
       {...trigger}
       tabIndex={-1}
       aria-hidden
-      className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] transition-colors ${side === "cut" ? "[border:1px_solid_var(--border-strong)]" : "[border:1px_solid_var(--border-dashed)]"} ${src ? "" : side === "cut" ? "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]"}`}
-      // eslint-disable-next-line no-restricted-syntax -- the card's own art, a per-item URL no class can hold
-      style={src ? { backgroundImage: cssUrl(src) } : undefined}
+      className={`relative h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] transition-colors ${side === "cut" ? "[border:1px_solid_var(--border-strong)]" : "[border:1px_solid_var(--border-dashed)]"} ${src ? "" : side === "cut" ? "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]"}`}
       title={name}
-    />
+    >
+      {src ? <ArtLayer src={src} /> : null}
+    </button>
   );
 }
 

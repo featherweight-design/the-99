@@ -4,9 +4,9 @@
 // `In this deck` box, only from a deck and only when this card is a maker of one of the deck's tokens. No
 // block of its own, and nothing at all outside a deck or with the switch off (no provider, no read).
 
-import { cssUrl } from "../../lib/collection/browse";
 import { tokensCopy } from "../../lib/copy/tokens";
 import { useDeckTokens } from "./deck-tokens-context";
+import { ArtLayer } from "../ui/art-layer";
 
 /** `onShowTokens` is null where the sheet cannot close to the page (stacked over another sheet): no link then. */
 export function TokenCardLine({ oracleId, onShowTokens }: { oracleId: string; onShowTokens: (() => void) | null }) {
@@ -25,12 +25,11 @@ export function TokenCardLine({ oracleId, onShowTokens }: { oracleId: string; on
     <div className="mt-[12px] flex flex-wrap items-center gap-x-[10px] border-t border-t-[color:var(--border)] pt-[10px]">
       <span
         aria-hidden
-        className="h-[28px] w-[20px] flex-none rounded-[2px] bg-cover bg-center"
-        style={{
-          boxShadow: "inset 0 0 0 1px var(--border-strong)",
-          backgroundImage: art ? cssUrl(art) : undefined,
-        }}
-      />
+        className="relative h-[28px] w-[20px] flex-none overflow-hidden rounded-[2px]"
+        style={{ boxShadow: "inset 0 0 0 1px var(--border-strong)" }}
+      >
+        {art ? <ArtLayer src={art} style={{ boxShadow: "inset 0 0 0 1px var(--border-strong)" }} /> : null}
+      </span>
       <span className="min-w-0 text-[13.5px]" style={{ color: "var(--fg-body)" }}>
         {boldNames(tokensCopy.details.line(names), names)}
         {state ? (

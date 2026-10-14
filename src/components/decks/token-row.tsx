@@ -2,7 +2,6 @@
 
 import { useRef, useState, useTransition, type MouseEvent } from "react";
 import { setTokenHeld, setTokenJoined } from "../../app/decks/token-actions";
-import { cssUrl } from "../../lib/collection/browse";
 import { tokensCopy } from "../../lib/copy/tokens";
 import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { tokenManapoolLine } from "../../lib/tokens/price-line";
@@ -13,6 +12,7 @@ import { TokenMakers } from "./token-makers";
 import { Chevron } from "../ui/chevron";
 import { useCardDetailIfAny, useCardIntentIfAny, type SiblingCard } from "../cards/card-detail-provider";
 import { usePreviewRow } from "./hover-preview";
+import { ArtLayer } from "../ui/art-layer";
 
 /** `{W}{U}` for a token's colors, `{C}` for none: the row's pip is the same pip a card's cost draws. */
 export function tokenPips(colors: string[]): string {
@@ -202,12 +202,14 @@ export function TokenRow({
           />
           {(() => {
             const art = {
-              className: "h-[42px] w-[30px] md:h-[36px] md:w-[26px] flex-none rounded-[3px] bg-cover bg-center",
-              style: {
-                boxShadow: "inset 0 0 0 1px var(--border-strong)",
-                backgroundImage: token.picture?.imageUriSmall ? cssUrl(token.picture.imageUriSmall) : undefined,
-              },
+              className: "relative h-[42px] w-[30px] md:h-[36px] md:w-[26px] flex-none overflow-hidden rounded-[3px]",
+              style: { boxShadow: "inset 0 0 0 1px var(--border-strong)" },
             };
+            // The art fades in over the ground (`ArtLayer`); the inset ring rides on it too, since a host's inset
+            // shadow paints under its children.
+            const layer = token.picture?.imageUriSmall
+              ? <ArtLayer src={token.picture.imageUriSmall} style={{ boxShadow: "inset 0 0 0 1px var(--border-strong)" }} />
+              : null;
             // Out of the tab order, as the name beside it is the same press for a keyboard.
             return detail
               ? (
@@ -222,9 +224,11 @@ export function TokenRow({
                   onClick={openDetails}
                   {...art}
                   className={`${art.className} cursor-pointer`}
-                />
+                >
+                  {layer}
+                </button>
               )
-              : <span aria-hidden {...art} />;
+              : <span aria-hidden {...art}>{layer}</span>;
           })()}
           <span className="flex min-w-0 flex-col gap-[2px]">
             <span className="flex flex-wrap items-center gap-x-[8px] text-[13.5px] leading-[1.4] text-[color:var(--fg)]">

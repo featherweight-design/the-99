@@ -5,7 +5,6 @@ import { useEffect, useId, useRef } from "react";
 import { comboModal, type ComboModal } from "../../lib/bracket/combo-modal";
 import type { Finding } from "../../lib/bracket/findings";
 import { SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
-import { cssUrl } from "../../lib/collection/browse";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { CardRef } from "../../lib/profile/types";
@@ -13,6 +12,8 @@ import { CardDetailTrigger, useCardDetail, type SheetFooter, type Sibling } from
 import { CostPips } from "../ui/cost-pips";
 import { useMinWidth } from "../ui/use-min-width";
 import { FindingMark } from "./finding-mark";
+import { ArtLayer } from "../ui/art-layer";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 /**
  * What a receipt tile draws for a card: the name printed on the copy the player owns, and its art.
@@ -71,7 +72,8 @@ export function ReceiptModal({
       closeLabel={copy.receipt.closeAria(label)}
       onClose={onClose}
     >
-      {finding.combos ? (
+      {/* One reading order for the whole receipt, every combo and tile (`ArrivalOrder`). */}
+      <ArrivalOrder>{finding.combos ? (
         finding.combos.map((combo) => (
           <ComboBody key={combo.variantId} combo={comboModal(combo)} art={art} />
         ))
@@ -86,7 +88,7 @@ export function ReceiptModal({
             </li>
           ))}
         </ul>
-      )}
+      )}</ArrivalOrder>
     </ModalChrome>
   );
 }
@@ -318,13 +320,14 @@ export function ReceiptTile({
       style={width ? { width } : undefined}
     >
       <span
-        className={"block w-full border border-[color:var(--border-strong)] bg-cover bg-center " + (width ? "rounded-[6px]" : "rounded-[8px]")}
+        className={"relative block w-full overflow-hidden border border-[color:var(--border-strong)] " + (width ? "rounded-[6px]" : "rounded-[8px]")}
         style={{
           aspectRatio: "63 / 88",
           backgroundColor: "var(--elevated)",
-          backgroundImage: drawn?.imageUri ? cssUrl(drawn.imageUri) : undefined,
         }}
-      />
+      >
+        {drawn?.imageUri ? <ArtLayer src={drawn.imageUri} /> : null}
+      </span>
       {/* 11.5 / 12px in the receipt's grid, where a tile is ~172px at both widths; the combo body's
           fixed 96px plates keep the smaller name, since that body is unchanged. */}
       <span className={(width ? "text-[11px] md:text-[10.5px]" : "text-[11.5px] md:text-[12px]") + " leading-[1.3]"} style={{ color: "var(--fg-body)" }}>

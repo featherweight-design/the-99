@@ -230,8 +230,9 @@ async function walk(page, label, width) {
     const grid = r.querySelector('[data-testid="receipt-grid"]');
     const all = [...(grid?.querySelectorAll('[data-testid="receipt-tile"]') ?? [])];
     const painted = all.filter((t) => {
+      // The art is the plate's own layer since the card-art fades (`ArtLayer`), never the plate's background.
       const plate = t.firstElementChild;
-      return plate && getComputedStyle(plate).backgroundImage.startsWith("url(");
+      return !!plate && [plate, ...plate.querySelectorAll("*")].some((e) => getComputedStyle(e).backgroundImage.startsWith("url("));
     }).length;
     const cols = new Set(all.slice(0, 6).map((t) => Math.round(t.getBoundingClientRect().left))).size;
     return { count: all.length, painted, cols, marks: grid?.querySelectorAll('[data-testid^="card-fact-"]').length ?? -1 };

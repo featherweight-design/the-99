@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { cssUrl } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import { suggestionNeedsBuy } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -20,6 +19,7 @@ import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
 import type { CardActions } from "./suggestion-card";
 import { useOptimisticVerdict } from "./use-optimistic-verdict";
+import { ArtLayer } from "../ui/art-layer";
 
 const TARGET = { apply: "accepted", reject: "dismissed", undo: "pending", restore: "pending" } as const;
 
@@ -252,10 +252,11 @@ function Thumb({ item }: { item: LineItem }) {
       {...trigger}
       tabIndex={-1}
       aria-hidden
-      className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] transition-colors ${add ? "[border:1px_dashed_var(--border-dashed)]" : "[border:1px_solid_var(--border-strong)]"} ${src ? "" : add ? "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]"}`}
-      style={src ? { backgroundImage: cssUrl(src) } : undefined}
+      className={`relative h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] transition-colors ${add ? "[border:1px_dashed_var(--border-dashed)]" : "[border:1px_solid_var(--border-strong)]"} ${src ? "" : add ? "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]"}`}
       title={item.cardName}
-    />
+    >
+      {src ? <ArtLayer src={src} /> : null}
+    </button>
   );
 }
 

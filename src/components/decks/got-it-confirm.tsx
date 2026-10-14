@@ -19,10 +19,10 @@ import type { ReceiptFacts } from "../../lib/decks/mark-bought";
 import type { PriceFact } from "../../lib/decks/price";
 import { collapseTwins, finishFor, gotItNeed, gotItPreset, presetQuantity, rebaseStale, type GotItChoice } from "../../lib/decks/got-it-preset";
 import { MARK_BOUGHT_MAX } from "../../lib/decks/mark-bought";
-import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { PrintingRegion } from "../cards/printing-region";
 import type { GotItWritten } from "./got-it-receipt";
+import { ArtLayer } from "../ui/art-layer";
 
 const c = gotItCopy.confirm;
 const MONO_LABEL = "font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]";
@@ -462,12 +462,13 @@ export function GotItConfirmForm<F>({
 
 /** B4: a card with one printing names it, with no picker; it is already the selection. */
 function SinglePrinting({ choice }: { choice: PrintingChoice }) {
-  const art = choice.imageUri
-    ? { backgroundImage: cssUrl(choice.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
-    : { background: identityGradient([]) };
+  // The ground; the art fades in over it (`ArtLayer`).
+  const art = { background: identityGradient([]) };
   return (
     <div className="flex items-center gap-[12px] rounded-[9px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[10px] py-[8px]">
-      <span aria-hidden className="h-[56px] w-[40px] flex-none rounded-[5px] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)]" style={art} />
+      <span aria-hidden className="relative h-[56px] w-[40px] flex-none overflow-hidden rounded-[5px] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)]" style={art}>
+        {choice.imageUri ? <ArtLayer src={choice.imageUri} className="shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)]" /> : null}
+      </span>
       <span className="flex min-w-0 flex-col gap-[2px]">
         <span className="text-[13px] text-[color:var(--fg)]">{choice.setName ?? choice.setCode.toUpperCase()}</span>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">

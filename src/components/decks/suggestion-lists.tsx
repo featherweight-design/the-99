@@ -9,6 +9,7 @@ import { MutationError } from "./mutation-error";
 import type { CardActions } from "./suggestion-card";
 import { SuggestionLine } from "./suggestion-line";
 import { useVerdictOverrideView } from "./use-optimistic-verdict";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 /**
  * Suggested changes' two lists (sub-project 8; Design's B10/B10b): a head with the count, the
@@ -123,11 +124,11 @@ function List({
         <p className="m-0 px-[2px] font-mono text-[12.5px]" style={{ color: "var(--fg-faint)" }}>{empty}</p>
       ) : (
         <ul className="m-0 flex list-none flex-col gap-[10px] p-0 md:gap-[6px]">
-          {rows.map((line) => (
+          <ArrivalOrder>{rows.map((line) => (
             <li key={line.id}>
               <SuggestionLine item={line} permits={permits} newestPriceAsOf={newestPriceAsOf} actions={actions} onSettled={onSettled} />
             </li>
-          ))}
+          ))}</ArrivalOrder>
         </ul>
       )}
     </section>
