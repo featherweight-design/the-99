@@ -33,7 +33,7 @@ const ENTRIES = [
     word: cardFactName(fact),
   })),
   // THE LEMNISCATE, glossed on the surface it debuts on. Neither clause sentence contains the
-  // word "combo" — they say `with {partner} — you own both` — so without this entry a fourth
+  // word "combo" — they say `with {partner}, you own both` — so without this entry a fourth
   // glyph arrives on /collection with nothing anywhere to say what it means, which is exactly
   // what the header above records the deck-status marks being retired for.
   //

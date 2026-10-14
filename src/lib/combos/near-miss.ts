@@ -296,7 +296,7 @@ async function nameMap(oracleIds: readonly string[]): Promise<Map<string, string
  * STATE 1 — both halves owned, and no deck has put them together.
  *
  * Collection-scoped, so it needs none of the deck plumbing states 2 and 3 do: it can ship
- * alone, and does. The clause it feeds reads `with {partner} — you own both`.
+ * alone, and does. The clause it feeds reads `with {partner}, you own both`.
  *
  * "UNASSEMBLED" IS ENFORCED HERE, and it is the half the design's own population figure did
  * not measure. The state is named *both halves owned, unassembled* while the 77 behind it was
