@@ -97,7 +97,7 @@ export const folderCopy = {
      * different sentence because it asks for a different thing: the name was
      * fine, and trying again is the answer.
      */
-     failed: 'That did not save. Try again.',
+     failed: 'We couldn’t confirm that saved. Reload to see your folders.',
   },
 
   // ── Rename (query to be added: `renameFolder`) ────────────────────────
@@ -133,7 +133,7 @@ export const folderCopy = {
      * is treated as done; this is an outage, and the sentence has to name the
      * act that did not happen rather than borrow create's.
      */
-    failed: 'That folder was not deleted. Try again.',
+    failed: 'We couldn’t confirm that folder was deleted. Reload to see your folders.',
     /** The shared delete pane's KEEP, the same label the deck's and the game's panes carry (2026-09-27). */
     cancel: 'Keep it',
   },
@@ -164,14 +164,14 @@ export const folderCopy = {
      * cannot act on — the deck or the folder is gone — and this is a failure
      * they can: the move did not happen and trying again is the answer.
      */
-    failed: 'That did not save. Try again.',
+    failed: 'We couldn’t confirm that move. Reload to see where the deck is.',
     /**
      * A move the server REFUSED, said after the deck has already taken its new
      * shelf on the press (H24): the deck goes back, and a screen reader that
      * heard "Filed under X" has to hear that it did not happen. A refusal means
      * the deck or the folder is gone, so there is nothing to try again.
      */
-    refused: 'That did not save. The deck or the folder is gone.',
+    refused: 'We couldn’t move that. The deck or the folder is gone.',
   },
 
   // ── Empty states — S2 and S3 only ─────────────────────────────────────

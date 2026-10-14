@@ -67,7 +67,7 @@ describe("PreconSuggestion", () => {
     expect(within(dialog).getByText("Eldrazi Unbound · 99 cards · before v1")).toBeInTheDocument();
     expect(within(dialog).getByText("73 of its 85")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Link" }));
-    await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("That didn’t link. Try again."));
+    await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("We couldn’t confirm that linked."));
     expect(linkActions.linkPrecon).toHaveBeenCalledWith("d1", "EldraziUnbound");
   });
 });

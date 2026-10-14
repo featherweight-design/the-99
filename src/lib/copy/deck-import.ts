@@ -161,7 +161,7 @@ export const deckImportCopy = {
      * Design rules on it — same standing as `entry.subMobileNoLink`.
      */
     unexpected: {
-      heading: "That didn't go through",
+      heading: "We couldn’t make that deck",
       /**
        * `detail` is the thrown message when the server refused for a reason the
        * player can act on — the size cap most of all, which is theirs to fix and
@@ -617,8 +617,8 @@ export const deckImportCopy = {
       live: "Updating the deck.",
     },
     refused: {
-      heading: "That didn’t go through",
-      body: "Your deck is exactly as it was. Your list is still here. Try again.",
+      heading: "We couldn’t update that deck",
+      body: "The deck is unchanged, and your list is still here.",
       action: "Try again",
     },
 

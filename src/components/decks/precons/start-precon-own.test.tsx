@@ -70,7 +70,7 @@ describe("Start dialog: I own this precon", () => {
     open();
     fireEvent.click(own());
     press();
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t add the cards. Nothing was saved."));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t add those. Your collection is unchanged."));
     expect(create).not.toHaveBeenCalled();
     press();
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));

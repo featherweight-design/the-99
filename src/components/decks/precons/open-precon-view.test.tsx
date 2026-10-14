@@ -217,7 +217,7 @@ describe("OpenPreconView", () => {
     const dialog = screen.getByRole("dialog", { name: "Unlink HD - Eldrazi from Eldrazi Unbound?" });
     expect(within(dialog).getByText("v0 leaves · v1 is first again")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Unlink" }));
-    await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("That didn’t unlink. Try again."));
+    await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("We couldn’t confirm that unlinked."));
     expect(linkActions.unlinkPrecon).toHaveBeenCalledWith("a", "EldraziUnbound_CMM");
   });
 

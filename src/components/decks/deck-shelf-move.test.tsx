@@ -77,7 +77,7 @@ describe("the deck page's Move", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Cube night" })));
     await flush();
     expect(moveRowName()).toBe("Move · Unfiled");
-    expect(screen.getByRole("status").textContent).toBe("That did not save. Try again.");
+    expect(screen.getByRole("status").textContent).toBe("We couldn’t confirm that move. Reload to see where the deck is.");
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
