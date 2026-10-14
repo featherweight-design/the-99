@@ -232,6 +232,47 @@ describe("the service worker", () => {
     }
   });
 
+  it("never drops a file the page kept NOW names, when a second worker published after this one read", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-10-14T12:00:00Z"));
+      start();
+      serve();
+      await install();
+      // A second worker publishes a page drawn with b.css while this one is mid-refresh with c.css:
+      // simulated by writing B's page into the cache the moment this refresh's own write lands.
+      vi.setSystemTime(new Date("2026-10-14T13:30:00Z"));
+      const offline = stores.get("offline-v1")!;
+      const put = offline.put.bind(offline);
+      let raced = false;
+      offline.put = async (req: Request, res: Response) => {
+        await put(req, res);
+        if (!raced && req.url === `${ORIGIN}/offline`) {
+          raced = true;
+          await put(new Request(`${ORIGIN}/_next/static/css/b.css`), new Response("asset b"));
+          await put(
+            new Request(`${ORIGIN}/offline`),
+            new Response('<link href="/_next/static/css/b.css">', {
+              headers: { "x-the99-kept-at": String(Date.now()), "x-the99-kept-assets": `${ORIGIN}/_next/static/css/b.css`, "x-the99-kept-previous": "" },
+            }),
+          );
+        }
+      };
+      network.mockImplementation(async (input: Request | string) => {
+        const path = new URL(typeof input === "string" ? input : input.url, ORIGIN).pathname;
+        if (path === "/offline") return answered('<link href="/_next/static/css/c.css">', "/offline");
+        if (path.startsWith("/_next/static/")) return answered(`asset ${path}`, path);
+        return answered(`page ${path}`, path);
+      });
+      await load("/decks");
+      const html = await offline.entries.get(`${ORIGIN}/offline`)!.clone().text();
+      expect(html).toContain("b.css");
+      expect(offline.entries.has(`${ORIGIN}/_next/static/css/b.css`)).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reads a path in the page's inline RSC payload without the escape before its closing quote", async () => {
     serve();
     await install();

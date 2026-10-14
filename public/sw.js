@@ -38,6 +38,8 @@ const OFFLINE_REFRESH_MS = 60 * 60 * 1000;
 const KEPT_AT = "x-the99-kept-at";
 // The kept page's own asset URLs, so the next refresh knows which files the copy it replaces drew with.
 const KEPT_ASSETS = "x-the99-kept-assets";
+// And the assets of the copy it replaced, which a document already served may still ask for.
+const KEPT_PREVIOUS = "x-the99-kept-previous";
 // One refresh at a time within a running worker.
 let refreshing = null;
 
@@ -131,14 +133,18 @@ async function keepOfflinePage() {
   // refresh ran) may still be asking for them; only files neither generation names are dropped.
   const offline = await caches.open(OFFLINE);
   const previous = await offline.match(offlineRequest());
-  const previousAssets = (previous?.headers.get(KEPT_ASSETS) ?? "").split(" ").filter(Boolean);
   const urls = kept.map(([request]) => request.url);
-  const wanted = new Set([offlineRequest().url, ...urls, ...previousAssets]);
   for (const [request, asset] of kept) await offline.put(request, asset);
   const headers = new Headers(response.headers);
   headers.set(KEPT_AT, String(Date.now()));
   headers.set(KEPT_ASSETS, urls.join(" "));
+  headers.set(KEPT_PREVIOUS, previous?.headers.get(KEPT_ASSETS) ?? "");
   await offline.put(offlineRequest(), new Response(html, { status: response.status, headers }));
+  // What stays is read from the page kept NOW, not from what this refresh saw: a second worker (one
+  // installing beside the active one) may have published after it, and its files must survive.
+  const current = await offline.match(offlineRequest());
+  const names = (header) => (current?.headers.get(header) ?? "").split(" ").filter(Boolean);
+  const wanted = new Set([offlineRequest().url, ...names(KEPT_ASSETS), ...names(KEPT_PREVIOUS)]);
   for (const key of await offline.keys()) if (!wanted.has(key.url)) await offline.delete(key);
 }
 
