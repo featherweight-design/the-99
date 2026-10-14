@@ -6,6 +6,7 @@ const stub = vi.hoisted(() => ({ held: vi.fn(), joined: vi.fn(), open: vi.fn(), 
 
 vi.mock("../../app/decks/token-actions", () => ({ setTokenHeld: stub.held, setTokenJoined: stub.joined }));
 vi.mock("../cards/card-detail-provider", () => ({
+  cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
   useCardDetail: () => ({ open: stub.open }),
   useCardDetailIfAny: () => ({ open: stub.open }),
   useCardIntent: () => ({}),
@@ -531,5 +532,15 @@ describe("the view", () => {
     const fold = screen.getByRole("button", { name: "Goblin token, made by 3 cards", expanded: false });
     fireEvent.click(fold);
     expect(screen.getByText("Maker 01")).toBeTruthy();
+  });
+
+  it("names a tile's art for what it does and its makers fold for what it folds, two controls with two names", () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(3) })]));
+    const art = screen.getByRole("button", { name: "View details for Goblin" });
+    fireEvent.click(art);
+    expect(stub.open.mock.calls[0][0]).toBe("g");
+    expect(art.hasAttribute("aria-expanded")).toBe(false);
+    expect(screen.getAllByRole("button", { name: "Goblin token, made by 3 cards" })).toHaveLength(1);
   });
 });

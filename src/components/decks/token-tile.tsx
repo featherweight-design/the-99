@@ -4,7 +4,7 @@ import { useRef, useState, type MouseEvent } from "react";
 import { tokensCopy } from "../../lib/copy/tokens";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckToken } from "../../lib/tokens/read";
-import { useCardDetailIfAny, useCardIntentIfAny, type SiblingCard } from "../cards/card-detail-provider";
+import { cardDetailCopy, useCardDetailIfAny, useCardIntentIfAny, type SiblingCard } from "../cards/card-detail-provider";
 import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
 import { Chevron } from "../ui/chevron";
 import { CostPips } from "../ui/cost-pips";
@@ -56,7 +56,9 @@ export function TokenTile({
             type="button"
             {...intent}
             onClick={openDetails}
-            aria-label={tokensCopy.row.toggleAria(token.name, token.makers.length)}
+            // What a press does: the card's details. The makers fold below carries `toggleAria`, so no two
+            // controls share a name.
+            aria-label={cardDetailCopy.triggerAria(token.name)}
             aria-describedby={`token-${token.oracleId}-face`}
             className={`${artClass} cursor-pointer`}
             style={artStyle}
