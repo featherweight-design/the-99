@@ -20,7 +20,6 @@ const row: PreconRow = {
 // A started deck answers with the redirect, which the dialog rethrows for the router; there is no router here, so the
 // page simply stays put, as it does while the navigation is under way.
 const redirect = () => new Promise(() => {});
-const redirected = () => Promise.reject(new Error("NEXT_REDIRECT;/decks/d1"));
 const KEY = "the99:precon-add-attempt:user_A:Multiverse_FRC";
 
 const open = (addedOn: string | null = null) => {
@@ -58,18 +57,12 @@ describe("Start dialog: I own this precon", () => {
 
 
   it("adds the box and starts the deck as ONE action, never the plain create", async () => {
-    start.mockImplementationOnce(redirected);
-    // The rethrown redirect reaches the window with no router to take it.
-    const swallow = (e: ErrorEvent) => e.preventDefault();
-    window.addEventListener("error", swallow);
+    start.mockImplementationOnce(redirect);
     open();
     fireEvent.click(own());
     press();
     await waitFor(() => expect(start).toHaveBeenCalledWith("Multiverse_FRC", "Multiverse Reforged", expect.stringMatching(/^[0-9a-f-]{36}$/)));
     expect(create).not.toHaveBeenCalled();
-    // The redirect is a known outcome: no attempt is left behind for a later press to land on this deck.
-    await waitFor(() => expect(window.sessionStorage.getItem(KEY)).toBeNull());
-    window.removeEventListener("error", swallow);
   });
 
   it("says nothing was saved when the start is refused, and a retry is a new action", async () => {

@@ -97,4 +97,19 @@ describe("StartPrecon, a redirecting action", () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.queryByRole("alert")).toBeNull();
   });
+
+  it("with the box selected, is not a failure either, and leaves no attempt for a later press to land on this deck", async () => {
+    const { redirect } = await import("next/navigation");
+    addAction.mockImplementationOnce(async () => redirect("/decks/d1?from=precon"));
+    const creates = action.mock.calls.length;
+    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getByRole("checkbox", { name: /I own this precon/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(addAction).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(window.sessionStorage.getItem(`the99:precon-add-attempt:user_A:${row.fileName}`)).toBeNull();
+    expect(action.mock.calls.length).toBe(creates);
+  });
 });
