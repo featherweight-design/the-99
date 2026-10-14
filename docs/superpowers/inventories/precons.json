@@ -252,7 +252,7 @@
     },
     {
       "id": "s1",
-      "label": "Start a deck from this: the confirm, with an illegal card named (S1, the illegal line)",
+      "label": "Start with this precon: the confirm, with an illegal card named (S1, the illegal line)",
       "view": "src/components/decks/precons/start-precon.tsx",
       "steps": [
         {
@@ -262,7 +262,7 @@
         },
         {
           "clickRole": "button",
-          "name": "Start a deck from this",
+          "name": "Start with this precon",
           "settle": 800
         },
         {
@@ -272,7 +272,7 @@
     },
     {
       "id": "s2",
-      "label": "Start the deck: the new draft with the precon arrival strip (S2) · creates a draft deck on the account each run: capture it on a scratch branch, never a shared database",
+      "label": "Start the deck: the new deck with the precon arrival strip (S2) · creates a deck on the account each run: capture it on a scratch branch, never a shared database",
       "view": "src/components/decks/arrival-strip.tsx",
       "steps": [
         {
@@ -282,7 +282,7 @@
         },
         {
           "clickRole": "button",
-          "name": "Start a deck from this",
+          "name": "Start with this precon",
           "settle": 800
         },
         {

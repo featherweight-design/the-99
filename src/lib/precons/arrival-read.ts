@@ -38,11 +38,12 @@ export function preconArrivalQuery(userId: string, deckId: string) {
     })
     .from(decks)
     .innerJoin(precons, eq(precons.fileName, decks.builtFromPrecon))
-    // Until the first commit (the table's lifetime): the URL keeps `?from=precon`, so a committed
-    // deck reloaded there must not read as just started.
+    // While the deck holds at most its starting version: the URL keeps `?from=precon`, so a deck committed again
+    // since (a second version) reloaded there must not read as just started. A start commits the deck once, so
+    // its own version is not a later commit.
     .where(and(
       eq(decks.id, deckId),
       eq(decks.userId, userId),
-      sql`not exists (select 1 from deck_versions dv where dv.deck_id = ${decks}.id)`,
+      sql`(select count(*) from deck_versions dv where dv.deck_id = ${decks}.id) <= 1`,
     ));
 }

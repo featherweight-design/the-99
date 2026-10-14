@@ -26,7 +26,11 @@ describe("StartPrecon", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText(/1 card isn’t legal in Commander: Dockside Extortionist/)).toBeInTheDocument();
     expect(screen.getByText("You already have HD - Sevinne with this commander. This makes a second deck.")).toBeInTheDocument();
-    expect(screen.getByText("all 100, as the precon lists them")).toBeInTheDocument();
+    expect(screen.getByText("all 100")).toBeInTheDocument();
+    expect(screen.getByText("this precon’s copies")).toBeInTheDocument();
+    // The deck is committed on start: no sentence about a draft, and no lead paragraph restating the Cards fact.
+    expect(screen.queryByText(/draft/i)).toBeNull();
+    expect(screen.queryByText(/Change anything before you commit/)).toBeNull();
     expect(screen.getByRole("textbox")).toHaveValue("Mystic Intellect");
   });
 
@@ -34,7 +38,7 @@ describe("StartPrecon", () => {
     render(<StartPrecon row={{ ...row, unmapped: 1 }} cards={99} body={98} illegal={[]} />);
     fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     expect(screen.getByText("99; 1 isn’t in our catalog yet")).toBeInTheDocument();
-    expect(screen.queryByText(/as the precon lists them/)).toBeNull();
+    expect(screen.queryByText("all 99")).toBeNull();
   });
 
   it("refuses a name with a control character before sending it, as the server would", () => {

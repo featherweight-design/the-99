@@ -35,7 +35,7 @@ import type { Bracket } from "../../lib/bracket/types";
 import { useDeclaration } from "./use-declaration";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
-import { PreconAddedReceipt, StripAddedParam } from "./precons/precon-added-receipt";
+import { StripAddedParam } from "./precons/precon-added-receipt";
 import type { PreconAddReceipt } from "../../lib/precons/add-receipt-read";
 import type { PreconArrival } from "../../lib/precons/arrival-read";
 import type { PreconMatch } from "../../lib/precons/link";
@@ -1630,9 +1630,9 @@ export function BuilderShell({
                 banner instead, whose warning would be contradicted by a line
                 reading "nothing needs your attention". */}
             {preconArrival && (
-              <PreconArrivalBand deckId={deck.id} arrival={preconArrival} />
+              <PreconArrivalBand deckId={deck.id} arrival={preconArrival} added={preconAddReceipt ? { entryId: preconAddReceipt.entryId } : null} />
             )}
-            {preconAddReceipt ? <PreconAddedReceipt receipt={preconAddReceipt} stripParam /> : preconAddedClaimed ? <StripAddedParam /> : null}
+            {preconAddedClaimed ? <StripAddedParam /> : null}
             {preconLink && preconLink.suggestions.length > 0 && (
               <PreconSuggestion deckId={deck.id} deckName={deck.name} suggestions={preconLink.suggestions} />
             )}

@@ -254,7 +254,6 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
             ✕
           </button>
         </div>
-        <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{copy.lead(cards, row.unmapped)}</p>
 
         <div className="flex items-center gap-[11px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[10px_12px]">
           <CommanderThumb imageUri={row.commanders[0]?.imageUri ?? null} colorIdentity={row.identity} size="list" />
@@ -299,7 +298,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
           <div className="flex flex-col">
             {fact(copy.facts.cards, copy.facts.cardsValue(cards, row.unmapped))}
             {fact(copy.facts.own, copy.facts.ownValue(row.owned, row.of))}
-            {fact(copy.facts.printings, own ? copy.facts.printingsValueAdding : copy.facts.printingsValue)}
+            {fact(copy.facts.printings, copy.facts.printingsValue)}
           </div>
 
           {(failed || !valid) && (

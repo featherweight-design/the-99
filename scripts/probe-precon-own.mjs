@@ -1,12 +1,12 @@
 // "I own this precon" (Start dialog checkbox, the receipt on the deck page, History's "Added from ...") walked in a
 // real browser at 390x844 and 1300x900 (precon ownership UI, PR B; Hugh specified it, no design round).
 //
-// Per width: the Start dialog draws the box UNTICKED with the Printings fact unchanged; ticking swaps that fact;
-// starting adds first and lands on the deck with the receipt in the arrival band (title, body, History link, Undo, ✕)
-// and `?added=` already stripped from the address while `from=precon` stays; a reload shows no receipt; History's top
-// precon entry reads "Added from Probe Own". Phone then presses Undo and Revert (the receipt goes, the copies go);
-// desktop presses ✕ (the receipt goes). Layout: no horizontal overflow, the ✕ is in the band's corner and the receipt
-// text stops before it, and Undo sits inside the viewport.
+// Per width: the Start dialog draws the box UNTICKED, says "this precon’s copies" for Printings (ticked or not) and nothing
+// about a draft; starting adds first and lands on the deck with ONE arrival band: "Started from the Probe Own precon",
+// "All 31 cards added to your collection." with a History link, the ✓ at the band's top-left, no second receipt banner, no
+// Undo, no "draft" sentence, and `?added=` already stripped while `from=precon` stays; a reload shows the minimal band; a
+// forged `?added=` draws nothing and is stripped all the same; History titles the entry "Added from Probe Own". Layout: no
+// horizontal overflow, the band text stops before its dismiss.
 //
 // It writes a fixture precon of 31 cards the account does NOT own (`ProbePreconOwn`), and removes it, the decks
 // it started and the collection rows the adds made (the fixture cards are unowned, so deleting their rows restores the
@@ -138,54 +138,50 @@ try {
     const box = dialog.getByRole("checkbox", { name: /I own this precon/ });
     await box.waitFor();
     check(!(await box.isChecked()), `${w.name}: the box is unticked by default`, "unticked");
-    check(await dialog.getByText("picked from the copies you hold").isVisible(), `${w.name}: the Printings fact is the usual one while unticked`, "usual");
+    check(await dialog.getByText("this precon’s copies").isVisible(), `${w.name}: the Printings fact says this precon's copies`, "precon's copies");
+    check((await dialog.getByText(/draft/i).count()) === 0, `${w.name}: the dialog says nothing about a draft`, "none");
     const bb = await box.boundingBox();
     check(bb && bb.width >= 16 && bb.height >= 16, `${w.name}: the box is a real target`, `${bb?.width}x${bb?.height}`);
     await box.check();
-    check(await dialog.getByText("picked from the copies you hold, this box’s included").isVisible(), `${w.name}: ticking swaps the Printings fact`, "swapped");
+    check(await dialog.getByText("this precon’s copies").isVisible(), `${w.name}: ticking leaves the Printings fact the same`, "same");
     const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     check(over <= 0, `${w.name}: the dialog causes no horizontal overflow`, `${over}px`);
     await dialog.getByRole("button", { name: "Start the deck" }).click();
 
     await page.waitForURL(/\/decks\/[0-9a-f-]{36}/, { timeout: 60_000 });
-    const receipt = page.getByRole("button", { name: "Undo" });
-    await receipt.waitFor({ timeout: 30_000 });
-    check(await page.getByText("31 copies added").isVisible(), `${w.name}: the receipt says what was added`, "31 copies added");
-    check(await page.getByRole("link", { name: "See it in History" }).isVisible(), `${w.name}: the receipt links to History`, "link");
+    // ONE band: where the deck came from, that the cards were added, and the History link. No second banner, no Undo.
+    const added = page.getByText("All 31 cards added to your collection.");
+    await added.waitFor({ timeout: 30_000 });
+    const historyLink = page.getByRole("link", { name: "History", exact: true });
+    check(await historyLink.isVisible() && /\/collection\/history\?entry=/.test((await historyLink.getAttribute("href")) ?? ""), `${w.name}: the band links the add's History entry`, "link");
+    check((await page.getByText("copies added").count()) === 0 && (await page.getByRole("button", { name: "Undo" }).count()) === 0, `${w.name}: no receipt banner and no Undo on the deck page`, "none");
+    check((await page.getByText(/draft until you commit/i).count()) === 0, `${w.name}: no draft sentence in the band`, "none");
+    check(await page.getByText("printings: this precon’s copies").isVisible(), `${w.name}: the band's meta line names the precon's copies`, "meta");
     await page.waitForFunction(() => !new URL(location.href).searchParams.has("added"), null, { timeout: 10_000 });
     const sp = await page.evaluate(() => new URL(location.href).searchParams.get("from"));
     check(sp === "precon", `${w.name}: ?added= is stripped and from=precon stays`, `from=${sp}`);
     const geo = await page.evaluate(() => {
-      const x = document.querySelector('button[aria-label="Dismiss the receipt"]');
-      const band = x.parentElement;
-      const t = [...band.querySelectorAll("p")].map((p) => { const r = document.createRange(); r.selectNodeContents(p); return r.getBoundingClientRect().right; });
+      const head = [...document.querySelectorAll("p")].find((p) => p.textContent?.startsWith("Started from the"));
+      const band = head.closest('div[style*="surface-rail"]');
+      const mark = [...band.querySelectorAll("span")].find((e) => e.textContent?.trim() === "✓");
+      const dismiss = band.querySelector("button");
+      const r = (e) => e.getBoundingClientRect();
+      const texts = [...band.querySelectorAll("p")].map((p) => { const q = document.createRange(); q.selectNodeContents(p); return r(q).right; });
       return {
         overflow: document.documentElement.scrollWidth - window.innerWidth,
-        xRight: band.getBoundingClientRect().right - x.getBoundingClientRect().right,
-        xTop: x.getBoundingClientRect().top - band.getBoundingClientRect().top,
-        xLeft: x.getBoundingClientRect().left, textRight: Math.max(...t),
+        markLeft: r(mark).left - r(band).left, markTopGap: Math.abs(r(mark).top - r(head).top),
+        textRight: Math.max(...texts), dismissLeft: r(dismiss).left, height: r(band).height,
       };
     });
-    const want = w.name === "phone" ? { right: 4, top: 2 } : { right: 22, top: 4 };
-    check(geo.overflow <= 0, `${w.name}: the deck page has no horizontal overflow with the receipt`, `${geo.overflow}px`);
-    check(Math.abs(geo.xRight - want.right) <= 1 && Math.abs(geo.xTop - want.top) <= 1, `${w.name}: the ✕ sits in the band's corner`, `${geo.xRight.toFixed(1)}px right, ${geo.xTop.toFixed(1)}px top`);
-    check(geo.textRight <= geo.xLeft + 0.5, `${w.name}: the receipt text stops before the ✕`, `text ends ${geo.textRight.toFixed(0)}, ✕ starts ${geo.xLeft.toFixed(0)}`);
+    check(geo.overflow <= 0, `${w.name}: the deck page has no horizontal overflow with the band`, `${geo.overflow}px`);
+    check(geo.markLeft >= 0 && geo.markLeft <= 32 && geo.markTopGap <= 8, `${w.name}: the ✓ sits at the band's top-left, level with the head`, `${geo.markLeft.toFixed(0)}px in, ${geo.markTopGap.toFixed(0)}px off the head`);
+    check(geo.textRight <= geo.dismissLeft + 0.5, `${w.name}: the band text stops before the dismiss`, `text ends ${geo.textRight.toFixed(0)}, dismiss starts ${geo.dismissLeft.toFixed(0)}`);
+    console.log(`${w.name}: band height ${geo.height.toFixed(1)}px`);
 
-    if (w.name === "phone") {
-      // Undo: the existing revert confirmation, then the receipt goes and the copies are gone from the collection.
-      await receipt.click();
-      await page.getByRole("button", { name: "Revert", exact: true }).click();
-      await page.getByText("31 copies added").waitFor({ state: "detached", timeout: 30_000 });
-      const [{ n }] = await sql`select count(*)::int as n from collection_items where user_id = ${userId} and oracle_id = any(${fixtureIds}::uuid[])`;
-      check(n === 0, `${w.name}: Undo reverts the add and the receipt goes`, `${n} fixture rows left`);
-    } else {
-      await page.getByRole("button", { name: "Dismiss the receipt" }).click();
-      check((await page.getByText("31 copies added").count()) === 0, `${w.name}: the ✕ dismisses the receipt`, "gone");
-    }
-    // A reload first: the address was stripped, so nothing draws a receipt again (History keeps the record).
+    // A reload: the address was stripped, so the band is the minimal one now (History keeps the record).
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByRole("tab").first().waitFor({ timeout: 30_000 }).catch(() => {});
-    check((await page.getByText("31 copies added").count()) === 0, `${w.name}: a reload shows no receipt`, "gone");
+    await page.getByText("Started from the").first().waitFor({ timeout: 30_000 });
+    check((await page.getByText("added to your collection").count()) === 0, `${w.name}: a reload does not repeat the added line`, "gone");
 
     // A claim no receipt can be drawn for (an id that is nobody's) is still spent: stripped from the address, nothing drawn.
     const deckUrl = new URL(page.url());
@@ -193,7 +189,7 @@ try {
     deckUrl.searchParams.set("added", "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11");
     await page.goto(deckUrl.toString(), { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => !new URL(location.href).searchParams.has("added"), null, { timeout: 15_000 }).catch(() => {});
-    const stale = await page.evaluate(() => ({ kept: new URL(location.href).searchParams.has("added"), receipt: document.body.innerText.includes("copies added") }));
+    const stale = await page.evaluate(() => ({ kept: new URL(location.href).searchParams.has("added"), receipt: document.body.innerText.includes("added to your collection") }));
     check(!stale.kept && !stale.receipt, `${w.name}: a forged ?added= draws no receipt and is stripped all the same`, `kept=${stale.kept} receipt=${stale.receipt}`);
 
     await page.goto(`${BASE}/collection/history`, { waitUntil: "domcontentloaded" });

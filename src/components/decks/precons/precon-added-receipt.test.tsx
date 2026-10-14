@@ -42,20 +42,6 @@ describe("PreconAddedReceipt", () => {
     expect(screen.getByText("1 token marked owned")).toBeInTheDocument();
   });
 
-  it("takes ?added= off the address on first draw and keeps the rest", () => {
-    render(<PreconAddedReceipt receipt={receipt} stripParam />);
-    expect(mirror).toHaveBeenCalledTimes(1);
-    const url = mirror.mock.calls[0][0] as URL;
-    expect(url.pathname).toBe("/decks/d1");
-    expect(url.searchParams.get("from")).toBe("precon");
-    expect(url.searchParams.has("added")).toBe(false);
-  });
-
-  it("leaves the address alone when not asked to strip it (the dialog's fallback)", () => {
-    render(<PreconAddedReceipt receipt={receipt} />);
-    expect(mirror).not.toHaveBeenCalled();
-  });
-
   it("goes away with the ✕", () => {
     const onClose = vi.fn();
     render(<PreconAddedReceipt receipt={receipt} onClose={onClose} />);
