@@ -203,6 +203,35 @@ describe("the service worker", () => {
     }
   });
 
+  it("keeps the previous page's assets one refresh longer, and drops those two refreshes old", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-10-14T12:00:00Z"));
+      start();
+      const generation = (css: string) =>
+        network.mockImplementation(async (input: Request | string) => {
+          const path = new URL(typeof input === "string" ? input : input.url, ORIGIN).pathname;
+          if (path === "/offline") return answered(`<link href="/_next/static/css/${css}.css">`, "/offline");
+          if (path.startsWith("/_next/static/")) return answered(`asset ${path}`, path);
+          return answered(`page ${path}`, path);
+        });
+      const kept = () => [...stores.get("offline-v1")!.entries.keys()].filter((u) => u.endsWith(".css")).sort();
+      generation("a");
+      await install();
+      // A deploy later, a refresh: a document that drew the first copy may still ask for a.css.
+      vi.setSystemTime(new Date("2026-10-14T13:30:00Z"));
+      generation("b");
+      await load("/decks");
+      expect(kept()).toEqual([`${ORIGIN}/_next/static/css/a.css`, `${ORIGIN}/_next/static/css/b.css`]);
+      vi.setSystemTime(new Date("2026-10-14T15:00:00Z"));
+      generation("c");
+      await load("/decks");
+      expect(kept()).toEqual([`${ORIGIN}/_next/static/css/b.css`, `${ORIGIN}/_next/static/css/c.css`]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reads a path in the page's inline RSC payload without the escape before its closing quote", async () => {
     serve();
     await install();

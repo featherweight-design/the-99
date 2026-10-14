@@ -36,6 +36,8 @@ const OFFLINE_PATH = "/offline";
 // a variable: the browser stops an idle worker after seconds, and a variable starts at zero again.
 const OFFLINE_REFRESH_MS = 60 * 60 * 1000;
 const KEPT_AT = "x-the99-kept-at";
+// The kept page's own asset URLs, so the next refresh knows which files the copy it replaces drew with.
+const KEPT_ASSETS = "x-the99-kept-assets";
 // One refresh at a time within a running worker.
 let refreshing = null;
 
@@ -123,13 +125,19 @@ async function keepOfflinePage() {
     if (!asset.ok) return;
     kept.push([request, asset]);
   }
-  // The page and its assets are kept TOGETHER, in their own cache, which no trim touches, and
-  // replaced as a set: the static cache's trim can then never take a file the kept page needs.
+  // The page and its assets are kept TOGETHER, in their own cache, which no trim touches: the static
+  // cache's trim can then never take a file the kept page needs. The PREVIOUS page's assets stay one
+  // generation longer, because a document already served that copy (in another tab, or while this
+  // refresh ran) may still be asking for them; only files neither generation names are dropped.
   const offline = await caches.open(OFFLINE);
-  const wanted = new Set([offlineRequest().url, ...kept.map(([request]) => request.url)]);
+  const previous = await offline.match(offlineRequest());
+  const previousAssets = (previous?.headers.get(KEPT_ASSETS) ?? "").split(" ").filter(Boolean);
+  const urls = kept.map(([request]) => request.url);
+  const wanted = new Set([offlineRequest().url, ...urls, ...previousAssets]);
   for (const [request, asset] of kept) await offline.put(request, asset);
   const headers = new Headers(response.headers);
   headers.set(KEPT_AT, String(Date.now()));
+  headers.set(KEPT_ASSETS, urls.join(" "));
   await offline.put(offlineRequest(), new Response(html, { status: response.status, headers }));
   for (const key of await offline.keys()) if (!wanted.has(key.url)) await offline.delete(key);
 }
