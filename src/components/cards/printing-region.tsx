@@ -10,13 +10,15 @@ import { reveal } from "../../lib/ui/reveal";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { heldOf } from "../../lib/collection/add-lines";
 import type { BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
-import { comparePrintings, cssUrl, matchesPreference } from "../../lib/collection/browse";
+import { comparePrintings, matchesPreference } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { SearchField } from "../ui/text-field";
 import { escapeDismisses } from "../../lib/ui/search-dismiss";
+import { ArtLayer } from "../ui/art-layer";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const copy = printingPickerCopy.printing;
 const deckCopy = deckPrintingsCopy.picker;
@@ -527,6 +529,8 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           a11y tree. It stays mounted through the empty-search branch — an empty radiogroup is
           valid, a dangling aria-controls is not. Search and chips sit outside it deliberately:
           they are not radios. */}
+      {/* One reading order for every tile, across the groups (`ArrivalOrder`). */}
+      <ArrivalOrder>
       <div id={id} role="radiogroup" aria-label={choose ? chooseCopy.regionLabel : copy.regionLabel} className={visible.length === 0 || (selectMode && !overflow) ? "" : selectMode ? "mt-[12px]" : "mt-[16px]"}>
         {groups.map((g) => (
             <div key={g.key} className={g.key === "" ? "" : "mt-[16px] first:mt-0"}>
@@ -579,6 +583,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
             </div>
         ))}
       </div>
+      </ArrivalOrder>
       {/* A refused deck save, below the tiles it reverted: a warning glyph and body text, never
           red and with no retry button (deck printings STATES, "Save failed"). */}
       {props.role !== "choose" && props.notice ? (
@@ -651,9 +656,8 @@ function PrintingTile({
   // The choose role says what the player holds of the printing, or nothing at all.
   const qty = choose ? (entry.quantity > 0 ? chooseCopy.tileOwned(entry.quantity) : "") : quantityLabel(entry);
   const state = picked ? "picked" : shownNow ? "shown-now" : "plain";
-  const artStyle: React.CSSProperties = entry.imageUri
-    ? { backgroundImage: cssUrl(entry.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
-    : { background: identityGradient(colorIdentity) };
+  // The identity is the ground; the printing's art, when it has one, fades in over it (`ArtLayer`).
+  const artStyle: React.CSSProperties = { background: identityGradient(colorIdentity) };
 
   return (
     <button
@@ -686,7 +690,7 @@ function PrintingTile({
       style={{ opacity: entry.dormant ? 0.55 : undefined }}
     >
       <div
-        className={`relative w-full ${confirmTiles ? "rounded-[9px]" : "rounded-[10px]"}`}
+        className={`relative w-full overflow-hidden ${confirmTiles ? "rounded-[9px]" : "rounded-[10px]"}`}
         style={{
           aspectRatio: "63/88",
           ...artStyle,
@@ -704,6 +708,8 @@ function PrintingTile({
           outlineOffset: 3,
         }}
       >
+        {/* The inset ring rides on the layer too: a host's inset shadow paints under its children. */}
+        {entry.imageUri ? <ArtLayer src={entry.imageUri} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }} /> : null}
         {/* Foil sheen — decorative. */}
         {!entry.dormant && foilCount(entry) > 0 && (
           <span

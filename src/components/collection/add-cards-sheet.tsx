@@ -19,7 +19,6 @@ import {
   canSave, choosePrinting, openLine, removeLine, setFinish, setQuantity, summarize, toPayload,
   type AddLineState,
 } from "../../lib/collection/add-lines";
-import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import type { CatalogCardResult, PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -35,6 +34,8 @@ import { ReplaceIcon } from "./replace-icon";
 import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
 import { SHEET_PANEL_CLASS } from "./sheet-frame";
 import type { EditCard } from "../../lib/collection/edit-lines";
+import { ArtLayer } from "../ui/art-layer";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const copy = collectionEditCopy.add;
 const SEARCH_DEBOUNCE_MS = 150;
@@ -383,6 +384,7 @@ function AddMode({
                 <span className="max-w-[300px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.noResultsBody}</span>
               </div>
             ) : (
+              <ArrivalOrder>
               <ul id={listId} role="listbox" aria-label={copy.resultsAria} className="m-0 flex list-none flex-col gap-[6px] p-0">
                 {results.map((r, i) => (
                   <ResultRow
@@ -396,6 +398,7 @@ function AddMode({
                   />
                 ))}
               </ul>
+              </ArrivalOrder>
             )
           ) : lines.length === 0 ? (
             <div className="flex flex-col gap-[10px] py-[8px]">
@@ -420,6 +423,7 @@ function AddMode({
                 <span className="ml-auto hidden text-[10px] text-[color:var(--fg-locked)] md:inline">{copy.newestFirst}</span>
               </div>
               <ul className={`m-0 flex list-none flex-col gap-[8px] p-0 ${frozen}`}>
+                <ArrivalOrder>
                 {lines.map((l) => (
                   <AddLine
                     key={l.id}
@@ -443,6 +447,7 @@ function AddMode({
                     }}
                   />
                 ))}
+                </ArrivalOrder>
               </ul>
             </>
           )}
@@ -525,9 +530,11 @@ function ResultRow({
     >
       <span
         aria-hidden
-        className="h-[45px] w-[32px] shrink-0 rounded-[4px]"
-        style={result.imageUri ? { backgroundImage: cssUrl(result.imageUri), backgroundSize: "cover", backgroundPosition: "center" } : { background: identityGradient([]) }}
-      />
+        className="relative h-[45px] w-[32px] shrink-0 overflow-hidden rounded-[4px]"
+        style={{ background: identityGradient([]) }}
+      >
+        {result.imageUri ? <ArtLayer src={result.imageUri} /> : null}
+      </span>
       <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
         <span className="truncate text-[14px] font-semibold">
           {at >= 0 ? (

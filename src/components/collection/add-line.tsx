@@ -4,7 +4,6 @@
 // whose printing is not chosen yet draws the required step in its place (B4a/B4m).
 
 import { useState } from "react";
-import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { ownedNote, SPECIAL_FINISHES, type AddLineState } from "../../lib/collection/add-lines";
 import { isSynthetic, printingLabel as labelOf } from "../../lib/collection/edit-lines";
@@ -14,13 +13,18 @@ import { PrintingRegion } from "../cards/printing-region";
 import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
 import { twMerge } from "tailwind-merge";
 import { Chevron } from "../ui/chevron";
+import { ArtLayer } from "../ui/art-layer";
 
 const copy = collectionEditCopy.add;
 
-const thumb = (uri: string | null): React.CSSProperties =>
-  uri
-    ? { backgroundImage: cssUrl(uri), backgroundSize: "cover", backgroundPosition: "center" }
-    : { background: identityGradient([]) };
+/** A line's thumb: the plain ground, and the art fading in over it when there is one (`ArtLayer`). */
+function Thumb({ uri }: { uri: string | null }) {
+  return (
+    <span aria-hidden className="relative h-[42px] w-[30px] shrink-0 overflow-hidden rounded-[4px]" style={{ background: identityGradient([]) }}>
+      {uri ? <ArtLayer src={uri} /> : null}
+    </span>
+  );
+}
 
 /** A holding with no catalog printing behind it (edit mode only) names no set to draw. */
 const printingLabel = (p: PrintingChoice) =>
@@ -70,7 +74,7 @@ export function AddLine(props: AddLineProps) {
   if (collapsed && !picking) {
     return (
       <li className="flex items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] p-[12px]">
-        <span aria-hidden className="h-[42px] w-[30px] shrink-0 rounded-[4px]" style={thumb(p?.imageUri ?? line.imageUri)} />
+        <Thumb uri={p?.imageUri ?? line.imageUri} />
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{line.name}</span>
         {p && <span className="font-mono text-[11px] text-[color:var(--fg-body)]">{printingLabel(p)}</span>}
         <span className="text-[13px] text-[color:var(--fg-muted)]">{"×"}{line.quantity}</span>
@@ -88,7 +92,7 @@ export function AddLine(props: AddLineProps) {
         <span key={pulse} aria-hidden className="anim-line-pulse pointer-events-none absolute inset-0 rounded-[10px]" />
       )}
       <div className="flex items-start gap-[12px]">
-        <span aria-hidden className="h-[42px] w-[30px] shrink-0 rounded-[4px]" style={thumb(p?.imageUri ?? line.imageUri)} />
+        <Thumb uri={p?.imageUri ?? line.imageUri} />
         <div className="flex min-w-0 flex-1 flex-col gap-[6px] md:gap-[4px]">
           <span className="text-[14px] font-semibold">{choosing && props.title ? props.title : line.name}</span>
           {choosing ? (

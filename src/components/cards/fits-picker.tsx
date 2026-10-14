@@ -22,6 +22,7 @@ import { HoverPreviewProvider } from "../decks/hover-preview";
 import { ModalChrome } from "../decks/receipt-modal";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { Crown } from "../ui/crown";
+import { ArtLayer } from "../ui/art-layer";
 
 const copy = swapToolsCopy.fits;
 
@@ -114,10 +115,13 @@ export function FitsPlate({
     >
       <span
         aria-hidden="true"
-        className="flex-none w-[22px] h-[31px] rounded-[3px] border border-[color:var(--border-strong)] bg-cover bg-center"
-        // The canvas's placeholder hatch (fits table §2.4) where the catalog has no art for the card.
-        style={{ backgroundImage: imageUri ? `url(${imageUri})` : "repeating-linear-gradient(135deg, var(--border) 0 3px, var(--surface-raised) 3px 6px)" }}
-      />
+        className="relative flex-none w-[22px] h-[31px] overflow-hidden rounded-[3px] border border-[color:var(--border-strong)]"
+        // The canvas's placeholder hatch (fits table §2.4) where the catalog has no art for the card; with art,
+        // a plain ground the art fades in over (`ArtLayer`).
+        style={imageUri ? { background: "var(--surface-raised)" } : { backgroundImage: "repeating-linear-gradient(135deg, var(--border) 0 3px, var(--surface-raised) 3px 6px)" }}
+      >
+        {imageUri ? <ArtLayer src={imageUri} /> : null}
+      </span>
       <span className="flex-1 min-w-0 flex flex-col gap-[3px]">
         <span className="text-[14px] font-semibold truncate" style={{ color: "var(--fg)" }}>{name}</span>
         <span className="font-mono text-[10.5px] truncate" style={{ color: "var(--fg-muted)" }}>

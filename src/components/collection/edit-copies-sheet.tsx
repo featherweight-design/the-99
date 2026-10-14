@@ -31,6 +31,7 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 import { AddLine } from "./add-line";
 import { SHEET_FOOT_CLASS, SHEET_PANEL_CLASS } from "./sheet-frame";
 import { ShortDeckWarning } from "./short-deck-warning";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const c = collectionEditCopy.copies;
 const r = collectionEditCopy.remove;
@@ -332,6 +333,7 @@ export function EditCopiesSheet({
           ) : (
             <>
               <ul className={`m-0 flex list-none flex-col gap-[8px] p-0 ${frozen}`}>
+                <ArrivalOrder>
                 {lines.map((l) => {
                   const note = lineNote(card.oracleId, holdings, l);
                   return (
@@ -366,6 +368,7 @@ export function EditCopiesSheet({
                     />
                   );
                 })}
+                </ArrivalOrder>
               </ul>
               {loaded ? (
                 <button
