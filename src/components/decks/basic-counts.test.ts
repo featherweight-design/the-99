@@ -7,11 +7,14 @@ import { createBasicCounts, SETTLE_MS } from "./basic-counts";
 
 function harness() {
   const saves: number[] = [];
+  const expecteds: number[] = [];
+  const refresh = vi.fn();
   const answers: Array<(v: unknown) => void> = [];
   const failures: Array<(e: unknown) => void> = [];
   const counts = createBasicCounts({
-    save: (_id, n) => {
+    save: (_id, n, expected) => {
       saves.push(n);
+      expecteds.push(expected);
       return new Promise((r, j) => {
         answers.push(r as (v: unknown) => void);
         failures.push(j);
@@ -19,7 +22,7 @@ function harness() {
     },
     predict: () => {},
     transition: (fn) => void fn(),
-    refresh: vi.fn(),
+    refresh,
   });
   const answer = (n: number) => {
     failures.shift();
@@ -33,7 +36,7 @@ function harness() {
     answers.shift();
     failures.shift()!(new Error("lost"));
   };
-  return { counts, saves, answer, refuse, fail };
+  return { counts, saves, expecteds, refresh, answer, refuse, fail };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -144,3 +147,34 @@ describe("createBasicCounts, round 4", () => {
     expect(await flushed).toBe(true);
   });
 });
+
+describe("createBasicCounts, round 6: compare-and-set", () => {
+  // Each save names the count it was computed from, and the next one names the figure the last confirmed.
+  it("sends the last confirmed count with each save", async () => {
+    const { counts, saves, expecteds, answer } = harness();
+    counts.set("island", 7, 6);
+    await vi.advanceTimersByTimeAsync(SETTLE_MS);
+    counts.set("island", 8, 6);
+    answer(7);
+    await vi.advanceTimersByTimeAsync(SETTLE_MS);
+    expect(saves).toEqual([7, 8]);
+    expect(expecteds).toEqual([6, 7]);
+  });
+
+  // Another writer moved the row: the save is refused, and the burst stops there rather than sending a newer
+  // figure from the same stale count. The page re-reads.
+  it("stops on a refusal, even with a newer press waiting, and re-reads", async () => {
+    const { counts, saves, refresh, refuse } = harness();
+    const heard = vi.fn();
+    counts.subscribe("island", heard);
+    counts.set("island", 7, 6);
+    await vi.advanceTimersByTimeAsync(SETTLE_MS);
+    counts.set("island", 8, 6);
+    refuse();
+    await vi.advanceTimersByTimeAsync(SETTLE_MS);
+    expect(saves).toEqual([7]);
+    expect(heard).toHaveBeenCalledWith({ kind: "refused" });
+    expect(refresh).toHaveBeenCalled();
+  });
+});
+

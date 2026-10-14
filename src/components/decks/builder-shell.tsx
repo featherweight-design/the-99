@@ -459,7 +459,7 @@ export function BuilderShell({
   const [basicCounts] = useState<BasicCounts>(() => createBasicCounts());
   useEffect(() => {
     basicCounts.configure({
-      save: (oracleId, n) => setBasicQuantity(deck.id, oracleId, n),
+      save: (oracleId, n, expected) => setBasicQuantity(deck.id, oracleId, n, expected),
       predict: setOptimisticQuantity,
       transition: (fn) => startBasicCount(fn),
       refresh: () => appRouter?.refresh(),

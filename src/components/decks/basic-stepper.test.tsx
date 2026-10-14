@@ -76,7 +76,7 @@ describe("the basics stepper on a decklist row", () => {
     expect(setBasicQuantity).not.toHaveBeenCalled();
     await settle();
     expect(setBasicQuantity).toHaveBeenCalledTimes(1);
-    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 9);
+    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 9, 6);
     expect(screen.getByRole("status")).toHaveTextContent(copy.settled("Island", 9));
   });
 
@@ -86,12 +86,12 @@ describe("the basics stepper on a decklist row", () => {
     wrap(<DecklistRow deckId="d1" card={island} newestAsOf={null} />);
     await press(copy.moreAria("Island", 7));
     await settle();
-    expect(setBasicQuantity).toHaveBeenLastCalledWith("d1", "o-island", 7);
+    expect(setBasicQuantity).toHaveBeenLastCalledWith("d1", "o-island", 7, 6);
     await press(copy.moreAria("Island", 8));
     await act(async () => { answer({ ok: true, quantity: 7, changed: true }); });
     await settle();
     expect(setBasicQuantity).toHaveBeenCalledTimes(2);
-    expect(setBasicQuantity).toHaveBeenLastCalledWith("d1", "o-island", 8);
+    expect(setBasicQuantity).toHaveBeenLastCalledWith("d1", "o-island", 8, 7);
   });
 
   it("puts the saved count back and says the deck is unchanged when the save is refused", async () => {
@@ -159,7 +159,7 @@ describe("the basics stepper on a decklist row", () => {
     view.unmount();
     await settle();
     expect(setBasicQuantity).toHaveBeenCalledTimes(1);
-    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 7);
+    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 7, 6);
   });
 
   // Focus survives 2 → 1: the − and the ✕ are the same button node, so a keyboard user stays put.
@@ -210,7 +210,7 @@ describe("the basics stepper on a decklist row", () => {
       wrap(<DecklistRow deckId="d1" card={{ ...island, quantity: 35 }} newestAsOf={null} />);
       await type("20");
       await settle();
-      expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 20);
+      expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 20, 35);
     });
 
     it("restores on Escape and writes nothing", async () => {
@@ -275,6 +275,6 @@ describe("the basics stepper on a card tile", () => {
     await press(copy.moreAria("Island", 8));
     await settle();
     expect(setBasicQuantity).toHaveBeenCalledTimes(1);
-    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 8);
+    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 8, 6);
   });
 });

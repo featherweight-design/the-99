@@ -44,7 +44,7 @@ export function useBasicCount({
     shared
       ? null
       : createBasicCounts({
-          save: (id, n) => setBasicQuantity(deckId, id, n),
+          save: (id, n, expected) => setBasicQuantity(deckId, id, n, expected),
           predict: () => {},
           transition: (fn) => startTransition(fn),
           refresh: () => router?.refresh(),

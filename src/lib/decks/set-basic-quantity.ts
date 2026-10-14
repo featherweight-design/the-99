@@ -24,8 +24,11 @@ export const BASIC_QUANTITY_MAX = 999;
  * - `not-in-deck`: the deck holds no row for the card. The stepper draws only on a row that
  *   exists, so this is a row removed elsewhere since the page drew it; adding a basic stays the
  *   Add panel's job, which is where colour identity is checked.
+ * - `moved`: the caller said what count it last saw (`expected`) and the row holds another. Some other writer on
+ *   the page (an add, a trade, an undo, a restore) reached the row first, and an absolute figure computed from the
+ *   old count would erase its change, so nothing is written and the caller re-reads.
  */
-export type BasicQuantityRefusal = "out-of-range" | "not-basic" | "not-in-deck";
+export type BasicQuantityRefusal = "out-of-range" | "not-basic" | "not-in-deck" | "moved";
 
 export type BasicQuantityOutcome =
   | { ok: true; quantity: number; changed: boolean }
@@ -52,8 +55,11 @@ export async function setBasicQuantityFor(
   deckId: string,
   oracleId: string,
   n: number,
+  /** The count the caller last saw confirmed. Given, the write is a compare-and-set against it. */
+  expected?: number,
 ): Promise<BasicQuantityOutcome> {
   if (!basicQuantityInRange(n)) return { ok: false, reason: "out-of-range" };
+  if (expected !== undefined && !basicQuantityInRange(expected)) return { ok: false, reason: "out-of-range" };
   await requireDeck(deckId, userId);
 
   const [card] = await db.select({ typeLine: cards.typeLine }).from(cards).where(eq(cards.oracleId, oracleId));
@@ -67,6 +73,7 @@ export async function setBasicQuantityFor(
     const [row] = await tx.select({ quantity: deckCards.quantity, auto: deckCards.auto })
       .from(deckCards).where(where).for("update");
     if (!row) return { ok: false, reason: "not-in-deck" } as const;
+    if (expected !== undefined && row.quantity !== expected) return { ok: false, reason: "moved" } as const;
 
     if (n === 0) {
       await tx.delete(deckCards).where(where);

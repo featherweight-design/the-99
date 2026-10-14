@@ -13,6 +13,8 @@ type Entry = {
   target: number;
   /** The deck's count when this burst began: the row's `from N` reads it. */
   base: number;
+  /** The count the server last confirmed for this card: each save is a compare-and-set against it. */
+  expected: number;
   timer: ReturnType<typeof setTimeout> | null;
   wake: ((settled: boolean) => void) | null;
   taken: boolean;
@@ -39,7 +41,7 @@ export type BasicCounts = {
 };
 
 type Deps = {
-  save: (oracleId: string, n: number) => Promise<BasicQuantityOutcome>;
+  save: (oracleId: string, n: number, expected: number) => Promise<BasicQuantityOutcome>;
   /** The deck-wide prediction, inside a transition. */
   predict: (oracleId: string, n: number) => void;
   /** Runs the burst as one async transition, so the prediction stands until the save has answered. */
@@ -55,12 +57,15 @@ type Deps = {
  * first.
  *
  * Each card's burst is one async transition: the prediction stands until its save has answered and the page
- * has revalidated. A press during a save restarts the settle and the next save carries the newer figure. A
+ * has revalidated. Each save is a COMPARE-AND-SET against the count the server last confirmed (round 6): every
+ * other writer to the row on this page (an add, a trade, a swap, an undo, a commit, a restore) can only make it
+ * refuse, never be overwritten by a figure computed from the count before it. The flushes below are for the
+ * common case, so a plain Add or Clear auto never meets that refusal at all. A press during a save restarts the settle and the next save carries the newer figure. A
  * returned refusal and a thrown save are told apart, because only the first may say the deck is unchanged.
  */
 export function createBasicCounts(initial?: Deps): BasicCounts {
   let deps: Deps = initial ?? {
-    save: async () => ({ ok: false, reason: "not-in-deck" }),
+    save: async () => ({ ok: false, reason: "not-in-deck" as const }),
     predict: () => {},
     transition: (fn) => void fn(),
     refresh: () => {},
@@ -85,7 +90,7 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
 
   function open(oracleId: string, n: number, base: number) {
     let finish!: (ok: boolean) => void;
-    const entry: Entry = { target: n, base, timer: null, wake: null, taken: false, done: new Promise((r) => (finish = r)) };
+    const entry: Entry = { target: n, base, expected: base, timer: null, wake: null, taken: false, done: new Promise((r) => (finish = r)) };
     entries.set(oracleId, entry);
     deps.transition(async () => {
       deps.predict(oracleId, n);
@@ -99,13 +104,16 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
           const saved = entry.target;
           let outcome: BasicQuantityOutcome;
           try {
-            outcome = await deps.save(oracleId, saved);
+            outcome = await deps.save(oracleId, saved, entry.expected);
           } catch {
             result = { kind: "thrown" };
             break;
           }
           if (entry.taken) break;
-          if (entry.target !== saved) continue;
+          if (outcome.ok) entry.expected = saved;
+          // Refused (another writer moved the row, most likely): stop, and say so, rather than send a newer
+          // figure computed from the same stale count.
+          if (outcome.ok && entry.target !== saved) continue;
           result = outcome.ok ? { kind: "ok", n: saved } : { kind: "refused" };
           break;
         }
@@ -115,7 +123,9 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
         finish(!entry.taken && result.kind === "ok");
       }
       if (entry.taken) return;
-      if (result.kind === "thrown") deps.refresh();
+      // Either failure re-reads: a throw may have landed, and a `moved` refusal means the row holds a count this
+      // page has not drawn.
+      if (result.kind !== "ok") deps.refresh();
       tell(oracleId, result);
     });
   }
