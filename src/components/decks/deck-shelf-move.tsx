@@ -32,16 +32,18 @@ export function useDeckShelfMove(deckId: string, shelf: DeckShelf): {
   // revalidation, or a move made in another tab) replaces the prediction, adjusted during render.
   const [served, setServed] = useState(shelf);
   const [current, setCurrent] = useState({ id: shelf.folderId, name: shelf.folderName });
+  // Folders made here that the server's list had not returned yet: every one, not the last, since
+  // a second create can land before any payload does.
+  const [made, setMade] = useState<readonly { id: string; name: string }[]>([]);
   if (served !== shelf) {
     setServed(shelf);
     setCurrent({ id: shelf.folderId, name: shelf.folderName });
+    setMade((prev) => prev.filter((m) => !shelf.folders.some((f) => f.id === m.id)));
   }
-  // A folder made here a moment ago that the server's list has not returned yet.
-  const [made, setMade] = useState<{ id: string; name: string } | null>(null);
-  const folders =
-    made && !shelf.folders.some((f) => f.id === made.id)
-      ? [...shelf.folders, made].sort((a, b) => a.name.localeCompare(b.name))
-      : shelf.folders;
+  const pending = made.filter((m) => !shelf.folders.some((f) => f.id === m.id));
+  const folders = pending.length
+    ? [...shelf.folders, ...pending].sort((a, b) => a.name.localeCompare(b.name))
+    : shelf.folders;
   const [creating, setCreating] = useState(false);
   const [closeAfterCreate, setCloseAfterCreate] = useState<{ seq: number } | null>(null);
   const filedOnDismiss = useRef(false);
@@ -90,7 +92,7 @@ export function useDeckShelfMove(deckId: string, shelf: DeckShelf): {
       onCreate={async (name) => {
         const result = await createFolderAction(name);
         if (!result.ok) return result.reason === "duplicate" ? "duplicate" : "invalid";
-        setMade({ id: result.folder.id, name: result.folder.name });
+        setMade((prev) => [...prev, { id: result.folder.id, name: result.folder.name }]);
         // Made from the act, so the deck is filed into it, through the same move as every other door.
         onMove(
           { id: result.folder.id, name: result.folder.name },

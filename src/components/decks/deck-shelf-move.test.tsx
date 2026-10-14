@@ -95,6 +95,24 @@ describe("the deck page's Move", () => {
     expect(moveRowName()).toBe("Move · Pauper");
   });
 
+  it("keeps every folder made in one visit until the server's list returns them", async () => {
+    moveDeckAction.mockResolvedValue(true);
+    createFolderAction
+      .mockResolvedValueOnce({ ok: true, folder: { id: "f2", name: "Pauper" } })
+      .mockResolvedValueOnce({ ok: true, folder: { id: "f3", name: "Cedh" } });
+    render(<Header />);
+    for (const name of ["Pauper", "Cedh"]) {
+      openMove();
+      fireEvent.click(screen.getByRole("button", { name: "New folder…" }));
+      fireEvent.change(screen.getByRole("textbox", { name: "Folder name" }), { target: { value: name } });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create" })));
+      await waitFor(() => expect(screen.queryByRole("textbox", { name: "Folder name" })).toBeNull());
+    }
+    openMove();
+    expect(screen.getByRole("button", { name: "Pauper" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Cedh/ })).toBeTruthy();
+  });
+
   it("takes a fresh server shelf over its own prediction", async () => {
     moveDeckAction.mockResolvedValue(true);
     const { rerender } = render(<Header />);
