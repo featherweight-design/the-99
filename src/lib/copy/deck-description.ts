@@ -22,7 +22,7 @@ export const deckDescriptionCopy = {
     maxLength: 240,
     warnAt: 220,
     tooLong: "Keep it to 240 characters.",
-    refused: "We couldn’t save that. The description is unchanged.",
+    refused: "We couldn’t save that. The deck is unchanged.",
     save: "Save",
     cancel: "Cancel",
     pencilAria: (name: string) => `Edit name and description of ${name}`,
