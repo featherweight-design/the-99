@@ -21,7 +21,7 @@
 //
 // It writes under a per-run `user_id` and purges that account in a `finally`, after the branch guard:
 // `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by id.
-// Point it at a scratch branch migrated to 0118, holding precons ingested after 0116.
+// Point it at a scratch branch migrated to 0119, holding precons ingested after 0116.
 //
 //   PROBE_DB_BRANCH=br-… pnpm probe:precon-start-owned
 import { requireEnv } from "./lib/env.mjs";

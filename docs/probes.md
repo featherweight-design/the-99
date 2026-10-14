@@ -2037,7 +2037,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
     still short.
 
   It WRITES under a per-run account it purges, after the same branch guard as `probe:precon-add`, on a branch
-  migrated to 0118. Mutation-checked: without the reservations the new deck owes 16 cards and "Went to" names the
+  migrated to 0119. Mutation-checked: without the reservations the new deck owes 16 cards and "Went to" names the
   older decks (Hugh's symptom), failing b to e; without the revert's release it fails h.
 - `pnpm probe:payments-webhook` proves the Stripe webhook's grant transaction (payments K1a) against a real database,
   through the real `fulfilCheckoutSession`, `readAllowance` and `purgeAccount`, with Stripe a stand-in whose
