@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const verify = vi.hoisted(() => vi.fn());
 const purge = vi.hoisted(() => vi.fn());
+const record = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
-vi.mock("../../../lib/account/purge", () => ({ purgeAccount: purge }));
+vi.mock("../../../lib/account/purge", () => ({ purgeAccount: purge, recordDeletion: record }));
 
 import { POST } from "./route";
 
@@ -16,6 +17,7 @@ beforeEach(() => {
   verify.mockReset();
   purge.mockReset();
   purge.mockResolvedValue(report);
+  record.mockReset().mockResolvedValue(undefined);
 });
 
 describe("POST /api/clerk-webhook", () => {
@@ -43,6 +45,17 @@ describe("POST /api/clerk-webhook", () => {
     verify.mockResolvedValue({ type: "user.deleted", data: { id: "user_gone", deleted: true } });
     expect((await POST(req())).status).toBe(200);
     expect(purge).toHaveBeenCalledWith("user_gone");
+  });
+
+  it("records the deletion before it purges, so a purge that fails is still swept", async () => {
+    verify.mockResolvedValue({ type: "user.deleted", data: { id: "user_gone" } });
+    const order: string[] = [];
+    record.mockImplementation(async () => { order.push("record"); });
+    purge.mockImplementation(async () => { order.push("purge"); throw new Error("x"); });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await POST(req())).status).toBe(500);
+    expect(record).toHaveBeenCalledWith("user_gone");
+    expect(order).toEqual(["record", "purge"]);
   });
 
   it("acknowledges any other event and purges nothing", async () => {

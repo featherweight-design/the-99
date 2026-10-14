@@ -37,7 +37,13 @@ async function main() {
   const friends = await import("../src/lib/social/friends");
   const pods = await import("../src/lib/social/pods");
   const spares = await import("../src/lib/social/spares");
-  const { purgeAccount } = await import("../src/lib/account/purge");
+  const { purgeAccount, recordDeletion, tombstoneHash } = await import("../src/lib/account/purge");
+  const { sweepTombstones, SWEEP_WINDOW_MS } = await import("../src/lib/account/sweep");
+  const tombstone = async (u: string) => {
+    const { rows: r } = await db.execute<{ clerk_id: string | null; deleted_at: string }>(
+      sql`select clerk_id, deleted_at from account_tombstones where id_hash = ${tombstoneHash(u)}`);
+    return r[0] ?? null;
+  };
 
   // Every text column in the database, read from the catalog, and searched for the account's id by VALUE.
   // No list of account columns is involved, so this is independent of the purge's own coverage test: a
@@ -51,6 +57,8 @@ async function main() {
     const out: Record<string, number> = {};
     for (const { t, c } of columns) {
       if (t === "admin_settings" || (t === "admin_events" && c === "actor_id")) continue; // kept on purpose
+      // Held a day on purpose, for the sweep's re-purge; checked by name below, and gone after the day.
+      if (t === "account_tombstones" && c === "clerk_id") continue;
       const { rows: r } = await db.execute<{ n: number }>(
         sql`select count(*)::int as n from ${sql.identifier(t)} where ${sql.identifier(c)} = ${u}`);
       if (r[0].n > 0) out[`${t}.${c}`] = r[0].n;
@@ -134,6 +142,8 @@ async function main() {
     check("the fixture names the account in many tables", Object.keys(before).length >= 12, Object.keys(before).join(" "));
     const fBefore = await stamp(F);
 
+    // As the webhook does: the tombstone in its own commit, then the purge.
+    await recordDeletion(P);
     const report = await purgeAccount(P);
     const after = await rowsNaming(P);
     check("no column anywhere names the purged account", Object.keys(after).length === 0, JSON.stringify(after));
@@ -169,6 +179,29 @@ async function main() {
     check("a second purge finds nothing", Object.values(again.rows).every((n) => n === 0) && again.stamp === 0
       && Object.values(again.social).every((n) => n === 0), JSON.stringify(again));
     void open;
+
+    // The tombstone, and the sweep that closes the window after the purge (orchestrator's ruling, 2026-10-14).
+    const stone = await tombstone(P);
+    check("the deletion was recorded: the id's hash, the raw id for the day, and when", stone !== null && stone.clerk_id === P && !!stone.deleted_at);
+    const { rows: hashed } = await db.execute<{ n: number }>(sql`select count(*)::int as n from account_tombstones where id_hash = ${P}`);
+    check("the tombstone is keyed on the hash, never the id", hashed[0].n === 0);
+    // A request already past its auth when the purge committed writes for the account afterwards.
+    await db.execute(sql`insert into user_prefs (user_id) values (${P}) on conflict do nothing`);
+    await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity) values (${P}, ${CMD}, 1) on conflict do nothing`);
+    check("a late write landed after the purge", Object.keys(await rowsNaming(P)).length >= 2, JSON.stringify(await rowsNaming(P)));
+    const swept = await sweepTombstones();
+    check("the sweep re-purged the young tombstone", swept.swept >= 1 && swept.failed === 0, JSON.stringify(swept));
+    check("and the late write is gone", Object.keys(await rowsNaming(P)).length === 0, JSON.stringify(await rowsNaming(P)));
+    check("the young tombstone keeps its raw id and its time", (await tombstone(P))?.clerk_id === P && (await tombstone(P))?.deleted_at === stone?.deleted_at);
+    // A day on: the next sweep purges once more and lets the raw id go.
+    await db.execute(sql`update account_tombstones set deleted_at = deleted_at - make_interval(secs => ${SWEEP_WINDOW_MS / 1000 + 60}) where id_hash = ${tombstoneHash(P)}`);
+    await db.execute(sql`insert into user_prefs (user_id) values (${P}) on conflict do nothing`);
+    await sweepTombstones();
+    const aged = await tombstone(P);
+    check("past its day, the sweep retires the raw id and keeps the hash and the time", aged !== null && aged.clerk_id === null);
+    check("after one last re-purge of the late write", Object.keys(await rowsNaming(P)).length === 0, JSON.stringify(await rowsNaming(P)));
+    const { rows: anywhere } = await db.execute<{ n: number }>(sql`select count(*)::int as n from account_tombstones where clerk_id = ${P}`);
+    check("no column anywhere holds the raw id now", anywhere[0].n === 0);
 
     // The lock hierarchy under a real race: a friend unfriends the account while it is purged, with a pod
     // each owns holding the other. Five fresh pairs, both sides started together; neither may deadlock
@@ -311,6 +344,8 @@ async function main() {
     await db.execute(sql`delete from friend_invites where inviter_user_id in ${who}`);
     await db.execute(sql`delete from social_profiles where user_id in ${who}`);
     await db.execute(sql`delete from user_data_stamps where user_id in ${who}`);
+    const hashes = sql`(${sql.join(all.map((u) => sql`${tombstoneHash(u)}`), sql`, `)})`;
+    await db.execute(sql`delete from account_tombstones where id_hash in ${hashes}`);
   }
   console.log(failed === 0 ? "\nall checks passed" : `\n${failed} check(s) failed`);
   process.exit(failed === 0 ? 0 : 1);

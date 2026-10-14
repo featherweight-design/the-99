@@ -1,6 +1,6 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { NextRequest } from "next/server";
-import { purgeAccount } from "../../../lib/account/purge";
+import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
   const userId = evt.data.id;
   if (typeof userId !== "string" || userId.length === 0) return new Response("No user id", { status: 400 });
   try {
+    // The tombstone first, in its own commit: a purge that fails below is still re-run by the account sweep.
+    await recordDeletion(userId);
     const report = await purgeAccount(userId);
     const direct = Object.values(report.rows).reduce((a, b) => a + b, 0);
     // Counts only, never the account id. `direct` is the PURGE_ORDER deletes alone: rows that went by
