@@ -1,5 +1,36 @@
-import { describe, expect, it } from "vitest";
-import { preconPins, preconTokenPins } from "./start";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const calls = vi.hoisted(() => ({ makes: new Set<string>(), writes: [] as unknown[], refuse: false }));
+vi.mock("../tokens/deck-printings", () => ({
+  deckMakesTokenIn: async (_tx: unknown, _deck: string, _user: string, token: string) => calls.makes.has(token),
+  writeDeckTokenPrintingIn: async (_tx: unknown, w: unknown) => { calls.writes.push(w); return calls.refuse ? "notHeld" : "ok"; },
+}));
+vi.mock("../decks/write-imported-deck", () => ({ writeImportedDeck: async () => "deck-1" }));
+vi.mock("../decks/versions", () => ({ commitVersion: async () => ({ version: {}, cardCount: 0 }) }));
+import { preconPins, preconTokenPins, writePreconDeckIn, type PreparedPreconDeck } from "./start";
+
+const deck: PreparedPreconDeck = {
+  commanderOracleId: "c", partnerOracleId: null, cards: [], printings: [], builtFromPrecon: "P",
+  tokens: [{ tokenOracleId: "t1", tokenPrintingId: "p1" }, { tokenOracleId: "t2", tokenPrintingId: "p2" }],
+};
+const tx = {} as Parameters<typeof writePreconDeckIn>[0];
+
+describe("writePreconDeckIn's token pins", () => {
+  beforeEach(() => { calls.makes = new Set(); calls.writes = []; calls.refuse = false; });
+
+  it("sends each token the deck makes to the one writer, at the box's printing, and no other", async () => {
+    calls.makes = new Set(["t2"]);
+    expect(await writePreconDeckIn(tx, "user_1", "Deck", deck, process.env)).toBe("deck-1");
+    expect(calls.writes).toEqual([{ deckId: "deck-1", userId: "user_1", tokenOracleId: "t2", tokenPrintingId: "p2" }]);
+  });
+
+  it("starts the deck all the same when the writer refuses a printing the player does not hold", async () => {
+    calls.makes = new Set(["t1", "t2"]);
+    calls.refuse = true;
+    expect(await writePreconDeckIn(tx, "user_1", "Deck", deck, process.env)).toBe("deck-1");
+    expect(calls.writes).toHaveLength(2);
+  });
+});
 
 describe("preconTokenPins", () => {
   it("keeps one printing per token, the first by id, whatever order the rows arrive in", () => {
