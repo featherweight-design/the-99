@@ -855,7 +855,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   reserve takes the pre-payments path. **"Out of credits" is decided in one place** (L2): `hasCredit` (the free
   allowance has room, or a lot holds a credit), `freeRoom` (the free allowance alone) and `freeCount` (the free
   credits a line shows, never below zero) in `allowance-rule.ts`. Every reader that decides whether a press may start
-  asks `hasCredit`, the server gates (`tuning/gate.ts`, `intake/the-read-run.ts`'s `closedNow`, `synopsis/read.ts`,
+  asks `hasCredit`, the server gates (`tuning/gate.ts`, `synopsis/read.ts`,
   intake's `closedBy`) and the panels alike (tuning, cuts, fits, and the overview's press note and refusal), after the
   spend cap's `paused` and `ownerShare`. `src/lib/model/credit-gates.test.ts` fails, anywhere else in `src/`, on a
   comparison of `used` against `limit`, on `limit - used` worked out by hand, and on a comparison of the free count.

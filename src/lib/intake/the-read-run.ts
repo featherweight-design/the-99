@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { readAllowance, type Billed } from "../model/allowance";
+import type { Billed } from "../model/allowance";
 import { callModel, type ModelOutcome } from "../model/client";
 import { collectionDigest, loadReadCards, loadReadDecks, type TaggedCard } from "./the-read-load";
 import {
@@ -10,7 +10,7 @@ import {
 } from "./limits";
 import { colorsKey, leadingThemes, loadPoolList, type PoolList } from "./pool-list";
 import { rankCandidates } from "./rank";
-import { hasRunningRead, reapAbandonedReads, setReadPhase, settleTheRead, startRead, withReadAdmission, type ReadErrorClass } from "./run-store";
+import { hasRunningRead, setReadPhase, settleTheRead, startRead, withReadAdmission, type ReadErrorClass } from "./run-store";
 import { loadIntakeCatalog, loadSearchFacts } from "./search";
 import { intakeLive, STUB_MODEL, stubDelayMs, stubMode } from "./stub";
 import {
@@ -19,7 +19,6 @@ import {
   type ShortlistReply, type TheReadResult,
 } from "./the-read";
 import type { EdhrecTag } from "../edhrec/parse";
-import { hasCredit } from "../model/allowance-rule";
 
 /**
  * One press of the read, end to end (rework plan PR 1): the inputs, the reservation, the shortlist,
@@ -191,17 +190,17 @@ export async function beginTheRead(
   inputs?: TheReadInputs | (() => Promise<TheReadInputs>),
 ): Promise<TheReadOutcome | { kind: "started"; readId: string; finish: () => Promise<TheReadOutcome> }> {
   const started0 = deps.now();
-  // Three refusals, each BEFORE the pool is read, cheapest first. A read already running refuses
-  // this one: a repeat of a stored ask is then refused too while another runs, the cheaper error,
-  // since its words are kept and the next press answers it.
+  // A read already running refuses this one, before the pool is read: a repeat of a stored ask is
+  // then refused too while another runs, the cheaper error, since its words are kept and the next
+  // press answers it.
+  //
+  // THERE IS NO ALLOWANCE GATE HERE (Hugh, 2026-10-14: a repeat of the same read is free). One stood
+  // here (#1558) and refused a player out of credit before the pool read, which is the only way to
+  // the fingerprint, so such a player was charged nothing but was refused their own stored answer.
+  // A stored repeat is found under `startRead`'s lock before anything is reserved; a fresh ask is
+  // refused there, under the reservation's lock, which is the authority either way. The price is a
+  // pool read for a press that is then refused, one at a time per player through the admission.
   if (await hasRunningRead(userId, new Date(started0))) return { kind: "in_flight" };
-  // A player with no credit would pay the pool read only to be refused at the reservation. The
-  // allowance is read without the reservation's lock, so this is a gate and not the authority:
-  // `startRead` decides under its lock, and a failed read here lets the press through to it. The
-  // price of the gate: a player out of credit is not served a free stored repeat by pressing again
-  // (finding it needs the pool); the stored read stays reachable by its own address.
-  const closed = await closedNow(userId, new Date(started0));
-  if (closed) return { kind: closed };
   // And one press per player at a time through the pool read and the reservation, so a burst reads
   // the pool once, not once per press.
   const load = typeof inputs === "function" ? inputs : inputs ? async () => inputs : () => loadTheReadInputs(userId, input.words, input.filters, input.tagged ?? [], input.env);
@@ -223,22 +222,6 @@ export async function beginTheRead(
   }
   if (started.kind !== "started") return { kind: started.kind };
   return { kind: "started", readId: started.readId, finish: () => finishTheRead(userId, input, deps, facts, started, started0) };
-}
-
-/** Why the player's allowance is closed now, in the reservation's own order; null when a press may go on. */
-async function closedNow(userId: string, now: Date): Promise<"paused" | "ownerShare" | "allowance" | null> {
-  try {
-    const closedBy = (a: Awaited<ReturnType<typeof readAllowance>>) =>
-      a.paused ? "paused" : a.ownerShare ? "ownerShare" : !hasCredit(a) ? "allowance" : null;
-    const first = closedBy(await readAllowance(userId, now, "intake"));
-    if (first !== "allowance") return first;
-    // A read the process died under still holds its unit until it is reaped, and `startRead` reaps
-    // before it reserves. So a spent allowance is read again after reaping, once, before refusing.
-    if ((await reapAbandonedReads(userId, now)) === 0) return first;
-    return closedBy(await readAllowance(userId, now, "intake"));
-  } catch {
-    return null;
-  }
 }
 
 async function finishTheRead(

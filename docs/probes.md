@@ -258,6 +258,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   phase while the shortlist runs (F2); a repeat answers from the store and reserves nothing; a read
   that finds nothing refunds and still records its cost. There is no Stop (removed 2026-10-12): a
   read always runs to its end.
+  Its hardening cases (2026-10-14): a burst of eight presses reads the pool once and reserves one
+  credit; a player with no credit left is served their own stored repeat free and reserves nothing,
+  while a fresh ask is refused for the allowance at the reservation; and a burst of eight DIFFERENT
+  asks at the last credit starts one read and leaves the player at exactly the limit.
   **Admission (hardening):** eight concurrent `beginTheRead` presses by one player read the pool
   ONCE (a counted loader, held 500ms so the presses overlap), admit one and answer the other seven
   `in_flight`, reserve one credit, and a press after them, while the read runs, is refused without

@@ -182,41 +182,25 @@ describe("runTheRead", () => {
       return loader;
     };
 
-    it("reads no pool for a player whose allowance is closed, whichever way it is closed", async () => {
-      for (const [closed, kind] of [
-        [{ ...OPEN, used: 5 }, "allowance"],
-        [{ ...OPEN, paused: { until: new Date() } }, "paused"],
-        [{ ...OPEN, ownerShare: true }, "ownerShare"],
-        // The reservation's own order: paused, then the owner's share, then spent.
-        [{ ...OPEN, used: 9, paused: { until: new Date() }, ownerShare: true }, "paused"],
-      ] as const) {
-        allowance.read.mockResolvedValueOnce(closed);
-        const loader = counted();
-        store.startRead.mockClear();
-        expect(await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader), kind).toEqual({ kind });
-        expect(loader).not.toHaveBeenCalled();
-        expect(store.startRead).not.toHaveBeenCalled();
-      }
-    });
-
-    it("reaps an abandoned read before refusing a spent allowance, and goes on if that freed the credit", async () => {
-      allowance.read.mockResolvedValueOnce({ ...OPEN, used: 5 }).mockResolvedValueOnce(OPEN);
-      store.reapAbandonedReads.mockResolvedValueOnce(1);
+    it("serves a stored repeat free to a player whose allowance is closed, whichever way it is closed", async () => {
+      // Hugh, 2026-10-14: a repeat of the same read is free. The allowance is never read before the
+      // pool: the stored answer is found under startRead's lock, before anything is reserved.
+      const result = { picks: [{ oracleId: "a", reason: [{ text: "Fits." }] }], pool: 2, weighed: 1 };
+      allowance.read.mockResolvedValue({ ...OPEN, used: 5 });
+      store.startRead.mockResolvedValue({ kind: "stored", readId: "old", useful: true, result });
       const loader = counted();
-      expect((await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader)).kind).toBe("started");
-      expect(store.reapAbandonedReads).toHaveBeenCalledWith("u", expect.any(Date));
+      expect(await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader)).toEqual({ kind: "read", readId: "old", result, repeat: true });
       expect(loader).toHaveBeenCalledTimes(1);
+      expect(allowance.read).not.toHaveBeenCalled();
     });
 
-    it("still refuses when the reaped read did not free the credit, and reaps nothing for an open allowance", async () => {
-      allowance.read.mockResolvedValueOnce({ ...OPEN, used: 5 }).mockResolvedValueOnce({ ...OPEN, used: 5 });
-      store.reapAbandonedReads.mockResolvedValueOnce(1);
-      const loader = counted();
-      expect(await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader)).toEqual({ kind: "allowance" });
-      expect(loader).not.toHaveBeenCalled();
-      store.reapAbandonedReads.mockClear();
-      await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), counted());
-      expect(store.reapAbandonedReads).not.toHaveBeenCalled();
+    it("leaves a fresh ask from a closed allowance to the reservation, which refuses it", async () => {
+      allowance.read.mockResolvedValue({ ...OPEN, used: 5 });
+      for (const kind of ["allowance", "paused", "ownerShare"] as const) {
+        store.startRead.mockResolvedValueOnce({ kind });
+        expect(await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), counted()), kind).toEqual({ kind });
+      }
+      expect(allowance.read).not.toHaveBeenCalled();
     });
 
     it("looks for a running read again inside the admission, before loading anything", async () => {
@@ -233,14 +217,6 @@ describe("runTheRead", () => {
       const loader = counted();
       const out = await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader);
       expect(out.kind).toBe("started");
-      expect(loader).toHaveBeenCalledTimes(1);
-      expect(allowance.read).toHaveBeenCalledWith("u", expect.any(Date), "intake");
-    });
-
-    it("leaves the decision to the reservation when the allowance cannot be read", async () => {
-      allowance.read.mockRejectedValueOnce(new Error("ledger down"));
-      const loader = counted();
-      expect((await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader)).kind).toBe("started");
       expect(loader).toHaveBeenCalledTimes(1);
     });
 
