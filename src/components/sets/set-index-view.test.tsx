@@ -99,7 +99,7 @@ describe("SetIndexView — S5 not indexed", () => {
         onSearch={noSearch}
       />,
     );
-    expect(screen.getByText("not indexed yet")).toBeInTheDocument();
+    expect(screen.getByText("no checklist yet")).toBeInTheDocument();
     expect(screen.queryByText(/%/)).toBeNull();
     expect(screen.queryByText(/0 \/ 0/)).toBeNull();
   });
@@ -120,7 +120,7 @@ describe("SetIndexView — a set with no base run", () => {
       />,
     );
     expect(screen.queryByText("17 owned")).toBeNull();
-    expect(screen.queryByText("not indexed yet")).toBeNull();
+    expect(screen.queryByText("no checklist yet")).toBeNull();
     expect(screen.getByRole("link")).toHaveAccessibleName(/17 of 180/);
   });
 });
@@ -136,7 +136,7 @@ describe("SetIndexView — search rows", () => {
     render(<SetIndexView sets={[set({})]} cardCount={1} onSearch={onSearch} />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "brothers" } });
     await waitFor(() => expect(screen.getByText("The Brothers' War")).toBeInTheDocument());
-    expect(screen.queryByText("not indexed yet")).toBeNull();
+    expect(screen.queryByText("no checklist yet")).toBeNull();
   });
 
   it("names the set in an unindexed row so two of them are not announced alike", () => {
@@ -258,9 +258,9 @@ describe("SetIndexView — a search in flight", () => {
     render(<SetIndexView sets={[set({})]} cardCount={1} onSearch={onSearch} />);
     const field = screen.getByRole("searchbox");
     fireEvent.change(field, { target: { value: "a" } });
-    await waitFor(() => expect(screen.getByText(/did not get through/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/didn’t go through/)).toBeInTheDocument());
     fireEvent.change(field, { target: { value: "ab" } });
-    expect(screen.queryByText(/did not get through/)).toBeNull();
+    expect(screen.queryByText(/didn’t go through/)).toBeNull();
   });
 });
 
@@ -319,7 +319,7 @@ describe("SetIndexView — recovering from a failed search", () => {
       .mockResolvedValueOnce([set({ code: "dsk", name: "Duskmourn" })]);
     render(<SetIndexView sets={[set({})]} cardCount={1} onSearch={onSearch} />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "dusk" } });
-    await waitFor(() => expect(screen.getByText(/did not get through/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/didn’t go through/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(screen.getByText("Duskmourn")).toBeInTheDocument());
     expect(onSearch).toHaveBeenLastCalledWith("dusk");
@@ -392,7 +392,7 @@ describe("SetIndexView — the extras figure", () => {
         onSearch={noSearch}
       />,
     );
-    expect(screen.getByText("not indexed yet")).toBeInTheDocument();
+    expect(screen.getByText("no checklist yet")).toBeInTheDocument();
     expect(screen.queryByText(/extras/)).toBeNull();
   });
 

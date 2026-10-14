@@ -31,7 +31,7 @@ const setFilterCopyOwnership = {
   heading: "Ownership",
   missing: { label: "Missing only", short: "Missing" },
   owned: { label: "Owned only", short: "Owned" },
-  unavailable: (name: string) => `${name}, no cells match your other filters`,
+  unavailable: (name: string) => `${name}, no cards match your other filters`,
 } as const;
 
 const setFilterCopyRarity = {
@@ -134,8 +134,8 @@ export const setFilterCopy = {
     // Through the same `en-US` formatter the rest of the filter-panel copy uses: the
     // visible count renders `1,234` while a bare interpolation announced `1234 cells`.
     optionAria: (name: string, count: number) =>
-      `${name}, ${count === 1 ? "1 cell" : `${count.toLocaleString("en-US")} cells`}`,
-    optionAriaUnavailable: (name: string) => `${name}, no cells match your other filters`,
+      `${name}, ${count === 1 ? "1 card" : `${count.toLocaleString("en-US")} cards`}`,
+    optionAriaUnavailable: (name: string) => `${name}, no cards match your other filters`,
     // Numbers since the chassis's own change: `FilterPanelCopy` formats them itself now.
     footerTotal: (total: number) => `${total} rarities`,
     footerSelected: (n: number, total: number) => `${n} of ${total} on`,
@@ -147,10 +147,10 @@ export const setFilterCopy = {
     announceMatches: (n: number, query: string) =>
       n === 0 ? `No rarities match ${query}` : `${n} ${n === 1 ? "rarity matches" : "rarities match"} ${query}`,
     announceAdded: (name: string, _n: number, shown: number, total: number) =>
-      `${name} on. ${shown} of ${total} cells shown.`,
+      `${name} on. ${shown} of ${total} cards shown.`,
     announceRemoved: (name: string, _n: number, shown: number, total: number) =>
-      `${name} off. ${shown} of ${total} cells shown.`,
-    announceCleared: (total: number) => `Rarity filter cleared. ${total} cells shown.`,
+      `${name} off. ${shown} of ${total} cards shown.`,
+    announceCleared: (total: number) => `Rarity filter cleared. ${total} cards shown.`,
   },
 } as const;
 
@@ -188,8 +188,8 @@ export const setsIndexCopy = {
   },
 
   notIndexed: {
-    tag: "not indexed yet",
-    aria: "This set's checklist has not been indexed yet",
+    tag: "no checklist yet",
+    aria: "This set’s checklist isn’t available yet",
   },
 
   row: {
@@ -224,7 +224,7 @@ export const setsIndexCopy = {
   // A request that failed is not an answer about the catalogue, and the no-match copy
   // would have spoken for a database that was simply unreachable.
   searchFailed: {
-    heading: "That search did not get through",
+    heading: "That search didn’t go through",
     body: "Something went wrong reaching the set catalog. Try again in a moment.",
     action: "Try again",
   },
@@ -237,7 +237,7 @@ export const setsIndexCopy = {
   noCollectibleSets: {
     heading: "No sets to complete yet",
     body:
-      "Nothing in your collection belongs to a set with a fixed numbered run that we have indexed. Search above to open any set at 0%.",
+      "Nothing in your collection is from a set we have a checklist for yet. Search above to open any set at 0%.",
   },
 
   noMatch: {
@@ -339,8 +339,8 @@ export const setPageCopy = {
     // "sold out" is true of these.
     noFigure: (n: number) =>
       n === 1
-        ? "1 has no price in this feed and is not in this figure"
-        : `${n} have no price in this feed and are not in this figure`,
+        ? "1 has no price from ManaPool and isn’t in this figure"
+        : `${n} have no price from ManaPool and aren’t in this figure`,
     soldOut: (n: number) =>
       n === 1
         ? "1 is sold out and is not in this figure"
@@ -384,25 +384,25 @@ export const setPageCopy = {
 
   result: {
     rest: (cells: number, have: number, missing: number) =>
-      `${cells} ${cells === 1 ? "cell" : "cells"} · ${have} yours, ${missing} missing`,
+      `${cells} ${cells === 1 ? "card" : "cards"} · ${have} yours, ${missing} missing`,
     // R3 finding 6, move 4. The second half restates a subtraction the ratio in the head
     // has already made two lines above, so the phone keeps the count and drops it. The
     // filtered and missing-only forms are untouched: neither is stated anywhere else.
-    restShort: (cells: number) => `${cells} ${cells === 1 ? "cell" : "cells"}`,
+    restShort: (cells: number) => `${cells} ${cells === 1 ? "card" : "cards"}`,
     missingOnly: (n: number) =>
       `${n} missing · numbers skip, because the cards you own are hidden`,
     // The owned-only mirror of the line above (H12). Queued for /copy-review.
     ownedOnly: (n: number) =>
       `${n} yours · numbers skip, because the cards you are missing are hidden`,
     filtered: (shown: number, total: number) =>
-      `${shown} of ${total} ${total === 1 ? "cell" : "cells"}`,
+      `${shown} of ${total} ${total === 1 ? "card" : "cards"}`,
   },
 
   // A printing the feed has never carried, as distinct from one that has sold out.
   cellPrice: {
     neverStocked: "Never stocked at ManaPool",
     soldOut: "Sold out at ManaPool",
-    noFigure: "No price in this feed",
+    noFigure: "No price from ManaPool",
   },
 
   cell: {
@@ -494,11 +494,11 @@ export const setPageCopy = {
   // A real set, on a real page, whose checklist the catalog has not written yet. Distinct
   // from an unknown code: nothing here is wrong and nothing needs correcting.
   notIndexed: {
-    heading: (name: string) => `${name} has not been indexed yet`,
+    heading: (name: string) => `${name} has no checklist yet`,
     // Ownership-neutral: search reaches sets the reader holds nothing from, so this page
     // is opened at 0% as often as it is opened over a collection.
     body:
-      "The checklist for this set is written when the catalog refreshes, which happens daily. Anything you own from it is already in your collection.",
+      "The checklist for this set is added when the catalog refreshes, which happens daily. Anything you own from it is already in your collection.",
     action: "Back to your sets",
   },
 

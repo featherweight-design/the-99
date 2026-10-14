@@ -184,7 +184,7 @@ describe("CostStrip — the phone's collapsed row", () => {
   // number is unpredictable.
   it.each([
     ["unpriced", { absentCount: 3 }, /never been stocked/],
-    ["noFigure", { inconclusiveCount: 2 }, /no price in this feed/],
+    ["noFigure", { inconclusiveCount: 2 }, /no price from ManaPool/],
     ["soldOut", { soldOutCount: 4 }, /sold out/i],
   ])("shows the %s caveat once expanded", (_name, over, pattern) => {
     render(<CostStrip cost={cost({ absentCount: 0, ...over })} href="https://manapool.com/x" />);
