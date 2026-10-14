@@ -227,7 +227,8 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
                 {b.sameCommanders ? copy.open.builtSame(b.deckName, b.shared, row.commanders.length === 2) : copy.open.builtAny(b.deckName, b.shared)}
               </p>
             ))}
-            {row.twinName && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.twin(row.twinName)}</p>}
+            {/* The edition switch already names the twin; the line stays only where no switch is drawn. */}
+            {row.twinName && !precon.collector && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.twin(row.twinName)}</p>}
             {row.unmapped > 0 && (
               <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.unmapped(row.unmapped, total)}</p>
             )}

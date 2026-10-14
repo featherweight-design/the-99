@@ -301,6 +301,15 @@ describe("OpenPreconView edition switch", () => {
 
   beforeEach(() => { mirrored.urls = []; window.history.replaceState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new"); });
 
+  it("drops the twin line where the switch names the twin, and keeps it where no switch is drawn", () => {
+    const twinRow = { ...withCollector(), row: { ...withCollector().row, twinName: "Eldrazi Unbound Collector's Edition" } };
+    const { unmount } = render(<OpenPreconView precon={twinRow} fromNew={false} />);
+    expect(screen.queryByText(/Eldrazi Unbound Collector's Edition/)).toBeNull();
+    unmount();
+    render(<OpenPreconView precon={{ ...twinRow, collector: null }} fromNew={false} />);
+    expect(screen.getByText(/Eldrazi Unbound Collector's Edition/)).toBeInTheDocument();
+  });
+
   it("is not drawn for a precon with no Collector's Edition", () => {
     render(<OpenPreconView precon={precon()} fromNew={false} />);
     expect(screen.queryByRole("radiogroup", { name: "Edition" })).toBeNull();
