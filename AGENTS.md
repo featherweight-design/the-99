@@ -1272,7 +1272,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `/offline` is public in `src/proxy.ts`), keeps only when the answer really is `/offline` (a redirect
   to sign-in or an error is thrown away), and fetches again at install and after a page load at most
   hourly, with its stylesheet and scripts, so it draws with no network after a deploy. A server's own
-  error (a 500) is passed through as it is. `src/app/sw.test.ts` pins every one of those. `src/app/sw.test.ts` runs the file against a fake worker scope. **To retire it**, ship a
+  error (a 500) is passed through as it is. `src/app/sw.test.ts` runs the file against a fake worker scope and pins every one of those, the
+  hourly re-fetch included. **To retire it**, ship a
   `sw.js` that unregisters itself (`self.registration.unregister()` in `activate`) rather than deleting
   the file: an update check that finds the script gone keeps the installed worker running on every
   device that has it, while a self-unregistering one leaves on the next visit. Bump `VERSION` in it to drop

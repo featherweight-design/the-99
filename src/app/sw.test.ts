@@ -46,8 +46,12 @@ beforeEach(() => {
     skipWaiting: () => {},
     clients: { claim: async () => {} },
   };
-  runInNewContext(SOURCE, { self, caches, fetch: network, URL, Response, Request, Set, Math, Date });
+  start = () => runInNewContext(SOURCE, { self, caches, fetch: network, URL, Response, Request, Headers, Set, Math, Date });
+  start();
 });
+
+/** Starts the worker script again over the same caches, as a browser does after stopping an idle worker. */
+let start: () => void;
 
 /** A response the way the network hands one back: with the URL it came from, and whether it redirected. */
 function answered(body: string, url: string, init: ResponseInit & { redirected?: boolean } = {}): Response {
@@ -62,7 +66,11 @@ function serve(page: (path: string) => Response | Promise<Response> = (path) => 
   network.mockImplementation(async (input: Request | string) => {
     const path = new URL(typeof input === "string" ? input : input.url, ORIGIN).pathname;
     if (path === "/offline") {
-      return answered('<link href="/_next/static/css/o.css"><script src="/_next/static/chunks/o.js"></script>', "/offline");
+      return answered(
+        '<link href="/_next/static/css/o.css"><script src="/_next/static/chunks/o.js"></script>' +
+          '<script>self.__next_f.push([1,"[\\"/_next/static/chunks/f.js\\"]"])</script>',
+        "/offline",
+      );
     }
     if (path.startsWith("/_next/static/")) return answered(`asset ${path}`, path);
     return page(path);
@@ -153,9 +161,43 @@ describe("the service worker", () => {
     expect(offlineCall?.[1]).toMatchObject({ credentials: "omit" });
     expect(await stores.get("offline-v1")!.entries.get(`${ORIGIN}/offline`)?.clone().text()).toContain("o.css");
     expect([...stores.get("static-v1")!.entries.keys()].sort()).toEqual([
+      `${ORIGIN}/_next/static/chunks/f.js`,
       `${ORIGIN}/_next/static/chunks/o.js`,
       `${ORIGIN}/_next/static/css/o.css`,
     ]);
+  });
+
+  it("reads a path in the page's inline RSC payload without the escape before its closing quote", async () => {
+    serve();
+    await install();
+    const asked = network.mock.calls.map(([input]) => new URL(typeof input === "string" ? input : input.url, ORIGIN).pathname);
+    expect(asked).toContain("/_next/static/chunks/f.js");
+    expect(asked.filter((p) => p.endsWith("/"))).toEqual([]);
+  });
+
+  it("fetches /offline again after a page load at most hourly, across a stopped and restarted worker", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-10-14T12:00:00Z"));
+      start();
+      serve();
+      await install();
+      const offlineFetches = () => network.mock.calls.filter(([input]) => input === "/offline").length;
+      expect(offlineFetches()).toBe(1);
+      await load("/decks");
+      // The browser stops the idle worker; the next page load starts the script again.
+      start();
+      vi.setSystemTime(new Date("2026-10-14T12:59:00Z"));
+      await load("/decks");
+      expect(offlineFetches()).toBe(1);
+      vi.setSystemTime(new Date("2026-10-14T13:01:00Z"));
+      await load("/decks");
+      expect(offlineFetches()).toBe(2);
+      await load("/decks");
+      expect(offlineFetches()).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps nothing for /offline when it is not that page: a redirect to sign-in, an error", async () => {

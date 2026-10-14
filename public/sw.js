@@ -32,9 +32,12 @@ const STATIC_LIMIT = 600;
 const OFFLINE = `offline-${VERSION}`;
 const OFFLINE_PATH = "/offline";
 // The kept `/offline` is fetched again after a page load at most this often, so its stylesheet
-// and scripts follow each deploy.
+// and scripts follow each deploy. When it was kept rides on the kept copy itself (`KEPT_AT`), not in
+// a variable: the browser stops an idle worker after seconds, and a variable starts at zero again.
 const OFFLINE_REFRESH_MS = 60 * 60 * 1000;
-let offlineFetchedAt = 0;
+const KEPT_AT = "x-the99-kept-at";
+// One refresh at a time within a running worker.
+let refreshing = null;
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -75,11 +78,26 @@ async function networkOrOffline(event) {
   try {
     response = (await event.preloadResponse) ?? (await fetch(event.request));
   } catch {
-    const kept = await (await caches.open(OFFLINE)).match(new Request(new URL(OFFLINE_PATH, self.location.origin)));
+    const kept = await (await caches.open(OFFLINE)).match(offlineRequest());
     return kept ?? Response.error();
   }
-  if (Date.now() - offlineFetchedAt > OFFLINE_REFRESH_MS) event.waitUntil(keepOfflinePage().catch(() => {}));
+  event.waitUntil(refreshOfflinePageIfOld().catch(() => {}));
   return response;
+}
+
+function offlineRequest() {
+  return new Request(new URL(OFFLINE_PATH, self.location.origin));
+}
+
+/** Fetches the kept `/offline` again when it is older than `OFFLINE_REFRESH_MS`, or missing. */
+async function refreshOfflinePageIfOld() {
+  const kept = await (await caches.open(OFFLINE)).match(offlineRequest());
+  const keptAt = Number(kept?.headers.get(KEPT_AT)) || 0;
+  if (Date.now() - keptAt <= OFFLINE_REFRESH_MS) return;
+  refreshing ??= keepOfflinePage().finally(() => {
+    refreshing = null;
+  });
+  await refreshing;
 }
 
 /**
@@ -88,12 +106,13 @@ async function networkOrOffline(event) {
  * are kept beside the build's other static files, so it draws with no network.
  */
 async function keepOfflinePage() {
-  offlineFetchedAt = Date.now();
   const response = await fetch(OFFLINE_PATH, { credentials: "omit", cache: "no-store", redirect: "follow" });
   if (!response.ok || response.redirected || new URL(response.url, self.location.origin).pathname !== OFFLINE_PATH) return;
   const html = await response.clone().text();
   const statics = await caches.open(STATIC);
-  const assets = new Set((html.match(/\/_next\/static\/[^"'\s<>)]+/g) ?? []).map((p) => p.replace(/&amp;/g, "&")));
+  // A path ends at a quote, a space, a bracket or a BACKSLASH: inside the page's inline RSC payload
+  // the same paths are JSON-escaped (`\"/_next/static/...\"`), and the backslash is not part of one.
+  const assets = new Set((html.match(/\/_next\/static\/[^"'\s<>)\\]+/g) ?? []).map((p) => p.replace(/&amp;/g, "&")));
   for (const path of assets) {
     const request = new Request(new URL(path, self.location.origin));
     if (await statics.match(request)) continue;
@@ -101,7 +120,9 @@ async function keepOfflinePage() {
     if (asset.ok) await statics.put(request, asset);
   }
   await trim(statics, STATIC_LIMIT);
-  await (await caches.open(OFFLINE)).put(new Request(new URL(OFFLINE_PATH, self.location.origin)), response);
+  const headers = new Headers(response.headers);
+  headers.set(KEPT_AT, String(Date.now()));
+  await (await caches.open(OFFLINE)).put(offlineRequest(), new Response(html, { status: response.status, headers }));
 }
 
 async function cacheFirst(request, event) {
