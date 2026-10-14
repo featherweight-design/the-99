@@ -312,7 +312,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'Shows your card count before and after.',
       'Rows sort into No longer to buy, Still to buy and Still short.',
-      'A card two decks want gets one row, oldest claim first.',
+      'A card two decks want gets one row, the deck that has held it longest first.',
       'A new copy goes to the deck that committed first, unless you pick another.',
     ],
     // ⚠ R4: strings inside this figure are FIXTURES, not read from source.
@@ -948,7 +948,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Your adds and cuts wait as changes until you commit. Each commit saves a version you can look back on, handy for settling whether last month’s list was better.',
     keys: [
-      'A card added to a committed deck claims your copy right away. Other decks see it once you commit.',
+      'A card added to a committed deck uses your copy right away. Other decks see it once you commit.',
       'Each version shows its date, card count and average mana value.',
       'Games you log name their version, so you can see if a change helped.',
       'Open a version to see which of its new cards you own today.',
