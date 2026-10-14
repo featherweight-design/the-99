@@ -28,6 +28,11 @@ describe("isLegendaryCreature", () => {
     expect(isLegendaryCreature("Legendary Artifact Creature — Robot")).toBe(true);
   });
 
+  it("reads the front face only, so a back face never makes a card a commander", () => {
+    expect(isLegendaryCreature("Land // Legendary Creature — Demon")).toBe(false);
+    expect(isLegendaryCreature("Legendary Creature — Human // Legendary Planeswalker — Ajani")).toBe(true);
+  });
+
   it("drops a legendary non-creature and a creature that is not legendary", () => {
     expect(isLegendaryCreature("Legendary Artifact — Equipment")).toBe(false);
     expect(isLegendaryCreature("Legendary Planeswalker — Spock")).toBe(false);

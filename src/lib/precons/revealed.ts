@@ -10,6 +10,7 @@ import { eq, inArray } from "drizzle-orm";
 
 import { db } from "../../db";
 import { cards, printings } from "../../db/schema";
+import { frontFaceTypeLine } from "../recs/faces";
 
 /** One printing in an announced set, as the read gives it. */
 export type RevealedPrinting = {
@@ -29,8 +30,14 @@ type Reader = Pick<typeof db, "select">;
 const LEGENDARY = /\bLegendary\b/;
 const CREATURE = /\bCreature\b/;
 
-/** A legendary creature, by its type line: `Legendary Enchantment Creature` is one, a legendary artifact is not. */
-export const isLegendaryCreature = (typeLine: string) => LEGENDARY.test(typeLine) && CREATURE.test(typeLine);
+/**
+ * A legendary creature, by its FRONT face's type line: `Legendary Enchantment Creature` is one, a legendary
+ * artifact is not, and a back face never qualifies a card (Westvale Abbey, `Land // Legendary Creature`, #79).
+ */
+export const isLegendaryCreature = (typeLine: string) => {
+  const front = frontFaceTypeLine(typeLine);
+  return LEGENDARY.test(front) && CREATURE.test(front);
+};
 
 /**
  * Collector numbers in printed order: by the leading digits as a number, then as strings, so `78` comes before
