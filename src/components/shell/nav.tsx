@@ -10,6 +10,7 @@ import { PendingPip } from "./pending-pip";
 import { useRailTag } from "./rail-tag";
 import { useAboutSheetUp } from "./about-sheet-presence";
 import { usePendingPush } from "./pending-push";
+import { OfflinePill } from "../pwa/offline-pill";
 import { Crowned99 } from "../marks";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { nameList } from "../../lib/copy/deck-analysis";
@@ -599,7 +600,9 @@ export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolea
       {/* ------------------------------------------------------------------ */}
       {/* Account trigger — §Rail: 30px circle, pinned to the bottom.         */}
       {/* ------------------------------------------------------------------ */}
-      <div className="mt-auto shrink-0">
+      <div className="mt-auto flex shrink-0 flex-col items-center">
+        {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
+        <OfflinePill place="rail" />
         <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} />
       </div>
       {tag}
@@ -710,8 +713,12 @@ export function MobileHeader({ theme, adminDoor, adminEnv }: { theme: ThemeKey }
         <Crowned99 variant="mobile-header" />
       </div>
 
-      {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-      <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} />
+      <div className="flex items-center">
+        {/* Offline, left of the avatar (Concert Crawl's PWA cluster, right-side slots). */}
+        <OfflinePill place="header" />
+        {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
+        <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} />
+      </div>
     </header>
   );
 }

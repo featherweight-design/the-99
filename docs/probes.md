@@ -2386,6 +2386,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   account's About row, restores it, and refuses a `DATABASE_URL` reporting the production or staging
   branch. Dropping the list from the phone header's door fails it at 390 and leaves 1300 green.
 
+- `pnpm probe:pwa-offline` proves the service worker's offline fallback and the offline pill, at 390 and 1300,
+  against a local `next start` (`PROBE_BASE`; the worker registers in production builds only). Signed in, it checks
+  that the worker controls the page and keeps `/offline`, and that the kept page names nothing of the reader's (their
+  email, id or first name) and draws no shell. Then, with the browser offline, the header pill (390) or the rail
+  pill (1300) must show, a page load must show `/offline` at the address asked for, and back online `Try again`
+  must load that page. Read-only.
 - `pnpm probe:card-sheet-min` proves the phone card sheet's min snap (Hugh, 2026-10-13) at 390. It opens a
   card from the deck page's list and swipes down on the card from the teaser. Mid-drag, the card must have grown as
   far toward its min size as the sheet has moved toward min (within 5 points), and on a drag back up it must shrink

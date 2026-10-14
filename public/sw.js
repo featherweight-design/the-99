@@ -1,18 +1,25 @@
 // The app's service worker (speed plan, 2026-10-12): a returning reader's static files come from
 // the device instead of the network, whatever the browser's HTTP cache has evicted since.
 //
-// It caches ONE thing: `/_next/static/`, content-hashed by the build, served `immutable` and
-// identical for every reader. Cache first, because a hashed URL never changes what it names.
+// It caches `/_next/static/`, content-hashed by the build, served `immutable` and identical for
+// every reader. Cache first, because a hashed URL never changes what it names.
+//
+// And it answers a PAGE LOAD (`mode: "navigate"`) from the network, always, falling back to ONE
+// page only when the network FAILS: `/offline`, a static page with no reader in it. The worker
+// fetches that page itself, with no credentials, so the copy it keeps is the signed-out render and
+// never anyone's data, and keeps it only when it really is `/offline` (a redirect to sign-in is
+// thrown away). A page load is never cached, and a server's own error (a 500) is passed through as
+// it is: only an unreachable network gets the fallback.
 //
 // Not the mana sprite, though every page asks for it again: its URL carries no hash, and each pip's
 // cell position is computed by the build's JavaScript from the sprite's symbol order. A cached
 // sprite one symbol behind a new build would draw every pip after the new symbol one cell over for
 // a whole visit. Its revalidation answers 304, so it costs a round trip and no bytes.
 //
-// Never a document, a React Server Component payload, an `/api` route, a server action or anything
-// cross-origin (Clerk, Scryfall's art). Those carry a reader's own data or are already cached by
-// their origin, and a stale one would be a wrong page rather than a slow one. A request it does not
-// answer goes to the network exactly as if there were no worker.
+// Never a reader's document, a React Server Component payload, an `/api` route, a server action or
+// anything cross-origin (Clerk, Scryfall's art). Those carry a reader's own data or are already
+// cached by their origin, and a stale one would be a wrong page rather than a slow one. A request it
+// does not answer goes to the network exactly as if there were no worker.
 //
 // Hand-written rather than generated: the app builds with Turbopack, which the generators' plugins
 // do not support, and a worker this small is easier to read than to configure.
@@ -22,9 +29,32 @@ const STATIC = `static-${VERSION}`;
 // Every deploy adds its own hashed files and none are removed by the build, so the cache is trimmed
 // to its newest entries. A build's whole set is a few hundred files.
 const STATIC_LIMIT = 600;
+const OFFLINE = `offline-${VERSION}`;
+const OFFLINE_PATH = "/offline";
+// The kept `/offline` is fetched again after a page load at most this often, so its stylesheet
+// and scripts follow each deploy. When it was kept rides on the kept copy itself (`KEPT_AT`), not in
+// a variable: the browser stops an idle worker after seconds, and a variable starts at zero again.
+const OFFLINE_REFRESH_MS = 60 * 60 * 1000;
+const KEPT_AT = "x-the99-kept-at";
+// The kept page's own asset URLs, so the next refresh knows which files the copy it replaces drew with.
+const KEPT_ASSETS = "x-the99-kept-assets";
+// And the assets of the copy it replaced, which a document already served may still ask for.
+const KEPT_PREVIOUS = "x-the99-kept-previous";
+// One refresh at a time within a running worker.
+let refreshing = null;
 
-self.addEventListener("install", () => {
+self.addEventListener("install", (event) => {
   self.skipWaiting();
+  // A worker installs only once ITS cache holds the offline page (a copy this version already kept
+  // counts). A failed fetch fails the install, so the worker before it, and the cache it reads, stay
+  // until the browser tries again, rather than a new version activating with nothing to fall back on
+  // and deleting the old one.
+  event.waitUntil(
+    (async () => {
+      if (await (await caches.open(OFFLINE)).match(offlineRequest())) return;
+      if (!(await keepOfflinePage().catch(() => false))) throw new Error("the offline page could not be kept");
+    })(),
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -33,7 +63,11 @@ self.addEventListener("activate", (event) => {
       // Only this worker's own older versions: Cache Storage is shared by the whole origin.
       for (const name of await caches.keys()) {
         if (name.startsWith("static-") && name !== STATIC) await caches.delete(name);
+        if (name.startsWith("offline-") && name !== OFFLINE) await caches.delete(name);
       }
+      // The page load starts while the worker wakes, rather than after it.
+      const preload = self.registration?.navigationPreload;
+      if (preload) await preload.enable().catch(() => {});
       await self.clients.claim();
     })(),
   );
@@ -44,12 +78,103 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (request.mode === "navigate") {
+    event.respondWith(networkOrOffline(event));
+    return;
+  }
   if (url.pathname.startsWith("/_next/static/")) event.respondWith(cacheFirst(request, event));
 });
 
+/** The network's answer, whatever it is; the kept `/offline` only when the network is unreachable. */
+async function networkOrOffline(event) {
+  let response;
+  try {
+    response = (await event.preloadResponse) ?? (await fetch(event.request));
+  } catch {
+    const kept = await (await caches.open(OFFLINE)).match(offlineRequest());
+    return kept ?? Response.error();
+  }
+  event.waitUntil(refreshOfflinePageIfOld().catch(() => {}));
+  return response;
+}
+
+function offlineRequest() {
+  return new Request(new URL(OFFLINE_PATH, self.location.origin));
+}
+
+/** Fetches the kept `/offline` again when it is older than `OFFLINE_REFRESH_MS`, or missing. */
+// When a refresh was last TRIED, kept in the offline cache beside the page: the throttle counts
+// attempts, not successes, so a page or asset that keeps failing is asked for at most hourly too.
+function attemptRequest() {
+  return new Request(new URL(`${OFFLINE_PATH}?attempt`, self.location.origin));
+}
+
+async function refreshOfflinePageIfOld() {
+  const offline = await caches.open(OFFLINE);
+  const stamp = async (request) => Number((await offline.match(request))?.headers.get(KEPT_AT)) || 0;
+  // A kept copy counts as an attempt too: the one install keeps starts the hour.
+  const triedAt = Math.max(await stamp(attemptRequest()), await stamp(offlineRequest()));
+  if (Date.now() - triedAt <= OFFLINE_REFRESH_MS) return;
+  refreshing ??= (async () => {
+    await offline.put(attemptRequest(), new Response(null, { headers: { [KEPT_AT]: String(Date.now()) } }));
+    await keepOfflinePage();
+  })().finally(() => {
+    refreshing = null;
+  });
+  await refreshing;
+}
+
+/**
+ * Fetches `/offline` with NO credentials, so the copy is the signed-out render, and keeps it only
+ * when it is that page (not a redirect to sign-in, not an error). Its own stylesheet and scripts
+ * are kept with it, so it draws with no network. Answers whether a copy was kept.
+ */
+async function keepOfflinePage() {
+  const response = await fetch(OFFLINE_PATH, { credentials: "omit", cache: "no-store", redirect: "follow" });
+  if (!response.ok || response.redirected || new URL(response.url, self.location.origin).pathname !== OFFLINE_PATH) return false;
+  const html = await response.clone().text();
+  const statics = await caches.open(STATIC);
+  // A path ends at a quote, a space, a bracket or a BACKSLASH: inside the page's inline RSC payload
+  // the same paths are JSON-escaped (`\"/_next/static/...\"`), and the backslash is not part of one.
+  const assets = new Set((html.match(/\/_next\/static\/[^"'\s<>)\\]+/g) ?? []).map((p) => p.replace(/&amp;/g, "&")));
+  // Every asset first, from the static cache when it has one: one that cannot be had abandons the
+  // refresh (a throw rejects it), so the copy already kept, which can still draw, is never replaced
+  // by one that cannot.
+  const kept = [];
+  for (const path of assets) {
+    const request = new Request(new URL(path, self.location.origin));
+    const asset = (await statics.match(request)) ?? (await fetch(request));
+    if (!asset.ok) return false;
+    kept.push([request, asset]);
+  }
+  // The page and its assets are kept TOGETHER, in their own cache, which no trim touches: the static
+  // cache's trim can then never take a file the kept page needs. The PREVIOUS page's assets stay one
+  // generation longer, because a document already served that copy (in another tab, or while this
+  // refresh ran) may still be asking for them; only files neither generation names are dropped.
+  const offline = await caches.open(OFFLINE);
+  const previous = await offline.match(offlineRequest());
+  const urls = kept.map(([request]) => request.url);
+  for (const [request, asset] of kept) await offline.put(request, asset);
+  const headers = new Headers(response.headers);
+  headers.set(KEPT_AT, String(Date.now()));
+  headers.set(KEPT_ASSETS, urls.join(" "));
+  headers.set(KEPT_PREVIOUS, previous?.headers.get(KEPT_ASSETS) ?? "");
+  await offline.put(offlineRequest(), new Response(html, { status: response.status, headers }));
+  // What stays is read from the page kept NOW, not from what this refresh saw: a second worker (one
+  // installing beside the active one) may have published after it, and its files must survive.
+  const current = await offline.match(offlineRequest());
+  const names = (header) => (current?.headers.get(header) ?? "").split(" ").filter(Boolean);
+  const wanted = new Set([offlineRequest().url, attemptRequest().url, ...names(KEPT_ASSETS), ...names(KEPT_PREVIOUS)]);
+  for (const key of await offline.keys()) if (!wanted.has(key.url)) await offline.delete(key);
+  return true;
+}
+
 async function cacheFirst(request, event) {
   const cache = await caches.open(STATIC);
-  const hit = await cache.match(request);
+  // The offline page's own assets are kept with it, out of reach of the static cache's trim.
+  // `has` before `open`, which would create the cache on a miss.
+  const hit =
+    (await cache.match(request)) ?? ((await caches.has(OFFLINE)) ? await (await caches.open(OFFLINE)).match(request) : undefined);
   if (hit) return hit;
   const response = await fetch(request);
   if (response.ok) {
