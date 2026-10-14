@@ -10,6 +10,8 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import type { TileBracket } from "../../lib/decks/read";
 import { SpineDesktop } from "./spine-desktop";
 import { SpineMobile } from "./spine-mobile";
+import { useDeckShelfMove, type DeckShelf } from "./deck-shelf-move";
+import type { DeckMove } from "./deck-card-overflow";
 import type { StatusPill } from "../../lib/decks/status";
 import type { HeaderNotice } from "./notice-tag";
 
@@ -62,6 +64,8 @@ interface BuilderSpineProps {
   onOpenNotices?: () => void;
   /** The trim line's `Proposed cuts →`. See `SpineBandProps`. */
   onProposedCuts?: () => void;
+  /** The deck's shelf and the shelves it can move to, for the ⋯ menu's Move. Absent, no Move row. */
+  shelf?: DeckShelf;
 }
 
 // The seam in the doubled glyph is the colour of whatever sits behind it, and
@@ -273,33 +277,42 @@ export function BuilderSpine({
   notice = null,
   onOpenNotices,
   onProposedCuts,
+  shelf,
 }: BuilderSpineProps) {
+  // One drawing of both spines, with the deck menu's Move when the page read the shelves.
+  const spines = (move?: DeckMove) => (
+    <>
+      <SpineDesktop
+        deck={deck}
+        counts={counts}
+        status={status}
+        onExport={onExport}
+        offerFirstCommit={offerFirstCommit}
+        bracket={bracket}
+        onOpenBracket={onOpenBracket}
+        notice={notice}
+        onOpenNotices={onOpenNotices}
+        onProposedCuts={onProposedCuts}
+        move={move}
+      />
+      <SpineMobile
+        deck={deck}
+        counts={counts}
+        status={status}
+        onExport={onExport}
+        offerFirstCommit={offerFirstCommit}
+        bracket={bracket}
+        onOpenBracket={onOpenBracket}
+        notice={notice}
+        onOpenNotices={onOpenNotices}
+        onProposedCuts={onProposedCuts}
+        move={move}
+      />
+    </>
+  );
   return (
     <>
-    <SpineDesktop
-      deck={deck}
-      counts={counts}
-      status={status}
-      onExport={onExport}
-      offerFirstCommit={offerFirstCommit}
-      bracket={bracket}
-      onOpenBracket={onOpenBracket}
-      notice={notice}
-      onOpenNotices={onOpenNotices}
-      onProposedCuts={onProposedCuts}
-    />
-    <SpineMobile
-      deck={deck}
-      counts={counts}
-      status={status}
-      onExport={onExport}
-      offerFirstCommit={offerFirstCommit}
-      bracket={bracket}
-      onOpenBracket={onOpenBracket}
-      notice={notice}
-      onOpenNotices={onOpenNotices}
-      onProposedCuts={onProposedCuts}
-    />
+    {shelf ? <ShelfSpines shelf={shelf} deckId={deck.id}>{spines}</ShelfSpines> : spines()}
 
     {/* Below the spine and above the decklist, per the canvas: it is a claim
         about the whole deck, and every group heading under it is a claim about
@@ -312,6 +325,22 @@ export function BuilderSpine({
         onShowShopping={onShowShopping}
       />
     )}
+    </>
+  );
+}
+
+/** Both spines share one Move: one shelf prediction, one create dialog, one announcement. */
+function ShelfSpines({ deckId, shelf, children }: {
+  deckId: string;
+  shelf: DeckShelf;
+  children: (move: DeckMove) => React.ReactNode;
+}) {
+  const { move, dialog, announced } = useDeckShelfMove(deckId, shelf);
+  return (
+    <>
+      {children(move)}
+      {dialog}
+      <span role="status" className="sr-only">{announced}</span>
     </>
   );
 }

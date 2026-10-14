@@ -14,6 +14,7 @@ import { readDeckOrigin } from "../../../lib/precons/origin-read";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
+import { listFolders } from "../../../lib/decks/folders";
 import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
 import type { PrintedInSet } from "../../../lib/sets/printed-in";
 import { cacheForUser } from "../../../lib/cache/user-lists";
@@ -208,6 +209,9 @@ export default async function DeckBuilderPage({
     ? early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null }, env)) : null)))
     : null;
   const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name", { env })));
+  // The reader's shelves, for the header menu's Move (the deck's own shelf rides on its list row).
+  // A failed read costs the menu its Move row and nothing else.
+  const foldersRead = early(perf.timed("folders", () => listFolders(userId)).catch(() => null));
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
   // Not swallowed, unlike the price and availability reads below. Those degrade to a missing
   // ornament; a ledger that quietly vanished would tell the player their passes are gone, which is
@@ -597,6 +601,15 @@ export default async function DeckBuilderPage({
   }
   const wasCounts = versionShape ? roleCounterFor(labelRows)(versionShape) : undefined;
 
+  const thisDeck = allDecks.find((d) => d.id === id);
+  const folders = await foldersRead;
+  const shelf = folders && thisDeck
+    ? {
+        folders: folders.map(({ id: folderId, name }) => ({ id: folderId, name })),
+        folderId: thisDeck.folderId,
+        folderName: thisDeck.folderName,
+      }
+    : undefined;
   const shell = (
     <BuilderShell
       // One builder per deck: a client navigation to another deck reuses this element, and its
@@ -607,6 +620,7 @@ export default async function DeckBuilderPage({
       labelRows={labelRows}
       labelQueried={labelQueried}
       deck={{ ...detail, cards, commander, partner }}
+      shelf={shelf}
       suggestions={pricedSuggestions}
       newestAsOf={priced?.newestAsOf ?? null}
       // Derived here and passed as a form, never as a clock. provenanceForm

@@ -13,7 +13,7 @@ import { useCommanderSiblings } from "./deck-siblings";
 import { IdentityPips } from "../commanders/commander-art";
 import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash } from "../ui/art-wash";
-import { DeckCardOverflow } from "./deck-card-overflow";
+import { DeckCardOverflow, type DeckMove } from "./deck-card-overflow";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
@@ -109,6 +109,8 @@ export interface SpineBandProps {
   /** The trim line's `Proposed cuts →` (Tuning hub A5): opens the tool on the Analysis tab.
    *  Absent with the hub off, and then the line is exactly as before. */
   onProposedCuts?: () => void;
+  /** The deck menu's Move, with the page's read of the shelves. Absent, the menu carries Delete alone. */
+  move?: DeckMove;
 }
 
 // §B16's single-field box is retired: editing now draws name and description at one width,
@@ -140,6 +142,7 @@ export function SpineDesktop({
   notice = null,
   onOpenNotices,
   onProposedCuts,
+  move,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
@@ -760,7 +763,7 @@ export function SpineDesktop({
               )}
               {/* The Decks tile's own ⋯, beside Export: Rename and Delete from inside the deck. A delete
                   lands on /decks, which `deleteDeck`'s redirect does. */}
-              <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" />
+              <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" move={move} />
               {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
             </div>
           )}

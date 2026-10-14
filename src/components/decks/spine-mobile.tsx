@@ -66,6 +66,7 @@ export function SpineMobile({
   notice = null,
   onOpenNotices,
   onProposedCuts,
+  move,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   // No measurement, and no clamp. `-webkit-line-clamp` requires
@@ -670,7 +671,7 @@ export function SpineMobile({
           )}
           {/* The Decks tile's own ⋯, beside Export: Rename and Delete from inside the deck. A delete
               lands on /decks, which `deleteDeck`'s redirect does. */}
-          <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" />
+          <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" move={move} />
           {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
         </div>
       )}
