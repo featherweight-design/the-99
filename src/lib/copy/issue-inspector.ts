@@ -65,7 +65,7 @@ export const issueInspectorCopy = {
   entry: {
     heading: "That CSV put up a fight.",
     body: (total: number) =>
-      `${total.toLocaleString("en-US")} row${total === 1 ? "" : "s"} couldn’t be read: quantity columns, mostly. Nothing fatal. Want to see the carnage?`,
+      `${total.toLocaleString("en-US")} ${total === 1 ? "row was" : "rows were"} skipped: quantity columns, mostly. Nothing fatal. Want to see the carnage?`,
     cta: (total: number) => `View ${total.toLocaleString("en-US")} issue${total === 1 ? "" : "s"}`,
   },
 };

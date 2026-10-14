@@ -343,8 +343,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Sometimes a line just won’t match: a typo, or an export that does something odd. Those land in Import issues with the reason beside each one, and everything else imports as normal.',
     keys: [
-      'Unmatched: names we couldn’t find.',
-      'Parse errors: lines we couldn’t read.',
+      'Not in catalog: names we couldn’t find.',
+      'Unreadable lines: lines we couldn’t read.',
       'A pasted list can’t fill in set completion.',
     ],
     marksPending: true,

@@ -6,12 +6,12 @@ import { issueInspectorCopy } from "./issue-inspector";
 describe("issueInspectorCopy.entry", () => {
   it("pins the Surfaces v2 body, repunctuated", () => {
     expect(issueInspectorCopy.entry.body(3)).toBe(
-      "3 rows couldn’t be read: quantity columns, mostly. Nothing fatal. Want to see the carnage?",
+      "3 rows were skipped: quantity columns, mostly. Nothing fatal. Want to see the carnage?",
     );
   });
 
   it("uses singular forms for a one-row import", () => {
-    expect(issueInspectorCopy.entry.body(1)).toContain("1 row couldn’t be read");
+    expect(issueInspectorCopy.entry.body(1)).toContain("1 row was skipped");
     expect(issueInspectorCopy.entry.cta(1)).toBe("View 1 issue");
   });
 
