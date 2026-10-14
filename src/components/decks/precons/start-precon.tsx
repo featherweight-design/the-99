@@ -3,21 +3,19 @@
 // "Start a deck from this" and its confirm (design table: Component StartPreconDialog; STATES S1 to
 // S1e). The button sits in the header at 900 and docks above the tab bar at 390. The confirm is a
 // modal at 900 and a bottom sheet at 390: the commander, the name (prefilled, focused, selected),
-// three facts, and any card the start keeps that is not legal in Commander. Starting never commits.
+// three facts, and any card the start keeps that is not legal in Commander. The deck starts committed (Hugh, 2026-10-14).
 
 import { useAuth } from "@clerk/nextjs";
 import { unstable_rethrow } from "next/navigation";
 import { startTransition, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { addPreconToCollection, createDeckFromPrecon } from "../../../app/decks/precon-actions";
+import { createDeckFromPrecon, startPreconOwned } from "../../../app/decks/precon-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { preconAddedDate, preconsCopy } from "../../../lib/copy/precons";
 import { DECK_NAME_MAX, hasControlChars } from "../../../lib/decks/deck-name";
 import type { PreconRow } from "../../../lib/precons/list";
-import type { PreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { PrimaryButton } from "../../ui/button";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { TextField } from "../../ui/text-field";
-import { PreconAddedReceipt } from "./precon-added-receipt";
 
 const copy = preconsCopy.start;
 
@@ -66,16 +64,15 @@ function writeAttempt(account: string | null | undefined, fileName: string, id: 
 export function StartPrecon(props: StartPreconProps) {
   const [open, setOpen] = useState(false);
   const { row, cards, dockSummary, dockBeside } = props;
-  // Kept here, past the dialog: if the cards were added and the deck did not start, the dialog closes onto the receipt, and
-  // a reopened one must not add the box twice. The id makes a ticked retry the same write; the date draws "you added this".
-  // Per edition: each edition's box is its own entry, so an add of one never reads as the other's.
+  // Kept here, past the dialog: a start whose answer was lost may have committed, and a reopened dialog must press again
+  // under the same id, so the retry lands on the deck it made rather than adding the box twice. Per edition: each
+  // edition's box is its own entry.
   const addFile = props.addFileName ?? row.fileName;
-  // A plain map held in state (never replaced): the dialog writes an add's id into its edition's slot.
-  const [adds] = useState(() => new Map<string, { id: string | null; at: string | null }>());
+  // A plain map held in state (never replaced): the dialog writes an attempt's id into its edition's slot.
+  const [adds] = useState(() => new Map<string, { id: string | null }>());
   let slot = adds.get(addFile);
-  if (!slot) { slot = { id: null, at: null }; adds.set(addFile, slot); }
+  if (!slot) { slot = { id: null }; adds.set(addFile, slot); }
   const add = { current: slot };
-  const [addedAtBy, setAddedAtBy] = useState<Record<string, string | null>>({});
   return (
     <>
       <PrimaryButton
@@ -98,10 +95,7 @@ export function StartPrecon(props: StartPreconProps) {
         <StartPreconDialog
           {...props}
           addFileName={addFile}
-          addedOn={addedAtBy[addFile] ?? props.addedOn ?? null}
           addRef={add}
-          onAdded={() => setAddedAtBy((by) => ({ ...by, [addFile]: new Date().toISOString() }))}
-          onAddReverted={() => { adds.set(addFile, { id: null, at: null }); setAddedAtBy((by) => ({ ...by, [addFile]: null })); }}
           onDismiss={() => setOpen(false)}
         />
       )}
@@ -109,12 +103,8 @@ export function StartPrecon(props: StartPreconProps) {
   );
 }
 
-function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn = false, addFileName, addRef, onAdded, onAddReverted, onDismiss }: StartPreconProps & {
-  addRef: React.RefObject<{ id: string | null; at: string | null }>;
-  /** The cards went into the collection (the deck may not have started yet). */
-  onAdded: () => void;
-  /** The fallback receipt's add was undone: a new tick must make a new add, under a new id. */
-  onAddReverted: () => void;
+function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn = false, addFileName, addRef, onDismiss }: StartPreconProps & {
+  addRef: React.RefObject<{ id: string | null }>;
   onDismiss: () => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
@@ -125,8 +115,6 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
   const [failed, setFailed] = useState<"start" | "add" | "addUnsure" | false>(false);
   // "I own this precon": off unless the reader ticks it, and left off when they have added it before.
   const [own, setOwn] = useState(false);
-  // The add went in but the deck did not start: the dialog becomes the receipt (History holds the record).
-  const [receipt, setReceipt] = useState<PreconAddReceipt | null>(null);
   const { userId: account } = useAuth();
   const errorId = useId();
   const titleId = useId();
@@ -135,9 +123,6 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
   const dismiss = () => { if (!pending) onDismiss(); };
   useDialogA11y(dialog, dismiss, { initialFocusRef: input });
   useEffect(() => { input.current?.select(); }, []);
-  // The submit button that had focus leaves with the form when the dialog becomes the receipt: the dialog takes it,
-  // or focus would fall to the page behind an aria-modal dialog.
-  useEffect(() => { if (receipt) dialog.current?.focus(); }, [receipt]);
 
   const trimmed = name.trim();
   // The server action's own rule (`validateDeckName`), so a name it would refuse is never sent.
@@ -155,49 +140,43 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
     setFailed(false);
     // In a transition, as the picker's create is, so the router takes the redirect it rethrows.
     startTransition(async () => {
-      let added: PreconAddReceipt | null = null;
-      try {
-        // The chosen edition: its box is the one added, and its printings are the ones the deck is pinned to.
-        const addFile = addFileName ?? row.fileName;
-        if (own && canOwn) {
-          // The add goes first, so the deck it starts holds the copies it just added (Hugh, 2026-10-13).
-          addRef.current.id ??= readAttempt(account, addFile) ?? crypto.randomUUID();
-          writeAttempt(account, addFile, addRef.current.id);
-          let res: Awaited<ReturnType<typeof addPreconToCollection>>;
-          try {
-            res = await addPreconToCollection(addFile, addRef.current.id);
-          } catch (err) {
-            // A thrown add is not a refusal: it may have committed with its response lost. The id is kept, so
-            // pressing again finds the committed entry rather than adding twice; the line does not claim a rollback.
-            unstable_rethrow(err);
-            inFlight.current = false;
-            setPending(false);
-            setFailed("addUnsure");
-            return;
-          }
-          // An outcome is known (committed, or refused): the stored attempt has done its job.
-          writeAttempt(account, addFile, null);
-          if (!res.ok) {
-            inFlight.current = false;
-            setPending(false);
-            setFailed("add");
-            return;
-          }
-          onAdded();
-          added = {
-            entryId: res.entryId, name: row.name, cards: res.cards, copies: res.copies, foil: res.foil, tokens: res.tokens,
-          };
+      // The chosen edition: its box is the one added, and its printings are the ones the deck is pinned to.
+      const addFile = addFileName ?? row.fileName;
+      if (own && canOwn) {
+        // One action, one transaction: the box goes into the collection, the deck starts committed, and the copies are
+        // reserved to it (Hugh, 2026-10-14). The id makes a retry land on the deck it made rather than adding twice.
+        addRef.current.id ??= readAttempt(account, addFile) ?? crypto.randomUUID();
+        writeAttempt(account, addFile, addRef.current.id);
+        try {
+          // Redirects to the new deck on success; a refusal is returned, and every refusal reads as nothing saved.
+          await startPreconOwned(addFile, trimmed, addRef.current.id);
+        } catch (err) {
+          // The redirect arrives here as a throw: the outcome is known, so the stored attempt has done its job.
+          try { unstable_rethrow(err); } catch (redirect) { writeAttempt(account, addFile, null); addRef.current.id = null; throw redirect; }
+          // A thrown start is not a refusal: it may have committed with its response lost. The id is kept, so pressing
+          // again lands on the committed deck rather than adding twice; the line does not claim a rollback.
+          inFlight.current = false;
+          setPending(false);
+          setFailed("addUnsure");
+          return;
         }
+        writeAttempt(account, addFile, null);
+        addRef.current.id = null;
+        inFlight.current = false;
+        setPending(false);
+        setFailed("add");
+        return;
+      }
+      try {
         // Redirects to the new deck on success; a refusal or an outage throws.
-        await createDeckFromPrecon(addFile, trimmed, added?.entryId);
+        await createDeckFromPrecon(addFile, trimmed);
       } catch (err) {
         // The redirect itself arrives here as a throw, before the router navigates: rethrown, or
         // every successful start would paint the failure for the frame the navigation takes.
         unstable_rethrow(err);
         inFlight.current = false;
         setPending(false);
-        if (added) setReceipt(added);
-        else setFailed("start");
+        setFailed("start");
       }
     });
   }
@@ -208,27 +187,6 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
       <span className="text-right font-mono text-[11px] text-[color:var(--fg-body)]">{v}</span>
     </div>
   );
-
-  // The cards went into the collection and the deck did not start: the dialog becomes the receipt. Reopening the
-  // dialog finds the "you added this" note (the parent kept the date) and the same action id, so a ticked retry is
-  // the same write and never a second add.
-  if (receipt) {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:px-[16px]">
-        <div aria-hidden="true" onClick={onDismiss} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
-        <div
-          ref={dialog}
-          role="dialog"
-          aria-modal="true"
-          aria-label={copy.title(row.name)}
-          tabIndex={-1}
-          className="relative z-10 mx-auto flex w-full flex-col overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] md:max-w-[500px] md:rounded-[14px]"
-        >
-          <PreconAddedReceipt receipt={receipt} note={copy.owned.addedNotStarted} onClose={onDismiss} onReverted={onAddReverted} />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:px-[16px]">

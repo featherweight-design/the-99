@@ -4,7 +4,7 @@ import type { PreconRow } from "../../../lib/precons/list";
 
 const action = vi.hoisted(() => vi.fn());
 const addAction = vi.hoisted(() => vi.fn());
-vi.mock("../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: action, addPreconToCollection: addAction }));
+vi.mock("../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: action, startPreconOwned: addAction }));
 vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: "user_A" }) }));
 import { StartPrecon } from "./start-precon";
 
@@ -59,7 +59,7 @@ describe("StartPrecon", () => {
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "My Intellect" } });
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t start the deck. Nothing was saved."));
-    expect(action).toHaveBeenCalledWith("MysticIntellect_C19", "My Intellect", undefined);
+    expect(action).toHaveBeenCalledWith("MysticIntellect_C19", "My Intellect");
     expect(screen.getByRole("textbox")).toHaveValue("My Intellect");
   });
 

@@ -29,8 +29,8 @@ vi.mock("../../db", () => {
 });
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => state.enabled }));
-vi.mock("../../lib/precons/add", () => ({
-  addPreconForUser: async (...args: unknown[]) => { state.addCalls.push(args); return state.addResult; },
+vi.mock("../../lib/precons/start-owned", () => ({
+  startPreconOwned: async (...args: unknown[]) => { state.addCalls.push(args); return state.addResult; },
 }));
 vi.mock("../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => state.collectionEdit }));
 vi.mock("../../lib/collection/added-copy-flag", () => ({ addedCopyEnabled: () => state.addedCopy }));
@@ -49,7 +49,7 @@ vi.mock("next/navigation", () => ({ redirect: (u: string) => { throw new Error(`
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { preconCards } from "../../db/schema";
-import { addPreconToCollection, createDeckFromPrecon } from "./precon-actions";
+import { createDeckFromPrecon, startPreconOwned } from "./precon-actions";
 
 const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}) => ({
   oracleId, name, typeLine: "Legendary Creature — Eldrazi", oracleText: "", manaCost: "{5}", layout: "normal", commanderLegal: true, ...over,
@@ -93,21 +93,6 @@ describe("createDeckFromPrecon", () => {
     expect(state.orders).toEqual([preconCards.position]);
   });
 
-  it("carries the add's entry on the redirect, and only when it is a uuid", async () => {
-    const rows = () => [
-      [{ fileName: "EldraziUnbound_CMM", twinOf: null }],
-      [{ oracleId: "zhulodok", quantity: 1, isCommander: true }, { oracleId: "sol-ring", quantity: 1, isCommander: false }],
-      [lead("zhulodok", "Zhulodok, Void Gorger")],
-    ];
-    const id = "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11";
-    state.selects = rows();
-    await expect(createDeckFromPrecon("EldraziUnbound_CMM", "A", id)).rejects.toThrow(`REDIRECT:/decks/deck-1?from=precon&added=${id}`);
-    for (const bad of ["not-a-uuid", "", "&from=x", `${id}&x=1`]) {
-      state.selects = rows();
-      await expect(createDeckFromPrecon("EldraziUnbound_CMM", "A", bad)).rejects.toThrow(/^REDIRECT:\/decks\/deck-1\?from=precon$/);
-    }
-  });
-
   it("starts a twin in its own printings, recorded as built from its plain edition", async () => {
     state.selects = [[{ fileName: "X_CE", twinOf: "X" }], [{ oracleId: "c", quantity: 1, isCommander: true, setCode: "xce", collectorNumber: "900" }], [lead("c", "C")]];
     await expect(createDeckFromPrecon("X_CE", "X")).rejects.toThrow(/REDIRECT/);
@@ -136,53 +121,57 @@ describe("createDeckFromPrecon", () => {
   });
 });
 
-describe("addPreconToCollection", () => {
+describe("startPreconOwned", () => {
   const ACTION = "00000000-0000-4000-8000-000000000001";
-  const ADDED = { ok: true, entryId: ACTION, cards: 99, copies: 100, foil: 2, placed: [], tokens: { marked: 8, names: [] } };
+  const ENTRY = "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11";
+  const STARTED = { ok: true, deckId: "deck-9", entryId: ENTRY };
   const flush = async () => { for (const fn of state.after) await fn(); };
 
-  it("refuses while precons are off, adding nothing", async () => {
+  it("refuses while precons are off, writing nothing", async () => {
     state.enabled = false;
-    await expect(addPreconToCollection("MultiverseReforged_FRC", ACTION)).rejects.toThrow("precons are off");
+    await expect(startPreconOwned("MultiverseReforged_FRC", "M", ACTION)).rejects.toThrow("precons are off");
     expect(state.addCalls).toEqual([]);
   });
 
-  it("refuses while collection editing is off, as every collection write does, adding nothing", async () => {
+  it("refuses while collection editing is off, as every collection write does, writing nothing", async () => {
     state.collectionEdit = false;
-    await expect(addPreconToCollection("MultiverseReforged_FRC", ACTION)).rejects.toThrow("collection editing is off");
+    await expect(startPreconOwned("MultiverseReforged_FRC", "M", ACTION)).rejects.toThrow("collection editing is off");
     expect(state.addCalls).toEqual([]);
   });
 
-  it("refuses a malformed action id, and answers notFound for a malformed file name, adding nothing", async () => {
-    await expect(addPreconToCollection("MultiverseReforged_FRC", "not-a-uuid")).rejects.toThrow("bad action id");
-    expect(await addPreconToCollection("", ACTION)).toEqual({ ok: false, reason: "notFound" });
-    expect(await addPreconToCollection("x".repeat(201), ACTION)).toEqual({ ok: false, reason: "notFound" });
+  it("refuses a malformed action id or name, and answers notFound for a malformed file name, writing nothing", async () => {
+    await expect(startPreconOwned("MultiverseReforged_FRC", "M", "not-a-uuid")).rejects.toThrow("bad action id");
+    await expect(startPreconOwned("MultiverseReforged_FRC", "   ", ACTION)).rejects.toThrow();
+    expect(await startPreconOwned("", "M", ACTION)).toEqual({ ok: false, reason: "notFound" });
+    expect(await startPreconOwned("x".repeat(201), "M", ACTION)).toEqual({ ok: false, reason: "notFound" });
     expect(state.addCalls).toEqual([]);
   });
 
-  it("adds for the signed-in player under the action id, forwarding whether placements are drawn", async () => {
-    state.addResult = ADDED;
-    await addPreconToCollection("MultiverseReforged_FRC", ACTION);
+  it("starts for the signed-in player under the action id, and lands on the deck carrying the add's entry", async () => {
+    state.addResult = STARTED;
+    await expect(startPreconOwned("MultiverseReforged_FRC", "  Mine ", ACTION)).rejects.toThrow(`REDIRECT:/decks/deck-9?from=precon&added=${ENTRY}`);
     state.addedCopy = false;
-    await addPreconToCollection("MultiverseReforged_FRC", ACTION);
-    expect(state.addCalls.map(([user, file, id, , placements]) => [user, file, id, placements])).toEqual([
-      ["user_1", "MultiverseReforged_FRC", ACTION, true],
-      ["user_1", "MultiverseReforged_FRC", ACTION, false],
+    await expect(startPreconOwned("MultiverseReforged_FRC", "Mine", ACTION)).rejects.toThrow(/REDIRECT/);
+    expect(state.addCalls.map(([user, file, name, id, , placements]) => [user, file, name, id, placements])).toEqual([
+      ["user_1", "MultiverseReforged_FRC", "Mine", ACTION, true],
+      ["user_1", "MultiverseReforged_FRC", "Mine", ACTION, false],
     ]);
+    expect(state.revalidated).toEqual(["deck-9", "deck-9"]);
   });
 
-  it("invalidates the collection's readers and warms the scores after a success, a retry's included", async () => {
-    state.addResult = ADDED;
-    expect(await addPreconToCollection("MultiverseReforged_FRC", ACTION)).toEqual(ADDED);
+  it("invalidates the collection's readers and warms the scores after a start", async () => {
+    state.addResult = STARTED;
+    await expect(startPreconOwned("MultiverseReforged_FRC", "M", ACTION)).rejects.toThrow(/REDIRECT/);
     expect(state.invalidated).toEqual([]);
     await flush();
     expect(state.invalidated).toEqual(["user_1"]);
     expect(state.warmed).toEqual(["user_1"]);
   });
 
-  it("touches no reader when the add fails", async () => {
+  it("returns a refusal for the dialog to say, touching no reader", async () => {
     state.addResult = { ok: false, reason: "failed" };
-    expect(await addPreconToCollection("MultiverseReforged_FRC", ACTION)).toEqual({ ok: false, reason: "failed" });
+    expect(await startPreconOwned("MultiverseReforged_FRC", "M", ACTION)).toEqual({ ok: false, reason: "failed" });
     expect(state.after).toEqual([]);
+    expect(state.revalidated).toEqual([]);
   });
 });
