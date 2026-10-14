@@ -68,7 +68,7 @@ async function buildPreview(args: {
   const { userId, filename, rows, errors } = args;
 
   if (rows.length === 0) {
-    throw new Error(errors[0] ? importReviewCopy.errors.unreadableWhy(errors[0].reason) : "No card rows to import");
+    throw new Error(errors[0] ? importReviewCopy.errors.unreadableWhy(errors[0].reason) : importReviewCopy.errors.unreadable);
   }
 
   const { catalog, indexes } = await loadMatchInputs(rows);
@@ -127,7 +127,7 @@ async function buildPreview(args: {
 export async function previewUpload(formData: FormData): Promise<UploadPreview> {
   const userId = await requireUserId();
   const file = formData.get("file");
-  if (!(file instanceof File)) throw new Error("No CSV file provided");
+  if (!(file instanceof File)) throw new Error(importReviewCopy.errors.noFile);
   if (file.size > COLLECTION_FILE_MAX_BYTES) throw new Error(importReviewCopy.errors.fileTooLarge(COLLECTION_FILE_MAX_LABEL));
   const { rows, errors } = parseCollectionCsv(await file.text());
   return buildPreview({ userId, filename: file.name, rows, errors });
