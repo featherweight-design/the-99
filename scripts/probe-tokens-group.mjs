@@ -133,8 +133,10 @@ const HEADING = "#deck-tokens-heading button";
 /** PROBE_SHOTS=<dir>: the group as drawn at each state, one image apiece. */
 const shot = (page, width, name) =>
   process.env.PROBE_SHOTS ? page.locator("section[aria-labelledby='deck-tokens-heading']").first().screenshot({ path: `${process.env.PROBE_SHOTS}/tokens-${name}-${width}.png` }) : null;
-const rows = (page) => page.locator("main li[data-token-state]:not([data-token-tile])").count();
-const tiles = (page) => page.locator("main [data-token-tile]").count();
+// Only THIS run's fixture tokens (named `Probe …`): a populated catalog may already give the deck tokens of its own.
+const PROBE_TOKEN = /Probe (Goblin|Soldier|Treasure)/;
+const rows = (page) => page.locator("main li[data-token-state]:not([data-token-tile])").filter({ hasText: PROBE_TOKEN }).count();
+const tiles = (page) => page.locator("main [data-token-tile]").filter({ hasText: PROBE_TOKEN }).count();
 
 async function leg(browser, size, deckA, deckB, makerName) {
   const tag = `@${size.width}`;
@@ -166,17 +168,20 @@ async function leg(browser, size, deckA, deckB, makerName) {
     await page.locator(HEADING).first().click();
     await page.evaluate((k) => localStorage.setItem(k, "card"), VIEW_KEY);
     await page.goto(`${BASE}/decks/${deckA}`, { waitUntil: "domcontentloaded" });
-    await page.locator("main [data-token-tile]").first().waitFor({ timeout: 60_000 });
+    await page.locator("main [data-token-tile]").filter({ hasText: PROBE_TOKEN }).first().waitFor({ timeout: 60_000 });
     // Art waits to come near the viewport (`HydratedImg`), so bring the group there first.
-    await page.locator("main [data-token-tile]").first().scrollIntoViewIfNeeded();
+    await page.locator("main [data-token-tile]").filter({ hasText: PROBE_TOKEN }).first().scrollIntoViewIfNeeded();
     const artLoaded = await page.waitForFunction(
-      () => [...document.querySelectorAll("main [data-token-tile] img")].length === 3 && [...document.querySelectorAll("main [data-token-tile] img")].every((i) => i.complete && i.naturalWidth > 0),
+      () => {
+        const imgs = [...document.querySelectorAll("main [data-token-tile]")].filter((t) => /Probe (Goblin|Soldier|Treasure)/.test(t.textContent)).map((t) => t.querySelector("img"));
+        return imgs.length === 3 && imgs.every((i) => i && i.complete && i.naturalWidth > 0);
+      },
       null, { timeout: 20_000 },
     ).then(() => true, () => false);
     report(`${tag}: each tile's art loads`, artLoaded, artLoaded ? "3 of 3" : "not loaded in 20s");
     await page.waitForTimeout(500);
     const geo = await page.evaluate(() => {
-      const ts = [...document.querySelectorAll("main [data-token-tile]")];
+      const ts = [...document.querySelectorAll("main [data-token-tile]")].filter((t) => /Probe (Goblin|Soldier|Treasure)/.test(t.textContent));
       const boxes = ts.map((t) => { const r = t.getBoundingClientRect(); return { l: Math.round(r.left), t: Math.round(r.top), w: Math.round(r.width) }; });
       const tops = [...new Set(boxes.map((b) => b.t))];
       const firstRow = boxes.filter((b) => b.t === tops[0]).length;
@@ -185,14 +190,14 @@ async function leg(browser, size, deckA, deckB, makerName) {
         art: ts.every((t) => !!t.querySelector("img")),
         names: ts.map((t) => t.textContent.includes("Probe")).every(Boolean),
         wide: document.documentElement.scrollWidth > document.documentElement.clientWidth,
-        rowsLeft: document.querySelectorAll("main li[data-token-state]:not([data-token-tile])").length,
+        rowsLeft: [...document.querySelectorAll("main li[data-token-state]:not([data-token-tile])")].filter((r) => /Probe (Goblin|Soldier|Treasure)/.test(r.textContent)).length,
       };
     });
     report(`${tag}: Card view draws the three as tiles with art and names, no rows, nothing wider than the page`, geo.n === 3 && geo.art && geo.names && geo.rowsLeft === 0 && !geo.wide, JSON.stringify(geo));
     if (size.width < 500) report(`${tag}: two across on a phone`, geo.firstRow === 2, `${geo.firstRow} in the first row, tiles ${geo.w}px`);
     else report(`${tag}: the deck's 178px floor from md`, geo.w >= 178, `${geo.w}px`);
     await shot(page, size.width, "card-open");
-    const controls = await page.locator("main [data-token-tile]").first().getByRole("button").count();
+    const controls = await page.locator("main [data-token-tile]").filter({ hasText: PROBE_TOKEN }).first().getByRole("button").count();
     report(`${tag}: a tile keeps its presses and makers fold`, controls >= 3, `${controls} buttons`);
 
     // `Tokens ›` on a folded group.
