@@ -85,8 +85,14 @@ describe("markUpcomingSeen", () => {
     expect(values).toHaveBeenCalledWith({ userId: "user_1", upcomingSeenCodes: ["trc", "lists:trc"] });
   });
 
-  it("refuses more than fifty codes in one call", async () => {
-    const many = Array.from({ length: 51 }, (_, i) => `s${i.toString(36).padStart(2, "0")}`);
-    await expect(markUpcomingSeen("user_1", many)).rejects.toThrow(/at most 50/);
+  it("writes more than fifty keys fifty to a statement, never refusing a dismiss", async () => {
+    const many = Array.from({ length: 101 }, (_, i) => `s${i.toString(36).padStart(2, "0")}`);
+    const sizes: number[] = [];
+    const values = vi.fn((v: { upcomingSeenCodes: string[] }) => {
+      sizes.push(v.upcomingSeenCodes.length);
+      return { onConflictDoUpdate: vi.fn(async () => undefined) };
+    });
+    await markUpcomingSeen("user_1", many, { insert: vi.fn(() => ({ values })) } as never);
+    expect(sizes).toEqual([50, 50, 1]);
   });
 });

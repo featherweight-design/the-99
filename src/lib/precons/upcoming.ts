@@ -123,12 +123,11 @@ export function upcomingSeenWrite(userId: string, keys: string[], q: Writer = db
 
 /**
  * Records that `userId` has been shown these sets (`trc`) or their decklists (`lists:trc`). A key of neither
- * form is dropped, and more than `MAX_CODES` in one call is refused: the caller passes the arrivals it drew,
- * which are never that many. Every key already held writes nothing.
+ * form is dropped. Every key already held writes nothing. The keys are written `MAX_CODES` to a statement, so a
+ * reader with many arrivals (each lists line is two keys) is never refused a dismiss: a refusal here was swallowed
+ * by the ✕ and the banner came back on every load.
  */
 export async function markUpcomingSeen(userId: string, codes: readonly string[], q: Writer = db): Promise<void> {
   const valid = [...new Set(codes.filter((c) => SEEN_KEY.test(c)))];
-  if (valid.length > MAX_CODES) throw new Error(`markUpcomingSeen: ${valid.length} codes, at most ${MAX_CODES}`);
-  if (valid.length === 0) return;
-  await upcomingSeenWrite(userId, valid, q);
+  for (let i = 0; i < valid.length; i += MAX_CODES) await upcomingSeenWrite(userId, valid.slice(i, i + MAX_CODES), q);
 }
