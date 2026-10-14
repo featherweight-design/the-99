@@ -393,7 +393,7 @@ product owns no confirm dialog.
 | margin-bottom | `13px` | `14px` |
 | emphasis run | `v2, committed 14 Mar` in `#EDE6D8`, `font-weight 600` | `v2 as committed on 14 Mar` in `#EDE6D8`, `font-weight 600` |
 | must name | the version, **its date** and **its card count** | same |
-| text | canvas: `Back to v2, committed 14 Mar — 99 cards. Nothing about the changes is stored, so this cannot be undone.` | canvas: `The deck goes back to v2 as committed on 14 Mar — 99 cards. The nineteen you added and the seventeen you cut are not stored anywhere, so this cannot be undone.` (production string is `discard.consequence`) |
+| text | canvas: `Back to v2, committed 14 Mar — 99 cards. Nothing about the changes is stored, so this can’t be undone.` | canvas: `The deck goes back to v2 as committed on 14 Mar — 99 cards. The nineteen you added and the seventeen you cut are not stored anywhere, so this can’t be undone.` (production string is `discard.consequence`) |
 
 ### Button row
 
