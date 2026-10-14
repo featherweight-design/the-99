@@ -235,6 +235,15 @@ describe("GotItConfirm", () => {
     expect(add()).toHaveTextContent(c.add(1));
   });
 
+  it("says the printings did not load, not that an add failed, when no add was tried", async () => {
+    loadPrintingChoices.mockRejectedValue(new Error("network"));
+    renderConfirm();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(c.loadFailedTitle));
+    expect(screen.getByRole("alert")).toHaveTextContent(c.loadFailedBody);
+    expect(screen.getByRole("alert")).not.toHaveTextContent(c.failedTitle);
+    expect(markBought).not.toHaveBeenCalled();
+  });
+
   it("keeps the choices when the write fails, and retries the same press", async () => {
     markBought.mockRejectedValueOnce(new Error("network"));
     renderConfirm();
