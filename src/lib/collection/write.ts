@@ -15,7 +15,7 @@ import { pruneOrphanAssignments } from "../decks/prune-assignments";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
-import { clearPreconTokens, markPreconTokens, recordUploadTokens, type TokenHolding } from "../tokens/ownership";
+import { recordUploadTokens, syncPreconTokens, type TokenHolding } from "../tokens/ownership";
 
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
@@ -71,7 +71,7 @@ export type CollectionChange =
   /**
    * Quantities added: an upload in Add mode (`uploadId`, stamped as above), the Add cards sheet, or a
    * precon added to the collection, whose `preconTokens` are marked owned by this entry
-   * (`markPreconTokens`) and taken back when it is reverted.
+   * (`syncPreconTokens`) and taken back when it is reverted.
    */
   | { kind: "add"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[]; preconTokens?: TokenHolding[] }
   /**
@@ -710,8 +710,8 @@ export async function applyCollectionChange(
           .set({ revertsId: change.entryId })
           .where(eq(collectionHistory.id, opts.id));
         target = row;
-        // A precon's tokens go with its cards.
-        await clearPreconTokens(tx, userId, change.entryId);
+        // A precon's tokens go with its cards, and come back with them when a revert is reverted.
+        await syncPreconTokens(tx, userId);
         if (change.ignoreDeckId !== undefined && row.source === `shopping:${change.ignoreDeckId}`) {
           ignoredDecks.add(change.ignoreDeckId);
         }
@@ -886,7 +886,7 @@ export async function applyCollectionChange(
         await recordUploadTokens(tx, userId, uploadId, change.kind, change.tokens);
       }
       const tokensMarked = change.kind === "add" && change.preconTokens
-        ? await markPreconTokens(tx, userId, opts.id, change.preconTokens)
+        ? await syncPreconTokens(tx, userId, opts.id)
         : undefined;
 
       const moves = countMoves(rows);

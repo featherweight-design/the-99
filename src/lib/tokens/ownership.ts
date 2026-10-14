@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { deckTokenJoins, tokenOwnership, tokenReads } from "../../db/schema";
+import { deckTokenJoins, preconTokens, tokenOwnership, tokenPrintings, tokenReads } from "../../db/schema";
+import { standingPreconAdds } from "../precons/added";
 
 /**
  * Token ownership (plan `2026-10-11-tokens-for-my-deck.md`, PR 3). Pure rules first, then the writes.
@@ -36,7 +37,7 @@ export function aggregateTokenRows(rows: { tokenOracleId: string; quantity: numb
 }
 
 /** Anything that runs one statement: a transaction or the db. */
-type Runner = Pick<typeof db, "execute" | "insert" | "delete" | "select">;
+type Runner = Pick<typeof db, "execute" | "insert" | "delete" | "select" | "update">;
 
 const BATCH = 500;
 
@@ -130,31 +131,63 @@ export async function writeUploadTokens(
 }
 
 /**
- * A precon's tokens, marked owned by the `add` entry `entryId` that added the precon (its own `precon`
- * source), so reverting that entry takes back exactly these. A token the player already holds, by any
- * source, is left as it stands. Joins first, as every write that makes a token held does
- * (`writeUploadTokens`), then the rows. Never writes the read marker: a precon says nothing about the
- * tokens it does not hold. Returns the token oracle ids it marked.
+ * Re-derives the player's `precon` token rows from the precon adds whose cards still stand
+ * (`standingPreconAdds`: an add reverted, or a revert itself reverted, follows its cards), so any
+ * order of adds and reverts leaves the tokens agreeing with the collection. Each token a standing add
+ * names is owned, attributed to the OLDEST such add and counted over all of them; a precon row no
+ * standing add names goes. A token the player holds by any other source is left as it stands and is
+ * never taken over. Joins first, as every write that makes a token held does (`writeUploadTokens`).
+ * Never writes the read marker: a precon says nothing about the tokens it does not hold.
+ *
+ * Runs inside the ledger's transaction, under the per-user lock. Returns the token oracle ids it newly
+ * marked owned for entry `entryId`, which is what an add reports.
  */
-export async function markPreconTokens(tx: Runner, userId: string, entryId: string, tokens: TokenHolding[]): Promise<string[]> {
-  if (tokens.length === 0 || !(await tokenOwnershipTablesExist(tx))) return [];
-  const ids = tokens.map((t) => t.tokenOracleId);
-  await tx.delete(deckTokenJoins).where(and(eq(deckTokenJoins.userId, userId), inArray(deckTokenJoins.tokenOracleId, ids)));
-  const marked = await tx.insert(tokenOwnership)
-    .values(tokens.map((t) => ({ userId, tokenOracleId: t.tokenOracleId, quantity: t.quantity, source: "precon" as const, entryId })))
-    .onConflictDoNothing()
-    .returning({ id: tokenOwnership.tokenOracleId });
-  return marked.map((m) => m.id);
-}
+export async function syncPreconTokens(tx: Runner, userId: string, entryId?: string): Promise<string[]> {
+  if (!(await tokenOwnershipTablesExist(tx))) return [];
+  const adds = await standingPreconAdds(userId, tx);
+  const files = [...new Set(adds.map((a) => a.fileName))];
+  const named = files.length === 0 ? [] : await tx
+    .select({ fileName: preconTokens.fileName, tokenOracleId: tokenPrintings.tokenOracleId, quantity: preconTokens.quantity })
+    .from(preconTokens)
+    .innerJoin(tokenPrintings, eq(tokenPrintings.scryfallId, preconTokens.tokenPrintingId))
+    .where(inArray(preconTokens.fileName, files));
+  const byFile = new Map<string, { tokenOracleId: string; quantity: number }[]>();
+  for (const n of named) byFile.set(n.fileName, [...(byFile.get(n.fileName) ?? []), n]);
+  const want = new Map<string, { entryId: string; quantity: number }>();
+  for (const add of adds) {
+    for (const t of byFile.get(add.fileName) ?? []) {
+      const at = want.get(t.tokenOracleId);
+      if (at) at.quantity += t.quantity;
+      else want.set(t.tokenOracleId, { entryId: add.id, quantity: t.quantity });
+    }
+  }
 
-/** Reverting entry `entryId` takes back the precon tokens it marked, and nothing else. */
-export async function clearPreconTokens(tx: Runner, userId: string, entryId: string): Promise<void> {
-  if (!(await tokenOwnershipTablesExist(tx))) return;
-  await tx.delete(tokenOwnership).where(and(
-    eq(tokenOwnership.userId, userId),
-    eq(tokenOwnership.source, "precon"),
-    eq(tokenOwnership.entryId, entryId),
-  ));
+  const have = await tx.select({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId, quantity: tokenOwnership.quantity })
+    .from(tokenOwnership).where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "precon")));
+  const gone = have.filter((h) => !want.has(h.id)).map((h) => h.id);
+  if (gone.length > 0) {
+    await tx.delete(tokenOwnership).where(and(
+      eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "precon"), inArray(tokenOwnership.tokenOracleId, gone),
+    ));
+  }
+  for (const h of have) {
+    const w = want.get(h.id);
+    if (w && (w.entryId !== h.entryId || w.quantity !== h.quantity)) {
+      await tx.update(tokenOwnership).set({ entryId: w.entryId, quantity: w.quantity, updatedAt: sql`now()` })
+        .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.tokenOracleId, h.id), eq(tokenOwnership.source, "precon")));
+    }
+  }
+  const held = new Set(have.map((h) => h.id));
+  const fresh = [...want].filter(([id]) => !held.has(id));
+  if (fresh.length === 0) return [];
+  const marked = await tx.insert(tokenOwnership)
+    .values(fresh.map(([id, w]) => ({ userId, tokenOracleId: id, quantity: w.quantity, source: "precon" as const, entryId: w.entryId })))
+    .onConflictDoNothing()
+    .returning({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId });
+  if (marked.length > 0) {
+    await tx.delete(deckTokenJoins).where(and(eq(deckTokenJoins.userId, userId), inArray(deckTokenJoins.tokenOracleId, marked.map((m) => m.id))));
+  }
+  return marked.filter((m) => m.entryId === entryId).map((m) => m.id);
 }
 
 /** The player's own `I have one`. Never writes the read marker; never touches an upload row. */

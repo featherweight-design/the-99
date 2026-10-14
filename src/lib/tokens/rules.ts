@@ -33,7 +33,7 @@ export function collidingTokenIds(tokens: (TokenFace & { oracleId: string })[]):
 
 /**
  * What holds a token: an upload row, the player's own mark, or a precon added to the collection
- * (`markPreconTokens`), which Revert of that add takes back.
+ * (`syncPreconTokens`), which Revert of that add takes back.
  */
 export type TokenSource = "upload" | "manual" | "precon";
 

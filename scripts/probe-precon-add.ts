@@ -11,12 +11,16 @@
 //   c  `preconAddedOn` reads the add; it reads null again once the entry is reverted
 //   d  a token the player already held by hand is left a hand mark, and is not counted as marked
 //   e  a second add adds a second box of copies and marks no token (all already held)
-//   f  reverting the second add leaves the first add's tokens; reverting the first clears them, keeps
-//      the hand mark, and leaves the collection empty
+//   f  reverting the FIRST add while the second stands keeps every token, now the second's
+//   g  reverting that revert brings the first add's copies back, its tokens back to it, and reads as
+//      added again
+//   h  reverting the second, then the revert of the revert, clears every precon token, keeps the hand
+//      mark, and leaves the collection empty
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
 // restored by copying back), and each fails it:
-//   - `clearPreconTokens` removed from the revert (`write.ts`): fails f.
+//   - `syncPreconTokens` removed from the revert (`write.ts`): fails f, g and h.
+//   - `standingIds` treating every reverted entry as gone (no chain): fails g.
 //   - the foil split dropped (`preconAddLines` writing every copy non-foil): fails a.
 //
 // It writes under a per-run `user_id` and purges that account in a `finally`, so it fails closed:
@@ -71,10 +75,13 @@ const owned = async () => rows<{ token: string; source: string; entry: string | 
   select t.name as token, o.source, o.entry_id::text as entry from token_ownership o
   join tokens t on t.oracle_id = o.token_oracle_id where o.user_id = ${USER} order by t.name`);
 
-async function revert(entryId: string) {
-  const r = await applyCollectionChange(USER, { kind: "revert", entryId }, { id: randomUUID(), env: ENV });
+async function revert(entryId: string): Promise<string> {
+  const id = randomUUID();
+  const r = await applyCollectionChange(USER, { kind: "revert", entryId }, { id, env: ENV });
   if (r.status !== "applied") throw new Error(`revert refused: ${r.status}`);
+  return id;
 }
+const preconRows = async () => (await owned()).filter((t) => t.source === "precon");
 
 async function run() {
   const [{ branch }] = await rows<{ branch: string | null }>(sql`select current_setting('neon.branch_id', true) as branch`);
@@ -132,14 +139,23 @@ async function run() {
   check("e · a second add adds a second box", await copies(), { total: 200, foil: 4 });
   check("e · and marks no token", e.ok && e.tokens.marked, 0);
 
+  const undoFirst = await revert(first);
+  check("f · reverting the first while the second stands keeps its tokens", (await preconRows()).length, 8);
+  check("f · now the second's", (await preconRows()).every((t) => t.entry === second), true);
+  check("f · and one box of copies", await copies(), { total: 100, foil: 2 });
+
+  const redoFirst = await revert(undoFirst);
+  check("g · reverting that revert brings the first box back", await copies(), { total: 200, foil: 4 });
+  check("g · and its tokens back to it", (await preconRows()).every((t) => t.entry === first) && (await preconRows()).length, 8);
+  check("g · and reads as added", (await preconAddedOn(USER, FILE)) !== null, true);
+
   await revert(second);
-  check("f · reverting the second leaves the first's tokens", (await owned()).filter((t) => t.source === "precon").length, 8);
-  check("f · and its copies", await copies(), { total: 100, foil: 2 });
-  await revert(first);
+  check("h · reverting the second leaves the first's tokens", (await preconRows()).length, 8);
+  await revert(redoFirst);
   const left = await owned();
-  check("f · reverting the first clears its tokens", left.filter((t) => t.source === "precon").length, 0);
-  check("f · and keeps the hand mark", left.map((t) => `${t.token}:${t.source}`), ["Soldier:manual"]);
-  check("f · and empties the collection", await copies(), { total: 0, foil: 0 });
+  check("h · undoing the first again clears every precon token", left.filter((t) => t.source === "precon").length, 0);
+  check("h · and keeps the hand mark", left.map((t) => `${t.token}:${t.source}`), ["Soldier:manual"]);
+  check("h · and empties the collection", await copies(), { total: 0, foil: 0 });
   check("c · a reverted add is not read as added", await preconAddedOn(USER, FILE), null);
 }
 
