@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F;
+    --surface-raised:#211D18; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-mid:#AB6E37; --accent-shadow:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --avail-hard-fg:#D9975C; --avail-over-fg:#C46857; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+    --fact:#8FA6BE;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B; --surface-sunken:#101219; --surface-inset:#13151C;
+    --elevated:#20222A; --elevated-hover:#181A21; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-mid:#D33E7E; --accent-shadow:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-hard-fg:#DF8AA7; --avail-over-fg:#C26755; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+    --fact:#8FA6BE;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:52px;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Combo awareness &middot; three states, three hosts &middot; four turns &middot; current: <a href="#4a">4a</a></span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-disabled);">theme: {{ theme }} &mdash; switch it in Tweaks</span>
+    </div>
+    <h1 style="font-family:var(--display),serif;font-weight:800;font-size:36px;margin:0;line-height:1.12;color:var(--fg);">Browse hosts get the marker; decision hosts get the sentence.</h1>
+    <p style="font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;max-width:940px;text-wrap:pretty;">Round 2&rsquo;s lemniscate is not redrawn and not re&ndash;argued. What this round adds is <b style="color:var(--fg);font-weight:600;">the partner&rsquo;s name</b> &mdash; because a mark alone cannot say <i>with Demonic Consultation</i>, and that name is the whole value. <b style="color:var(--fg);font-weight:600;">The rule: on the shipped one-line <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">/collection</span> row and tile the marker joins the Game Changer cluster and its hover tooltip carries the name; on the Add panel and the Last-31 list the mark leaves the name line to lead a one-line clause.</b> One glyph, never drawn twice on one row.</p>
+    <p style="font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;max-width:940px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">One mark with three readings, not three marks.</b> The three states differ by <i>ownership of the row&rsquo;s card</i>, and every host already draws that &mdash; the shipped ownership dot and the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">BuyTag</span>. So state 2 and state 3 wear the identical mark and the identical string, and the row&rsquo;s own money column is the only thing that differs. <b style="color:var(--fg);font-weight:600;">The combo clause never turns <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">--warning</span> and never enters the availability slot.</b></p>
+    <p style="font-size:14px;line-height:1.7;color:var(--fg-faint);margin:2px 0 0;max-width:940px;">Written handoff: <a href="HANDOFF.md">HANDOFF.md</a> (start here &mdash; reading order and the four things most likely to get broken in build) &middot; <a href="README.md">README.md</a> (the five calls and what each refuses) &middot; <a href="ADDENDUM-modal-block.md">ADDENDUM-modal-block.md</a> (the card-modal block, closed row and all) &middot; <a href="STATES-combo-awareness.md">STATES-combo-awareness.md</a> (the state matrices and the host coverage grid) &middot; <a href="combo-awareness &middot; copy strings.ts">copy strings</a> (the clause, the tooltips, the modal block &mdash; every string bounded) &middot; <a href="READINESS.md">READINESS.md</a>.</p>
+  </div>
+
+  <div style="max-width:1180px;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;background:var(--surface);padding:16px 20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">the measured population this is drawn against</div>
+    <div style="display:flex;gap:26px;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--fg);">77</span><span style="font-size:12px;color:var(--fg-muted);">cards, state 1 &mdash; both halves owned, unassembled</span></div>
+      <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--fg);">~4</span><span style="font-size:12px;color:var(--fg-muted);">per deck, state 2 &mdash; one away, you own it</span></div>
+      <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--fg);">~37</span><span style="font-size:12px;color:var(--fg-muted);">per deck, state 3 &mdash; one away, you&rsquo;d buy it</span></div>
+      <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--fg-locked);">962</span><span style="font-size:12px;color:var(--fg-muted);">raw near-misses across 20 decks &mdash; <b style="color:var(--fg-body);font-weight:600;">the reason there is no list</b></span></div>
+    </div>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:26px;">
+
+    <div id="4a" style="display:flex;flex-direction:column;gap:22px;">
+
+      <div style="max-width:1180px;display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">4a</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Turn 4 &middot; corrected against the shipped row &mdash; supersedes <a href="#1b">1b</a> on /collection</span>
+        </div>
+        <h2 style="font-family:var(--display),serif;font-weight:700;font-size:26px;margin:0;color:var(--fg);">On /collection it is a marker, not a sentence &mdash; rendered exactly like Game Changer, with the partner name in the tooltip.</h2>
+        <p style="font-size:13.5px;line-height:1.7;color:var(--fg-muted);margin:0;max-width:960px;text-wrap:pretty;">Turn 1 drew the collection row as a two-line row with a type line underneath. <b style="color:var(--fg);font-weight:600;">The shipped row is one line</b> &mdash; name at the left, a marker cluster after it, meta at the right &mdash; and it already renders a fact marker with a hover tooltip: the Game Changer bolt. <b style="color:var(--fg-body);font-weight:600;">So the combo mark joins that family rather than inventing a second pattern beside it.</b></p>
+        <p style="font-size:13px;line-height:1.7;color:var(--fg-faint);margin:0;max-width:960px;"><b style="color:var(--fg-body);font-weight:600;">The clause is dropped from both /collection hosts.</b> The partner name is not lost &mdash; it moves into the tooltip and the modal. The candidate surfaces keep their clause; the reason is at the foot of this turn.</p>
+      </div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="flex:1;min-width:560px;display:flex;flex-direction:column;gap:13px;border:1px solid var(--accent-shadow);border-radius:11px;background:var(--surface);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">collection row &middot; desktop &mdash; the shipped one-line row</span>
+
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">shipped today &mdash; Game Changer, the pattern this follows</span>
+            <div style="display:flex;align-items:center;gap:0;background:var(--surface-raised);border:1px solid var(--border);border-radius:9px;padding:0 16px;min-height:56px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);width:52px;flex:none;">&times;1</span>
+              <span style="font-size:15px;font-weight:600;color:var(--fg);flex:none;">Smothering Tithe</span>
+              <span style="display:flex;align-items:center;gap:11px;margin-left:13px;flex:1;min-width:0;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--avail-hard-fg);">&#9670; none free</span>
+              </span>
+              <span style="display:flex;align-items:center;gap:6px;flex:none;"><span style="width:17px;height:17px;border-radius:50%;background:#3A3630;color:var(--fg-body);font-size:10px;display:flex;align-items:center;justify-content:center;">3</span><span style="width:17px;height:17px;border-radius:50%;background:var(--w);"></span></span>
+              <span style="font-size:13.5px;color:var(--fg-muted);width:150px;text-align:left;padding-left:22px;flex:none;">Enchantment</span>
+              <span style="display:flex;align-items:center;gap:7px;width:96px;flex:none;"><span style="width:9px;height:9px;border-radius:50%;background:var(--warning);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">CMM</span></span>
+              <span style="font-size:13px;color:var(--fg-faint);flex:none;">&#8250;</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">state 1 &mdash; the lemniscate in the same slot, same size, same silence</span>
+            <div style="position:relative;display:flex;align-items:center;gap:0;background:var(--surface-raised);border:1px solid var(--border);border-radius:9px;padding:0 16px;min-height:56px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);width:52px;flex:none;">&times;1</span>
+              <span style="font-size:15px;font-weight:600;color:var(--fg);flex:none;">Thassa&rsquo;s Oracle</span>
+              <span style="display:flex;align-items:center;gap:11px;margin-left:13px;flex:1;min-width:0;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">1 free</span>
+              </span>
+              <span style="display:flex;align-items:center;gap:6px;flex:none;"><span style="width:17px;height:17px;border-radius:50%;background:#3A3630;color:var(--fg-body);font-size:10px;display:flex;align-items:center;justify-content:center;">1</span><span style="width:17px;height:17px;border-radius:50%;background:var(--u);"></span></span>
+              <span style="font-size:13.5px;color:var(--fg-muted);width:150px;text-align:left;padding-left:22px;flex:none;">Creature</span>
+              <span style="display:flex;align-items:center;gap:7px;width:96px;flex:none;"><span style="width:9px;height:9px;border-radius:50%;background:var(--u);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">THB</span></span>
+              <span style="font-size:13px;color:var(--fg-faint);flex:none;">&#8250;</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">hover &mdash; the tooltip carries the name the marker cannot say</span>
+            <div style="position:relative;padding-top:42px;">
+              <div style="position:absolute;top:0;left:196px;max-width:360px;background:var(--elevated);border:1px solid var(--border-strong);border-radius:6px;padding:7px 11px;box-shadow:0 4px 12px rgba(0,0,0,.5);">
+                <span style="font-size:13px;color:var(--fg);line-height:1.5;">Two-card combo with Demonic Consultation. You own both.</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:0;background:var(--surface-raised);border:1px solid var(--border);border-radius:9px;padding:0 16px;min-height:56px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);width:52px;flex:none;">&times;1</span>
+                <span style="font-size:15px;font-weight:600;color:var(--fg);flex:none;">Thassa&rsquo;s Oracle</span>
+                <span style="display:flex;align-items:center;gap:11px;margin-left:13px;flex:1;min-width:0;">
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 5px color-mix(in oklab,var(--fact) 70%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">1 free</span>
+                </span>
+                <span style="display:flex;align-items:center;gap:6px;flex:none;"><span style="width:17px;height:17px;border-radius:50%;background:#3A3630;color:var(--fg-body);font-size:10px;display:flex;align-items:center;justify-content:center;">1</span><span style="width:17px;height:17px;border-radius:50%;background:var(--u);"></span></span>
+                <span style="font-size:13.5px;color:var(--fg-muted);width:150px;text-align:left;padding-left:22px;flex:none;">Creature</span>
+                <span style="display:flex;align-items:center;gap:7px;width:96px;flex:none;"><span style="width:9px;height:9px;border-radius:50%;background:var(--u);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">THB</span></span>
+                <span style="font-size:13px;color:var(--fg-faint);flex:none;">&#8250;</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">both facts &mdash; Round 1&rsquo;s fixed order, one cluster, no new line</span>
+            <div style="display:flex;align-items:center;gap:0;background:var(--surface-raised);border:1px solid var(--border);border-radius:9px;padding:0 16px;min-height:56px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);width:52px;flex:none;">&times;1</span>
+              <span style="font-size:15px;font-weight:600;color:var(--fg);flex:none;">Underworld Breach</span>
+              <span style="display:flex;align-items:center;gap:9px;margin-left:13px;flex:1;min-width:0;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);margin-left:2px;">1 free</span>
+              </span>
+              <span style="display:flex;align-items:center;gap:6px;flex:none;"><span style="width:17px;height:17px;border-radius:50%;background:#3A3630;color:var(--fg-body);font-size:10px;display:flex;align-items:center;justify-content:center;">1</span><span style="width:17px;height:17px;border-radius:50%;background:var(--r);"></span></span>
+              <span style="font-size:13.5px;color:var(--fg-muted);width:150px;text-align:left;padding-left:22px;flex:none;">Enchantment</span>
+              <span style="display:flex;align-items:center;gap:7px;width:96px;flex:none;"><span style="width:9px;height:9px;border-radius:50%;background:var(--r);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">THB</span></span>
+              <span style="font-size:13px;color:var(--fg-faint);flex:none;">&#8250;</span>
+            </div>
+            <span style="font-size:12px;color:var(--fg-muted);line-height:1.6;">Two markers, one cluster, Round 1&rsquo;s order &mdash; and <b style="color:var(--fg-body);font-weight:600;">each has its own tooltip</b>, as the bolt does today. <b style="color:var(--fg);font-weight:600;">The &ldquo;mark moves down to lead a sentence&rdquo; rule is withdrawn on this host</b>: there is no second line to move to, and with no clause there is nothing to lead.</span>
+          </div>
+        </div>
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">the marker, to Game Changer&rsquo;s spec exactly</span>
+          <div style="width:360px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:13px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+              <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.55;"><b style="color:var(--fg);font-weight:600;">Game Changer</b> &mdash; 16&times;16, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fact</span>, in the cluster after the name, tooltip on hover, no target.</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;padding:10px 12px;background:var(--surface);border:1px solid var(--accent-shadow);border-radius:8px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.55;"><b style="color:var(--fg);font-weight:600;">Two-card combo</b> &mdash; identical in all four. <b style="color:var(--fg-body);font-weight:600;">The only difference is what the tooltip says</b>, because the only difference is the fact.</span>
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:360px;"><b style="color:var(--fg);font-weight:600;">The key already has the entry.</b> The shipped legend reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#9889; game changer</span> &hellip; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#8734; Two-card combo</span> &mdash; so the marker is already named where the reader learns the family, and nothing about the legend changes.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:360px;"><b style="color:var(--fg-body);font-weight:600;">Tooltip copy, both hosts:</b> <i>&ldquo;Two-card combo with Demonic Consultation. You own both.&rdquo;</i> Two sentences, Game Changer&rsquo;s register (<i>&ldquo;This card is on the Game Changer list.&rdquo;</i>) &mdash; sentence case, full stop, no mono. <b style="color:var(--fg);font-weight:600;">Several partners:</b> <i>&ldquo;Two-card combo with Demonic Consultation, and 3 others.&rdquo;</i> &mdash; a count of what the tooltip is not naming, never a claim about what exists.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:360px;"><b style="color:var(--fg);font-weight:600;">Touch:</b> no hover, so the tooltip is unreachable at 390 &mdash; and that is correct rather than a gap. The row&rsquo;s own tap opens the modal, where the block holds every partner and its state. <b style="color:var(--fg-body);font-weight:600;">Same as Game Changer today.</b></div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">card tile &mdash; the marker joins the caption&rsquo;s marker row, nothing yields</span>
+          <div style="display:flex;gap:16px;align-items:flex-start;">
+
+            <div style="width:186px;display:flex;flex-direction:column;gap:9px;">
+              <div style="aspect-ratio:63/88;border-radius:8px;background:linear-gradient(150deg,#2f2a22,#1c1913);border:1px solid var(--border);"></div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;align-items:center;gap:9px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:999px;padding:3px 9px;">&#9670; none free</span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">CMM &middot; mythic</span>
+                </div>
+                <span style="font-size:15px;font-weight:600;color:var(--fg);line-height:1.25;">Smothering Tithe</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">shipped today</span>
+            </div>
+
+            <div style="width:186px;display:flex;flex-direction:column;gap:9px;">
+              <div style="aspect-ratio:63/88;border-radius:8px;background:linear-gradient(150deg,#1f2a33,#151a20);border:1px solid var(--border);"></div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;align-items:center;gap:9px;">
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">THB &middot; rare</span>
+                </div>
+                <span style="font-size:15px;font-weight:600;color:var(--fg);line-height:1.25;">Thassa&rsquo;s Oracle</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);">state 1 &mdash; SET &middot; rarity intact</span>
+            </div>
+
+            <div style="width:186px;display:flex;flex-direction:column;gap:9px;">
+              <div style="aspect-ratio:63/88;border-radius:8px;background:linear-gradient(150deg,#332a22,#1d1813);border:1px solid var(--border);"></div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:999px;padding:3px 9px;">short 1</span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                </div>
+                <span style="font-size:15px;font-weight:600;color:var(--fg);line-height:1.25;">Underworld Breach</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);">chip + two markers &mdash; SET &middot; rarity drops, as it does today</span>
+            </div>
+
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:620px;"><b style="color:var(--fg);font-weight:600;">The tile&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SET &middot; rarity</span> yield is withdrawn.</b> It was invented to make room for a ~100px partner name; a 16px glyph needs no room. <b style="color:var(--fg-body);font-weight:600;">Round 1&rsquo;s rule is restored whole: nothing yields</b> &mdash; the marker row already holds a chip, a bolt and a printing today, and the lemniscate is one more 16px glyph in a row built for them. Caption height untouched.</div>
+        </div>
+
+        <div style="flex:1;min-width:360px;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">what this costs, and where the name went</span>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Turn 1&rsquo;s argument was that a mark alone cannot say <i>with Demonic Consultation</i>, and that name is the whole value.</b> That still holds &mdash; what changed is where the sentence lives. On /collection it is <b style="color:var(--fg-body);font-weight:600;">the tooltip on pointer, the modal on touch</b>, and the row stays one line at both widths.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The honest cost: at 390 the name is two taps away rather than on screen.</b> That is a real loss, and it is the price of the marker family being the family &mdash; the bolt has always worked this way, and a combo mark that behaved differently would teach the reader that some markers talk and some do not.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:11px;"><b style="color:var(--fg);font-weight:600;">The candidate surfaces keep their clause.</b> On the Add panel and the Last-31 list the sentence is not a gloss on a browse row &mdash; it is the reason to pick <i>this</i> card out of 38 near-identical ones, at the moment of picking, and there is no marker family in a candidate row to join. <b style="color:var(--fg-body);font-weight:600;">Browse hosts get the marker; decision hosts get the sentence.</b> That is the line, and it is a sharper rule than Turn 1&rsquo;s.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg-body);font-weight:600;">Also withdrawn with the clause:</b> the Last-31 phone row&rsquo;s pip-track yield stands (that host keeps its clause), but <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span>&rsquo;s two yields &mdash; the row&rsquo;s type line and the tile&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SET &middot; rarity</span> &mdash; are both gone, along with the clause that needed them. <b style="color:var(--fg);font-weight:600;">Net effect on the shipped row: one 16px glyph, and nothing else moves.</b></div>
+        </div>
+
+      </div>
+
+      <div style="max-width:1180px;height:1px;background:var(--border-strong);"></div>
+    </div>
+
+    <div id="3a" style="display:flex;flex-direction:column;gap:22px;">
+
+      <div style="max-width:1180px;display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">3a</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Turn 3 &middot; the block closes by default &mdash; supersedes <a href="#2a">2a</a>&rsquo;s density</span>
+        </div>
+        <h2 style="font-family:var(--display),serif;font-weight:700;font-size:26px;margin:0;color:var(--fg);">A closed row that says what is inside, so the reader decides whether to spend the space.</h2>
+        <p style="font-size:13.5px;line-height:1.7;color:var(--fg-muted);margin:0;max-width:960px;text-wrap:pretty;">Six lines is ~230px in the oracle column and it pushed the printing, the price and the pager below the fold on the card the reader actually opened. <b style="color:var(--fg);font-weight:600;">The fix is not a shorter list &mdash; it is a closed block, always, at every count.</b> One 52px row, in the stack where it belongs, holding its position whether the reader opens it or never does.</p>
+        <p style="font-size:13px;line-height:1.7;color:var(--fg-faint);margin:0;max-width:960px;"><b style="color:var(--fg-body);font-weight:600;">And it is the honest answer to Hugh&rsquo;s question</b> &mdash; a list of fourteen stops being too much information when it is not on screen unless asked for.</p>
+      </div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:13px;border:1px solid var(--accent-shadow);border-radius:11px;background:var(--surface);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">closed &mdash; the default, and what most readers ever see</span>
+          <div style="width:520px;display:flex;flex-direction:column;gap:14px;">
+
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:0 15px;min-height:52px;display:flex;align-items:center;gap:11px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);flex:none;">Two-card combos</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);flex:1;min-width:0;"><span style="color:var(--success);">1 in this deck</span> &middot; 1 you own &middot; 4 you don&rsquo;t</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);flex:none;">&#9662;</span>
+            </div>
+
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The closed row is a count, and that is the one place a count is legal.</b> Everywhere else a number would claim completeness &mdash; here it is a description of <i>this list</i>, the same licence <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+8 more</span> had. <b style="color:var(--fg-body);font-weight:600;">It is a tally of what the block holds, not of what exists</b>, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#42;</span> still carries the bound.</div>
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The breakdown is the whole reason this works.</b> A bare <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Two-card combos &#9662;</span> makes every reader open it to find out whether they care. <b style="color:var(--fg-body);font-weight:600;">Counts by state let them decide while it is shut</b> &mdash; and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 in this deck</span> in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span> is the only part that is ever urgent, so it leads and it is the only part in colour.</div>
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg-body);font-weight:600;">A state with a count of zero is not drawn.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">4 you don&rsquo;t</span> alone, or <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 in this deck &middot; 4 you don&rsquo;t</span> &mdash; never a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 you own</span>. Absence is not drawn, as everywhere in this round.</div>
+          </div>
+        </div>
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">open &mdash; the same row, still in place, with the list under it</span>
+          <div style="width:520px;background:var(--bg);border:1px solid var(--accent-shadow);border-radius:10px;padding:0 15px 13px;display:flex;flex-direction:column;">
+            <div style="min-height:52px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--border);">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);flex:none;">Two-card combos <span style="color:var(--accent);font-size:11px;">&#42;</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:1;min-width:0;">against Kykar, Wind&rsquo;s Fury</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);flex:none;">&#9652;</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px;padding-top:11px;">
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#3a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Isochron Scepter</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);flex:none;">in this deck</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#3a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Paradox Engine</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);flex:none;">you own it</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#3a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Rings of Brighthearth</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">you don&rsquo;t own it</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#3a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Kiki-Jiki, Mirror Breaker</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">you don&rsquo;t own it</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#3a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Basalt Monolith</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">you don&rsquo;t own it</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#3a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Zealous Conscripts</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">you don&rsquo;t own it</span>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:520px;"><b style="color:var(--fg);font-weight:600;">Open, the row keeps its place and the scope line takes over from the counts.</b> The counts were the closed row&rsquo;s job &mdash; answering <i>is this worth opening</i> &mdash; and once it is open the lines answer it better. <b style="color:var(--fg-body);font-weight:600;">The scope line moves onto the header rather than under it</b>, so the block gains no chrome by opening. The <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#42;</span> is only there when open, because a closed block is not making a claim yet.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:520px;"><b style="color:var(--fg);font-weight:600;">The six-line cap is withdrawn.</b> It existed to stop a fourteen-line block, and a closed block already does. <b style="color:var(--fg-body);font-weight:600;">Open means all of them</b>, in the same order &mdash; in this deck, owned, unowned, popularity inside each band &mdash; and a reader who has explicitly asked for the list is not served by a second disclosure inside it. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+N more</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show all N</span> leave this block.</div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">the stack, closed &mdash; what the change actually buys</span>
+          <div style="width:400px;display:flex;flex-direction:column;gap:11px;">
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:9px;opacity:0.55;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In the bracket rules</span>
+              <span style="font-size:13px;color:var(--fg-body);">Game Changer</span>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:0 15px;min-height:52px;display:flex;align-items:center;gap:11px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);flex:none;">Two-card combos</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);flex:1;min-width:0;"><span style="color:var(--success);">1 in this deck</span> &middot; 1 you own</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);flex:none;">&#9662;</span>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:7px;opacity:0.55;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In your collection</span>
+              <span style="font-size:13px;color:var(--fg-body);">2 copies &middot; 1 free</span>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:7px;opacity:0.55;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In your decks</span>
+              <span style="font-size:13px;color:var(--fg-body);">Kykar, Wind&rsquo;s Fury</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px;">
+              <span style="font-size:13px;color:var(--accent);border-bottom:1px solid var(--accent-shadow);">Buy any printing at Mana Pool &#8599;</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">1 of 1</span>
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:400px;"><b style="color:var(--fg);font-weight:600;">52px instead of ~230px, and the pager is back above the fold.</b> The combo block keeps its place in the stack &mdash; card fact, pair fact, copy facts &mdash; and the three blocks that were pushed down are where they were before this feature existed.</div>
+        </div>
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">390 &mdash; closed, then open</span>
+          <div style="width:358px;display:flex;flex-direction:column;gap:12px;">
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:0 13px;min-height:52px;display:flex;align-items:center;gap:9px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);"><span style="color:var(--success);">1 in this deck</span> &middot; 5 you don&rsquo;t</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);flex:none;">&#9662;</span>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--accent-shadow);border-radius:10px;padding:0 13px 12px;display:flex;flex-direction:column;">
+              <div style="min-height:52px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border);">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos <span style="color:var(--accent);font-size:10.5px;">&#42;</span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">against Kykar, Wind&rsquo;s Fury</span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);flex:none;">&#9652;</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px;padding-top:11px;">
+                <div style="display:flex;align-items:flex-start;gap:8px;">
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;margin-top:1px;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+                    <span style="font-size:13px;color:var(--fg-body);">with <a href="#3a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Isochron Scepter</a></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);">in this deck</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;">
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;margin-top:1px;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+                    <span style="font-size:13px;color:var(--fg-body);">with <a href="#3a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Rings of Brighthearth</a></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">you don&rsquo;t own it</span>
+                  </div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">&hellip;4 more lines, no inner disclosure</span>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:358px;"><b style="color:var(--fg);font-weight:600;">Same 52px row, two lines instead of one.</b> The label and the counts stack because the counts do not fit beside a 10px uppercase label at 358px. <b style="color:var(--fg-body);font-weight:600;">The row is the target, whole</b> &mdash; not the chevron &mdash; so the 44px floor is met by a wide margin at both widths.</div>
+        </div>
+
+      </div>
+
+      <div style="max-width:1180px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">the rules that come with a closed block</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:13px;">
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Closed at every count, including one.</b> A block that is sometimes a row and sometimes a list is a block whose position the reader cannot learn. <b style="color:var(--fg-body);font-weight:600;">One rule, one height, always</b> &mdash; and at 49% of pieces having exactly one partner, that single line is also the cheapest thing to open.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The open state is remembered, per reader, not per card.</b> A player who opens it on one card is telling us they care about combos; the next modal opens with the block already open. <b style="color:var(--fg-body);font-weight:600;">Closing it once turns it back off.</b> One flag, and it is why the closed default costs the interested reader a single tap ever rather than one per card.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">It is a disclosure, not an accordion.</b> No sibling closes when this one opens &mdash; the other three blocks are not collapsible and this one does not become a set. It grows in place, downward, and the scroll position does not move.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Absent when nothing is detected, as before.</b> No closed row saying <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0</span>, no reserved 52px. <b style="color:var(--fg-body);font-weight:600;">The closed row is itself the count</b>, so a row is only ever drawn when there is something in it.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">A11y:</b> a real <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;button&gt;</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-expanded</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-controls</span>, its accessible name the label plus the counts as words &mdash; <i>&ldquo;two-card combos, one in this deck, one you own, four you don&rsquo;t&rdquo;</i>. Focus stays on the button. The <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#42;</span> is a separate target inside it and is not part of that name.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">No motion.</b> The block does not slide, fade or ease open. Round 1&rsquo;s zero-net-motion rule holds &mdash; the chevron flips and the content is there.</div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:12px;"><b style="color:var(--fg);font-weight:600;">Withdrawn from <a href="#2a">2a</a>:</b> the six/four-line cap and both disclosure atoms inside this block. <b style="color:var(--fg-body);font-weight:600;">Kept from <a href="#2a">2a</a>:</b> the placement in the stack, the scope line, the three states and their inks, the ordering rule, the pressable partner name, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#42;</span> with the bound and its Spellbook link.</div>
+      </div>
+
+      <div style="max-width:1180px;border:1px solid var(--border-strong);border-left:3px solid var(--success);border-radius:11px;background:var(--surface);padding:17px 20px;display:flex;flex-direction:column;gap:11px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--success);">this changes Design&rsquo;s answer to Hugh&rsquo;s question</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:900px;"><b style="color:var(--fg);font-weight:600;">Design now argues for keeping the unowned partners.</b> The concern was fourteen combos blowing up a modal &mdash; and closed by default, they do not occupy a pixel until a reader asks for them. <b style="color:var(--fg-body);font-weight:600;">The closed row also puts the decision in the reader&rsquo;s hands with the facts they need to make it:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 in this deck &middot; 1 you own &middot; 4 you don&rsquo;t</span> tells them what is behind the row before they spend the space on it.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:900px;"><b style="color:var(--fg-body);font-weight:600;">Still eng&rsquo;s call, and still worth measuring</b> &mdash; but the cut is now cheaper to make later than it was to make now: dropping the unowned lines is one filter, and the closed row&rsquo;s counts change by themselves.</div>
+      </div>
+
+      <div style="max-width:1180px;height:1px;background:var(--border-strong);"></div>
+    </div>
+
+    <div id="2a" style="display:flex;flex-direction:column;gap:22px;">
+
+      <div style="max-width:1180px;display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2a</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Turn 2 &middot; addendum &mdash; the card modal</span>
+        </div>
+        <h2 style="font-family:var(--display),serif;font-weight:700;font-size:26px;margin:0;color:var(--fg);">A pair fact sits between the card facts and the copy facts &mdash; and it is the one block that reads differently depending on where you opened from.</h2>
+        <p style="font-size:13.5px;line-height:1.7;color:var(--fg-muted);margin:0;max-width:960px;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">In the bracket rules</span> is true of the card wherever you are standing. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">In your collection</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">In your decks</span> are true of your copies, also wherever you are standing. <b style="color:var(--fg);font-weight:600;">A combo is neither: it is a fact about a pair, and half of it is somewhere that depends on the route.</b> So the block goes second in the stack, and <b style="color:var(--fg-body);font-weight:600;">it names its own scope when it has one</b> &mdash; otherwise the same card shows different words on two routes with nothing on screen explaining why.</p>
+        <p style="font-size:13px;line-height:1.7;color:var(--fg-faint);margin:0;max-width:960px;">Median 2 partners, <b style="color:var(--fg-body);font-weight:600;">49% have exactly one</b> &mdash; so the common case is a single line and the disclosure is drawn for the 21 of 249 owned pieces that exceed ten.</p>
+      </div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">opened from a deck &mdash; the oracle column&rsquo;s block stack</span>
+          <div style="width:400px;display:flex;flex-direction:column;gap:12px;">
+
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:9px;opacity:0.55;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In the bracket rules</span>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);">Game Changer</span>
+              </div>
+            </div>
+
+            <div style="background:var(--bg);border:1px solid var(--accent-shadow);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:9px;">
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos <span style="color:var(--accent);font-size:11px;">&#42;</span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">against Kykar, Wind&rsquo;s Fury</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Isochron Scepter</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);flex:none;">in this deck</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Paradox Engine</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);flex:none;">you own it</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Rings of Brighthearth</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">you don&rsquo;t own it</span>
+              </div>
+              </div>
+
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:7px;opacity:0.55;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In your collection</span>
+              <span style="font-size:13px;color:var(--fg-body);">2 copies &middot; 1 free</span>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:7px;opacity:0.55;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In your decks</span>
+              <span style="font-size:13px;color:var(--fg-body);">Kykar, Wind&rsquo;s Fury</span>
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:400px;"><b style="color:var(--fg);font-weight:600;">Order: card fact &rarr; pair fact &rarr; copy facts.</b> The bracket block is about the card, the two receipts are about your copies, and the combo block is the hinge between them &mdash; it is the only one whose contents change with the route, so it is drawn where the reader crosses from <i>what this card is</i> to <i>what you have</i>.</div>
+        </div>
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">opened from /collection &mdash; same card, no deck in scope</span>
+          <div style="width:400px;background:var(--bg);border:1px solid var(--accent-shadow);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos <span style="color:var(--accent);font-size:11px;">&#42;</span></span>
+            <div style="display:flex;align-items:center;gap:9px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Isochron Scepter</a></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);flex:none;">you own it</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Paradox Engine</a></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);flex:none;">you own it</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Rings of Brighthearth</a></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">you don&rsquo;t own it</span>
+            </div>
+            </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:400px;"><b style="color:var(--fg);font-weight:600;">Two differences, both forced by the route.</b> No scope line, because there is no deck to name. And <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">in this deck</span> is unsayable, so the Scepter reverts to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">you own it</span> and the ordering falls back to owned-first, then popularity.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:400px;"><b style="color:var(--fg-body);font-weight:600;">The scope line is the whole fix.</b> Without it a player who sees three lines here and the same three with different tails on the deck route has no way to know the block is answering a different question. One mono line in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> is cheaper than a reader deciding the app is inconsistent.</div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">density &mdash; 1 line (49%), 2 lines (median), and the 21 of 249 that exceed ten</span>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+
+            <div style="width:300px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:9px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos <span style="color:var(--accent);font-size:11px;">&#42;</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:-6px;">against Kykar, Wind&rsquo;s Fury</span>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Isochron Scepter</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);flex:none;">in this deck</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);">49% of pieces &mdash; one line, no disclosure</span>
+            </div>
+
+            <div style="width:300px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:9px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos <span style="color:var(--accent);font-size:11px;">&#42;</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:-6px;">against Kykar, Wind&rsquo;s Fury</span>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Dramatic Reversal</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);flex:none;">in this deck</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Paradox Engine</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);flex:none;">you own it</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);">the median &mdash; two lines, no disclosure</span>
+            </div>
+
+            <div style="width:300px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:9px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos <span style="color:var(--accent);font-size:11px;">&#42;</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:-6px;">against Kykar, Wind&rsquo;s Fury</span>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Dramatic Reversal</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);flex:none;">in this deck</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Paradox Engine</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);flex:none;">you own it</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Rings of Brighthearth</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">you don&rsquo;t own it</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;opacity:0.85;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Basalt Monolith</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);flex:none;">you own it</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;opacity:0.85;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Kiki-Jiki, Mirror Breaker</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">you don&rsquo;t own it</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;opacity:0.85;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Zealous Conscripts</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">you don&rsquo;t own it</span>
+              </div>
+              <span style="align-self:flex-start;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border:1px dashed var(--border-strong);border-radius:8px;padding:5px 11px;">+8 more</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);">14 partners &mdash; six, then the shipped disclosure</span>
+            </div>
+
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:960px;"><b style="color:var(--fg);font-weight:600;">Six is the cap, at both widths, and it is chosen against the distribution rather than the layout.</b> At a median of 2 and 49% at exactly one, a cap of six leaves the block un-truncated for the overwhelming majority and only bites on the 21 of 249 owned pieces that exceed ten. <b style="color:var(--fg-body);font-weight:600;">The disclosure is the shipped one</b> &mdash; dashed <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span> chip, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+N more</span> mono 11px in brass because it is expandable, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show all N</span> as a full-width 44px dashed row on phone. Expanded, the block grows in place; it does not scroll inside itself and it does not open a second surface.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:960px;"><b style="color:var(--fg);font-weight:600;">Ordering: in this deck, then owned, then unowned; popularity inside each band.</b> So the cap never hides a partner already on the table in favour of one you would have to buy &mdash; which is the one truncation that would actually mislead.</div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">390 &mdash; the block is full width, the state wraps under the name</span>
+          <div style="width:358px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 13px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos <span style="color:var(--accent);font-size:11px;">&#42;</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">against Kykar, Wind&rsquo;s Fury</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;margin-top:1px;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+                <span style="font-size:13px;color:var(--fg-body);">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Rings of Brighthearth</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">you don&rsquo;t own it</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;margin-top:1px;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+                <span style="font-size:13px;color:var(--fg-body);">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Kiki-Jiki, Mirror Breaker</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">you own it</span>
+              </div>
+            </div>
+            <span style="display:flex;align-items:center;justify-content:center;min-height:44px;border:1px dashed var(--border-strong);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">Show all 14</span>
+                      </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:358px;"><b style="color:var(--fg);font-weight:600;">The state drops under the name rather than truncating it.</b> Same rule as the row: the app&rsquo;s words move before the card&rsquo;s name does. <b style="color:var(--fg-body);font-weight:600;">Phone caps at four</b>, not six, and the disclosure is the 44px dashed row.</div>
+        </div>
+
+        <div style="flex:1;min-width:380px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">the partner name is the one thing in the block you can press</span>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">It opens the partner&rsquo;s modal, and it replaces rather than stacks.</b> A pair fact read from one end wants the other end, and the modal is the only surface in this round where a target is legal at all. Brass underline (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1px --accent-shadow</span>), 44px hit area on phone, and the back gesture returns to the card you started from &mdash; never a stack of modals two combos deep.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Everything else stays inert.</b> The glyph takes no target on any surface, including here. The state words are not filters. There is no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">add to deck</span> in this block &mdash; it is a receipt, and the surfaces that add cards are the ones that already carry the clause.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:11px;"><b style="color:var(--fg);font-weight:600;">Refused: a price on an unowned partner.</b> The modal already carries a money receipt for the card you opened, and a second figure about a card you are not looking at reads as a basket. <b style="color:var(--fg-body);font-weight:600;">Refused: a count in the heading</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Two-card combos &middot; 14</span>) &mdash; detection is bounded, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+8 more</span> is a fact about what is hidden rather than a claim about what exists. <b style="color:var(--fg-body);font-weight:600;">Refused: merging this into the bracket-rules block.</b> One is a card fact, one is a pair fact; merging them would make the bracket block route-dependent, which it has never been.</div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="flex:none;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">the bound becomes a marker &mdash; revision 1</span>
+          <div style="width:400px;display:flex;flex-direction:column;gap:14px;">
+
+            <div style="position:relative;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:9px;">
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos <span style="color:var(--accent);font-size:11px;">&#42;</span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">against Kykar, Wind&rsquo;s Fury</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">with <a href="#2a" style="font-weight:600;border-bottom:1px solid var(--accent-shadow);">Isochron Scepter</a></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);flex:none;">in this deck</span>
+                
+              </div>
+              <div style="align-self:flex-start;max-width:330px;background:var(--elevated);border:1px solid var(--border-strong);border-radius:6px;padding:7px 10px;box-shadow:0 4px 12px rgba(0,0,0,.45);">
+                <span style="font-size:12px;color:var(--fg-body);line-height:1.5;">From <a href="#2a" style="border-bottom:1px solid var(--accent-shadow);">Commander Spellbook &#8599;</a>. Combos needing a third piece are not listed.</span>
+              </div>
+            </div>
+
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">One brass <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#42;</span> on the heading, and the sentence is behind it.</b> It appeared under six blocks on this canvas and would have appeared under every combo modal in the app &mdash; a caveat that repeats that often stops being read, which is the opposite of what a caveat is for.</div>
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg-body);font-weight:600;">Pointer-fine:</b> Round 1&rsquo;s tooltip chrome verbatim &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--elevated</span> plate, 1px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span>, radius 6, 12px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span>, 400ms in, instant out &mdash; but <b style="color:var(--fg);font-weight:600;">wrapping to two lines here rather than one</b>, because this is a sentence and not a label. <b style="color:var(--fg-body);font-weight:600;">Touch:</b> the marker is a real 44px target and the same sentence opens in place, under the heading, pushing the lines down; tapping again closes it. <b style="color:var(--fg);font-weight:600;">Unlike Round 1&rsquo;s tooltip, this one has a tap route</b> &mdash; Round 1 could refuse one because the key and the modal carried the words, and here the modal <i>is</i> the last surface.</div>
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The marker is on the heading, not on a line.</b> The bound is a property of the whole list &mdash; what is missing from it &mdash; not of any partner in it. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-describedby</span> ties the sentence to the block, so a screen reader hears it with the heading and never has to find it.</div>
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:400px;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">the link out &mdash; revision 2, inside the tooltip</span>
+          <div style="max-width:340px;background:var(--elevated);border:1px solid var(--border-strong);border-radius:6px;padding:8px 11px;box-shadow:0 4px 12px rgba(0,0,0,.45);">
+            <span style="font-size:12px;color:var(--fg-body);line-height:1.55;">From <a href="#2a" style="border-bottom:1px solid var(--accent-shadow);">Commander Spellbook &#8599;</a>. Combos needing a third piece are not listed.</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The source names itself, so the source is the link.</b> The sentence already said <i>Commander Spellbook</i>; making those two words the route costs no new glyph, no new column and no second target on a line. <b style="color:var(--fg-body);font-weight:600;">One link in the block, not one per partner.</b></div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg-body);font-weight:600;">Spec:</b> the words <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Commander Spellbook</span> on a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1px --accent-shadow</span> underline with a trailing <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#8599;</span>, inside the tooltip. New tab, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rel=&quot;noopener&quot;</span>, accessible name <i>&ldquo;This card on Commander Spellbook, opens in a new tab&rdquo;</i>. <b style="color:var(--fg);font-weight:600;">Drawn only when eng can build the URL</b> &mdash; without one the sentence reads exactly as it does today, in plain text, and nothing shifts.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The tooltip has to be dismissible to hold a link.</b> On pointer-fine it stays open while the pointer is inside it, so the link is reachable rather than a target that disappears on the way. On touch it is already a tap-to-disclose panel, so the link is simply in it.</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:11px;"><b style="color:var(--fg-body);font-weight:600;">And it makes the caveat an onward route rather than an apology.</b> The sentence says a three-piece combo is not listed here, and the words immediately before it are where to go and find it. <b style="color:var(--fg);font-weight:600;">Withdrawn: a per-variant <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#8599;</span> on every line</b> &mdash; drawn in the first pass of this turn, and a second target per line for a question most readers are not asking.</div>
+        </div>
+
+      </div>
+
+      <div style="max-width:1180px;border:1px solid var(--border-strong);border-left:3px solid var(--warning);border-radius:11px;background:var(--surface);padding:17px 20px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--warning);">open question for engineering &mdash; Hugh&rsquo;s, carried verbatim, not Design&rsquo;s to settle</div>
+        <div style="font-size:13.5px;color:var(--fg-body);line-height:1.7;max-width:900px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">&ldquo;I have concerns about showing every two-card combo in a list &mdash; this could blow up a card details modal. Originally I thought we would just show what&rsquo;s in a deck and what you own. We could technically link out to Spellbook for the ones you don&rsquo;t own, but it is nice to have this utility in the app. I just wonder if showing 14 possible card combos is too much information. What&rsquo;s your take?&rdquo;</b></div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:900px;"><b style="color:var(--fg);font-weight:600;">Design&rsquo;s position, offered and not asserted:</b> the cap already answers the height worry &mdash; six lines, four at 390, and 49% of pieces have exactly one partner &mdash; so the modal never opens taller than seven lines. <b style="color:var(--fg-body);font-weight:600;">The question the cap does not answer is whether the unowned partners belong at all.</b></div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:900px;"><b style="color:var(--fg-body);font-weight:600;">If eng agrees with Hugh, the cut is clean and already drawn:</b> keep <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">in this deck</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">you own it</span>, drop <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">you don&rsquo;t own it</span>, and the block becomes a receipt about things you have rather than a catalogue. The ordering rule already puts the owned lines first, so the cut is literally a filter on the tail &mdash; no relayout, no new copy, and the marker&rsquo;s sentence grows one clause (<i>combos needing a card you don&rsquo;t own are not listed</i>). <b style="color:var(--fg);font-weight:600;">The disclosure and the six-line cap survive either way</b>, because 21 of 249 owned pieces exceed ten partners <i>before</i> any ownership filter.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:900px;"><b style="color:var(--fg-body);font-weight:600;">What Design would lose:</b> the one case where an unowned partner earns its line is a cheap card &mdash; a $2 piece that closes a loop with something already in the deck is the best recommendation the app could make, and it is exactly what <i>state 3</i> on the candidate surfaces exists to say. Dropping unowned partners from the modal does not remove that; it just means the modal stops repeating it. <b style="color:var(--fg);font-weight:600;">Design&rsquo;s honest read: Hugh is probably right, and the version that ships should be measured on a real 14-partner card in a real modal before either of us is sure.</b></div>
+      </div>
+
+      <div style="max-width:1180px;height:1px;background:var(--border-strong);"></div>
+    </div>
+
+    <div style="max-width:1180px;display:flex;flex-direction:column;gap:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Turn 1 &middot; the naming question</span>
+      <h2 style="font-family:var(--display),serif;font-weight:700;font-size:24px;margin:0;color:var(--fg);">How the partner is named</h2>
+      <p style="font-size:13.5px;line-height:1.7;color:var(--fg-muted);margin:0;max-width:940px;">Three routes were drawn. The test is the phone, because the desktop hover is not available there and the modal is two taps away.</p>
+    </div>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:stretch;">
+
+      <div id="1a" style="flex:1;min-width:300px;max-width:380px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+        <div style="display:flex;align-items:center;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--fg-faint);border:1px solid var(--border-strong);border-radius:5px;padding:2px 7px;">1a</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">mark only, name on hover</span></div>
+        <div style="display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--success);flex:none;"></span>
+          <span style="font-size:13.5px;color:var(--fg);">Dramatic Reversal</span>
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2.5px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--danger);font-weight:600;">Refused.</b> On a phone this is the mark saying <i>something about this card loops</i> and nothing more &mdash; which is <b style="color:var(--fg-body);font-weight:600;">Round 2&rsquo;s fact, already shipped</b>. It draws three new states as zero new information on half the app&rsquo;s surfaces.</div>
+      </div>
+
+      <div id="1b" style="flex:1;min-width:320px;max-width:400px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--accent-shadow);border-radius:11px;background:var(--surface);padding:16px 18px;">
+        <div style="display:flex;align-items:center;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1b</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);">the mark moves down and leads a sentence &#10003;</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;">
+          <div style="display:flex;align-items:center;gap:9px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--success);flex:none;"></span>
+            <span style="font-size:13.5px;color:var(--fg);">Dramatic Reversal</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;padding-left:16px;">
+            <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">completes with Isochron Scepter</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Adopted.</b> The name is the value, so the name is drawn &mdash; at every width, on every host, with no hover and no second tap. <b style="color:var(--fg-body);font-weight:600;">The mark is not repeated:</b> it vacates the name line, because a glyph with a sentence beside it strictly dominates a glyph alone, and one row never shows the same glyph twice.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg-body);font-weight:600;">Every host already has the line it needs.</b> The clause takes the host&rsquo;s secondary line &mdash; the collection row&rsquo;s type line, the tile&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SET &middot; rarity</span> group, the Consider tile&rsquo;s type line, the quick-add row&rsquo;s meta line. <b style="color:var(--fg);font-weight:600;">Nothing grows a line and nothing grows in height.</b></div>
+      </div>
+
+      <div id="1c" style="flex:1;min-width:300px;max-width:380px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+        <div style="display:flex;align-items:center;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--fg-faint);border:1px solid var(--border-strong);border-radius:5px;padding:2px 7px;">1c</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">mark on the row, names in the modal only</span></div>
+        <div style="display:flex;flex-direction:column;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">two-card combos</span>
+          <span style="font-size:12.5px;color:var(--fg-body);">with Isochron Scepter</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--danger);font-weight:600;">Refused as the only route, kept as the fuller one.</b> A state whose value is <i>act on this now</i> cannot live one tap away from the list where the acting happens. <b style="color:var(--fg-body);font-weight:600;">The modal keeps this block</b> and is the one place every detected partner is listed &mdash; see the modal drawing below.</div>
+      </div>
+
+    </div>
+
+    <div style="max-width:1180px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;display:flex;flex-direction:column;gap:11px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">the two sentences, and why there are only two</div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:7px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 10px;">with {partner} &mdash; you own both</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">State 1 only.</b> There is no deck in the sentence because there is no deck on this host. <i>Both</i> is the word doing the work: the app has never once told a player they already hold two cards that do something together.</span>
+        </div>
+        <div style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:7px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 10px;">completes with {partner}</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">States 2 and 3, identically.</b> <i>Completes</i> presupposes the partner is in the deck, which is what makes the row&rsquo;s card the one that is missing. Whether you own it is the dot&rsquo;s job and the tag&rsquo;s job, and neither needs help.</span>
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:11px;"><b style="color:var(--fg);font-weight:600;">Both sentences are bounded by construction.</b> No count, no <i>the</i>, no <i>only</i>, no <i>your deck has N combos</i>. Detection excludes template-gated variants by design, so a row may be one away from something the app cannot see &mdash; and a sentence that names one partner is true whether or not there are others. <b style="color:var(--fg-body);font-weight:600;">A count would be the first false claim on the surface.</b></div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg-body);font-weight:600;">Two partners, one line:</b> the row names the most popular detected partner and says nothing about the rest. The modal lists them all. <b style="color:var(--fg-body);font-weight:600;">Never</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">with Isochron Scepter +1</span> &mdash; a residual count is a completeness claim wearing a plus sign.</div>
+    </div>
+
+    <div style="max-width:1180px;height:1px;background:var(--border-strong);"></div>
+
+    <div style="max-width:1180px;display:flex;flex-direction:column;gap:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Host A &middot; /collection &mdash; state 1</span>
+      <h2 style="font-family:var(--display),serif;font-weight:700;font-size:24px;margin:0;color:var(--fg);">The row and the tile</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">superseded by <a href="#4a">4a</a> &mdash; the shipped row is one line with a marker cluster, so these two-line drawings and the clause they carry are withdrawn. Kept for the argument, not the layout.</span>
+      <p style="font-size:13.5px;line-height:1.7;color:var(--fg-muted);margin:0;max-width:940px;">No deck is in scope here, so <b style="color:var(--fg-body);font-weight:600;">only state 1 can be true</b> &mdash; and it is the state with nowhere else to live. 77 cards in a 2,805-card collection.</p>
+    </div>
+
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="flex:1;min-width:520px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">collection row &middot; desktop</span>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">unmarked &mdash; the row that ships today</span>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+            <div style="width:32px;height:44px;border-radius:4px;background:linear-gradient(150deg,#2f2a22,#1c1913);border:1px solid var(--border);flex:none;"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:13.5px;color:var(--fg);">Swords to Plowshares</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">Instant</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);width:90px;">2LEA</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);width:150px;">2 free</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);width:92px;text-align:right;">$1.90</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">Round 2&rsquo;s fact alone &mdash; a combo piece, nothing in reach</span>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+            <div style="width:32px;height:44px;border-radius:4px;background:linear-gradient(150deg,#222a33,#161a20);border:1px solid var(--border);flex:none;"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:13.5px;color:var(--fg);">Kiki-Jiki, Mirror Breaker</span>
+                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2.5px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">Legendary Creature &mdash; Goblin Shaman</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);width:90px;">2MM3</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);width:150px;">1 free</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);width:92px;text-align:right;">$12.40</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">state 1 &mdash; the mark moves down and the type line yields</span>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+            <div style="width:32px;height:44px;border-radius:4px;background:linear-gradient(150deg,#1f2a33,#151a20);border:1px solid var(--border);flex:none;"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:13.5px;color:var(--fg);">Thassa&rsquo;s Oracle</span>
+              <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">with Demonic Consultation &mdash; you own both</span>
+              </div>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);width:90px;">2THB</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);width:150px;">1 free</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);width:92px;text-align:right;">$18.20</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">state 1, and the card also carries a Round 1 fact &mdash; the two marks do not meet</span>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+            <div style="width:32px;height:44px;border-radius:4px;background:linear-gradient(150deg,#332a22,#1d1813);border:1px solid var(--border);flex:none;"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:13.5px;color:var(--fg);">Underworld Breach</span>
+                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2.5px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">with Brain Freeze &mdash; you own both</span>
+              </div>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);width:90px;">1R THB</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);width:150px;">1 free</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);width:92px;text-align:right;">$24.60</span>
+          </div>
+          <span style="font-size:12px;color:var(--fg-muted);line-height:1.6;">The bolt is a fact about the card and keeps the name line in Round 1&rsquo;s fixed order. The lemniscate has a sentence, so it is downstairs with it. <b style="color:var(--fg-body);font-weight:600;">The two lines never trade places</b> &mdash; facts above, relations below.</span>
+        </div>
+      </div>
+
+      <div style="flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">collection row &middot; 390</span>
+        <div style="width:358px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;">
+            <div style="width:26px;height:36px;border-radius:4px;background:linear-gradient(150deg,#2f2a22,#1c1913);border:1px solid var(--border);flex:none;"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:13px;color:var(--fg);">Swords to Plowshares</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">Instant</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);width:76px;text-align:right;">2 free</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;">
+            <div style="width:26px;height:36px;border-radius:4px;background:linear-gradient(150deg,#1f2a33,#151a20);border:1px solid var(--border);flex:none;"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:13px;color:var(--fg);">Thassa&rsquo;s Oracle</span>
+              <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">with Demonic Consultation &mdash; both yours</span>
+              </div>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);width:76px;text-align:right;">1 free</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:358px;"><b style="color:var(--fg);font-weight:600;">The clause shortens, the name never does.</b> At 390 the tail becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">both yours</span> and the partner name keeps its full width &mdash; if anything has to ellipse it is the app&rsquo;s words, never Wizards&rsquo;.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">collection tile &middot; desktop 157 &middot; phone 150</span>
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+
+          <div style="width:157px;display:flex;flex-direction:column;gap:7px;">
+            <div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(150deg,#2f2a22,#1c1913);border:1px solid var(--border);"></div>
+            <div style="height:56px;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:6px;height:17px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">LEA &middot; rare</span>
+              </div>
+              <span style="font-size:12.5px;font-weight:600;color:var(--fg);line-height:1.3;">Swords to Plowshares</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">unmarked</span>
+          </div>
+
+          <div style="width:157px;display:flex;flex-direction:column;gap:7px;">
+            <div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(150deg,#222a33,#161a20);border:1px solid var(--border);"></div>
+            <div style="height:56px;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:6px;height:17px;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">2XM &middot; rare</span>
+              </div>
+              <span style="font-size:12.5px;font-weight:600;color:var(--fg);line-height:1.3;">Kiki-Jiki, Mirror Breaker</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">fact only &mdash; Round 1 unchanged</span>
+          </div>
+
+          <div style="width:157px;display:flex;flex-direction:column;gap:7px;">
+            <div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(150deg,#1f2a33,#151a20);border:1px solid var(--border);"></div>
+            <div style="height:56px;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:5px;height:17px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">with Demonic Consul&hellip;</span>
+              </div>
+              <span style="font-size:12.5px;font-weight:600;color:var(--fg);line-height:1.3;">Thassa&rsquo;s Oracle</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">superseded by <a href="#4a">4a</a> &mdash; the yield is withdrawn</span>
+          </div>
+
+          <div style="width:157px;display:flex;flex-direction:column;gap:7px;">
+            <div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(150deg,#1f2a33,#151a20);border:1px solid var(--border);"></div>
+            <div style="height:56px;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:5px;height:17px;min-width:0;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:0 5px;flex:none;">short 1</span>
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Demonic&hellip;</span>
+              </div>
+              <span style="font-size:12.5px;font-weight:600;color:var(--fg);line-height:1.3;">Thassa&rsquo;s Oracle <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">&times;2</span></span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);">state 1 + chip &mdash; the chip keeps its slot</span>
+          </div>
+
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:700px;"><b style="color:var(--fg);font-weight:600;">This is a named amendment to Round 1&rsquo;s tile rule.</b> Round 1 said nothing yields, and that held because a 12px glyph costs 12px. A partner name costs ~100px, and it does not fit beside a printing code. <b style="color:var(--fg-body);font-weight:600;">So on the tile &mdash; and only for the state, never for the bare fact &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SET &middot; rarity</span> yielded the meta line.</b> <b style="color:var(--accent);font-weight:600;">Withdrawn by <a href="#4a">4a</a>:</b> with no clause to make room for, a 16px glyph needs none, and Round 1&rsquo;s <i>nothing yields</i> is restored whole. The printing is one tap away in the modal; <i>you own two cards that go infinite together</i> is not anywhere. The chip never yields, because it is about your copies and so is the caption.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:700px;"><b style="color:var(--fg-body);font-weight:600;">The caption height is untouched</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CARD_TILE_CAPTION_H</span>, 56/50), there is no third line, and the ellipsis is the tile&rsquo;s honest limit rather than a truncation bug &mdash; the full name is in the row view, the modal and the accessible name.</div>
+      </div>
+    </div>
+
+    <div style="max-width:1180px;height:1px;background:var(--border-strong);"></div>
+
+    <div style="max-width:1180px;display:flex;flex-direction:column;gap:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Host B &middot; the deck Add panel &mdash; states 2 and 3</span>
+      <h2 style="font-family:var(--display),serif;font-weight:700;font-size:24px;margin:0;color:var(--fg);">Consider tiles and the quick-add row</h2>
+      <p style="font-size:13.5px;line-height:1.7;color:var(--fg-muted);margin:0;max-width:940px;">A deck is in scope, so <i>completes</i> is sayable. Drawn against Kykar, Wind&rsquo;s Fury at 68/99 &mdash; the top-off handoff&rsquo;s mock, so every figure here is the same deck.</p>
+    </div>
+
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Consider tile &middot; desktop 168</span>
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+
+          <div style="width:168px;display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 9px 10px;">
+            <div style="position:relative;aspect-ratio:63/88;border-radius:7px;background:linear-gradient(150deg,#2a2f3a,#1a1d24);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,.65), inset 0 0 0 1px rgba(0,0,0,.3);">
+              <span style="position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 0 2px rgba(10,8,6,.7);"></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <span style="font-size:12.5px;font-weight:600;color:var(--fg);line-height:1.3;">Dramatic Reversal</span>
+              <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">completes with Isochron&hellip;</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="flex:1;height:4px;border-radius:999px;background:var(--border);overflow:hidden;"><div style="width:62%;height:100%;background:var(--accent);"></div></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);">62%</span>
+            </div>
+            <div style="background:var(--accent);color:var(--bg);font-size:12px;font-weight:600;border-radius:7px;text-align:center;padding:7px 0;">Add</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);text-align:center;">state 2 &mdash; you own it</span>
+          </div>
+
+          <div style="width:168px;display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 9px 10px;">
+            <div style="position:relative;aspect-ratio:63/88;border-radius:7px;background:linear-gradient(150deg,#332a22,#1d1813);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,.65), inset 0 0 0 1px rgba(0,0,0,.3);">
+              <span style="position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;border:1px dashed var(--fg-locked);box-shadow:0 0 0 2px rgba(10,8,6,.7);"></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <span style="font-size:12.5px;font-weight:600;color:var(--fg);line-height:1.3;">Dualcaster Mage</span>
+              <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">completes with Ghostly&hellip;</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="flex:1;height:4px;border-radius:999px;background:var(--border);overflow:hidden;"><div style="width:38%;height:100%;background:var(--accent);"></div></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);">38%</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="flex:1;background:var(--accent);color:var(--bg);font-size:12px;font-weight:600;border-radius:7px;text-align:center;padding:7px 0;">Add</div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;white-space:nowrap;">buy $3.60</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);text-align:center;">state 3 &mdash; you&rsquo;d buy it</span>
+          </div>
+
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:520px;"><b style="color:var(--fg);font-weight:600;">The two tiles are the same tile.</b> Same mark, same string, same slot. What differs is the shipped dot (filled / dashed) and the shipped buy tag &mdash; <b style="color:var(--fg-body);font-weight:600;">both of which were already there before this round existed</b>. The clause takes the type line, which on this tile was an ellipsed <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Instant</span>.</div>
+      </div>
+
+      <div style="flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">quick-add result row &middot; 52 desktop / 56 phone</span>
+        <div style="width:420px;display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:6px 10px;min-height:52px;">
+            <div style="width:30px;height:42px;border-radius:5px;background:linear-gradient(150deg,#2a2f3a,#1a1d24);border:1px solid var(--border);flex:none;"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:14px;font-weight:600;color:var(--fg);">Dramatic Reversal</span>
+              <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">completes with Isochron Scepter</span>
+              </div>
+            </div>
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--success);flex:none;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);flex:none;">&#8629; add</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:6px 10px;min-height:52px;">
+            <div style="width:30px;height:42px;border-radius:5px;background:linear-gradient(150deg,#332a22,#1d1813);border:1px solid var(--border);flex:none;"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:14px;font-weight:600;color:var(--fg);">Dualcaster Mage</span>
+              <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">completes with Ghostly Flicker</span>
+              </div>
+            </div>
+            <span style="width:7px;height:7px;border-radius:50%;border:1px dashed var(--fg-locked);flex:none;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;white-space:nowrap;flex:none;">buy $3.60</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:6px 10px;min-height:52px;opacity:0.62;">
+            <div style="width:30px;height:42px;border-radius:5px;background:linear-gradient(150deg,#26231e,#18150f);border:1px solid var(--border);flex:none;filter:grayscale(.6);"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:14px;font-weight:600;color:var(--fg-muted);">Isochron Scepter</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">Artifact</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--success);border:1px solid var(--border);border-radius:5px;padding:2px 7px;flex:none;">&#10003; In deck</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:420px;"><b style="color:var(--fg);font-weight:600;">The partner wears nothing.</b> Isochron Scepter is already in the deck, so it is the thing the sentence points at, not a thing to act on &mdash; and the in-deck row keeps its type line. <b style="color:var(--fg-body);font-weight:600;">A mark on both halves would double the ink and halve the meaning.</b></div>
+      </div>
+
+    </div>
+
+    <div style="max-width:1180px;height:1px;background:var(--border-strong);"></div>
+
+    <div style="max-width:1180px;display:flex;flex-direction:column;gap:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Host C &middot; the Last-31 top-off list &mdash; states 2 and 3</span>
+      <h2 style="font-family:var(--display),serif;font-weight:700;font-size:24px;margin:0;color:var(--fg);">The candidate row, where the row is one line</h2>
+      <p style="font-size:13.5px;line-height:1.7;color:var(--fg-muted);margin:0;max-width:940px;">The only host with no secondary line at desktop. It is also the host where the state matters most: 38 near-identical candidates, and four of them close something.</p>
+    </div>
+
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="flex:1;min-width:560px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-rail);padding:16px 18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">candidate row &middot; desktop 34px &mdash; the clause takes the name cell&rsquo;s tail</span>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:10px;background:var(--elevated-hover);border:1px solid var(--accent-shadow);border-radius:7px;padding:0 9px;min-height:34px;">
+            <span style="width:18px;height:18px;border-radius:5px;border:1px solid var(--accent);color:var(--accent);font-size:11px;display:flex;align-items:center;justify-content:center;flex:none;background:color-mix(in oklab,var(--accent) 12%,transparent);">&#10003;</span>
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--success);flex:none;"></span>
+            <span style="font-size:13.5px;color:var(--fg);flex:none;">Dramatic Reversal</span>
+            <div style="display:flex;align-items:center;gap:5px;min-width:0;flex:1;">
+              <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">completes with Isochron Scepter</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);width:40px;text-align:right;flex:none;">1U</span>
+            <span style="width:84px;text-align:right;flex:none;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--success);width:88px;text-align:right;flex:none;">+14.2</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);width:52px;text-align:right;flex:none;">41%</span>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">state 2 &mdash; owned, availability slot silent, no money anywhere on the row</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:0 9px;min-height:34px;">
+            <span style="width:18px;height:18px;border-radius:5px;border:1px solid var(--border-strong);color:var(--fg-faint);font-size:11px;display:flex;align-items:center;justify-content:center;flex:none;">+</span>
+            <span style="width:7px;height:7px;border-radius:50%;border:1px dashed var(--fg-locked);flex:none;"></span>
+            <span style="font-size:13.5px;color:var(--fg);flex:none;">Dualcaster Mage</span>
+            <div style="display:flex;align-items:center;gap:5px;min-width:0;flex:1;">
+              <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">completes with Ghostly Flicker</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);width:40px;text-align:right;flex:none;">2R</span>
+            <span style="width:84px;text-align:right;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;white-space:nowrap;">buy $3.60</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--success);width:88px;text-align:right;flex:none;">+9.8</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);width:52px;text-align:right;flex:none;">22%</span>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">state 3 &mdash; the shipped BuyTag in the shipped 84px slot, untouched</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:0 9px;min-height:34px;">
+            <span style="width:18px;height:18px;border-radius:5px;border:1px solid var(--border-strong);color:var(--fg-faint);font-size:11px;display:flex;align-items:center;justify-content:center;flex:none;">+</span>
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--avail-hard-fg);flex:none;"></span>
+            <span style="font-size:13.5px;color:var(--fg);flex:auto;min-width:0;">Fellwar Stone</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);width:40px;text-align:right;flex:none;">2</span>
+            <span style="width:84px;text-align:right;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--avail-hard-fg);">&#9670; none free</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--success);width:88px;text-align:right;flex:none;">+6.1</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);width:52px;text-align:right;flex:none;">58%</span>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">no combo state &mdash; the row is exactly the row that ships, to the pixel</span>
+        </div>
+
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">The clause takes the tail of the name cell and yields to the name.</b> The name goes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex:none</span>, the clause takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex:1;min-width:0</span> and ellipses first. <b style="color:var(--fg-body);font-weight:600;">The row does not grow and the four fixed columns do not move</b> &mdash; cost track 40, availability 84, synergy 88, inclusion 52 &mdash; so the columns still land on one vertical line down 38 rows, which was the whole argument for fixing them.</div>
+      </div>
+
+      <div style="flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-rail);padding:16px 18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">candidate row &middot; 390 &mdash; 52px, line 2</span>
+        <div style="width:358px;display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:center;gap:9px;background:var(--elevated-hover);border:1px solid var(--accent-shadow);border-radius:7px;padding:5px 4px 5px 8px;min-height:52px;">
+            <span style="width:26px;height:26px;border-radius:5px;border:1px solid var(--accent);color:var(--accent);font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;background:color-mix(in oklab,var(--accent) 12%,transparent);">&#10003;</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:var(--success);flex:none;"></span>
+                <span style="font-size:13px;color:var(--fg);">Dramatic Reversal</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">completes with Isochron Scepter</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--success);margin-left:auto;flex:none;">+14.2</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);flex:none;">41%</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 4px 5px 8px;min-height:52px;">
+            <span style="width:26px;height:26px;border-radius:5px;border:1px solid var(--border-strong);color:var(--fg-faint);font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;">+</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:7px;height:7px;border-radius:50%;border:1px dashed var(--fg-locked);flex:none;"></span>
+                <span style="font-size:13px;color:var(--fg);flex:1;min-width:0;">Dualcaster Mage</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;white-space:nowrap;flex:none;">buy $3.60</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">completes with Ghostly Flicker</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--success);margin-left:auto;flex:none;">+9.8</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);flex:none;">22%</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 4px 5px 8px;min-height:52px;">
+            <span style="width:26px;height:26px;border-radius:5px;border:1px solid var(--border-strong);color:var(--fg-faint);font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;">+</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:var(--avail-hard-fg);flex:none;"></span>
+                <span style="font-size:13px;color:var(--fg);flex:1;min-width:0;">Fellwar Stone</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--avail-hard-fg);flex:none;">&#9670; none free</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="width:13px;height:13px;border-radius:50%;background:var(--fg-faint);box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);flex:none;"></span>
+                <span style="width:13px;height:13px;border-radius:50%;background:var(--fg-faint);box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);flex:none;"></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--success);margin-left:auto;">+6.1</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">58%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:358px;"><b style="color:var(--fg);font-weight:600;">At 390 the pip track yields, and only on a row that carries a clause.</b> Line 2 holds pips, synergy and inclusion today; a clause does not fit beside all three. <b style="color:var(--fg-body);font-weight:600;">On the four rows that complete something, the mana cost steps aside</b> &mdash; a player choosing between 38 candidates does not break the tie on cost when one of them closes a loop. The other 34 rows are untouched, pips and all.</div>
+      </div>
+
+    </div>
+
+    <div style="max-width:1180px;height:1px;background:var(--border-strong);"></div>
+
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="flex:1;min-width:420px;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">state 3 beside the shipped BuyTag</span>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">They do not compete, because Round 1 already separated them.</b> <i>Boxed means about your copies; bare means about the card.</i> The buy tag is boxed, mono, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span>, and lives in a fixed right-hand slot. The combo clause is bare, mono, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span>, and lives on a secondary line at the left. <b style="color:var(--fg-body);font-weight:600;">Different box, different ink, different edge of the row.</b></div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;flex:none;">buy $3.60</span>
+            <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;">unchanged. Same atom, same ink, same slot, same collapse rules per host.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+            <span style="display:flex;align-items:center;gap:5px;flex:none;"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="display:block;color:var(--fact);filter:drop-shadow(0 0 2px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);">completes with&hellip;</span></span>
+            <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;">never enters the availability slot, never turns <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span>, never carries a price.</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:11px;"><b style="color:var(--fg);font-weight:600;">Refused: a combined atom.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">completes a combo &middot; $3.60</span> reads as a price <i>for the combo</i>, which is false &mdash; you already own the other half, and the figure is this card&rsquo;s. <b style="color:var(--fg-body);font-weight:600;">Refused: making the tag brighter on a combo row.</b> That is the app leaning on a purchase, which is the one thing a shopping surface must never do.</div>
+      </div>
+
+      <div style="flex:1;min-width:380px;display:flex;flex-direction:column;gap:13px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">the card modal &mdash; where the list is complete</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">superseded by <a href="#2a">2a</a> &mdash; the scope line, the six-line cap and the pressable partner name are Turn 2&rsquo;s.</span>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos <span style="color:var(--accent);font-size:11px;">&#42;</span></span>
+          <div style="display:flex;align-items:center;gap:9px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+            <span style="font-size:13px;color:var(--fg-body);">with <b style="color:var(--fg);font-weight:600;">Isochron Scepter</b> <span style="color:var(--fg-faint);">&mdash; in this deck</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block;flex:none;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in oklab,var(--fact) 45%,transparent));"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+            <span style="font-size:13px;color:var(--fg-body);">with <b style="color:var(--fg);font-weight:600;">Paradox Engine</b> <span style="color:var(--fg-faint);">&mdash; in your collection</span></span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);line-height:1.6;border-top:1px solid var(--border);padding-top:8px;">from Commander Spellbook. combos needing a third piece are not listed.</div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">This is the only surface that enumerates.</b> Rows name one partner; the modal names every detected one and says, in one mono line, what it cannot see. <b style="color:var(--fg-body);font-weight:600;">The qualifier lives here and nowhere else</b> &mdash; a caveat repeated on 38 rows is noise, and a caveat said once where the full list is shown is an honest footnote.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;">Chrome is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">AvailabilityDetail</span>&rsquo;s verbatim, as Round 1&rsquo;s block is, and it sits <b style="color:var(--fg-body);font-weight:600;">directly under</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">In the bracket rules</span>. Facts first, relations second &mdash; the same order as the row.</div>
+      </div>
+
+    </div>
+
+    <div style="max-width:1180px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">host coverage &mdash; three cells are ruled empty, out loud</span>
+      <div style="display:grid;grid-template-columns:minmax(200px,1.4fr) 1fr 1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <div style="background:var(--surface);padding:9px 11px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-faint);">state</div>
+        <div style="background:var(--surface);padding:9px 11px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-faint);">/collection</div>
+        <div style="background:var(--surface);padding:9px 11px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-faint);">Add panel</div>
+        <div style="background:var(--surface);padding:9px 11px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-faint);">Last-31</div>
+
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12.5px;color:var(--fg-body);">1 &middot; both halves owned, unassembled</div>
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12.5px;color:var(--fg);">&#10003; row + tile</div>
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12px;color:var(--fg-locked);">&mdash; two away, not one</div>
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12px;color:var(--fg-locked);">&mdash; two away, not one</div>
+
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12.5px;color:var(--fg-body);">2 &middot; one away, you own it</div>
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12px;color:var(--fg-locked);">&mdash; no deck in scope</div>
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12.5px;color:var(--fg);">&#10003; tile + row</div>
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12.5px;color:var(--fg);">&#10003; both widths</div>
+
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12.5px;color:var(--fg-body);">3 &middot; one away, you&rsquo;d buy it</div>
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12px;color:var(--fg-locked);">&mdash; no deck in scope</div>
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12.5px;color:var(--fg);">&#10003; tile + row</div>
+        <div style="background:var(--surface-raised);padding:10px 11px;font-size:12.5px;color:var(--fg);">&#10003; both widths</div>
+      </div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">A dash is a ruling, not a gap.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> has no deck, so <i>completes</i> has nothing to complete &mdash; the two deck states are unsayable there, and inventing a deck picker on a browse surface to say them is a feature, not a mark. The candidate surfaces have a deck, so state 1 <i>could</i> be drawn there as <i>you own both halves and neither is in this deck</i> &mdash; but that is a <b style="color:var(--fg-body);font-weight:600;">two-card add</b>, and this round is about being one away. Named as severable, not refused.</div>
+    </div>
+
+    <div style="max-width:1180px;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:16px 18px;display:flex;flex-direction:column;gap:11px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">what this round refuses</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:11px;">
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">A list.</b> Hugh ruled it and the volume is the reason: 962 raw near-misses across 20 decks. A mark on a row a player is already reading costs nothing; a screen of 48 near-misses per deck costs attention nobody has.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">A second ink, and a second glyph.</b> Three states, one mark. The ownership difference is already drawn twice on every host that carries it.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Any count, badge or total.</b> No <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">4 combos</span> on a deck tile, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+1</span> after a partner name. Detection is bounded by design, so a number would be the first thing on the surface that is not true.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">Sorting, filtering or promoting combo rows.</b> The ranking is EDHREC synergy and stays that way. A mark says a fact; moving a row makes a recommendation, and nobody has argued for that one yet.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">A tap target, a tooltip-only gloss, motion.</b> Round 1&rsquo;s rules carry over whole: the clause is inert, the row&rsquo;s own tap opens the modal, and the glow is a static shadow.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;"><b style="color:var(--fg);font-weight:600;">A mark on the partner.</b> The half already in the deck is the sentence&rsquo;s object, not its subject. Marking both ends doubles the ink to say one thing.</div>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;'amonkhet' | 'kamigawa'&quot;,&quot;section&quot;:&quot;Canvas&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? 'amonkhet' };
+  }
+}
+</script>
+</body>
+</html>

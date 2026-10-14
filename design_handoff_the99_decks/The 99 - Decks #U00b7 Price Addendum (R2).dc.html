@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #DEAA29; color: #14110E; }
+  a { color: #DEAA29; text-decoration: none; }
+  a:hover { color: #E8BC4C; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(222,170,41,0.05), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#DEAA29;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Decks &middot; #291 &middot; corrections + one new drawing</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">The locked rule is exact, so staleness stops being a per-card guess.</h1>
+    <p style="max-width:1020px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">R1 derived <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">soldOut</span> from a wall-clock window. <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">schema.ts:87</span> says a row is live when its <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">as_of</span> equals the newest in the table &mdash; a comparison, not a duration. <b style="color:#EDE6D8;font-weight:600;">The failure mode inverts, and that is the whole gain:</b> a missed run leaves every row live, so <i>no</i> card says sold out, and staleness becomes one fact about the table instead of eight cards asserting it badly.</p>
+    <p style="max-width:1020px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">So the per-card tags are <b style="color:#EDE6D8;font-weight:600;">unchanged</b>. Four tails, same four words. What R1 got wrong was where the fact lives, not what it looks like &mdash; and the run-health state it said #291 didn&rsquo;t expose is drawn below, as one clause on one line.</p>
+    <p style="max-width:1020px;font-size:14px;line-height:1.7;color:#8B8270;margin:0;">Read <a href="R2-README.md">R2-README.md</a> and <a href="R2-READINESS.md">R2-READINESS.md</a>. Rulings 1&ndash;4, the four-tails structure, the no-link-out reasoning and the deck-level denominator are accepted and not reopened. R1&rsquo;s canvas and documents are untouched; its four stale drawings are recorded in R2-README &sect;7.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#18140F;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">No hex on this canvas is normative</div>
+    <div style="font-size:13px;color:#A59C89;line-height:1.7;">Six themes shipped 2026-09-02. Every colour here is a <b style="color:#EDE6D8;font-weight:600;">token resolved against theme A</b> for drawing purposes only &mdash; R1&rsquo;s contrast table quoted the pre-theme palette and is withdrawn in full. The token table in item 5 is the claim. <b style="color:#EDE6D8;font-weight:600;">This pass introduces no new colour pairing:</b> every ink is one the shipped tag and row text already use on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span>.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2100px;">
+
+  <!-- ============ 1 · THE DERIVATION ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #DEAA29;padding-top:18px;">Item 1 &middot; <span style="color:#DEAA29;">blocker 1 &mdash; the derivation, corrected</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:600px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:9px;">Withdrawn &mdash; R1</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;line-height:1.8;text-decoration:line-through;">soldOut = now &minus; row.as_of &gt; cadence + grace</div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:10px;">Fails exactly where it must not: <b style="color:#EDE6D8;font-weight:600;">a missed run ages every row past the window</b> and eight cards claim to be sold out at once. The locked rule cannot do that.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:18px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:11px;">Locked &mdash; <span style="color:#DEAA29;text-transform:none;">schema.ts:87</span></div>
+          <div style="background:#14110E;border:1px solid #2B241B;border-radius:9px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:2;color:#C0B8A6;">live<span style="color:#6B6354;">&nbsp;&nbsp;&nbsp;&nbsp;=</span> row.as_of === max(as_of)<br>soldOut<span style="color:#6B6354;">&nbsp;=</span> row exists &amp;&amp; !live<br>absent<span style="color:#6B6354;">&nbsp;&nbsp;=</span> no row<br>foilOnly<span style="color:#6B6354;">=</span> live &amp;&amp; cents === null<br><span style="color:#6B6354;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&amp;</span> (foilCents ?? etchedCents) !== null<br>priced<span style="color:#6B6354;">&nbsp;&nbsp;=</span> live &amp;&amp; cents !== null</div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:12px;"><b style="color:#EDE6D8;font-weight:600;">No constant, no grace period, no clock.</b> Every row from one run shares a timestamp, so the comparison is exact. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">sold out</span> now means exactly what the table says it means: a later run went out and this card wasn&rsquo;t in it.</div>
+        </div>
+      </div>
+
+      <div style="width:540px;flex:none;border:1px solid #2B241B;border-radius:14px;background:#18140F;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">The inversion, drawn</div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A59C89;margin-bottom:8px;">A missed run &mdash; under R1&rsquo;s window</div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:6px;background:#1E1A15;"><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Dockside Extortionist</span><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="color:#C0B8A6;">sold out</span></span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:6px;background:#1E1A15;"><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Mayhem Devil</span><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="color:#C0B8A6;">sold out</span></span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:6px;background:#1E1A15;"><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Bolas&rsquo;s Citadel</span><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="color:#C0B8A6;">sold out</span></span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#C6533F;padding:5px 10px;">&hellip; and the other five. Eight cards lying at once.</div>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#2B241B;margin-bottom:16px;"></div>
+
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A59C89;margin-bottom:8px;">The same missed run &mdash; under <span style="color:#DEAA29;">as_of === max(as_of)</span></div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:6px;background:#1E1A15;"><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Dockside Extortionist</span><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="color:#C0B8A6;">$45.00</span></span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:6px;background:#1E1A15;"><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Mayhem Devil</span><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="color:#C0B8A6;">$2.85</span></span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:6px;background:#1E1A15;"><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Bolas&rsquo;s Citadel</span><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="color:#C0B8A6;">$12.40</span></span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8B8270;padding:5px 10px;">Every row equals <span style="color:#C0B8A6;">max(as_of)</span>, so every row is live. Nothing is sold out.</div>
+          </div>
+          <div style="margin-top:12px;padding:11px 13px;background:#14110E;border:1px solid #2B241B;border-radius:8px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;line-height:1.8;">prices from ManaPool &middot; last checked 12 August &middot; these are behind</div>
+          </div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:11px;">The whole missed run, said once, in the one place that can honestly say it.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 2 · THE TWO HEADER FORMS ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #DEAA29;padding-top:18px;">Item 2 &middot; <span style="color:#DEAA29;">gap &sect;2 retired &mdash; the run-health state, drawn, and the corrected header string</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:8px;">Phone &middot; table current</div>
+        <div style="background:#100D0A;border:1px solid #2B241B;border-radius:16px;overflow:hidden;">
+          <div style="padding:12px 14px;border-bottom:1px solid #2B241B;background:#14110E;display:flex;gap:7px;align-items:center;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#A59C89;border:1px solid #3A3229;border-radius:999px;padding:4px 11px;">All 62</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#14110E;background:#DEAA29;border-radius:999px;padding:4px 11px;">Shopping 8</span>
+          </div>
+          <div style="padding:11px 14px 12px;background:#14110E;border-bottom:1px solid #2B241B;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">54 owned &middot; 8 you don&rsquo;t own</span>
+              <span style="display:inline-flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#EDE6D8;">$84.25</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">&middot; 6 of 8 priced</span></span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;margin-top:5px;">prices from ManaPool &middot; last checked Monday</div>
+          </div>
+          <div style="padding:10px 12px 14px;display:flex;flex-direction:column;gap:4px;">
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dockside Extortionist</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$45.00</span></span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Grim Hireling</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">sold out</span></span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Deflecting Swat</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$2.10 <span style="color:#8B8270;">foil</span></span></span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Squirrel Nest</span><span style="flex:none;display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy</span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:8px;">Phone &middot; <span style="color:#DEAA29;">table behind</span> &mdash; one clause, and nothing else moves</div>
+        <div style="background:#100D0A;border:1px solid #2B241B;border-radius:16px;overflow:hidden;">
+          <div style="padding:12px 14px;border-bottom:1px solid #2B241B;background:#14110E;display:flex;gap:7px;align-items:center;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#A59C89;border:1px solid #3A3229;border-radius:999px;padding:4px 11px;">All 62</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#14110E;background:#DEAA29;border-radius:999px;padding:4px 11px;">Shopping 8</span>
+          </div>
+          <div style="padding:11px 14px 12px;background:#14110E;border-bottom:1px solid #2B241B;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">54 owned &middot; 8 you don&rsquo;t own</span>
+              <span style="display:inline-flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#EDE6D8;">$87.10</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">&middot; 7 of 8 priced</span></span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;margin-top:5px;">prices from ManaPool &middot; last checked 12 August &middot; these are behind</div>
+          </div>
+          <div style="padding:10px 12px 14px;display:flex;flex-direction:column;gap:4px;">
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dockside Extortionist</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$45.00</span></span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Grim Hireling</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$2.85</span></span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Deflecting Swat</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$2.10 <span style="color:#8B8270;">foil</span></span></span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Squirrel Nest</span><span style="flex:none;display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy</span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6B6354;margin-top:9px;line-height:1.6;">Grim Hireling gets its figure back &mdash; under the exact rule it is live, because no newer run skipped it. The total rises and the denominator follows. Only Squirrel Nest stays unpriced: it has no row at all.</div>
+      </div>
+
+      <div style="width:400px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:9px;">The clause, and what it doesn&rsquo;t do</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">&#8226; <b style="color:#EDE6D8;font-weight:600;">The figures stay, and so does the total.</b> The prices are real; they are just old. Suppressing them would be R1&rsquo;s over-reaction one level up.</div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">&#8226; <b style="color:#EDE6D8;font-weight:600;">A date, not a duration.</b> Past a week a weekday stops being unambiguous, so the line switches to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">12 August</span> at the same threshold that adds the clause.</div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">&#8226; <b style="color:#EDE6D8;font-weight:600;">Not a warning colour.</b> The line stays <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-locked</span>. Old prices are not an error and the player didn&rsquo;t cause them; amber would put the surface&rsquo;s loudest ink on our operational problem.</div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">&#8226; <b style="color:#EDE6D8;font-weight:600;">No banner.</b> Unchanged: nothing ranks, filters or sorts on price. This is quieter than a banner and truer than eight sold-out tags.</div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">&#8226; <b style="color:#EDE6D8;font-weight:600;">Third clause and last.</b> Two is the shipped shape, three the ceiling. A fourth pricing fact needs a different home, not a fourth middot.</div>
+          </div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">Correction &mdash; the header string</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;text-decoration:line-through;margin-bottom:6px;">8 cards you don&rsquo;t own</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;margin-bottom:10px;">54 owned &middot; 8 you don&rsquo;t own</div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">The shipped string, drawn correctly. The total keeps its own denominator on the right, so the two counts sit on one line without colliding &mdash; one describes the deck, one describes what we know about buying it.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">Accessible name, both forms</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;line-height:1.8;">&ldquo;$45.00 at ManaPool, last checked Monday&rdquo;<br><br>&ldquo;$45.00 at ManaPool, last checked 12 August, these prices are behind&rdquo;</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 3 · THE TAILS, CORRECTED ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #DEAA29;padding-top:18px;">Item 3 &middot; <span style="color:#DEAA29;">blocker 2 &mdash; three inks become two, and the etched guard</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="flex:1;min-width:700px;border:1px solid #2B241B;border-radius:14px;background:#18140F;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:130px 1fr 180px 180px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;background:#14110E;border-bottom:1px solid #2B241B;">
+          <div style="padding:11px 16px;">State</div>
+          <div style="padding:11px 14px;">Derived from</div>
+          <div style="padding:11px 14px;">Row</div>
+          <div style="padding:11px 14px;">Tile</div>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 1fr 180px 180px;align-items:center;border-bottom:1px solid #2B241B;">
+          <div style="padding:14px 16px;font-size:13px;font-weight:600;color:#EDE6D8;">Priced</div>
+          <div style="padding:14px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;">live &amp;&amp; cents !== null</div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$45.00</span></span></div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#DEAA29;background:rgba(20,17,14,0.82);box-shadow:inset 0 0 0 1px rgba(222,170,41,0.5);border-radius:4px;padding:2px 5px;">buy<span style="color:#4A3A24;">&middot;</span><span style="color:#EDE6D8;">$45.00</span></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 1fr 180px 180px;align-items:center;border-bottom:1px solid #2B241B;">
+          <div style="padding:14px 16px;font-size:13px;font-weight:600;color:#EDE6D8;">Foil only</div>
+          <div style="padding:14px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;">live &amp;&amp; cents null &amp;&amp; foilCents set</div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$2.10 <span style="color:#8B8270;">foil</span></span></span></div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#DEAA29;background:rgba(20,17,14,0.82);box-shadow:inset 0 0 0 1px rgba(222,170,41,0.5);border-radius:4px;padding:2px 5px;">buy<span style="color:#4A3A24;">&middot;</span><span style="color:#EDE6D8;">$2.10 <span style="color:#A59C89;">foil</span></span></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 1fr 180px 180px;align-items:center;border-bottom:1px solid #2B241B;background:rgba(222,170,41,0.04);">
+          <div style="padding:14px 16px;font-size:13px;font-weight:600;color:#EDE6D8;">&mdash; etched<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#DEAA29;font-weight:400;margin-top:3px;">the guard</div></div>
+          <div style="padding:14px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;">&hellip; &amp;&amp; only etchedCents set<div style="color:#6B6354;margin-top:4px;">0 rows in staging. Renders correctly the day one appears.</div></div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$6.80 <span style="color:#8B8270;">etched</span></span></span></div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#DEAA29;background:rgba(20,17,14,0.82);box-shadow:inset 0 0 0 1px rgba(222,170,41,0.5);border-radius:4px;padding:2px 5px;">buy<span style="color:#4A3A24;">&middot;</span><span style="color:#EDE6D8;">$6.80 <span style="color:#A59C89;">etched</span></span></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 1fr 180px 180px;align-items:center;border-bottom:1px solid #2B241B;">
+          <div style="padding:14px 16px;font-size:13px;font-weight:600;color:#EDE6D8;">Sold out</div>
+          <div style="padding:14px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;">row exists &amp;&amp; !live</div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">sold out</span></span></div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#DEAA29;background:rgba(20,17,14,0.82);box-shadow:inset 0 0 0 1px rgba(222,170,41,0.5);border-radius:4px;padding:2px 5px;">buy<span style="color:#4A3A24;">&middot;</span><span style="color:#EDE6D8;">sold out</span></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 1fr 180px 180px;align-items:center;">
+          <div style="padding:14px 16px;font-size:13px;font-weight:600;color:#EDE6D8;">Never stocked</div>
+          <div style="padding:14px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;">no row</div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy</span></div>
+          <div style="padding:14px 14px;"><span style="display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#DEAA29;background:rgba(20,17,14,0.82);box-shadow:inset 0 0 0 1px rgba(222,170,41,0.5);border-radius:4px;padding:2px 5px;">buy</span></div>
+        </div>
+      </div>
+
+      <div style="width:400px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:9px;">The fix removes a colour</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;text-decoration:line-through;margin-bottom:6px;">sold out &middot; --fg-body-dim</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;margin-bottom:10px;">sold out &middot; --fg-body</div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.7;">Not a token, so I picked none: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">sold out</span> takes <b style="color:#EDE6D8;font-weight:600;">the figure&rsquo;s own ink</b>, because it sits in the figure&rsquo;s slot and is the same class of fact. The tail now has two inks at each density &mdash; the word, and whatever follows it &mdash; and the state is still told apart by being a word where the others are a number.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">Still four tails</div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.7;">The etched row is <b style="color:#EDE6D8;font-weight:600;">one word swapped inside foil-only&rsquo;s tail</b>, not a fifth state: same derivation branch, same slot, same inks, one string (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#DEAA29;">price.tagEtched</span>). Zero rows against 84,306 priced and 12,423 foil-only, so it renders nowhere today.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 4 · TOKENS ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #DEAA29;padding-top:18px;">Item 4 &middot; <span style="color:#DEAA29;">blocker 3 &mdash; the contrast claim, withdrawn and restated as tokens</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:600px;flex:none;border:1px solid #2B241B;border-radius:14px;background:#18140F;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1fr 240px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;background:#14110E;border-bottom:1px solid #2B241B;">
+          <div style="padding:11px 16px;">Tag part</div>
+          <div style="padding:11px 14px;">Token</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 240px;border-bottom:1px solid #2B241B;"><div style="padding:10px 16px;font-size:12.5px;color:#C0B8A6;">The word <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#DEAA29;">buy</span></div><div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;">--warning</div></div>
+        <div style="display:grid;grid-template-columns:1fr 240px;border-bottom:1px solid #2B241B;"><div style="padding:10px 16px;font-size:12.5px;color:#C0B8A6;">Separator</div><div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;">--border-strong</div></div>
+        <div style="display:grid;grid-template-columns:1fr 240px;border-bottom:1px solid #2B241B;"><div style="padding:10px 16px;font-size:12.5px;color:#C0B8A6;">Row figure, <i>sold out</i></div><div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;">--fg-body</div></div>
+        <div style="display:grid;grid-template-columns:1fr 240px;border-bottom:1px solid #2B241B;"><div style="padding:10px 16px;font-size:12.5px;color:#C0B8A6;">Tile figure, <i>sold out</i></div><div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;">--fg</div></div>
+        <div style="display:grid;grid-template-columns:1fr 240px;border-bottom:1px solid #2B241B;"><div style="padding:10px 16px;font-size:12.5px;color:#C0B8A6;"><i>foil</i> / <i>etched</i></div><div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;">--fg-faint</div></div>
+        <div style="display:grid;grid-template-columns:1fr 240px;border-bottom:1px solid #2B241B;"><div style="padding:10px 16px;font-size:12.5px;color:#C0B8A6;">Row tag fill</div><div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;">--warning at 13%</div></div>
+        <div style="display:grid;grid-template-columns:1fr 240px;border-bottom:1px solid #2B241B;"><div style="padding:10px 16px;font-size:12.5px;color:#C0B8A6;">Tile scrim / inset</div><div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;">shipped scrim + --warning at 50%</div></div>
+        <div style="display:grid;grid-template-columns:1fr 240px;border-bottom:1px solid #2B241B;"><div style="padding:10px 16px;font-size:12.5px;color:#C0B8A6;">Total figure / clause</div><div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;">--fg / --fg-faint</div></div>
+        <div style="display:grid;grid-template-columns:1fr 240px;"><div style="padding:10px 16px;font-size:12.5px;color:#C0B8A6;">Provenance, both forms</div><div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;">--fg-locked</div></div>
+      </div>
+
+      <div style="width:430px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:9px;">No new pairing to verify</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">Every ink above is one the shipped tag and the shipped row text <b style="color:#EDE6D8;font-weight:600;">already use on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span></b>, so the tag inherits whatever the theme pass verified for body text there. Its own fill is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> at 13% over that surface, which <b style="color:#EDE6D8;font-weight:600;">raises</b> every ratio rather than lowering one. The AAA claim is the theme pass&rsquo;s, unchanged, and this pass spends none of its margin.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">Not asserted, and why</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">globals.css</span> is not in this tree &mdash; local <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">src/</span> still holds only <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">components/shell/nav.tsx</span>. R1&rsquo;s figures came from a palette I could read and a theme that no longer ships. <b style="color:#EDE6D8;font-weight:600;">No number replaces them;</b> the table is the claim.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">One ask of eng &mdash; not a blocker</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">The measured ratio for <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> on the tile tag scrim in all six. 9px mono over card art is the size exception <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--avail-hard-fg</span> exists for, and on a theme where <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span> sit close &mdash; the same shape as R4&rsquo;s flag on Neon Rain, Kamigawa and Duskmourn &mdash; the tile tag and the brass evidence bar are the two things to check on a real row before beta. Give me the figures and they go in the ledger rather than being inferred.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 5 · LEDGER ============ -->
+  <div style="margin-bottom:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #DEAA29;padding-top:18px;">Item 5 &middot; <span style="color:#DEAA29;">the four citations, and the copy call R1 owed</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;border:1px solid #2B241B;border-radius:14px;background:#18140F;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;background:#14110E;border-bottom:1px solid #2B241B;">
+          <div style="padding:11px 16px;">R1 said</div>
+          <div style="padding:11px 14px;">Actually</div>
+          <div style="padding:11px 14px;">Effect</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #2B241B;">
+          <div style="padding:13px 16px;font-size:12.5px;color:#8B8270;line-height:1.6;">The row&rsquo;s meta line carries <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">&times;N owned</span> and the availability clause</div>
+          <div style="padding:13px 14px;font-size:12.5px;color:#C0B8A6;line-height:1.6;">It carries an <b style="color:#EDE6D8;font-weight:600;">EDHREC inclusion percentage</b></div>
+          <div style="padding:13px 14px;font-size:12.5px;color:#A59C89;line-height:1.6;">Ruling 1 survives with a <b style="color:#EDE6D8;font-weight:600;">better</b> reason: a dollar figure beside a percentage is two rates in one slot, and only one of them is the player&rsquo;s money.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #2B241B;">
+          <div style="padding:13px 16px;font-size:12.5px;color:#8B8270;line-height:1.6;">The Shopping header reads <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">8 cards you don&rsquo;t own</span></div>
+          <div style="padding:13px 14px;font-size:12.5px;color:#C0B8A6;line-height:1.6;">Shipped is <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">N owned &middot; N you don&rsquo;t own</span></div>
+          <div style="padding:13px 14px;font-size:12.5px;color:#A59C89;line-height:1.6;">Drawn corrected in item 2. The total keeps its own denominator, so the two counts share a line without collision.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #2B241B;">
+          <div style="padding:13px 16px;font-size:12.5px;color:#8B8270;line-height:1.6;">The provenance line &ldquo;replaces the shipped caption on the Shopping filter&rdquo;</div>
+          <div style="padding:13px 14px;font-size:12.5px;color:#C0B8A6;line-height:1.6;">That caption lives in the <b style="color:#EDE6D8;font-weight:600;">export dialog</b></div>
+          <div style="padding:13px 14px;font-size:12.5px;color:#A59C89;line-height:1.6;">The Shopping header&rsquo;s provenance line is <b style="color:#EDE6D8;font-weight:600;">new</b>, not a replacement. The dialog&rsquo;s own line is a separate call &mdash; right.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;">
+          <div style="padding:13px 16px;font-size:12.5px;color:#8B8270;line-height:1.6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">names only &middot; prices for reference</span></div>
+          <div style="padding:13px 14px;font-size:12.5px;color:#C0B8A6;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Not a shipped string</b> &mdash; quoted from R1&rsquo;s own mock</div>
+          <div style="padding:13px 14px;font-size:12.5px;color:#A59C89;line-height:1.6;">Withdrawn. No claim is made about the dialog&rsquo;s caption except the one at right.</div>
+        </div>
+      </div>
+
+      <div style="width:430px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:9px;">The copy call R1 missed</div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.7;margin-bottom:11px;">Shipping this makes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">export-dialog.tsx:397</span> false &mdash; <i>&ldquo;Pricing is a planned add&rdquo;</i> stops being true the moment a price renders on the decklist, even though the exports don&rsquo;t change.</div>
+          <div style="background:#14110E;border:1px solid #2B241B;border-radius:8px;padding:12px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;margin-bottom:6px;">export.pricingNote</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;line-height:1.7;">Prices show in the app &middot; exports copy names only</div>
+          </div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.7;margin-top:11px;">Two clauses, one middot, no dash doing a sentence break&rsquo;s work. What changed, then what didn&rsquo;t &mdash; in that order, because the second half is the one the reviewer note cared about. <b style="color:#EDE6D8;font-weight:600;">Exports are still untouched.</b></div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">Stale in R1, recorded not redrawn</div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.8;">1 &middot; item 7&rsquo;s staleness ledger and its gap &sect;2 note<br>2 &middot; the <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">sold out</span> ink<br>3 &middot; every Shopping header string<br>4 &middot; the whole palette and its contrast table</div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.7;margin-top:11px;">All four drawn correctly above. R1&rsquo;s canvas and documents are kept as the record &mdash; new files only, per the house rule.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

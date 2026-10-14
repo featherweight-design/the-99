@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --display:'Cinzel',serif;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --avail-hard:var(--accent); --avail-hard-fg:#D9975C; --avail-over-fg:#C46857;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --display:'Chakra Petch',sans-serif;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --warning:#E0913C; --avail-hard-fg:#DF8AA7; --avail-over-fg:#C26755;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ screenLabel }}" style="{{ frameBox }}">
+  <div aria-hidden="true" style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 72%, transparent);"></div>
+
+  <div role="dialog" style="{{ sheetBox }}">
+    <div style="{{ headRow }}">
+      <h2 style="margin:0;min-width:0;font-family:var(--display);font-weight:700;font-size:16px;line-height:1.2;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ title }}</h2>
+      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">{{ aside }}</span>
+      <span style="margin-left:auto;display:flex;flex:none;width:44px;height:44px;margin-right:-10px;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">×</span>
+    </div>
+
+    <div style="{{ bodyBox }}">
+
+      <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ lede }}</p>
+          <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">{{ countedNote }}</p>
+        </div>
+
+        <sc-if value="{{ ownsNone }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">You own none of them yet.</p>
+        </sc-if>
+
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+          <section style="display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--elevated);">
+              <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">{{ g.heading }}</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);text-align:right;">{{ g.note }}</span>
+            </div>
+            <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+              <div data-candidate="true" style="display:flex;flex-direction:column;border-bottom:1px solid var(--border);">
+                <div style="display:flex;gap:12px;align-items:flex-start;padding:11px 0;">
+                  <span aria-hidden="true" style="position:relative;display:flex;flex:none;width:56px;height:41px;border-radius:6px;overflow:hidden;border:1px solid var(--border-strong);background:var(--elevated);margin-top:1px;">
+                    <sc-for list="{{ r.thumbs }}" as="t" hint-placeholder-count="1">
+                      <span style="{{ t }}"></span>
+                    </sc-for>
+                  </span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+                    <sc-for list="{{ r.halves }}" as="h" hint-placeholder-count="1">
+                      <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:9px;row-gap:3px;min-width:0;">
+                        <sc-if value="{{ h.second }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:13px;color:var(--fg-faint);margin-right:-4px;">+</span></sc-if>
+                        <span style="min-width:0;font-size:14px;font-weight:600;line-height:1.3;color:var(--fg);border-bottom:1px solid var(--border-strong);">{{ h.name }}</span>
+                        <sc-if value="{{ h.free }}" hint-placeholder-val="{{ false }}">
+                          <span style="display:inline-flex;align-items:center;gap:6px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);"></span>free</span>
+                        </sc-if>
+                        <sc-if value="{{ h.held }}" hint-placeholder-val="{{ false }}">
+                          <span style="display:inline-flex;align-items:center;gap:6px;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--avail-hard-fg);"><span style="display:block;flex:none;width:6px;height:6px;transform:rotate(45deg);background:var(--avail-hard);"></span><span style="white-space:pre;">{{ h.heldText }}</span></span>
+                        </sc-if>
+                        <sc-if value="{{ h.buy }}" hint-placeholder-val="{{ false }}">
+                          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ h.price }}</span></span>
+                        </sc-if>
+                        <sc-if value="{{ h.inDeck }}" hint-placeholder-val="{{ false }}">
+                          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">in this deck<span style="color:var(--border-strong);padding:0 4px;">·</span>trades places</span>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <div data-mv="true" style="display:flex;flex-wrap:wrap;align-items:center;column-gap:8px;row-gap:3px;min-height:16px;"><span style="display:flex;align-items:center;gap:3px;flex:none;"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="3"><sc-if value="{{ p.sep }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);padding:0 3px;">+</span></sc-if><sc-if value="{{ p.pip }}" hint-placeholder-val="{{ true }}"><span style="{{ p.style }}">{{ p.t }}</span></sc-if></sc-for></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.4;color:var(--fg-muted);">{{ r.rel }}</span></div>
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px;row-gap:6px;">
+                      <sc-if value="{{ r.hasFigure }}" hint-placeholder-val="{{ true }}">
+                        <span style="display:inline-flex;align-items:center;min-height:36px;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);cursor:pointer;"><span style="border-bottom:1px dotted var(--fg-faint);">{{ r.figure }}</span><span style="font-size:10px;color:var(--fg-faint);">{{ r.caret }}</span></span>
+                      </sc-if>
+                      <sc-if value="{{ r.noData }}" hint-placeholder-val="{{ false }}">
+                        <span style="display:inline-flex;align-items:center;min-height:36px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">no deck data</span>
+                      </sc-if>
+                      <span style="display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 14px;margin-left:auto;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;font-weight:600;color:var(--fg);cursor:pointer;">Choose</span>
+                    </div>
+                  </div>
+                </div>
+                <sc-if value="{{ r.expanded }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:0 0 12px 68px;padding:11px 13px 13px;border-radius:9px;background:var(--surface-sunken);border:1px solid var(--border);display:flex;flex-direction:column;gap:9px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ r.expandCaption }}</span>
+                    <div style="{{ namesGrid }}">
+                      <sc-for list="{{ r.names }}" as="n" hint-placeholder-count="12">
+                        <span style="font-size:12.5px;line-height:1.35;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:3px 0;">{{ n }}</span>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ g.hasMore }}" hint-placeholder-val="{{ false }}">
+              <span style="display:inline-flex;align-self:flex-start;align-items:center;min-height:44px;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);"><span style="border-bottom:1px dotted var(--accent);">{{ g.moreLabel }}</span><span style="color:var(--fg-faint);">{{ g.moreNote }}</span></span>
+            </sc-if>
+          </section>
+        </sc-for>
+      </sc-if>
+
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+        <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">{{ lede }}</p>
+        <div role="status" style="display:flex;flex-direction:column;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);padding-bottom:8px;border-bottom:1px solid var(--elevated);">Reading which commanders' decks run your cards…</span>
+          <sc-for list="{{ skeleton }}" as="s" hint-placeholder-count="4">
+            <div style="{{ s }}">
+              <span style="flex:none;width:56px;height:41px;border-radius:6px;background:var(--elevated);"></span>
+              <div style="flex:1;display:flex;flex-direction:column;gap:9px;padding-top:3px;">
+                <span style="width:52%;height:11px;border-radius:3px;background:var(--elevated);"></span>
+                <span style="width:34%;height:9px;border-radius:3px;background:var(--elevated);"></span>
+              </div>
+              <span style="flex:none;width:76px;height:36px;border-radius:8px;border:1px solid var(--border);"></span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isFailed }}" hint-placeholder-val="{{ false }}">
+        <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">{{ lede }}</p>
+        <div role="alert" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 8px 10px;">
+          <svg aria-hidden="true" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--fg-muted)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="display:block;opacity:0.3;"><path d="M4 8h15"></path><path d="M15 4l4 4-4 4"></path><path d="M20 16H5"></path><path d="M9 12l-4 4 4 4"></path></svg>
+          <h3 style="margin:22px 0 0;font-family:var(--display);font-weight:700;font-size:21px;line-height:1.25;color:var(--fg);text-wrap:balance;">We could not read the candidates.</h3>
+          <p style="margin:11px 0 0;max-width:460px;font-size:13.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Nothing about your deck changed.</p>
+          <span style="margin-top:20px;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14.5px;">Try again</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isNone }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:10px;padding:18px 0 6px;">
+          <p style="margin:0;font-family:var(--display);font-weight:700;font-size:18px;line-height:1.3;color:var(--fg);text-wrap:pretty;">{{ noneHead }}</p>
+          <p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ noneBody }}</p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isConfirm }}" hint-placeholder-val="{{ false }}">
+        <span style="display:inline-flex;align-self:flex-start;align-items:center;min-height:32px;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">← All candidates</span>
+        <div style="display:flex;align-items:flex-start;justify-content:center;gap:14px;padding:4px 0 2px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--warning);">{{ outLabel }}</span>
+            <div style="display:flex;gap:6px;">
+              <sc-for list="{{ outTiles }}" as="t" hint-placeholder-count="1">
+                <div style="{{ t.box }}">
+                  <span style="{{ t.art }}"></span>
+                  <span style="font-size:11.5px;line-height:1.3;color:var(--fg-body);text-align:center;">{{ t.name }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:center;"><span style="display:flex;align-items:center;gap:3px;flex:none;"><sc-for list="{{ outPips }}" as="p" hint-placeholder-count="3"><sc-if value="{{ p.sep }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);padding:0 3px;">+</span></sc-if><sc-if value="{{ p.pip }}" hint-placeholder-val="{{ true }}"><span style="{{ p.style }}">{{ p.t }}</span></sc-if></sc-for></span></div>
+          </div>
+          <span aria-hidden="true" style="flex:none;align-self:center;margin-top:-30px;font-family:'IBM Plex Mono',monospace;font-size:18px;color:var(--fg-faint);">{{ arrow }}</span>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--success);">{{ inLabel }}</span>
+            <div style="display:flex;gap:6px;">
+              <sc-for list="{{ inTiles }}" as="t" hint-placeholder-count="1">
+                <div style="{{ t.box }}">
+                  <span style="{{ t.art }}"></span>
+                  <span style="font-size:11.5px;line-height:1.3;color:var(--fg-body);text-align:center;">{{ t.name }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="display:flex;align-items:center;gap:3px;flex:none;"><sc-for list="{{ inPips }}" as="p" hint-placeholder-count="3"><sc-if value="{{ p.sep }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);padding:0 3px;">+</span></sc-if><sc-if value="{{ p.pip }}" hint-placeholder-val="{{ true }}"><span style="{{ p.style }}">{{ p.t }}</span></sc-if></sc-for></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.4;color:var(--fg-muted);text-align:center;">{{ inRel }}</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;padding-top:12px;border-top:1px solid var(--border);">
+          <p style="margin:0;font-size:14px;line-height:1.6;color:var(--fg);text-wrap:pretty;">{{ sentence }}</p>
+          <sc-if value="{{ buyLine }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;line-height:1.55;color:var(--fg-body);">{{ buyText }} <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ buyPrice }}</span></span></p>
+          </sc-if>
+          <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);text-wrap:pretty;">{{ undoLine }}</p>
+        </div>
+        <div style="{{ footRow }}">
+          <span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14px;text-align:center;">{{ primary }}</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--border-strong);font-weight:500;font-size:13.5px;color:var(--fg-muted);">Back to the list</span>
+        </div>
+        <sc-if value="{{ failed }}" hint-placeholder-val="{{ false }}">
+          <p role="alert" style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--danger);">{{ failText }}</p>
+        </sc-if>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <sc-if value="{{ cardOpen }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+      <div role="dialog" data-card-modal="stacked" style="position:absolute;left:240px;top:112px;z-index:3;width:820px;height:620px;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;display:flex;box-shadow:0 30px 80px rgba(0,0,0,0.55);">
+        <div style="width:320px;flex:none;background:var(--bg);padding:28px;display:flex;flex-direction:column;align-items:center;">
+          <div style="{{ modalArt }}"></div>
+          <div style="margin-top:10px;display:flex;justify-content:center;min-height:20px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.04em;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">$2.40</span></div>
+        </div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+          <div style="flex:1;min-height:0;padding:30px 32px;overflow:hidden;">
+            <div style="display:flex;align-items:flex-start;gap:16px;padding-right:190px;">
+              <h3 style="font-family:var(--display);font-weight:700;font-size:26px;margin:0;color:var(--fg);line-height:1.2;">Mayael the Anima</h3>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:8px;"><span style="font-size:14px;color:var(--fg-muted);">Legendary Creature — Elf Shaman</span><span style="margin-left:auto;"><span style="display:flex;align-items:center;gap:3px;flex:none;"><sc-for list="{{ modalPips }}" as="p" hint-placeholder-count="3"><sc-if value="{{ p.sep }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);padding:0 3px;">+</span></sc-if><sc-if value="{{ p.pip }}" hint-placeholder-val="{{ true }}"><span style="{{ p.style }}">{{ p.t }}</span></sc-if></sc-for></span></span></div>
+            <div style="margin-top:16px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface-sunken);font-size:13.5px;line-height:1.65;color:var(--fg-body);">{3}{R}{G}{W}, {T}: Look at the top five cards of your library. You may put a creature card with power 5 or greater from among them onto the battlefield. Put the rest on the bottom of your library in any order.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px 26px;margin-top:22px;">
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:5px;">Rarity</div><div style="font-size:14px;color:var(--fg-body);">Mythic</div></div>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:5px;">You own</div><div style="font-size:14px;color:var(--fg-body);">none</div></div>
+              <div style="grid-column:1 / -1;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:5px;">Set</div><div style="font-size:14px;color:var(--fg-body);">Shards of Alara · ALA 176</div></div>
+            </div>
+          </div>
+          <div style="flex:none;border-top:1px solid var(--border);padding:0 32px;min-height:56px;display:flex;align-items:center;gap:16px;">
+            <span style="font-size:14px;color:var(--accent);border-bottom:1px solid var(--accent);">Buy this at Mana Pool ↗</span>
+            <span style="margin-left:auto;font-size:13px;color:var(--fg-faint);">‹ Prev</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">5 of 12</span>
+            <span style="font-size:13px;color:var(--fg-faint);">Next ›</span>
+          </div>
+        </div>
+        <span style="position:absolute;top:18px;right:18px;display:flex;align-items:center;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">← Change commander</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div role="dialog" data-card-modal="stacked" style="position:absolute;left:0;right:0;top:96px;bottom:0;z-index:3;display:flex;flex-direction:column;background:var(--surface);border-top:1px solid var(--border-strong);border-radius:14px 14px 0 0;overflow:hidden;box-shadow:0 -12px 30px rgba(0,0,0,0.5);">
+        <div style="position:relative;height:180px;flex:none;background:var(--bg);">
+          <div style="{{ modalCrop }}"></div>
+          <span style="position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:8px;background:var(--bg);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font-size:15px;">✕</span>
+          <span style="position:absolute;left:12px;bottom:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--accent-shadow);background:var(--bg);border-radius:4px;padding:2px 7px;">$2.40</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:16px 18px;">
+          <h3 style="margin:0;font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">Mayael the Anima</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:7px;"><span style="font-size:13px;color:var(--fg-muted);">Legendary Creature — Elf Shaman</span><span style="margin-left:auto;"><span style="display:flex;align-items:center;gap:3px;flex:none;"><sc-for list="{{ modalPips }}" as="p" hint-placeholder-count="3"><sc-if value="{{ p.sep }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);padding:0 3px;">+</span></sc-if><sc-if value="{{ p.pip }}" hint-placeholder-val="{{ true }}"><span style="{{ p.style }}">{{ p.t }}</span></sc-if></sc-for></span></span></div>
+          <div style="margin-top:14px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-sunken);font-size:13px;line-height:1.6;color:var(--fg-body);">{3}{R}{G}{W}, {T}: Look at the top five cards of your library. You may put a creature card with power 5 or greater from among them onto the battlefield. Put the rest on the bottom of your library in any order.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px;">Rarity</div><div style="font-size:13.5px;color:var(--fg-body);">Mythic</div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px;">You own</div><div style="font-size:13.5px;color:var(--fg-body);">none</div></div>
+          </div>
+        </div>
+        <div style="flex:none;border-top:1px solid var(--border);padding:0 18px;min-height:56px;display:flex;align-items:center;gap:14px;">
+          <span style="font-size:13.5px;color:var(--accent);border-bottom:1px solid var(--accent);">Buy at Mana Pool ↗</span>
+          <span style="margin-left:auto;font-size:13px;color:var(--fg-faint);">‹</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">5 of 12</span>
+          <span style="font-size:13px;color:var(--fg-faint);">›</span>
+        </div>
+      </div>
+    </sc-if>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:820},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;several&quot;,&quot;expanded&quot;,&quot;pair&quot;,&quot;onlyUnowned&quot;,&quot;none&quot;,&quot;nonePair&quot;,&quot;loading&quot;,&quot;failed&quot;,&quot;confirm&quot;,&quot;confirmTrade&quot;,&quot;confirmPair&quot;,&quot;confirmBrew&quot;,&quot;swapFailed&quot;,&quot;cardOpen&quot;],&quot;default&quot;:&quot;several&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const v = this.props.variant || "several";
+    const art = (n, ver = "art_crop") => `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}&format=image&version=${ver}`;
+    const short = (n) => n.split(/,| the /)[0].trim();
+    const thumbs = (names) => names.map((n, i) => ({
+      position: "absolute", top: 0, bottom: 0, left: names.length === 2 ? i * 28 : 0, width: names.length === 2 ? 28 : 56,
+      backgroundImage: `url("${art(n)}")`, backgroundSize: "cover", backgroundPosition: "center",
+      borderLeft: i === 1 ? "1px solid var(--bg)" : "none",
+    }));
+    const H = (name, mark = {}, second = false) => ({
+      name, second, free: mark.k === "free", held: mark.k === "held", heldText: mark.t || "",
+      buy: mark.k === "buy", price: mark.p || "", inDeck: mark.k === "in",
+    });
+    const pair = v === "pair" || v === "nonePair" || v === "confirmPair";
+    const denom = pair ? 58 : 64;
+    const cur = pair ? { name: "Thrasios & Tymna", mv: 5 } : { name: "Gishath", mv: 8 };
+    const COL = { W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)" };
+    const pip = (sym, size = 13) => {
+      const parts = sym.split("/"), cols = parts.filter((x) => COL[x]), num = parts.find((x) => /^\d+$/.test(x));
+      const bg = cols.length >= 2 ? `linear-gradient(135deg, ${COL[cols[0]]} 50%, ${COL[cols[1]]} 50%)` : cols.length ? COL[cols[0]] : "var(--fg-faint)";
+      return { pip: true, sep: false, t: cols.length ? (num || "") : sym, style: { display: "inline-flex", flex: "none", alignItems: "center", justifyContent: "center", width: size, height: size, borderRadius: "50%", fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: Math.round(size * 0.64), background: bg, color: "var(--bg)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.45)" } };
+    };
+    const parse = (c) => [...c.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
+    const run = (costs, size) => costs.flatMap((c, i) => [...(i ? [{ sep: true, pip: false }] : []), ...parse(c).map((s) => pip(s, size))]);
+    const mvOf = (costs) => costs.reduce((n, c) => n + parse(c).reduce((a, s) => a + (/^\d+$/.test(s) ? +s : 1), 0), 0);
+    const relText = (mv) => { const d = mv - cur.mv; return `(${d === 0 ? "same as" : d < 0 ? `${-d} less than` : `${d} more than`} ${cur.name})`; };
+    const row = (halves, fig, opts = {}) => {
+      const names = halves.map((h) => h.name);
+      return {
+        pips: run(opts.cost || [], 13), rel: relText(mvOf(opts.cost || [])), thumbs: thumbs(names), halves: halves.map((h, i) => ({ ...h, second: i > 0 })),
+        hasFigure: fig != null, noData: fig == null,
+        figure: fig != null ? `${fig} of ${denom} are in ${halves.length === 2 ? "their" : "its"} decks` : "",
+        caret: opts.names ? "▴" : "▾",
+        expanded: !!opts.names, names: opts.names || [],
+        expandCaption: opts.names ? `The ${fig} ${short(names[0])}'s decks run` : "",
+      };
+    };
+    const marisiNames = ["Beast Within","Chaos Warp","Cinder Glade","Cultivate","Eladamri's Call","Farseek","Generous Gift","Heroic Intervention","Jetmir's Garden","Kodama's Reach","Lightning Greaves","Nature's Lore","Path to Exile","Rampant Growth","Return of the Wildspeaker","Rhythm of the Wild","Sacred Foundry","Spire Garden","Stomping Ground","Sungrass Prairie","Swords to Plowshares","Temple Garden","Three Visits"];
+    const yours = [
+      row([H("Pantlaza, Sun-Favored", { k: "in" })], 51, { cost: ["{2}{R}{G}{W}"] }),
+      row([H("Zacama, Primal Calamity", { k: "held", t: "none free, in HD - Etali" })], 44, { cost: ["{6}{R}{G}{W}"] }),
+      row([H("Marisi, Breaker of the Coil", { k: "free" })], 23, v === "expanded" ? { names: marisiNames, cost: ["{2}{R}{G}{W}"] } : { cost: ["{2}{R}{G}{W}"] }),
+      row([H("Kaheera, the Orphanguard", { k: "free" })], null, { cost: ["{1}{R/W}{G/W}"] }),
+    ];
+    const toBuy = [
+      ["Mayael the Anima", 38, "$2.40", "{R}{G}{W}"], ["Jetmir, Nexus of Revels", 31, "$1.20", "{3}{R}{G}{W}"], ["Samut, Voice of Dissent", 26, "$0.45", "{3}{R}{G}{W}"],
+      ["Rith, the Awakener", 24, "$3.10", "{3}{R}{G}{W}"], ["Gahiji, Honored One", 21, "$0.35", "{2}{R}{G}{W}"], ["Uril, the Miststalker", 18, "$0.90", "{3}{R}{G}{W}"],
+      ["Ghired, Conclave Exile", 17, "$0.30", "{2}{R}{G}{W}"], ["Hazezon, Shaper of Sand", 12, "$0.50", "{R}{G}{W}"],
+    ].map(([n, f, p, c]) => row([H(n, { k: "buy", p })], f, { cost: [c] }));
+    const buyGroup = (n) => ({ heading: `To buy · ${n}`, note: "by figure", rows: toBuy, hasMore: true, moreLabel: "Show 8 more", moreNote: `${n - 8} left` });
+    const pairYours = [
+      row([H("Ishai, Ojutai Dragonspeaker", { k: "free" }), H("Reyhan, Last of the Abzan", { k: "free" })], 39, { cost: ["{2}{W}{U}", "{1}{B}{G}"] }),
+      row([H("Silas Renn, Seeker Adept", { k: "held", t: "none free, in HD - Yuriko" }), H("Sidar Kondo of Jamuraa", { k: "free" })], 22, { cost: ["{1}{U}{B}", "{2}{G}{W}"] }),
+    ];
+    const pairBuy = [row([H("Ikra Shidiqi, the Usurper", { k: "buy", p: "$0.60" }), H("Ishai, Ojutai Dragonspeaker", { k: "free" })], 27, { cost: ["{3}{B}{G}", "{2}{W}{U}"] })];
+
+    let groups = [], ownsNone = false;
+    if (v === "several" || v === "expanded" || v === "cardOpen") groups = [{ heading: "Yours · 4", note: "by figure", rows: yours, hasMore: false }, buyGroup(27)];
+    if (v === "onlyUnowned") { groups = [buyGroup(31)]; ownsNone = true; }
+    if (v === "pair") groups = [{ heading: "Yours · 2", note: "by figure", rows: pairYours, hasMore: false }, { heading: "To buy · 1", note: "a half to buy", rows: pairBuy, hasMore: false }];
+
+    const deckName = pair ? "HD - Thrasios & Tymna" : "HD - Gishath";
+    const isConfirm = v.startsWith("confirm") || v === "swapFailed";
+    const tileW = pair ? (phone ? 68 : 84) : (phone ? 104 : 120);
+    const tile = (n) => ({ name: n, box: { display: "flex", flexDirection: "column", gap: 6, width: tileW }, art: { display: "block", width: "100%", aspectRatio: "63 / 88", borderRadius: 8, border: "1px solid var(--border-strong)", backgroundColor: "var(--elevated)", backgroundImage: `url("${art(n, "normal")}")`, backgroundSize: "cover", backgroundPosition: "center" } });
+    const C = {
+      confirm: { out: ["Gishath, Sun's Avatar"], inn: ["Mayael the Anima"], ol: "Leaves the deck", il: "Leads the deck", arrow: "→",
+        s: "Mayael the Anima takes the command zone. Gishath, Sun's Avatar leaves the deck, and the 99 stay exactly as they are.",
+        buy: ["You don't own Mayael yet. It joins this draft's buy list:", "$2.40"],
+        u: "Lands in your pending changes, not yet a version. Discard puts Gishath back.", p: "Make Mayael commander" },
+      confirmTrade: { out: ["Gishath, Sun's Avatar"], inn: ["Pantlaza, Sun-Favored"], ol: "Moves into the 99", il: "Moves to the command zone", arrow: "⇄",
+        s: "The two trade places. Pantlaza, Sun-Favored leaves the 99 for the command zone, and Gishath, Sun's Avatar takes its slot. The deck stays at 99.",
+        u: "Lands in your pending changes, not yet a version. Discard puts both back where they were.", p: "Make Pantlaza commander" },
+      confirmPair: { out: ["Thrasios, Triton Hero", "Tymna the Weaver"], inn: ["Ishai, Ojutai Dragonspeaker", "Reyhan, Last of the Abzan"], ol: "Leave the deck", il: "Lead the deck", arrow: "→",
+        s: "Ishai and Reyhan take the command zone. Thrasios and Tymna leave the deck, and the 98 stay exactly as they are.",
+        u: "Lands in your pending changes, not yet a version. Discard puts Thrasios and Tymna back.", p: "Make Ishai and Reyhan commanders" },
+      confirmBrew: { out: ["Gishath, Sun's Avatar"], inn: ["Marisi, Breaker of the Coil"], ol: "Leaves the deck", il: "Leads the deck", arrow: "→",
+        s: "Marisi, Breaker of the Coil takes the command zone. Gishath, Sun's Avatar leaves the deck, and the 99 stay exactly as they are.",
+        u: "This deck has no version yet, so there is nothing to discard back to. Changing commander again is the only way back.", p: "Make Marisi commander" },
+    };
+    C.swapFailed = { ...C.confirm, p: "Try again", f: "We couldn't change the commander. Gishath still leads this deck." };
+    const G8 = ["{5}{R}{G}{W}"];
+    C.confirm.m = [G8, ["{R}{G}{W}"]]; C.confirmTrade.m = [G8, ["{2}{R}{G}{W}"]]; C.confirmPair.m = [["{G}{U}", "{1}{W}{B}"], ["{2}{W}{U}", "{1}{B}{G}"]]; C.confirmBrew.m = [G8, ["{2}{R}{G}{W}"]];
+    const c = C[v] || C.confirm;
+    const cm = c.m || C.confirm.m;
+
+    const fb = phone
+      ? { position: "relative", width: 390, height: 844, overflow: "hidden", background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif" }
+      : { position: "relative", width: 1300, height: 820, overflow: "hidden", background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", justifyContent: "center", alignItems: "flex-start", paddingTop: 56 };
+    const sb = phone
+      ? { position: "absolute", left: 0, right: 0, top: 52, bottom: 0, display: "flex", flexDirection: "column", background: "var(--surface-raised)", borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", boxShadow: "0 40px 100px rgba(0,0,0,0.7)", overflow: "hidden" }
+      : { position: "relative", width: 700, maxHeight: 708, display: "flex", flexDirection: "column", background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 40px 100px rgba(0,0,0,0.7)", overflow: "hidden" };
+
+    const behind = v === "cardOpen";
+    if (behind) { sb.background = "var(--surface-sunken)"; sb.borderColor = "var(--border)"; if (phone) sb.borderTop = "1px solid var(--border)"; }
+    const cardBox = phone
+      ? { position: "absolute", left: 0, right: 0, top: 96, bottom: 0, zIndex: 3, display: "flex", flexDirection: "column", background: "var(--surface-raised)", borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", boxShadow: "0 -12px 30px rgba(0,0,0,0.5)" }
+      : { position: "absolute", left: "50%", top: 112, width: 620, marginLeft: -310, zIndex: 3, display: "flex", flexDirection: "column", background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 40px 100px rgba(0,0,0,0.7)", minHeight: 460 };
+    return {
+      cardOpen: behind, cardBox,
+      cardBody: { display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "center" : "flex-start", gap: phone ? 14 : 18, padding: phone ? "16px 16px 12px" : "18px 18px 16px" },
+      cardArt: { display: "block", flex: "none", width: phone ? 200 : 220, aspectRatio: "63 / 88", borderRadius: 10, border: "1px solid var(--border-strong)", backgroundColor: "var(--elevated)", backgroundImage: `url("${art("Mayael the Anima", "normal")}")`, backgroundSize: "cover", backgroundPosition: "center" },
+      headRow: { display: "flex", flex: "none", alignItems: "center", gap: 10, minHeight: 43, padding: "0 16px 0 18px", borderBottom: "1px solid var(--border)", opacity: behind ? 0.55 : 1 },
+      bodyBox: { flex: 1, minHeight: 0, overflow: "hidden", padding: "16px 18px 22px", display: "flex", flexDirection: "column", gap: 16, opacity: behind ? 0.35 : 1 },
+      outPips: run(cm[0], 13), inPips: run(cm[1], 13), inRel: relText(mvOf(cm[1])),
+      modalPips: run(["{R}{G}{W}"], phone ? 15 : 17), desk: !phone, phone,
+      modalArt: { width: 264, height: 369, borderRadius: 11, backgroundColor: "var(--elevated)", backgroundImage: `url("${art("Mayael the Anima", "normal")}")`, backgroundSize: "cover", backgroundPosition: "center", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" },
+      modalCrop: { position: "absolute", inset: 0, backgroundImage: `url("${art("Mayael the Anima")}")`, backgroundSize: "cover", backgroundPosition: "center top" },
+      theme: this.props.theme || "amonkhet",
+      screenLabel: `Change commander · ${v} · ${phone ? 390 : 1300}`,
+      frameBox: fb, sheetBox: sb,
+      title: pair ? "Change pair" : "Change commander",
+      aside: deckName,
+      isList: ["several", "expanded", "onlyUnowned", "pair", "cardOpen"].includes(v),
+      isLoading: v === "loading", isFailed: v === "failed", isNone: v === "none" || v === "nonePair", isConfirm,
+      lede: pair
+        ? "Pairs who can lead these 98 without changing a card. The figure is how many of this deck's cards their decks run."
+        : "Commanders who can lead these 99 without changing a card. The figure is how many of this deck's cards their decks run.",
+      countedNote: `${denom} of your cards are counted. Basic lands and the staples every deck runs, like Sol Ring, are left out.`,
+      ownsNone, groups,
+      namesGrid: { display: "grid", gridTemplateColumns: phone ? "repeat(2, minmax(0,1fr))" : "repeat(3, minmax(0,1fr))", columnGap: 14 },
+      skeleton: [1, 0.8, 0.6, 0.4].map((o) => ({ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 0", borderBottom: "1px solid var(--border)", opacity: o })),
+      noneHead: v === "nonePair" ? "No other pair shares these four colors." : "No other commander leads a Naya deck yet.",
+      noneBody: v === "nonePair"
+        ? "Only pairs whose two identities add up to exactly this deck's are offered, so the 98 never change. When the index sees a new legal pairing in these colors, it shows up here."
+        : "Only commanders in exactly this deck's colors are offered, so the 99 never change. A wider or narrower identity would mean cutting cards, which is a new deck.",
+      outLabel: c.ol, inLabel: c.il, arrow: c.arrow, tileW,
+      outTiles: c.out.map(tile), inTiles: c.inn.map(tile),
+      sentence: c.s, buyLine: !!c.buy, buyText: c.buy ? c.buy[0] : "", buyPrice: c.buy ? c.buy[1] : "",
+      undoLine: c.u, primary: c.p, failed: !!c.f, failText: c.f || "",
+      footRow: phone
+        ? { display: "flex", flexDirection: "column", gap: 8, marginTop: "auto" }
+        : { display: "flex", alignItems: "center", gap: 10, paddingTop: 4 },
+    };
+  }
+}
+</script>
+</body>
+</html>

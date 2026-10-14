@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #FF4D9A; color: #16181F; }
+  a { color: #FF4D9A; text-decoration: none; border-bottom: 1px solid rgba(255,77,154,0.35); }
+  a:hover { color: #FF62A9; border-bottom-color: #FF62A9; }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-mid:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#DF8AA7; --avail-over-fg:#C26755;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-mid:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#D9975C; --avail-over-fg:#C46857;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-mid:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#ABCB5B; --avail-over-fg:#C56A58;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-mid:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#77A9A0; --avail-over-fg:#BE6453;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-mid:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#80ABEF; --avail-over-fg:#C86D5B;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-mid:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#B795EA; --avail-over-fg:#C56A58;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(255,77,154,0.05), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1560px;margin:0 0 34px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ABOUT R5 &middot; TEMPLATES</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#7A8095;">two filled &sect;G artboards &middot; entries 36 and 37 &middot; both since: 6</span>
+    </div>
+    <div style="border:2px solid #FF4D9A;border-radius:14px;background:#141620;padding:22px 26px;">
+      <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:28px;margin:0 0 12px;line-height:1.28;text-wrap:pretty;">A coverage sweep found two routes a reader can reach with nothing on the page explaining them. Both are filled here on <a href="#g">&sect;G&rsquo;s artboard</a>, each beside <span style="color:#FF4D9A;">the specimen it specifies</span> &mdash; because a template slot reading &ldquo;<span style="font-family:'IBM Plex Mono',monospace;font-size:24px;">the Coming in column</span>&rdquo; is only checkable next to the thing it names.</h1>
+      <p style="font-size:14.5px;line-height:1.7;color:#AEB4C6;margin:0;max-width:1240px;text-wrap:pretty;">Neither is drawn on the R4 canvas. <b style="color:#E6E8F0;font-weight:600;">&sect;G3 is explicit</b> &mdash; a new entry is a filled template plus a fixture, never an edit to the canvas &mdash; and these two are the first entries to test that rule with a real route behind them. The two calls the round turned on are argued at the foot of each artboard.</p>
+    </div>
+  </section>
+
+  <section id="g" style="max-width:1560px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">36</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">Reviewing what a commit will cost</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#7A8095;">/decks/[id]/changes &middot; ~1,100 lines, so one slice</span>
+    </div>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <div data-theme="{{ theme }}" style="width:620px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:20px 22px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">&sect;G artboard &mdash; filled</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;line-height:1.55;color:var(--fg-body);">
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Title</div><div style="color:var(--fg);">Reviewing what a commit will cost</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Route</div><div><span style="font-family:'IBM Plex Mono',monospace;color:var(--accent);">/decks/[id]/changes</span> &middot; opens the review page</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Chapter</div><div>03 &mdash; Building the 99</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Width</div><div>plate</div></div>
+          <div style="grid-column:1/-1;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Caption</div><div>A draft becomes a version here, and this page is the only place that says what that will cost. Not what the deck holds &mdash; the deck page already shows that list &mdash; but what committing it asks of the rest of your collection. Cards coming in are counted into four buckets, and a card another deck has already sleeved carries <b style="color:var(--fg);font-weight:600;">Pull it</b>: take that copy, and the deck holding it is cut a version. It is the one act on this page nobody can take back. Cards going out carry <b style="color:var(--fg);font-weight:600;">Put back</b>, and the commit sheet below the columns is where the version is actually cut.</div></div>
+          <div style="grid-column:1/-1;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Specimen</div><div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Column</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">columnKey=&quot;in&quot;</span> from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">review-changes.tsx</span>, with its <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DecklistGroupHeader</span> and three <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DiffRowIn</span>s. Real <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PullControl</span> on row 2; row 3 renders its <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">pullGuardTag</span>.</div></div>
+          <div style="grid-column:1/-1;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Fixture props &mdash; fixtures.reviewIn</div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.75;color:var(--fg-muted);">
+              heading&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--fg-body);">copy.groupIn(9)</span> &rarr; &ldquo;Coming in &middot; 9&rdquo;<br />
+              note&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--fg-body);">copy.groupInBreakdown(5,3,1)</span><br />
+              rows[0]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Beast Within &middot; bucket <span style="color:var(--fg-body);">&quot;free&quot;</span> &middot; no action<br />
+              rows[1]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rhystic Study &middot; <span style="color:var(--fg-body);">&quot;claimed&quot;</span> &middot; heldBy Atraxa Counters<br />
+              rows[2]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sol Ring &middot; pullClaim.pending &rarr; guard tag<br />
+              claimsKnown&nbsp;<span style="color:var(--fg-body);">true</span> &nbsp;&middot;&nbsp; onRestore&nbsp;<span style="color:var(--fg-body);">null</span>
+            </div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Key lines &mdash; 3 of 4</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);flex:none;">1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);line-height:1.5;">Coming in is broken down where it is headed &mdash; free, sleeved, to buy &mdash; so the page says what the commit costs before a single row is read.</span></div>
+              <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);flex:none;">2</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);line-height:1.5;">`Pull it` takes a copy out of another deck and cuts that deck a version. The one act here that cannot be undone, which is why the deck it raids is named on the row.</span></div>
+              <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);flex:none;">3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);line-height:1.5;">a deck with a draft of its own cannot be raided, so the row says `deck in draft` and offers no control &mdash; the same shape a commander&rsquo;s row takes.</span></div>
+            </div>
+          </div>
+          <div style="grid-column:1/-1;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Phone reduction</div><div>One column at a time behind a segmented <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Coming in &middot; N</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out &middot; N</span> pair; the chips and the lede are desktop-only and the caption carries the lede&rsquo;s sentence instead. The breakdown stays on the heading. <b style="color:var(--fg);font-weight:600;">Rows keep their floor</b> &mdash; name, availability slot, control.</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">since</div><div>6</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Strings from</div><div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">copy/deck-versioning.ts</span> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">review.*</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">restore.cta</span></div></div>
+        </div>
+      </div>
+
+      <div style="border:2px solid #FF4D9A;border-radius:14px;background:#141620;padding:18px 20px 20px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;">36a</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#E6E8F0;">The specimen the slots above specify</span>
+        </div>
+        <div data-theme="{{ theme }}" style="width:600px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:18px;">
+          <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid var(--elevated);">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--success);flex:none;">Coming in &middot; 9</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-align:right;color:var(--fg-locked);">5 free &middot; 3 sleeved &middot; 1 to buy</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 0;">
+              <span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--success);"></span>
+              <span style="font-size:13px;color:var(--fg);flex:1;min-width:0;">Beast Within</span>
+              <span style="display:flex;gap:3px;flex:none;">
+                <span style="width:13px;height:13px;border-radius:50%;background:var(--fg-faint);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);">2</span>
+                <span style="width:13px;height:13px;border-radius:50%;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);"></span>
+              </span>
+            </div>
+            <div style="height:1px;background:var(--border);"></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 0;">
+              <span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--warning);"></span>
+              <span style="font-size:13px;color:var(--fg);flex:none;">Rhystic Study</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">in Atraxa Counters</span>
+              <span style="height:26px;display:flex;align-items:center;border-radius:7px;border:1px solid var(--accent);color:var(--accent);padding:0 11px;font-size:11.5px;font-weight:500;flex:none;">Pull it</span>
+              <span style="width:14px;height:14px;flex:none;border-radius:50%;background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;">2</span>
+            </div>
+            <div style="height:1px;background:var(--border);"></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 0;">
+              <span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--warning);"></span>
+              <span style="font-size:13px;color:var(--fg);flex:none;">Sol Ring</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">in Kinnan Ramp</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);border:1px dashed var(--border-dashed);border-radius:5px;padding:2px 7px;flex:none;">deck in draft</span>
+              <span style="width:14px;height:14px;flex:none;border-radius:50%;background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;">3</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+              <span style="width:14px;height:14px;flex:none;border-radius:50%;background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;">1</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">the breakdown, on the heading &mdash; annotated above the rows it counts</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:600px;border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;margin-top:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:8px;">why this slice, of ~1,100 lines</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;">Every chapter-03 figure that tried to draw a whole route was cropped, so this one is cropped on purpose. <b style="color:#E6E8F0;font-weight:600;">The Coming in column carries everything this route has and no other does</b> &mdash; the four-bucket breakdown, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it</span>, and both guards. The changed strip is the deck page&rsquo;s own mix strip folded over two lists and is documented there; the commit sheet and the discard confirm get one caption clause each. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Put back</span> is already drawn on <b style="color:#E6E8F0;font-weight:600;">undo-removal</b> and is named here rather than drawn twice.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width:1560px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">37</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">Starting a deck</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#7A8095;">/decks/new &middot; two doors, one entry</span>
+    </div>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <div data-theme="{{ theme }}" style="width:620px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:20px 22px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">&sect;G artboard &mdash; filled</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;line-height:1.55;color:var(--fg-body);">
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Title</div><div style="color:var(--fg);">Starting a deck</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Route</div><div><span style="font-family:'IBM Plex Mono',monospace;color:var(--accent);">/decks/new</span> &middot; opens the commander picker</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Chapter</div><div>03 &mdash; Building the 99</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Width</div><div>plate</div></div>
+          <div style="grid-column:1/-1;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Caption</div><div>Every deck starts with a commander you already own. The picker lists them all with the size of the pool each one opens up &mdash; how many of your cards are legal in its colours &mdash; and a name is the only other thing a deck needs. Commanders that partner get a second slot, filtered to the ones they can legally pair with. <b style="color:var(--fg);font-weight:600;">Arriving from a commander&rsquo;s own page skips the list</b>: the commander is already chosen, any synergy picks you made there travel with you, and the page asks for the name.</div></div>
+          <div style="grid-column:1/-1;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Specimen</div><div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CreatePicker</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">mode=&quot;create&quot;</span>, desktop two-column: three rows left, the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Selected</span> sidebar with its name field and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Create deck &rarr;</span> right.</div></div>
+          <div style="grid-column:1/-1;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Fixture props &mdash; fixtures.createPicker</div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.75;color:var(--fg-muted);">
+              legalCommanders[0]&nbsp;&nbsp;Preston Garvey &middot; RGW &middot; pool <span style="color:var(--fg-body);">1615</span><br />
+              legalCommanders[1]&nbsp;&nbsp;Kotis, Sibsig Ch. &middot; UBG &middot; pool <span style="color:var(--fg-body);">1747</span> <span style="color:var(--accent);">&larr; selected</span><br />
+              legalCommanders[2]&nbsp;&nbsp;Kinnan, Bonder P. &middot; UG &middot; pool <span style="color:var(--fg-body);">1402</span><br />
+              deckName&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--fg-body);">&quot;&quot;</span> (placeholder &ldquo;Deck name&hellip;&rdquo;)
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);line-height:1.6;margin-top:7px;">Row meta is the component&rsquo;s own <span style="color:var(--fg-faint);">${colorLabel} &middot; ${poolCount} cards</span>. No partner in the fixture &mdash; PartnerSlot is named in the caption, not drawn.</div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Key lines &mdash; 3 of 4</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);flex:none;">1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);line-height:1.5;">only commanders you own and could legally build are listed &mdash; the picker is your collection, not a catalogue.</span></div>
+              <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);flex:none;">2</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);line-height:1.5;">the figure beside each one is how many of your cards are legal in its colours &mdash; the `Pool` part of a fit score, seen from the other side.</span></div>
+              <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);flex:none;">3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);line-height:1.5;">a name is required and everything else has a default: the deck is created empty, and the 99 is filled in afterwards.</span></div>
+            </div>
+          </div>
+          <div style="grid-column:1/-1;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Phone reduction</div><div>Single column. The name field moves into the scrolling flow <b style="color:var(--fg);font-weight:600;">above</b> the list &mdash; the list is every legal commander you own and it scrolls, so a required field after it can never be found &mdash; and a fixed dock at the foot carries the selection summary and the button only.</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">since</div><div>6</div></div>
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Strings from</div><div><span style="color:var(--danger);">&#9888;</span> inline in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">create-picker.tsx</span>, plus <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">decks-builder.ts</span> dockSummary</div></div>
+        </div>
+      </div>
+
+      <div style="border:2px solid #FF4D9A;border-radius:14px;background:#141620;padding:18px 20px 20px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;">37a</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#E6E8F0;">The specimen the slots above specify</span>
+        </div>
+        <div data-theme="{{ theme }}" style="width:600px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:18px;">
+          <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;gap:16px;">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;">
+              <div style="height:34px;border-radius:9px;border:1px solid var(--accent);background:var(--bg);display:flex;align-items:center;gap:10px;padding:0 13px;">
+                <span style="font-size:12.5px;color:var(--fg-locked);flex:1;">Search commanders&hellip;</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">3 results</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;border-radius:10px;border:1px solid var(--border);background:var(--surface-rail);padding:9px 11px;">
+                <span style="width:28px;height:39px;flex:none;border-radius:5px;background:linear-gradient(160deg, var(--g), var(--r));box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);"></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-family:'Cinzel',serif;font-size:13.5px;font-weight:600;color:var(--fg);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Preston Garvey, Minuteman</div>
+                  <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+                    <span style="width:9px;height:9px;border-radius:50%;background:var(--r);"></span><span style="width:9px;height:9px;border-radius:50%;background:var(--g);"></span><span style="width:9px;height:9px;border-radius:50%;background:var(--w);"></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">Naya &middot; 1615 cards</span>
+                  </div>
+                </div>
+                <span style="width:20px;height:20px;flex:none;border-radius:50%;border:2px solid var(--border-dashed);"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;border-radius:10px;border:1px solid var(--accent);background:var(--elevated-hover);padding:9px 11px;">
+                <span style="width:28px;height:39px;flex:none;border-radius:5px;background:linear-gradient(160deg, var(--b), var(--g));box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);"></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-family:'Cinzel',serif;font-size:13.5px;font-weight:600;color:var(--fg);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kotis, Sibsig Champion</div>
+                  <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+                    <span style="width:9px;height:9px;border-radius:50%;background:var(--u);"></span><span style="width:9px;height:9px;border-radius:50%;background:var(--b);"></span><span style="width:9px;height:9px;border-radius:50%;background:var(--g);"></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">Sultai &middot; 1747 cards</span>
+                  </div>
+                </div>
+                <span style="width:20px;height:20px;flex:none;border-radius:50%;border:2px solid var(--accent);background:var(--accent);"></span>
+                <span style="width:14px;height:14px;flex:none;border-radius:50%;background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;">1</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;border-radius:10px;border:1px solid var(--border);background:var(--surface-rail);padding:9px 11px;">
+                <span style="width:28px;height:39px;flex:none;border-radius:5px;background:linear-gradient(160deg, var(--u), var(--g));box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);"></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-family:'Cinzel',serif;font-size:13.5px;font-weight:600;color:var(--fg);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kinnan, Bonder Prodigy</div>
+                  <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+                    <span style="width:9px;height:9px;border-radius:50%;background:var(--u);"></span><span style="width:9px;height:9px;border-radius:50%;background:var(--g);"></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">Simic &middot; 1402 cards</span>
+                    <span style="width:14px;height:14px;flex:none;border-radius:50%;background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;margin-left:2px;">2</span>
+                  </div>
+                </div>
+                <span style="width:20px;height:20px;flex:none;border-radius:50%;border:2px solid var(--border-dashed);"></span>
+              </div>
+            </div>
+            <div style="width:210px;flex:none;border-radius:12px;background:var(--surface-rail);border:1px solid var(--border);padding:14px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:12px;">Selected</div>
+              <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
+                <span style="width:38px;height:53px;flex:none;border-radius:6px;background:linear-gradient(160deg, var(--b), var(--g));box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);"></span>
+                <div style="min-width:0;">
+                  <div style="font-family:'Cinzel',serif;font-size:13.5px;font-weight:600;color:var(--fg);line-height:1.2;">Kotis, Sibsig Champion</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-top:3px;">Sultai &middot; 1747 cards</div>
+                </div>
+              </div>
+              <div style="height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);display:flex;align-items:center;padding:0 11px;margin-bottom:12px;"><span style="font-size:12px;color:var(--fg-locked);">Deck name&hellip;</span></div>
+              <div style="height:38px;border-radius:9px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">Create deck &rarr;</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:11px;">
+                <span style="width:14px;height:14px;flex:none;border-radius:50%;background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;">3</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);line-height:1.4;">a name is the only other requirement</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="width:600px;border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;margin-top:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:8px;">why the picker, not the pre-filled door</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CreatePreFilled</span> is the same act with the list already answered &mdash; same <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">createDeck</span>, same field, same button. The picker is the door reached by intent; the pre-filled one is reached by having already chosen, from a surface chapter 02 documents. <b style="color:#E6E8F0;font-weight:600;">An entry drawn on the shortcut would teach the shortcut and leave the front door undocumented.</b> Drawn on the picker, the shortcut is one caption clause &mdash; and that clause carries the only thing it uniquely adds: synergy picks made on the commander page travel with you.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width:1560px;margin-bottom:20px;">
+    <div style="display:flex;gap:18px;flex-wrap:wrap;">
+      <div data-theme="{{ theme }}" style="width:760px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:20px 24px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;">coverage, after these two land</div>
+        <div style="display:flex;align-items:baseline;gap:20px;flex-wrap:wrap;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:40px;font-weight:700;color:var(--fg);line-height:1;">37</span>
+          <span style="font-size:14px;color:var(--fg-body);">entries across</span>
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:40px;font-weight:700;color:var(--fg);line-height:1;">17</span>
+          <span style="font-size:14px;color:var(--fg-body);">routes &mdash; nothing unrepresented</span>
+        </div>
+        <div style="font-size:13px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;">The two doors these entries do <i>not</i> draw are both documented elsewhere: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/decks/import</span> has its own entry, and the pre-filled create door is a caption clause on 37 above.</div>
+      </div>
+      <div style="width:520px;border:1px solid #C6533F;border-radius:12px;background:#12141C;padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:9px;">&#9888; one thing for eng, not for design</div>
+        <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;">The create-mode strings are <b style="color:#E6E8F0;font-weight:600;">inline in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">create-picker.tsx</span></b>, not in a copy module. Entry 37 is therefore the one entry on the About page quoting a component&rsquo;s literals directly, which means a rename will not reach it. Extracting them to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">copy/deck-create.ts</span> closes it; until then the entry carries the flag in its Strings-from slot.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kamigawa&quot;,&quot;amonkhet&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;eldraine&quot;],&quot;default&quot;:&quot;kamigawa&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? "kamigawa" };
+  }
+}
+</script>
+</body>
+</html>

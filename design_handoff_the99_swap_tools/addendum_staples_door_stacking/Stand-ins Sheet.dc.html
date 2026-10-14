@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --accent-strong:#AB6E37; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#D9975C; --avail-over-fg:#C46857; --avail-over-border:#752619;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --accent-strong:#D33E7E; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#DF8AA7; --avail-over-fg:#C26755; --avail-over-border:#752619;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  @keyframes dots { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .anim-dots { animation: none !important; } }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ sheetStyle }}">
+  <div style="{{ headStyle }}">
+    <h2 style="margin:0;flex:1;font-family:var(--display);font-weight:700;font-size:16px;line-height:1.2;color:var(--fg);white-space:nowrap;">Cheaper stand-ins</h2>
+    <sc-if value="{{ backWide }}" hint-placeholder-val="{{ false }}"><span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--elevated);font-size:12.5px;font-weight:600;color:var(--fg);white-space:nowrap;"><span aria-hidden="true">←</span>{{ orig.name }}</span></sc-if>
+    <sc-if value="{{ closeX }}" hint-placeholder-val="{{ true }}"><span aria-label="{{ closeAria }}" style="flex:none;width:44px;height:44px;margin-right:-10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">×</span></sc-if>
+  </div>
+
+  <div style="{{ bodyStyle }}">
+    <div style="display:flex;flex-direction:column;gap:6px;padding:11px 13px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ origLabel }}</span>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 9px;">
+        <span aria-hidden="true" style="flex:none;width:22px;height:31px;border-radius:3px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--border) 0 3px,var(--surface-raised) 3px 6px);"></span>
+        <span aria-hidden="true" style="flex:none;width:7px;height:7px;border-radius:50%;border:1px dashed var(--fg-faint);"></span>
+        <span style="font-size:14px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ orig.name }}</span>
+        <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ orig.price }}</span></span>
+        <sc-if value="{{ orig.over }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);white-space:nowrap;">{{ orig.overText }}</span></sc-if>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);">{{ orig.job }}</span>
+    </div>
+
+    <sc-if value="{{ lead }}" hint-placeholder-val="{{ true }}"><p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ lead }}</p></sc-if>
+
+    <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:250px;padding:28px 20px;border-radius:10px;background:radial-gradient(420px 220px at 50% 70%,color-mix(in oklab,var(--accent) 8%,transparent),transparent 70%);">
+        {{ crownPulse }}
+        <h3 style="margin:20px 0 0;width:100%;font-family:var(--display);font-weight:700;font-size:18px;line-height:1.25;color:var(--fg);text-wrap:balance;">{{ loadingHeading }}</h3>
+        <p style="margin:8px 0 0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">{{ loadingText }}</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ failed }}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:0;padding:30px 20px 26px;border-radius:10px;border:1px solid var(--border);background:var(--surface);">
+        {{ crownStill }}
+        <span style="margin-top:18px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--danger);">didn’t load</span>
+        <h3 style="margin:8px 0 0;width:100%;font-family:var(--display);font-weight:700;font-size:18px;line-height:1.25;color:var(--fg);text-wrap:balance;">The stand-ins didn’t come back</h3>
+        <p style="margin:10px 0 0;max-width:420px;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">We couldn’t read prices and your collection just now. It isn’t something you did, and it usually clears in a moment.</p>
+        <p style="margin:8px 0 0;max-width:420px;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Plateau is still in the deck, and nothing was changed.</p>
+        <button type="button" style="{{ retryStyle }}">Try again</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sentence }}" hint-placeholder-val="{{ false }}">
+      <p style="margin:0;padding-top:12px;border-top:1px solid var(--border);font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ sentence }}</p>
+    </sc-if>
+
+    <sc-if value="{{ takenNote }}" hint-placeholder-val="{{ false }}">
+      <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">{{ takenNote }}</p>
+    </sc-if>
+
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;">
+        <span style="padding:0 0 6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">{{ g.heading }}</span>
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="2">
+          <div style="border-bottom:1px solid var(--border);">
+            <sc-if value="{{ r.taken }}" hint-placeholder-val="{{ false }}">
+              <div style="margin:8px 0;display:flex;flex-wrap:wrap;align-items:center;gap:9px;border-radius:9px;padding:10px 12px;background:var(--surface);border:1px solid var(--success);">
+                <span style="flex:none;display:flex;align-items:center;gap:6px;"><span aria-hidden="true" style="width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:9px;border:1px solid var(--success);color:var(--success);">✓</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--success);">taken</span></span>
+                <span style="min-width:0;font-size:13px;color:var(--fg-body);">{{ orig.name }} <span style="font-family:'IBM Plex Mono',monospace;color:var(--success);">→</span> <b style="font-weight:600;color:var(--fg);">{{ r.name }}</b></span>
+                <button type="button" style="{{ putBackStyle }}">Undo swap</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ r.live }}" hint-placeholder-val="{{ true }}">
+              <div style="{{ r.gridStyle }}">
+                <div style="{{ r.leftStyle }}">
+                  <div style="display:flex;align-items:center;gap:7px;min-width:0;">
+                    <span aria-hidden="true" style="flex:none;width:22px;height:31px;border-radius:3px;border:1px solid var(--border-dashed);background:repeating-linear-gradient(135deg,var(--elevated) 0 3px,var(--border) 3px 6px);"></span>
+                    <span aria-hidden="true" style="{{ r.dotStyle }}"></span>
+                    <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ r.name }}</span>
+                    <sc-if value="{{ r.mark }}" hint-placeholder-val="{{ false }}"><span style="flex:none;display:inline-flex;align-items:center;gap:6px;"><span aria-hidden="true" style="display:block;width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--avail-soft);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);white-space:nowrap;">{{ r.mark }}</span></span></sc-if>
+                  </div>
+                  <span style="{{ r.factStyle }}">{{ r.facts }}</span>
+                </div>
+                <div style="{{ r.priceStyle }}">
+                  <sc-if value="{{ r.free }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 6px;color:var(--success);background:color-mix(in oklab,var(--success) 13%,transparent);">free</span></sc-if>
+                  <sc-if value="{{ r.buy }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if>
+                </div>
+                <div style="{{ r.takeCell }}">
+                  <sc-if value="{{ r.canTake }}" hint-placeholder-val="{{ true }}"><button type="button" style="{{ takeStyle }}">Take</button></sc-if>
+                </div>
+              </div>
+              <sc-if value="{{ r.refused }}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="{{ refusedStyle }}">
+                  <div style="display:flex;align-items:center;gap:8px;"><span aria-hidden="true" style="width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid var(--danger);color:var(--danger);">!</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--danger);">not taken</span></div>
+                  <b style="font-size:13.5px;font-weight:600;line-height:1.35;color:var(--fg);">The deck changed before this swap could land</b>
+                  <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">HD Gishath was edited after this list was read, in another tab or on another device. Nothing moved: Plateau is still in, and Sunbaked Canyon isn’t.</p>
+                  <div style="{{ refusedActions }}"><button type="button" style="{{ rereadStyle }}">Read the list again</button><button type="button" style="{{ dismissStyle }}">Close</button></div>
+                </div>
+              </sc-if>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+
+    <sc-if value="{{ foot }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;color:var(--fg-locked);">{{ foot }}</span></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:640,&quot;height&quot;:620},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;kind&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;lands&quot;,&quot;spells&quot;,&quot;fetch&quot;,&quot;norole&quot;,&quot;nothing&quot;,&quot;loading&quot;,&quot;failed&quot;,&quot;refused&quot;,&quot;partner&quot;,&quot;taken&quot;,&quot;staple&quot;],&quot;default&quot;:&quot;staple&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;from&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;shopping&quot;,&quot;card&quot;],&quot;default&quot;:&quot;shopping&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const kind = this.props.kind ?? "lands";
+    const mono = "'IBM Plex Mono',monospace";
+    const row = (o) => {
+      const r = { mark: null, free: false, buy: false, price: "", canTake: true, taken: false, refused: false, factInk: "var(--fg-muted)", ...o };
+      r.live = !r.taken;
+      if (r.price) r.buy = true; else r.free = true;
+      r.gridStyle = phone
+        ? { display: "grid", gridTemplateColumns: "minmax(0,1fr) 72px", columnGap: 10, rowGap: 6, alignItems: "center", padding: "10px 0" }
+        : { display: "grid", gridTemplateColumns: "minmax(0,1fr) 96px 64px", columnGap: 12, alignItems: "center", padding: "9px 0" };
+      r.leftStyle = { gridColumn: 1, gridRow: 1, display: "flex", flexDirection: "column", gap: 3, minWidth: 0 };
+      r.priceStyle = phone ? { gridColumn: 1, gridRow: 2, display: "flex", paddingLeft: 43 } : { gridColumn: 2, gridRow: 1, display: "flex", justifyContent: "flex-end" };
+      r.takeCell = phone ? { gridColumn: 2, gridRow: "1 / span 2", display: "flex", justifyContent: "flex-end" } : { gridColumn: 3, gridRow: 1, display: "flex", justifyContent: "flex-end" };
+      r.dotStyle = r.price
+        ? { flex: "none", width: 7, height: 7, borderRadius: "50%", border: "1px dashed var(--fg-faint)" }
+        : { flex: "none", width: 7, height: 7, borderRadius: "50%", background: "var(--success)" };
+      r.factStyle = { paddingLeft: 43, fontFamily: mono, fontSize: 10.5, lineHeight: 1.45, color: r.factInk, textWrap: "pretty", ...(r.unnamed ? { fontStyle: "italic" } : {}) };
+      r.hasStaple = !!r.staple;
+      return r;
+    };
+    const plateau = { name: "Plateau", price: "$293.84", over: true, overText: "over $10", job: "makes white and red · gives up nothing" };
+    const landGroups = (mod = {}) => [
+      { heading: "yours, free", rows: [
+        row({ name: "Sacred Foundry", mark: "in 1 brew", facts: "enters tapped unless you pay 2 life", ...(mod["Sacred Foundry"] || {}) }),
+        row({ name: "Battlefield Forge", facts: "deals 1 damage to you for white or red", ...(mod["Battlefield Forge"] || {}) }),
+      ] },
+      { heading: "to buy · cheapest first", rows: [
+        row({ name: "Sunbaked Canyon", price: "$1.12", facts: "costs 1 life for white or red", ...(mod["Sunbaked Canyon"] || {}) }),
+        row({ name: "Rugged Prairie", price: "$2.46", facts: "gives up something we couldn’t name · read the card", unnamed: true, ...(mod["Rugged Prairie"] || {}) }),
+      ] },
+    ];
+    const landLead = "Every land here makes both white and red. Free copies come first, then the cheapest, and each says what it gives up.";
+    const foot = "Cheapest printing of each, from ManaPool · last checked 3 hours ago";
+    let v = { loadingHeading: "", orig: plateau, origLabel: "replacing, in HD Gishath", lead: landLead, groups: [], loading: false, failed: false, sentence: null, takenNote: null, foot, loadingText: "" };
+    if (kind === "lands") v.groups = landGroups();
+    if (kind === "refused") v.groups = landGroups({ "Sunbaked Canyon": { refused: true } });
+    if (kind === "taken") {
+      v.lead = null;
+      v.takenNote = "Plateau has left the draft, so the other stand-ins are put away. Undo the swap to choose a different one.";
+      v.groups = landGroups({ "Sunbaked Canyon": { taken: true } }).map((g) => ({ ...g, rows: g.rows.map((r) => (r.taken ? r : { ...r, canTake: false })) }));
+    }
+    if (kind === "loading") { v.lead = null; v.groups = []; v.loading = true; v.foot = null; v.loadingHeading = "Checking the binder"; v.loadingText = "finding lands that make white and red…"; }
+    if (kind === "failed") { v.lead = null; v.groups = []; v.failed = true; v.foot = null; }
+    if (kind === "fetch") {
+      v.orig = { name: "Wooded Foothills", price: "$22.10", over: true, overText: "over $10", job: "finds a Mountain or Forest card · costs 1 life" };
+      v.lead = "Every land here finds a Mountain or a Forest. Free copies come first, then the cheapest, and each says what it gives up.";
+      v.groups = [
+        { heading: "yours, free", rows: [row({ name: "Terramorphic Expanse", facts: "finds only a basic · it enters tapped" })] },
+        { heading: "to buy · cheapest first", rows: [
+          row({ name: "Evolving Wilds", price: "$0.24", facts: "finds only a basic · it enters tapped" }),
+          row({ name: "Fabled Passage", price: "$1.06", facts: "finds only a basic · it enters tapped unless you control 4 lands" }),
+          row({ name: "Prismatic Vista", price: "$4.35", facts: "finds only a basic · costs 1 life" }),
+        ] },
+      ];
+    }
+    const spell = (name, price, fig, cmdr, mv = 1, role = "ramp") => row({ name, price, facts: fig ? `${role} · MV ${mv} · in ${fig}% of ${cmdr} decks` : `${role} · MV ${mv}` });
+    if (kind === "spells") {
+      v.orig = { name: "Mana Vault", price: "$38.40", over: true, overText: "over $10", job: "ramp · mana value 1" };
+      v.lead = "Every card here is ramp at mana value 1 or less. Free copies come first, then the rest by how often Gishath decks run them.";
+      v.groups = [
+        { heading: "yours, free", rows: [spell("Llanowar Elves", "", 52, "Gishath")] },
+        { heading: "to buy · by Gishath decks", rows: [spell("Birds of Paradise", "$7.90", 58, "Gishath"), spell("Elvish Mystic", "$0.30", 41, "Gishath"), spell("Avacyn’s Pilgrim", "$0.35", 22, "Gishath")] },
+        { heading: "not listed for Gishath · cheapest first", rows: [spell("Fyndhorn Elves", "$0.62", null)] },
+      ];
+    }
+    if (kind === "staple") {
+      const st = (name, price, mv = 2) => row({ name, price, facts: `ramp · MV ${mv} · staple, any commander` });
+      v.orig = { name: "Grim Monolith", price: "$31.50", over: true, overText: "over $10", job: "ramp · mana value 2" };
+      v.lead = "Every card here is ramp at mana value 2 or less. Free copies come first, then staples, then the rest by how often Gishath decks run them.";
+      v.groups = [
+        { heading: "yours, free", rows: [spell("Mind Stone", "", 44, "Gishath", 2), spell("Fellwar Stone", "", 38, "Gishath", 2)] },
+        { heading: "to buy · staples, cheapest first", rows: [st("Arcane Signet", "$0.40")] },
+        { heading: "to buy · by Gishath decks", rows: [spell("Talisman of Impulse", "$0.55", 31, "Gishath", 2), spell("Coldsteel Heart", "$0.48", 18, "Gishath", 2)] },
+      ];
+    }
+    if (kind === "partner") {
+      v.origLabel = "replacing, in HD Tymna + Thrasios";
+      v.orig = { name: "Rhystic Study", price: "$38.20", over: true, overText: "over $10", job: "draw · mana value 3" };
+      v.lead = "Every card here draws at mana value 3 or less. Free copies come first, then the rest by how often Tymna + Thrasios decks run them.";
+      v.groups = [
+        { heading: "yours, free", rows: [spell("Mystic Remora", "", 71, "Tymna + Thrasios", 1, "draw")] },
+        { heading: "to buy · by Tymna + Thrasios decks", rows: [spell("Esper Sentinel", "$6.10", 58, "Tymna + Thrasios", 1, "draw"), spell("Phyrexian Arena", "$3.60", 22, "Tymna + Thrasios", 3, "draw")] },
+      ];
+    }
+    if (kind === "norole") {
+      v.orig = { name: "Doubling Season", price: "$42.60", over: true, overText: "over $10", job: "no role we can name" };
+      v.lead = null; v.foot = null;
+      v.sentence = "Doubling Season does a job we can’t read from its text, so there are no stand-ins for it. We won’t guess at one.";
+    }
+    if (kind === "nothing") {
+      v.orig = { name: "Swords to Plowshares", price: "$1.84", over: false, overText: "", job: "removal · mana value 1" };
+      v.lead = null; v.foot = null;
+      v.sentence = "Nothing cheaper does this job. All the other removal at mana value 1 or less in Gishath’s colors costs more than $1.84, and you have no free copy of any of it.";
+    }
+    const btn = phone
+      ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", height: 44, width: 72, borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" }
+      : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "6px 13px", fontSize: 12.5, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" };
+    const quiet = phone
+      ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "inline-flex", alignItems: "center", minHeight: 44, borderRadius: 8, padding: "0 14px", fontSize: 13, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }
+      : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "inline-flex", alignItems: "center", minHeight: 32, borderRadius: 7, padding: "6px 11px", fontSize: 12, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)" };
+    const diamonds = (pulse, color) => React.createElement("span", { "aria-hidden": true, style: { display: "flex", alignItems: "center", gap: 9, height: 16 } },
+      [8, 11, 8].map((d, i) => React.createElement("span", { key: i, className: pulse ? "anim-dots" : undefined, style: { display: "block", width: d, height: d, transform: "rotate(45deg)", background: color, ...(pulse ? { animation: "dots 1.2s ease-in-out infinite", animationDelay: `${i * 0.2}s` } : {}) } })));
+    const fromCard = this.props.from === "card";
+    return {
+      ...v,
+      backWide: fromCard && !phone,
+      closeX: !(fromCard && !phone),
+      closeAria: fromCard ? `Back to ${v.orig.name}` : "Close cheaper stand-ins",
+      crownPulse: diamonds(true, "var(--accent-strong)"),
+      crownStill: diamonds(false, "var(--border-strong)"),
+      refusedStyle: { margin: "0 0 10px", display: "flex", flexDirection: "column", gap: 7, padding: "12px 14px", borderRadius: 9, background: "var(--surface)", border: "1px solid var(--avail-over-border)" },
+      refusedActions: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 },
+      dismissStyle: { ...quiet, minHeight: phone ? 44 : 30, border: "0", padding: phone ? "0 10px" : "4px 6px" },
+      theme: this.props.theme ?? "amonkhet",
+      takeStyle: btn,
+      retryStyle: { ...btn, width: "auto", marginTop: 18, padding: phone ? "0 18px" : "7px 16px" },
+      rereadStyle: { ...btn, width: "auto", padding: phone ? "0 14px" : "6px 13px" },
+      putBackStyle: { ...quiet, marginLeft: "auto" },
+      sheetStyle: phone
+        ? { width: 390, background: "var(--surface-raised)", borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" }
+        : { width: 640, background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 24px 60px rgba(0,0,0,0.45)", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" },
+      headStyle: phone
+        ? { flex: "none", height: 43, display: "flex", alignItems: "center", gap: 9, padding: "0 6px 0 16px", borderBottom: "1px solid var(--border)" }
+        : { flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderBottom: "1px solid var(--border)" },
+      bodyStyle: { padding: phone ? "14px 16px 24px" : "16px 18px 18px", display: "flex", flexDirection: "column", gap: phone ? 12 : 14 },
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+  /* The 37-key contract, transcribed from src/app/globals.css at main.
+     Low Sun on :root so the page paints its default before the prop resolves. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --avail-hard-fg:#D9975C; --avail-over-fg:#C46857; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-hard-fg:#DF8AA7; --avail-over-fg:#C26755; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E; --fg-disabled:#3E473A;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-hard-fg:#ABCB5B; --avail-over-fg:#C56A58; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A; --fg-disabled:#403E45;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-hard-fg:#77A9A0; --avail-over-fg:#BE6453; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475; --fg-disabled:#443F4D;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-hard-fg:#B795EA; --avail-over-fg:#C56A58; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-hard-fg:#80ABEF; --avail-over-fg:#C86D5B; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Deck proxies &middot; /decks/[id] &middot; card detail &middot; /collection/proxies &middot; /decks &middot; /changes</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">Covered is not owned.</h1>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">A proxy is one deck's answer about one slot: <b style="color:#EDE6D8;font-weight:600;">this deck needs nothing from the collection for this card.</b> The slot is filled, the claim is released to whichever deck holds the real copy, and the player owns <b style="color:#EDE6D8;font-weight:600;">nothing new</b>. Every drawing in this package is built to keep those two facts apart, because this is the one feature where the app could quietly lie about what is in a box.</p>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">The feature spends no colour, and that is the central call, not a saving.</b> Every hue in this app is already booked &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">--accent</span> is <i>in use / to buy</i>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">--warning</span> is money, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">--success</span> is complete, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">--danger</span> is over-committed. A proxy is none of those, and the one thing it must never say is <i>owned</i>. So the tag is neutral ink on a dashed hairline, which borrows no meaning and inherits the app's existing <i>not-cardboard</i> vocabulary &mdash; the unowned ownership dot, the unresolved row, the missing set cell, all dashed already. <a href="#nine">&sect;9</a> is the dividend: <b style="color:#EDE6D8;font-weight:600;">no per-theme variant exists anywhere in the feature.</b></p>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">Source of truth: <b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">docs/superpowers/specs/2026-09-14-deck-proxies-design.md</span></b>, read in full at <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">main</span>. The five rulings are drawn as written and not reopened. Structural sibling: <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">design/design_handoff_the99_set_collections/</span> &mdash; same folder shape, same copy-export shape, and the same problem of a new route under the collection reached from the filter bar's rack.</p>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">Every value inside every frame is <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">var(--token)</span>, read from <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">src/app/globals.css</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">main</span> &mdash; <b style="color:#EDE6D8;font-weight:600;">no hex literal appears in a drawing.</b> The canvas carries a <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">theme</span> prop; switch it and all ten frames re-render in that palette.</p>
+    <p style="max-width:1060px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> for the decisions log, <a href="STATES-proxies.md">STATES-proxies.md</a> for the state matrix at both widths, <a href="COVERED-not-owned.md">COVERED-not-owned.md</a> for the language contract and its per-theme measurements, <a href="deck-proxies · copy strings.ts">copy strings</a>, <a href="READINESS.md">READINESS.md</a>.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:10px;">The five rulings, drawn as written &mdash; not reopened</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px 26px;">
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">1 &middot; A proxy releases the physical copy.</b> The other deck stops reading short. Drawn in <a href="#four">&sect;4</a>'s receipt, where the released copy shows up as <i>free</i>.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">2 &middot; Outside versioning.</b> Immediate, no pending state, nothing on <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">/changes</span>. <a href="#three">&sect;3</a> spends one mono line saying so and no confirm step at all.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">3 &middot; Commanders can be proxied.</b> <a href="#two">&sect;2</a>, including the pair case, which is the one place the tag has to name who it belongs to.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">4 &middot; Three surfaces.</b> <a href="#one">&sect;1</a>+<a href="#two">&sect;2</a> the deck, <a href="#four">&sect;4</a> the receipt, <a href="#six">&sect;6</a>+<a href="#seven">&sect;7</a> the list.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">5 &middot; A proxy covers the whole ask. No quantity.</b> So the mark is one glyph with no tail, and nothing in this package ever prints <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&times;N</span> beside it &mdash; see <a href="#one">&sect;1</a>.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:10px;">R2 &middot; two additions, no R1 surface reopened</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px 26px;">
+      <div style="font-size:13px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;"><a href="#eleven">&sect;11</a> &middot; the same fact on the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">/decks</span> tile.</b> The grid is where two <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Complete</span> decks are indistinguishable and the pill sits with no mark on screen to qualify it. The line takes <b style="color:#EDE6D8;font-weight:600;">the tile's existing detail slot</b> &mdash; no new row, no new grid template &mdash; and lands in the accessible name for free.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;"><a href="#twelve">&sect;12</a> &middot; the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">bucketAdds</span> word.</b> <b style="color:#EDE6D8;font-weight:600;">Not a bucket heading</b> &mdash; those were withdrawn at deck-versioning R2, which ruled availability a per-row treatment and has a test pinning their absence. It is a fourth branch of <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">bucketWord</span>, in the shipped chip skin, plus the row-level defect that finding exposed.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#16131A;padding:20px 24px;margin-bottom:38px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Call 1 &middot; the tag's form</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">One glyph &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">P</span> where money draws <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">$</span></b> &mdash; in the buy tag's collapsed box exactly. A key decodes the row; the word lives there and in the accessible name. Skin <b style="color:#EDE6D8;font-weight:600;">ratified as A</b> in <a href="#onebee">&sect;1b</a>. <a href="#one">&sect;1</a></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Call 2 &middot; the control</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">A square tick in a deck-scoped block in the card sheet.</b> Square, not round &mdash; and that inverts the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">card_assignments</span> ruling for the reason that ruling named. <a href="#three">&sect;3</a></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Call 3 &middot; the receipt's line</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">A second list, below the split, with no figures at all</b> &mdash; the missing column <i>is</i> the statement that no copy is involved. <a href="#four">&sect;4</a></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Call 4 &middot; the list</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">One card per row, its decks under the name, its price to the right</b>, newest first. Read-only: the unmark lives where the proxy lives. <a href="#six">&sect;6</a></div></div>
+  </div>
+
+  <!-- ============================ SECTION 1 ============================ -->
+  <section id="one" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;1 &middot; the tag, and the slot it shares with buy</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">One glyph, one slot, and a key that decodes it.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">BuyTag</span> is the one place the word <i>buy</i> and its colour are declared: mono, radius 4, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">px 5 / py 1</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--warning</span> ink on a <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">13%</span> warning plate. <b style="color:#EDE6D8;font-weight:600;">The proxy mark is that box at its collapsed density</b> &mdash; the density the All view already draws money at &mdash; carrying <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">P</span> where money carries <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">$</span>. <b style="color:#EDE6D8;font-weight:600;">Same box means the row does not move when the state flips</b>, which is the whole reason the two share a slot rather than sitting beside each other.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px;margin-bottom:22px;">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">anatomy &middot; the two marks, row density, 1:1</div>
+        <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);">P</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">&middot;</span><span style="color:var(--fg-body);">$32.90</span></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">$</span>
+        </div>
+        <div style="margin-top:16px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Top to bottom: the proxy mark, the Shopping-density buy tag with its <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">FIGURE_SLOT</span> tail, and the All-view collapsed buy tag &mdash; <b style="color:var(--fg);font-weight:600;">the third of those is the pattern the first one joins</b>, not a new one. <b style="color:var(--fg);font-weight:600;">The proxy mark has one density and the buy tag has two</b>, and the asymmetry is the model's rather than a shortcut: a proxied card is never a Shopping row, so there is no surface on which the word would ever be drawn beside a card name. Money needs a full form because it carries a figure, and the proxy mark never does.</div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">why dashed, and why that token</div>
+        <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Dashed is already this app's word for <i>not settled cardboard</i>:</b> the unowned ownership dot is a dashed hollow, the unresolved row is dashed, the spent-slot receipt is dashed, the missing set cell is dashed. A printed card is exactly a card-shaped thing that is not cardboard, so the edge says it before the word does.<br><br><b style="color:var(--fg);font-weight:600;">The edge is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-locked</span> and never <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--border-dashed</span></b>, which is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">set_collections</span>' general rule restated: <i>a dashed line that carries state takes a foreground token, not a border token.</i> Measured against <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface-rail</span>, the row's own ground, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-locked</span> clears <b style="color:var(--fg);font-weight:600;">3.14&ndash;3.35:1</b> in all six themes and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--border-dashed</span> clears none of them. The glyph takes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg</span> at weight 600 &mdash; <b style="color:var(--fg);font-weight:600;">11.3:1 (First Frost) to 14.4:1 (Low Sun)</b> &mdash; because it is text, it owes 4.5:1, and it is the one character carrying the whole mark. It is the brightest ink in the row, a step above the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-body</span> the word used to take, and that lift is where the eye-catching quality comes from without spending a hue.</div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">the glyph, and why a letter rather than a shape</div>
+        <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">P</span> for proxy</b> &mdash; the initial of the word players already use, and the word in the route. It sits in the same box as <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">$</span> and therefore reads as the same kind of thing before it is decoded.<br><br><b style="color:var(--fg);font-weight:600;">A letter, not a shape.</b> Every small geometric mark in this app is already taken: the rotated diamond is the availability glyph in four states, a filled diamond is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">printing_picker</span>'s <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Your pick</span>, an outlined one is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">BY NAME</span> and the rack's link, and a disc is the ownership dot. <b style="color:var(--fg);font-weight:600;">A fifth diamond would be unreadable, and any new shape needs teaching anyway</b> &mdash; at which point a letter teaches faster, because a key can spell it out.<br><br><b style="color:var(--fg);font-weight:600;">And a letter scales where a hue does not.</b> Marks are about to become a family &mdash; game changers, bracket movers &mdash; and there are 26 letters against four hue families in the token contract, all four of which are already booked. <a href="#onebee">&sect;1b</a> is that argument in full.<br><br><b style="color:var(--fg);font-weight:600;">The word is still authored</b>, in three places: the key, the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">title</span>, and the accessible name. Rejected as the word: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">printed</span> (one letter from <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">printing</span>, on surfaces that ship both), <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">paper</span> (slang, and it names the object rather than the deck's answer), <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">covered</span> (states the effect and hides the cause).</div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:24px 26px;margin-bottom:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">desktop decklist rows &middot; 34px &middot; proxied / owned / to-buy</div>
+      <div style="font-size:12.5px;color:var(--fg-muted);margin-bottom:16px;line-height:1.6;">Three rows from one deck's All view, drawn on <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface-rail</span> at the shipped 34px. Nothing about the row's structure changes between them: same dot, same name, same fixed pip track, same availability slot, same tag slot, same 	&times;.</div>
+
+      <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;min-height:34px;background:var(--surface-rail);border-bottom:1px solid var(--border);">
+          <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">The Ozolith</span>
+          <span style="flex:none;width:150px;display:flex;align-items:center;gap:8px;">
+            <span style="flex:none;display:flex;gap:3px;align-items:center;"><span style="width:13px;height:13px;border-radius:999px;background:var(--fg-faint);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></span>
+            <span style="flex:1;min-width:0;display:flex;justify-content:flex-end;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span></span>
+          </span>
+          <span style="flex:none;font-size:13px;color:var(--border-dashed);padding-left:6px;">&#10005;</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;min-height:34px;background:var(--surface-rail);border-bottom:1px solid var(--border);">
+          <span style="flex:none;width:8px;height:8px;border-radius:999px;background:var(--success);"></span>
+          <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Sol Ring</span>
+          <span style="flex:none;width:150px;display:flex;align-items:center;gap:8px;">
+            <span style="flex:none;display:flex;gap:3px;align-items:center;"><span style="width:13px;height:13px;border-radius:999px;background:var(--fg-faint);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></span>
+          </span>
+          <span style="flex:none;font-size:13px;color:var(--border-dashed);padding-left:6px;">&#10005;</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;min-height:34px;background:var(--surface-rail);">
+          <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Jeweled Lotus</span>
+          <span style="flex:none;width:150px;display:flex;align-items:center;gap:8px;">
+            <span style="flex:none;display:flex;gap:3px;align-items:center;"><span style="width:13px;height:13px;border-radius:999px;background:var(--fg-faint);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></span>
+            <span style="flex:1;min-width:0;display:flex;justify-content:flex-end;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);flex:none;">$</span></span>
+          </span>
+          <span style="flex:none;font-size:13px;color:var(--border-dashed);padding-left:6px;">&#10005;</span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;padding:0 2px;">
+        <span style="display:inline-flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">$</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">to buy</span></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);">P</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">proxy</span></span>
+        <a href="#onebee" style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);text-decoration:none;border-bottom:1px solid var(--border-strong);">what the marks mean</a>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px 26px;margin-top:4px;">
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Row 1 &middot; proxied.</b> The dot is <b style="color:var(--fg);font-weight:600;">still hollow and still dashed</b>, and that is the single most important pixel in this package. The dot is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">card.owned</span> &mdash; a fact about the collection &mdash; and a proxy changes nothing about the collection. <b style="color:var(--fg);font-weight:600;">The dot is the box's word; the tag is the deck's word.</b> The row honestly reads <i>not in your collection &middot; covered by a proxy</i>, and filling that dot in would be the app's first lie.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Row 1 &middot; no availability marker.</b> The marker's <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">free</span> state renders <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">null</span> by design, and a proxied card claims nothing, so it is free by construction. <b style="color:var(--fg);font-weight:600;">Nothing is added to suppress it</b> &mdash; the anti-join in <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">all_claims</span> already produces silence here, which is the model and the drawing agreeing without a special case.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Row 3 &middot; to-buy, unchanged.</b> Collapsed <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">$</span> in the All view, full <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">buy &middot; $32.90</span> in Shopping. Drawn so the comparison is available at one glance: <b style="color:var(--fg);font-weight:600;">the only difference between rows 1 and 3 is which tag is in the slot</b>, and no reader has to hold two screens in their head to see it.</div>
+      </div>
+
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">the key &middot; the line drawn above, under the decklist's toolbar</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);margin-bottom:16px;line-height:1.6;max-width:1000px;">The sample above the rows is what the real surface draws, in position &mdash; above the first group heading and below the view tabs. These three notes are about that line, not about the rows.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px 26px;">
+          <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">It lists only the marks present in the current view</b> &mdash; an empty legend is furniture, and this app is already strict about that (the availability marker renders nothing when free, the roll-up region is absent at zero). A deck with no proxies and nothing to buy has no key at all.<br><br>One mono line, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-faint</span> words beside the real marks at their real size, so the key is a <i>sample</i> rather than a description of one. <b style="color:var(--fg);font-weight:600;">It grows by one pair per mark</b> &mdash; a game changer, a bracket mover &mdash; and wraps rather than scrolling.</div>
+          <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The trailing link is the door to the about page</b>, and it is why the deck page does not have to explain anything. The key answers <i>what is this glyph</i> in two words; anything longer belongs off this surface. Drawn as a hairline-underlined mono link at <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-locked</span> &mdash; quieter than the words it follows, because a reader who already knows the glyphs should not be offered a lesson twice per visit.<br><br><b style="color:var(--fg);font-weight:600;">Until the about page lands, the link is absent rather than dead.</b> The key stands alone perfectly well; the pointer is the addition.</div>
+          <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Three carriers, so the glyph is never the only one.</b> The key on the surface, a <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">title</span> on hover for a pointer, and the full word in the accessible name &mdash; which is not a new mechanism but <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">BuyTag</span>'s own: at collapsed density it draws <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">$</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">aria-hidden</span> and speaks the word and the price in full from an <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">sr-only</span> span.<br><br><b style="color:var(--fg);font-weight:600;">Hover alone was considered and is not enough</b>, and the reason is not touch &mdash; it is that a tooltip teaches one reader at a time, on a surface whose whole job is scanning ninety-nine rows at once.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,390px) minmax(0,1fr);gap:22px;align-items:start;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">390px &middot; 52px rows, meta line</div>
+        <div style="width:390px;max-width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:8px;padding:0 4px 0 8px;min-height:52px;background:var(--surface-rail);border-bottom:1px solid var(--border);">
+            <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+            <span style="flex:auto;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;">
+              <span style="font-size:12.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">The Ozolith</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:13px;height:13px;border-radius:999px;background:var(--fg-faint);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span>
+            <span style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--border-dashed);">&#10005;</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:0 4px 0 8px;min-height:52px;background:var(--surface-rail);">
+            <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+            <span style="flex:auto;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;">
+              <span style="font-size:12.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Jeweled Lotus</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:13px;height:13px;border-radius:999px;background:var(--fg-faint);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span><span style="color:var(--border-strong);">&middot;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">edhrec 61%</span></span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);flex:none;">buy<span style="color:var(--border-strong);padding:0 3px;">&middot;</span><span style="color:var(--fg-body);">$32.90</span></span>
+            <span style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--border-dashed);">&#10005;</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--avail-over-fg);margin-bottom:12px;">the exclusion is structural, not a pair of conditionals</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--fg-muted);">A proxy tag and a buy tag <b style="color:var(--fg);font-weight:600;">can never co-occur</b>, and the model already guarantees it: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">isShoppingCard</span> tests <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">proxied</span> first, so a proxied card is never a Shopping row and never carries a price at all.<br><br><b style="color:var(--fg);font-weight:600;">Draw it as one slot, not two siblings.</b> The row today writes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">{(!card.owned || spokenFor) &amp;&amp; &lt;BuyTag /&gt;}</span>; adding <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">{card.proxied &amp;&amp; &lt;ProxyTag /&gt;}</span> beside it makes the exclusivity a property of two booleans that happen to disagree today. One function &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deckRowTag(card): "proxy" | "buy" | null</span> &mdash; makes both tags impossible to draw at once <i>by construction</i>, which is the same move the spec makes when it scopes the proxy read to membership rather than enumerating six cleanup paths. <b style="color:var(--fg);font-weight:600;">Two independent conditionals is how they co-occur eighteen months from now</b>, in a state nobody drew.<br><br>Corollary, and it is the reason this is in a red box rather than the component table: the slot must also be <b style="color:var(--fg);font-weight:600;">unreserved</b>. Row 2 above shows an owned card with an empty slot and no gap &mdash; the tag is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex:none</span> and simply absent, exactly as the buy tag is today.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 1b ============================ -->
+  <section id="onebee" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;1b &middot; the mark's skin &mdash; ratified: A</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">If marks are a family, colour cannot be the identifier.</h2>
+    <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#161318;padding:14px 18px;margin-bottom:18px;max-width:1400px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">ratified &middot; option A, neutral bright</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.7;">Product ratified <b style="color:#EDE6D8;font-weight:600;">A</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg</span> at weight 600 on a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">1px dashed var(--fg-locked)</span> edge, no fill &mdash; which is what every other frame in this canvas draws. <b style="color:#EDE6D8;font-weight:600;">B, C and D stay in the package rather than being deleted</b>, because the argument they carry is the one a future mark will reopen: the day someone asks for a game changer in green, this frame is the record of why the family shares one neutral skin and why no fixed hue survives six accents. <b style="color:#EDE6D8;font-weight:600;">C is the one to revisit if that answer ever changes</b>, and it is a deliberate change to what <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--accent</span> means rather than a free win.</div>
+    </div>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 12px;">The moment there are four marks &mdash; money, proxy, game changer, bracket mover &mdash; a reader cannot learn four hues, and the token contract does not have four hues to give. <b style="color:#EDE6D8;font-weight:600;">So the glyph identifies, the key decodes, and colour only has one job left: say <i>there is a mark here</i>.</b> That reframing is what makes the question below answerable at all, because it turns <i>what colour is proxy</i> into <i>what colour are marks</i>, which is a decision made once.</p>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;"><b style="color:#EDE6D8;font-weight:600;">Money keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--warning</span> and is the exception, not the precedent.</b> It ships, and a price is the one mark that is a genuinely different kind of fact &mdash; it is the only one you can act on with a credit card. Everything else takes one shared skin, and the four candidates below are candidates for <i>that</i> skin rather than for the proxy tag alone.</p>
+
+    <div style="border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:22px;max-width:1400px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#E0913C;margin-bottom:10px;">the honest colour audit &mdash; there is no unclaimed hue</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.75;">The 37-key contract has <b style="color:#EDE6D8;font-weight:600;">exactly four hue families and all four are spoken for</b>: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--accent</span> is <i>in use / to buy</i>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--warning</span> is money, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--success</span> is complete &mdash; which this feature is forbidden from touching by definition &mdash; and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--danger</span> is over-committed. The five <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--avail-*</span> keys are aliases of accent, danger and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-muted</span>, and the five WUBRG swatches mean colour identity, so a blue glyph would read as a blue card.<br><br><b style="color:#EDE6D8;font-weight:600;">And minting one does not escape it.</b> Three of the four semantics are near-identical in all six themes, so a new one would have to be too &mdash; one hex, six palettes. But <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--accent</span> is the per-theme hue, and across the six it lands on <b style="color:#EDE6D8;font-weight:600;">orange, pink, yellow-green, teal, violet and blue</b>. That is six of the eight hue regions. <b style="color:#EDE6D8;font-weight:600;">Any fixed hue collides with at least one theme's accent</b>, in the one theme whose reader will never see the others to compare. Option D below is drawn precisely so that collision is visible rather than argued.</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px;">
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:20px 22px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg);border-radius:5px;padding:2px 8px;">A</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:var(--fg);">Neutral bright &mdash; recommended</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">--fg at 600 &middot; 1px dashed --fg-locked &middot; no fill</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:9px;">
+          <div data-theme="amonkhet" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span></div>
+          <div data-theme="kamigawa" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span></div>
+          <div data-theme="ixalan" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span></div>
+          <div data-theme="phyrexia" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span></div>
+          <div data-theme="eldraine" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span></div>
+          <div data-theme="kaldheim" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span></div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:13px;max-width:1000px;"><b style="color:var(--fg);font-weight:600;">More eye-catching than the word was, which is the part worth noticing:</b> one bright character in a 20px box is a higher-contrast, more distinctly-shaped object than five 9.5px characters at <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-body</span>. The lift from <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-body</span> to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg</span> plus weight 600 is the same move the availability marker makes when it lifts its label to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--avail-hard-fg</span>. <b style="color:var(--fg);font-weight:600;">Costs no token, collides with nothing, and a seventh theme is free.</b></div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:20px 22px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-muted);border-radius:5px;padding:2px 8px;">B</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:var(--fg);">Filled plate &mdash; mass instead of hue</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">--fg at 600 &middot; --elevated fill &middot; no border</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:9px;">
+          <div data-theme="amonkhet" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;background:var(--elevated);flex:none;">P</span></div>
+          <div data-theme="kamigawa" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;background:var(--elevated);flex:none;">P</span></div>
+          <div data-theme="ixalan" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;background:var(--elevated);flex:none;">P</span></div>
+          <div data-theme="phyrexia" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;background:var(--elevated);flex:none;">P</span></div>
+          <div data-theme="eldraine" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;background:var(--elevated);flex:none;">P</span></div>
+          <div data-theme="kaldheim" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;background:var(--elevated);flex:none;">P</span></div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:13px;max-width:1000px;">Louder than A by <b style="color:var(--fg);font-weight:600;">mass</b> rather than hue, and it themes for free because <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--elevated</span> is per-theme chrome. <b style="color:var(--fg);font-weight:600;">The cost is that it loses the dashed edge, and the dashed edge was carrying meaning</b> &mdash; it is this app's existing word for <i>not settled cardboard</i>, which is exactly what a printed card is. A filled plate says <i>mark</i> and stops there; A says <i>mark, and not real cardboard</i>. A also wins in <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">forced-colors</span>, where a background is dropped and a border is not.</div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:20px 22px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">C</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:var(--fg);">Accent &mdash; real colour, and it themes for free</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">--accent at 600 &middot; 1px solid --accent-dim</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:9px;">
+          <div data-theme="amonkhet" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--accent);font-weight:600;border:1px solid var(--accent-dim);flex:none;">P</span></div>
+          <div data-theme="kamigawa" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--accent);font-weight:600;border:1px solid var(--accent-dim);flex:none;">P</span></div>
+          <div data-theme="ixalan" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--accent);font-weight:600;border:1px solid var(--accent-dim);flex:none;">P</span></div>
+          <div data-theme="phyrexia" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--accent);font-weight:600;border:1px solid var(--accent-dim);flex:none;">P</span></div>
+          <div data-theme="eldraine" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--accent);font-weight:600;border:1px solid var(--accent-dim);flex:none;">P</span></div>
+          <div data-theme="kaldheim" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--accent);font-weight:600;border:1px solid var(--accent-dim);flex:none;">P</span></div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:13px;max-width:1000px;">Genuinely the most eye-catching, and it costs no token. <b style="color:var(--fg);font-weight:600;">The cost is a re-reading of accent, and it is not small:</b> accent currently means <i>in use / to buy</i> on the deck row, the collection row, the set cell and the rack. Spending it here makes it mean <i>there is a mark on this row</i>, which is looser &mdash; and the loosening is permanent, because every future mark joins the same skin. <b style="color:var(--fg);font-weight:600;">Two things make it defensible anyway:</b> the key now carries identity, so accent no longer has to distinguish anything; and a proxied row's other accent carriers are all silent by construction (no marker, no price, no buy tag), so an accent glyph there is the only accent on the row rather than a second one. <b style="color:var(--fg);font-weight:600;">This is the option to pick if you want colour</b>, and it should be picked deliberately as a change to what accent means.</div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:20px 22px;opacity:0.92;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:#8C86B8;border-radius:5px;padding:2px 8px;">D</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:var(--fg);">A minted hue &mdash; drawn to show why not</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">one fixed #8C86B8 across all six &middot; --bg ink</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:9px;">
+          <div data-theme="amonkhet" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--bg);font-weight:600;background:#8C86B8;flex:none;">P</span></div>
+          <div data-theme="kamigawa" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--bg);font-weight:600;background:#8C86B8;flex:none;">P</span></div>
+          <div data-theme="ixalan" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--bg);font-weight:600;background:#8C86B8;flex:none;">P</span></div>
+          <div data-theme="phyrexia" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--bg);font-weight:600;background:#8C86B8;flex:none;">P</span></div>
+          <div data-theme="eldraine" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--bg);font-weight:600;background:#8C86B8;flex:none;">P</span></div>
+          <div data-theme="kaldheim" style="background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);flex:none;"></span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--bg);font-weight:600;background:#8C86B8;flex:none;">P</span></div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:13px;max-width:1000px;"><b style="color:var(--fg);font-weight:600;">Look at Witching Hour.</b> The minted violet-grey and that theme's <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--accent</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">#AE88E6</span> are the same hue family, so in that one palette the new mark reads as an accent-coloured affordance &mdash; and its reader has no other theme to compare against. <b style="color:var(--fg);font-weight:600;">Move the hue and the collision moves with it:</b> teal hits Oil Haze, blue hits First Frost, yellow-green hits Canopy, pink hits Neon Rain, orange hits Low Sun. This is also the only option carrying a hex literal inside a frame, which is the rule this canvas otherwise keeps &mdash; and the reason it keeps it. <b style="color:var(--fg);font-weight:600;">Drawn to be rejected, and kept in the package so the rejection is checkable.</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 2 ============================ -->
+  <section id="two" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;2 &middot; the commander slot</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Expensive legends are the most proxied cards there are.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;">The commander has no row &mdash; it is the spine's art band, and its name lives in the mono caption beside the identity pips and the status pill. <b style="color:#EDE6D8;font-weight:600;">The tag joins that caption row</b>, after the name group and before the status pill, at 9.5px. The route to the control is the one that already exists: the band's own <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">FullCardTrigger</span> opens the card sheet, and the sheet now carries the deck id.</p>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden;margin-bottom:18px;">
+      <div style="position:relative;padding:26px 30px 22px;background:linear-gradient(90deg, var(--elevated) 0%, var(--surface-raised) 34%, var(--surface) 62%);">
+        <div style="position:absolute;inset:0;width:38%;background-image:repeating-linear-gradient(135deg, var(--elevated-hover) 0 9px, var(--surface-raised) 9px 18px);opacity:0.55;"></div>
+        <div style="position:absolute;inset:0;width:46%;background:linear-gradient(90deg, transparent 0%, var(--surface) 88%);"></div>
+        <div style="position:absolute;left:14px;top:14px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);z-index:2;">art crop &middot; art-wash left-portrait</div>
+        <div style="position:relative;z-index:2;margin-left:46%;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;color:var(--fg);margin-bottom:5px;">HD Gods</div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0;">
+            <span style="display:flex;gap:3px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--w);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--u);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--b);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);display:flex;gap:5px;align-items:baseline;min-width:0;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Elenda, Saint of Dusk</span><span style="flex:none;">&middot; Esper</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);background:color-mix(in oklab, var(--bg) 92%, transparent);flex:none;">P</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;border-radius:6px;padding:3px 8px;color:var(--success);border:1px solid var(--success);flex:none;">Complete</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:7px;">
+            <div style="flex:1;max-width:170px;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;"><div style="height:100%;width:100%;background:var(--success);"></div></div>
+            <div style="display:flex;align-items:baseline;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--fg);">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 99</span></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:6px;">7 of these are proxies</div>
+        </div>
+      </div>
+      <div style="padding:20px 26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px 26px;border-top:1px solid var(--border);">
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The tag takes a scrim on the band and only on the band.</b> Everywhere else it sits on a flat surface where the dashed edge measures 3.14&ndash;3.35:1. Here it sits on a photograph, where nothing is guaranteed &mdash; so it takes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">color-mix(in oklab, var(--bg) 92%, transparent)</span> behind it, unconditionally. <b style="color:var(--fg);font-weight:600;">That is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">BuyTag</span>'s own tile scrim, at its own opacity, for its own stated reason</b> &mdash; a theme with a lighter canvas wants a lighter scrim, or the tag reads as a hole punched in the art. Unconditional, not gated on how bright the crop is: a primitive that decided how to look from what is behind it is the defect that comment warns about.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The line under the bar is this handoff's one addition beyond the spec's surfaces, and it is severable.</b> A 99-card deck reading <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Complete</span> with seven printed cards in it is correct and is also the exact moment a player could be misled. <i>7 of these are proxies</i> is one mono <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-muted</span> line, no colour, no control, absent at zero. <b style="color:var(--fg);font-weight:600;">Not a roll-up band</b> &mdash; those are alarm chrome for over-commitment, and a proxy is not a problem to be solved. Cut it and nothing else in the package moves.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The status pill still says <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Complete</span>, and that is not a lie.</b> This app's vocabulary is already explicit that <i>finished lists hold</i> &mdash; the pill has always been a claim about the <i>list</i>, never about a box. What must not happen is a second, ownership-shaped reading arriving beside it; which is why the line above says <i>proxies</i> and not <i>7 you don't own</i>, a sentence that would be true of the buy list too and means something else there.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px;">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">the pair case &mdash; the one place the tag names its owner</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px;">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:9px;">
+            <span style="display:flex;gap:3px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--u);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--b);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--r);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);display:flex;gap:5px;align-items:baseline;min-width:0;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Kraum, Ludevic's Opus</span><span style="flex:none;">+</span><span style="flex:none;border-bottom:1px solid var(--border-strong);">Tymna the Weaver</span><span style="flex:none;">&middot; Grixis</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);background:color-mix(in oklab, var(--bg) 92%, transparent);flex:none;">P &middot; Tymna</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);">Two commanders, two independent flags, one caption row. A bare <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">P</span> there would be ambiguous about <i>which</i> commander, and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">P&times;2</span> is banned by ruling 5. <b style="color:var(--fg);font-weight:600;">So the pair case &mdash; and only the pair case &mdash; adds the short name after a middot.</b> Both proxied draws two tags in the same slot, in name order; the row already wraps. A single commander never pays for this, because there is nothing it could be confused with.</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">390px &middot; the mobile spine caption</div>
+        <div style="width:100%;max-width:358px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;margin-bottom:14px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:var(--fg);margin-bottom:6px;">HD Gods</div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+            <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:var(--w);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span><span style="width:9px;height:9px;border-radius:2px;background:var(--u);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span><span style="width:9px;height:9px;border-radius:2px;background:var(--b);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">Elenda, Saint of Dusk</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);background:color-mix(in oklab, var(--bg) 92%, transparent);flex:none;">P</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);">The mobile caption drops the identity <i>label</i> already (decision 18 of the spine handoff), so the tag lands in the space that word used to hold and the row does not grow. <b style="color:var(--fg);font-weight:600;">The tag is a mark, never a target</b> at either width &mdash; it has no hover, no focus ring and no tap behaviour, exactly like the availability marker and the buy tag. The whole band is already one trigger, and putting a 44px control inside it would be a second target for a gesture the reader is already making.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 3 ============================ -->
+  <section id="three" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;3 &middot; the card sheet &middot; mark and unmark</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">A square tick, because every deck really can have one.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">filter-panel.tsx</span> ships the ruling this feature needs and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">card_assignments</span> spent a round confirming it: <i>round for single-select &mdash; a square tick on a one-of-many list promises you can have two.</i> The assignment chooser went round because one copy cannot honour that promise. <b style="color:#EDE6D8;font-weight:600;">A proxy claims nothing, so here the promise is true</b>: every deck in the list can be proxying the same card at the same time, independently, and a square tick is the shape that says so. <b style="color:#EDE6D8;font-weight:600;">Same rule, opposite answer, because the supply constraint is gone.</b></p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px;margin-bottom:20px;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">a &middot; unmarked &mdash; the deck is short and shopping</div>
+        <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:18px 20px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:10px;">In this deck</div>
+            <div style="display:flex;align-items:flex-start;gap:11px;min-height:44px;">
+              <span style="flex:none;width:16px;height:16px;border-radius:2px;border:1px solid var(--fg-faint);margin-top:1px;"></span>
+              <span style="font-size:13.5px;color:var(--fg);line-height:1.45;">Run a proxy in <b style="font-weight:600;">HD Gods</b></span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);margin-top:10px;line-height:1.55;">Takes effect at once &mdash; a proxy is not part of a version.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">b &middot; marked &mdash; the slot is filled, the box untouched</div>
+        <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:18px 20px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:10px;">In this deck</div>
+            <div style="display:flex;align-items:flex-start;gap:11px;min-height:44px;">
+              <span style="flex:none;width:16px;height:16px;border-radius:2px;background:var(--fg-body);display:flex;align-items:center;justify-content:center;margin-top:1px;"><span style="font-size:11px;line-height:1;color:var(--bg);font-weight:700;">&#10003;</span></span>
+              <span style="font-size:13.5px;color:var(--fg);line-height:1.45;">Run a proxy in <b style="font-weight:600;">HD Gods</b></span>
+            </div>
+            <div style="font-size:12.5px;color:var(--fg-muted);margin-top:8px;line-height:1.6;">This deck's slot is filled. Nothing is claimed from your collection.</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);margin-top:10px;line-height:1.55;">Takes effect at once &mdash; a proxy is not part of a version.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">c &middot; no deck context &mdash; the block is absent</div>
+        <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:18px 20px;height:calc(100% - 26px);">
+          <div style="background:var(--bg);border:1px dashed var(--border-dashed);border-radius:10px;padding:16px 18px;display:flex;align-items:center;justify-content:center;min-height:104px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);text-align:center;line-height:1.6;">nothing renders here<br>(this dashed box is the canvas, not the UI)</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);margin-top:12px;line-height:1.6;">Opened from <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">/collection</span>, from a set cell, or from commander detail, there is no deck to proxy into &mdash; so there is no block, <b style="color:var(--fg);font-weight:600;">not a disabled one</b>. The <i>grey in place, never absent</i> rule protects a control's <i>state</i>; here there is no state, because there is no deck the control could be about.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Geometry is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">filter-panel.tsx</span>'s, taken unchanged:</b> 16px desktop / 18px phone, gap 11 / 12, 1px ring, row floor 44px at both widths. The only departure is the corner &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">radius 2</span>, the panel's own square-tick radius, against the chooser's <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">999px</span>.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The fill is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-body</span>, not <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--accent</span>, and the check is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--bg</span>.</b> Accent is reserved for <i>in use / to buy</i> on every surface this sheet can be opened from; spending it here would make a printed card the loudest thing in a receipt about real cardboard. Neutral is also what <a href="#nine">&sect;9</a> costs nothing to theme.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">No <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Apply</span>, no confirm, no undo receipt.</b> Ruling 2 says the toggle lands immediately, so a button would be a second act for a decision already made. Unmarking can put the deck back to short &mdash; the spec is explicit that this is the same arithmetic a pull already performs and <b style="color:var(--fg);font-weight:600;">needs no warning of its own</b>. Drawn as written: state (b) to state (a) is one tap with nothing in between.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Accessibility is native and nothing is bolted on.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">role="checkbox"</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">aria-checked</span>, the label naming the deck. The state line under it is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">aria-describedby</span> rather than part of the name, because it is the consequence rather than the control.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Where the block sits: under the availability receipt, never above it.</b> The receipt is what the card <i>is</i> across every deck; this is what <i>this</i> deck does about it. Reading the general before the particular is also what makes the marked state's sentence land &mdash; <i>nothing is claimed</i> only means something once you have just read what the claims are.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">One heading, not the deck's name.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">IN THIS DECK</span> in the sheet's shipped mono caption skin; the deck's name rides the label where it is a fact the reader must check, not a heading they must parse. The sheet is opened from the deck they are standing in, but a sheet paged through with Prev/Next is easy to lose your place in &mdash; so the name is <i>in the sentence you are about to act on</i>.</div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 4 ============================ -->
+  <section id="four" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;4 &middot; the receipt &middot; real holders and proxying decks together</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">The split still adds up. The proxies sit outside it.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">AvailabilityDetail</span> is a receipt and it has to add up: a total, one row per claiming deck with that deck's own ask, then <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">in use + free === owned</span>. <b style="color:#EDE6D8;font-weight:600;">A proxying deck was never in that arithmetic and must not enter it.</b> So it rides below the split, behind a hairline, in a list of its own &mdash; and that list has <b style="color:#EDE6D8;font-weight:600;">no right-hand column at all</b>, because <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">holds N</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">wants N</span> are quantities of cardboard and there is no cardboard here. The missing figure is the statement.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">a &middot; owned once, held by one deck, proxied by two</div>
+        <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:18px 20px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px 20px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In your collection</div>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;color:var(--accent);">&times;1</span></div>
+            <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">On your lists</div>
+            <div style="margin-top:6px;">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:2px 0;font-size:13px;color:var(--fg-body);"><span style="text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">Kinnan Ramp</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">holds 1</span></div>
+            </div>
+            <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">1 in use &middot; 0 free</div>
+            <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--border);">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Running a proxy</div>
+              <div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">
+                <div style="font-size:13px;color:var(--fg-body);padding:2px 0;"><span style="text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">HD Gods</span></div>
+                <div style="font-size:13px;color:var(--fg-body);padding:2px 0;"><span style="text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">Sidisi Graveyard</span></div>
+              </div>
+              <p style="margin:8px 0 0;font-size:12.5px;line-height:1.5;color:var(--fg-muted);">These lists are covered and ask nothing of your collection.</p>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.7;color:#A89B84;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">Ruling 1, visible in one figure.</b> Before the two proxies this card read <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">short 2</span> and Kinnan Ramp was told to go shopping for a card it physically holds. It now reads <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">1 in use &middot; 0 free</span> with no marker at all: three lists want it, one copy exists, <b style="color:#EDE6D8;font-weight:600;">and nobody is short.</b></div>
+      </div>
+
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">b &middot; the headline case &mdash; owned in none</div>
+        <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:18px 20px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px 20px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In your collection</div>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;color:var(--fg-muted);">none</span></div>
+            <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--border);">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Running a proxy</div>
+              <div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">
+                <div style="font-size:13px;color:var(--fg-body);padding:2px 0;"><span style="text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">HD Gods</span></div>
+              </div>
+              <p style="margin:8px 0 0;font-size:12.5px;line-height:1.5;color:var(--fg-muted);">This list is covered and asks nothing of your collection.</p>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.7;color:#A89B84;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">No claims, no split, no note &mdash; and the block still renders.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">loadCardDetail</span> skips availability entirely at <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">owned.length === 0</span>, which is why the spec puts the proxying decks on their own field loaded on <i>both</i> branches. This drawing is what that field buys: the one card in the feature's own worked example &mdash; too expensive to own, printed, and until now with nothing at all to say for itself.<br><br><b style="color:#EDE6D8;font-weight:600;">The total reads <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">none</span>, in <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-muted</span>, not <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">&times;0</span> in accent.</b> Straight out of the marker's own copy rule: <i>"none" rather than "0" &mdash; every neighbouring number on these surfaces is a quantity you can act on, and a leading 0 beside them reads as one more tally rather than as an absence.</i> Accent is for a quantity you have.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:14px;padding:22px 26px;margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Two lists, one heading skin, and the difference carried by structure.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">On your lists</span> has figures; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Running a proxy</span> does not. At a glance the second is obviously a different kind of fact, and no reader has to learn a legend to see it. <b style="color:var(--fg);font-weight:600;">Deliberately not a third verb</b> in the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">holds / wants</span> pair: those two are the whole finished-versus-unfinished model, and a <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">prints 1</span> beside them would put a quantity on a thing ruling 5 says has none.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The hairline above the block is the boundary of the arithmetic</b>, and it is the only rule in the receipt. Everything above it sums to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">owned</span>; everything below it is outside that sum by construction. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Availability.claims</span> keeps carrying real claimants only &mdash; folding proxies in would make <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">hardDecks</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">pullSources</span>, the markers and the pull authorization all start subtracting cardboard that does not exist.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Deck names are links here and only here</b>, matching the shipped claim rows: the accessible name is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Open the {deck} deck</span>, because the visible text is a bare proper noun that truncates. That link is also <b style="color:var(--fg);font-weight:600;">the route to unmarking</b> &mdash; see <a href="#six">&sect;6</a>, where the same reasoning keeps a control off the proxy list.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Ordering: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">created_at</span>, oldest first.</b> The claim rows above are the query's order and untouched. This list has exactly one natural order and the spec names it as load-bearing &mdash; <i>the only record of when a printed copy entered a deck</i> &mdash; so it is used rather than re-sorted by name.</div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 5 ============================ -->
+  <section id="five" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;5 &middot; the entry point &middot; filter-bar's rack</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Beside <span style="font-family:'IBM Plex Mono',monospace;font-size:21px;">By set</span>, and it differs on exactly one condition.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;">Both pills change <i>which surface you are on</i>, so both live in the rack's trailing cluster, before the view well and never inside it. The one difference is the one the spec names: <b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">By set</span> is gated on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">hasCollection</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Proxies</span> is not.</b> A set browser with no collection has nothing to say; a proxy list is most useful to exactly the player whose cards are all printed.</p>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">a &middot; desktop, with a collection &mdash; the trailing cluster, 1:1</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-rail);border:1px solid var(--border);border-radius:10px;">
+        <span style="flex:1;min-width:180px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">1,284 of 1,284 cards</span>
+        <a href="#five" style="display:inline-flex;align-items:center;gap:6px;height:46px;padding:0 10px;border-radius:8px;font-size:13px;color:var(--fg-body);border:1px solid var(--accent);text-decoration:none;"><span style="width:7px;height:7px;transform:rotate(45deg);background:var(--accent);display:inline-block;"></span>By set</a>
+        <a href="#five" style="display:inline-flex;align-items:center;gap:6px;height:46px;padding:0 10px;border-radius:8px;font-size:13px;color:var(--fg-body);border:1px solid var(--border-strong);text-decoration:none;"><span style="width:7px;height:7px;transform:rotate(45deg);border:1px solid var(--fg-muted);display:inline-block;"></span>Proxies</a>
+        <span style="display:inline-flex;align-items:center;height:46px;border-radius:8px;border:1px solid var(--border-strong);overflow:hidden;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:100%;background:var(--elevated);color:var(--fg);font-size:14px;">&#8803;</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:100%;color:var(--fg-muted);font-size:14px;">&#9638;</span>
+        </span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px 26px;margin-top:18px;">
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Same 46px pill, same 7px diamond &mdash; outlined instead of filled.</b> That is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">printing_picker</span>'s unset half again, the same move <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">set_collections</span> made for its <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">BY NAME</span> mark: not a new mark, the other half of one that exists. Hairline is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--border-strong</span>, not <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--accent</span>, because two accent hairlines side by side is two permanent off-default signals in 180px, and the second one stops meaning anything.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Ranking is deliberate and it is not disabled-ness.</b> The label is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-body</span>, identical to its neighbour's; only the edge and the diamond's fill are quieter. Disabled in this app is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-disabled</span> ink and no response, and nothing here is at that value &mdash; which matters most in the state below, where this pill is the only one on the row.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">A plain link, no query, no memory.</b> Same rule <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">By set</span> took after the Commanders/Discover warning: nothing carries across the route boundary in either direction. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">/collection</span>'s search, type, colour and availability filters are not applied to the proxy list, and the list has no filters to apply back.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px;">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">b &middot; no collection &mdash; the point of the feature</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-rail);border:1px solid var(--border);border-radius:10px;">
+          <span style="flex:1;min-width:120px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">no cards yet</span>
+          <a href="#five" style="display:inline-flex;align-items:center;gap:6px;height:46px;padding:0 10px;border-radius:8px;font-size:13px;color:var(--fg-body);border:1px solid var(--border-strong);text-decoration:none;"><span style="width:7px;height:7px;transform:rotate(45deg);border:1px solid var(--fg-muted);display:inline-block;"></span>Proxies</a>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:14px;"><b style="color:var(--fg);font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">By set</span> is gone, not greyed</b> &mdash; that is the shipped behaviour and it is unchanged. The view well goes too, with nothing to view. <b style="color:var(--fg);font-weight:600;">The row is not empty, and that is the whole reason this pill exists on it</b>: a player who owns no cards and prints their whole deck has one page in this app that is about them, and this is the door to it.</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">c &middot; 390px &mdash; two 44px pills, their own row</div>
+        <div style="width:100%;max-width:358px;padding:10px 12px;background:var(--surface-rail);border:1px solid var(--border);border-radius:10px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-bottom:9px;">1,284 cards</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <a href="#five" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 10px;border-radius:8px;font-size:13px;color:var(--fg-body);border:1px solid var(--accent);text-decoration:none;"><span style="width:7px;height:7px;transform:rotate(45deg);background:var(--accent);display:inline-block;"></span>By set</a>
+            <a href="#five" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 10px;border-radius:8px;font-size:13px;color:var(--fg-body);border:1px solid var(--border-strong);text-decoration:none;"><span style="width:7px;height:7px;transform:rotate(45deg);border:1px solid var(--fg-muted);display:inline-block;"></span>Proxies</a>
+            <span style="flex:none;display:inline-flex;align-items:center;min-height:44px;border-radius:8px;border:1px solid var(--border-strong);overflow:hidden;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;min-height:44px;background:var(--elevated);color:var(--fg);font-size:14px;">&#8803;</span>
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;min-height:44px;color:var(--fg-muted);font-size:14px;">&#9638;</span>
+            </span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:14px;"><b style="color:var(--fg);font-weight:600;">The result line takes its own line and the pills share the next one</b>, each <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">flex:1</span>. Two 44px targets and the view well do not fit beside a count at 390px, and a horizontally scrolling rack was already ruled out on this route. With no collection the row holds one full-width pill.</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">rejected, and why</div>
+        <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">A sixth nav tab.</b> The spec rules it out and the rack is the answer: five is the set, and this is a corner of the collection rather than a peer of it.<br><br><b style="color:var(--fg);font-weight:600;">A count on the pill</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Proxies &middot; 12</span>. Drawn and dropped, for the reason <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">By set &middot; 34</span> was dropped: it competes with the real count 40px to its left, and the number of cards you print is not a figure anyone is tracking toward zero.<br><br><b style="color:var(--fg);font-weight:600;">An entry from <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">/decks</span> as well.</b> Tempting &mdash; proxies are made in decks. But the list is <i>across</i> decks, and a door on a per-deck page would imply a per-deck list. One door, one list.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 6 ============================ -->
+  <section id="six" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;6 &middot; /collection/proxies &middot; populated</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">What to print, and what to buy for real later.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;">Two questions, one list. One row per card, the decks running it named beneath, and the price of owning it for real to the right. <b style="color:#EDE6D8;font-weight:600;">Newest first</b>, on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">deck_proxies.created_at</span> &mdash; the most recent decision is the one you are still thinking about.</p>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,390px);gap:22px;align-items:start;">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:24px 26px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--fg-faint);margin-bottom:10px;">Collection / Proxies</div>
+        <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 6px;color:var(--fg);">What you're printing</h3>
+        <p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:var(--fg-muted);max-width:620px;">9 cards across 4 decks. None of these is in your collection because of this page &mdash; a proxy fills a deck's slot and claims nothing.</p>
+
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 16px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:10px;margin-bottom:18px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:5px;">Cost to own them for real</div>
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:var(--accent);">$486.20</span>
+              <span style="font-size:12.5px;color:var(--fg-muted);">over 7 of the 9</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);margin-top:5px;">2 have never been stocked and are not in this figure</div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);">prices as of 12 Sep</div>
+        </div>
+
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;">
+          <li>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 12px;border-radius:10px;background:var(--surface-rail);">
+              <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);margin-top:6px;"></span>
+              <span style="flex:1;min-width:0;">
+                <span style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;"><span style="font-size:14px;color:var(--fg);">The Ozolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg-faint);">THB &middot; rare</span></span>
+                <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HD Gods</span><span style="color:var(--border-strong);">&middot;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">Sidisi Graveyard</span></span>
+              </span>
+              <span style="flex:none;text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg-body);">$41.80</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:3px;">2 decks</span></span>
+            </div>
+          </li>
+          <li>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 12px;border-radius:10px;background:var(--surface-rail);">
+              <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);margin-top:6px;"></span>
+              <span style="flex:1;min-width:0;">
+                <span style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;"><span style="font-size:14px;color:var(--fg);">Elenda, Saint of Dusk</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg-faint);">LCI &middot; mythic</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg-muted);border:1px solid var(--border-strong);">commander</span></span>
+                <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HD Gods</span></span>
+              </span>
+              <span style="flex:none;text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg-body);">$8.40</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:3px;">1 deck</span></span>
+            </div>
+          </li>
+          <li>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 12px;border-radius:10px;background:var(--surface-rail);">
+              <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);margin-top:6px;"></span>
+              <span style="flex:1;min-width:0;">
+                <span style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;"><span style="font-size:14px;color:var(--fg);">Gaea's Cradle</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg-faint);">USG &middot; rare</span></span>
+                <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">Kinnan Ramp</span></span>
+              </span>
+              <span style="flex:none;text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg-body);">$312.00</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:3px;">1 deck</span></span>
+            </div>
+          </li>
+          <li>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 12px;border-radius:10px;background:var(--surface-rail);">
+              <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);margin-top:6px;"></span>
+              <span style="flex:1;min-width:0;">
+                <span style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;"><span style="font-size:14px;color:var(--fg);">Imperial Seal</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg-faint);">PTK &middot; rare</span></span>
+                <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">Sidisi Graveyard</span></span>
+              </span>
+              <span style="flex:none;text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg-locked);">no stock</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:3px;">1 deck</span></span>
+            </div>
+          </li>
+        </ul>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);margin-top:12px;">&hellip; 5 more cards</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:12px;">the row, decided</div>
+          <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The dot is on this row too, and it is always hollow.</b> Every card on this page is a card the player does not own &mdash; that is what makes the page coherent, and repeating the mark here is what makes it the <i>same</i> statement as the deck row's rather than a second vocabulary.<br><br><b style="color:var(--fg);font-weight:600;">The decks are named, not counted</b> &mdash; naming them is the whole ask in ruling 4. The count on the right is a second reading of the same fact, and it earns its place only because it is the one thing that sorts: a card three decks print is a different buying decision from one deck's.<br><br><b style="color:var(--fg);font-weight:600;">No proxy tag on these rows.</b> Every row is a proxy; a tag on all of them is a legend, not a mark. The tag exists to tell one row from its neighbours, and here it has no neighbours to differ from.<br><br><b style="color:var(--fg);font-weight:600;">A <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">commander</span> plate where the proxy is a commander</b>, in the neutral hairline skin, because ruling 3's case is invisible otherwise &mdash; a legend in this list looks like any other card.</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:12px;">the money, and its stated gap</div>
+          <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The figure always states what it covers</b> &mdash; <i>$486.20 over 7 of the 9</i>, with the unpriced named underneath. Never a total that silently treats an unstocked card as zero. Straight from <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">set_collections</span>' cost strip; same sentence shape, same <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--accent</span> figure, same <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-locked</span> caveat line.<br><br><b style="color:var(--fg);font-weight:600;">The row price is a bare figure, not a buy tag.</b> A <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">buy</span> plate here would contradict the model out loud: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">isShoppingCard</span> has just removed every one of these from every Shopping list, and drawing the tag they were removed from would put the two surfaces in direct disagreement. The figure answers <i>what would it cost</i>; the tag would claim <i>you have to buy this</i>, which is exactly what a proxy says you do not.<br><br><b style="color:var(--fg);font-weight:600;">And no <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Send N to ManaPool</span>.</b> The cart builder assumes a shopping list; this is a list of things the player has decided not to buy. The figure is a reference, not a basket.</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:14px;padding:22px 24px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--warning);margin-bottom:12px;">read-only, on purpose &mdash; and this one is worth ruling on</div>
+          <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">There is no unmark control on this page.</b> The row opens the card sheet with <i>no</i> deck id &mdash; a card here belongs to several decks, and the sheet's control is per deck &mdash; so the block in <a href="#three">&sect;3</a> correctly does not render. Unmarking happens where the proxy lives, and <b style="color:var(--fg);font-weight:600;">the deck names on each row are the links that get you there.</b><br><br>The alternative is expressible: the row knows every deck id, so it could carry one small control per named deck. It is not drawn, because that puts <i>N</i> state-changing controls inside one row of a list whose job is to be read &mdash; and because the most destructive version of this page is one where a mis-tap silently puts a deck back on the shopping list. <b style="color:var(--fg);font-weight:600;">Flagged for Product rather than settled:</b> if the print-run workflow turns out to involve pruning the list in place, this is the decision to reopen first.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 7 ============================ -->
+  <section id="seven" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;7 &middot; /collection/proxies &middot; empty, and the all-printed player</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Three branches, and only one of them is a gap.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;">The interesting state is not the empty one. It is the third: <b style="color:#EDE6D8;font-weight:600;">a full list and no collection at all</b> &mdash; the player the spec put the ungated link there for. Nothing on that page may read as broken, and nothing on it may offer to fix the collection.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">a &middot; nothing proxied yet</div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:28px 22px;text-align:center;background:var(--surface-sunken);">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:var(--fg);margin-bottom:8px;">You're not printing anything</div>
+          <div style="font-size:13px;line-height:1.6;color:var(--fg-muted);max-width:330px;margin:0 auto 16px;">When a card in a deck is too expensive to buy, or two decks want the one copy you have, mark one of them as a proxy from the card's sheet. It lands here.</div>
+          <a href="#seven" style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:8px;font-size:13px;color:var(--fg-body);border:1px solid var(--border-strong);text-decoration:none;">Go to your decks</a>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:14px;"><b style="color:var(--fg);font-weight:600;">The body says where the act lives</b>, because there is no way to start one from here and an empty state that does not say where to go is a dead end. A <b style="color:var(--fg);font-weight:600;">ghost</b> button, not the page's filled one: this page has no primary act, and spending the one filled button on <i>leave</i> would be strange.</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">b &middot; no proxies, no decks either</div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:28px 22px;text-align:center;background:var(--surface-sunken);">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:var(--fg);margin-bottom:8px;">Proxies start in a deck</div>
+          <div style="font-size:13px;line-height:1.6;color:var(--fg-muted);max-width:330px;margin:0 auto 16px;">A proxy is one deck's answer about one slot, so there has to be a deck first. Build one and this page fills itself in.</div>
+          <a href="#seven" style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:8px;font-size:13px;color:var(--bg);background:var(--fg);text-decoration:none;font-weight:600;">Build a deck</a>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:14px;"><b style="color:var(--fg);font-weight:600;">A different heading, because it is a different fact.</b> Branch (a) is <i>you have not done this yet</i>; (b) is <i>you cannot do this yet</i>, and an empty state that names the wrong precondition sends the reader somewhere that will not help. This is the only branch with a filled button, because here there genuinely is one next act. <b style="color:var(--fg);font-weight:600;">Neither branch mentions your collection</b>, which is the rule this route is built on.</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;">c &middot; a full list, and no collection &mdash; the point</div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:16px 16px;background:var(--surface-sunken);">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:var(--fg);margin-bottom:5px;">What you're printing</div>
+          <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);margin-bottom:12px;">99 cards across 1 deck.</div>
+          <div style="padding:11px 12px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:5px;">Cost to own them for real</div>
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:17px;color:var(--accent);">$1,902.60</span><span style="font-size:12.5px;color:var(--fg-muted);">over 94 of the 99</span></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:14px;"><b style="color:var(--fg);font-weight:600;">The page renders exactly as it does for anyone else</b>, and the subtitle drops its second clause: the <i>none of these is in your collection</i> sentence is a clarification for someone who has one. <b style="color:var(--fg);font-weight:600;">No upload prompt, no banner, no empty-collection chrome anywhere on this route.</b> The prices still work &mdash; a price is a catalogue fact, not a collection fact &mdash; which is what makes the figure the most useful number this player has seen in the app.<br><br>Their deck reads <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Complete</span> and <a href="#two">&sect;2</a>'s line under the bar reads <i>99 of these are proxies</i>. <b style="color:var(--fg);font-weight:600;">Both are true, and together they are the whole feature in two sentences.</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 8 ============================ -->
+  <section id="eight" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;8 &middot; the language contract</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">The app has one job here: never say you own it.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">lib/copy/availability.ts</span> already states the governing rule in its header &mdash; <i>nothing here may assert where a physical card is: we describe LISTS, never boxes, binders or sleeves.</i> A proxy is the first feature that can break it, because it is the first thing that fills a slot with no card behind it. Every string in this package is checked against the table below.</p>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:6px 0;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:minmax(150px,1fr) minmax(190px,1.3fr) minmax(190px,1.3fr);gap:0;">
+        <div style="padding:13px 20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">Where</div>
+        <div style="padding:13px 20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">Ships</div>
+        <div style="padding:13px 20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">Refused, and why</div>
+
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-body);border-bottom:1px solid var(--border);">The ownership dot</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;">Hollow, dashed, unchanged &mdash; it reads <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">card.owned</span> and that is still false.</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;">A filled dot, a half-filled dot, a third dot state. Any of them makes the collection's own glyph answer a question about a deck.</div>
+
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-body);border-bottom:1px solid var(--border);">The tag</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">P</span>, decoded by the key and by its accessible name as <i>proxy</i> &mdash; which names the cause, the thing a player can change.</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">have it</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">sorted</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">covered</span>. The first two are ownership in a shorter word; the third states only the effect.</div>
+
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-body);border-bottom:1px solid var(--border);">The sheet's marked state</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;"><i>This deck's slot is filled. Nothing is claimed from your collection.</i> Two clauses: what changed, and what did not.</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;"><i>You're covered</i> alone. True and incomplete &mdash; the second clause is the one that stops a reader inferring a purchase they did not make.</div>
+
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-body);border-bottom:1px solid var(--border);">The receipt's second list</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;"><i>Running a proxy</i>, and no figure beside any row.</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">prints 1</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">holds a proxy</span>. Both print a quantity of an object that does not exist, against ruling 5.</div>
+
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-body);border-bottom:1px solid var(--border);">The deck's status</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Complete</span>, plus <i>7 of these are proxies</i> under the bar.</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.6;">A new <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Complete&#42;</span> status, or a sixth pill. A proxied deck is finished; inventing a lesser word for it is a judgment the app has no business making.</div>
+
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-body);">The list's page title</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><i>What you're printing</i> &mdash; an act the player performs, stated in their own words.</div>
+        <div style="padding:13px 20px;font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><i>Cards you don't own</i>. Describes half the collection, not this list, and turns a deliberate decision into a deficiency.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 11 ============================ -->
+  <section id="eleven" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;11 &middot; R2 &middot; the /decks tile</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Two Complete decks, and only one of them is cardboard.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 12px;">On the deck page the pill has company &mdash; ninety-nine rows of marks under it, and a key that decodes them. <b style="color:#EDE6D8;font-weight:600;">On the grid it stands alone.</b> Two tiles, both <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Complete</span>, both a full green bar and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">99 / 99</span>, and nothing on either that says one of them is seven cards of printer paper. That is the surface decision 6 was written for.</p>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;"><b style="color:#EDE6D8;font-weight:600;">It takes the tile's existing detail slot</b> &mdash; the slot <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">detailFor</span> already owns, which returns <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">null</span> for <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Complete</span> because <i>all owned</i> was cut as a third way of saying finished. <b style="color:#EDE6D8;font-weight:600;">A proxy count is the one thing <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Complete</span> has to say that the bar and the count do not carry between them</b> &mdash; which is exactly the test that cut the old figure, passed rather than failed. No new row, no new grid template, no new token.</p>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:24px 26px;margin-bottom:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">desktop &middot; the pair the brief names, 1:1 in a 420px column</div>
+      <div style="font-size:12.5px;color:var(--fg-muted);margin-bottom:18px;line-height:1.6;max-width:1000px;">Left: seven of its cards are printed. Right: all ninety-nine are in a box. Every other pixel on the two tiles is identical, which is the point &mdash; and the line is the only thing that differs.</div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;max-width:900px;">
+        <div style="border:1px solid var(--border);border-radius:14px;background:var(--surface-inset);overflow:hidden;">
+          <div style="position:relative;height:210px;background:linear-gradient(180deg, var(--elevated) 0%, var(--surface-raised) 60%, var(--surface) 100%);">
+            <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(135deg, var(--elevated-hover) 0 10px, var(--surface-raised) 10px 20px);opacity:0.5;"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg, transparent 40%, var(--surface-inset) 96%);"></div>
+            <div style="position:absolute;left:11px;top:10px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">art crop</div>
+            <div style="position:absolute;inset-inline:0;bottom:0;padding:0 56px 10px 13px;">
+              <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:var(--fg);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">HD Gods</div>
+              <div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.25;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Elenda, Saint of Dusk &middot; Esper</div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:11px 13px 13px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px 8px;">
+            <span style="grid-area:1 / 1;height:22px;display:inline-flex;align-items:center;border-radius:6px;padding:0 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;color:var(--success);border:1px solid var(--success);">Complete</span>
+            <span style="grid-area:1 / 2;height:3px;border-radius:999px;background:var(--border);position:relative;"><span style="position:absolute;inset:0;border-radius:999px;background:var(--success);"></span></span>
+            <span style="grid-area:1 / 3;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">99 / 99</span>
+            <span style="grid-area:2 / 1 / 3 / 3;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">7 proxies</span>
+            <span style="grid-area:2 / 3;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">2 days ago</span>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--border);border-radius:14px;background:var(--surface-inset);overflow:hidden;">
+          <div style="position:relative;height:210px;background:linear-gradient(180deg, var(--elevated) 0%, var(--surface-raised) 60%, var(--surface) 100%);">
+            <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(135deg, var(--elevated-hover) 0 10px, var(--surface-raised) 10px 20px);opacity:0.5;"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg, transparent 40%, var(--surface-inset) 96%);"></div>
+            <div style="position:absolute;left:11px;top:10px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">art crop</div>
+            <div style="position:absolute;inset-inline:0;bottom:0;padding:0 56px 10px 13px;">
+              <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:var(--fg);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Kinnan Ramp</div>
+              <div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.25;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Kinnan, Bonder Prodigy &middot; Simic</div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:11px 13px 13px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px 8px;">
+            <span style="grid-area:1 / 1;height:22px;display:inline-flex;align-items:center;border-radius:6px;padding:0 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;color:var(--success);border:1px solid var(--success);">Complete</span>
+            <span style="grid-area:1 / 2;height:3px;border-radius:999px;background:var(--border);position:relative;"><span style="position:absolute;inset:0;border-radius:999px;background:var(--success);"></span></span>
+            <span style="grid-area:1 / 3;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">99 / 99</span>
+            <span style="grid-area:2 / 3;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">6 days ago</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px 26px;margin-top:20px;">
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">7 proxies</span>, not R1's sentence.</b> The deck page says <i>7 of these are proxies</i> across a wide band; the tile's detail slot is a truncating 10.5px cell in a column that is 189px at 640px of viewport. <b style="color:var(--fg);font-weight:600;">Its idiom is figure-plus-noun</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">4 over</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">3 lines unresolved</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">3 in use elsewhere</span> &mdash; and the same fact takes the density of the surface it is on. Same word in both, so nobody has to learn two.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The right-hand tile is unchanged.</b> Absent at zero means the row is absent, so a deck with no proxies draws exactly what it draws today and the grid's rhythm is untouched for most decks. <b style="color:var(--fg);font-weight:600;">The cost is honest and worth naming:</b> a Complete deck with proxies grows by one row &mdash; a 9px gap plus a 10.5px line &mdash; which is precisely the cost the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Building</span> + <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">inUseElsewhere</span> clause already accepted for its own tile.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The accessible name needs no new work at all</b>, which is the dividend of using the existing slot. The overlay link's name is composed by <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">cardAria(name, identity, status, count, detail, lastPlayed)</span>, so the line arrives in it <i>in position</i> &mdash; a reader hears <i>&hellip; Complete, 99 / 99, 7 proxies</i>. The qualifier lands directly after the word it qualifies, which is where a sighted reader's eye goes too.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:22px;align-items:start;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">390px &middot; 168px band, detail takes the full row</div>
+        <div style="width:100%;max-width:300px;border:1px solid var(--border);border-radius:14px;background:var(--surface-inset);overflow:hidden;">
+          <div style="position:relative;height:168px;background:linear-gradient(180deg, var(--elevated) 0%, var(--surface-raised) 60%, var(--surface) 100%);">
+            <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(135deg, var(--elevated-hover) 0 10px, var(--surface-raised) 10px 20px);opacity:0.5;"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg, transparent 40%, var(--surface-inset) 96%);"></div>
+            <div style="position:absolute;inset-inline:0;bottom:0;padding:0 56px 10px 13px;">
+              <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:var(--fg);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">HD Gods</div>
+              <div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.25;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Elenda, Saint of Dusk &middot; Esper</div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:11px 13px 13px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px 8px;">
+            <span style="grid-area:1 / 1;height:22px;display:inline-flex;align-items:center;border-radius:6px;padding:0 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;color:var(--success);border:1px solid var(--success);">Complete</span>
+            <span style="grid-area:1 / 2;height:3px;border-radius:999px;background:var(--border);position:relative;"><span style="position:absolute;inset:0;border-radius:999px;background:var(--success);"></span></span>
+            <span style="grid-area:1 / 3;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg);">99 / 99</span>
+            <span style="grid-area:2 / 1 / 3 / 4;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">7 proxies</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);margin-top:14px;">The phone template is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">'detail detail detail'</span> and last-played is desktop-only, so the line takes the whole row at 11px. <b style="color:var(--fg);font-weight:600;">Both templates already exist</b> &mdash; this state is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">detail + hasLastPlayed</span> pair, reached by a status that could not reach it before.</div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--success);margin-bottom:12px;">&ldquo;takes no colour&rdquo; is structural here, not a rule to remember</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--fg-muted);">The slot is coloured by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DETAIL_COLOR[status]</span>, so a naive addition would inherit <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span> on an Over deck and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> on an Unresolved one &mdash; a proxy count in alarm ink, which R1 forbids.<br><br><b style="color:var(--fg);font-weight:600;">It cannot happen, and no new rule is needed to stop it.</b> The line is a fallback into the <i>null</i> branch, exactly as the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">inUseElsewhere</span> clause is &mdash; it never displaces a figure. And <b style="color:var(--fg);font-weight:600;">every status that would lend it a warning colour already has a figure in that slot:</b> Over has <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">4 over</span>, Unresolved has <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">3 lines unresolved</span>, To buy has its roll-up. The statuses that reach the fallback &mdash; Complete, Building, Draft &mdash; are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> in the map, all three.<br><br><b style="color:var(--fg);font-weight:600;">So the constraint is enforced by the precedence, not by a colour override</b>, and it holds for any status added later: a status with something to say keeps saying it, and one with nothing to say has nothing to lend.<br><br><div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;"><b style="color:var(--fg);font-weight:600;">One ordering to state, because two fallbacks now share the branch.</b> Building keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">3 in use elsewhere</span> when it has one: that clause answers <i>what is holding this deck up</i>, and a proxy is not holding anything up. <b style="color:var(--fg);font-weight:600;">The proxy line ranks second</b> &mdash; which costs nothing on Complete, the tile the brief is about, because Complete cannot reach the first clause at all.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 12 ============================ -->
+  <section id="twelve" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;12 &middot; R2 &middot; the review row's bucket</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">A chip, not a heading &mdash; and silence here would be the lie.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 12px;">Gap report item 5 asked for a word on a bucket. <b style="color:#EDE6D8;font-weight:600;">The bucket headings do not exist.</b> Deck-versioning's R2 ruled availability <i>a per-row treatment rather than a grouping</i>; <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">review.bucketFree</span> and its siblings were deleted, a test pins their absence (<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">"bucketFree" in copy.review === false</span>), and the buckets survive as <b style="color:#EDE6D8;font-weight:600;">counts and per-row chips</b>. So the word is a fourth branch of <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">bucketWord</span>, in <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">chipBuy</span>'s skin.</p>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;">And that surface's own precedent argues for the opposite of what it looks like it argues for. <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">bucketWord</span> returns <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">null</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">free</span> and at a null bucket &mdash; so silence is a shipped, legitimate state, and a proxied add could plausibly borrow it. <b style="color:#EDE6D8;font-weight:600;">It must not.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">free</span> means <i>your collection has a spare copy for this</i>. Drawing a proxied add the same way makes the app say a copy exists in a box, on the one surface that exists to tell a player what a commit will cost them.</p>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:24px 26px;margin-bottom:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">coming in &middot; four adds, one of each bucket &middot; desktop 40px rows</div>
+      <div style="font-size:12.5px;color:var(--fg-muted);margin-bottom:16px;line-height:1.6;max-width:1000px;">The chip rides <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">bucketWord</span>'s existing slot, before the trailing cost column. Row 4 is the new branch; the other three are shipped, drawn for comparison.</div>
+
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div style="display:flex;align-items:center;gap:9px;min-height:40px;padding:0 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border);">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;background:var(--success);"></span>
+          <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Sol Ring</span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);text-align:right;min-width:54px;">&#9679;</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;min-height:40px;padding:0 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border);">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Jeweled Lotus</span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;border-radius:999px;padding:3px 8px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">to buy</span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);text-align:right;min-width:54px;">&#9679;</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;min-height:40px;padding:0 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border);">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;background:var(--accent);"></span>
+          <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Gaea's Cradle</span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;border-radius:999px;padding:3px 8px;color:var(--accent);background:color-mix(in oklab, var(--accent) 13%, transparent);">can be pulled</span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);text-align:right;min-width:54px;">&#9679;</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;min-height:40px;padding:0 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border-strong);">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">The Ozolith</span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;border-radius:999px;padding:3px 8px;color:var(--fg-body);border:1px dashed var(--fg-locked);">proxied</span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);text-align:right;min-width:54px;">&#9679;</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px 26px;margin-top:20px;">
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">proxied</span>, one word.</b> The two shipped chips name <i>what you can do about it</i> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">to buy</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">can be pulled</span>. The proxy answer is that there is nothing to do, so the chip names the cause instead, which is R1's ruling on the word and the reason <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">covered</span> lost there too. It also sits beside <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">commander</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">deck in draft</span>, the page's other two one-fact tags.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The chip's skin is the mark's, not a bucket's.</b> The two bucket chips carry a tinted plate in the bucket's own hue; this one takes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-body</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">1px dashed var(--fg-locked)</span> &mdash; the pill radius of its neighbours, the edge of the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">P</span> mark. Same reason as R1: those hues are money and pulls, this is neither, and <b style="color:var(--fg);font-weight:600;">the dashed edge is already the app's word for <i>not settled cardboard</i></b>. A reader who has seen the decklist recognises it.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The ownership dot stays hollow and dashed</b>, as on every other surface in this package &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">OwnershipDot</span> reads <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">card.owned</span> and a proxy changes nothing about the collection. Note row 2: <b style="color:var(--fg);font-weight:600;">the to-buy add and the proxied add have the same dot</b>, and the chip is the only thing between them. That is the deck row's arrangement exactly, one surface over.</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Never rendered:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">proxiedA11y(card)</span> &mdash; <i>&ldquo;The Ozolith is a proxy in this deck, so this add asks nothing of your collection.&rdquo;</i> It rides <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">describedBy</span>, which is the slot this page already uses to carry the availability word <i>&ldquo;so the buy tag's colour is not the only statement of it&rdquo;</i>, and it is shaped like <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">commanderGuardA11y</span>: full sentence, names the card, offers no action.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:14px;padding:22px 26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:18px 26px;">
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">The word is not the only thing this row needs, and the rest is a defect rather than a design.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">AvailabilitySlot</span> opens <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">if (buyable &amp;&amp; (!card.owned || &hellip;)) return &lt;BuyTag /&gt;</span>. A proxied add is unowned, so <b style="color:var(--fg);font-weight:600;">as shipped this row draws a buy tag and a price for a card the player has decided not to buy</b> &mdash; R1's mutual-exclusion constraint, arriving on a third surface nobody had drawn. The slot must test proxied first, which is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">deckRowTag</span>'s ruling applied here rather than a second convention.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Three figures must exclude the proxied add, and each has a shipped precedent for how.</b> The footer's <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">buy</span>, the commit sheet's total, and the pending banner's <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">money</span> sentence &mdash; <i>N of the M are short of spare copies</i>. A proxied add is not short of anything; it asks for nothing. Billing it is precisely what &ldquo;must not be billed&rdquo; means, and it is the same class of error as printing <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">0 to buy</span> over a failed claim read, which this file already refuses in four places.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">One thing I am flagging rather than deciding:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">groupInBreakdown(free, sleeved, buy)</span> is a shipped three-term string, and a proxied add is in none of the three &mdash; so the terms stop summing to the group's count. <b style="color:var(--fg);font-weight:600;">My recommendation is to leave it under-summing rather than add a fourth term:</b> each term stays true, and it is the same posture as <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">footerUnknown</span> dropping a term rather than printing a figure nobody can stand behind. A fourth term is a change to a shipped surface R2 was not given &mdash; the reason <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">stamp.columnHeader</span> was dropped from that same file.</div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 9 ============================ -->
+  <section id="nine" style="max-width:1400px;margin:0 0 44px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;9 &middot; all six themes</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Spending no colour is what makes this free.</h2>
+    <p style="max-width:1020px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;">The proxied row in all six <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">[data-theme]</span> blocks, drawn from the real tokens in <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">src/app/globals.css</span>. Every value in the feature is a text-ramp or chrome token, so <b style="color:#EDE6D8;font-weight:600;">no per-theme variant exists anywhere in this package</b> &mdash; no geometry changes, no state drawn differently, nothing to re-measure when a seventh theme lands. The one number worth checking is the dashed edge against the row's own ground, and it clears the 3:1 non-text floor in all six by construction, because <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--fg-locked</span> is a text-ramp token rather than a border token.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(412px,1fr));gap:16px;">
+      <div data-theme="amonkhet" style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:var(--fg);">Low Sun</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">amonkhet &middot; dashed edge 3.16:1</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;min-height:34px;background:var(--surface-rail);border-radius:6px;">
+          <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">The Ozolith</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span>
+          <span style="flex:none;font-size:13px;color:var(--border-dashed);padding-left:6px;">&#10005;</span>
+        </div>
+      </div>
+      <div data-theme="kamigawa" style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:var(--fg);">Neon Rain</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">kamigawa &middot; dashed edge 3.14:1</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;min-height:34px;background:var(--surface-rail);border-radius:6px;">
+          <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">The Ozolith</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span>
+          <span style="flex:none;font-size:13px;color:var(--border-dashed);padding-left:6px;">&#10005;</span>
+        </div>
+      </div>
+      <div data-theme="ixalan" style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:var(--fg);">Canopy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">ixalan &middot; dashed edge 3.35:1</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;min-height:34px;background:var(--surface-rail);border-radius:6px;">
+          <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">The Ozolith</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span>
+          <span style="flex:none;font-size:13px;color:var(--border-dashed);padding-left:6px;">&#10005;</span>
+        </div>
+      </div>
+      <div data-theme="phyrexia" style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:var(--fg);">Oil Haze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">phyrexia &middot; dashed edge 3.14:1</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;min-height:34px;background:var(--surface-rail);border-radius:6px;">
+          <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">The Ozolith</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span>
+          <span style="flex:none;font-size:13px;color:var(--border-dashed);padding-left:6px;">&#10005;</span>
+        </div>
+      </div>
+      <div data-theme="eldraine" style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:var(--fg);">Witching Hour</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">eldraine &middot; dashed edge 3.26:1</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;min-height:34px;background:var(--surface-rail);border-radius:6px;">
+          <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">The Ozolith</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span>
+          <span style="flex:none;font-size:13px;color:var(--border-dashed);padding-left:6px;">&#10005;</span>
+        </div>
+      </div>
+      <div data-theme="kaldheim" style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:var(--fg);">First Frost</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">kaldheim &middot; dashed edge 3.25:1</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;min-height:34px;background:var(--surface-rail);border-radius:6px;">
+          <span style="flex:none;width:8px;height:8px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+          <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">The Ozolith</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--fg);font-weight:600;border:1px dashed var(--fg-locked);flex:none;">P</span>
+          <span style="flex:none;font-size:13px;color:var(--border-dashed);padding-left:6px;">&#10005;</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 26px;margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Measured against <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface-rail</span>, the decklist row's ground</b>, which is the darkest surface the tag ever sits on. On <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface-sunken</span> the figures are within 0.1 of these. The band in <a href="#two">&sect;2</a> is the one exception, and it buys its ratio back with the 92% scrim rather than with a different token.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">First Frost is the theme to look at twice.</b> Its ink ramp is the narrowest of the six &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">#C6D2D3</span> against <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-body</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">#B3C0C2</span> &mdash; which the glyph makes irrelevant and instructive at once: <b style="color:var(--fg);font-weight:600;">the mark and the card name are now the same token</b>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg</span>, so no theme can tell them apart by ink and none has to. <b style="color:var(--fg);font-weight:600;">The box is what says <i>mark</i>, and the ink is only there to be read</b> &mdash; which is the third and strongest reason the dashed edge was worth a token argument, and the reason the narrowest ramp of the six costs this feature nothing.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Greyscale and forced colours both survive</b>, and by the same property: nothing in the feature is distinguished by hue in the first place. Under <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">forced-colors: active</span> the dashed border is a system border and the word is system text &mdash; which is still a bordered box with <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">P</span> in it, decoded by a key that is system text too. Compare the buy tag, whose whole signal is a warning-coloured plate.</div>
+    </div>
+  </section>
+
+  <!-- ============================ SECTION 10 ============================ -->
+  <section id="ten" style="max-width:1400px;margin:0 0 20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">&sect;10 &middot; the component contract</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 18px;color:#EDE6D8;">Four components, and the four things most likely to go subtly wrong.</h2>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:minmax(150px,0.8fr) minmax(280px,2.2fr);">
+        <div style="padding:13px 20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">Component</div>
+        <div style="padding:13px 20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">Spec</div>
+
+        <div style="padding:14px 20px;font-size:12.5px;color:var(--fg-body);border-bottom:1px solid var(--border);"><b style="color:var(--fg);font-weight:600;">ProxyTag</b><br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">decks/proxy-tag.tsx</span></div>
+        <div style="padding:14px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.65;">Mono, radius 4, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">px 5 / py 1</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">9px</span> phone / <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">9.5px</span> desktop, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">flex-none</span>. Glyph <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">P</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg</span> weight 600, edge <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">1px dashed var(--fg-locked)</span>, no background. <b style="color:var(--fg);font-weight:600;">Two variants, like BuyTag:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">row</span> (no plate) and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">band</span> (the unconditional 92% <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--bg</span> scrim, for the commander caption over art). <b style="color:var(--fg);font-weight:600;">One glyph, one density, and no word on the row</b> &mdash; the word is carried by the key, the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">title</span> and an <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">sr-only</span> span, which is exactly how <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">BuyTag density="collapsed"</span> already speaks its own glyph. No price, no tail, no quantity. Never a tap target.</div>
+
+        <div style="padding:14px 20px;font-size:12.5px;color:var(--fg-body);border-bottom:1px solid var(--border);"><b style="color:var(--fg);font-weight:600;">deckRowTag</b><br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">lib/decks/row-tag.ts</span></div>
+        <div style="padding:14px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.65;">One function returning <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">"proxy" | "buy" | null</span>, and the row renders whatever it returns into one slot. <b style="color:var(--fg);font-weight:600;">This is the exclusivity constraint, expressed as a type rather than as a convention</b> &mdash; two sibling conditionals cannot be reviewed into safety, and the co-occurrence they permit is the one state in this feature nobody has drawn.</div>
+
+        <div style="padding:14px 20px;font-size:12.5px;color:var(--fg-body);border-bottom:1px solid var(--border);"><b style="color:var(--fg);font-weight:600;">ProxyControl</b><br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">cards/proxy-control.tsx</span></div>
+        <div style="padding:14px 20px;font-size:12.5px;color:var(--fg-muted);border-bottom:1px solid var(--border);line-height:1.65;">Renders <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">null</span> without a <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">deckId</span> &mdash; the absence is the design, not a guard. Block chrome is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">AvailabilityDetail</span>'s verbatim (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--bg</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">1px --border</span>, radius 10, the mono caption heading), so the two read as one column. Tick 16/18px, radius 2, ring <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">1px --fg-faint</span>, checked fill <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-body</span> with a <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--bg</span> check. Row floor 44px at both widths. Optimistic, no confirm, no spinner &mdash; the tick is the receipt.</div>
+
+        <div style="padding:14px 20px;font-size:12.5px;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">ProxyRow</b><br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">proxies/proxy-row.tsx</span></div>
+        <div style="padding:14px 20px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;">The set-index row's shell: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">rounded-[10px] px-[12px] py-[11px] min-h-[44px]</span>, hover <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--elevated</span>. The card name opens the sheet; <b style="color:var(--fg);font-weight:600;">the deck names are separate links and must not nest inside it</b> &mdash; one row, several targets, so the row is a container and never a button. The price column is right-aligned mono at <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-body</span>, with <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">no stock</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-locked</span> holding the slot's height.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 26px;margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Copy lives in <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">src/lib/copy/proxies.ts</span></b> &mdash; see <a href="deck-proxies · copy strings.ts">the export</a>. One block, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">proxyCopy</span>, with the rack's label in <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">entryPoint</span> beside <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">setPageCopy.entryPoint</span>'s shape.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">One count function.</b> The subtitle's <i>9 cards across 4 decks</i>, the cost strip's denominator and the tail's <i>&hellip; 5 more</i> are three readings of one computation. Do not count in three places &mdash; the same instruction the set page shipped with, for the same reason.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Mock data.</b> The Ozolith in HD Gods is the spec's own example; every other card, deck, figure and date in this canvas is invented and internally consistent. The art band in <a href="#two">&sect;2</a> is a striped stand-in for <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">art_crop_uri</span>.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:var(--fg-muted);"><b style="color:var(--fg);font-weight:600;">Revalidation, restated from the spec because it is a visible bug if missed:</b> a toggle moves figures on <i>other decks'</i> detail pages and changes this new list, so <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">claimSurfaces</span> gains the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">/decks/[id]</span> pattern and the literal <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">/collection/proxies</span>. Without the first, <a href="#four">&sect;4</a>'s ruling-1 drawing is a screen a player never sees update.</div>
+    </div>
+  </section>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;amonkhet&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;eldraine&quot;,&quot;kaldheim&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;}}"></script>
+</body>
+</html>

@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; border-bottom: 1px solid rgba(207,135,69,0.4); }
+  a:hover { color: #DE9757; border-bottom-color: #DE9757; }
+  /* The 37-key contract, transcribed from src/app/globals.css. Low Sun on :root
+     so the page paints its default before the theme prop resolves. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+<!-- ═══════════════════════════ HEAD ═══════════════════════════ -->
+<section style="max-width:1400px;margin:0 0 30px;">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">One filter chassis &middot; four routes, three implementations, one frame</div>
+  </div>
+  <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 12px;color:#EDE6D8;line-height:1.15;">One bar above the content, at five dimensions.</h1>
+  <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;">A new chassis for <b style="color:#EDE6D8;font-weight:600;">/commanders</b>, <b style="color:#EDE6D8;font-weight:600;">/discover</b>, <b style="color:#EDE6D8;font-weight:600;">/decks</b> and <b style="color:#EDE6D8;font-weight:600;">/collection</b> &mdash; three rows, one control vocabulary, per-surface dimensions. Drawn against <b style="color:#EDE6D8;font-weight:600;">/decks</b> first, at its five (<a href="#two">&sect;2</a>), because it carries the most; the other three are proved against it in <a href="#five">&sect;5</a> rather than drawn independently.</p>
+  <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 18px;text-wrap:pretty;">The one thing that is <i>not</i> <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">var(--token)</span> anywhere in this file is the mana pip, and <a href="#four">&sect;4</a> is about why that is correct and what it costs the surround. Everything else inside every frame is a token, as set collections established.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px;max-width:1400px;">
+    <div style="flex:1 1 300px;min-width:280px;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;background:#141210;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Provenance</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;">Read at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">main</span>: the brief, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rack/filter-rack.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rack/colour-control.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rack/result-line.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rack/select.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-filter-column.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-filter-sheet.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">collection/filter-bar.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">collection/color-pip.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ui/filter-panel.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ui/cost-pips.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">lib/copy/lanes.ts</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">lib/collection/browse.ts</span>. Every contrast figure below is computed from the six <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">[data-theme]</span> blocks, to two decimals.</div>
+    </div>
+    <div style="flex:1 1 300px;min-width:280px;border:1px solid #6B482A;border-radius:12px;padding:16px 18px;background:#191410;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:9px;">Correction to the handoff prompt</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;">The prompt instructed that the pips be <b style="color:#EDE6D8;font-weight:600;">token-coloured masks, not inline art with baked fills</b>, citing set collections&rsquo; finding 1. <b style="color:#EDE6D8;font-weight:600;">The brief locks the opposite</b> &mdash; &sect;2.5 and &sect;4 ship Scryfall&rsquo;s <b style="color:#EDE6D8;font-weight:600;">full-colour SVGs as images, not masked</b> &mdash; and &sect;4 says it was rewritten after opening the endpoint, to correct exactly that inference. Finding 1 is about <b style="color:#EDE6D8;font-weight:600;">set icons</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">sets/*.svg</span>, a bare path); mana symbols are a different endpoint carrying a filled <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;circle&gt;</span>. Drawn per the brief. A mask would flatten every hybrid pip to one colour.</div>
+    </div>
+    <div style="flex:1 1 300px;min-width:280px;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;background:#141210;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Two more corrections</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Four routes, not three.</b> The prompt names /commanders, /decks and /collection; the brief&rsquo;s table has four, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/discover</span> is the one that shares <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FilterRack</span> with /commanders. It is drawn.<div style="height:8px;"></div><b style="color:#EDE6D8;font-weight:600;">&sect;2.3 is not a settled dimension.</b> Set filtering on /commanders is locked, but &sect;6 leaves its matching rule open and it is the one call here with a data dependency behind it. Ruled in <a href="#six">&sect;6</a>.</div>
+    </div>
+    <div style="flex:1 1 100%;border:1px solid #6FA368;border-radius:12px;padding:16px 18px;background:#121612;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:9px;">Changed at R2, from review</div>
+      <div style="font-size:12.5px;line-height:1.75;color:#A59C89;text-wrap:pretty;">
+        <b style="color:#EDE6D8;font-weight:600;">1. The wrapping sort was a defect, and it is fixed by a rule rather than a nudge.</b> The control row now never wraps: two forms, wide and compact, switching at 900px, with search as the only shrinking child. <a href="#two">&sect;2</a> carries the arithmetic, and it is set by /collection&rsquo;s seven controls rather than /decks&rsquo; five.<div style="height:7px;"></div>
+        <b style="color:#EDE6D8;font-weight:600;">2. Every shipped filter is now inventoried and slotted.</b> New <a href="#oneb">&sect;1b</a>: twelve live controls across four routes, each mapped to one of four control types, with what changes for it. The chassis has slots, not a dimension list.<div style="height:7px;"></div>
+        <b style="color:#EDE6D8;font-weight:600;">3. Score against was drawn wrong.</b> R1 made it a dropdown; it ships as an inline segmented pair with a mono caption, and that is what the shipped screen does. Corrected, and it produced the <b style="color:#EDE6D8;font-weight:600;">segmented</b> control type &mdash; used only where a dimension has no off state.<div style="height:7px;"></div>
+        <b style="color:#EDE6D8;font-weight:600;">4. /collection compact is drawn in full</b> (<a href="#threeb">&sect;3b</a>), as the route that conforms least today, together with the commander sheet. The view toggle moves to the result line&rsquo;s trailing edge &mdash; it is not a filter, and it is the only way seven dimensions and a view control fit 390px without search collapsing to its minimum.<div style="height:7px;"></div>
+        <b style="color:#EDE6D8;font-weight:600;">5. Sheet order is fixed and pips lead it.</b> R1 put the pip block between two chip groups, where its weight unbalanced the sheet. Pips first on every route, then segmented, then chip groups, then anything with a hint line.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ §1 ANATOMY ═══════════════════════════ -->
+<section id="one" style="min-width:1180px;max-width:1400px;margin:0 0 46px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">&sect;1 &mdash; the chassis</div>
+  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Three rows, always all three, in this order.</h2>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 22px;text-wrap:pretty;">Lifted wholesale from <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">filter-rack.tsx</span>, which already carries the invariants and the tests: <b style="color:#EDE6D8;font-weight:600;">the chassis never collapses, never reorders, and never changes height when the results change.</b> What is new is that the same three rows now hold five dimensions, that the frame sits above the content on every route, and that one panel shape opens every dimension.</p>
+
+  <div data-screen-label="A1 anatomy" data-theme="{{ theme }}" style="border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);width:1180px;">
+    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:14px 22px 12px;display:flex;flex-direction:column;gap:11px;">
+      <!-- row 1 -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;">
+        <label style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg-faint);padding:0 11px;flex:1 1 auto;min-width:132px;">
+          <span aria-hidden="true" style="font-size:13px;line-height:1;">&#9906;</span>
+          <span style="font-size:12.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">Search decks</span>
+        </label>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Status<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div role="group" style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--bg);padding:0 10px;flex:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        </div>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Last played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div style="margin-left:auto;flex:none;display:flex;align-items:center;gap:12px;">
+          <span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);"></span>
+          <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Sort &middot; Recently played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        </div>
+      </div>
+      <!-- row 2 -->
+      <div style="display:flex;align-items:center;gap:8px;min-height:24px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">no filters on</span>
+      </div>
+      <!-- row 3 -->
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">18 decks</p>
+    </div>
+    <div style="padding:26px 22px;background:var(--bg);color:var(--fg-locked);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;">deck grid &mdash; full width, no sibling column</div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;max-width:1180px;">
+    <div style="flex:1 1 220px;min-width:210px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Row 1 &mdash; controls</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;">Every desktop control is <b style="color:#EDE6D8;font-weight:600;">34px</b>. The rack ships search at 34 and Order at 32; one rhythm, and the 2px mismatch goes. Dimensions run leading-edge in reading order; sort trails past a hairline. <b style="color:#EDE6D8;font-weight:600;">The row never wraps</b> &mdash; search is the only child that shrinks, every control is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex:none</span>, and below 900px the whole bar becomes the compact form instead.</div>
+    </div>
+    <div style="flex:1 1 220px;min-width:210px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Row 2 &mdash; chips</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;">What is on, and the only place a filter is removed one at a time. At rest it holds <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">no filters on</span> rather than collapsing &mdash; that is what keeps the height fixed.</div>
+    </div>
+    <div style="flex:1 1 220px;min-width:210px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Row 3 &mdash; result</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">result-line.tsx</span> verbatim, on all four routes: mono 11px, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-muted</span>, tabular, drawn instantly and announced at 300ms. Measured <b style="color:#EDE6D8;font-weight:600;">6.53:1</b> floor.</div>
+    </div>
+    <div style="flex:1 1 220px;min-width:210px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">The width it returns</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DeckFilterColumn</span> is a 262px sibling inside a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">sm:flex-row</span>. Mounted above the content, the chassis costs <b style="color:#EDE6D8;font-weight:600;">~101px of height</b> and returns all 262px to deck art.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ §1b INVENTORY ═══════════════════════════ -->
+<section id="oneb" style="min-width:1180px;max-width:1400px;margin:0 0 46px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">&sect;1b &mdash; every shipped filter, and what it becomes</div>
+  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Four control types. Nothing is dropped.</h2>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 10px;text-wrap:pretty;">The chassis does not have a dimension list of its own &mdash; it has <b style="color:#EDE6D8;font-weight:600;">slots</b>, and a route fills them. Every filter live today appears below with the control type it takes, and <b style="color:#EDE6D8;font-weight:600;">the type is decided by the shape of the values, not by the route</b>, which is what makes the same dimension look identical on two surfaces and at two widths.</p>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 20px;text-wrap:pretty;">One rule does most of the work: <b style="color:#EDE6D8;font-weight:600;">segmented is only for a dimension with no off state.</b> Colour match is always Any or Exactly; score-against is always one or the other; view is always rows or grid. Last-played has two values <i>and</i> an off, so it is a panel &mdash; which is also why the shipped deck column draws it as two independently-clearable rows rather than a pair of segments.</p>
+
+  <div style="overflow-x:auto;border:1px solid #3A3229;border-radius:12px;background:#121110;margin-bottom:16px;">
+    <table style="border-collapse:collapse;width:100%;min-width:900px;font-size:12.5px;">
+      <thead>
+        <tr style="background:#191512;">
+          <th style="text-align:left;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:500;">Shipped filter</th>
+          <th style="text-align:left;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:500;">Routes</th>
+          <th style="text-align:left;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:500;">Becomes</th>
+          <th style="text-align:left;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:500;">What changes for it</th>
+        </tr>
+      </thead>
+      <tbody>
+        <sc-for list="{{ inventory }}" as="row" hint-placeholder-count="12">
+          <tr style="border-top:1px solid #2B241B;">
+            <td style="padding:10px 14px;color:#EDE6D8;font-weight:600;">{{ row.filter }}</td>
+            <td style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">{{ row.routes }}</td>
+            <td style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;">{{ row.type }}</td>
+            <td style="padding:10px 14px;color:#A59C89;line-height:1.6;">{{ row.change }}</td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px;max-width:1400px;">
+    <div style="flex:1 1 240px;min-width:230px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Field</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;">Search, on all four. 34px wide / 44px compact, and <b style="color:#EDE6D8;font-weight:600;">the only child of row 1 that shrinks</b>. Never inside a sheet or panel.</div>
+    </div>
+    <div style="flex:1 1 240px;min-width:230px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Pip row</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;">Colour identity, on all four, and the only dimension with a bespoke control. Inline wide, first block in the sheet compact. 22px / 44px circles.</div>
+    </div>
+    <div style="flex:1 1 240px;min-width:230px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Segmented</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;">Two or three short values, <b style="color:#EDE6D8;font-weight:600;">no off state</b>, never behind a trigger. Colour match, score-against, view. 34px wide / 44px compact, same shape both.</div>
+    </div>
+    <div style="flex:1 1 240px;min-width:230px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Trigger + panel</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;">Everything else: status, last played, type, set, availability, printed-in, sort. Anchored panel wide; the same rows as a chip group in the sheet compact.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ §2 DECKS DESKTOP ═══════════════════════════ -->
+<section id="two" style="min-width:1180px;max-width:1400px;margin:0 0 46px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">&sect;2 &mdash; /decks, five dimensions, desktop</div>
+  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">The densest surface, in five states.</h2>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 10px;text-wrap:pretty;">Search &middot; status &middot; colour &middot; played-window &middot; sort. <b style="color:#EDE6D8;font-weight:600;">The control row never wraps.</b> There are two forms and no in-between: the <b style="color:#EDE6D8;font-weight:600;">wide</b> form above, and the <b style="color:#EDE6D8;font-weight:600;">compact</b> form of <a href="#three">&sect;3</a>, switching at <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">900px</span>. Search is the only child that shrinks (<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">min-width 132</span>); every control is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">flex:none</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">white-space:nowrap</span>; the trailing sort group is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">flex:none</span> too, so it can never be pushed to a second line.</p>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 10px;text-wrap:pretty;">The arithmetic that sets the 900px switch is <b style="color:#EDE6D8;font-weight:600;">/collection</b>, not /decks &mdash; seven controls is the widest list in the app: search 132 + pips 148 + Type 150 + Set 78 + Availability 120 + hairline 1 + Sort 160 + view toggle 70 + seven 12px gaps + 44px padding = <b style="color:#EDE6D8;font-weight:600;">887px</b>. Below that the wide form cannot be honest, so it does not try. <b style="color:#EDE6D8;font-weight:600;">A wrapped filter bar was the defect R1 shipped</b>: the sort landed on its own line and read as a layout bug rather than a trailing slot.</p>
+
+  <div data-screen-label="S1 rest" data-theme="{{ theme }}" style="border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);width:1180px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#121110;border-bottom:1px solid #2B241B;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">S1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">at rest &mdash; nothing on, no ratio printed</span>
+    </div>
+    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:14px 22px 12px;display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;">
+        <label style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);padding:0 11px;flex:1 1 auto;min-width:132px;"><span aria-hidden="true" style="font-size:13px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:12.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">Search decks</span></label>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Status<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div role="group" style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--bg);padding:0 10px;flex:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        </div>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Last played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div style="margin-left:auto;flex:none;display:flex;align-items:center;gap:12px;"><span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);"></span><button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Sort &middot; Recently played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;min-height:24px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">no filters on</span></div>
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">18 decks</p>
+    </div>
+    <div style="padding:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;background:var(--bg);">
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+    </div>
+  </div>
+
+  <div data-screen-label="S2 one active" data-theme="{{ theme }}" style="border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);width:1180px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#121110;border-bottom:1px solid #2B241B;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">S2</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">one filter active &mdash; trigger lit, chip present, ratio printed</span>
+    </div>
+    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:14px 22px 12px;display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;">
+        <label style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);padding:0 11px;flex:1 1 auto;min-width:132px;"><span aria-hidden="true" style="font-size:13px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:12.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">Search decks</span></label>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Status &middot; Building<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div role="group" style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--bg);padding:0 10px;flex:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        </div>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Last played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div style="margin-left:auto;flex:none;display:flex;align-items:center;gap:12px;"><span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);"></span><button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Sort &middot; Recently played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;min-height:24px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span aria-hidden="true" style="display:block;width:6px;height:6px;border-radius:50%;background:var(--warning);"></span>Building<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+      </div>
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">6 of 18 decks match</p>
+    </div>
+    <div style="padding:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;background:var(--bg);">
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+    </div>
+  </div>
+
+  <div data-screen-label="S3 several active" data-theme="{{ theme }}" style="border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);width:1180px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#121110;border-bottom:1px solid #2B241B;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">S3</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">several active &mdash; four dimensions on, Clear all appears</span>
+    </div>
+    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:14px 22px 12px;display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;">
+        <label style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--accent);background:var(--bg);padding:0 11px;flex:1 1 auto;min-width:132px;"><span aria-hidden="true" style="font-size:13px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:12.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">tokens</span></label>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Status &middot; 2 on<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div role="group" style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--accent);background:var(--bg);padding:0 10px;flex:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        </div>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Last played &middot; This month<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div style="margin-left:auto;flex:none;display:flex;align-items:center;gap:12px;"><span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);"></span><button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Sort &middot; Name<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;min-height:24px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">&ldquo;tokens&rdquo;<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span aria-hidden="true" style="display:block;width:6px;height:6px;border-radius:50%;background:var(--warning);"></span>Building<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span aria-hidden="true" style="display:block;width:6px;height:6px;border-radius:50%;background:var(--danger);"></span>Over<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 5px 0 7px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:13px;height:13px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span><span style="width:13px;height:13px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;margin-left:-5px;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span><span style="margin-left:2px;">2 colours</span><span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">This month<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <button type="button" style="margin-left:auto;height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;cursor:pointer;">Clear all filters</button>
+      </div>
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">2 of 18 decks match</p>
+    </div>
+    <div style="padding:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;background:var(--bg);">
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+    </div>
+  </div>
+
+  <div data-screen-label="S4 open panel" data-theme="{{ theme }}" style="border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);width:1180px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#121110;border-bottom:1px solid #2B241B;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">S4</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">panel open &mdash; anchored, never in flow</span>
+    </div>
+    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:14px 22px 12px;display:flex;flex-direction:column;gap:11px;position:relative;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;">
+        <label style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);padding:0 11px;flex:1 1 auto;min-width:132px;"><span aria-hidden="true" style="font-size:13px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:12.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">Search decks</span></label>
+        <div style="position:relative;">
+          <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Status &middot; 2 on<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9652;</span></button>
+          <div role="menu" style="position:absolute;left:0;top:40px;z-index:10;width:280px;border-radius:10px;padding:6px;background:var(--surface-rail);border:1px solid var(--border-strong);box-shadow:0 16px 40px rgba(0,0,0,0.5);">
+            <div style="display:flex;align-items:center;gap:10px;border-radius:7px;padding:9px 12px;background:var(--elevated-hover);"><span aria-hidden="true" style="display:block;width:8px;height:8px;transform:rotate(45deg);background:var(--accent);flex:none;"></span><span style="font-size:13.5px;color:var(--fg);flex:1;">Building</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">6</span></div>
+            <div style="display:flex;align-items:center;gap:10px;border-radius:7px;padding:9px 12px;background:var(--elevated-hover);"><span aria-hidden="true" style="display:block;width:8px;height:8px;transform:rotate(45deg);background:var(--accent);flex:none;"></span><span style="font-size:13.5px;color:var(--fg);flex:1;">Over</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1</span></div>
+            <div style="display:flex;align-items:center;gap:10px;border-radius:7px;padding:9px 12px;"><span aria-hidden="true" style="display:block;width:8px;height:8px;transform:rotate(45deg);border:1.5px solid var(--border-strong);flex:none;"></span><span style="font-size:13.5px;color:var(--fg-body);flex:1;">Draft</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">4</span></div>
+            <div style="display:flex;align-items:center;gap:10px;border-radius:7px;padding:9px 12px;"><span aria-hidden="true" style="display:block;width:8px;height:8px;transform:rotate(45deg);border:1.5px solid var(--border-strong);flex:none;"></span><span style="font-size:13.5px;color:var(--fg-body);flex:1;">Unresolved</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">2</span></div>
+            <div style="display:flex;align-items:center;gap:10px;border-radius:7px;padding:9px 12px;"><span aria-hidden="true" style="display:block;width:8px;height:8px;transform:rotate(45deg);border:1.5px solid var(--border-strong);flex:none;"></span><span style="font-size:13.5px;color:var(--fg-body);flex:1;">To buy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">3</span></div>
+            <div style="display:flex;align-items:center;gap:10px;border-radius:7px;padding:9px 12px;"><span aria-hidden="true" style="display:block;width:8px;height:8px;transform:rotate(45deg);border:1.5px solid var(--border-strong);flex:none;"></span><span style="font-size:13.5px;color:var(--fg-body);flex:1;">Complete</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">2</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);margin-top:4px;padding:8px 12px 4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">2 of 6 on</span><button type="button" style="border:none;background:transparent;color:var(--fg-muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;cursor:pointer;padding:0;">Clear status</button></div>
+          </div>
+        </div>
+        <div role="group" style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--bg);padding:0 10px;flex:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        </div>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Last played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div style="margin-left:auto;flex:none;display:flex;align-items:center;gap:12px;"><span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);"></span><button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Sort &middot; Recently played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;min-height:24px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span aria-hidden="true" style="display:block;width:6px;height:6px;border-radius:50%;background:var(--warning);"></span>Building<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span aria-hidden="true" style="display:block;width:6px;height:6px;border-radius:50%;background:var(--danger);"></span>Over<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <button type="button" style="margin-left:auto;height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;cursor:pointer;">Clear all filters</button>
+      </div>
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">7 of 18 decks match</p>
+    </div>
+    <div style="padding:22px 22px 60px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;background:var(--bg);">
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:96px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+    </div>
+  </div>
+
+  <div data-screen-label="S5 empty result" data-theme="{{ theme }}" style="border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);width:1180px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#121110;border-bottom:1px solid #2B241B;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">S5</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">empty result &mdash; chassis unchanged, one named fix</span>
+    </div>
+    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:14px 22px 12px;display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;">
+        <label style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--accent);background:var(--bg);padding:0 11px;flex:1 1 auto;min-width:132px;"><span aria-hidden="true" style="font-size:13px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:12.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">landfall</span></label>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Status &middot; Complete<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div role="group" style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--accent);background:var(--bg);padding:0 10px;flex:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        </div>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Last played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div style="margin-left:auto;flex:none;display:flex;align-items:center;gap:12px;"><span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);"></span><button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Sort &middot; Recently played<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;min-height:24px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">&ldquo;landfall&rdquo;<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span aria-hidden="true" style="display:block;width:6px;height:6px;border-radius:50%;background:var(--success);"></span>Complete<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 5px 0 7px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:13px;height:13px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span><span style="margin-left:2px;">Green</span><span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <button type="button" style="margin-left:auto;height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;cursor:pointer;">Clear all filters</button>
+      </div>
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">0 of 18 decks match</p>
+    </div>
+    <div style="padding:44px 22px 52px;background:var(--bg);display:flex;flex-direction:column;align-items:flex-start;gap:12px;max-width:560px;">
+      <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);">No deck matches all three.</h3>
+      <p style="margin:0;font-size:14px;line-height:1.7;color:var(--fg-body);text-wrap:pretty;">One deck is called <b style="color:var(--fg);font-weight:600;">Landfall, Eventually</b>, but <b style="color:var(--fg);font-weight:600;">Complete</b> rules it out. Drop that and you get one deck back.</p>
+      <div style="display:flex;gap:10px;margin-top:2px;">
+        <button type="button" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--accent);background:transparent;color:var(--fg);font-size:13px;cursor:pointer;">Drop Complete</button>
+        <button type="button" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-muted);font-size:13px;cursor:pointer;">Clear all filters</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:1180px;margin-top:14px;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;background:#121110;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Why the empty state names one fix</div>
+    <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;">Because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">commandersCopy.empty</span> already does, and it is the best copy in the app on this problem &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">bodyOneFix</span> names the control and <b style="color:#EDE6D8;font-weight:600;">promises the row count</b> that dropping it returns. /decks and /collection today show a generic nothing-found. The chassis makes this shared: one control to blame when one is enough, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">bodyNoSingleFix</span> when several overlap. The empty state lives <i>below</i> the chassis and never replaces it &mdash; the filters that caused the emptiness must stay on screen and stay removable.</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ §3 DECKS PHONE ═══════════════════════════ -->
+<section id="three" style="min-width:1180px;max-width:1400px;margin:0 0 46px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">&sect;3 &mdash; the phone collapse, 390px</div>
+  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Search, sort, Filters. Everything else in the sheet.</h2>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 22px;text-wrap:pretty;">The rack&rsquo;s persistent row, unchanged and already tested on two lanes: search takes the width, sort is a 44px icon trigger, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Filters</span> carries the active-dimension badge. <b style="color:#EDE6D8;font-weight:600;">Search and sort are never in the sheet</b> &mdash; which is also why the badge counts neither.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:20px;">
+    <div data-screen-label="P1 phone rest" data-theme="{{ theme }}" style="width:390px;flex:none;border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);">
+      <div style="padding:8px 12px;background:#121110;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">P1 &mdash; rest</div>
+      <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:12px 16px 10px;display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="display:flex;align-items:center;gap:9px;height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);padding:0 12px;flex:1;min-width:0;"><span aria-hidden="true" style="font-size:15px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:13.5px;color:var(--fg-faint);">Search</span></label>
+          <button type="button" style="width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-size:15px;cursor:pointer;">&#8645;</button>
+          <button type="button" style="height:44px;flex:none;display:inline-flex;align-items:center;gap:7px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-size:13px;padding:0 13px;cursor:pointer;">Filters</button>
+        </div>
+        <div style="min-height:24px;display:flex;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">no filters on</span></div>
+        <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);font-variant-numeric:tabular-nums;">18 decks</p>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg);">
+        <div style="height:116px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+        <div style="height:116px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      </div>
+    </div>
+
+    <div data-screen-label="P2 phone active" data-theme="{{ theme }}" style="width:390px;flex:none;border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);">
+      <div style="padding:8px 12px;background:#121110;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">P2 &mdash; three on, chips scroll</div>
+      <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:12px 16px 10px;display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="display:flex;align-items:center;gap:9px;height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);padding:0 12px;flex:1;min-width:0;"><span aria-hidden="true" style="font-size:15px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:13.5px;color:var(--fg-faint);">Search</span></label>
+          <button type="button" style="width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-size:15px;cursor:pointer;">&#8645;</button>
+          <button type="button" style="height:44px;flex:none;display:inline-flex;align-items:center;gap:7px;border-radius:10px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-size:13px;padding:0 11px;cursor:pointer;">Filters<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;height:18px;min-width:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;">3</span></button>
+        </div>
+        <div style="min-height:24px;display:flex;align-items:center;gap:8px;overflow-x:auto;">
+          <span style="flex:none;display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span aria-hidden="true" style="display:block;width:6px;height:6px;border-radius:50%;background:var(--warning);"></span>Building<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+          <span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 5px 0 7px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:13px;height:13px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span><span style="margin-left:2px;">White</span><span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+          <span style="flex:none;display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">This month<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        </div>
+        <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);font-variant-numeric:tabular-nums;">3 of 18 decks match</p>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg);">
+        <div style="height:116px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+        <div style="height:116px;border-radius:10px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      </div>
+    </div>
+
+    <div data-screen-label="P3 sheet open" data-theme="{{ theme }}" style="width:390px;flex:none;border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);">
+      <div style="padding:8px 12px;background:#121110;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">P3 &mdash; sheet, four dimensions, no sort</div>
+      <div style="background:rgba(16,13,10,0.74);padding:36px 0 0;">
+        <div style="border-top:1px solid var(--border-strong);border-radius:22px 22px 0 0;background:var(--surface-inset);padding:12px 16px 16px;display:flex;flex-direction:column;gap:14px;">
+          <div aria-hidden="true" style="height:4px;width:38px;align-self:center;border-radius:2px;background:var(--border-strong);"></div>
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <h2 style="margin:0;font-family:'Cinzel',serif;font-size:18px;font-weight:600;color:var(--fg);">Filters</h2>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">3 of 18 match</span>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Colour identity</div>
+            <div style="display:flex;gap:8px;">
+              <span style="width:44px;height:44px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Status</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--warning);background:color-mix(in srgb, var(--warning) 15%, transparent);color:var(--fg);font-size:13px;">Building</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Draft</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Over</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Complete</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Last played</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--accent);background:color-mix(in oklab, var(--accent) 16%, transparent);color:var(--fg);font-size:13px;">This month</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Never</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button type="button" style="flex:auto;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:none;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;cursor:pointer;">Show 3 decks</button>
+            <button type="button" style="height:44px;padding:0 14px;border:none;background:transparent;color:var(--fg-muted);font-size:14px;cursor:pointer;">Clear all</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="P4 phone empty" data-theme="{{ theme }}" style="width:390px;flex:none;border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);">
+      <div style="padding:8px 12px;background:#121110;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">P4 &mdash; empty result</div>
+      <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:12px 16px 10px;display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="display:flex;align-items:center;gap:9px;height:44px;border-radius:10px;border:1px solid var(--accent);background:var(--bg);padding:0 12px;flex:1;min-width:0;"><span aria-hidden="true" style="font-size:15px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:13.5px;color:var(--fg);">landfall</span></label>
+          <button type="button" style="width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-size:15px;cursor:pointer;">&#8645;</button>
+          <button type="button" style="height:44px;flex:none;display:inline-flex;align-items:center;gap:7px;border-radius:10px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-size:13px;padding:0 11px;cursor:pointer;">Filters<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;height:18px;min-width:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;">2</span></button>
+        </div>
+        <div style="min-height:24px;display:flex;align-items:center;gap:8px;overflow-x:auto;">
+          <span style="flex:none;display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">&ldquo;landfall&rdquo;<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+          <span style="flex:none;display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span aria-hidden="true" style="display:block;width:6px;height:6px;border-radius:50%;background:var(--success);"></span>Complete<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        </div>
+        <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);font-variant-numeric:tabular-nums;">0 of 18 decks match</p>
+      </div>
+      <div style="padding:30px 16px 40px;background:var(--bg);display:flex;flex-direction:column;gap:12px;">
+        <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:var(--fg);">No deck matches both.</h3>
+        <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;">One deck is called <b style="color:var(--fg);font-weight:600;">Landfall, Eventually</b>, but <b style="color:var(--fg);font-weight:600;">Complete</b> rules it out. Drop that and you get one deck back.</p>
+        <button type="button" style="align-self:flex-start;height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--accent);background:transparent;color:var(--fg);font-size:13.5px;cursor:pointer;">Drop Complete</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ §3b COMPACT CONFORMITY ═══════════════════════════ -->
+<section id="threeb" style="min-width:1180px;max-width:1400px;margin:0 0 46px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">&sect;3b &mdash; the compact form on the other routes</div>
+  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">/collection is the hard one. Seven dimensions on 390px.</h2>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 10px;text-wrap:pretty;">It is the route that conforms least today &mdash; a horizontally-scrolling row of unlike pills, with colour behind a panel on the phone and inline on desktop. Under the chassis it is the same three rows as every other route. <b style="color:#EDE6D8;font-weight:600;">The view toggle is what makes it hard</b>: four things want the persistent row and only three fit.</p>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 22px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Ruling: the view toggle goes on the result line, at its trailing edge.</b> It is not a filter, the result line is the one row with dead space to the right of it, and &ldquo;how many results&rdquo; sitting beside &ldquo;how they are drawn&rdquo; is a sentence that reads. The arithmetic it avoids: search 132 + sort 44 + Filters 44 + view 76 + three 8px gaps + 32px padding = <b style="color:#EDE6D8;font-weight:600;">352px</b> of a 390px screen, which fits but leaves search at its minimum on the app&rsquo;s most search-driven surface.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:20px;">
+    <div data-screen-label="P5 collection phone" data-theme="{{ theme }}" style="width:390px;flex:none;border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);">
+      <div style="padding:8px 12px;background:#121110;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">P5 &mdash; /collection, two of seven on</div>
+      <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:12px 16px 10px;display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="display:flex;align-items:center;gap:9px;height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);padding:0 12px;flex:1;min-width:0;"><span aria-hidden="true" style="font-size:15px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:13.5px;color:var(--fg-faint);">Search your cards&hellip;</span></label>
+          <button type="button" style="width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-size:15px;cursor:pointer;">&#8645;</button>
+          <button type="button" style="height:44px;flex:none;display:inline-flex;align-items:center;gap:7px;border-radius:10px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-size:13px;padding:0 11px;cursor:pointer;">Filters<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;height:18px;min-width:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;">2</span></button>
+        </div>
+        <div style="min-height:24px;display:flex;align-items:center;gap:8px;overflow-x:auto;">
+          <span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 5px 0 7px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:13px;height:13px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span><span style="margin-left:2px;">Red</span><span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+          <span style="flex:none;display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Creature<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+          <button type="button" style="flex:none;height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;cursor:pointer;">Clear all</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);font-variant-numeric:tabular-nums;">184 of 2,472 cards match</p>
+          <div style="margin-left:auto;flex:none;display:flex;height:30px;border-radius:8px;border:1px solid var(--border-strong);overflow:hidden;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;background:var(--elevated);color:var(--fg);font-size:13px;">&#8803;</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;background:transparent;color:var(--fg-muted);font-size:13px;">&#9638;</span>
+          </div>
+        </div>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--bg);">
+        <div style="height:56px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+        <div style="height:56px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+        <div style="height:56px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      </div>
+    </div>
+
+    <div data-screen-label="P6 collection sheet" data-theme="{{ theme }}" style="width:390px;flex:none;border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);">
+      <div style="padding:8px 12px;background:#121110;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">P6 &mdash; /collection sheet, four dimensions</div>
+      <div style="background:rgba(16,13,10,0.74);padding:24px 0 0;">
+        <div style="border-top:1px solid var(--border-strong);border-radius:22px 22px 0 0;background:var(--surface-inset);padding:12px 16px 16px;display:flex;flex-direction:column;gap:14px;">
+          <div aria-hidden="true" style="height:4px;width:38px;align-self:center;border-radius:2px;background:var(--border-strong);"></div>
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <h2 style="margin:0;font-family:'Cinzel',serif;font-size:18px;font-weight:600;color:var(--fg);">Filters</h2>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">184 of 2,472 match</span>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Colour</div>
+            <div style="display:flex;gap:8px;">
+              <span style="width:44px;height:44px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Type</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--accent);background:color-mix(in oklab, var(--accent) 16%, transparent);color:var(--fg);font-size:13px;">Creature</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Instant</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Sorcery</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Land</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-muted);font-size:13px;">+3</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Set</div>
+            <button type="button" style="display:flex;align-items:center;gap:9px;width:100%;height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);padding:0 12px;color:var(--fg-faint);font-size:13.5px;cursor:pointer;text-align:left;"><span aria-hidden="true" style="font-size:15px;line-height:1;">&#9906;</span>Search 41 owned sets&hellip;</button>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Availability</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Free</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Spoken for</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13px;">Overcommitted</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button type="button" style="flex:auto;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:none;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;cursor:pointer;">Show 184 cards</button>
+            <button type="button" style="height:44px;padding:0 14px;border:none;background:transparent;color:var(--fg-muted);font-size:14px;cursor:pointer;">Clear all</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="P7 commanders sheet" data-theme="{{ theme }}" style="width:390px;flex:none;border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);">
+      <div style="padding:8px 12px;background:#121110;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">P7 &mdash; /commanders sheet, pips then segments</div>
+      <div style="background:rgba(16,13,10,0.74);padding:36px 0 0;">
+        <div style="border-top:1px solid var(--border-strong);border-radius:22px 22px 0 0;background:var(--surface-inset);padding:12px 16px 16px;display:flex;flex-direction:column;gap:14px;">
+          <div aria-hidden="true" style="height:4px;width:38px;align-self:center;border-radius:2px;background:var(--border-strong);"></div>
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <h2 style="margin:0;font-family:'Cinzel',serif;font-size:18px;font-weight:600;color:var(--fg);">Filters</h2>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">14 of 3,301 match</span>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Colour identity</div>
+            <div style="display:flex;gap:8px;">
+              <span style="width:44px;height:44px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+              <span style="width:44px;height:44px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Colour match</div>
+            <div role="radiogroup" style="display:flex;height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;">
+              <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--fg-muted);font-size:13.5px;">Any of these</span>
+              <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);font-size:13.5px;">Exactly these</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Printed in</div>
+            <button type="button" style="display:flex;align-items:center;gap:9px;width:100%;height:44px;border-radius:10px;border:1px solid var(--accent);background:var(--bg);padding:0 12px;color:var(--fg);font-size:13.5px;cursor:pointer;text-align:left;">Duskmourn<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">DSK</span></button>
+            <p style="margin:7px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Matches any printing, including ones you don't own.</p>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Score against</div>
+            <div role="radiogroup" style="display:flex;height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;">
+              <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);font-size:13.5px;">All my cards</span>
+              <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--fg-muted);font-size:13.5px;">Free cards only</span>
+            </div>
+            <p style="margin:7px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Free means not spoken for by a deck you've already built.</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button type="button" style="flex:auto;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:none;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;cursor:pointer;">Show 14 commanders</button>
+            <button type="button" style="height:44px;padding:0 14px;border:none;background:transparent;color:var(--fg-muted);font-size:14px;cursor:pointer;">Clear all</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;max-width:1400px;">
+    <div style="flex:1 1 300px;min-width:280px;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Sheet order is fixed, not per route</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Pips first, always.</b> R1 put them in the middle of the deck sheet, between two chip groups, and the block&rsquo;s weight made the sheet read as unbalanced &mdash; five 44px circles of full-strength artwork outweigh everything around them. At the top they are the anchor instead of an interruption, and they are also the dimension every route shares. Then segmented controls, then chip groups, then anything carrying a hint line. A hint is the last thing in its group and the group is near the bottom, because a sentence between two rows of controls is the same interruption in a different form.</div>
+    </div>
+    <div style="flex:1 1 300px;min-width:280px;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">A long vocabulary stays searchable in the sheet</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Printed in</span> cannot be chip groups &mdash; 41 owned sets is not a chip row, and the full set list is thousands. In the sheet they are a 44px row that opens the panel&rsquo;s own searchable list as a second layer. That is the one place the compact form nests, and it nests because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-panel.tsx</span>&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">searchable</span> branch already exists and already works at this width.</div>
+    </div>
+    <div style="flex:1 1 300px;min-width:280px;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Every control keeps its shape across widths</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;">A segmented control is a segmented control at 34px and at 44px &mdash; not a segmented control on desktop and a pair of pills on the phone, which is what the deck sheet does with sort today and the commander sheet does with match. Only two things change between widths: <b style="color:#EDE6D8;font-weight:600;">target size</b>, and <b style="color:#EDE6D8;font-weight:600;">whether a panel is anchored or a block in the sheet</b>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ §4 THE PIP ═══════════════════════════ -->
+<section id="four" style="min-width:1180px;max-width:1400px;margin:0 0 46px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">&sect;4 &mdash; the pip, and the surround</div>
+  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Stop dimming it. That is the whole treatment.</h2>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 10px;text-wrap:pretty;">&sect;4 of the brief says the pip cannot adapt, so the surround must. Having measured it, the surround&rsquo;s job turns out to be <b style="color:#EDE6D8;font-weight:600;">getting out of the way</b>: all three shipped colour controls carry their unlit state as an <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">opacity</span> of <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">0.34</span>&ndash;<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">0.40</span>, and a faded cream circle with a black glyph in it is illegible on a near-black ground. <b style="color:#EDE6D8;font-weight:600;">The pip is never dimmed and never tinted.</b> Lit is an <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--accent</span> ring; unlit is no ring.</p>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 22px;text-wrap:pretty;">&sect;5 of the brief is right that no prior figure exists. Here are the figures, computed from the six theme blocks to two decimals &mdash; and the headline is that the state this round replaces sits at <b style="color:#C6533F;font-weight:600;">1.38:1</b>, well under the 3:1 non-text floor, on three shipped surfaces today.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px;">
+    <div data-theme="amonkhet" style="flex:1 1 380px;min-width:340px;border:1px solid #C6533F;border-radius:12px;overflow:hidden;">
+      <div style="padding:9px 14px;background:#1A1210;border-bottom:1px solid #4A2A24;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:#C6533F;">Before &mdash; shipped, unlit at opacity .34</div>
+      <div style="padding:22px;background:var(--surface-sunken);display:flex;align-items:center;gap:10px;">
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--w);opacity:0.34;display:block;"></span>
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--u);opacity:0.34;display:block;"></span>
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--b);opacity:0.34;display:block;"></span>
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--r);opacity:0.34;display:block;"></span>
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--g);opacity:0.34;display:block;"></span>
+        <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;">1.38&ndash;2.77:1</span>
+      </div>
+    </div>
+    <div data-theme="amonkhet" style="flex:1 1 380px;min-width:340px;border:1px solid #6FA368;border-radius:12px;overflow:hidden;">
+      <div style="padding:9px 14px;background:#121612;border-bottom:1px solid #2A4A28;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:#6FA368;">After &mdash; full-strength artwork, unlit means no ring</div>
+      <div style="padding:22px;background:var(--surface-sunken);display:flex;align-items:center;gap:10px;">
+        <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;">9.51&ndash;17.53:1</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="overflow-x:auto;border:1px solid #3A3229;border-radius:12px;background:#121110;margin-bottom:20px;">
+    <table style="border-collapse:collapse;width:100%;min-width:820px;font-size:12.5px;">
+      <thead>
+        <tr style="background:#191512;">
+          <th style="text-align:left;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:500;">Theme</th>
+          <th style="text-align:left;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:500;">Pips on <span style="text-transform:none;letter-spacing:0;">--surface-sunken</span></th>
+          <th style="text-align:left;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:500;">Ring <span style="text-transform:none;letter-spacing:0;">--accent</span></th>
+          <th style="text-align:left;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:500;">Result line</th>
+          <th style="text-align:left;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:500;">Shipped dim</th>
+        </tr>
+      </thead>
+      <tbody>
+        <sc-for list="{{ contrast }}" as="row" hint-placeholder-count="6">
+          <tr style="border-top:1px solid #2B241B;">
+            <td style="padding:11px 14px;color:#EDE6D8;font-weight:600;">{{ row.theme }}</td>
+            <td style="padding:11px 14px;font-family:'IBM Plex Mono',monospace;color:#6FA368;">{{ row.pips }}</td>
+            <td style="padding:11px 14px;font-family:'IBM Plex Mono',monospace;color:#C0B8A6;">{{ row.ring }}</td>
+            <td style="padding:11px 14px;font-family:'IBM Plex Mono',monospace;color:#C0B8A6;">{{ row.result }}</td>
+            <td style="padding:11px 14px;font-family:'IBM Plex Mono',monospace;color:#C6533F;">{{ row.dim }}</td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div style="flex:1 1 250px;min-width:240px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">The ring is the only state carrier</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span> against <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span> floors at <b style="color:#EDE6D8;font-weight:600;">4.42:1</b> (Phyrexia) &mdash; clears 3:1 in all six. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span> does not: it floors at <b style="color:#C6533F;font-weight:600;">1.24:1</b>, so a hairline rim can never be the carrier and the unlit pip carries no rim at all.</div>
+    </div>
+    <div style="flex:1 1 250px;min-width:240px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Never colour alone</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;">The ring is one carrier; the chip in row 2 is the second, and it names the colour in words (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">White</span>, or <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">2 colours</span> past one). Past one pip the chip shingles at &minus;5px, borrowing <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">cost-pips.tsx</span>&rsquo;s own overlap.</div>
+    </div>
+    <div style="flex:1 1 250px;min-width:240px;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Circles, not rounded squares</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;">The asset is a circle. The rack draws a 6px-radius square and the deck column a 7px one; both would crop the artwork or float it in a box. <b style="color:#EDE6D8;font-weight:600;">22px circle desktop, 44px circle phone</b> &mdash; and the phone pip is a real 44px target, not a 26px pip in a 44px box.</div>
+    </div>
+    <div style="flex:1 1 250px;min-width:240px;border:1px solid #6B482A;border-radius:10px;padding:13px 15px;background:#191410;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">One figure to confirm at build</div>
+      <div style="font-size:12.5px;line-height:1.65;color:#A59C89;">The brief quotes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">W</span> = <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#F8F6D8</span> and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">WU</span> half = <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#C1D7E9</span> verbatim. <b style="color:#EDE6D8;font-weight:600;">B, R and G are the canonical pip colours, not quoted anywhere I could read</b> &mdash; the figures above assume <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#CBC2BF</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#F9AA8F</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#9BD3AE</span>. Confirm on first fetch. The floor has 6.5 points of headroom, so no plausible value threatens it.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-radius:12px;padding:18px;background:#121110;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">The same five pips, all six themes &mdash; one lit, four not</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div data-theme="{{ t.key }}" style="flex:1 1 200px;min-width:190px;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;">
+          <div style="padding:8px 12px;background:var(--surface-rail);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">{{ t.label }}</div>
+          <div style="padding:16px 12px;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;gap:8px;">
+            <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+            <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+            <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+            <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+            <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ §5 THE OTHER THREE ═══════════════════════════ -->
+<section id="five" style="min-width:1180px;max-width:1400px;margin:0 0 46px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">&sect;5 &mdash; the other three routes, proved against /decks</div>
+  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 10px;color:#EDE6D8;">Same three rows. Fewer or different dimensions.</h2>
+  <p style="max-width:1060px;font-size:14.5px;line-height:1.7;color:#C6B79A;margin:0 0 22px;text-wrap:pretty;">Nothing below is a new layout &mdash; each is the &sect;2 chassis with its own dimension list. Each is drawn at <b style="color:#EDE6D8;font-weight:600;">several active</b>, the state that exercises the chip line hardest; rest, open panel, empty and phone follow &sect;2 and &sect;3 exactly and are enumerated in <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">STATES-filter-chassis.md</span>.</p>
+
+  <div data-screen-label="C1 commanders" data-theme="{{ theme }}" style="border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);width:1180px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#121110;border-bottom:1px solid #2B241B;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">/commanders</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">search &middot; colour+match &middot; printed-in &middot; score-against &middot; sort</span>
+    </div>
+    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:14px 22px 12px;display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;">
+        <label style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);padding:0 11px;flex:1 1 auto;min-width:132px;"><span aria-hidden="true" style="font-size:13px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:12.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">Search commanders</span></label>
+        <div role="group" style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--accent);background:var(--bg);padding:0 10px 0 10px;flex:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);flex:none;"></span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid transparent;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">Any</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--elevated);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg);">Exactly</span>
+        </div>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Printed in &middot; DSK<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div style="display:flex;flex:none;align-items:center;gap:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);white-space:nowrap;">Score against</span>
+          <div role="radiogroup" style="display:flex;flex:none;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);overflow:hidden;">
+            <span style="display:inline-flex;align-items:center;padding:0 11px;background:var(--elevated);color:var(--fg);font-size:12.5px;white-space:nowrap;">All my cards</span>
+            <span style="display:inline-flex;align-items:center;padding:0 11px;background:transparent;color:var(--fg-muted);font-size:12.5px;white-space:nowrap;">Free only</span>
+          </div>
+        </div>
+        <div style="margin-left:auto;flex:none;display:flex;align-items:center;gap:12px;"><span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);"></span><button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Sort &middot; Fit<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;min-height:24px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 5px 0 7px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:13px;height:13px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span><span style="width:13px;height:13px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;margin-left:-5px;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span><span style="margin-left:2px;">Exactly 2 colours</span><span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Printed in DSK<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <button type="button" style="margin-left:auto;height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;cursor:pointer;">Clear all filters</button>
+      </div>
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">14 of 3,301 commanders match &mdash; Exactly excludes 61 that Any would show</p>
+    </div>
+    <div style="padding:18px 22px;background:var(--bg);display:flex;flex-direction:column;gap:10px;">
+      <div style="height:72px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:72px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+    </div>
+  </div>
+
+  <div data-screen-label="C2 discover" data-theme="{{ theme }}" style="border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);width:1180px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#121110;border-bottom:1px solid #2B241B;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">/discover</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">same frame, no score-against, five sort options with glosses</span>
+    </div>
+    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:14px 22px 12px;display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;">
+        <label style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);padding:0 11px;flex:1 1 auto;min-width:132px;"><span aria-hidden="true" style="font-size:13px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:12.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">Search commanders</span></label>
+        <div role="group" style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--bg);padding:0 10px;flex:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);flex:none;"></span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">Any</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">Exactly</span>
+        </div>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Printed in &middot; 2 sets<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div style="margin-left:auto;flex:none;display:flex;align-items:center;gap:12px;"><span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);"></span><button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Sort &middot; Best fit<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;min-height:24px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Printed in DSK, BLB<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <button type="button" style="margin-left:auto;height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;cursor:pointer;">Clear all filters</button>
+      </div>
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">312 of 18,644 commanders match</p>
+    </div>
+    <div style="padding:18px 22px;background:var(--bg);display:flex;flex-direction:column;gap:10px;">
+      <div style="height:72px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:72px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+    </div>
+  </div>
+
+  <div data-screen-label="C3 collection" data-theme="{{ theme }}" style="border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:var(--bg);width:1180px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:#121110;border-bottom:1px solid #2B241B;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">/collection</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;letter-spacing:0.1em;text-transform:uppercase;">seven &mdash; the widest control list, and the view toggle</span>
+    </div>
+    <div style="background:var(--surface-sunken);border-bottom:1px solid var(--border);padding:14px 22px 12px;display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;">
+        <label style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);padding:0 11px;flex:1 1 auto;min-width:132px;"><span aria-hidden="true" style="font-size:13px;line-height:1;color:var(--fg-faint);">&#9906;</span><span style="font-size:12.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">Search by card name&hellip;</span></label>
+        <div role="group" style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--accent);background:var(--bg);padding:0 10px;flex:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:#F8F6D8;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#C1D7E9;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#CBC2BF;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;box-shadow:0 0 0 2px var(--accent);"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+          <span style="width:22px;height:22px;border-radius:50%;background:#9BD3AE;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="" style="width:100%;height:100%;display:block;"></span>
+        </div>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--accent);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Type &middot; Creature<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Set<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Availability<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+        <div style="margin-left:auto;flex:none;display:flex;align-items:center;gap:12px;">
+          <span aria-hidden="true" style="display:block;width:1px;height:20px;background:var(--border);"></span>
+          <button type="button" style="display:inline-flex;flex:none;white-space:nowrap;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;">Sort &middot; Name A&ndash;Z<span aria-hidden="true" style="display:inline-flex;width:14px;justify-content:center;color:var(--accent);">&#9662;</span></button>
+          <div style="display:flex;height:34px;border-radius:8px;border:1px solid var(--border-strong);overflow:hidden;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;background:var(--elevated);color:var(--fg);font-size:14px;">&#8803;</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;background:transparent;color:var(--fg-muted);font-size:14px;">&#9638;</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;min-height:24px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 5px 0 7px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:13px;height:13px;border-radius:50%;background:#F9AA8F;overflow:hidden;display:block;flex:none;"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="" style="width:100%;height:100%;display:block;"></span><span style="margin-left:2px;">Red</span><span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <span style="display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 5px 0 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Creature<span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--elevated);color:var(--fg-muted);font-size:10px;">&times;</span></span>
+        <button type="button" style="margin-left:auto;height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;cursor:pointer;">Clear all filters</button>
+      </div>
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">184 of 2,472 cards match</p>
+    </div>
+    <div style="padding:18px 22px;background:var(--bg);display:flex;flex-direction:column;gap:8px;">
+      <div style="height:56px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:56px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+      <div style="height:56px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;max-width:1180px;">
+    <div style="flex:1 1 300px;min-width:280px;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">/collection keeps its desktop pip row</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;">It loses the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">COLOR</span> label &mdash; the pips are their own label once they are real symbols, and a mono caption in a 34px well was only ever there to explain five abstract squares. It keeps its <b style="color:#EDE6D8;font-weight:600;">seven controls</b>, its view toggle (past the sort, outside the hairline) and its sticky behaviour.</div>
+    </div>
+    <div style="flex:1 1 300px;min-width:280px;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">The match modifier stays inside the pip well</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;">Only the two commander lanes mount it, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">colour-control.tsx</span>&rsquo;s call 1 is preserved verbatim: with no pip lit it is <b style="color:#EDE6D8;font-weight:600;">greyed in place</b>, keeps its value, keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-disabled</span>, stays focusable. That is /discover above. /decks and /collection AND their colours together and mount no modifier &mdash; unchanged from today.</div>
+    </div>
+    <div style="flex:1 1 300px;min-width:280px;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Score against, not Availability</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;">The owned lane&rsquo;s control keeps its shipped legend from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">commandersCopy.availability</span> &mdash; it changes what the fit score is computed against, which is not what /collection&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Availability &#9662;</span> means. <b style="color:#EDE6D8;font-weight:600;">Two controls, two names, kept apart on purpose.</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ §6 RULINGS ═══════════════════════════ -->
+<section id="six" style="min-width:1180px;max-width:1400px;margin:0 0 46px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">&sect;6 &mdash; the calls</div>
+  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 20px;color:#EDE6D8;">&sect;3.1 &ndash; &sect;3.5, and &sect;6&rsquo;s open question.</h2>
+
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:1180px;">
+    <div style="border:1px solid #3A3229;border-radius:12px;padding:16px 18px;background:#121110;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">&sect;3.1</span><b style="color:#EDE6D8;font-weight:600;font-size:14.5px;">Two forms, four control types, and a route fills slots.</b></div>
+      <div style="font-size:13px;line-height:1.7;color:#A59C89;text-wrap:pretty;">The chassis has no dimension list of its own. It has a field slot, a pip slot, an ordered run of dimension slots, and a trailing slot for sort &mdash; and a route fills them from <a href="#oneb">&sect;1b</a>&rsquo;s four control types, chosen by the shape of the values rather than by the surface. That is what makes status on /decks and type on /collection the same object, and what lets a fifth route mount the chassis without a design round.<div style="height:9px;"></div><b style="color:#EDE6D8;font-weight:600;">And there are exactly two forms.</b> Wide above 900px, compact below, nothing in between and no wrapping at any width. R1 let row 1 wrap and the sort dropped to its own line, which read as a bug rather than as a trailing slot &mdash; correctly, because a trailing slot that is not trailing is not a slot. Search is the only child that shrinks; everything else is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">flex:none</span>.<div style="height:9px;"></div><b style="color:#EDE6D8;font-weight:600;">A control keeps its shape across both forms.</b> Only the target size changes, and whether a panel is anchored or a block in the sheet. A segmented control does not become a pair of pills, and a pip row does not become a dropdown &mdash; which is the specific inconsistency /collection ships today, with colour inline on desktop and behind a panel on the phone.</div>
+    </div>
+    <div style="border:1px solid #3A3229;border-radius:12px;padding:16px 18px;background:#121110;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">&sect;3.3</span><b style="color:#EDE6D8;font-weight:600;font-size:14.5px;">The result line is the shared answer. Clear is two controls with two scopes.</b></div>
+      <div style="font-size:13px;line-height:1.7;color:#A59C89;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">result-line.tsx</span> moves up to the shared chassis unchanged: mono 11px, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-muted</span>, tabular, <b style="color:#EDE6D8;font-weight:600;">one live region per surface</b>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">aria-atomic</span>, drawn instantly and announced at 300ms, and stating the lane rather than a ratio at rest. It already carries the reasoning and the tests, and /collection&rsquo;s bar already debounces its own count the same way.<div style="height:9px;"></div>On clear: the <b style="color:#EDE6D8;font-weight:600;">chip&rsquo;s &times; removes one value</b>, the <b style="color:#EDE6D8;font-weight:600;">panel&rsquo;s footer clears that dimension</b>, and <b style="color:#EDE6D8;font-weight:600;">Clear all filters</b> at the chip line&rsquo;s trailing edge clears every dimension and never the sort. Three scopes, each worded to say which. This deliberately keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">filter-panel.tsx</span>&rsquo;s per-dimension Clear rather than retiring it &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">FilterChangeIntent</span> exists precisely because &ldquo;Clear&rdquo; and &ldquo;toggled the last one off&rdquo; land on the same state and must announce differently, and collapsing to one global Clear would throw that distinction away. What <i>is</i> retired: the deck column&rsquo;s footer Clear, the deck sheet&rsquo;s footer Clear, and the column&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">all statuses on</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">someOn(n)</span> line, whose job the chip line and the panel footer now do between them.</div>
+    </div>
+
+    <div style="border:1px solid #3A3229;border-radius:12px;padding:16px 18px;background:#121110;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">&sect;3.4</span><b style="color:#EDE6D8;font-weight:600;font-size:14.5px;">Sort stays in the chassis, in a separated trailing slot, on every route and at both widths.</b></div>
+      <div style="font-size:13px;line-height:1.7;color:#A59C89;text-wrap:pretty;">Not because sort is a filter &mdash; it is not, and the hairline is what says so &mdash; but because every alternative is worse on this app&rsquo;s actual surfaces. /decks&rsquo; desktop sort lives in a toolbar that <b style="color:#EDE6D8;font-weight:600;">disappears with the sidebar</b>, so &ldquo;leave it where it is&rdquo; is not available; /collection and both commander lanes already trail it inside the bar. Three of four routes need no change.<div style="height:9px;"></div>At phone it is the 44px icon trigger on the persistent row, which is what <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">filter-rack.tsx</span> ships today via <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">iconOnly={!wide}</span> &mdash; already built, already tested, on two routes. <b style="color:#EDE6D8;font-weight:600;">The deck sheet&rsquo;s Sort group is retired</b>, which is the one place the app answers this question twice. Consequence to accept: sort is then never inside the sheet on any route, so the sheet is filters only and its badge stays honest.</div>
+    </div>
+
+    <div style="border:1px solid #3A3229;border-radius:12px;padding:16px 18px;background:#121110;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">&sect;3.5</span><b style="color:#EDE6D8;font-weight:600;font-size:14.5px;">The two lanes converge on the frame and keep exactly two differences &mdash; both data, not layout.</b></div>
+      <div style="font-size:13px;line-height:1.7;color:#A59C89;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Score against stays owned-lane only</b> (the tests assert its absence on discover, and a greyed stand-in was already rejected), and <b style="color:#EDE6D8;font-weight:600;">the sort options stay per-lane</b> &mdash; two of discover&rsquo;s five decide what the lane is ranked on, and the owned lane has no equivalent. Both survive because they describe what the data can answer. Everything else merges: one frame, one control order, one panel shape, one result line.<div style="height:9px;"></div>The brief asks whether the difference is &ldquo;still meaningful&rdquo;. It is, and the test is a question a player could ask: <i>what would this control do here?</i> Score-against on discover has no answer &mdash; you own none of it.</div>
+    </div>
+
+    <div style="border:1px solid #6B482A;border-radius:12px;padding:16px 18px;background:#191410;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">&sect;6</span><b style="color:#EDE6D8;font-weight:600;font-size:14.5px;">Any printing, on both lanes &mdash; and the control is called Printed in, not Set.</b></div>
+      <div style="font-size:13px;line-height:1.7;color:#A59C89;text-wrap:pretty;">Option <b style="color:#EDE6D8;font-weight:600;">(1)</b>. Option (2) &mdash; owned printing &mdash; is the better long-term answer and engineering is right that it is the direction, but it cannot ship this round on the surface that needs it: by construction <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">candidates.ts</span> partitions /discover to commanders the player <i>does not own</i>, so an owned-printing filter there matches nothing, ever. That forces the dimension to be owned-lane-only &mdash; a <b style="color:#EDE6D8;font-weight:600;">third</b> per-lane difference in the same round that &sect;3.5 argues for convergence. (1) also needs no printing-aware row rendering, so it does not drag the printed-name work onto a lane whose art is oracle-level by construction.<div style="height:9px;"></div><b style="color:#EDE6D8;font-weight:600;">The wording is the fix for the visible contradiction the brief names.</b> A row matching on a set while drawing another set&rsquo;s art is only a contradiction if the control claimed to be about the art. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Printed in Duskmourn</span> is true of the oracle card whichever printing the row happens to draw; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Set: DSK</span> implies the thing on screen. One word, and the row needs no change.<div style="height:9px;"></div><b style="color:#EDE6D8;font-weight:600;">Named collision:</b> /collection&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Set &#9662;</span> means something genuinely different &mdash; sets you hold cards from, counted from <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">setCounts</span>. It keeps its name. Two differently-named controls because they are two different questions; this is the same trap set collections caught as its <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Set &#9662;</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">By set</span> collision, decision 20. <b style="color:#EDE6D8;font-weight:600;">When the commander lane becomes printing-aware, (2) is a filter swap behind an unchanged control</b> &mdash; and at that point the honest label is still <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Printed in</span>.</div>
+    </div>
+
+    <div style="border:1px solid #3A3229;border-radius:12px;padding:16px 18px;background:#121110;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#CF8745;">&sect;2.1</span><b style="color:#EDE6D8;font-weight:600;font-size:14.5px;">One flag on the locked decision: the new chassis retires a component that landed three weeks ago.</b></div>
+      <div style="font-size:13px;line-height:1.7;color:#A59C89;text-wrap:pretty;">Drawn as locked &mdash; new chassis, not an adoption. But the brief&rsquo;s rejection names &ldquo;the collection bar&rdquo; and &ldquo;the commanders rack&rdquo;, and the collection bar <i>is</i> five mounts of <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">ui/filter-panel.tsx</span> &mdash; 42.5KB of component with 34.6KB of tests, ratified in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">collection-filter-panel.md</span>, named &ldquo;the reference implementation&rdquo; in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">rack/filter-sheet.tsx</span>&rsquo;s own header, and listed by set collections&rsquo; readiness as <b style="color:#EDE6D8;font-weight:600;">&ldquo;mounted, not forked&rdquo;</b>.<div style="height:9px;"></div><b style="color:#EDE6D8;font-weight:600;">So the drawing above deliberately specifies the panel as what <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">FilterPanel</span> already does</b> &mdash; anchored not in flow, searchable past a length threshold, counts per row, single-select mode for sort, one live region written by the bar, a per-dimension Clear that announces its intent. Read &sect;2.1 as <i>a new chassis around the existing panel</i> and nothing needs rewriting; read it as <i>a new panel too</i> and this round throws away a tested component and set collections&rsquo; Task 9 lands on a control that is about to be replaced. <b style="color:#EDE6D8;font-weight:600;">That is the one decision I want confirmed before build</b>, and it is the difference between a moderate refactor and a large one.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ §7 CONTRACT ═══════════════════════════ -->
+<section id="seven" style="max-width:1180px;margin:0 0 30px;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">&sect;7 &mdash; the contract</div>
+  <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0 0 18px;color:#EDE6D8;">What a build must not change.</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;">
+    <div style="flex:1 1 340px;min-width:320px;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">Invariants</div>
+      <div style="font-size:12.5px;line-height:1.8;color:#A59C89;">
+        <div>1. Three rows, always all three, in order. Row 2 prints <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">no filters on</span> at rest rather than collapsing.</div>
+        <div>2. The chassis never changes height when results change.</div>
+        <div>3. One live region per surface, and it is the result line.</div>
+        <div>4. One treatment mounted per width &mdash; never a desktop copy and a phone copy hidden past each other.</div>
+        <div>5. The pip carries no opacity, no tint, no token colour. Ever.</div>
+        <div>6. No filter state is carried by colour alone.</div>
+        <div>7. The badge counts active dimensions, never search and never sort.</div>
+        <div>8. Every phone target is 44px, pips included.</div>
+        <div>9. The empty state sits below the chassis and never replaces it.</div>
+      </div>
+    </div>
+    <div style="flex:1 1 340px;min-width:320px;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;background:#121110;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:10px;">Retired by this round</div>
+      <div style="font-size:12.5px;line-height:1.8;color:#A59C89;">
+        <div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-filter-column.tsx</span> &mdash; the whole 262px column, its <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FilterRow</span> keyline vocabulary, its footer Clear and its <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">allOn</span>/<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">someOn</span> line.</div>
+        <div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ColourSwatch</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rack/colour-control.tsx</span>&rsquo;s pip half, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">collection/color-pip.tsx</span> &mdash; three controls, one replacement. The match modifier survives.</div>
+        <div>The deck sheet&rsquo;s <b style="color:#EDE6D8;font-weight:600;">Sort</b> group.</div>
+        <div>The collection bar&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">COLOR</span> caption.</div>
+        <div>Every <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">opacity</span> on a colour control: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0.34</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0.40</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">color-pip</span>&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">opacity-40</span>.</div>
+        <div>The 32px/34px control-height split inside one row.</div>
+      </div>
+    </div>
+    <div style="flex:1 1 340px;min-width:320px;border:1px solid #6B482A;border-radius:12px;padding:16px 18px;background:#191410;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:10px;">Dependencies &amp; sequencing</div>
+      <div style="font-size:12.5px;line-height:1.8;color:#A59C89;">
+        <div><b style="color:#EDE6D8;font-weight:600;">Set collections Task 9 goes first</b> and produces the extracted colour control this treatment lands on. Its test asserts <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">getByRole("button")</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-pressed</span>; the real API is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">role="switch"</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-checked</span> &mdash; the brief flags it and it must be rewritten before the task runs.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">The set pages inherit this pip.</b> Brief &sect;5 takes that branch and it needs ratifying against a Green handoff. The contrast is measured here: <b style="color:#EDE6D8;font-weight:600;">9.51:1</b> floor, so the inheritance is safe on the number, not merely assumed.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Asset delivery is unspecified.</b> Five remote SVGs per surface, one per pip, theme-independent and cacheable forever. Whether they ship as static assets, sprite or hotlink is engineering&rsquo;s, but <b style="color:#EDE6D8;font-weight:600;">hotlinking a third party in the filter chrome of four routes is the one choice Design would push back on</b>.</div>
+        <div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">cost-pips.tsx</span> is out of scope and drawn as if convergence will be yes &mdash; same circles, same assets, same &minus;5px shingle.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;amonkhet&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;ixalan&quot;,&quot;eldraine&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      themes: [
+        { key: "amonkhet", label: "Low Sun" },
+        { key: "kamigawa", label: "Neon Rain" },
+        { key: "phyrexia", label: "Oil Slick" },
+        { key: "kaldheim", label: "Rune Frost" },
+        { key: "ixalan", label: "Sun Empire" },
+        { key: "eldraine", label: "Witchlight" },
+      ],
+      // Every filter live on main, and the control type it takes. Read off
+      // filter-rack.tsx, deck-filter-column.tsx, deck-filter-sheet.tsx and
+      // collection/filter-bar.tsx.
+      inventory: [
+        { filter: "Search", routes: "all four", type: "field", change: "Nothing. Same placeholder per route, same live filtering, still never in the sheet." },
+        { filter: "Colour identity", routes: "all four", type: "pip row", change: "Real symbols, circles, no dimming. Gains a legend on /decks and /collection, which had none." },
+        { filter: "Colour match — Any / Exactly", routes: "commanders, discover", type: "segmented", change: "Nothing. Stays inside the pip well past a hairline; greyed in place with no pip lit." },
+        { filter: "Score against — All my cards / Free only", routes: "commanders", type: "segmented", change: "Keeps its inline segmented shape and its caption. R1 drew it as a dropdown; corrected." },
+        { filter: "Order / Sort", routes: "all four", type: "trigger + panel", change: "Moves to the trailing slot past a hairline on every route, both widths. Leaves the deck sheet and the deck toolbar." },
+        { filter: "Status", routes: "decks", type: "trigger + panel", change: "Leaves the sidebar. Panel rows keep the status token as a leading dot; chips keep the 15% token fill." },
+        { filter: "Last played", routes: "decks", type: "trigger + panel", change: "Two values plus an off, so a panel and not a segmented. Single-select inside it, as today." },
+        { filter: "Type", routes: "collection", type: "trigger + panel", change: "Nothing. Fixed vocabulary, no search field, no footer total — filter-panel.tsx's existing config." },
+        { filter: "Set", routes: "collection", type: "trigger + panel", change: "Nothing, including its name. Searchable, matches the abbreviation, counts per row." },
+        { filter: "Availability", routes: "collection", type: "trigger + panel", change: "Nothing. Four-item vocabulary, marker glyph per row, disabled state when the aggregate fails to read." },
+        { filter: "Printed in", routes: "commanders, discover", type: "trigger + panel", change: "New (§6). Searchable, matches any printing, carries a one-line hint saying so." },
+        { filter: "View — rows / grid", routes: "collection", type: "segmented", change: "Not a filter: sits outside the hairline wide, and on the result line compact. Never counted by the badge or cleared." },
+      ],
+      // Computed from the six [data-theme] blocks. Pips = the five Scryfall
+      // grounds against --surface-sunken, worst first; dim = the shipped
+      // opacity .34 token pip, the state this round replaces.
+      contrast: [
+        { theme: "Low Sun", pips: "9.75 – 16.73", ring: "6.29", result: "6.73", dim: "1.39" },
+        { theme: "Neon Rain", pips: "9.95 – 17.07", ring: "6.04", result: "6.68", dim: "1.40" },
+        { theme: "Oil Slick", pips: "10.22 – 17.53", ring: "4.42", result: "6.62", dim: "1.38" },
+        { theme: "Rune Frost", pips: "9.51 – 16.32", ring: "4.86", result: "6.93", dim: "1.40" },
+        { theme: "Sun Empire", pips: "9.82 – 16.84", ring: "9.26", result: "7.23", dim: "1.40" },
+        { theme: "Witchlight", pips: "10.02 – 17.19", ring: "6.69", result: "6.53", dim: "1.40" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

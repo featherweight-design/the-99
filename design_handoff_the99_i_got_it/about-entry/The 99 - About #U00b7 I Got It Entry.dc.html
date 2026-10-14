@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:56px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">about &middot; I got it entry &middot; &sect;G template artboard &middot; ship at the end of the launch &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:31px;margin:0 0 14px;line-height:1.26;max-width:1240px;">One entry for chapter 03, after Cheaper stand-ins: the last step of a buying trip.</h1>
+    <p style="max-width:1240px;font-size:15px;line-height:1.72;color:var(--fg-body);margin:0;text-wrap:pretty;">It's <b style="color:var(--fg);font-weight:600;">since: 12</b>, the same launch bump (11 &rarr; 12) as the five collection edit entries, so the six ship together. It carries <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">switch: 'SHOPPING_MARK_BOUGHT_ENABLED'</span>. The control also needs <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">COLLECTION_EDIT_ENABLED</span>, and the entry's <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">switch</span> takes one key. That's the ask in the README (open 1).</p>
+  </section>
+
+  <section style="max-width:1320px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;margin-bottom:14px;">&sect;0 &middot; <span style="color:var(--accent);">where it goes in chapter 03 &middot; the bump as a returning reader meets it</span></div>
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="width:560px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface);padding:14px 18px;display:flex;flex-direction:column;">
+        <sc-for list="{{ order }}" as="o" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:12px;min-height:30px;border-bottom:1px solid var(--border);">
+            <span style="flex:1;font-size:13.5px;color:{{ o.ink }};font-weight:{{ o.weight }};">{{ o.title }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--accent);">{{ o.tag }}</span>
+          </div>
+        </sc-for>
+        <div style="padding-top:8px;font-size:12px;color:var(--fg-muted);">Chapter 03, excerpt. The neighbours are the shipped ids <span style="font-family:'IBM Plex Mono',monospace;">shopping</span> and <span style="font-family:'IBM Plex Mono',monospace;">stand-ins</span>.</div>
+      </div>
+      <div style="width:420px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface);padding:16px 18px;">
+        <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--accent);">6 new in About</h2>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;font-size:14px;">
+          <span>Adding cards by hand</span><span>Replacing or adding from a file</span><span>Changing how many you own</span><span style="color:var(--fg-muted);font-size:13px;">and 3 more</span>
+        </div>
+        <div style="margin-top:12px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is sheet N2, unchanged. With both switches on, the launch bump brings six entries, and the sheet still lists three in page order. Chapter 01 has five and comes first, so this entry is counted. With only the collection edit switch on, the sheet reads <span style="font-family:'IBM Plex Mono',monospace;">5 new</span> as the 1+2 addendum drew it. In the index (O1), chapter 03's row reads <span style="font-family:'IBM Plex Mono',monospace;">1 new</span>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s1" style="max-width:1320px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:12px;border-top:1px solid var(--accent);padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:3px 9px;">S1</span>
+      <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:23px;">{{ title }}</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">id {{ id }} &middot; after “Cheaper stand-ins”</span>
+    </div>
+    <p style="margin:0;max-width:1100px;font-size:13.5px;line-height:1.65;color:var(--fg-muted);">Chapter 03, straight after Cheaper stand-ins. Shopping says what to buy, stand-ins say what to buy instead, and this is what you do once it arrives. It isn't in chapter 01, even though it writes to the Collection, because the reader meets the control on a deck page, in the Shopping view. Its caption sends them to History, which chapter 01 teaches (U5).</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:700px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+        <sc-for list="{{ slots }}" as="s" hint-placeholder-count="11">
+          <div style="{{ s.cell }}border:1px dashed var(--border-dashed);border-radius:8px;padding:10px 12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ s.label }}</div>
+            <div style="white-space:pre-line;color:{{ s.ink }};font-weight:{{ s.weight }};font-family:{{ s.font }};">{{ s.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="width:520px;border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:22px 24px 24px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the entry, as the page draws it</div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="font-family:'Cinzel',serif;font-size:19px;font-weight:700;">{{ title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--bg);background:var(--accent);border-radius:4px;padding:1px 6px;">NEW</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ route }}</div>
+        <p style="margin:6px 0 0;font-size:13.5px;line-height:1.6;color:var(--fg-body);white-space:pre-line;">{{ caption }}</p>
+        <div style="margin-top:8px;height:150px;border-radius:8px;border:1px solid var(--border);background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-locked);">specimen &middot; two Shopping rows with the control, and the receipt toast</div>
+        <ol style="margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.55;color:var(--fg-body);">
+          <sc-for list="{{ keys }}" as="k" hint-placeholder-count="4"><li>{{ k }}</li></sc-for>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const e = {
+      id: "shopping-got-it", title: "Marking a card you bought", route: "/decks/[id] · Shopping view · each row's buy tag",
+      caption: "Bought something off a deck's Shopping list? Press the card's buy tag. Say which printing came, whether it's foil, and how many, and it goes straight into your Collection.\n\nThe deck reads the new copy like any other, so the card usually drops off the list on its own.",
+      specimen: "Two Shopping DecklistRows: Polyraptor with every neighbour (over $5, ⇄) and its tag in the open state, and Trapjaw Tyrant at rest. Below them, the receipt toast, clean: “Etali, Primal Conqueror added · ×1 · MOM #137 · nonfoil”, with History and Undo. The confirm isn't mounted, since it opens on press.",
+      fixture: "fixtures.gotIt · rows [{Etali, Primal Conqueror, $6.50, edhrec 29}, {Doubling Season, $42.60, over, limit $10}] · swapTools {limitCents 1000} · toast {card 'Etali, Primal Conqueror', qty 1, printing 'MOM #137', finish 'nonfoil'}",
+      keys: [
+        "The printing starts at the one the list priced. If a different one came, change it.",
+        "Usually the card leaves the list. If an older deck was short of it too, the copy goes there first, and this deck keeps the card on its list.",
+        "Undo is on the receipt, and History keeps the change after that.",
+        "You never mark the deck by hand. Its buy marks follow your Collection.",
+      ],
+      phone: "The buy tag is the control at both widths, and the form opens as a bottom sheet. The specimen's rows take the phone's two-line shape, and the toast spans the column.",
+    };
+    const full = "grid-column:1 / -1;";
+    const mono = "'IBM Plex Mono',monospace";
+    const slot = (label, text, cell = "", ink = "var(--fg-body)", weight = 400, font = "'IBM Plex Sans',sans-serif") => ({ label, text, cell, ink, weight, font });
+    const row = (title, tag) => ({ title, tag, ink: tag ? "var(--fg)" : "var(--fg-muted)", weight: tag ? 600 : 400 });
+    return {
+      ...e,
+      slots: [
+        slot("Title", e.title, "", "var(--fg)", 600),
+        slot("Route", e.route, "", "var(--fg-body)", 400, mono),
+        slot("Chapter", "03 · Building the 99, after “Cheaper stand-ins”"),
+        slot("Width", "plate: the specimen is two rows and a toast at full column width"),
+        slot("Caption", e.caption, full),
+        slot("Specimen", e.specimen, full),
+        slot("Fixture props", e.fixture, full, "var(--fg-body)", 400, mono),
+        slot("Key lines · 4 of 4", e.keys.map((k, j) => `${j + 1}. ${k}`).join("\n"), full),
+        slot("Phone reduction", e.phone, full),
+        slot("since · switch", "12 (the launch bump, 11 → 12) · SHOPPING_MARK_BOUGHT_ENABLED, and COLLECTION_EDIT_ENABLED (open 1)"),
+        slot("Strings from", "copy/i-got-it.ts (row.*, confirm.*, receipt.*)", "", "var(--fg-body)", 400, mono),
+      ],
+      order: [row("shopping · as shipped", ""), row("stand-ins · Cheaper stand-ins, as shipped", ""), row("Marking a card you bought", "S1 · new"), row("…the rest of chapter 03, unchanged", "")],
+    };
+  }
+}
+</script>
+</body>
+</html>

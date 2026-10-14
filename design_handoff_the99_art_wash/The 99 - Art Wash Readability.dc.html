@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#14110E; font-family:'IBM Plex Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#C9A24B; }
+  a:hover { color:#E0B963; }
+</style>
+</helmet>
+
+<div style="padding:44px 40px 90px;max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:56px;">
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#8E8269;">The 99 · Readability amendment</div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:38px;color:#EDE6D8;margin:0;line-height:1.12;">Commander art wash — scrim system</h1>
+    <p style="font-size:15px;color:#C6B79A;line-height:1.65;margin:0;max-width:760px;text-wrap:pretty;">The wash is right. What broke is that the art was let through at full luminance, and the <b style="color:#EDE6D8;font-weight:600;">whole card image</b> was used instead of the art crop — so Magic's own printed title and type line land in exactly the band our labels occupy. Four rules below fix both surfaces without giving up the wash.</p>
+  </div>
+
+  <!-- DIAGNOSIS -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">What's going wrong</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;">
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:#C05A48;">01 · WRONG SOURCE</div>
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;line-height:1.2;">Full card, not art crop</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;">The gold frame, printed name and type line ride along and collide with our own type at the same size.</div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:#C05A48;">02 · NO SCRIM</div>
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;line-height:1.2;">Art at full luminance</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;">Highlights in Aang's fire and Eldrazi's fog reach L*80+. No amount of white text survives that.</div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:#C05A48;">03 · ALPHA INK</div>
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;line-height:1.2;">Translucent text and chips</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;">“Complete” and the overflow button are alpha fills over art, so the art reads through the chip.</div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:#C05A48;">04 · WASH TOO FAR</div>
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;line-height:1.2;">Art behind dense data</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;">On commander rows the wash runs under stat pills, the synergy bar and the receipts line — all of which need flat ground.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE SYSTEM -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">The scrim system · four rules</div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;overflow:hidden;">
+        <div style="padding:18px 20px 14px;border-bottom:1px solid #2A241D;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#EDE6D8;">Rule 1 · Art crop only</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-top:6px;">Always <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">image_uris.art_crop</code> (626×457), <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">object-fit:cover</code>. Never <code style="font-family:'IBM Plex Mono',monospace;color:#C05A48;font-size:12px;">normal</code>, <code style="font-family:'IBM Plex Mono',monospace;color:#C05A48;font-size:12px;">large</code> or <code style="font-family:'IBM Plex Mono',monospace;color:#C05A48;font-size:12px;">png</code>. On a modal DFC, crop the front face.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#2A241D;">
+          <div>
+            <div style="height:104px;background:#0E0C09 center/cover no-repeat url('https://api.scryfall.com/cards/named?exact=Avatar%20Aang&format=image&version=normal');"></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C05A48;background:#1A160F;padding:8px 12px;">NORMAL — FRAME + TYPE LINE</div>
+          </div>
+          <div>
+            <div style="height:104px;background:#0E0C09 center/cover no-repeat url('https://api.scryfall.com/cards/named?exact=Avatar%20Aang&format=image&version=art_crop');"></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#6B9E63;background:#1A160F;padding:8px 12px;">ART_CROP — CLEAN</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;overflow:hidden;">
+        <div style="padding:18px 20px 14px;border-bottom:1px solid #2A241D;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#EDE6D8;">Rule 2 · Three layers, this order</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-top:6px;">Dim the art <i>and</i> cover it. Dimming alone loses the drama; covering alone leaves hotspots.</div>
+        </div>
+        <div style="padding:16px 20px 20px;display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;flex:none;width:26px;padding-top:2px;">L1</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Base plate</b> <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">#0E0C09</code> — under the art, so a slow or missing image never flashes light ground.</div></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;flex:none;width:26px;padding-top:2px;">L2</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Art</b> at <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">opacity .55</code> — keeps hue, drops luminance globally.</div></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;flex:none;width:26px;padding-top:2px;">L3</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Gradient scrim</b> — heavy at the label bands, thin in the middle third so the art still breathes.</div></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#A89B84;background:#100D0A;border:1px solid #2A241D;border-radius:8px;padding:12px 14px;margin-top:4px;white-space:pre-wrap;">linear-gradient(180deg,
+  rgba(14,12,9,.90) 0%,
+  rgba(14,12,9,.34) 38%,
+  rgba(14,12,9,.66) 78%,
+  #14110E 100%)</div>
+        </div>
+      </div>
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;overflow:hidden;">
+        <div style="padding:18px 20px 14px;border-bottom:1px solid #2A241D;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#EDE6D8;">Rule 3 · Full-opacity ink</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-top:6px;">Nothing over art gets an alpha colour. Use solid brand ink plus a shadow to seat it.</div>
+        </div>
+        <div style="padding:16px 20px 20px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><span style="font-size:13px;color:#C6B79A;">Title over art</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#F4EFE3;">#F4EFE3 · 100%</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><span style="font-size:13px;color:#C6B79A;">Subtitle over art</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">#C6B79A · 100%</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><span style="font-size:13px;color:#C6B79A;">Shadow on both</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A89B84;">0 1px 3px rgba(0,0,0,.6)</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #2A241D;padding-top:10px;"><span style="font-size:13px;color:#C6B79A;">Chips on art</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A89B84;">#14110E + 1px #3A3229</span></div>
+          <div style="font-size:12.5px;color:#8E8269;line-height:1.55;">Contrast floor over the scrimmed art: <b style="color:#A89B84;font-weight:600;">7:1</b> for titles, <b style="color:#A89B84;font-weight:600;">4.5:1</b> for meta, measured against the art's brightest pixel — the scrim caps it at L*34.</div>
+        </div>
+      </div>
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;overflow:hidden;">
+        <div style="padding:18px 20px 14px;border-bottom:1px solid #2A241D;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#EDE6D8;">Rule 4 · Data lives on flat ground</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-top:6px;">The wash owns one band. Below the hairline divider, everything sits on solid card ground — no exceptions for pills, bars, prices or receipts.</div>
+        </div>
+        <div style="padding:16px 20px 20px;display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:#6B9E63;font-size:13px;flex:none;">✓</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Deck name, subtitle, status chip, overflow — <b style="color:#EDE6D8;font-weight:600;">in the wash</b>.</div></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:#C05A48;font-size:13px;flex:none;">✕</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Colour pips, card count, completion bar, price, last-played, stat pills, synergy bar, receipts — <b style="color:#EDE6D8;font-weight:600;">below the divider</b>.</div></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#A89B84;background:#100D0A;border:1px solid #2A241D;border-radius:8px;padding:12px 14px;margin-top:4px;">divider: 1px solid #2A241D<br>ground:  #1A160F</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DECK CARD -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">Deck card · before / after</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px;align-items:start;">
+
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="width:8px;height:8px;border-radius:999px;background:#C05A48;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#C05A48;">Shipping today</span></div>
+        <div style="border-radius:14px;background:#1A160F;border:1px solid #2A241D;overflow:hidden;">
+          <div style="position:relative;height:158px;background:#0E0C09 center/cover no-repeat url('https://api.scryfall.com/cards/named?exact=Avatar%20Aang&format=image&version=normal');">
+            <div style="position:absolute;left:12px;top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(200,230,220,0.75);border:1px solid rgba(120,200,180,0.35);background:rgba(20,40,36,0.28);border-radius:6px;padding:5px 9px;">Complete</div>
+            <div style="position:absolute;right:12px;top:12px;width:30px;height:26px;border-radius:6px;background:rgba(20,17,14,0.35);display:flex;align-items:center;justify-content:center;color:rgba(237,230,216,0.6);font-size:15px;letter-spacing:1px;">···</div>
+            <div style="position:absolute;left:14px;bottom:14px;font-family:'Cinzel',serif;font-weight:600;font-size:21px;color:rgba(237,230,216,0.82);">HD - Avatar Aang</div>
+          </div>
+          <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:11px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div style="display:flex;gap:5px;"><span style="width:13px;height:13px;border-radius:3px;background:#E8E4D6;"></span><span style="width:13px;height:13px;border-radius:3px;background:#4A7FB5;"></span><span style="width:13px;height:13px;border-radius:3px;background:#5B5566;"></span><span style="width:13px;height:13px;border-radius:3px;background:#C05A48;"></span><span style="width:13px;height:13px;border-radius:3px;background:#6B9E63;"></span></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8E8269;">5-color</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#C6B79A;">99 / 99</span>
+            </div>
+            <div style="height:3px;border-radius:999px;background:#4A7FB5;"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;"><span>12 unowned · $13.20</span><span>never played</span></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#8E8269;line-height:1.6;">Printed type line runs straight through the deck name; the status chip is 28% alpha over a bright sky. Nothing here clears 3:1.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="width:8px;height:8px;border-radius:999px;background:#6B9E63;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6B9E63;">Corrected</span></div>
+        <div style="border-radius:14px;background:#1A160F;border:1px solid #2A241D;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,0.4);">
+          <div style="position:relative;height:158px;background:#0E0C09;overflow:hidden;">
+            <div style="position:absolute;inset:0;background:center/cover no-repeat url('https://api.scryfall.com/cards/named?exact=Avatar%20Aang&format=image&version=art_crop');opacity:0.55;"></div>
+            <div style="position:absolute;inset:0;background:{{ scrimOverlay }};"></div>
+            <div style="position:absolute;left:16px;top:15px;right:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+              <div style="min-width:0;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:#F4EFE3;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">HD - Avatar Aang</div>
+                <div style="font-size:12.5px;color:#C6B79A;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Avatar Aang // Aang, Master of Elements</div>
+              </div>
+              <div style="width:30px;height:26px;flex:none;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;color:#C6B79A;font-size:15px;letter-spacing:1px;">···</div>
+            </div>
+            <div style="position:absolute;left:16px;bottom:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;color:#8FC08A;background:#14110E;border:1px solid #33402F;border-radius:6px;padding:5px 9px;">Complete</div>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:14px 16px 16px;display:flex;flex-direction:column;gap:11px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div style="display:flex;gap:5px;"><span style="width:13px;height:13px;border-radius:3px;background:#E8E4D6;"></span><span style="width:13px;height:13px;border-radius:3px;background:#4A7FB5;"></span><span style="width:13px;height:13px;border-radius:3px;background:#5B5566;"></span><span style="width:13px;height:13px;border-radius:3px;background:#C05A48;"></span><span style="width:13px;height:13px;border-radius:3px;background:#6B9E63;"></span></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#A89B84;">5-color</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#EDE6D8;">99 / 99</span>
+            </div>
+            <div style="height:3px;border-radius:999px;background:#2A241D;overflow:hidden;"><div style="width:100%;height:100%;background:#4A7FB5;"></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A89B84;"><span>12 unowned · $13.20</span><span>never played</span></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#8E8269;line-height:1.6;">Art crop, dimmed and scrimmed. Title and subtitle move to the top band where the scrim is heaviest; the status chip drops to the art's darkest corner with an opaque fill; all data sits below the divider.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECOND DECK SAMPLE -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">Grid at rest · three arts, one scrim</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">
+      <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+        <div style="border-radius:14px;background:#1A160F;border:1px solid #2A241D;overflow:hidden;min-width:0;">
+          <div style="position:relative;height:150px;background:#0E0C09;overflow:hidden;">
+            <div style="position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0.55;background-image:{{ d.art }};"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,12,9,0.90) 0%,rgba(14,12,9,0.34) 38%,rgba(14,12,9,0.66) 78%,#14110E 100%);"></div>
+            <div style="position:absolute;left:16px;top:15px;right:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+              <div style="min-width:0;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#F4EFE3;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.name }}</div>
+                <div style="font-size:12px;color:#C6B79A;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.cmd }}</div>
+              </div>
+              <div style="width:30px;height:26px;flex:none;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;color:#C6B79A;font-size:15px;letter-spacing:1px;">···</div>
+            </div>
+            <div style="position:absolute;left:16px;bottom:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;color:#8FC08A;background:#14110E;border:1px solid #33402F;border-radius:6px;padding:5px 9px;">Complete</div>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:14px 16px 16px;display:flex;flex-direction:column;gap:11px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div style="display:flex;gap:5px;"><sc-for list="{{ d.pips }}" as="p" hint-placeholder-count="2"><span style="width:13px;height:13px;border-radius:3px;background:{{ p }};"></span></sc-for></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#A89B84;">{{ d.ids }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#EDE6D8;">99 / 99</span>
+            </div>
+            <div style="height:3px;border-radius:999px;background:#6B9E63;"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A89B84;"><span>all owned</span><span>{{ d.played }}</span></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- COMMANDER ROW -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">Commander row · before / after</div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;"><span style="width:8px;height:8px;border-radius:999px;background:#C05A48;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#C05A48;">Shipping today — wash runs the full row</span></div>
+      <div style="position:relative;border-radius:12px;border:1px solid #2A241D;overflow:hidden;background:#0E0C09 left 30% top 30%/cover no-repeat url('https://api.scryfall.com/cards/named?exact=Kotis%2C%20Sibsig%20Champion&format=image&version=normal');">
+        <div style="position:absolute;inset:0;background:rgba(14,12,9,0.28);"></div>
+        <div style="position:relative;display:flex;gap:20px;padding:18px 22px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="font-family:'Cinzel',serif;font-weight:800;font-size:22px;color:rgba(142,130,105,0.9);flex:none;width:22px;">2</div>
+          <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:10px;">
+            <div style="font-family:'Cinzel',serif;font-weight:600;font-size:22px;color:rgba(237,230,216,0.82);">Kotis, Sibsig Champion</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:rgba(198,183,154,0.7);background:rgba(42,36,29,0.4);border-radius:999px;padding:6px 12px;">RAMP 158/10</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:rgba(198,183,154,0.7);background:rgba(42,36,29,0.4);border-radius:999px;padding:6px 12px;">DRAW 262/10</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:rgba(198,183,154,0.7);background:rgba(42,36,29,0.4);border-radius:999px;padding:6px 12px;">REMOVAL 159/8</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;color:rgba(142,130,105,0.8);">SYNERGY</span><span style="flex:1;min-width:120px;height:4px;border-radius:999px;background:rgba(42,36,29,0.5);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:rgba(198,183,154,0.65);">own 136 of top 258</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:rgba(142,130,105,0.7);">receipts: Most Decrepit Old Bird · Hobbit Hole · Azog, Moria's Ruin +133</div>
+          </div>
+          <div style="flex:none;width:150px;"><div style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;color:rgba(237,230,216,0.8);line-height:1;">72</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;color:rgba(142,130,105,0.8);margin-top:4px;">/100 FIT</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;">
+      <div style="display:flex;align-items:center;gap:10px;"><span style="width:8px;height:8px;border-radius:999px;background:#6B9E63;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6B9E63;">Corrected — wash owns the identity band</span></div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <sc-for list="{{ cmds }}" as="c" hint-placeholder-count="3">
+          <div style="border-radius:12px;border:1px solid #2A241D;background:#1A160F;overflow:hidden;">
+            <div style="position:relative;min-height:78px;background:#0E0C09;overflow:hidden;">
+              <div style="position:absolute;inset:0;background-size:cover;background-position:center 28%;background-repeat:no-repeat;opacity:0.5;background-image:{{ c.art }};"></div>
+              <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,12,9,0.72) 0%,rgba(14,12,9,0.5) 45%,rgba(14,12,9,0.86) 100%);"></div>
+              <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(14,12,9,0.55) 0%,rgba(14,12,9,0.1) 40%,rgba(14,12,9,0.8) 100%);"></div>
+              <div style="position:relative;display:flex;align-items:center;gap:18px;padding:16px 22px;flex-wrap:wrap;">
+                <div style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;color:#C6B79A;flex:none;min-width:24px;text-shadow:0 1px 3px rgba(0,0,0,0.7);">{{ c.rank }}</div>
+                <div style="flex:1;min-width:200px;">
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#F4EFE3;text-shadow:0 1px 3px rgba(0,0,0,0.7);">{{ c.name }}</span>
+                    <span style="display:flex;gap:4px;"><sc-for list="{{ c.pips }}" as="p" hint-placeholder-count="3"><span style="width:12px;height:12px;border-radius:3px;background:{{ p }};box-shadow:0 0 0 1px rgba(14,12,9,0.8);"></span></sc-for></span>
+                  </div>
+                  <div style="font-size:12.5px;color:#C6B79A;margin-top:3px;text-shadow:0 1px 3px rgba(0,0,0,0.7);">{{ c.sub }}</div>
+                </div>
+                <div style="flex:none;display:flex;align-items:baseline;gap:7px;background:#14110E;border:1px solid #3A3229;border-radius:9px;padding:8px 13px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;color:#EDE6D8;line-height:1;">{{ c.fit }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:#8E8269;">/100 FIT</span>
+                </div>
+              </div>
+            </div>
+            <div style="border-top:1px solid #2A241D;padding:14px 22px 16px;display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <sc-for list="{{ c.stats }}" as="s" hint-placeholder-count="4">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 12px;">{{ s }}</span>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:#8E8269;flex:none;">SYNERGY</span>
+                <span style="flex:1;min-width:110px;height:4px;border-radius:999px;background:#2A241D;overflow:hidden;display:block;"><span style="display:block;height:100%;background:#4A7FB5;width:{{ c.synW }};"></span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#A89B84;flex:none;">{{ c.own }}</span>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;line-height:1.5;">{{ c.receipts }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:12.5px;color:#8E8269;line-height:1.6;max-width:820px;">Two zones: a scrimmed identity band carrying rank, name, colour pips and the fit score, then flat ground for the numbers. Vertical <i>and</i> horizontal scrims — the horizontal one guarantees the fit chip's corner stays dark whatever the art does.</div>
+    </div>
+  </div>
+
+  <!-- HANDOFF -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">Dev notes</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;">
+      <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:10px;padding:16px 18px;font-size:13px;color:#C6B79A;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">One shared component.</b> Both surfaces should render the same <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">&lt;ArtWash&gt;</code> — art url, height, and a <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">band</code> prop for the label zone. Divergent scrims are how this drifts back.</div>
+      <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:10px;padding:16px 18px;font-size:13px;color:#C6B79A;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">No art is a valid state.</b> Missing <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">art_crop</code> falls back to the existing colour-identity gradient at the same opacity — same scrim, no layout shift.</div>
+      <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:10px;padding:16px 18px;font-size:13px;color:#C6B79A;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Respect reduced-transparency.</b> Under <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">prefers-reduced-transparency</code> or high-contrast, drop L2 to <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">opacity .3</code> and push L3's stops to .95 / .6 / .85.</div>
+      <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:10px;padding:16px 18px;font-size:13px;color:#C6B79A;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Don't scrim with blur.</b> <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">backdrop-filter</code> on the label band was the other candidate — it costs a compositing layer per card in a 40-deck grid and still doesn't fix hotspot luminance.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;scrim&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.9,&quot;min&quot;:0.5,&quot;max&quot;:1,&quot;step&quot;:0.02,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Scrim&quot;,&quot;unit&quot;:&quot;&quot;}}">
+const S = n => `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}&format=image&version=art_crop`;
+const url = n => `url('${S(n)}')`;
+const W='#E8E4D6',U='#4A7FB5',B='#5B5566',R='#C05A48',G='#6B9E63';
+
+class Component extends DCLogic {
+  renderVals() {
+    const scrim = this.props.scrim ?? 0.9;
+    return {
+      scrimOverlay: `linear-gradient(180deg,rgba(14,12,9,${scrim}) 0%,rgba(14,12,9,${(scrim*0.38).toFixed(3)}) 38%,rgba(14,12,9,${(scrim*0.73).toFixed(3)}) 78%,#14110E 100%)`,
+      decks: [
+        { name:'HD - Tovolar', cmd:'Tovolar, Dire Overlord', art:url('Tovolar, Dire Overlord'), pips:[R,G], ids:'Gruul', played:'7 weeks ago' },
+        { name:'HD - Eldrazi', cmd:'Zhulodok, Void Gorger', art:url('Zhulodok, Void Gorger'), pips:[], ids:'Colorless', played:'2 days ago' },
+        { name:'HD - Brago', cmd:'Brago, King Eternal', art:url('Brago, King Eternal'), pips:[W,U], ids:'Azorius', played:'never played' }
+      ],
+      cmds: [
+        { rank:1, name:'Preston Garvey, Minuteman', sub:'Legendary Creature — Human Soldier', art:url('Preston Garvey, Minuteman'), pips:[G,R,W], fit:73, synW:'58%', own:'own 140 of top 252',
+          stats:['RAMP 166/10','DRAW 149/10','REMOVAL 152/8','WIPES 17/3'], receipts:'receipts: Celebrate the Mountain-king · Bofur, Reliable Guardian · Key to the Side-Door +137' },
+        { rank:2, name:'Kotis, Sibsig Champion', sub:'Legendary Creature — Zombie Assassin', art:url('Kotis, Sibsig Champion'), pips:[B,G,U], fit:72, synW:'53%', own:'own 136 of top 258',
+          stats:['RAMP 158/10','DRAW 262/10','REMOVAL 159/8','WIPES 13/3'], receipts:"receipts: Most Decrepit Old Bird · Hobbit Hole · Azog, Moria's Ruin +133" },
+        { rank:3, name:'Sokka, Lateral Strategist', sub:'Legendary Creature — Human Advisor', art:url('Sokka, Lateral Strategist'), pips:[U,W], fit:71, synW:'52%', own:'own 147 of top 281',
+          stats:['RAMP 75/10','DRAW 202/10','REMOVAL 113/8','WIPES 17/3'], receipts:'receipts: Bilbo Baggins, Burglar · Well-Worn Spatula · Plunder the Trollshaws +144' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

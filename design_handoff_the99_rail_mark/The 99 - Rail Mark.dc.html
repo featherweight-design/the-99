@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#14110E; color:#EDE6D8; font-family:'Inter',system-ui,sans-serif; }
+  a { color:#CF8745; text-decoration:none; }
+  a:hover { color:#DE9757; text-decoration:underline; }
+</style>
+</helmet>
+
+<section id="turn1" style="padding:56px 44px 80px;display:flex;flex-direction:column;gap:34px;">
+  <div style="max-width:1000px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.3em;text-transform:uppercase;color:#8B8270;">Rail mark — R1 · ruled 1a · 2026-09-08</div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:12px 0 12px;color:#EDE6D8;text-wrap:pretty;">The rail head is a diamond. The mark is a crowned numeral. Put the mark back.</h1>
+    <p style="font-size:15px;line-height:1.7;color:#A59C89;margin:0 0 10px;">The 62px rail ships a bare 26px outlined diamond at the top — the crown's <i>middle</i> diamond, alone, with the numerals gone. It is the only place in the product where the app identifies itself at desktop width, and it currently identifies as a shape the nav also uses for Discover. All three candidates keep the 62px rail and one head slot 14–18px from the top — its height differs (39px in <a href="#1a">1a</a>, 21px in <a href="#1b">1b</a>, 38px in <a href="#1c">1c</a>, against today's 26px) — and the rule from <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">CHROME-rail-and-tabs.md</span>: <b style="color:#EDE6D8;font-weight:600;">the mark appears once, at the top, and is never repeated per row.</b></p>
+    <p style="font-size:14px;line-height:1.7;color:#8B8270;margin:0;">The head is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&lt;Crowned99&gt;</span> either way — <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">nav.tsx</span> already imports it for the wide rail and the mobile header; this adds a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">variant="rail-62"</span>. Crown takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--accent</span> so it themes; numerals take <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg</span>. Rail shown in the shipped slate theme.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start;">
+
+    <div id="1a" style="background:#171310;border:1px solid #2B241B;border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:16px;width:400px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 7px;">1a</span>
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Crown over numerals</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;border:1px solid #2F4A2C;border-radius:5px;padding:3px 7px;">Ruled &mdash; build this</span>
+      </div>
+      <div style="display:flex;gap:18px;">
+        <div style="width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;border-radius:10px 0 0 10px;display:flex;flex-direction:column;align-items:center;padding:14px 0 12px;height:330px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="display:flex;align-items:center;gap:6px;height:12px;">
+              <span style="width:6px;height:6px;background:#5B8DE0;transform:rotate(45deg);"></span>
+              <span style="width:8.5px;height:8.5px;background:#5B8DE0;transform:rotate(45deg);"></span>
+              <span style="width:6px;height:6px;background:#5B8DE0;transform:rotate(45deg);"></span>
+            </div>
+            <span style="font-family:'Cinzel',serif;font-weight:900;font-size:23px;line-height:1;color:#E6E8F0;letter-spacing:-0.01em;">99</span>
+          </div>
+          <div style="height:20px;"></div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.6 10 3.2l7 5.4V16a1 1 0 0 1-1 1h-3.2v-4.8H7.2V17H4a1 1 0 0 1-1-1z"></path></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="3" y="3" width="6.2" height="6.2" rx="1.4"></rect><rect x="10.8" y="3" width="6.2" height="6.2" rx="1.4"></rect><rect x="3" y="10.8" width="6.2" height="6.2" rx="1.4"></rect><rect x="10.8" y="10.8" width="6.2" height="6.2" rx="1.4"></rect></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 15.6h14.4M3.4 5.4l3.3 3.9L10 4.2l3.3 5.1 3.3-3.9-1.1 7.6H4.5z"></path></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><circle cx="10" cy="10" r="6.8"></circle><rect x="10" y="5.5" width="3.2" height="3.2" rx="0.4" transform="rotate(45 10 5.5)"></rect></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;background:#20222A;display:flex;align-items:center;justify-content:center;color:#E6E8F0;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="6.4" y="6.4" width="10.2" height="10.2" rx="2"></rect><path d="M13.4 3.6H5.4a1.8 1.8 0 0 0-1.8 1.8v8"></path></svg>
+            </div>
+          </div>
+          <div style="margin-top:auto;width:30px;height:30px;border-radius:50%;background:#16181F;border:1px solid #262A35;"></div>
+        </div>
+        <div style="font-size:13px;line-height:1.65;color:#A59C89;display:flex;flex-direction:column;gap:9px;padding-top:2px;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Geometry.</b> Crown 6&thinsp;/&thinsp;8.5&thinsp;/&thinsp;6px, 3px of visible air between points (6px layout gap &mdash; a rotated square is 1.414&times; as wide as its box), numerals Cinzel 900 at 23px, 4px between crown and digits — a 32.5&times;39 lockup (crown row 12 + 4 + 23) centred in the 62px rail with 14px above.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Why.</b> The whole mark, at the only width it has to survive. The brand sheet's rule — <i>below 24px the crown drops away</i> — is about the numerals' size, and 23px clears it.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Cost.</b> The head grows 26 &rarr; 39px tall, so the nav block starts 13px lower and the head zone is 14 + 39 + 20 = 73px. Nothing else on the rail moves.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1b" style="background:#171310;border:1px solid #2B241B;border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:16px;width:400px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 7px;">1b</span>
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#A59C89;">The crown alone</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;border:1px solid #2B241B;border-radius:5px;padding:3px 7px;">Not taken</span>
+      </div>
+      <div style="display:flex;gap:18px;">
+        <div style="width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;border-radius:10px 0 0 10px;display:flex;flex-direction:column;align-items:center;padding:18px 0 12px;height:330px;">
+          <div style="display:flex;align-items:center;gap:10.5px;height:21px;">
+            <span style="width:11px;height:11px;background:#5B8DE0;transform:rotate(45deg);"></span>
+            <span style="width:15px;height:15px;background:#5B8DE0;transform:rotate(45deg);"></span>
+            <span style="width:11px;height:11px;background:#5B8DE0;transform:rotate(45deg);"></span>
+          </div>
+          <div style="height:24px;"></div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.6 10 3.2l7 5.4V16a1 1 0 0 1-1 1h-3.2v-4.8H7.2V17H4a1 1 0 0 1-1-1z"></path></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="3" y="3" width="6.2" height="6.2" rx="1.4"></rect><rect x="10.8" y="3" width="6.2" height="6.2" rx="1.4"></rect><rect x="3" y="10.8" width="6.2" height="6.2" rx="1.4"></rect><rect x="10.8" y="10.8" width="6.2" height="6.2" rx="1.4"></rect></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 15.6h14.4M3.4 5.4l3.3 3.9L10 4.2l3.3 5.1 3.3-3.9-1.1 7.6H4.5z"></path></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><circle cx="10" cy="10" r="6.8"></circle><rect x="10" y="5.5" width="3.2" height="3.2" rx="0.4" transform="rotate(45 10 5.5)"></rect></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;background:#20222A;display:flex;align-items:center;justify-content:center;color:#E6E8F0;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="6.4" y="6.4" width="10.2" height="10.2" rx="2"></rect><path d="M13.4 3.6H5.4a1.8 1.8 0 0 0-1.8 1.8v8"></path></svg>
+            </div>
+          </div>
+          <div style="margin-top:auto;width:30px;height:30px;border-radius:50%;background:#16181F;border:1px solid #262A35;"></div>
+        </div>
+        <div style="font-size:13px;line-height:1.65;color:#A59C89;display:flex;flex-direction:column;gap:9px;padding-top:2px;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Geometry.</b> Three filled diamonds 11&thinsp;/&thinsp;15&thinsp;/&thinsp;11px, 5px of visible air (10.5px layout gaps) — 43&times;15, replacing the outlined 26px diamond in the same slot.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Why.</b> Filled brass reads at a glance where a 1.5px outline does not, it stops colliding with Discover's diamond glyph, and the crown is the half of the mark that is <i>ours</i> — the numerals are a numeral.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Cost.</b> Only the phone header and the wide rail still say <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">THE 99</span> in words. Desktop never spells the name.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1c" style="background:#171310;border:1px solid #2B241B;border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:16px;width:400px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 7px;">1c</span>
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#A59C89;">The app-icon seal</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;border:1px solid #2B241B;border-radius:5px;padding:3px 7px;">Not taken</span>
+      </div>
+      <div style="display:flex;gap:18px;">
+        <div style="width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;border-radius:10px 0 0 10px;display:flex;flex-direction:column;align-items:center;padding:14px 0 12px;height:330px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:#101219;border:1px solid #262A35;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
+            <div style="display:flex;align-items:center;gap:4px;height:8px;">
+              <span style="width:4px;height:4px;background:#5B8DE0;transform:rotate(45deg);"></span>
+              <span style="width:5.5px;height:5.5px;background:#5B8DE0;transform:rotate(45deg);"></span>
+              <span style="width:4px;height:4px;background:#5B8DE0;transform:rotate(45deg);"></span>
+            </div>
+            <span style="font-family:'Cinzel',serif;font-weight:900;font-size:16px;line-height:1;color:#E6E8F0;">99</span>
+          </div>
+          <div style="height:16px;"></div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.6 10 3.2l7 5.4V16a1 1 0 0 1-1 1h-3.2v-4.8H7.2V17H4a1 1 0 0 1-1-1z"></path></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="3" y="3" width="6.2" height="6.2" rx="1.4"></rect><rect x="10.8" y="3" width="6.2" height="6.2" rx="1.4"></rect><rect x="3" y="10.8" width="6.2" height="6.2" rx="1.4"></rect><rect x="10.8" y="10.8" width="6.2" height="6.2" rx="1.4"></rect></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 15.6h14.4M3.4 5.4l3.3 3.9L10 4.2l3.3 5.1 3.3-3.9-1.1 7.6H4.5z"></path></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><circle cx="10" cy="10" r="6.8"></circle><rect x="10" y="5.5" width="3.2" height="3.2" rx="0.4" transform="rotate(45 10 5.5)"></rect></svg>
+            </div>
+            <div style="width:38px;height:38px;border-radius:10px;background:#20222A;display:flex;align-items:center;justify-content:center;color:#E6E8F0;">
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="6.4" y="6.4" width="10.2" height="10.2" rx="2"></rect><path d="M13.4 3.6H5.4a1.8 1.8 0 0 0-1.8 1.8v8"></path></svg>
+            </div>
+          </div>
+          <div style="margin-top:auto;width:30px;height:30px;border-radius:50%;background:#16181F;border:1px solid #262A35;"></div>
+        </div>
+        <div style="font-size:13px;line-height:1.65;color:#A59C89;display:flex;flex-direction:column;gap:9px;padding-top:2px;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Geometry.</b> A 36px tile, 9px radius, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--surface-sunken</span> on a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--border-strong</span> hairline: crown 4&thinsp;/&thinsp;5.5&thinsp;/&thinsp;4 on 4px layout gaps over 16px numerals — the 64px favicon, one step down.</div>
+          <div style="color:#C46857;"><b style="font-weight:600;">Read the risk.</b> A 36px rounded tile 16px above five 38px rounded tiles reads as a sixth nav item, and 16px numerals sit under the brand sheet's own 24px floor.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Earns its place if</b> the head becomes a real route — tile links home, tooltip <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">The 99 &mdash; home</span> — and the Home icon leaves the nav. Five items, not six.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#171310;border:1px solid #2B241B;border-radius:14px;padding:20px 24px;max-width:1290px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px 28px;font-size:13px;line-height:1.65;color:#A59C89;">
+    <div><b style="color:#EDE6D8;font-weight:600;">Ruled: <a href="#1a">1a</a>, on client sign-off.</b> It is the mark the brand sheet locked, at a size that keeps the crown legal, and it is the only candidate where the desktop app says its own name. <a href="#1b">1b</a> and <a href="#1c">1c</a> stay drawn so the two rejections are on the record.</div>
+    <div><b style="color:#EDE6D8;font-weight:600;">One rule survives all three.</b> Whatever sits in the head is not a nav item and is not repeated per row — <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">RailDiamond</span> stays retired.</div>
+    <div><b style="color:#EDE6D8;font-weight:600;">Discover keeps its glyph.</b> Its 6.8r circle with a 3.2r diamond is unchanged in every candidate; <a href="#1b">1b</a> and <a href="#1a">1a</a> simply stop the head from being a bare diamond too.</div>
+    <div><b style="color:#EDE6D8;font-weight:600;">Accessible name.</b> The head carries <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">aria-label="The 99"</span> in <a href="#1a">1a</a>/<a href="#1b">1b</a> as an image role; in <a href="#1c">1c</a> it is a link and the name becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">The 99 — home</span>.</div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

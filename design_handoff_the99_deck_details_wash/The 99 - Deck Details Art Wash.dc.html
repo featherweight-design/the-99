@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* The 37-key contract from src/app/globals.css. Reproduced here so this
+     document resolves the same tokens the app does — every colour below is a
+     var(), never a literal. Only the keys these surfaces touch. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F;
+    --surface-raised:#211D18; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B; --surface-sunken:#101219; --surface-inset:#13151C;
+    --elevated:#20222A; --elevated-hover:#181A21; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814; --surface-sunken:#101512; --surface-inset:#141B16;
+    --elevated:#212A23; --elevated-hover:#18201A; --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-disabled:#3E473A;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-shadow:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13; --surface-sunken:#100E12; --surface-inset:#131115;
+    --elevated:#1E1C20; --elevated-hover:#171519; --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-disabled:#403E45;
+    --accent:#52827A; --accent-hover:#629189; --accent-shadow:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B; --surface-sunken:#131018; --surface-inset:#17141D;
+    --elevated:#26232C; --elevated-hover:#1D1A23; --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-disabled:#443F4D;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-shadow:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D; --surface-inset:#1A1B22;
+    --elevated:#2D2E35; --elevated-hover:#212229; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-shadow:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  body { margin:0; background:var(--bg); font-family:'IBM Plex Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:var(--accent); }
+  a:hover { color:var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="padding:44px 40px 90px;max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:56px;background:var(--bg);">
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">The 99 · Art wash · detail surfaces · {{ rev }}</div>
+    <h1 style="font-family:var(--display),serif;font-weight:800;font-size:38px;color:var(--fg);margin:0;line-height:1.12;">Deck details, commander mobile, rename — on tokens</h1>
+    <p style="font-size:15px;color:var(--fg-body);line-height:1.65;margin:0;max-width:840px;text-wrap:pretty;">The two deck-header bands shipped in <b style="color:var(--fg);font-weight:600;">PR #473</b>. This revision rules on the four open questions that PR carries, ratifies both recorded divergences, and drops one unreachable state. <b style="color:var(--fg);font-weight:600;">No geometry changes</b> — <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:13px;">168 × 1.37 = 230px</code>, the flat-by-240px scrim and the zero-reflow rename ring all stand as built. Earlier rounds moved this document onto <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:13px;">var(--*)</code> and closed its undrawn states; switch the theme prop to check any surface under all six.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:10px;padding:16px 20px;">
+      <div style="font-size:13.5px;color:var(--fg-body);line-height:1.6;max-width:880px;"><b style="color:var(--fg);font-weight:600;">Root cause, stated once.</b> Six rounds of review kept finding the same defect in different clothes — chrome, spine furniture, the Card details pill, the rename field, the pips. Every one was a value I recreated from an image instead of reading from source. The colour findings in this audit are all that same error at the token layer, so this revision fixes the <i>method</i>: nothing below is a literal, and the palette section names its source file.</div>
+    </div>
+  </div>
+
+  <!-- TOKEN CORRECTIONS -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">Every colour retired and replaced — source <code style="color:var(--accent);text-transform:none;letter-spacing:0;">src/app/globals.css</code></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px;">
+      <sc-for list="{{ corrections }}" as="c" hint-placeholder-count="6">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-family:var(--display),serif;font-weight:700;font-size:16px;color:var(--fg);line-height:1.25;">{{ c.title }}</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--danger);text-decoration:line-through;">{{ c.was }}</span>
+            <span style="color:var(--fg-faint);font-size:12px;">&rarr;</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--success);">{{ c.now }}</span>
+          </div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;">{{ c.why }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- PIPS -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">Conflict 1 · the pips — ruling upheld, my drawing was wrong</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">The shipped pip stands</div>
+        <div style="display:flex;align-items:center;gap:22px;">
+          <div style="display:flex;flex-direction:column;gap:7px;align-items:center;">
+            <span style="display:flex;gap:3px;"><sc-for list="{{ naya }}" as="c" hint-placeholder-count="3"><span style="width:14px;height:14px;border-radius:2px;background:{{ c }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span></sc-for></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);">SHIPPED · r2px</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;align-items:center;">
+            <span style="display:flex;gap:3px;"><sc-for list="{{ naya }}" as="c" hint-placeholder-count="3"><span style="width:14px;height:14px;border-radius:999px;background:{{ c }};display:block;"></span></sc-for></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--danger);">R2 · round</span>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;"><code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">IdentityPips</code> is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">rounded-[2px]</code> with <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">inset 0 0 0 1px rgba(0,0,0,.4)</code>, on <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">--w…--g</code>. Adopted. <b style="color:var(--fg);font-weight:600;">The ruling is not just upheld, this document proves it</b>: R2 drew round pips <i>and</i> the commander hero had round printed mana symbols in frame — exactly the read the squared shape exists to prevent.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">Two wrong palettes, not one</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <sc-for list="{{ pipRows }}" as="p" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);width:22px;flex:none;">{{ p.k }}</span>
+              <span style="width:16px;height:16px;border-radius:2px;flex:none;background:{{ p.tok }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--success);flex:none;">{{ p.hex }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--danger);text-decoration:line-through;">{{ p.wrong }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;">R1 sampled the screenshot's mana symbols. R2 "corrected" to the <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">brand/</code> sheet — <b style="color:var(--fg);font-weight:600;">also wrong</b>, and the reason the audit found none of five matching. The tokens are the only source. Note <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">--g</code> moves to <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">#527030</code> under Oil Haze, which no literal could have survived.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCENT + BAR -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">Conflicts 2 &amp; 3 · the accent literal is withdrawn, the bar keys off status</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);"><code style="font-family:'IBM Plex Mono',monospace;color:var(--danger);font-size:15px;">#8FB8E6</code> withdrawn entirely</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;">The premise was wrong twice. The screenshot was a non-default theme, so "the shipped <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">--accent</code> blue" was never the default's orange — and a single on-art literal would be one theme's hue under all six.</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">The rank eyebrow takes <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">var(--fg-body)</code></b> — but not on the strength of <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">wash-contrast.test.ts</code>'s <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.86</code> stop, which an earlier draft cited wrongly: that stop is the band's <i>bottom</i> and covers the subtitle, while the eyebrow starts at 54%. It clears because the ramp's dark stop moved to 50% (decision 12), putting it at &alpha; 0.643 and <b style="color:var(--fg);font-weight:600;">5.06:1</b>. Accent stays where it is large enough to hold its own — the FIT figure and buttons.</div>
+        <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;color:var(--fg-body);">RANK 1 · YOUR BEST FIT</span>
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">The bar keys off status, not percentage</div>
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ b.label }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ b.tok }}</span>
+            </div>
+            <div style="height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;"><div style="width:{{ b.w }};height:100%;background:{{ b.fill }};"></div></div>
+          </div>
+        </sc-for>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:2px;">Corrected against <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">status-style.ts</code>: the fill is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">var(STATUS_TOKEN[status])</code> — <b style="color:var(--fg);font-weight:600;">one token per status, not thresholds on the count</b>. An earlier draft had it as success/warning/danger by percentage, which would render a 40/99 Building deck red. Width is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">min(100, built/99)</code>, so an Over deck is full rather than 105%. Track <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">var(--elevated)</code> with <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">inset 0 0 0 1px rgba(0,0,0,.4)</code> — inset, on the track, so one value serves every status.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATES -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">R6 · the desktop header states — band <code style="color:var(--accent);text-transform:none;letter-spacing:0;">min-height:168px</code></div>
+    <div style="display:flex;flex-direction:column;gap:22px;">
+      <sc-for list="{{ states }}" as="s" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ s.tag }}</span>
+            <span style="font-size:13px;color:var(--fg-muted);line-height:1.55;">{{ s.note }}</span>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:12px;background:var(--bg);overflow:hidden;">
+            <div style="position:relative;min-height:168px;background:var(--bg);overflow:hidden;">
+              <div style="position:absolute;inset:0;opacity:{{ s.ambientOp }};background-size:cover;background-position:center top;background-repeat:no-repeat;background-image:{{ s.ambient }};"></div>
+              <div style="position:absolute;left:0;top:0;bottom:0;width:230px;opacity:{{ s.sharpOp }};background-size:auto 100%;background-position:left center;background-repeat:no-repeat;background-image:{{ s.sharp }};-webkit-mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);"></div>
+              <sc-if value="{{ s.hasWash }}" hint-placeholder-val="{{ true }}">
+                <div style="position:absolute;inset:0;background:linear-gradient(90deg,color-mix(in oklab,var(--bg) 30%,transparent) 0px,color-mix(in oklab,var(--bg) 26%,transparent) 134px,color-mix(in oklab,var(--bg) 78%,transparent) 230px,var(--bg) 240px);"></div>
+                <div style="position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in oklab,var(--bg) 30%,transparent) 0%,color-mix(in oklab,var(--bg) 10%,transparent) 46%,color-mix(in oklab,var(--bg) 42%,transparent) 100%);"></div>
+              </sc-if>
+              <sc-if value="{{ s.hasPill }}" hint-placeholder-val="{{ true }}">
+                <div style="position:absolute;left:16px;bottom:14px;display:flex;align-items:center;gap:6px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:999px;padding:6px 11px;">
+                  <span style="color:var(--fg);font-size:12px;">&#9974;</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg);">Card details</span>
+                </div>
+              </sc-if>
+              <div style="position:relative;height:100%;display:flex;align-items:center;gap:18px;padding:0 24px 0 {{ s.pad }};">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-family:var(--display),serif;font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);overflow:hidden;max-height:51px;">{{ s.name }}</div>
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:3px;">
+                    <sc-if value="{{ s.hasPips }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:flex;gap:3px;"><sc-for list="{{ s.pips }}" as="c" hint-placeholder-count="2"><span style="width:10px;height:10px;border-radius:2px;background:{{ c }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span></sc-for></span>
+                    </sc-if>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ s.subInk }};">{{ s.sub }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ s.chipInk }};background:{{ s.chipFill }};border:1px {{ s.chipStyle }} var(--border-strong);border-radius:6px;padding:3px 8px;">{{ s.chip }}</span>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:4px;margin-top:5px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:{{ s.builtInk }};">{{ s.built }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 99</span>
+                    <sc-if value="{{ s.hasOver }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ s.builtInk }};">{{ s.over }}</span>
+                    </sc-if>
+                  </div>
+                  <div style="width:170px;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;margin-top:6px;"><div style="width:{{ s.barW }};height:100%;background:{{ s.barFill }};"></div></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);margin-top:6px;">{{ s.owned }}</div>
+                  <sc-if value="{{ s.hasTrim }}" hint-placeholder-val="{{ true }}">
+                    <div style="font-size:11.5px;color:var(--fg-body);line-height:1.5;margin-top:6px;max-width:520px;"><b style="color:var(--fg-body);font-weight:600;">{{ s.trimLead }}</b> {{ s.trim }}</div>
+                  </sc-if>
+                </div>
+                <div style="flex:none;display:flex;gap:9px;align-items:center;">
+                  <span style="font-size:13px;font-weight:600;color:var(--fg);border:1px solid var(--border-strong);border-radius:8px;padding:10px 16px;">Update from a list</span>
+                  <sc-if value="{{ s.hasExport }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:8px;padding:11px 18px;">Export</span>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- MOBILE + HERO -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">Below 768px · the two <code style="color:var(--accent);text-transform:none;letter-spacing:0;">cover</code> surfaces</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:var(--success);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--success);">Deck header · 2.2/1 · at rest, long name</span></div>
+        <div style="width:390px;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden;">
+          <div style="position:relative;aspect-ratio:2.2/1;background:var(--bg);overflow:hidden;">
+            <div style="position:absolute;inset:0;opacity:0.58;background-size:cover;background-position:center top;background-repeat:no-repeat;background-image:{{ dogArt }};"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in oklab,var(--bg) 66%,transparent) 0%,color-mix(in oklab,var(--bg) 22%,transparent) 26%,color-mix(in oklab,var(--bg) 62%,transparent) 50%,color-mix(in oklab,var(--bg) 90%,transparent) 100%);"></div>
+            <div style="position:absolute;top:13px;right:16px;display:flex;align-items:center;gap:6px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:999px;padding:6px 11px;">
+              <span style="color:var(--fg);font-size:12px;">&#9974;</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg);">Card details</span>
+            </div>
+            <div style="position:absolute;left:18px;right:18px;bottom:12px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+              <div style="display:flex;align-items:flex-start;gap:8px;max-width:100%;">
+                <div style="font-family:var(--display),serif;font-weight:700;font-size:20px;line-height:1.25;color:var(--fg);text-align:center;max-height:50px;overflow:hidden;text-shadow:0 1px 4px rgba(0,0,0,0.85);">HD Tune - Scrappy Survivors of the Common&hellip;</div>
+                <span style="width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:8px;color:var(--fg);font-size:15px;">&#9998;</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;">
+                <span style="display:flex;gap:3px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--r);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--w);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,0.85);">Dogmeat, Ever Loyal &middot; Naya</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);background:color-mix(in srgb,var(--success) 18%,var(--bg));border:1px solid var(--border-strong);border-radius:6px;padding:3px 7px;">Complete</span>
+              </div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:14px 16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div style="display:flex;align-items:baseline;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--fg);">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">/ 99</span></div>
+            <div style="width:100%;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;"><div style="width:100%;height:100%;background:var(--success);"></div></div>
+          </div>
+          <div style="padding:4px 16px 14px;display:flex;gap:8px;justify-content:center;">
+            <span style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border:1px solid var(--border-strong);border-radius:7px;padding:6px 12px;min-height:44px;">&darr; Export</span>
+            <span style="display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);border:1px solid var(--border-strong);border-radius:7px;padding:6px 12px;min-height:44px;">Update from a list</span>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;color:var(--fg-muted);line-height:1.6;">Title 20px, subtitle 10px — larger than the spine's at-rest figures because with the thumbnail gone the title is the surface's only identity. The clamp is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">max-height: 50px</code> and <b style="color:var(--fg);font-weight:600;">no <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">min-height</code></b>. <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">suggestion-tile.tsx</code> pairs the two, but only to align one-line titles across a <i>grid of sibling tiles</i> — a header has no sibling, so reserving the second line just leaves 26px of dead space under the common case. The pencil is <b style="color:var(--fg);font-weight:600;">44px and always visible</b> here — there is no hover on a phone.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:var(--accent);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">Deck header · 2.2/1 · renaming</span></div>
+        <div style="width:390px;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden;">
+          <div style="position:relative;aspect-ratio:2.2/1;background:var(--bg);overflow:hidden;">
+            <div style="position:absolute;inset:0;opacity:0.58;background-size:cover;background-position:center top;background-repeat:no-repeat;background-image:{{ dogArt }};"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in oklab,var(--bg) 66%,transparent) 0%,color-mix(in oklab,var(--bg) 22%,transparent) 26%,color-mix(in oklab,var(--bg) 62%,transparent) 50%,color-mix(in oklab,var(--bg) 90%,transparent) 100%);"></div>
+            <div style="position:absolute;top:13px;right:16px;display:flex;align-items:center;gap:6px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:999px;padding:6px 11px;">
+              <span style="color:var(--fg);font-size:12px;">&#9974;</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg);">Card details</span>
+            </div>
+            <div style="position:absolute;left:18px;right:18px;bottom:12px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+              <div style="width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:var(--surface-sunken);border:1px solid var(--accent);border-radius:8px;padding:8px 12px;">
+                <span style="font-family:var(--display),serif;font-weight:700;font-size:20px;color:var(--fg);">HD Tune - Scrappy Survivors</span>
+                <span style="width:1px;height:16px;background:var(--accent);margin-left:1px;flex:none;display:block;"></span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <span style="display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:var(--bg);background:var(--accent);border-radius:7px;padding:0 18px;min-height:44px;">Save</span>
+                <span style="display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:7px;padding:0 18px;min-height:44px;">Cancel</span>
+              </div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:14px 16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;">
+              <span style="display:flex;gap:3px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--r);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--w);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">Dogmeat, Ever Loyal &middot; Naya</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);background:color-mix(in srgb,var(--success) 18%,var(--bg));border:1px solid var(--border-strong);border-radius:6px;padding:3px 7px;">Complete</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--fg);">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">/ 99</span></div>
+            <div style="width:100%;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;"><div style="width:100%;height:100%;background:var(--success);"></div></div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;color:var(--fg-muted);line-height:1.6;">The band is a fixed <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">2.2/1</code> and <b style="color:var(--fg);font-weight:600;">cannot grow</b>, so the field and its two 44px actions take the space the title and subtitle held, and the pips/subtitle/chip row moves below the divider. <b style="color:var(--fg);font-weight:600;">Zero reflow is a desktop-only claim</b> — here the content below the band shifts by one row, which is the honest trade at this width.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:var(--success);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--success);">Commander hero · 1.6/1 · mobile only</span></div>
+        <div style="width:390px;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden;">
+          <div style="position:relative;aspect-ratio:1.6/1;background:var(--bg);overflow:hidden;">
+            <div style="position:absolute;inset:0;opacity:0.58;background-size:cover;background-position:center top;background-repeat:no-repeat;background-image:{{ prestonArt }};"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in oklab,var(--bg) 66%,transparent) 0%,color-mix(in oklab,var(--bg) 22%,transparent) 26%,color-mix(in oklab,var(--bg) 62%,transparent) 50%,color-mix(in oklab,var(--bg) 90%,transparent) 100%);"></div>
+            <div style="position:absolute;right:16px;top:14px;display:flex;gap:4px;">
+              <span style="width:12px;height:12px;border-radius:2px;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span>
+              <span style="width:12px;height:12px;border-radius:2px;background:var(--r);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span>
+              <span style="width:12px;height:12px;border-radius:2px;background:var(--w);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span>
+            </div>
+            <div style="position:absolute;top:56px;right:16px;display:flex;align-items:center;gap:6px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:999px;padding:6px 11px;">
+              <span style="color:var(--fg);font-size:12px;">&#9974;</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg);">Card details</span>
+            </div>
+            <div style="position:absolute;left:16px;bottom:15px;right:16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;color:var(--fg-body);text-shadow:0 1px 3px rgba(0,0,0,0.8);">RANK 1 &middot; YOUR BEST FIT</div>
+              <div style="font-family:var(--display),serif;font-weight:700;font-size:25px;color:var(--fg);line-height:1.15;margin-top:4px;text-shadow:0 1px 4px rgba(0,0,0,0.85);">Preston Garvey, Minuteman</div>
+              <div style="font-size:12.5px;color:var(--fg-body);margin-top:4px;text-shadow:0 1px 4px rgba(0,0,0,0.85);">Legendary Creature &mdash; Human Soldier</div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:16px 18px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;color:var(--fg-faint);">FIT FOR YOUR COLLECTION</div>
+        </div>
+        <div style="width:390px;font-size:12.5px;color:var(--fg-muted);line-height:1.6;"><code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">1.6/1</code> rather than 2.2 — mobile has the vertical room, and it loses <b style="color:var(--fg);font-weight:600;">14.4%</b> of crop height against 37.7%. Labels are bottom-anchored so the ramp inverts; <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">center top</code> puts the face above them. <b style="color:var(--fg);font-weight:600;">The identity pips are squares here too</b> — the shipped shape, and the reason it exists: the printed card's round mana symbols sit in this very frame.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RENAME LIFECYCLE -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">Blockers 2, 3, 8 · rename, all five states — the title column at 21px</div>
+    <p style="font-size:14px;color:var(--fg-body);line-height:1.65;margin:0;max-width:860px;">Every state occupies the same 25px line box, so the zero-reflow claim holds across the whole lifecycle rather than only at rest and editing. Entry is a ghost <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">&#9998;</code> that is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">opacity 0</code> until the row is hovered or the button is focused — and <b style="color:var(--fg);font-weight:600;">always visible at 44px on mobile</b>, since there is no hover there.</p>
+    <div style="display:flex;flex-direction:column;gap:9px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">Desktop header, editing \u00b7 the whole band</span>
+        <span style="font-size:13px;color:var(--fg-muted);line-height:1.55;">Save and Cancel in the actions slot, the hint beneath them, and every row below the title where it sits at rest.</span>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:12px;background:var(--bg);overflow:hidden;">
+        <div style="position:relative;height:168px;background:var(--bg);overflow:hidden;">
+          <div style="position:absolute;inset:0;opacity:0.2;background-size:cover;background-position:center top;background-repeat:no-repeat;background-image:{{ dogArt }};"></div>
+          <div style="position:absolute;left:0;top:0;bottom:0;width:230px;opacity:0.8;background-size:auto 100%;background-position:left center;background-repeat:no-repeat;background-image:{{ dogArt }};-webkit-mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(90deg,color-mix(in oklab,var(--bg) 30%,transparent) 0px,color-mix(in oklab,var(--bg) 26%,transparent) 134px,color-mix(in oklab,var(--bg) 78%,transparent) 230px,var(--bg) 240px);"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in oklab,var(--bg) 30%,transparent) 0%,color-mix(in oklab,var(--bg) 10%,transparent) 46%,color-mix(in oklab,var(--bg) 42%,transparent) 100%);"></div>
+          <div style="position:absolute;left:16px;bottom:14px;display:flex;align-items:center;gap:6px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:999px;padding:6px 11px;">
+            <span style="color:var(--fg);font-size:12px;">&#9974;</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg);">Card details</span>
+          </div>
+          <div style="position:relative;height:100%;display:flex;align-items:center;gap:18px;padding:0 24px 0 254px;">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;width:352px;height:29px;box-sizing:border-box;background:var(--surface-sunken);border:1px solid var(--accent);border-radius:8px;padding:1px 10px;margin:-2px 0 -2px -11px;white-space:nowrap;overflow:hidden;">
+                <span style="font-family:var(--display),serif;font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">HD Tune - Scrappy Survivors</span>
+                <span style="width:1px;height:16px;background:var(--accent);margin-left:1px;flex:none;display:block;"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:3px;">
+                <span style="display:flex;gap:3px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--r);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span><span style="width:10px;height:10px;border-radius:2px;background:var(--w);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Dogmeat, Ever Loyal &middot; Naya</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--success);background:color-mix(in srgb,var(--success) 18%,var(--bg));border:1px solid var(--border-strong);border-radius:6px;padding:3px 8px;">Complete</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:4px;margin-top:5px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:var(--fg);">99</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 99</span>
+              </div>
+              <div style="width:170px;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;margin-top:6px;"><div style="width:100%;height:100%;background:var(--success);"></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);margin-top:6px;">99 owned &middot; 0 to buy</div>
+            </div>
+            <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:7px;">
+              <div style="display:flex;gap:9px;align-items:center;">
+                <span style="font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:8px;padding:11px 18px;">Save</span>
+                <span style="font-size:13px;font-weight:600;color:var(--fg);border:1px solid var(--border-strong);border-radius:8px;padding:10px 16px;">Cancel</span>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg-faint);">&crarr; save &middot; esc cancel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;max-width:920px;">Compare against the at-rest frames above: <b style="color:var(--fg);font-weight:600;">the pips/subtitle row, count, bar and owned line are all at the pixel they hold at rest.</b> The field occupies the title's own box, and <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">Update from a list</code> and <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">Export</code> are replaced rather than pushed \u2014 which is what makes the hint line free: it takes the actions slot\u2019s own spare height, <b style="color:var(--fg);font-weight:600;">not a row in the title column</b>.</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <sc-for list="{{ rename }}" as="r" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:148px 1fr;gap:18px;align-items:start;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ r.tag }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:5px;">{{ r.keys }}</div>
+          </div>
+          <div style="min-width:0;display:flex;flex-direction:column;gap:9px;">
+            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+              <sc-if value="{{ r.hasTrigger }}" hint-placeholder-val="{{ true }}">
+                <span style="font-family:var(--display),serif;font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);white-space:nowrap;">HD Tune - Scrappy Survivors</span>
+                <span style="display:flex;gap:16px;align-items:center;margin-left:6px;">
+                  <sc-for list="{{ pencil }}" as="q" hint-placeholder-count="3">
+                    <span style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+                      <span style="width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid {{ q.border }};background:{{ q.bg }};border-radius:6px;color:var(--fg-muted);font-size:13px;opacity:{{ q.op }};outline:{{ q.ring }};outline-offset:2px;">&#9998;</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--fg-faint);">{{ q.label }}</span>
+                    </span>
+                  </sc-for>
+                </span>
+              </sc-if>
+              <sc-if value="{{ r.hasField }}" hint-placeholder-val="{{ true }}">
+                <span style="display:flex;align-items:center;width:352px;height:29px;box-sizing:border-box;background:var(--surface-sunken);border:1px solid {{ r.fieldBorder }};border-radius:8px;padding:1px 10px;margin:-2px 0 -2px -11px;white-space:nowrap;overflow:hidden;opacity:{{ r.fieldOp }};">
+                  <span style="font-family:var(--display),serif;font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">{{ r.fieldText }}</span>
+                  <sc-if value="{{ r.hasCaret }}" hint-placeholder-val="{{ true }}">
+                    <span style="width:1px;height:16px;background:var(--accent);margin-left:1px;flex:none;display:block;"></span>
+                  </sc-if>
+                </span>
+                <span style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;border-left:1px solid var(--border);padding-left:12px;margin-left:3px;">
+                  <span style="display:flex;gap:9px;align-items:center;">
+                    <span style="font-size:13px;font-weight:600;color:{{ r.saveInk }};background:{{ r.saveBg }};border-radius:8px;padding:11px 18px;opacity:{{ r.saveOp }};">{{ r.saveLabel }}</span>
+                    <span style="font-size:13px;font-weight:600;color:{{ r.cancelInk }};border:1px solid {{ r.cancelBorder }};border-radius:8px;padding:10px 16px;">Cancel</span>
+                  </span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;color:{{ r.hintInk }};min-height:16px;">{{ r.hintText }}</span>
+                </span>
+              </sc-if>
+            </div>
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;">{{ r.note }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- BREAKPOINT + FOCUS -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">Blockers 8 &amp; 9 · focus, and the breakpoint</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">The focus ring already exists</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;"><code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">globals.css</code> puts <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">outline:2px solid var(--accent); outline-offset:2px</code> on every <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">:focus-visible</code> in <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">@layer base</code>. <b style="color:var(--fg);font-weight:600;">No on-art value is needed</b> — the 2px offset lands the ring on the control's own opaque fill plus 2px of scrim, and every control on art is opaque-filled by decision 13. That is a second reason for that rule.</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;">
+          <span style="font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:8px;padding:11px 18px;outline:2px solid var(--accent);outline-offset:2px;">Export</span>
+          <span style="font-size:13px;font-weight:600;color:var(--fg);border:1px solid var(--border-strong);border-radius:8px;padding:10px 16px;outline:2px solid var(--accent);outline-offset:2px;">Update</span>
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;">One addition, because the field is the exception: it already draws a 1px <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">var(--accent)</code> border while editing, so the base ring doubles it. The field takes <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">focus-visible:outline-none</code> — the border <i>is</i> its indicator, which is the override the base rule's comment anticipates.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">The split is 768px, and tablet is the mobile treatment</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;"><code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">md</code> — matching the shipped header and <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.guided-banner</code>'s own <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">min-width:768px</code>, not the 640px the siblings use.</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">R2's open item 1 is closed by deletion, not by drawing.</b> The 230px portrait and 254px inset need ~700px of row to leave a usable label column, so there is no tablet-specific header: below 768px the <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">cover</code> treatment applies at whatever width it gets — it is aspect-driven and scales. <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">left-portrait</code> is desktop-only by definition.</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:var(--fg-muted);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">&lt; 768px &nbsp;cover &middot; aspect 2.2/1<br>&ge; 768px &nbsp;left-portrait &middot; 168px band</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERNAL RECONCILIATION -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">Conflicts 4–8 &amp; the arithmetic · canvas is now the single source</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
+      <sc-for list="{{ fixes }}" as="f" hint-placeholder-count="7">
+        <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid {{ f.edge }};border-radius:10px;padding:16px 18px;font-size:13px;color:var(--fg-body);line-height:1.6;">
+          <b style="color:var(--fg);font-weight:600;">{{ f.head }}</b> {{ f.body }}
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;amonkhet&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;eldraine&quot;,&quot;kaldheim&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+const art = n => `url("https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n).replace(/'/g,'%27')}&format=image&version=art_crop")`;
+const V = n => `var(${n})`;
+
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? 'amonkhet';
+    const bolg = art('Bolg of the North');
+    const dog = art('Dogmeat, Ever Loyal');
+    // The identity gradient a null art_crop falls back to — ground, not
+    // photography, so it publishes opacity 1 (the ratified reduced-transparency
+    // reading). Rakdos: --b through --r.
+    const identity = 'linear-gradient(135deg, var(--b) 0%, color-mix(in oklab, var(--b), var(--r)) 50%, var(--r) 100%)';
+
+    return {
+      // Single source for the revision label. Bump ONLY here — the eyebrow reads
+      // it, so the title can never fall a revision behind the rulings below it.
+      rev: 'R6',
+      theme,
+      naya: [V('--r'), V('--g'), V('--w')],
+      pipRows: [
+        { k:'W', tok:V('--w'), hex:'#F4E9C4', wrong:'#E8E4D6 / #EFEAD8' },
+        { k:'U', tok:V('--u'), hex:'#3A6AA5', wrong:'#4A7FB5' },
+        { k:'B', tok:V('--b'), hex:'#98748F', wrong:'#5B5566' },
+        { k:'R', tok:V('--r'), hex:'#C05A3E', wrong:'#C05A48' },
+        { k:'G', tok:V('--g'), hex:'#4B7A46', wrong:'#6B9E63 / #4E7A46' }
+      ],
+      corrections: [
+        { title:'The rename field border', was:'#C9A24B', now:'var(--accent)', why:'Retired pre-rebrand brass. It cannot come back, and the field needs the live accent so it re-themes with everything else.' },
+        { title:'The field fill', was:'#181410 / #0E0C09', now:'var(--surface-sunken)', why:'#0E0C09 is derived as color-mix(--bg 86%, black) and must not be minted as a literal. --surface-sunken is the token that already means "a well below the surface".' },
+        { title:'The Export button', was:'#CF8745 literal', now:'var(--accent)', why:'The literal happened to be Low Sun\u2019s accent, which is why it looked right — and would have been pink, lime, teal, violet or blue in the other five.' },
+        { title:'The bar track and fill', was:'#29241F / #DEAA29', now:'var(--elevated) / var(STATUS_TOKEN[status])', why:'Both were real tokens but the mid state only \u2014 and the replacement was wrong too. statusBarStyle keys the fill off the status token, never thresholds on the count: a 40/99 Building deck is --fg-body, not red. Width min(100, built/99).' },
+        { title:'Ground, divider, chip', was:'#1A160F #2A241D #14110E', now:'var(--surface) var(--border) statusPillStyle', why:'Ground and divider are tokens now. The chip is not ours at all \u2014 it renders status-style.ts verbatim: the status colour in the fill mixed into --bg, one --border-strong hairline, Building dashed.' },
+        { title:'The rank eyebrow', was:'#8FB8E6', now:'var(--fg-body)', why:'A single on-art accent literal is one theme\u2019s hue in six. --fg-body clears 4.5:1 only once the ramp\u2019s dark stop moves to 50% \u2014 measured 5.06:1 at the eyebrow. The .86-stop proof cited earlier measured the band\u2019s bottom, not the eyebrow.' }
+      ],
+      bars: [
+        { label:'Complete · 99 / 99', tok:'--success', fill:V('--success'), w:'100%' },
+        { label:'Building · 40 / 99', tok:'--fg-body', fill:V('--fg-body'), w:'40%' },
+        { label:'Draft · 0 / 99', tok:'--fg-faint', fill:V('--fg-faint'), w:'0%' },
+        { label:'Over · 104 / 99', tok:'--danger', fill:V('--danger'), w:'100%' },
+        { label:'Unresolved · 97 / 99', tok:'--warning', fill:V('--warning'), w:'98%' },
+        { label:'To buy · 99 / 99', tok:'--accent', fill:V('--accent'), w:'100%' }
+      ],
+      states: [
+        { tag:'01 · null art_crop', note:'Ratified R6 — the identity gradient is the AMBIENT layer only. Your drawing is better than my table: a gradient in a 230px masked box compresses the same ramp into a narrower space and seams at the mask edge.',
+          pad:'254px', hasWash:true,
+          ambient:identity, ambientOp:1, sharp:'none', sharpOp:0, hasPill:false, hasPips:true,
+          name:'HD - Bolg', sub:'Bolg of the North · Rakdos', subInk:'var(--fg-body)', pips:[V('--b'),V('--r')],
+          chip:'Complete', chipInk:'var(--success)', chipFill:'color-mix(in srgb, var(--success) 18%, var(--bg))', chipStyle:'solid',
+          built:'99', builtInk:'var(--fg)', barW:'100%', barFill:V('--success'), owned:'99 owned · 0 to buy',
+          hasExport:true, hasOver:false, over:'', hasTrim:false, trim:'' },
+        { tag:'02 · building, 40 / 99', note:'The status-keyed bar and the dashed chip, both on art.',
+          pad:'254px', hasWash:true,
+          ambient:bolg, ambientOp:0.2, sharp:bolg, sharpOp:0.8, hasPill:true, hasPips:true,
+          name:'HD - Bolg', sub:'Bolg of the North · Rakdos', subInk:'var(--fg-body)', pips:[V('--b'),V('--r')],
+          chip:'Building', chipInk:'var(--fg-body)', chipFill:'color-mix(in srgb, var(--fg-body) 14%, var(--bg))', chipStyle:'dashed',
+          built:'40', builtInk:'var(--fg)', barW:'40%', barFill:V('--fg-body'), owned:'34 owned · 6 to buy',
+          hasExport:true, hasOver:false, over:'', hasTrim:false, trim:'' },
+        { tag:'03 · over 99 — the one state that grows the band', note:'Ratified R6, with one redraw: the built figure takes the STATUS token, not a hardcoded --warning. Past 99 the status is Over, whose bar is --danger, so the shipped pairing painted one state in two alarm colours.',
+          pad:'254px', hasWash:true,
+          ambient:bolg, ambientOp:0.2, sharp:bolg, sharpOp:0.8, hasPill:true, hasPips:true,
+          name:'HD - Bolg', sub:'Bolg of the North · Rakdos', subInk:'var(--fg-body)', pips:[V('--b'),V('--r')],
+          chip:'Over', chipInk:'var(--danger)', chipFill:'color-mix(in srgb, var(--danger) 18%, var(--bg))', chipStyle:'solid',
+          built:'104', builtInk:'var(--danger)', barW:'100%', barFill:V('--danger'), owned:'98 owned · 6 to buy',
+          hasExport:true, hasOver:true, over:'+5', hasTrim:true,
+          trimLead:'Cut five cards',
+          trim:'to make this deck legal. The lead is bold but stays var(--fg-body): the figure and the delta are the readout, this is the remedy. The bar is clamped at 100%, so the +5 is the only place the overage is legible.' },
+        { tag:'04 · long name', note:'Two-line clamp at both widths, so the band never grows for a name — only for the trim copy above.',
+          pad:'254px', hasWash:true,
+          ambient:dog, ambientOp:0.2, sharp:dog, sharpOp:0.8, hasPill:true, hasPips:true,
+          name:'HD Tune - Scrappy Survivors of the Common…', sub:'Dogmeat, Ever Loyal · Naya', subInk:'var(--fg-body)', pips:[V('--r'),V('--g'),V('--w')],
+          chip:'Complete', chipInk:'var(--success)', chipFill:'color-mix(in srgb, var(--success) 18%, var(--bg))', chipStyle:'solid',
+          built:'99', builtInk:'var(--fg)', barW:'100%', barFill:V('--success'), owned:'99 owned · 0 to buy',
+          hasExport:true, hasOver:false, over:'', hasTrim:false, trim:'' }
+      ],
+      pencil: [
+        { label:'REST', op:0, bg:'transparent', border:'var(--border-strong)', ring:'none' },
+        { label:'HOVER', op:1, bg:'var(--elevated-hover)', border:'var(--border-strong)', ring:'none' },
+        { label:'FOCUS', op:1, bg:'transparent', border:'var(--border-strong)', ring:'2px solid var(--accent)' }
+      ],
+      rename: [
+        { tag:'Rest', keys:'click · enter', hasTrigger:true, hasField:false, hasError:false,
+          note:'A 28px ghost after the title. The three states are drawn: REST really is opacity 0, which is why that swatch reads as an empty box — the affordance does not exist until the row is hovered or the button is focused. Below 768px it is 44px and always visible, since there is no hover on a phone.' },
+        { tag:'Editing', keys:'\u21b5 save · esc cancel', hasField:true, hasCaret:true,
+          fieldBorder:'var(--accent)', fieldOp:1, fieldText:'HD Tune - Scrappy Survivors',
+          hintText:'\u21b5 save \u00b7 esc cancel', hintInk:'var(--fg-faint)',
+          saveLabel:'Save', saveBg:'var(--accent)', saveInk:'var(--bg)', saveOp:1,
+          cancelInk:'var(--fg)', cancelBorder:'var(--border-strong)', hasError:false,
+          note:'The border is var(--accent) and the fill var(--surface-sunken). Save and Cancel take the header\u2019s actions slot, which is what keeps desktop reflow at zero.' },
+        { tag:'Saving', keys:'input locked', hasField:true, hasCaret:false,
+          fieldBorder:'var(--border-strong)', fieldOp:1, fieldText:'HD Tune - Scrappy Survivors',
+          hintText:'saving\u2026', hintInk:'var(--fg-faint)',
+          saveLabel:'Saving\u2026', saveBg:'var(--accent)', saveInk:'var(--bg)', saveOp:0.6,
+          cancelInk:'var(--fg)', cancelBorder:'var(--border-strong)', hasError:false,
+          note:'The field goes read-only, not disabled: the name stays selectable and the box does not resize. Its border drops from var(--accent) to var(--border-strong) — the accent border is the focus indicator, and focus has left the field — but the ink stays at full strength. Only Save dims: \u003cb\u003eCancel stays live\u003c/b\u003e, because if a save hangs, a disabled Cancel removes the reader\u2019s only exit at exactly the moment they need it.' },
+        { tag:'Error', keys:'esc reverts', hasField:true, hasCaret:true,
+          fieldBorder:'var(--danger)', fieldOp:1, fieldText:'HD Tune - Scrappy Survivors',
+          hintText:'That name is already taken \u2014 strings are yours', hintInk:'var(--danger)',
+          saveLabel:'Retry', saveBg:'var(--accent)', saveInk:'var(--bg)', saveOp:1,
+          cancelInk:'var(--fg)', cancelBorder:'var(--border-strong)',
+          hasError:true, errorMsg:'That name is already taken — strings are yours',
+          note:'Border swaps to var(--danger) and the message replaces the hint line in the row that is already there, so no row is added. Blocker 3: empty, duplicate and server-failure all render here.' },
+        { tag:'Disabled Save', keys:'\u21b5 does nothing', hasField:true, hasCaret:true,
+          fieldBorder:'var(--accent)', fieldOp:1, fieldText:'',
+          hintText:'\u21b5 save \u00b7 esc cancel', hintInk:'var(--fg-disabled)',
+          saveLabel:'Save', saveBg:'var(--elevated)', saveInk:'var(--fg-disabled)', saveOp:1,
+          cancelInk:'var(--fg)', cancelBorder:'var(--border-strong)', hasError:false,
+          note:'Empty or unchanged: Save drops to var(--elevated) with var(--fg-disabled) ink and aria-disabled, and Enter is inert. The field holds its full box while empty — it is the title\u2019s space, not the text\u2019s. Cancel never disables; it is the exit.' }
+      ],
+      fixes: [
+        { edge:'var(--success)', head:'Mobile type: 20px title, 10px subtitle.', body:'The canvas wins; the R2 README\u2019s 16px/11px was the spine\u2019s at-rest figure, carried over after the card object was dropped and the title took its place as the surface\u2019s only identity.' },
+        { edge:'var(--success)', head:'Decision 13 does reduce to mobile plus the hero.', body:'Correct, and the audit is right that it is vacuous on desktop — the scrim is flat at 240px and the row starts at 254px. So desktop Update keeps its ghost outline; the README\u2019s "gains an opaque fill" is withdrawn.' },
+        { edge:'var(--success)', head:'Divider, ground and ring alphas.', body:'All were canvas-vs-README drift between hex literals. Divider is var(--border), ground var(--surface), band var(--bg); the pip and track rings are both inset 0 0 0 1px rgba(0,0,0,.4), matching IdentityPips.' },
+        { edge:'var(--success)', head:'The mobile band does not grow.', body:'Right — it is a fixed 2.2/1 aspect. The rename row lands inside it and the pips/subtitle/chip row moves below the divider. Zero reflow is a desktop claim only, and the README now says so.' },
+        { edge:'var(--warning)', head:'1.6:1 loses 14.4%, not 27%.', body:'Arithmetic error, and it strengthens the case: 1 \u2212 (1.37/1.6) = 14.4% against 37.7% at 2.2:1. The hero keeps more than twice as much crop as a deck card, not marginally more.' },
+        { edge:'var(--warning)', head:'243px was the same pixel, not ahead of it.', body:'Fair, and zero tolerance is right for a spec. The flat stop moves to 240px, so it now precedes the field ring at 243px and the type inset at 254px with nothing coincident to explain.' },
+        { edge:'var(--fg-faint)', head:'Recorded, no action.', body:'ambient-only was never built, so nothing to remove; the Card details pill is reusable as-is, its full-band overlay scoped your side.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

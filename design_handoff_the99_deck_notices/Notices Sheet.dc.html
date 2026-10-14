@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-raised:#211D18; --surface-sunken:#18140F; --elevated:#29241F; --display:'Cinzel',serif;
+    --border:#2B241B; --border-strong:#3A3229;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --danger:#C6533F; --fact:#8FA6BE;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-raised:#191B22; --surface-sunken:#101219; --elevated:#20222A; --display:'Chakra Petch',sans-serif;
+    --border:#181C26; --border-strong:#262A35;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9;
+  }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" role="dialog" aria-label="Notices" data-screen-label="Notices sheet" style="{{ box }}">
+  <div style="{{ head }}">
+    <h2 style="margin:0;min-width:0;font-family:var(--display);font-weight:700;font-size:16px;line-height:1.2;color:var(--fg);white-space:nowrap;">Notices</h2>
+    <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">{{ aside }}</span>
+    <span style="margin-left:auto;margin-right:-10px;display:flex;flex:none;width:44px;height:44px;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">×</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;">
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+      <section data-group="{{ g.id }}" style="{{ g.style }}">
+        <div style="display:flex;align-items:center;gap:8px;min-height:20px;">
+          <sc-if value="{{ g.hasGlyph }}" hint-placeholder-val="{{ false }}"><img alt="" src="{{ g.glyph }}" style="display:block;width:16px;height:16px;flex:none;"></sc-if>
+          <h3 style="{{ g.labelStyle }}">{{ g.label }}</h3>
+        </div>
+        <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;">
+          <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="1">
+            <li style="{{ r.style }}">
+              <span style="{{ r.dirStyle }}">{{ r.dir }}</span>
+              <span style="display:flex;flex:1;flex-direction:column;gap:2px;min-width:0;">
+                <sc-if value="{{ r.isRule }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:13.5px;line-height:20px;font-weight:600;color:var(--fg);">{{ r.rule }}</span>
+                  <span style="font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ r.says }}</span>
+                </sc-if>
+                <sc-if value="{{ r.isCards }}" hint-placeholder-val="{{ true }}">
+                  <span style="font-size:13.5px;line-height:20px;color:var(--fg-faint);"><sc-for list="{{ r.names }}" as="n" hint-placeholder-count="1"><sc-if value="{{ n.join }}" hint-placeholder-val="{{ false }}"> + </sc-if><b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ n.t }}</b></sc-for></span>
+                  <sc-if value="{{ r.hasTail }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font-size:12.5px;line-height:1.5;color:var(--fg-muted);"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="0"><span style="{{ p }}"></span></sc-for>{{ r.tail }}</span></sc-if>
+                </sc-if>
+              </span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:20px;color:var(--fg-faint);white-space:nowrap;text-align:right;flex:none;">{{ r.date }}</span>
+            </li>
+          </sc-for>
+        </ul>
+        <sc-if value="{{ g.hasFoot }}" hint-placeholder-val="{{ false }}"><p style="margin:2px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ g.foot }}</p></sc-if>
+      </section>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ footReanalyze }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ foot }}">
+      <p style="margin:0;flex:1 1 220px;min-width:0;font-size:13px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Your bracket holds until you re-analyze. Nothing here moves it on its own.</p>
+      <span style="{{ btn }}">Re-analyze</span>
+    </div>
+  </sc-if>
+  <sc-if value="{{ footDirty }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ foot }}">
+      <p style="margin:0;flex:1 1 260px;min-width:0;font-size:13px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Your bracket holds until you re-analyze. Your own edits are waiting too: the Re-analyze on the Analysis tab reads both.</p>
+      <span style="display:inline-flex;align-items:center;min-height:44px;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);flex:none;"><span style="border-bottom:1px dotted var(--accent);">Analysis tab</span><span>→</span></span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:560,&quot;height&quot;:600},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;data&quot;,&quot;dirty&quot;,&quot;legalChip&quot;,&quot;legalNoChip&quot;,&quot;all&quot;],&quot;default&quot;:&quot;all&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const v = this.props.variant || "data";
+    const pip = (c) => ({ display: "block", flex: "none", width: 10, height: 10, borderRadius: 2, background: `var(--${c})`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)" });
+    const cards = (dir, names, date, tail) => ({ dir, date, isCards: true, isRule: false, names: names.map((t, i) => ({ t, join: i > 0 })), tail: tail || "", hasTail: !!tail, pips: [] });
+    const legal = (names, tail, pips) => ({ dir: "", date: "", isCards: true, isRule: false, names: names.map((t, i) => ({ t, join: i > 0 })), tail, hasTail: true, pips: (pips || []).map(pip) });
+    const rule = (rule, says, date) => ({ dir: "moved", date, isCards: false, isRule: true, rule, says, names: [], pips: [] });
+
+    const G = {
+      notLegal: { id: "not-legal", label: "Not legal in Commander", danger: true },
+      outside: { id: "outside-colors", label: "Outside the commander's colors", danger: true },
+      gc: { id: "game-changers", label: "Game changers", glyph: "assets/fact-game-changer-ink.svg" },
+      combo: { id: "combos", label: "Two-card combos", glyph: "assets/fact-two-card-infinite-ink.svg" },
+      mld: { id: "mass-land-denial", label: "Mass land denial", glyph: "assets/fact-mass-land-denial-ink.svg" },
+      et: { id: "extra-turns", label: "Extra turns", glyph: "assets/fact-extra-turns-ink.svg" },
+      rules: { id: "rules", label: "Bracket rules" },
+    };
+    const R = {
+      crypt: legal(["Mana Crypt"], "Not legal in Commander."),
+      lotus: legal(["Jeweled Lotus"], "Not legal in Commander."),
+      counter: legal(["Counterspell"], "Blue, outside Tovolar's colors (red and green).", ["u"]),
+      remora: cards("added", ["Mystic Remora"], "21 Sept"),
+      notion: cards("removed", ["Notion Thief"], "21 Sept"),
+      oracle: cards("added", ["Thassa's Oracle", "Tainted Pact"], "22 Sept", "Spellbook: win the game."),
+      scepter: cards("removed", ["Dramatic Reversal", "Isochron Scepter"], "22 Sept", "Spellbook: infinite mana, infinite untaps."),
+      b2b: cards("added", ["Back to Basics"], "22 Sept"),
+      walk: cards("removed", ["Walk the Aeons"], "22 Sept"),
+      gcRule: rule("Game Changer limit", "Upgraded now allows up to four game changers. Until 23 Sept it allowed three.", "23 Sept"),
+    };
+    const legalFoot = "These stay until the cards leave the deck. Reading them does not clear them.";
+    const V = {
+      data: { aside: "since analyzed 18 Sept", foot: "reanalyze", groups: [[G.gc, [R.remora]], [G.combo, [R.oracle]], [G.rules, [R.gcRule]]] },
+      dirty: { aside: "since analyzed 18 Sept", foot: "dirty", groups: [[G.gc, [R.remora]], [G.combo, [R.oracle]], [G.rules, [R.gcRule]]] },
+      legalChip: { aside: "since analyzed 18 Sept", foot: "reanalyze", groups: [[G.notLegal, [R.crypt]], [G.gc, [R.remora]], [G.combo, [R.oracle]], [G.rules, [R.gcRule]]] },
+      legalNoChip: { aside: "HD - Tovolar", foot: "none", groups: [[G.notLegal, [R.lotus]], [G.outside, [R.counter]]] },
+      all: { aside: "since analyzed 18 Sept", foot: "reanalyze", groups: [[G.notLegal, [R.crypt]], [G.outside, [legal(["Lightning Bolt"], "Red, outside Yuriko's colors (blue and black).", ["r"])]], [G.gc, [R.remora, R.notion]], [G.combo, [R.oracle, R.scepter]], [G.mld, [R.b2b]], [G.et, [R.walk]], [G.rules, [R.gcRule]]] },
+    };
+    const s = V[v] || V.data;
+    const rowStyle = () => ({ display: "flex", alignItems: "flex-start", gap: phone ? 10 : 12, padding: "7px 0", minHeight: 36 });
+    const dirStyle = (r) => ({ display: r.dir === "" ? "none" : "block", flex: "none", width: phone ? 56 : 64, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, lineHeight: "20px", color: "var(--fg-muted)" });
+    const lastLegal = s.groups.map(([g]) => !!g.danger).lastIndexOf(true);
+    const groups = s.groups.map(([g, rows], i) => ({
+      id: g.id, label: g.label, rows: rows.map((r) => ({ ...r, style: rowStyle(r), dirStyle: dirStyle(r) })), glyph: g.glyph || "", hasGlyph: !!g.glyph,
+      hasFoot: i === lastLegal, foot: legalFoot,
+      style: { display: "flex", flexDirection: "column", gap: 4, padding: phone ? "12px 16px 10px" : "14px 18px 12px", borderTop: i > 0 ? "1px solid var(--border)" : "none" },
+      labelStyle: { margin: 0, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 400, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: g.danger ? "var(--danger)" : "var(--fg-faint)" },
+    }));
+    return {
+      theme: this.props.theme || "amonkhet",
+      aside: s.aside, groups,
+      box: phone
+        ? { width: 390, display: "flex", flexDirection: "column", background: "var(--surface-raised)", borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)", overflow: "hidden" }
+        : { width: 560, display: "flex", flexDirection: "column", background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 24px 60px rgba(0,0,0,0.45)", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)", overflow: "hidden" },
+      head: phone
+        ? { display: "flex", alignItems: "center", gap: 9, height: 43, padding: "0 16px", borderBottom: "1px solid var(--border)", flex: "none" }
+        : { display: "flex", alignItems: "center", gap: 10, padding: "0 18px", height: 52, borderBottom: "1px solid var(--border)", flex: "none" },
+      rowStyle: { display: "grid", gridTemplateColumns: phone ? "56px minmax(0,1fr) auto" : "64px minmax(0,1fr) auto", columnGap: phone ? 10 : 12, alignItems: "start", padding: "8px 0", minHeight: 44 },
+      footReanalyze: s.foot === "reanalyze", footDirty: s.foot === "dirty",
+      foot: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: phone ? 12 : 16, padding: phone ? "14px 16px 22px" : "14px 18px 16px", borderTop: "1px solid var(--border)", background: "var(--surface-rail)" },
+      btn: phone
+        ? { display: "flex", alignItems: "center", justifyContent: "center", width: "100%", minHeight: 44, borderRadius: 8, border: "1px solid var(--border-strong)", color: "var(--fg)", fontWeight: 500, fontSize: 14 }
+        : { display: "inline-flex", alignItems: "center", minHeight: 36, padding: "0 16px", borderRadius: 8, border: "1px solid var(--border-strong)", color: "var(--fg)", fontWeight: 500, fontSize: 13, flex: "none" },
+    };
+  }
+}
+</script>
+</body>
+</html>

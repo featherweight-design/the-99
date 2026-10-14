@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; border-bottom: 1px solid rgba(207,135,69,0.4); }
+  a:hover { color: #DE9757; border-bottom-color: #DE9757; }
+  /* Token contract transcribed from src/app/globals.css via the filter-chassis
+     handoff. Low Sun on :root so the page paints before the theme prop lands. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --accent-30:#4A3524; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --accent-30:#5A2140; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --accent-30:#22332F; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --accent-30:#25364B; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --accent-30:#3B4722; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --accent-30:#3E3150; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+<!-- ═══════════════════════════════ HEAD ═══════════════════════════════ -->
+<section style="max-width:1400px;margin:0 0 30px;">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Ordering the deck list &middot; one control, one row, two widths</div>
+  </div>
+  <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 12px;color:#EDE6D8;line-height:1.15;">A tenth child for a row that already wraps.</h1>
+  <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;">One control on one surface: an order picker for the deck page's <b style="color:#EDE6D8;font-weight:600;">Your deck</b> list, mounted into <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">group-toggle.tsx</span>'s existing row. It is <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">FilterPanel</span> in <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">selectionMode="single"</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">widthPx={260}</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">desktopRowMinPx={44}</span> &mdash; the mount <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">filter-bar.tsx:242-267</span> already ships, not a fifth menu.</p>
+  <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 18px;text-wrap:pretty;">So the menu is not the question. <a href="#one">&sect;1</a> reads the row and answers <b style="color:#EDE6D8;font-weight:600;">4.1</b>; <a href="#two">&sect;2</a> and <a href="#three">&sect;3</a> draw the four variants at 1300 and 390; <a href="#four">&sect;4</a> is the trigger and the panel at rest, open and chosen; <a href="#five">&sect;5</a> answers 4.2&ndash;4.5; <a href="#six">&sect;6</a> is the copy block and <b style="color:#EDE6D8;font-weight:600;">three defects the mount exposes in a shipped component</b>.</p>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#181410;padding:16px 20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">Read at <span style="text-transform:none;letter-spacing:0;">main</span>, not recalled</div>
+    <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;">The brief in full, then <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">decks/group-toggle.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">decks/clear-auto.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">decks/price-strip.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">ui/filter-panel.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">ui/view-toggle.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">lib/collection/sort-options.ts</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">lib/copy/collection.ts</span>. Every pixel in every frame below is one of those files' declared value &mdash; the pills' paddings, the bulk buttons' mono border, the well's 70&times;36 and 94&times;48, the panel's 44px rows and 16px marker, the sheet's 36&times;4 handle. <b style="color:#EDE6D8;font-weight:600;">Nothing here is drawn from the brief's prose where the source had a number.</b></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ §1 ═══════════════════════════════ -->
+<section id="one" style="max-width:1400px;margin:0 0 48px;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+    <span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:0.2em;color:#CF8745;">&sect;1</span>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;color:#EDE6D8;">4.1 &mdash; the row is three clusters, and sort joins the third</h2>
+  </div>
+  <p style="max-width:1080px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 22px;text-wrap:pretty;">The brief offers four candidate hosts and rules none. None of them is quite the answer, because all four treat the row as a line of eight peers with two ends. It is not. Read the children by <i>what they say</i> and they fall into three groups &mdash; and the third group is the one the reader is in when they want a different order.</p>
+
+  <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;margin-bottom:22px;">
+    <div style="width:640px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">The eight, in source order &mdash; <span style="color:#C9A24B;">grouped by what they say</span></div>
+      <div style="font-size:12.5px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;padding:0 0 7px;">which cards</div>
+        <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #241F18;"><span style="flex:none;width:158px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All N</span><span style="flex:1;color:#A59C89;line-height:1.55;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">:113</span> &middot; always</span></div>
+        <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #241F18;"><span style="flex:none;width:158px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">Shopping N</span><span style="flex:1;color:#A59C89;line-height:1.55;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">:127</span> &middot; always. Idle skin is the row's only accent, 30% into a border.</span></div>
+        <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #241F18;"><span style="flex:none;width:158px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6E6654;">flexible spacer</span><span style="flex:1;color:#6E6654;line-height:1.55;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">:139</span> &middot; layout, not a control</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;padding:14px 0 7px;">act on the cards</div>
+        <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #241F18;"><span style="flex:none;width:158px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">the draft's note</span><span style="flex:1;color:#A59C89;line-height:1.55;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">:149</span> &middot; a draft exists. <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">hidden md:inline</span>. Stands the kept note down.</span></div>
+        <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #241F18;"><span style="flex:none;width:158px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">Keep all N<br>Clear all auto &middot; N</span><span style="flex:1;color:#A59C89;line-height:1.55;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">:156</span> &middot; the deck has auto cards. <b style="color:#C6B79A;font-weight:600;">Already one flex child</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">clear-auto.tsx</span> wraps the pair itself so it cannot split.</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;padding:14px 0 7px;">how the list reads</div>
+        <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #241F18;"><span style="flex:none;width:158px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">By type</span><span style="flex:1;color:#A59C89;line-height:1.55;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">:174</span> &middot; always. Names the headings.</span></div>
+        <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #241F18;"><span style="flex:none;width:158px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">By role</span><span style="flex:1;color:#A59C89;line-height:1.55;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">:187</span> &middot; always. Idle at phone has no border at all.</span></div>
+        <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #241F18;background:rgba(207,135,69,0.07);"><span style="flex:none;width:158px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;">&larr; the sort trigger</span><span style="flex:1;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Here.</b> Names what happens under the headings.</span></div>
+        <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #241F18;"><span style="flex:none;width:158px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">list / card well</span><span style="flex:1;color:#A59C89;line-height:1.55;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">:199</span> &middot; <b style="color:#C6B79A;font-weight:600;">All only</b>. Names how a row is drawn.</span></div>
+      </div>
+    </div>
+
+    <div style="width:calc(100% - 662px);min-width:400px;background:#181410;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:14px;padding:22px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Called: after <span style="text-transform:none;letter-spacing:0;">By role</span>, before the well &mdash; one hairline, in front of the cluster</div>
+      <p style="font-size:13.5px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The arrangement cluster finally reads as a sentence.</b> <i>By type</i> says what the sections are, <i>Name&nbsp;&middot;&nbsp;A&ndash;Z</i> says what happens inside them, the well says how each row is drawn. That is brief &sect;2.5's ruling &mdash; sorting happens inside the grouping, which stays &mdash; expressed as adjacency rather than as a sentence in a doc nobody reads.</p>
+      <p style="font-size:13.5px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The leading edge is wrong because the pills own it.</b> <i>All 99</i> is the first thing read and it is the one control that changes which cards exist; a sort trigger in front of it puts an ordering question before the question of what is being ordered, and it separates the two lane pills from the count in the deck's own heading above them.</p>
+      <p style="font-size:13.5px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">And trailing-most is wrong because that slot is allowed to vanish.</b> The well is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">All</span>-only. A trigger positioned against the row's right edge would sit 96px further right under Shopping than under All &mdash; the same objection the brief raises against the price strip, arriving from the other direction. Trailing-most stays with the child that disappears.</p>
+      <p style="font-size:13.5px;line-height:1.7;color:#C6B79A;margin:0;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Its own line is the one candidate this actively buys back.</b> <a href="#three">&sect;3</a> measures 345 of 358px at 390, so the trigger costs no line under either lane &mdash; on the condition in the box below, and on <a href="#five">4.3</a>.</p>
+    </div>
+  </div>
+
+  <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">The one structural change the placement requires</div>
+    <p style="max-width:1120px;font-size:13.5px;line-height:1.75;color:#A89B84;margin:0 0 14px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The three grouping children become one <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">flex-none</span> wrapper, exactly as the auto cluster already is.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">clear-auto.tsx</span>'s own comment states the pattern and the reason: <i>&ldquo;the cluster is a single child of the toolbar's wrap, so without this the answers would be pushed off the edge rather than under the question.&rdquo;</i> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">By type</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">By role</span> and the well are three loose children today and get away with it at seven. At eight they do not: a free wrap puts the well alone on line three under All, or strands <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">By role</span> &mdash; which is the outcome brief &sect;4.1 names as the thing to avoid.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:240px;background:#16130F;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">the rule</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;">The row wraps <b style="color:#C6B79A;font-weight:600;">between clusters, never inside one</b>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-wrap</span> stays on the row; each cluster is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-none</span> and nowrap inside.</div>
+      </div>
+      <div style="flex:1;min-width:240px;background:#16130F;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">the hairline</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;">1px &times; 22px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span>, desktop only, <b style="color:#C6B79A;font-weight:600;">in front of the arrangement cluster</b>. A separator, not a child: with nothing to its left, and on any wrapped line, it renders nothing.</div>
+      </div>
+      <div style="flex:1;min-width:240px;background:#16130F;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">not the chassis' hairline</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;">There it divides <i>filters</i> from <i>not a filter</i>. Here it divides <i>acting on the cards</i> from <i>reading them</i> &mdash; and sort is on the reading side, so it is inside the rule, not past it.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ §2 ═══════════════════════════════ -->
+<section id="two" style="max-width:1400px;margin:0 0 48px;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+    <span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:0.2em;color:#CF8745;">&sect;2</span>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;color:#EDE6D8;">1300px &mdash; four variants, one line every time</h2>
+  </div>
+  <p style="max-width:1080px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 22px;text-wrap:pretty;">1008px of content inside the container's <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">md:px-[26px] md:pt-[14px] md:pb-[10px]</span>, gap <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">10px</span> &mdash; so each frame is authored 1062 wide and its <i>content box</i> is the 1008 the figures budget against. Fixture: a filled deck at <b style="color:#EDE6D8;font-weight:600;">68 / 99</b> &mdash; 40 untouched auto rows, 28 the player's, 12 unowned, no draft.</p>
+
+  <div data-theme="{{ theme }}" style="background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:28px;">
+
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:9px;">D1 &middot; All &middot; auto present &mdash; every child the row can hold</div>
+      <div style="width:1062px;flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 26px 10px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;">
+        <span style="flex:none;font-size:13px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:5px 14px;">All 99</span>
+        <span style="flex:none;font-size:13px;font-weight:500;color:var(--warning);background:transparent;border:1px solid var(--accent-30);border-radius:999px;padding:5px 14px;">Shopping 12</span>
+        <span style="flex:1;"></span>
+        <span style="flex:none;display:flex;align-items:center;gap:8px;white-space:nowrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);">28 cards are yours now</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);background:transparent;border:1px solid var(--border-strong);border-radius:8px;padding:6px 12px;">Keep all 40</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);background:transparent;border:1px solid var(--border-strong);border-radius:8px;padding:6px 12px;">Clear all auto &middot; 40</span>
+        </span>
+        <span style="flex:none;width:1px;height:22px;background:var(--border-strong);"></span>
+        <span style="flex:none;display:flex;align-items:center;gap:10px;white-space:nowrap;">
+          <span style="font-size:12.5px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:5px 13px;">By type</span>
+          <span style="font-size:12.5px;font-weight:500;color:var(--fg-faint);background:transparent;border:1px solid var(--border);border-radius:999px;padding:5px 13px;">By role</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:8px;padding:9px 14px;">Name &middot; A&ndash;Z<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+          <span style="display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);">
+            <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-size:13px;font-weight:600;color:var(--fg);background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);">&#8803;</span>
+            <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-size:13px;color:var(--fg-faint);background:transparent;">&#9638;</span>
+          </span>
+        </span>
+      </div>
+      <sc-if value="{{ showMeasurements }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">lane 170 &middot; spacer 0 &middot; auto 429 &middot; rule 1 &middot; arrangement 356 &middot; six children, five 10px gaps 50 &nbsp;=&nbsp; <span style="color:var(--fg-muted);">1006 of 1008</span> &mdash; <b style="color:var(--warning);font-weight:600;">2px spare</b>. Measured in the browser, not computed. <b style="color:var(--fg-muted);font-weight:600;">The spacer must keep its shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;">flex-1</span> and no minimum</b> &mdash; an 8px floor on it is 6px more than this row has. The widest state that exists, and it clears by single digits &mdash; see <a href="READINESS.md">READINESS</a></div>
+      </sc-if>
+    </div>
+
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:9px;">D2 &middot; All &middot; no auto &mdash; the cluster and its hairline both leave</div>
+      <div style="width:1062px;flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 26px 10px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;">
+        <span style="flex:none;font-size:13px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:5px 14px;">All 99</span>
+        <span style="flex:none;font-size:13px;font-weight:500;color:var(--warning);background:transparent;border:1px solid var(--accent-30);border-radius:999px;padding:5px 14px;">Shopping 12</span>
+        <span style="flex:1;"></span>
+        <span style="flex:none;display:flex;align-items:center;gap:10px;white-space:nowrap;">
+          <span style="font-size:12.5px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:5px 13px;">By type</span>
+          <span style="font-size:12.5px;font-weight:500;color:var(--fg-faint);background:transparent;border:1px solid var(--border);border-radius:999px;padding:5px 13px;">By role</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:8px;padding:9px 14px;">Name &middot; A&ndash;Z<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+          <span style="display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);">
+            <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-size:13px;font-weight:600;color:var(--fg);background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);">&#8803;</span>
+            <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-size:13px;color:var(--fg-faint);background:transparent;">&#9638;</span>
+          </span>
+        </span>
+      </div>
+      <sc-if value="{{ showMeasurements }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">A hand-built deck, or one whose fill was entirely swept. <span style="color:var(--fg-muted);">The hairline has nothing on its left and renders nothing</span> &mdash; a rule at the start of a run is furniture.</div>
+      </sc-if>
+    </div>
+
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:9px;">D3 &middot; Shopping &middot; auto present &mdash; Price arrives, the well leaves, the strip is below</div>
+      <div style="width:1062px;flex:none;display:flex;flex-direction:column;padding:14px 26px 10px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+          <span style="flex:none;font-size:13px;font-weight:500;color:var(--fg-faint);background:transparent;border:1px solid var(--border-strong);border-radius:999px;padding:5px 14px;">All 99</span>
+          <span style="flex:none;font-size:13px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:5px 14px;">Shopping 12</span>
+          <span style="flex:1;"></span>
+          <span style="flex:none;display:flex;align-items:center;gap:8px;white-space:nowrap;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);">28 cards are yours now</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);background:transparent;border:1px solid var(--border-strong);border-radius:8px;padding:6px 12px;">Keep all 40</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);background:transparent;border:1px solid var(--border-strong);border-radius:8px;padding:6px 12px;">Clear all auto &middot; 40</span>
+          </span>
+          <span style="flex:none;width:1px;height:22px;background:var(--border-strong);"></span>
+          <span style="flex:none;display:flex;align-items:center;gap:10px;white-space:nowrap;">
+            <span style="font-size:12.5px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:5px 13px;">By type</span>
+            <span style="font-size:12.5px;font-weight:500;color:var(--fg-faint);background:transparent;border:1px solid var(--border);border-radius:999px;padding:5px 13px;">By role</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:8px;padding:9px 14px;">Price &middot; Highest<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+          </span>
+        </div>
+        <div style="margin-top:10px;display:flex;flex-direction:row-reverse;align-items:baseline;justify-content:space-between;gap:14px;border:1px solid var(--border);border-radius:9px;padding:11px 15px;background:var(--surface-sunken);">
+          <p style="margin:0;display:flex;align-items:baseline;gap:7px;font-family:'IBM Plex Mono',monospace;"><span style="font-size:14px;font-weight:600;color:var(--fg);">$129.50</span><span style="font-size:10.5px;color:var(--fg-faint);"><span aria-hidden="true">&middot; </span>10 of 12 priced</span></p>
+          <div style="margin-right:auto;">
+            <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;color:var(--fg-locked);">Market prices &middot; last checked 2 hours ago</p>
+            <p style="margin:9px 0 0;font-size:12.5px;"><span style="color:var(--accent);border-bottom:1px solid var(--accent-dim);">Buy these at Mana Pool &#8599;</span></p>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ showMeasurements }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">The trigger reads <span style="color:var(--fg-muted);">Price &middot; Highest</span> &mdash; #629's shipped order, now named on screen for the first time. <span style="color:var(--fg-muted);">The strip is not the host</span>: it is a rendering of the list, and a control inside it would move between lanes.</div>
+      </sc-if>
+    </div>
+
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:9px;">D4 &middot; Shopping &middot; no auto &mdash; three children, and the trigger is still not trailing-most on All</div>
+      <div style="width:1062px;flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 26px 10px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;">
+        <span style="flex:none;font-size:13px;font-weight:500;color:var(--fg-faint);background:transparent;border:1px solid var(--border-strong);border-radius:999px;padding:5px 14px;">All 99</span>
+        <span style="flex:none;font-size:13px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:5px 14px;">Shopping 12</span>
+        <span style="flex:1;"></span>
+        <span style="flex:none;display:flex;align-items:center;gap:10px;white-space:nowrap;">
+          <span style="font-size:12.5px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:5px 13px;">By type</span>
+          <span style="font-size:12.5px;font-weight:500;color:var(--fg-faint);background:transparent;border:1px solid var(--border);border-radius:999px;padding:5px 13px;">By role</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:8px;padding:9px 14px;">Price &middot; Highest<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+        </span>
+      </div>
+      <sc-if value="{{ showMeasurements }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">Heights in the cluster, rendered: pills <span style="color:var(--fg-muted);">27</span> &middot; trigger <span style="color:var(--fg-muted);">36</span> &middot; well <span style="color:var(--fg-muted);">38</span>. Three heights, not four &mdash; see <a href="#six">&sect;6 finding 3</a>.</div>
+      </sc-if>
+    </div>
+
+  </div>
+
+  <div style="margin-top:18px;padding:14px 18px;border:1px solid #3A3229;border-radius:10px;background:#1A1611;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">The trigger takes no accent border, which is a change to the component rather than a skin on this mount.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-panel.tsx</span> borders the trigger <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span> whenever <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">selected.length &gt; 0</span>. Under <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">selectionMode="single"</span> exactly one row is always chosen, so that branch is <i>unconditional</i> &mdash; an accent border that means nothing, on a bar whose own comment says selection is said with the bone-on-elevated skin and never with a coloured ground. <a href="#six">&sect;6 finding 1</a>.</div>
+</section>
+
+<!-- ═══════════════════════════════ §3 ═══════════════════════════════ -->
+<section id="three" style="max-width:1400px;margin:0 0 48px;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+    <span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:0.2em;color:#CF8745;">&sect;3</span>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;color:#EDE6D8;">390px &mdash; where the tenth child is actually decided</h2>
+  </div>
+  <p style="max-width:1080px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 22px;text-wrap:pretty;">358px of content inside <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">px-[16px] py-[9px]</span>, gap <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">7px</span>. Both notes are <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">hidden md:inline</span>, so the auto cluster here is two mono buttons at their mobile strings and their <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">min-h-[44px]</span>. <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">FilterPanel</span>'s compact trigger is already a <b style="color:#EDE6D8;font-weight:600;">44px rounded-full pill</b> &mdash; it joins this row's vocabulary with no override.</p>
+
+  <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+
+    <div data-theme="{{ theme }}" style="flex:none;width:434px;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">P1 &middot; All &middot; auto present &mdash; three lines, and the well stays put</div>
+      <div style="width:390px;margin-left:-2px;display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:9px 16px;background:var(--surface-sunken);border-bottom:1px solid var(--border);border-radius:9px;">
+        <span style="flex:none;display:flex;align-items:center;gap:7px;">
+          <span style="font-size:12px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:4px 11px;">All 99</span>
+          <span style="font-size:12px;font-weight:500;color:var(--warning);background:transparent;border:1px solid var(--accent-30);border-radius:999px;padding:4px 11px;">Shopping 12</span>
+        </span>
+        <span style="flex:1;min-width:0;"></span>
+        <span style="flex:none;display:flex;align-items:center;gap:8px;white-space:nowrap;">
+          <span style="display:inline-flex;align-items:center;min-height:44px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);border:1px solid var(--border-strong);border-radius:8px;padding:6px 12px;">Keep 40</span>
+          <span style="display:inline-flex;align-items:center;min-height:44px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);border:1px solid var(--border-strong);border-radius:8px;padding:6px 12px;">Clear auto &middot; 40</span>
+        </span>
+        <span style="flex:none;display:flex;align-items:center;gap:7px;white-space:nowrap;">
+          <span style="font-size:11.5px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:4px 10px;">By type</span>
+          <span style="font-size:11.5px;font-weight:500;color:var(--fg-faint);border-radius:999px;padding:4px 6px;">By role</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:12.5px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:8px 13px;">Name &middot; A&ndash;Z<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+          <span style="display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);">
+            <span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:6px;font-size:13px;font-weight:600;color:var(--fg);background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);">&#8803;</span>
+            <span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:6px;font-size:13px;color:var(--fg-faint);background:transparent;">&#9638;</span>
+          </span>
+        </span>
+      </div>
+      <sc-if value="{{ showMeasurements }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);line-height:1.8;">line 1 &middot; lane &nbsp;64 + 7 + 92 = 163<br>line 2 &middot; auto &nbsp;76 + 8 + 134 = 218<br>line 3 &middot; arrangement &nbsp;66 + 52 + 110 + 96 + 21 = <span style="color:var(--fg-muted);">345 of 358</span> &mdash; 13 spare</div>
+      </sc-if>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The three lines already exist.</b> The shipped row wraps to three here on a filled deck &mdash; lane, auto, grouping &mdash; and the trigger joins the third rather than making a fourth. <b style="color:var(--fg);font-weight:600;">13px is the whole margin</b>, and <a href="#five">4.3</a> is what buys it.</div>
+    </div>
+
+    <div data-theme="{{ theme }}" style="flex:none;width:434px;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">P2 &middot; All &middot; no auto &mdash; two lines</div>
+      <div style="width:390px;margin-left:-2px;display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:9px 16px;background:var(--surface-sunken);border-bottom:1px solid var(--border);border-radius:9px;">
+        <span style="flex:none;display:flex;align-items:center;gap:7px;">
+          <span style="font-size:12px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:4px 11px;">All 99</span>
+          <span style="font-size:12px;font-weight:500;color:var(--warning);background:transparent;border:1px solid var(--accent-30);border-radius:999px;padding:4px 11px;">Shopping 12</span>
+        </span>
+        <span style="flex:1;min-width:0;"></span>
+        <span style="flex:none;display:flex;align-items:center;gap:7px;white-space:nowrap;">
+          <span style="font-size:11.5px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:4px 10px;">By type</span>
+          <span style="font-size:11.5px;font-weight:500;color:var(--fg-faint);border-radius:999px;padding:4px 6px;">By role</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:12.5px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:8px 13px;">Name &middot; A&ndash;Z<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+          <span style="display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);">
+            <span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:6px;font-size:13px;font-weight:600;color:var(--fg);background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);">&#8803;</span>
+            <span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:6px;font-size:13px;color:var(--fg-faint);background:transparent;">&#9638;</span>
+          </span>
+        </span>
+      </div>
+      <sc-if value="{{ showMeasurements }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);line-height:1.8;">line 1 &middot; lane 163 &nbsp;|&nbsp; line 2 &middot; arrangement <span style="color:var(--fg-muted);">345 of 358</span><br>the two cannot share a line: 163 + 7 + 345 = 515</div>
+      </sc-if>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">Identical arrangement line to P1. <b style="color:var(--fg);font-weight:600;">The cluster's width does not depend on what else is in the row</b> &mdash; which is the property that makes one measurement cover all four variants.</div>
+    </div>
+
+    <div data-theme="{{ theme }}" style="flex:none;width:434px;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">P3 &middot; Shopping &middot; auto present &mdash; three lines and the strip</div>
+      <div style="width:390px;margin-left:-2px;display:flex;flex-direction:column;padding:9px 16px 0;background:var(--surface-sunken);border-bottom:1px solid var(--border);border-radius:9px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;">
+          <span style="flex:none;display:flex;align-items:center;gap:7px;">
+            <span style="font-size:12px;font-weight:500;color:var(--fg-faint);background:transparent;border:1px solid var(--border-strong);border-radius:999px;padding:4px 11px;">All 99</span>
+            <span style="font-size:12px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:4px 11px;">Shopping 12</span>
+          </span>
+          <span style="flex:1;min-width:0;"></span>
+          <span style="flex:none;display:flex;align-items:center;gap:8px;white-space:nowrap;">
+            <span style="display:inline-flex;align-items:center;min-height:44px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);border:1px solid var(--border-strong);border-radius:8px;padding:6px 12px;">Keep 40</span>
+            <span style="display:inline-flex;align-items:center;min-height:44px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);border:1px solid var(--border-strong);border-radius:8px;padding:6px 12px;">Clear auto &middot; 40</span>
+          </span>
+          <span style="flex:none;display:flex;align-items:center;gap:7px;white-space:nowrap;">
+            <span style="font-size:11.5px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:4px 10px;">By type</span>
+            <span style="font-size:11.5px;font-weight:500;color:var(--fg-faint);border-radius:999px;padding:4px 6px;">By role</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:12.5px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:8px 13px;">Price &middot; Highest<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+          </span>
+        </div>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:5px;border:1px solid var(--border);border-radius:9px;padding:10px 13px 0;background:var(--surface-sunken);">
+          <p style="margin:0;display:flex;align-items:baseline;gap:7px;font-family:'IBM Plex Mono',monospace;"><span style="font-size:14px;font-weight:600;color:var(--fg);">$129.50</span><span style="font-size:10.5px;color:var(--fg-faint);"><span aria-hidden="true">&middot; </span>10 of 12 priced</span></p>
+          <div>
+            <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;color:var(--fg-locked);">Market prices &middot; last checked 2 hours ago</p>
+            <div style="margin-top:9px;display:flex;min-height:44px;align-items:center;"><span style="font-size:12.5px;color:var(--accent);border-bottom:1px solid var(--accent-dim);">Buy these at Mana Pool &#8599;</span></div>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ showMeasurements }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);line-height:1.8;">line 3 &middot; arrangement &nbsp;66 + 52 + 123 + 14 = <span style="color:var(--fg-muted);">255 of 358</span><br>no well under Shopping &mdash; 103 spare</div>
+      </sc-if>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The trigger and the strip are one screen apart and say different things.</b> The strip totals the list; the trigger orders it. The strip is not the host precisely because it is absent under All &mdash; brief &sect;4.1's own objection.</div>
+    </div>
+
+    <div data-theme="{{ theme }}" style="flex:none;width:434px;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">P4 &middot; Shopping &middot; no auto &mdash; the narrowest state, and the one it must not become</div>
+      <div style="width:390px;margin-left:-2px;display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:9px 16px;background:var(--surface-sunken);border-bottom:1px solid var(--border);border-radius:9px;">
+        <span style="flex:none;display:flex;align-items:center;gap:7px;">
+          <span style="font-size:12px;font-weight:500;color:var(--fg-faint);background:transparent;border:1px solid var(--border-strong);border-radius:999px;padding:4px 11px;">All 99</span>
+          <span style="font-size:12px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:4px 11px;">Shopping 12</span>
+        </span>
+        <span style="flex:1;min-width:0;"></span>
+        <span style="flex:none;display:flex;align-items:center;gap:7px;white-space:nowrap;">
+          <span style="font-size:11.5px;font-weight:600;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:4px 10px;">By type</span>
+          <span style="font-size:11.5px;font-weight:500;color:var(--fg-faint);border-radius:999px;padding:4px 6px;">By role</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:12.5px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:999px;padding:8px 13px;">Price &middot; Highest<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+        </span>
+      </div>
+      <div style="margin-top:16px;padding:13px 15px;border:1px solid var(--danger);border-left:3px solid var(--danger);border-radius:9px;background:var(--surface-sunken);">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--danger);margin-bottom:8px;">what the loose row does instead &mdash; drawn so it is refused, not described</div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;width:330px;max-width:100%;">
+          <span style="font-size:11.5px;font-weight:600;color:var(--fg-faint);border:1px solid var(--border);border-radius:999px;padding:4px 10px;opacity:0.5;">By type</span>
+          <span style="font-size:11.5px;color:var(--fg-faint);padding:4px 6px;opacity:0.5;">By role</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:12.5px;color:var(--fg-faint);border:1px solid var(--border);border-radius:999px;padding:8px 13px;opacity:0.5;">Name &middot; A&ndash;Z &#9662;</span>
+          <span style="width:100%;"></span>
+          <span style="display:inline-flex;gap:2px;padding:2px;border-radius:8px;border:1px solid var(--danger);">
+            <span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:6px;font-size:13px;color:var(--fg-faint);">&#8803;</span>
+            <span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:6px;font-size:13px;color:var(--fg-faint);">&#9638;</span>
+          </span>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--fg-muted);line-height:1.6;text-wrap:pretty;">Eight loose children, 390px: the well lands alone on a fourth line, 96px of control on a 48px row of nothing. <b style="color:var(--fg);font-weight:600;">This is the defect the cluster wrapper exists to prevent</b>, and it is one <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">flex-none</span> span away in either direction.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ §4 ═══════════════════════════════ -->
+<section id="four" style="max-width:1400px;margin:0 0 48px;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+    <span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:0.2em;color:#CF8745;">&sect;4</span>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;color:#EDE6D8;">The trigger and its panel &mdash; two or three rows, never six</h2>
+  </div>
+  <p style="max-width:1080px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 22px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">One row per key, not one per direction.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">buildSortOptions</span> maps over the keys and hangs the direction on the chosen row as its <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">hint</span>; picking another key adopts that key's own default, picking the chosen key reverses it. So the deck list's panel is <b style="color:#EDE6D8;font-weight:600;">two rows under All and three under Shopping</b> &mdash; the shortest menu in the app, which is most of why it fits.</p>
+
+  <div data-theme="{{ theme }}" style="background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:24px;">
+    <div style="display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="flex:none;width:300px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Desktop &middot; three trigger states</div>
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);margin-bottom:7px;">resting</div>
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:8px;padding:9px 14px;">Name &middot; A&ndash;Z<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);margin-bottom:7px;">open &mdash; <span style="color:var(--accent);">the one accent the control keeps</span></div>
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg);background:var(--border-strong);border:1px solid var(--accent);border-radius:8px;padding:9px 14px;">Name &middot; A&ndash;Z<span aria-hidden="true" style="color:var(--fg-faint);">&#9652;</span></span>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);margin-bottom:7px;">chosen &mdash; after re-picking Name</div>
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);border-radius:8px;padding:9px 14px;">Name &middot; Z&ndash;A<span aria-hidden="true" style="color:var(--fg-faint);">&#9662;</span></span>
+          </div>
+        </div>
+        <div style="margin-top:20px;font-size:12.5px;color:var(--fg-muted);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Open is the only state that takes accent</b>, and it is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">open</span> branch unchanged: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span> ground, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span> border, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#9652;</span> in the chevron slot. It is transient and it means something.</div>
+      </div>
+
+      <div style="flex:none;width:300px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Popover &middot; All &middot; 260px, 44px rows</div>
+        <div style="width:260px;border-radius:12px;background:var(--surface-rail);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:44px;">
+            <span aria-hidden="true" style="flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:999px;background:var(--accent);border:1px solid var(--accent);color:var(--bg);font-size:11px;line-height:1;">&#9679;</span>
+            <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--fg);">Name</span>
+            <span aria-hidden="true" style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.04em;color:var(--fg-faint);">A&ndash;Z</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:44px;">
+            <span aria-hidden="true" style="flex:none;width:16px;height:16px;border-radius:999px;background:var(--bg);border:1px solid var(--border-dashed);"></span>
+            <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--fg);">Mana value</span>
+          </div>
+        </div>
+        <div style="margin-top:18px;font-size:12.5px;color:var(--fg-muted);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">No search, no counts, no footer</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">searchable</span> false drops the field and the group labels with it, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">renderFooter</span> returns null for single-select on desktop. A two-row menu is what remains, and the round marker is the shipped affordance for <i>one of these</i>.</div>
+        <div style="margin-top:12px;font-size:12.5px;color:var(--fg-muted);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Price is not a greyed row here.</b> Brief &sect;2.4: an All row draws no figure, so the order would be one nothing on the page confirms. A disabled row would advertise it anyway &mdash; and the row is not unavailable, it is <i>not a question on this lane</i>.</div>
+      </div>
+
+      <div style="flex:none;width:300px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Popover &middot; Shopping &middot; the third row, and the hint</div>
+        <div style="width:260px;border-radius:12px;background:var(--surface-rail);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:44px;">
+            <span aria-hidden="true" style="flex:none;width:16px;height:16px;border-radius:999px;background:var(--bg);border:1px solid var(--border-dashed);"></span>
+            <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--fg);">Name</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:44px;">
+            <span aria-hidden="true" style="flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:999px;background:var(--accent);border:1px solid var(--accent);color:var(--bg);font-size:11px;line-height:1;">&#9679;</span>
+            <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--fg);">Price</span>
+            <span aria-hidden="true" style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.04em;color:var(--fg-faint);">Highest</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:44px;">
+            <span aria-hidden="true" style="flex:none;width:16px;height:16px;border-radius:999px;background:var(--bg);border:1px solid var(--border-dashed);"></span>
+            <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--fg);">Mana value</span>
+          </div>
+        </div>
+        <div style="margin-top:18px;font-size:12.5px;color:var(--fg-muted);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The hint is the direction and only the chosen row has one</b> &mdash; brief &sect;2.3, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">sort-options.ts</span>'s own reason: an unchosen row has no direction yet, so labelling it would promise a state the click does not produce. The accessible name carries the rest: <i>&ldquo;Price &middot; Highest, current order, choose again to reverse.&rdquo;</i></div>
+      </div>
+
+      <div style="flex:none;width:290px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Sheet &middot; 390px &middot; Shopping</div>
+        <div style="width:270px;border-radius:16px 16px 0 0;background:var(--surface-rail);border-top:1px solid var(--border-strong);box-shadow:0 -20px 50px rgba(0,0,0,0.5);overflow:hidden;">
+          <div style="display:flex;justify-content:center;padding:9px 0 4px;"><span style="height:4px;width:36px;border-radius:999px;background:var(--border-strong);"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;">
+            <h2 style="margin:0;font-family:'Cinzel',serif;font-size:18px;font-weight:600;color:var(--fg);">Sort by</h2>
+            <span aria-hidden="true" style="display:flex;align-items:center;justify-content:center;height:30px;width:30px;border-radius:999px;font-size:13px;background:var(--surface-raised);color:var(--fg-muted);border:1px solid var(--border-strong);">&#10005;</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;">
+            <span aria-hidden="true" style="flex:none;width:18px;height:18px;border-radius:999px;background:var(--bg);border:1px solid var(--border-dashed);"></span>
+            <span style="flex:1;font-size:14.5px;line-height:1.35;color:var(--fg);">Name</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;">
+            <span aria-hidden="true" style="flex:none;display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:999px;background:var(--accent);border:1px solid var(--accent);color:var(--bg);font-size:12px;line-height:1;">&#9679;</span>
+            <span style="flex:1;font-size:14.5px;line-height:1.35;color:var(--fg);">Price</span>
+            <span aria-hidden="true" style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.04em;color:var(--fg-faint);">Highest</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;">
+            <span aria-hidden="true" style="flex:none;width:18px;height:18px;border-radius:999px;background:var(--bg);border:1px solid var(--border-dashed);"></span>
+            <span style="flex:1;font-size:14.5px;line-height:1.35;color:var(--fg);">Mana value</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:flex-end;border-top:1px solid var(--border);padding:12px 16px 20px;">
+            <span style="display:inline-flex;align-items:center;border-radius:8px;background:var(--accent);color:var(--bg);font-size:13.5px;font-weight:600;padding:10px 22px;">Done</span>
+          </div>
+        </div>
+        <div style="margin-top:18px;font-size:12.5px;color:var(--fg-muted);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The sheet is the shipped compact form, with one thing removed:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-panel.tsx</span> puts an accent count badge beside the title whenever <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">selected.length &gt; 0</span>, which under single-select is a permanent badge reading <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1</span>. <a href="#six">&sect;6 finding 2</a>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Done</span> stays &mdash; it is the sheet's way out, and it commits nothing, because the pick already applied and dismissed.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ §5 ═══════════════════════════════ -->
+<section id="five" style="max-width:1400px;margin:0 0 48px;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+    <span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:0.2em;color:#CF8745;">&sect;5</span>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;color:#EDE6D8;">&sect;4's five, answered in order</h2>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-left:3px solid #CF8745;border-radius:12px;padding:20px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:2px 7px;">4.1</span>
+        <div style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;color:#EDE6D8;">Where the trigger sits &rarr; <span style="color:#CF8745;">after <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">By role</span>, before the well, inside a new arrangement cluster</span></div>
+      </div>
+      <div style="font-size:13px;color:#A59C89;line-height:1.7;text-wrap:pretty;">Drawn in full at <a href="#two">&sect;2</a> and <a href="#three">&sect;3</a>, argued at <a href="#one">&sect;1</a>. None of the four candidates as posed: not the trailing edge (that slot is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">All</span>-only and would move the trigger 96px between lanes), not the leading edge (the pills answer <i>which cards</i> first), not the strip (absent under All), not its own line (unnecessary &mdash; 345 of 358 at 390px). The condition is the one structural change: <b style="color:#EDE6D8;font-weight:600;">the three grouping children become one <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-none</span> wrapper</b>, the pattern <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">clear-auto.tsx</span> already uses on the pair beside it.</div>
+    </div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-left:3px solid #CF8745;border-radius:12px;padding:20px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:2px 7px;">4.2</span>
+        <div style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;color:#EDE6D8;">The phone form &rarr; <span style="color:#CF8745;">the labelled 44px pill, not <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">iconOnly</span></span></div>
+      </div>
+      <div style="font-size:13px;color:#A59C89;line-height:1.7;text-wrap:pretty;">The row gains 110px, not 44, and it has 123 to give. <b style="color:#EDE6D8;font-weight:600;">An icon trigger cannot say which order is on</b>, and on this surface that is the control's entire output: the list is always sorted, so there is no off state a glyph could stand for. The chassis' <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">iconOnly</span> mounts sit on a persistent row beside a search field that must keep its width; nothing on this row shrinks, so nothing is bought by shortening this one. <b style="color:#EDE6D8;font-weight:600;">And the compact trigger is already a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rounded-full</span> pill at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">min-h-[44px]</span></b> &mdash; it lands in this row's vocabulary with no prop at all.</div>
+    </div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-left:3px solid #DEAA29;border-radius:12px;padding:20px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#DEAA29;border-radius:4px;padding:2px 7px;">4.3</span>
+        <div style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;color:#EDE6D8;">Does it state the order &rarr; <span style="color:#DEAA29;">yes, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">Sort:</span> prefix goes &mdash; a third answer</span></div>
+      </div>
+      <div style="font-size:13px;color:#A59C89;line-height:1.7;text-wrap:pretty;">The brief offers <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sort: Name &middot; A&ndash;Z</span> or a bare <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sort</span>. Take the order and drop the prefix: <b style="color:#EDE6D8;font-weight:600;">the prefix is 38px, and 38px is the difference between the view well staying on the arrangement line and landing alone on a fourth.</b> 345 of 358 with it dropped; 383 of 358 with it kept.
+      <div style="margin-top:10px;">It is also the right word to lose on <i>this</i> row. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span>'s prefix earns its width because that trigger sits among <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Type</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Availability</span>, where an unprefixed value would read as a filter value. Here the neighbours are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">By type</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">By role</span> &mdash; already arrangement statements &mdash; and the refresh retired this row's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Group</span> caption for exactly this reason: a label naming the category beside controls that say it themselves. One new copy key, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">triggerOne: (order) =&gt; order</span>. <b style="color:#EDE6D8;font-weight:600;">The accessible name keeps the word in full</b> &mdash; <i>&ldquo;Sort the deck list, Name &middot; A&ndash;Z, collapsed&rdquo;</i> &mdash; so nothing is lost to a reader who cannot see the neighbours.</div></div>
+    </div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-left:3px solid #CF8745;border-radius:12px;padding:20px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:2px 7px;">4.4</span>
+        <div style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;color:#EDE6D8;">What happens to the view toggle &rarr; <span style="color:#CF8745;">nothing. Neither yields, because neither has to</span></div>
+      </div>
+      <div style="font-size:13px;color:#A59C89;line-height:1.7;text-wrap:pretty;">Both sit on the arrangement line at 390px with 13px spare, and both sit on one desktop line with 55px spare in the widest state that exists. <b style="color:#EDE6D8;font-weight:600;">Had one needed to yield it would have been the well</b>, and the reason is worth recording in case the row tightens later: the well is a persisted preference (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">the99:deck-view</span>, one key for every deck &mdash; <i>&ldquo;I read decks as cards&rdquo; is a fact about the reader</i>), so it is set once and rarely revisited, while an order is a per-visit question. A control you touch once belongs behind something; a control you touch every visit does not.</div>
+    </div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-left:3px solid #CF8745;border-radius:12px;padding:20px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:2px 7px;">4.5</span>
+        <div style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;color:#EDE6D8;">Chassis control or toolbar member &rarr; <span style="color:#CF8745;">the same component, this toolbar's vocabulary</span></div>
+      </div>
+      <div style="font-size:13px;color:#A59C89;line-height:1.7;text-wrap:pretty;">Chassis decision 11 does not reach here, and the split it implies is the wrong axis. <b style="color:#EDE6D8;font-weight:600;">What travels between surfaces is the component and its behaviour</b> &mdash; one row per key, direction as re-pick, the round marker, the hint on the chosen row, Escape-dismisses-never-undoes, the pick committing and closing. <b style="color:#EDE6D8;font-weight:600;">What is local is the frame</b>, and the shipped component already gets it right without being told: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rounded-lg</span> at desktop, where it sits beside the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rounded-lg</span> view well; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rounded-full</span> at phone, where it sits among pills. The only thing this mount asks the component to stop doing is spend accent it cannot mean &mdash; <a href="#six">&sect;6</a>. <b style="color:#EDE6D8;font-weight:600;">No <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">hairline + trailing slot</span> quotation</b>: that hairline says <i>not a filter</i>, and on this row nothing is a filter but the two lane pills.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ §6 ═══════════════════════════════ -->
+<section id="six" style="max-width:1400px;margin:0 0 40px;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+    <span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:0.2em;color:#CF8745;">&sect;6</span>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;color:#EDE6D8;">The copy, and three defects single-select already has</h2>
+  </div>
+  <p style="max-width:1080px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 22px;text-wrap:pretty;">All three are live on <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">/collection</span> today, not introduced here &mdash; each is a branch keyed on <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">selected.length &gt; 0</span>, which under <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">selectionMode="single"</span> is always true and therefore says nothing. This mount is what makes them visible, because this bar has a stated rule about accent.</p>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
+    <div style="flex:1;min-width:300px;background:#181410;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;padding:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:9px;">finding 1 &middot; the permanent accent border</div>
+      <div style="font-size:12.5px;color:#A59C89;line-height:1.7;text-wrap:pretty;">The trigger's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">selected.length &gt; 0</span> branch takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">border-[--accent]</span>. Fix: condition it on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">selectionMode === "multi"</span>. <b style="color:#EDE6D8;font-weight:600;">This improves <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> too</b> &mdash; an always-lit border there distinguishes Sort from nothing, and reads as a filter that is on.</div>
+    </div>
+    <div style="flex:1;min-width:300px;background:#181410;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;padding:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:9px;">finding 2 &middot; the sheet's badge reading <span style="text-transform:none;letter-spacing:0;">1</span></div>
+      <div style="font-size:12.5px;color:#A59C89;line-height:1.7;text-wrap:pretty;">The sheet title takes an accent count pill on the same condition, so <i>Sort by</i> wears a permanent <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1</span>. Same one-line fix, same collateral improvement. A badge counts a selection the reader made <i>among many</i>; one-of-many has nothing to count.</div>
+    </div>
+    <div style="flex:1;min-width:300px;background:#181410;border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;padding:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin-bottom:9px;">finding 3 &middot; the trigger is 36 and the well is 38</div>
+      <div style="font-size:12.5px;color:#A59C89;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Accepted, not fixed.</b> The row already mixes 27px pills with a 38px well under <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">items-center</span>; a third height 2px off the well adds no inconsistency a reader can see, and forcing agreement means either a magic padding on this mount or a height prop on a shared component. <b style="color:#EDE6D8;font-weight:600;">Recorded so the next person does not read it as a mistake.</b></div>
+    </div>
+  </div>
+
+  <div data-theme="{{ theme }}" style="background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:24px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">The copy block &mdash; three keys, six directions, one departure</div>
+    <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="flex:1;min-width:400px;">
+        <table style="border-collapse:collapse;width:100%;font-size:13px;">
+          <tr><th style="text-align:left;padding:0 12px 9px 0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);font-weight:400;">key</th><th style="text-align:left;padding:0 12px 9px 0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);font-weight:400;">asc</th><th style="text-align:left;padding:0 12px 9px 0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);font-weight:400;">desc</th><th style="text-align:left;padding:0 0 9px 0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);font-weight:400;">default &middot; lanes</th></tr>
+          <tr><td style="padding:10px 12px 10px 0;border-top:1px solid var(--border);color:var(--fg);font-weight:600;">Name</td><td style="padding:10px 12px 10px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">A&ndash;Z</td><td style="padding:10px 12px 10px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">Z&ndash;A</td><td style="padding:10px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">asc &middot; both</td></tr>
+          <tr><td style="padding:10px 12px 10px 0;border-top:1px solid var(--border);color:var(--fg);font-weight:600;">Price</td><td style="padding:10px 12px 10px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">Lowest</td><td style="padding:10px 12px 10px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">Highest</td><td style="padding:10px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">desc &middot; Shopping only</td></tr>
+          <tr><td style="padding:10px 12px 10px 0;border-top:1px solid var(--border);color:var(--fg);font-weight:600;">Mana value</td><td style="padding:10px 12px 10px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">Curve up</td><td style="padding:10px 12px 10px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">Curve down</td><td style="padding:10px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">asc &middot; both</td></tr>
+        </table>
+        <div style="margin-top:16px;font-size:12.5px;color:var(--fg-muted);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Price names its extremes as figures, not as shopping.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Lowest</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Highest</span> rather than the straw man's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Cheapest</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Dearest</span>: <i>dearest</i> is British, and this app writes US English (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Color identity</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">en-US</span> pinned through every formatter in the copy layer). It also keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span>'s pattern of naming the extreme rather than the direction &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Fewest</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Most</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Common first</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Mythic first</span> &mdash; and beside a strip reading <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">$129.50</span>, <i>highest</i> can only mean the figure.
+        <div style="margin-top:12px;"><b style="color:var(--fg);font-weight:600;">Which changes why mana value takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Curve up</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Curve down</span>.</b> R1's first argument was collision &mdash; the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Cheapest to cast</span> sitting two rows above a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Price &middot; Cheapest</span>. <b style="color:var(--fg);font-weight:600;">With the money words gone, that argument goes with them</b>, and the curve pair now stands on one thing only: it abbreviates a sentence this same deck already shows the reader &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deckVersioningCopy.changed</span> ships <i>the curve goes up</i> and <i>the curve comes down</i> on its own diff. The shipped string is available again and would need a US reverse that is not a coinage; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Dearest to cast</span> is the word just retired. Still the one call flagged in <a href="READINESS.md">READINESS</a>.</div></div>
+      </div>
+      <div style="flex:none;width:340px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:10px;">what changes from <span style="text-transform:none;letter-spacing:0;">collectionFilterCopy.sort</span></div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;">
+          <div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">triggerOne</span> &mdash; <span style="color:var(--warning);">the one departure</span>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">(order) =&gt; order</span>, not <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">`Sort: ${order}`</span>. <a href="#five">4.3</a>.</div>
+          <div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">panelAriaLabel</span> &mdash; <i>Sort the deck list</i>. The page holds one list, and <i>Sort cards</i> would name the wrong noun on a surface where <i>card</i> also means a tile.</div>
+          <div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">sheetTitle</span> &mdash; <i>Sort by</i>, verbatim.</div>
+          <div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">optionAria</span> &mdash; verbatim, including <i>choose again to reverse</i>, which is the only place the re-pick rule is stated out loud.</div>
+          <div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">groupDefault</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">groupMatches</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">search*</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">empty*</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">clear</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">footer*</span> &mdash; written out, unreachable, because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FilterPanelCopy</span> is a shared shape.</div>
+          <div style="padding-top:11px;border-top:1px solid var(--border);"><b style="color:var(--fg);font-weight:600;">Persistence, recommended not ruled:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">the99:deck-sort</span>, one key for every deck, holding both lanes' orders. The trigger now lives in the same cluster as the view well, and the well's own precedent is that how you read a list is a fact about the reader, not about the deck.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="reference" style="max-width:1400px;margin:0 0 40px;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+    <span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:0.2em;color:#CF8745;">&sect;6b</span>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;color:#EDE6D8;">The reference menu, read against &sect;2</h2>
+  </div>
+  <p style="max-width:1080px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;text-wrap:pretty;">A comparable control from another app, shared in review: trigger <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Price &bull; Desc</span> behind a sort glyph, and a menu of <b style="color:#EDE6D8;font-weight:600;">three keys, a divider, then Ascending / Descending as a second group</b>, each group with its own check. It is a good control and it is worth being precise about which parts of it this round can take, because <b style="color:#EDE6D8;font-weight:600;">two of them are the two things &sect;2 locks shut.</b></p>
+
+  <div data-theme="{{ theme }}" style="display:flex;gap:16px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:300px;background:#181410;border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;padding:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin-bottom:9px;">taken &middot; the trigger's shape</div>
+      <div style="font-size:12.5px;color:#A59C89;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Key, separator, direction &mdash; already what R1 draws</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Price &middot; Highest</span>), and the reference is the second surface to arrive at it independently. It also confirms decision 7 from the other side: the reference prints no <i>Sort:</i> prefix either. The direction is abbreviated there because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Descending</span> is a long word; a named extreme is already short.</div>
+    </div>
+    <div style="flex:1;min-width:300px;background:#181410;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;padding:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:9px;">blocked &middot; the second group is a direction affordance</div>
+      <div style="font-size:12.5px;color:#A59C89;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">&sect;2.2 rules direction is re-pick, and names no new affordance</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">sort-options.ts:69-73</span>'s reasoning is that an asc/desc control &ldquo;would sit in the filter row doing nothing four times out of five.&rdquo; The reference's divider-plus-pair is precisely that control, moved inside the menu. Reopenable, but it is a locked decision and a change to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> as well, since the two share the component.</div>
+    </div>
+    <div style="flex:1;min-width:300px;background:#181410;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;padding:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:9px;">blocked &middot; and it costs the per-key labels</div>
+      <div style="font-size:12.5px;color:#A59C89;line-height:1.7;text-wrap:pretty;">One direction group for every key means <b style="color:#EDE6D8;font-weight:600;">one vocabulary for every key</b>, which is &sect;2.3 reversed: <i>&ldquo;A&ndash;Z says more than ascending for a name and nothing at all for a rarity.&rdquo;</i> The trade is legible &mdash; <b style="color:#EDE6D8;font-weight:600;">six labels become two</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Asc</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Desc</span>), the mana-value wording question disappears entirely, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">A&ndash;Z</span> goes with it. <b style="color:#EDE6D8;font-weight:600;">Hugh's call, not mine</b>: it is two locked decisions and a shared component, so R1 draws the ruled shape and states the alternative rather than quietly taking it.</div>
+    </div>
+    <div style="flex:1;min-width:300px;background:#181410;border:1px solid #3A3229;border-left:3px solid #8B8270;border-radius:12px;padding:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">not taken &middot; the per-row icons and the lit ink</div>
+      <div style="font-size:12.5px;color:#A59C89;line-height:1.7;text-wrap:pretty;">The reference gives every row a glyph and paints the chosen row's label in its accent. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-panel.tsx</span> carries <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">leadingGlyph</span> and <b style="color:#EDE6D8;font-weight:600;">exactly one mount uses it</b> (Availability, whose rows are distinguished by a mark rather than a word). Three rows reading Name, Price, Mana value are distinguished by the words. And the chosen row is already said twice &mdash; filled round marker, plus the direction hint no other row has; accent ink would be a third, on the bar that spends none.</div>
+    </div>
+  </div>
+</section>
+
+<div style="max-width:1400px;padding-top:20px;border-top:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;line-height:1.8;">
+  Ordering the deck list &middot; R1 &middot; design handoff &mdash; <a href="README.md">README.md</a> &middot; <a href="STATES-decklist-sort.md">STATES-decklist-sort.md</a> &middot; <a href="READINESS.md">READINESS.md</a> &middot; <a href="decklist-sort · copy strings.ts">copy strings</a><br>
+  Brief read at <span style="color:#8E8269;">main</span>, verified there against <span style="color:#8E8269;">6d5aa90c</span>. Fixture: <i>HD Tune</i> at 68 / 99 &mdash; 40 auto, 28 the player's, 12 unowned, no draft. Every metric in every frame is a declared value in <span style="color:#8E8269;">group-toggle.tsx</span>, <span style="color:#8E8269;">clear-auto.tsx</span>, <span style="color:#8E8269;">price-strip.tsx</span>, <span style="color:#8E8269;">filter-panel.tsx</span> or <span style="color:#8E8269;">view-toggle.tsx</span>.
+</div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;amonkhet&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;ixalan&quot;,&quot;eldraine&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Canvas&quot;},&quot;showMeasurements&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Canvas&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      showMeasurements: this.props.showMeasurements ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>

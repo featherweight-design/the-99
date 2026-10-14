@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Addendum · card availability · #43</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">The numeral, the window, and the accessible name.</h1>
+    <p style="max-width:980px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">Three rulings and a closed gap. R1&rsquo;s marker, states, surfaces and copy are unchanged &mdash; nothing in this addendum redraws them. What changes is what happens to the <b style="color:#EDE6D8;font-weight:600;">rank numeral</b> and the <b style="color:#EDE6D8;font-weight:600;">reveal window</b> when <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Score against</span> flips, one respecified <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">aria</span> signature, and a degraded state that now has a shipped precedent to reuse.</p>
+    <p style="max-width:980px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> for the seven original calls. This file is additive; where the two disagree, this one is newer.</p>
+  </section>
+
+  <!-- ============ CORRECTION LEDGER ============ -->
+  <div style="max-width:1400px;margin-bottom:38px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;border-top:1px solid #C9A24B;padding-top:18px;">Provenance corrections &middot; <span style="color:#C9A24B;">four, all landed, none redraw</span></div>
+    <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:200px 1fr 1fr;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;background:#14110E;border-bottom:1px solid #2A241D;">
+        <div style="padding:11px 18px;">Item</div><div style="padding:11px 18px;">R1 said</div><div style="padding:11px 18px;">Corrected to</div>
+      </div>
+      <div style="display:grid;grid-template-columns:200px 1fr 1fr;border-bottom:1px solid #2A241D;font-size:12.5px;line-height:1.55;">
+        <div style="padding:15px 18px;color:#EDE6D8;font-weight:600;">Light theme</div>
+        <div style="padding:15px 18px;color:#8E8269;">&ldquo;&hellip; and take a light-theme pair there&rdquo;</div>
+        <div style="padding:15px 18px;color:#C6B79A;"><b style="color:#EDE6D8;font-weight:600;">Clause deleted.</b> One <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">:root</span>, no <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">color-scheme</span>. The two new literals are single-value like every other token.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:200px 1fr 1fr;border-bottom:1px solid #2A241D;font-size:12.5px;line-height:1.55;">
+        <div style="padding:15px 18px;color:#EDE6D8;font-weight:600;">Brass contrast</div>
+        <div style="padding:15px 18px;color:#8E8269;">&ldquo;brass is not AA as small text&rdquo; &mdash; <b style="color:#E0913C;font-weight:600;">wrong, and dangerous as a general rule</b></div>
+        <div style="padding:15px 18px;color:#C6B79A;"><b style="color:#EDE6D8;font-weight:600;">Brass is AAA for normal text</b> &mdash; 7.5:1 on <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface</span>, 7.84:1 on <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--bg</span>. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--avail-hard-fg</span> is kept for a different reason &mdash; see the panel below.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:200px 1fr 1fr;border-bottom:1px solid #2A241D;font-size:12.5px;line-height:1.55;">
+        <div style="padding:15px 18px;color:#EDE6D8;font-weight:600;">Copy line ref</div>
+        <div style="padding:15px 18px;color:#8E8269;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">decks-builder.ts:158</span></div>
+        <div style="padding:15px 18px;color:#C6B79A;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">decks-builder.ts:197</span> &mdash; string unchanged. Fixed in README and in the copy file header.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:200px 1fr 1fr;font-size:12.5px;line-height:1.55;">
+        <div style="padding:15px 18px;color:#EDE6D8;font-weight:600;">Surface token</div>
+        <div style="padding:15px 18px;color:#8E8269;">contrast quoted against <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">#1A160F</span></div>
+        <div style="padding:15px 18px;color:#C6B79A;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">#1A160F</span> is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface-rail</span>. Tiles and rows are <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface #1E1A15</span>. Figures <b style="color:#EDE6D8;font-weight:600;">recomputed, not adjusted</b> &mdash; the repoint costs about 2%, and everything clears AAA.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:22px;margin-top:20px;flex-wrap:wrap;">
+      <div style="width:660px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:14px;padding:20px 22px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin-bottom:10px;">Why <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#C9A24B;">--avail-hard-fg</span> survives the correction</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">Not because brass fails &mdash; <b style="color:#EDE6D8;font-weight:600;">brass passes comfortably at normal text sizes and should keep being used as text.</b> The reason is <b style="color:#EDE6D8;font-weight:600;">size, not hue</b>: the tile chip label is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">8.5px</span> mono, well under the 14px/18.66px thresholds, sitting on a <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">rgba(11,9,7,0.9)</span> scrim over card art rather than on a flat token. At that size on that backing I want headroom above 7:1, not a pass at it &mdash; so the chip label lifts to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">#E8CE93</span> and the row-density label uses the same value for consistency.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;margin-top:10px;"><b style="color:#EDE6D8;font-weight:600;">The glyph itself stays brass.</b> That is the point of the correction landing: the diamond is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--brass</span>, unchanged, and nobody should read this pass as a reason to replace brass text anywhere.</div>
+      </div>
+      <div style="width:520px;flex:none;background:#181410;border:1px solid #3A3229;border-radius:14px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Restated contrast, against <span style="color:#C6B79A;">--surface #1E1A15</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A89B84;line-height:2;">
+          <div style="display:flex;justify-content:space-between;"><span style="color:#E8CE93;">#E8CE93</span><span>hard label &mdash; 11.8:1 &middot; AAA</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:#E9917A;">#E9917A</span><span>over label &mdash; 7.6:1 &middot; AAA</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:#C6B79A;">#C6B79A</span><span>soft label &mdash; 9.2:1 &middot; AAA</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:#C9A24B;">#C9A24B</span><span>glyph &middot; brass &mdash; <b style="color:#C6B79A;font-weight:600;">7.5:1 &middot; AAA</b></span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:#8E8269;">#C6533F</span><span>glyph + border only &mdash; never text</span></div>
+        </div>
+        <div style="font-size:12px;color:#8E8269;line-height:1.6;margin-top:12px;"><b style="color:#C6B79A;font-weight:600;">All five clear AAA for normal text</b>, brass included &mdash; which is the correction, stated in the table as well as in the prose. Repointing from <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface-rail</span> to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface</span> costs about 2%, not the double digits R1&rsquo;s figures implied. The 8.5px chip sits on a scrim darker than <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface</span>, so its true ratios are higher again.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ A · THE NUMERAL ============ -->
+  <div style="margin-bottom:38px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">A1 · <span style="color:#C9A24B;">the rank numeral recomputes under What&rsquo;s free — and is still global</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:840px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;">
+          <div style="border-right:1px solid #2A241D;">
+            <div style="padding:12px 18px 10px;background:#181410;border-bottom:1px solid #2A241D;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">Everything I own</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;margin-top:4px;">rank map A &middot; no filter</div>
+            </div>
+            <div style="padding:6px 0;">
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8E8269;width:20px;text-align:center;">1</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Kykar</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">82</span></div>
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8E8269;width:20px;text-align:center;">2</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">79</span></div>
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8E8269;width:20px;text-align:center;">3</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Lathril</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">74</span></div>
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8E8269;width:20px;text-align:center;">4</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Muldrotha</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">71</span></div>
+            </div>
+          </div>
+          <div style="border-right:1px solid #2A241D;background:#181410;">
+            <div style="padding:12px 18px 10px;background:#1E1A15;border-bottom:1px solid #C9A24B;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">What&rsquo;s free</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:4px;">rank map B &middot; no filter</div>
+            </div>
+            <div style="padding:6px 0;">
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#C9A24B;width:20px;text-align:center;">1</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Lathril</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">74</span></div>
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#C9A24B;width:20px;text-align:center;">2</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Muldrotha</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">71</span></div>
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#C9A24B;width:20px;text-align:center;">3</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Kykar</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">61</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">&darr;21</span></div>
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#C9A24B;width:20px;text-align:center;">4</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">52</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">&darr;27</span></div>
+            </div>
+          </div>
+          <div>
+            <div style="padding:12px 18px 10px;background:#181410;border-bottom:1px solid #2A241D;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">What&rsquo;s free <span style="color:#4A7FB5;">+ U filter</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;margin-top:4px;">rank map B &middot; numerals skip</div>
+            </div>
+            <div style="padding:6px 0;">
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;opacity:0.3;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8E8269;width:20px;text-align:center;">1</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-style:italic;">Lathril &mdash; filtered out</span></div>
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#C9A24B;width:20px;text-align:center;">2</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Muldrotha</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">71</span></div>
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#C9A24B;width:20px;text-align:center;">3</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Kykar</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">61</span></div>
+              <div style="padding:9px 18px;display:flex;align-items:center;gap:12px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#C9A24B;width:20px;text-align:center;">4</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">52</span></div>
+            </div>
+            <div style="padding:4px 18px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;line-height:1.6;">2, 3, 4 &mdash; the 1 is gone and nothing slides up. Shipped invariant, preserved.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:480px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">The ruling: <span style="color:#C9A24B;">two rank maps, both global</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The numeral recomputes.</b> Build a second rank map from the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">free</span> ordering, exactly as the first is built from the base ordering. Which map is in play follows <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?avail=</span>.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Because the invariant is about filtering, and this is not filtering.</b> A filter hides rows without changing any score &mdash; renumbering there would be a lie, since the card&rsquo;s standing among all 214 has not moved. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Score against</span> changes the score itself: under <i>What&rsquo;s free</i>, Kykar genuinely <i>is</i> the third-best thing this player can build right now. The numeral names position in the ranking on screen, so it must agree with it.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The alternative is unreadable.</b> Frozen numerals would render <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">3, 4, 1, 2</span> down the page &mdash; a list whose numbers disagree with its own order. That is worse than either behaviour on its own.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Global, never post-filter.</b> Both maps are built over the full candidate set before any colour filter applies, so the shipped rule survives verbatim in both modes: <b style="color:#EDE6D8;font-weight:600;">filtering never renumbers.</b> Third column shows it &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">2, 3, 4</span> with a gap where rank 1 was.</div>
+        <div style="height:1px;background:#2A241D;"></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">And <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Order: Fit &darr; &middot; fixed</span> stays literally true.</b> The order <i>rule</i> is Fit descending in both modes and there is still no ordering control &mdash; what changed is the measurement, not the sort. The label needs no edit. If it ever reads as a promise that numerals are frozen, the fix is the label, not this ruling.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ A2 · WINDOWING ============ -->
+  <div style="margin-bottom:38px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">A2 · <span style="color:#C9A24B;">flipping Score against resets the window — and the delta never needed it</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &middot; before &mdash; two batches revealed, then the flip</div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;">
+          <div style="padding:14px 16px 10px;border-bottom:1px solid #2A241D;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Commanders</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:3px;">214 generals &middot; <span style="color:#C6B79A;">50 shown &middot; 164 more below</span></div>
+          </div>
+          <div style="padding:11px 16px;background:#14110E;border-bottom:1px solid #2A241D;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Score against</div>
+            <div style="display:flex;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;">
+              <div style="flex:1;height:38px;border-radius:6px;background:#C9A24B;color:#14110E;font-weight:600;display:flex;align-items:center;justify-content:center;font-size:13px;">Everything I own</div>
+              <div style="flex:1;height:38px;border-radius:6px;color:#C6B79A;font-weight:500;display:flex;align-items:center;justify-content:center;font-size:13px;">What&rsquo;s free</div>
+            </div>
+          </div>
+          <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;letter-spacing:0.1em;">&hellip; ranks 1&ndash;48 above &hellip;</div>
+            <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:11px 13px;display:flex;align-items:center;gap:11px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:16px;color:#8E8269;width:22px;text-align:center;">49</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Shorikai</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">44</span></div>
+            <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:11px 13px;display:flex;align-items:center;gap:11px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:16px;color:#8E8269;width:22px;text-align:center;">50</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Tuvasa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">43</span></div>
+            <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:14px 16px;min-height:52px;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <span style="font-size:14.5px;font-weight:600;color:#EDE6D8;">Show 25 more &darr;</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">164 remaining</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &middot; after &mdash; <span style="color:#C9A24B;">window back to batch 1, scrolled to top</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;">
+          <div style="padding:14px 16px 10px;border-bottom:1px solid #2A241D;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Commanders</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:3px;">214 generals &middot; <span style="color:#C6B79A;">25 shown &middot; 189 more below</span></div>
+          </div>
+          <div style="padding:11px 16px;background:#14110E;border-bottom:1px solid #2A241D;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Score against</div>
+            <div style="display:flex;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;">
+              <div style="flex:1;height:38px;border-radius:6px;color:#C6B79A;font-weight:500;display:flex;align-items:center;justify-content:center;font-size:13px;">Everything I own</div>
+              <div style="flex:1;height:38px;border-radius:6px;background:#C9A24B;color:#14110E;font-weight:600;display:flex;align-items:center;justify-content:center;font-size:13px;">What&rsquo;s free</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:7px;line-height:1.5;">Cards sleeved into a finished deck don&rsquo;t count toward these scores.</div>
+          </div>
+          <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+            <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:11px 13px;display:flex;align-items:center;gap:11px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:16px;color:#C9A24B;width:22px;text-align:center;">1</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Lathril</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">74</span></div>
+            <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:11px 13px;display:flex;align-items:center;gap:11px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:16px;color:#C9A24B;width:22px;text-align:center;">2</span><span style="flex:1;font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Muldrotha</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">71</span></div>
+            <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:11px 13px;display:flex;align-items:center;gap:11px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:16px;color:#C9A24B;width:22px;text-align:center;">3</span><span style="flex:1;min-width:0;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;display:block;">Kykar</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">was 1st</span></span><span style="text-align:right;"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;display:block;">61</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">&darr;21 from 82</span></span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;letter-spacing:0.1em;">&hellip; ranks 4&ndash;25 below &hellip;</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:8px;line-height:1.6;">Live region: &ldquo;Re-ranked by what&rsquo;s free. Showing 25 of 214 commanders.&rdquo;</div>
+      </div>
+
+      <div style="width:480px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">The ruling: <span style="color:#C9A24B;">yes, it resets</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Same class of event as a colour-filter change</b>, so it takes the same behaviour: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shown &rarr; REVEAL_STEP</span>, remaining recomputed against the current result length. Windowing&rsquo;s own rule already covers it &mdash; the window is a property of the current result set, not of the session &mdash; and a re-rank produces a new result set in the only sense that matters: <b style="color:#EDE6D8;font-weight:600;">different cards occupy the revealed range.</b></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">Keeping <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shown = 50</span> would hand the player fifty <i>different</i> commanders with no signal that the set beneath them had changed. Resetting is the honest read, and it is the behaviour they have already met on the filter.</div>
+        <div style="height:1px;background:#2A241D;"></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The delta needs no anchor in the list.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&darr;21 from 82</span> compares a card to <i>itself</i> &mdash; its own two scores &mdash; never to another row. So it is window-independent by construction: it reads correctly on rank 3 or rank 200, revealed or not, filtered or not. Nothing to fix.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">One real cost, accepted.</b> A commander at rank 3 under <i>Everything I own</i> can land at rank 60 under <i>What&rsquo;s free</i> &mdash; outside the first batch, so it vanishes from view on the flip. That is the toggle telling the truth, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">25 shown &middot; 189 more below</span> count says there is more. Auto-revealing far enough to keep a previously-seen card visible would be a new windowing pattern; not worth it for R2. Carried as gap &sect;10.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">was 1st</span> annotation is optional</b> and I would ship without it &mdash; it is drawn above only to show what the reset costs. It is the one thing in this addendum I would not defend hard.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ B · ARIA ============ -->
+  <div style="margin-bottom:38px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">B · <span style="color:#C9A24B;">rowAria — the clause joins, it does not supplant</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:840px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="background:#1A160F;border:1px solid #6B3226;border-radius:12px;padding:18px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#E9917A;margin-bottom:10px;">R1 &mdash; wrong. A replacement that drops the type line.</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A89B84;line-height:1.7;">rowAria: (name, ownedQty, clause) =&gt;<br>&nbsp;&nbsp;clause ? `${name}, ${ownedQty} owned, ${clause}` : &hellip;</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#E9917A;margin-top:12px;">&rarr; &ldquo;Cyclonic Rift, 1 owned, 0 free&rdquo;<span style="color:#8E8269;">&nbsp;&nbsp;&mdash; type line gone from every Consider row</span></div>
+        </div>
+        <div style="background:#1A160F;border:1px solid #C9A24B;border-radius:12px;padding:18px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:10px;">R2 &mdash; the shipped signature, one optional trailing argument</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A89B84;line-height:1.7;">rowAria: (name, typeLine, owned<span style="color:#6A6152;">: boolean</span>, availability?<span style="color:#6A6152;">: string | null</span>) =&gt;<br>&nbsp;&nbsp;`${name}, ${typeLine}, ${owned ? 'owned' : 'not owned'}`<br>&nbsp;&nbsp;&nbsp;&nbsp;+ (availability ? `, ${availability}` : '')</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;margin-top:12px;line-height:1.8;">&rarr; &ldquo;Cyclonic Rift, Instant, owned, no free copies; this one is on your Atraxa list&rdquo;<br>&rarr; &ldquo;Swords to Plowshares, Instant, owned&rdquo;<span style="color:#8E8269;">&nbsp;&nbsp;&mdash; free state, no fourth argument, byte-identical to shipped</span></div>
+        </div>
+        <div style="background:#181410;border:1px solid #3A3229;border-radius:12px;padding:16px 20px;font-size:12.5px;color:#A89B84;line-height:1.65;">
+          <b style="color:#EDE6D8;font-weight:600;">Three properties this now has.</b> The first three arguments and their order are untouched, so existing call sites compile and behave identically. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">owned</span> stays a boolean &mdash; the marker&rsquo;s clause carries its own counts, so nothing needs a quantity here. And a free card produces the <b style="color:#EDE6D8;font-weight:600;">exact shipped string</b>, which is the accessible-name form of &ldquo;silence is the default&rdquo;.
+        </div>
+      </div>
+
+      <div style="width:480px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Where the clause comes from</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">availability</span> argument is one of the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">marker.*Aria</span> strings already in the copy file &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">softAria</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">hardAria</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">hardMultiAria</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">overAria</span> &mdash; or <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">null</span>. It is prose, not the visual label: the eye reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 free &mdash; in Atraxa</span>, the ear hears <i>&ldquo;no free copies; this one is on your Atraxa list&rdquo;</i>.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">Same reason the diamond is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span>: a decorative glyph should not become a word, and a terse mono label should not become a sentence fragment.</div>
+        <div style="height:1px;background:#2A241D;"></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Applies to the decklist row too.</b> Row density on both surfaces takes the clause the same way; only the caller differs.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GAP 6 CLOSED ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Gap &sect;6 closed · <span style="color:#C9A24B;">a failed availability read reuses DegradedBanner — and disables the segment</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:1080px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &middot; /commanders, availability read failed &mdash; recs intact</div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;">
+          <div style="padding:18px 34px 0;">
+            <div style="background:#211C15;border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:12px;padding:15px 18px;display:flex;align-items:center;gap:14px;">
+              <span style="width:26px;height:26px;border-radius:999px;border:1px solid #E0913C;display:flex;align-items:center;justify-content:center;color:#E0913C;font-size:13px;flex:none;">&#9888;</span>
+              <div style="flex:1;">
+                <div style="font-size:13.5px;font-weight:600;color:#EDE6D8;">We can&rsquo;t see your decks right now</div>
+                <div style="font-size:12.5px;color:#A89B84;margin-top:3px;line-height:1.55;">Ranking and Fit are unaffected. We just can&rsquo;t tell which cards are already in a deck, so <i>What&rsquo;s free</i> is unavailable until this comes back.</div>
+              </div>
+              <div style="flex:none;background:#1E1A15;border:1px solid #4A4033;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;color:#EDE6D8;">Retry now</div>
+            </div>
+          </div>
+          <div style="padding:16px 34px 14px;border-bottom:1px solid #2A241D;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="display:flex;align-items:center;gap:8px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:8px 12px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.12em;margin-right:2px;">COLOR IDENTITY</span>
+                <span style="width:16px;height:16px;border-radius:999px;background:#E8E4D6;opacity:0.35;"></span><span style="width:16px;height:16px;border-radius:999px;background:#4A7FB5;opacity:0.35;"></span><span style="width:16px;height:16px;border-radius:999px;background:#5B5566;opacity:0.35;"></span><span style="width:16px;height:16px;border-radius:999px;background:#C05A48;opacity:0.35;"></span><span style="width:16px;height:16px;border-radius:999px;background:#6B9E63;opacity:0.35;"></span>
+              </div>
+              <span style="font-size:13px;font-weight:500;color:#8E8269;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Includes &#9662;</span>
+              <div style="display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:5px 8px 5px 12px;opacity:0.55;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.12em;">SCORE AGAINST</span>
+                <div style="display:flex;background:#100D0A;border:1px solid #2A241D;border-radius:6px;padding:2px;gap:2px;">
+                  <div style="height:26px;padding:0 12px;border-radius:4px;background:#3A3229;color:#C6B79A;display:flex;align-items:center;font-size:12.5px;font-weight:600;">Everything I own</div>
+                  <div style="height:26px;padding:0 12px;border-radius:4px;color:#6A6152;display:flex;align-items:center;font-size:12.5px;font-weight:500;text-decoration:line-through;">What&rsquo;s free</div>
+                </div>
+              </div>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">Order: Fit &darr; &middot; fixed</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:12px;">Showing 24 of 24 &middot; <span style="color:#A89B84;">scored against everything you own</span></div>
+          </div>
+          <div style="padding:16px 34px 26px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:grid;grid-template-columns:40px 100px 1fr 236px;gap:20px;align-items:center;padding:16px 20px;border-radius:12px;background:#1E1A15;border:1px solid #2A241D;">
+              <div style="text-align:center;font-family:'Cinzel',serif;font-weight:800;font-size:26px;color:#8E8269;">1</div>
+              <div style="aspect-ratio:63/88;border-radius:8px;background:repeating-linear-gradient(135deg,#221D16,#221D16 5px,#1A160F 5px,#1A160F 10px);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.28);"></div>
+              <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</div><div style="font-size:12.5px;color:#A89B84;margin-top:2px;">Legendary Creature &mdash; Bird Cleric &middot; 74 cards in your Jeskai pool</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:9px;">own <b style="color:#EDE6D8;font-weight:600;">29</b> of top 40</div></div>
+              <div style="border-left:1px solid #2A241D;padding-left:20px;"><div style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;color:#EDE6D8;line-height:1;">82</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8E8269;">/100</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-left:2px;">Fit</span></div></div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">&hellip; no availability receipt on any card &mdash; the clause is absent, not zeroed &hellip;</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:480px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">The ruling: <span style="color:#C9A24B;">banner where there is one, quiet where there isn&rsquo;t</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">On <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/commanders</span>: reuse <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DegradedBanner</span></b> &mdash; the shipped amber-left-border form with <i>Retry now</i>, unchanged. Availability folds into the same query, so a failure that would already have shown a banner shows this one instead, with its own message.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Because on this surface, quiet failure lies.</b> A silent fallback would leave <i>What&rsquo;s free</i> selectable and produce scores identical to <i>Everything I own</i> &mdash; the player would read &ldquo;nothing you own is committed&rdquo; from a network error. So the free segment is <b style="color:#EDE6D8;font-weight:600;">disabled and struck</b>, selection reverts to <i>Everything I own</i>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?avail=free</span> is honoured again after a successful retry.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">On the builder surfaces: genuinely quiet.</b> Consider tiles, decklist rows and quick add have no banner, no recs query and nothing that changes meaning &mdash; the marker is pure annotation there, so its absence degrades to exactly the silent state a player with no commitments sees. Never block, and never a banner over a working list.</div>
+        <div style="height:1px;background:#2A241D;"></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The distinction is load-bearing, so state it plainly:</b> a banner is owed wherever the failure changes what a control means. Nowhere else.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">Two degraded reads can co-occur &mdash; EDHREC down <i>and</i> availability down. One banner, two sentences, one <i>Retry now</i>; never two stacked banners. Flagged for engineering rather than drawn.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+</body>
+</html>

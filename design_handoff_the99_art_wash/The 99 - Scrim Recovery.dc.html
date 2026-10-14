@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270;
+    --accent:#CF8745; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46; --display:'Cinzel';
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C;
+    --accent:#5C86C9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-sunken:#131018; --elevated:#26232C;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395;
+    --accent:#AE88E6; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  body { margin:0; background:var(--bg); font-family:'IBM Plex Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:var(--accent); } a:hover { color:var(--accent); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="padding:44px 40px 80px;max-width:1340px;margin:0 auto;display:flex;flex-direction:column;gap:50px;background:var(--bg);">
+
+  <div style="display:flex;flex-direction:column;gap:13px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">The 99 · Art wash · scrim recovery · all surfaces</div>
+    <h1 style="font-family:var(--display),serif;font-weight:800;font-size:34px;color:var(--fg);margin:0;line-height:1.14;">Getting the picture back</h1>
+    <p style="font-size:15px;color:var(--fg-body);line-height:1.65;margin:0;max-width:840px;text-wrap:pretty;">Two things were making the bands dark, and only one of them was the scrim. Every surface below is drawn twice at the same size, same art, same ink — <b style="color:var(--fg);font-weight:600;">as it ships today, and as proposed</b>. Numbers are worst-case: a pure white pixel directly behind the glyph, in <b style="color:var(--fg);font-weight:600;">Eldraine</b>, which measures as the least forgiving of the six themes for body text. Three themes are wired to the prop here, including that worst case.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:15px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:19px 21px;display:flex;flex-direction:column;gap:11px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--danger);">CAUSE 1 · THE LAYERS MULTIPLY</div>
+      <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);line-height:1.25;">The art was dimmed before the scrim arrived</div>
+      <div style="font-size:13.5px;color:var(--fg-muted);line-height:1.6;">At <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">opacity .58</code> the image is already 42% faded toward the background. The scrim then takes more on top. In the middle of the band — where the subject is — <b style="color:var(--fg);font-weight:600;">45% of the picture survived on bottom-labelled bands, and 33% on top-labelled ones</b>.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:19px 21px;display:flex;flex-direction:column;gap:11px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--danger);">CAUSE 2 · THE RAMP OVERSHOT</div>
+      <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);line-height:1.25;">It kept darkening past the type</div>
+      <div style="font-size:13.5px;color:var(--fg-muted);line-height:1.6;">Bottom-labelled bands darken past the type they protect &mdash; the hero reaches <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">&alpha; .751</code> where <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.598</code> clears. <b style="color:var(--fg);font-weight:600;">Darkness bought and not spent.</b> Top-labelled bands have the opposite bug, and it is worse &mdash; see below.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:12px;padding:19px 21px;display:flex;flex-direction:column;gap:11px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--danger);">FOUND WHILE MEASURING · LIVE DEFECT</div>
+      <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);line-height:1.25;">Deck-card subtitles fail in production today</div>
+      <div style="font-size:13.5px;color:var(--fg-muted);line-height:1.6;">A top-labelled ramp reaches its dark value at the <i>title</i>, then lightens through the rest of the block. The subtitle lands at <code style="font-family:'IBM Plex Mono',monospace;color:var(--danger);font-size:12px;">3.15:1</code> on shipped deck cards and Home ready-to-build &mdash; <b style="color:var(--fg);font-weight:600;">below the 4.5:1 floor, right now.</b> The fix is to hold the dark value across the <i>whole</i> block rather than reach it at the first line. <b style="color:var(--fg);font-weight:600;">This correction stands on its own</b> and can ship ahead of the art lift.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:12px;padding:19px 21px;display:flex;flex-direction:column;gap:11px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--success);">THE FIX · BOTH LEVERS</div>
+      <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);line-height:1.25;">Art to <code style="font-size:15px;color:var(--accent);">.80</code>, dark stop <i>at</i> the type</div>
+      <div style="font-size:13.5px;color:var(--fg-muted);line-height:1.6;">Mid-band goes <b style="color:var(--fg);font-weight:600;">45% &rarr; 69%</b> on bottom-labelled bands and <b style="color:var(--fg);font-weight:600;">33% &rarr; 61%</b> on top-labelled ones, while every line of type lands on <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">&alpha; .73</code> &mdash; <b style="color:var(--fg);font-weight:600;">4.80:1</b> body, and no line below the floor. Each ramp is derived from its own measured block.</div>
+    </div>
+  </div>
+
+  <sc-for list="{{ surfaces }}" as="s" hint-placeholder-count="6">
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:17px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">{{ s.route }}</span>
+        <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">{{ s.title }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ s.spec }}</span>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+        <sc-for list="{{ s.variants }}" as="v" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:9px;width:{{ s.w }};">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:7px;height:7px;border-radius:999px;background:{{ v.dot }};"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:{{ v.dot }};">{{ v.tag }}</span>
+            </div>
+
+            <sc-if value="{{ s.isCover }}" hint-placeholder-val="{{ true }}">
+              <div style="border:1px solid var(--border);border-radius:13px;background:var(--surface);overflow:hidden;">
+                <div style="position:relative;aspect-ratio:{{ s.aspect }};background:var(--bg);overflow:hidden;">
+                  <div style="position:absolute;inset:0;background-size:cover;background-position:center top;background-repeat:no-repeat;background-image:{{ s.art }};opacity:{{ v.artOp }};"></div>
+                  <div style="position:absolute;inset:0;background:{{ v.ramp }};"></div>
+                  <sc-if value="{{ s.topLabel }}" hint-placeholder-val="{{ true }}">
+                    <div style="position:absolute;left:16px;top:14px;right:16px;">
+                      <div style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,0.85);">{{ s.name }}</div>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,0.85);">{{ s.sub }}</div>
+                    </div>
+                    <div style="position:absolute;left:16px;bottom:13px;display:flex;gap:3px;">
+                      <sc-for list="{{ s.pips }}" as="p" hint-placeholder-count="2"><span style="width:11px;height:11px;border-radius:2px;background:{{ p }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span></sc-for>
+                    </div>
+                    <div style="position:absolute;right:16px;bottom:13px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);background:color-mix(in srgb,var(--success) 18%,var(--bg));border:1px solid var(--border-strong);border-radius:6px;padding:3px 8px;">{{ s.chip }}</div>
+                  </sc-if>
+                  <sc-if value="{{ s.bottomLabel }}" hint-placeholder-val="{{ true }}">
+                    <div style="position:absolute;right:16px;top:14px;display:flex;gap:4px;">
+                      <sc-for list="{{ s.pips }}" as="p" hint-placeholder-count="2"><span style="width:11px;height:11px;border-radius:2px;background:{{ p }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span></sc-for>
+                    </div>
+                    <div style="position:absolute;left:16px;bottom:14px;right:16px;">
+                      <sc-if value="{{ s.hasEyebrow }}" hint-placeholder-val="{{ true }}">
+                        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:var(--fg-body);text-shadow:0 1px 3px rgba(0,0,0,0.8);">{{ s.eyebrow }}</div>
+                      </sc-if>
+                      <div style="font-family:var(--display),serif;font-weight:700;font-size:{{ s.nameSize }};color:var(--fg);line-height:1.18;margin-top:4px;text-shadow:0 1px 4px rgba(0,0,0,0.85);">{{ s.name }}</div>
+                      <div style="font-size:11.5px;color:var(--fg-body);margin-top:4px;text-shadow:0 1px 4px rgba(0,0,0,0.85);">{{ s.sub }}</div>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="border-top:1px solid var(--border);padding:11px 15px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ s.footL }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ s.footR }}</span>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ s.isRow }}" hint-placeholder-val="{{ true }}">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden;">
+                <div style="position:relative;height:{{ s.bandH }};background:var(--bg);overflow:hidden;">
+                  <div style="position:absolute;inset:0;background-size:cover;background-position:center top;background-repeat:no-repeat;background-image:{{ s.art }};opacity:{{ v.ambientOp }};"></div>
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:{{ s.portraitW }};background-size:auto 100%;background-position:left center;background-repeat:no-repeat;background-image:{{ s.art }};opacity:{{ v.sharpOp }};-webkit-mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);"></div>
+                  <div style="position:absolute;inset:0;background:{{ s.hScrim }};"></div>
+                  <div style="position:absolute;inset:0;background:{{ v.vScrim }};"></div>
+                  <div style="position:relative;height:100%;display:flex;align-items:center;gap:14px;padding:0 18px 0 {{ s.inset }};">
+                    <sc-if value="{{ s.hasRank }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-family:var(--display),serif;font-weight:800;font-size:22px;color:var(--fg-muted);flex:none;">{{ s.rank }}</span>
+                    </sc-if>
+                    <div style="flex:1;min-width:0;">
+                      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                        <span style="font-family:var(--display),serif;font-weight:700;font-size:{{ s.nameSize }};color:var(--fg);line-height:1.2;">{{ s.name }}</span>
+                        <span style="display:flex;gap:3px;"><sc-for list="{{ s.pips }}" as="p" hint-placeholder-count="2"><span style="width:10px;height:10px;border-radius:2px;background:{{ p }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);display:block;"></span></sc-for></span>
+                      </div>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.sub }}</div>
+                    </div>
+                    <div style="flex:none;text-align:right;">
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--fg-faint);">{{ s.footL }}</div>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);margin-top:3px;">{{ s.footR }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+              <sc-for list="{{ v.stats }}" as="q" hint-placeholder-count="3">
+                <span style="display:flex;align-items:baseline;gap:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);">{{ q.k }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ q.ink }};">{{ q.v }}</span>
+                </span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;max-width:900px;">{{ s.note }}</div>
+    </div>
+  </sc-for>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:15px;border-top:1px solid var(--border);padding-top:20px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:11px;padding:17px 20px;font-size:13.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">Two constants, not a per-surface pass.</b> Art opacity and the ramp both live in <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">&lt;ArtWash&gt;</code>. The label position is already passed as <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">band</code>, so deriving the dark stop from it is a change to the derivation, not to six call sites.</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:11px;padding:17px 20px;font-size:13.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">The rows are three cases, not one.</b> An earlier draft of this card said rows carry no vertical ramp; <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">art-wash.tsx</code> ships one on <b style="color:var(--fg);font-weight:600;">168</b> (<code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.30 .10 .46 .42</code>) and <b style="color:var(--fg);font-weight:600;">148</b> (<code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.62 .16 .42 .74</code>), and none on <b style="color:var(--fg);font-weight:600;">72</b> — so the claim was true of exactly one of three. At <i>desktop</i> width all three put type past the flat stop, so those ramps do nothing for legibility and need no change: 168 and 148 take the art lift only (sharp <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.80&rarr;.92</code>, ambient <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.20&rarr;.28</code>), and 72 ships <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.85/.14</code> &rarr; <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.95/.22</code>, the largest lift in the system, because nothing reads on it at all. <b style="color:var(--fg);font-weight:600;">That only holds because each row's scrim is keyed to its own portrait</b> (<code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">0 / .58w / w / w+10</code>, per decision 8). Share one literal across rows and the 99px resume band goes flat at 230px instead of 109px, leaving its type on the ambient layer — where the lift <i>would</i> cost it 6.18:1 &rarr; 4.99:1.</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:11px;padding:17px 20px;font-size:13.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">The 148 row at phone width is the one surface the lift cannot pay for.</b> Its type starts 13px from the edge, on the sharp copy, and spans the band &mdash; so there is no dark end to derive a stop from, only the whole block. Holding the ramp flat at <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.78</code> clears all three lines at <code style="font-family:'IBM Plex Mono',monospace;color:var(--success);font-size:12px;">5.05:1</code>, and leaves the art at <b style="color:var(--fg);font-weight:600;">22% mid-band</b> &mdash; darker than what this document was written to fix. <b style="color:var(--fg);font-weight:600;">Two lines are already under the floor today</b> (3.12 and 3.92:1), so that hold ships regardless, as an accessibility fix. But the recommendation is to stop paying with the scrim and <b style="color:var(--fg);font-weight:600;">move the type off the portrait at this width</b> &mdash; the fix desktop already uses. That is a layout change, so it is a separate proposal, not a value in this one.</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:11px;padding:17px 20px;font-size:13.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">The hero pips keep their bare edge.</b> Measured rather than assumed, since the lift genuinely brightens the ground under them: the lightest pip (<code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">--w</code>, cream) against art <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.80</code> under a <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.50</code> bottom stop reads <b style="color:var(--fg);font-weight:600;">4.01&ndash;4.09:1</b> across themes. A pip is a non-text component, so its floor is 3:1 &mdash; it clears with room. <b style="color:var(--fg);font-weight:600;">No hairline.</b> The deliberate omission stands.</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:11px;padding:17px 20px;font-size:13.5px;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);font-weight:600;">Where this stops.</b> <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.73</code> sits <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.022</code> above the 4.5:1 floor at art <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">.80</code>. That margin is the whole remaining budget — going lighter, or pushing art to <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">1.0</code> without also darkening the label stop, drops body text under the floor on a white-skied crop.</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1340},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;amonkhet&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kaldheim&quot;,&quot;eldraine&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+const art = n => `url("https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n).replace(/'/g,'%27')}&format=image&version=art_crop")`;
+const V = t => `var(${t})`;
+const mix = a => `color-mix(in oklab,var(--bg) ${Math.round(a*100)}%,transparent)`;
+const ramp = stops => `linear-gradient(180deg,${stops.map(([p,a]) => `${mix(a)} ${p}%`).join(',')})`;
+
+// current ramps, as built
+const NOW_TOP = ramp([[0,0.90],[40,0.30],[74,0.52],[100,0.86]]);
+const NOW_BOT = ramp([[0,0.66],[26,0.22],[50,0.62],[100,0.90]]);
+// Proposed. A top-labelled ramp must hold its dark value across the WHOLE label
+// block, not just reach it at the first line — the subtitle is the binding case.
+const NEW_TOP = ramp([[0,0.78],[31,0.73],[62,0.14],[100,0.50]]);
+// Bottom-labelled: labelAt is MEASURED off the live band, never estimated.
+const newBot = labelAt => ramp([[0,0.44],[Math.round(labelAt*0.48),0.14],[labelAt,0.73],[100,0.88]]);
+
+const stat = (k,v,ink) => ({ k, v, ink: ink || 'var(--fg-body)' });
+// Rows are NOT one class. Read from art-wash.tsx: 168 and 148 each ship a vertical
+// ramp because they print type over the band's full height; only 72 has none. An
+// earlier draft of this document claimed rows carry no vertical ramp at all, which
+// is true of exactly one of the three.
+const vRamp = (a,b,c,d) => `linear-gradient(180deg,${mix(a)} 0%,${mix(b)} 34%,${mix(c)} 68%,${mix(d)} 100%)`;
+const V_168 = vRamp(0.30,0.10,0.46,0.42);   // ships
+const V_148 = vRamp(0.62,0.16,0.42,0.74);   // ships
+const V_148_HELD = `linear-gradient(180deg,${mix(0.78)} 0%,${mix(0.78)} 100%)`;
+const V_NONE = 'none';
+
+const rowStats = (s,a) => [stat('PORTRAIT',`${s} sharp / ${a} ambient`)];
+const ROW_NOW = [stat('PORTRAIT','.80 sharp / .20 ambient'), stat('TYPE','past the flat stop')];
+const ROW_NEW = [stat('PORTRAIT','.92 sharp / .28 ambient','var(--success)'), stat('TYPE','unchanged')];
+// 72px resume: no vertical ramp, type at 116px past a flat stop at 109px. Nothing
+// reads on its art, so it takes the largest lift in the system.
+const R72_NOW = [stat('PORTRAIT','.85 sharp / .14 ambient'), stat('V-RAMP','none — the only row without one')];
+const R72_NEW = [stat('PORTRAIT','.95 sharp / .22 ambient','var(--success)'), stat('V-RAMP','still none','var(--success)')];
+// 148px at mobile width: type starts 13px from the edge, ON the sharp portrait.
+const M148_NOW = [stat('UPPER LINE','3.12:1','var(--danger)'), stat('MIDDLE','3.92:1','var(--danger)'), stat('LOWER','4.66:1')];
+const M148_LIFT = [stat('UPPER LINE','2.68:1','var(--danger)'), stat('MIDDLE','3.42:1','var(--danger)'), stat('LOWER','4.17:1','var(--danger)')];
+const M148_HELD = [stat('ALL THREE','\u2265 5.05:1','var(--success)'), stat('ART MID-BAND','22%','var(--danger)')];
+
+// Per-surface, measured at each band's own binding point.
+const S = {
+  top: {
+    now: [stat('ART MID-BAND','33%','var(--danger)'), stat('TITLE @7.9%','8.48:1'), stat('SUBTITLE @31%','3.16:1','var(--danger)')],
+    proposed: [stat('ART MID-BAND','61%','var(--success)'), stat('TITLE @7.9%','6.86:1'), stat('SUBTITLE @31%','4.80:1','var(--success)')]
+  },
+  hero: {
+    now: [stat('ART MID-BAND','45%','var(--danger)'), stat('ART AT LABEL','16%'), stat('EYEBROW @68%','5.87:1')],
+    proposed: [stat('ART MID-BAND','69%','var(--success)'), stat('ART AT LABEL','22%','var(--success)'), stat('EYEBROW @68%','4.80:1')]
+  },
+  discover: {
+    now: [stat('ART MID-BAND','45%','var(--danger)'), stat('ART AT LABEL','17%'), stat('LABEL @66%','5.73:1')],
+    proposed: [stat('ART MID-BAND','69%','var(--success)'), stat('ART AT LABEL','22%','var(--success)'), stat('LABEL @66%','4.80:1')]
+  }
+};
+
+function cover(o) {
+  const k = o.topLabel ? 'top' : o.statKey;
+  return Object.assign({
+    isCover: true, isRow: false, w: '390px', aspect: '2.2/1', nameSize: '19px',
+    topLabel: false, bottomLabel: false, hasEyebrow: false, chip: 'Complete',
+    variants: [
+      { tag: 'ships today', dot: 'var(--danger)', artOp: 0.58, ramp: o.topLabel ? NOW_TOP : NOW_BOT, stats: S[k].now },
+      { tag: 'proposed',    dot: 'var(--success)', artOp: 0.80, ramp: o.topLabel ? NEW_TOP : newBot(o.labelAt), stats: S[k].proposed }
+    ]
+  }, o);
+}
+function row(o) {
+  return Object.assign({
+    isCover: false, isRow: true, w: '620px', nameSize: '18px', hasRank: false,
+    // Decision 8: the stops are keyed to THIS row's portrait, never a shared literal.
+    // The portrait is band × 1.37, so the scrim travels with band height automatically.
+    hScrim: (pw => `linear-gradient(90deg,${mix(0.30)} 0px,${mix(0.26)} ${Math.round(pw*0.58)}px,${mix(0.78)} ${pw}px,var(--bg) ${pw+10}px)`)(parseInt(o.portraitW, 10)),
+    variants: o.variants || [
+      { tag: 'ships today', dot: 'var(--danger)', sharpOp: 0.80, ambientOp: 0.20, vScrim: o.vNow || V_148, stats: ROW_NOW },
+      { tag: 'proposed',    dot: 'var(--success)', sharpOp: 0.92, ambientOp: 0.28, vScrim: o.vNew || V_148, stats: ROW_NEW }
+    ]
+  }, o);
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      theme: this.props.theme ?? 'amonkhet',
+      surfaces: [
+        cover({ route:'/', title:'Home · ready to build', spec:'cover 2.2/1 · labels top · dark held to 31%',
+          art: art('Zhulodok, Void Gorger'), topLabel: true, name:'Zhulodok, Void Gorger',
+          sub:'Legendary Creature — Eldrazi', pips:[], chip:'78 FIT', footL:'1,240 fit', footR:'Build',
+          note:'Labels sit at the top, so the ramp runs dark-to-light. This is also where the audit found a live defect: the shipped ramp reaches its dark value at the title and then lightens through the subtitle, which lands that line at 3.16:1 today — under the floor. Holding .73 across the whole block to 31% fixes it and still opens the middle from 33% to 61%.' }),
+        row({ route:'/', title:'Home · pick up where you left off', spec:'left-portrait 72px · portrait 99px',
+          art: art("Yuriko, the Tiger's Shadow"), bandH:'72px', portraitW:'99px', inset:'116px',
+          name:'HD Yuriko', sub:"Yuriko, the Tiger's Shadow", pips:[V('--u'),V('--b')],
+          footL:'COMMANDER', footR:'17 hours ago',
+          variants:[
+            { tag:'ships today', dot:'var(--danger)', sharpOp:0.85, ambientOp:0.14, vScrim:V_NONE, stats:R72_NOW },
+            { tag:'proposed', dot:'var(--success)', sharpOp:0.95, ambientOp:0.22, vScrim:V_NONE, stats:R72_NEW }
+          ],
+          note:'Corrected: this row ships .85 / .14, not the .80 / .20 an earlier draft drew. It is also the ONLY row without a vertical ramp — 168 and 148 both carry one. Both facts point the same way: nothing reads on this art (type starts at 116px, past a flat stop at 109px), so it takes the largest lift in the system at .95 / .22. The ambient ceiling here is set by the pips, not the type.' }),
+        cover({ route:'/decks', title:'Decks · deck card', spec:'cover 2.2/1 · labels top · dark held to 31%',
+          art: art('Avatar Aang'), topLabel: true, name:'HD - Avatar Aang',
+          sub:'Avatar Aang // Aang, Master of Elements', pips:[V('--w'),V('--u'),V('--b'),V('--r'),V('--g')],
+          footL:'5-color · 99/99', footR:'never played',
+          note:'The grid case, and the one where darkness compounds: forty of these in a column read as a uniformly dim page. At 69% mid-band the arts differentiate from each other again, which is what makes a grid scannable.' }),
+        row({ route:'/commanders', title:'Commanders · row', spec:'left-portrait 148px · portrait 203px',
+          art: art('Kotis, Sibsig Champion'), bandH:'148px', portraitW:'203px', inset:'254px',
+          hasRank: true, rank:'2', name:'Kotis, Sibsig Champion',
+          sub:'Legendary Creature — Zombie Assassin', pips:[V('--b'),V('--g'),V('--u')],
+          footL:'/100 FIT', footR:'72',
+          vNow: V_148, vNew: V_148,
+          note:'The tallest portrait in the system at 203px, and the one that most rewards the lift — at .92 the sharp copy is close to a plate you could identify across the room. It does carry a vertical ramp of its own ([.62 .16 .42 .74], per art-wash.tsx), but at desktop width the type sits past the 254px inset, so that ramp is doing nothing for legibility and needs no change. The horizontal scrim is px-keyed and likewise unchanged.' }),
+        cover({ route:'/commanders/[id]', title:'Commander details · hero (mobile)', spec:'cover 1.6/1 · labels bottom · dark stop @68%',
+          art: art('Preston Garvey, Minuteman'), aspect:'1.6/1', bottomLabel: true, labelAt: 68.1, statKey:'hero',
+          hasEyebrow: true, eyebrow:'RANK 1 · YOUR BEST FIT', nameSize:'22px',
+          name:'Preston Garvey, Minuteman', sub:'Legendary Creature — Human Soldier',
+          pips:[V('--g'),V('--r'),V('--w')], footL:'FIT FOR YOUR COLLECTION', footR:'73 / 100',
+          note:'The only art on the page, so it has the most to lose. Its eyebrow begins at 68.1% — measured off the band, not estimated: an earlier draft of this document put the stop at 54% and overshot to .776 by the time the ramp reached the type, which is the same defect it was written to correct.' }),
+        row({ route:'/commanders', title:'Commanders · row at phone width', spec:'left-portrait 148px · type at 13px, ON the portrait',
+          art: art('Preston Garvey, Minuteman'), bandH:'148px', portraitW:'203px', inset:'13px', w:'390px', nameSize:'16px',
+          name:'Preston Garvey, Minuteman', sub:'Legendary Creature — Human Soldier',
+          pips:[V('--g'),V('--r'),V('--w')], footL:'RAMP 166/10', footR:'73 FIT',
+          variants:[
+            { tag:'ships today', dot:'var(--danger)', sharpOp:0.80, ambientOp:0.20, vScrim:V_148, stats:M148_NOW },
+            { tag:'art lift alone — worse', dot:'var(--danger)', sharpOp:0.92, ambientOp:0.28, vScrim:V_148, stats:M148_LIFT },
+            { tag:'lift + ramp held at .78', dot:'var(--success)', sharpOp:0.92, ambientOp:0.28, vScrim:V_148_HELD, stats:M148_HELD }
+          ],
+          note:'CORRECTED — the first pass of this survey invented a cover band here. There is no cover variant of a row: art-wash.tsx takes band 168 | 148 | 72 and this surface is 148 at every width, with only the text layout changing. That matters because the type starts 13px from the left edge, ON the sharp copy — so the lift costs it. Today the three lines read 3.12 / 3.92 / 4.66:1; the lift alone drops them to 2.68 / 3.42 / 4.17. Holding the ramp flat at .78 clears all three at 5.05:1 or better, but look at what it does to the art: 22% mid-band, the darkest surface in the system. See the ruling below.' }),
+        row({ route:'/discover', title:'Discover · desktop', spec:'left-portrait 148px · portrait 203px',
+          art: art('Kenrith, the Returned King'), bandH:'148px', portraitW:'203px', inset:'254px',
+          hasRank: true, rank:'1', name:'Kenrith, the Returned King',
+          sub:'31,455 decks tracked · 35 of its top cards new to you',
+          pips:[V('--w'),V('--u'),V('--b'),V('--r'),V('--g')], footL:'OF TOP 262 OWNED', footR:'86',
+          vNow: V_148, vNew: V_148,
+          note:'Corrected: the first pass drew Discover as a 2.2/1 tile. It is a left-portrait row, structurally identical to the commander row — so it takes the portrait lift and no ramp change, not the other way round.' }),
+        row({ route:'/discover', title:'Discover · row at phone width', spec:'left-portrait 148px · type at 13px, ON the portrait',
+          art: art('Esika, God of the Tree // The Prismatic Bridge'), bandH:'148px', portraitW:'203px', inset:'13px', w:'390px', nameSize:'16px',
+          name:'Esika, God of the Tree…', sub:'25,635 decks tracked',
+          pips:[V('--w'),V('--u'),V('--b'),V('--r'),V('--g')], footL:'OF TOP 271 OWNED', footR:'88',
+          variants:[
+            { tag:'ships today', dot:'var(--danger)', sharpOp:0.80, ambientOp:0.20, vScrim:V_148, stats:M148_NOW },
+            { tag:'art lift alone — worse', dot:'var(--danger)', sharpOp:0.92, ambientOp:0.28, vScrim:V_148, stats:M148_LIFT },
+            { tag:'lift + ramp held at .78', dot:'var(--success)', sharpOp:0.92, ambientOp:0.28, vScrim:V_148_HELD, stats:M148_HELD }
+          ],
+          note:'The same 148 band and the same correction. Esika is the worst-case crop in the system — near-white across the whole upper band — so it is the art the .78 hold is sized against, and the art that hold most obviously wastes.' }),
+        row({ route:'/decks/[id]', title:'Deck details · desktop header', spec:'left-portrait 168px · portrait 230px',
+          art: art('Kratos, Stoic Father'), bandH:'168px', portraitW:'230px', inset:'254px',
+          name:'HD - Gods', sub:'Kratos, Stoic Father + Atreus, Impulsive Son · Jeskai',
+          pips:[V('--w'),V('--u'),V('--r')], footL:'96 / 98', footR:'95 owned · 1 to buy',
+          vNow: V_168, vNew: V_168,
+          note:'Already specified in the deck-details handoff, included here so the art lift is visible on every screen it touches. It ships its own vertical ramp ([.30 .10 .46 .42] — lighter than the 148 row\u2019s, because its type sits lower), but that type is past the flat stop at 240px, so this band takes the portrait lift only.' }),
+        cover({ route:'/decks/[id]', title:'Deck details · mobile header', spec:'cover 2.2/1 · labels bottom · dark stop @66%',
+          art: art('Kratos, Stoic Father'), bottomLabel: true, labelAt: 66, statKey:'discover',
+          name:'HD - Gods', sub:'Kratos, Stoic Father + Atreus, Impulsive Son',
+          pips:[V('--w'),V('--u'),V('--r')], footL:'96 / 98', footR:'Building',
+          note:'The mobile counterpart, likewise from the deck-details handoff. Bottom-labelled, so it takes both levers — the art lift and a dark stop derived from its own label block.' })
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

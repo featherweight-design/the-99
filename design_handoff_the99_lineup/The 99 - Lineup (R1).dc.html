@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --border:#1A1F2B; --border-strong:#2E3340; --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --accent:#5C86C9; --accent-hover:#6C95D8; --brass:#C9A54E; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0C0C10; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div style="font-family:'IBM Plex Sans',sans-serif;background:#0C0C10;color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:56px;width:max-content;">
+
+  <section id="C0" data-screen-label="C0 · Calls" style="max-width:1340px;display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">C0</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Lineup · R1 · for audit · 2026-10-11</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:32px;margin:0;line-height:1.2;">Lineup: your decks, side by side</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1040px;text-wrap:pretty;">Brief: <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">docs/superpowers/design-briefs/2026-10-11-all-decks-stats.md</code> (main). Hugh’s six rulings are taken as closed. Fixture: the brief’s 21-deck staging account. Frames are 900 and 390, Kaldheim. Every string is a placeholder for <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/copy-review</code>. Everything here is behind <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">LINEUP_ENABLED</code>; with it off, /decks is as shipped (<a href="#P0">P0</a>).</p>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,640px));gap:14px 28px;">
+      <sc-for list="{{ calls }}" as="cl" hint-placeholder-count="8">
+        <div style="display:flex;gap:12px;border-top:1px solid var(--border-strong);padding-top:12px;">
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);padding-top:2px;">{{ cl.n }}</span>
+          <div style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:14px;font-weight:600;color:var(--fg);">{{ cl.h }}</span><span style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ cl.t }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <h2 style="margin:18px 0 0;font-family:'Metamorphous',serif;font-weight:400;font-size:21px;">Open questions, answered</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,420px));gap:14px 26px;">
+      <sc-for list="{{ qs }}" as="q" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--border);padding-top:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ q.n }}</span><span style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ q.t }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+    <section id="{{ r.id }}" data-screen-label="{{ r.screen }}" style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;max-width:1340px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:6px;padding:3px 9px;">{{ r.id }}</span>
+        <span style="font-family:'Metamorphous',serif;font-size:20px;color:var(--fg);">{{ r.title }}</span>
+        <span style="font-size:13px;line-height:1.55;color:var(--fg-muted);max-width:980px;text-wrap:pretty;">{{ r.note }}</span>
+      </div>
+      <div style="display:flex;gap:32px;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">900</span>
+          <div style="border:1px solid var(--border-strong);border-radius:6px;overflow:hidden;"><dc-import name="Lineup" scene="{{ r.scene }}" lineup-enabled="{{ r.on }}" hint-size="900px,900px"></dc-import></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">390</span>
+          <div style="border:1px solid var(--border-strong);border-radius:6px;overflow:hidden;"><dc-import name="Lineup" scene="{{ r.scene }}" phone="{{ true }}" lineup-enabled="{{ r.on }}" hint-size="390px,844px"></dc-import></div>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const calls = [
+      { n: "1", h: "Placement: a view of /decks, not a route or a door", t: "A Tiles · Lineup switch opens the row that already holds the shelves (900) or the shelf trigger (390), the shape of Deck stats’ All · Shopping | Stats. The cart and precon doors aren’t touched, so Hugh’s tight phone row stays two cells. On a phone the shelf row grows from about 30 to 44px, so the first tile moves about 14px (P1). In Lineup the shelves and the tile filters leave, as every tool leaves Stats, and the Lineup filter takes their place. ?view=lineup." },
+      { n: "2", h: "One card per figure, rows are decks", t: "Q1: a row per deck inside each figure. The tile grid is already the card per deck. Seven cards: four of Hugh’s families, This deck among yours, and two proposals drawn dashed in brass." },
+      { n: "3", h: "The filter: one control, two positions", t: "All decks (brews included, the default) and Finished only. I read Hugh’s three words, all decks, finished only and include brews, as two states, because “include brews” is what “all” already means. Each chart redraws on the narrower set, and per-copy totals keep counting every copy you own (F1). Needs Hugh." },
+      { n: "4", h: "Recency: a lane per played deck, a group for the rest", t: "Each played deck gets a lane on one shared time axis, with its games as Results beads (won in brass, lost outlined). A line runs from the last game to today. The 15 never-played decks share one dashed group under the lanes: one hollow square each, and every name a link. They take one block, not 15 lanes (Q2)." },
+      { n: "5", h: "Brackets: nine slots, a span sits on the line", t: "The slots run 1, 1–2, 2 … 4–5, 5. A deck analyzed as [4, 5] sits on the 4–5 line, not in either bracket (Q3). Each deck is a square in its colors. The 7 not analyzed are hollow, beside the chart. Gaps are counts: “No deck is at bracket 1 or 5 alone.” Press a slot to name its decks. A declared bracket is a note there." },
+      { n: "6", h: "Shared cards: one square per deck that plays it", t: "Filled is a deck holding a copy you own. Dashed is a deck that wants one with none left. Sol Ring reads 17 filled and 3 dashed, a count in the Buy chart’s squares with no warning ink (Q4). Press the row to name those decks and reach the cart. A second chip lists the 77 wanted more than owned." },
+      { n: "7", h: "Collection: per copy, in squares", t: "Copies and value drawn as unit fields (one square is 10 copies, or $10), in deck against not, under ruling 3. The fact line is two percentages and no verdict. Wanted by your commanders cuts at 40% (67) by default, with 20% (144) one chip away. It names the deck and the commander’s share (Q5)." },
+      { n: "8", h: "This deck among yours", t: "A strip per figure: all 21 as dots, the median as a tick, the chosen deck in accent. The figures are the deck’s own, from the same functions (lock 2). You pick it from the card’s select, or from Among your decks in a tile’s … menu (P1). The deck page isn’t touched this round." },
+      { n: "9", h: "Results: raw, with pods (ruling 4)", t: "Lineup total “won 2 of 7 · 7 games · pods of 3–5”, and per deck too, beside each lane (Q6). There’s no rate and no adjusted figure." },
+      { n: "10", h: "Proposals, drawn and marked", t: "Decks that share the most: pairs by shared nonbasic cards, from decklists. Curve against lands: one square per deck, average mana value against land count, with median lines. Both read data the app already holds. Hugh keeps or cuts them." },
+    ];
+    const qs = [
+      { n: "Q1 · one chart per figure or one card per deck", t: "Per figure, with decks as rows. The tile grid already answers “what is this deck like”." },
+      { n: "Q2 · never-played as a group", t: "One dashed block under the lanes, with a hollow square and a name per deck. It’s visible and linked, but it isn’t on the time axis, so it can’t swamp the 6 that have dates." },
+      { n: "Q3 · a deck spanning two brackets; the 7 unanalyzed", t: "A span sits on the boundary slot between its two brackets. The unanalyzed sit beside the chart as hollow squares, counted, never hidden." },
+      { n: "Q4 · 20 against 17", t: "A count drawn as 17 filled squares and 3 dashed ones in neutral ink, with “20 decks · you own 17”. No warning color." },
+      { n: "Q5 · the commanders’ cut; naming", t: "40% by default (67), with 20% (144) as the second chip. Each row names the deck as a link and the commander’s share. A partner deck reads the pair’s own list and says so (T5)." },
+      { n: "Q6 · results line per deck", t: "Both: the lineup total in the card head, and each deck’s own beside its lane." },
+    ];
+    const rows = [
+      { id: "P0", title: "/decks, LINEUP_ENABLED off", note: "As shipped: no switch and no read. The view row is the shelves (900) or the shelf trigger (390).", scene: "decksOff", on: false },
+      { id: "P1", title: "/decks with the switch on, Tiles", note: "Tiles · Lineup leads the shelf row. The doors row is unchanged. The first tile’s … menu gains Among your decks, which opens Lineup with that deck chosen. The phone fold is marked at the tab bar.", scene: "decks", on: true },
+      { id: "L1", title: "Lineup, All decks", note: "The default: 21 decks, brews included. Bracket 3 is pressed. Sol Ring is open. Scrappy Survivors is chosen because it played last. The two dashed cards are proposals.", scene: "lineup", on: true },
+      { id: "F1", title: "Finished only", note: "The 3 brews leave every chart. Sol Ring reads 17 of 17 and its gap closes. Owned counts and per-copy totals still count every copy you own. Collection and Finished-only overlap figures are illustrative.", scene: "finished", on: true },
+      { id: "T1", title: "Thin · one deck", note: "One sentence says what Lineup does with one deck. Recency, spread and collection draw at their true size. Shared cards states that it needs two decks, and This deck among yours is left out. Collection figures are illustrative.", scene: "one", on: true },
+      { id: "T2", title: "Thin · no games logged", note: "No lanes and no results line. All 21 sit in Never played, and one sentence says where games come from.", scene: "noGames", on: true },
+      { id: "T3", title: "Thin · no deck analyzed", note: "The nine slots draw empty and all 21 sit under not analyzed. Colors draw as usual, since they need no analysis.", scene: "noAnalysis", on: true },
+      { id: "T4", title: "Thin · a colorless deck", note: "HD - Eldrazi is a grey square in the spread and the Colorless row, and is noted colorless when its slot opens. Chosen in This deck among yours.", scene: "colorless", on: true },
+      { id: "T5", title: "Thin · a partner deck", note: "HD - Gods (Kratos + Atreus) counts once, by the pair’s colors. Its wanted cards come from the pair’s own list (commander_pair_support_cards), and the row says so. The card names and shares in this list are illustrative.", scene: "partner", on: true },
+    ].map((r) => ({ ...r, screen: `${r.id} · ${r.title}` }));
+    return { calls, qs, rows };
+  }
+}
+</script>
+</body>
+</html>

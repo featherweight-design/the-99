@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02) translateY(3px); } }
+  @keyframes rise { 0% { transform: translateY(18px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</helmet>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="crab99" viewBox="0 0 160 110">
+    <g fill="none" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M30 60 L 13 70 L 6 88"/><path d="M34 72 L 19 84 L 14 101"/><path d="M43 81 L 33 93 L 30 105"/>
+      <path d="M130 60 L 147 70 L 154 88"/><path d="M126 72 L 141 84 L 146 101"/><path d="M117 81 L 127 93 L 130 105"/>
+    </g>
+    <path d="M80 24 C 114 24, 136 40, 134 60 C 132 80, 110 90, 80 90 C 50 90, 28 80, 26 60 C 24 40, 46 24, 80 24 Z" fill="#1E1A15" stroke="#C9A24B" stroke-width="3" stroke-linejoin="round"/>
+    <g fill="#1E1A15" stroke="#C9A24B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M54 76 C 36 72, 22 82, 27 95 C 31 105, 49 109, 59 101 C 66 96, 65 84, 58 79 Z"/><path d="M59 101 L 49 88" fill="none"/>
+      <path d="M106 76 C 124 72, 138 82, 133 95 C 129 105, 111 109, 101 101 C 94 96, 95 84, 102 79 Z"/><path d="M101 101 L 111 88" fill="none"/>
+    </g>
+    <ellipse cx="58" cy="18" rx="4.5" ry="6.5" fill="#1E1A15" stroke="#C9A24B" stroke-width="3"/>
+    <ellipse cx="102" cy="18" rx="4.5" ry="6.5" fill="#1E1A15" stroke="#C9A24B" stroke-width="3"/>
+    <circle cx="57" cy="20" r="2" fill="#C9A24B"/><circle cx="101" cy="20" r="2" fill="#C9A24B"/>
+    <path d="M52 14 L 63 13" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M97 13 L 108 14" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M72 62 L 88 62" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </symbol>
+  <symbol id="kaiju99" viewBox="0 0 480 380">
+    <path d="M132 96 C 142 82, 154 68, 162 60 C 168 80, 168 100, 170 116 C 182 102, 200 88, 214 84 C 216 104, 214 126, 208 142 C 222 126, 244 114, 258 116 C 258 136, 252 160, 244 176 C 258 162, 280 152, 296 156 C 294 176, 284 196, 272 212 C 288 200, 310 196, 326 202 C 320 222, 308 238, 296 252 C 312 244, 332 244, 348 252 C 340 270, 324 282, 310 292 C 324 288, 342 292, 356 302 C 346 316, 334 324, 322 330 Z" fill="rgba(201,162,75,0.16)" stroke="rgba(201,162,75,0.45)" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M56 120 C 54 106, 64 92, 84 86 C 102 80, 120 84, 132 96 C 180 118, 240 160, 280 220 C 300 252, 314 290, 318 330 C 322 344, 328 352, 340 356 C 380 360, 430 352, 456 336 C 430 356, 390 364, 340 364 L 150 364 C 132 356, 126 342, 132 326 C 108 284, 96 232, 98 190 C 99 168, 94 150, 80 142 C 68 136, 58 130, 56 120 Z" fill="#0B0907" stroke="rgba(201,162,75,0.30)" stroke-width="2" stroke-linejoin="round"/>
+    <g stroke="rgba(201,162,75,0.55)" stroke-width="2" fill="none" stroke-linecap="round">
+      <path d="M56 120 C 70 127, 84 127, 97 122"/><path d="M60 124 L 65 130 L 70 124 L 75 130 L 80 124 L 85 129"/>
+      <path d="M118 214 C 130 218, 136 224, 134 234"/><path d="M134 234 L 140 236"/><path d="M134 234 L 138 239"/><path d="M134 234 L 134 240"/>
+    </g>
+    <circle cx="96" cy="102" r="4" fill="rgba(201,162,75,0.9)"/>
+    <path d="M89 97 L 103 98" stroke="rgba(201,162,75,0.9)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <rect x="396" y="338" width="9" height="9" fill="rgba(201,162,75,0.55)" transform="rotate(45 400 342)"/>
+  </symbol>
+</svg>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section id="4a" style="max-width:1400px;margin:0 0 34px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">4a</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">The 99 — Surfaces v2 · Richness pass · #51</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 8px;color:#EDE6D8;">Collection · Commanders · Decks — the moments</h1>
+    <p style="max-width:780px;font-size:15px;line-height:1.65;color:#C6B79A;margin:0;">The richness deltas each surface owns, drawn as content frames (rail + chrome unchanged — see <b style="color:#EDE6D8;font-weight:600;">App Shell v2</b>). Everything else in the v1 surface docs stands: rows, filters, modals, builder, exports. Browse surfaces additionally loosen ~6–8px of padding; working surfaces (replace review, issue inspector, builder ledger) do not change density.</p>
+  </section>
+
+  <!-- ===== COLLECTION ===== -->
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin:0 0 16px;border-top:1px solid #2A241D;padding-top:18px;">Collection · Δ no-results gets the crab · replace-review issue CTA gets the wink (already specced in Richness Pass) · grid tiles +6px padding</div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:46px;">
+    <div style="width:760px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 24px 70px rgba(0,0,0,0.5);">
+      <div style="height:34px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">/collection?q=counterspell&amp;c=R · NO RESULTS</span></div>
+      <div style="background:#14110E;padding:18px 22px 0;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:5px 12px 5px 9px;"><span style="width:9px;height:9px;border-radius:999px;background:#C05A48;"></span>Red <span style="color:#8E8269;">✕</span></span>
+          <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;">"counterspell" <span style="color:#8E8269;">✕</span></span>
+          <a href="#4a" style="font-size:12px;color:#C9A24B;margin-left:4px;">Clear all</a>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">Showing 0 of 2,933</span>
+        </div>
+      </div>
+      <div style="height:360px;background:#14110E;background-image:radial-gradient(440px 260px at 50% 78%, rgba(201,162,75,0.07), transparent 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+        <div style="width:96px;animation:bob 5s ease-in-out infinite;"><svg viewBox="0 0 160 110" style="width:100%;display:block;"><use href="#crab99"/></svg></div>
+        <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:22px;color:#EDE6D8;margin:18px 0 0;">Nothing matches "counterspell" in Red.</h3>
+        <p style="font-size:14px;color:#C6B79A;line-height:1.6;margin:8px 0 0;max-width:360px;">Which, honestly, checks out. Drop the color filter or try another name.</p>
+        <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:10px 18px;margin-top:18px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Clear filters</button>
+      </div>
+    </div>
+    <div style="width:340px;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:22px 24px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">Collection deltas</div>
+      <ul style="font-size:13px;color:#A89B84;line-height:1.7;margin:12px 0 0;padding-left:18px;">
+        <li><b style="color:#C6B79A;font-weight:600;">No-results</b> — crab replaces the bare card-fan; quip is state-aware (names the filter). Distinct from shell-owned empty collection.</li>
+        <li><b style="color:#C6B79A;font-weight:600;">Replace review</b> — issue CTA strip per Richness Pass ("That CSV put up a fight."). Type-to-confirm stays dead straight — destructive, no crab.</li>
+        <li><b style="color:#C6B79A;font-weight:600;">Grid tiles</b> — padding 12→16, gap 14→18 (browse loosening). Rows keep v1 density.</li>
+        <li><b style="color:#C6B79A;font-weight:600;">Vignette</b> — behind empty/no-result states only, never behind the list.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== COMMANDERS ===== -->
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin:0 0 16px;border-top:1px solid #2A241D;padding-top:18px;">Commanders · Δ filtered-to-zero gets the crab · degraded banner stays straight (shown as the counter-example) · rec cards +6px padding</div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:46px;">
+    <div style="width:760px;display:flex;flex-direction:column;gap:20px;">
+      <div style="border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 24px 70px rgba(0,0,0,0.5);">
+        <div style="height:34px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">/commanders?c=WR · FILTERED TO ZERO</span></div>
+        <div style="height:340px;background:#14110E;background-image:radial-gradient(420px 240px at 50% 76%, rgba(201,162,75,0.07), transparent 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="display:flex;gap:8px;opacity:.5;"><span style="width:16px;height:16px;border-radius:999px;background:#E8E4D6;box-shadow:0 0 0 2px #C9A24B;"></span><span style="width:16px;height:16px;border-radius:999px;background:#C05A48;box-shadow:0 0 0 2px #C9A24B;"></span></div>
+            <div style="width:88px;animation:bob 5s ease-in-out infinite;"><svg viewBox="0 0 160 110" style="width:100%;display:block;"><use href="#crab99"/></svg></div>
+          </div>
+          <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:22px;color:#EDE6D8;margin:16px 0 0;">No generals in Boros.</h3>
+          <p style="font-size:14px;color:#C6B79A;line-height:1.6;margin:8px 0 0;max-width:380px;">Your collection has opinions about white-red. All 24 candidates are one filter away.</p>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;margin-top:12px;">Showing 0 of 24</div>
+          <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:10px 18px;margin-top:16px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Clear color filter</button>
+        </div>
+      </div>
+      <div style="border-radius:14px;overflow:hidden;border:1px solid #3A3229;">
+        <div style="height:34px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">/commanders · DEGRADED — UTILITY STAYS STRAIGHT, NO CRAB</span></div>
+        <div style="background:#14110E;padding:20px 22px;">
+          <div style="background:#211C15;border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;">
+            <span style="width:30px;height:30px;flex:none;border-radius:999px;border:1px solid #E0913C;color:#E0913C;display:flex;align-items:center;justify-content:center;font-size:15px;">⚠</span>
+            <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Synergy data is offline.</div><div style="font-size:13px;color:#A89B84;margin-top:2px;">Ranking continues on pool + role coverage. Receipts return when EDHREC does.</div></div>
+            <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 16px;cursor:pointer;flex:none;">Retry now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="width:340px;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:22px 24px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">Commanders deltas</div>
+      <ul style="font-size:13px;color:#A89B84;line-height:1.7;margin:12px 0 0;padding-left:18px;">
+        <li><b style="color:#C6B79A;font-weight:600;">Filtered-to-zero</b> — crab beside the dimmed active pips; quip names the guild. No-candidates keeps the XCIX seal (leadership mark), crab optional at its feet.</li>
+        <li><b style="color:#C6B79A;font-weight:600;">Degraded states</b> — unchanged. Data-outage copy is utility: straight, amber, retry. The discipline is the system.</li>
+        <li><b style="color:#C6B79A;font-weight:600;">Rec cards</b> — padding 18→24, evidence row-gap +4 (browse loosening). Fit bar, receipts, order unchanged.</li>
+        <li><b style="color:#C6B79A;font-weight:600;">First-run banner</b> — crab joins the XCIX crumb row, copy: "1,418 cards read. 24 can lead. I ranked them — you're welcome."</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== DECKS ===== -->
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin:0 0 16px;border-top:1px solid #2A241D;padding-top:18px;">Decks · Δ builder empty gets the crab · deck completion owns THE kaiju reveal · deck-list cards +6px padding</div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:26px;">
+    <div style="width:760px;display:flex;flex-direction:column;gap:20px;">
+      <!-- builder empty -->
+      <div style="border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 24px 70px rgba(0,0,0,0.5);">
+        <div style="height:34px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">/decks/korvold · BUILDER · EMPTY</span></div>
+        <div style="background:#14110E;">
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid #2A241D;">
+            <div style="width:34px;height:47px;border-radius:5px;background:linear-gradient(135deg,#2E1F14,#3A2418);border:1px solid #4A4033;"></div>
+            <div style="flex:1;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Korvold, Fae-Cursed King</div><div style="display:flex;gap:4px;margin-top:4px;"><span style="width:9px;height:9px;border-radius:2px;background:#5B5566;"></span><span style="width:9px;height:9px;border-radius:2px;background:#C05A48;"></span><span style="width:9px;height:9px;border-radius:2px;background:#6B9E63;"></span></div></div>
+            <div style="text-align:right;"><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#C6B79A;">0 / 99</div><div style="width:150px;height:5px;background:#2A241D;border-radius:3px;margin-top:6px;"></div></div>
+            <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#8E8269;background:#221D16;border:1px solid #2A241D;border-radius:8px;padding:9px 16px;cursor:not-allowed;">Export ▾</button>
+          </div>
+          <div style="height:300px;background-image:radial-gradient(400px 220px at 50% 80%, rgba(201,162,75,0.07), transparent 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+            <div style="display:flex;align-items:flex-end;gap:16px;">
+              <div style="width:88px;animation:bob 5s ease-in-out infinite;"><svg viewBox="0 0 160 110" style="width:100%;display:block;"><use href="#crab99"/></svg></div>
+              <div style="position:relative;width:72px;height:86px;"><div style="position:absolute;left:50%;top:50%;width:38px;height:54px;border-radius:6px;background:#2A241D;border:1.5px solid #4A4033;transform:translate(-50%,-50%) rotate(-14deg) translateX(-13px);"></div><div style="position:absolute;left:50%;top:50%;width:38px;height:54px;border-radius:6px;background:#33291F;border:1.5px solid #5A4B38;transform:translate(-50%,-50%);"></div><div style="position:absolute;left:50%;top:50%;width:38px;height:54px;border-radius:6px;background:#3E3020;border:1.5px solid #C9A24B;transform:translate(-50%,-50%) rotate(14deg) translateX(13px);display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:15px;color:#C9A24B;">99</span></div></div>
+            </div>
+            <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:21px;color:#EDE6D8;margin:16px 0 0;">A king with no army.</h3>
+            <p style="font-size:14px;color:#C6B79A;line-height:1.6;margin:8px 0 0;max-width:380px;">Ninety-nine slots, zero filled. Suggestions are primed on the right — Korvold eats everything anyway.</p>
+            <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:10px 20px;margin-top:16px;cursor:pointer;" style-hover="background:#D8B25E;">Open suggestions</button>
+          </div>
+        </div>
+      </div>
+      <!-- celebration -->
+      <div style="border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 24px 70px rgba(0,0,0,0.5);">
+        <div style="height:34px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">/decks/korvold · 99TH CARD ADDED · THE BIG BEAT — full-surface moment, then dissolves to the builder</span></div>
+        <div style="position:relative;height:380px;overflow:hidden;background:linear-gradient(180deg,#171310,#110E0B);">
+          <div style="position:absolute;right:-60px;bottom:-12px;width:440px;opacity:.94;animation:breathe 10s ease-in-out infinite;"><svg viewBox="0 0 480 380" style="width:100%;display:block;filter:drop-shadow(0 0 46px rgba(0,0,0,0.6));"><use href="#kaiju99"/></svg></div>
+          <div style="position:absolute;left:0;right:0;bottom:52px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,162,75,0.4),transparent);"></div>
+          <div style="position:absolute;left:46%;bottom:32px;width:84px;animation:bob 4.5s ease-in-out infinite;"><svg viewBox="0 0 160 110" style="width:100%;display:block;"><use href="#crab99"/></svg></div>
+          <div style="position:absolute;left:40px;top:56px;max-width:330px;animation:rise .8s ease-out both;">
+            <div style="display:inline-flex;gap:7px;margin-bottom:12px;"><span style="width:9px;height:9px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:13px;height:13px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:9px;height:9px;background:#C9A24B;transform:rotate(45deg);"></span></div>
+            <h3 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;color:#EDE6D8;margin:0;">The 99 is complete.</h3>
+            <p style="font-size:15px;line-height:1.6;color:#C6B79A;margin:10px 0 0;">Korvold is fed — 99 of 99, all owned. Try not to let it get to your head at the table.</p>
+            <div style="display:flex;gap:12px;margin-top:18px;"><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;">Export decklist</button><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:10px 20px;cursor:pointer;">Back to the deck</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="width:340px;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:22px 24px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">Decks deltas</div>
+      <ul style="font-size:13px;color:#A89B84;line-height:1.7;margin:12px 0 0;padding-left:18px;">
+        <li><b style="color:#C6B79A;font-weight:600;">Builder empty</b> — crab + card-fan; quip references the actual commander. Ledger/Add panel density unchanged.</li>
+        <li><b style="color:#C6B79A;font-weight:600;">Completion</b> — the app's ONE kaiju reveal: fires when built hits 99/99 all-owned. Full-surface, ~4s or dismissible, then dissolves to the builder. Reduced-motion: static frame.</li>
+        <li><b style="color:#C6B79A;font-weight:600;">Guided step 3 banner</b> — crab joins the card-fan crumb row.</li>
+        <li><b style="color:#C6B79A;font-weight:600;">Deck-list cards</b> — padding 16→22, gap +4 (browse loosening).</li>
+        <li><b style="color:#C6B79A;font-weight:600;">Exports</b> — untouched. Plain text is sacred.</li>
+      </ul>
+    </div>
+  </div>
+
+  <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin:10px 0 0;max-width:760px;line-height:1.7;">Mobile forms follow the same deltas (crab 72–90px, celebration full-screen). Canonical marks + system brief: <b style="color:#C6B79A;">design_handoff_the99_richness/</b>. System reference: <b style="color:#C6B79A;">The 99 - Richness Pass.dc.html</b> · shell: <b style="color:#C6B79A;">The 99 - App Shell v2.dc.html</b>.</p>
+
+</div>
+</x-dc>
+</body>
+</html>

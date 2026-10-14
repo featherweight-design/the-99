@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ rootStyle }}">
+  <div style="{{ toolbarStyle }}">
+    <span style="display:flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;font-size:12.5px;">
+      <span style="padding:6px 12px;background:var(--elevated);color:var(--fg);">{{ allLabel }}</span>
+      <span style="padding:6px 12px;color:var(--fg-muted);">Shopping 3</span>
+    </span>
+    <span style="display:flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:11px;">
+      <span style="padding:6px 10px;color:var(--fg-muted);">List</span>
+      <span style="padding:6px 10px;background:var(--elevated);color:var(--fg);">Cards</span>
+    </span>
+    <span style="{{ modeBtn }}"><span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:11px;height:13px;"><span style="{{ btn.shackle }}"></span><span style="{{ btn.leg }}"></span><span style="{{ btn.body }}"></span><span style="{{ btn.hole }}"></span></span>{{ modeLabel }}</span>
+    <sc-if value="{{ showKey }}" hint-placeholder-val="{{ true }}">
+      <span role="group" aria-label="What the marks on these cards mean" style="{{ keyStyle }}">
+        <span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:11px;height:13px;"><span style="position:absolute;left:2px;top:0;width:7px;height:7.5px;border:1.6px solid var(--fg-body);border-bottom:none;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:var(--fg-body);"></span><span style="position:absolute;left:4.5px;top:8.75px;width:2px;height:2px;border-radius:50%;background:var(--bg);"></span></span>
+        <span>locked</span>
+      </span>
+    </sc-if>
+  </div>
+  <sc-if value="{{ mode }}" hint-placeholder-val="{{ false }}">
+    <p style="margin:0;font-size:12.5px;line-height:1.5;color:var(--fg-body);">Locked cards are never suggested as cuts. <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">2 locked</span></p>
+  </sc-if>
+  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);padding:2px 2px 0;">Artifacts and creatures</span>
+  <ul style="{{ gridStyle }}">
+    <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="6">
+      <li style="display:flex;flex-direction:column;">
+        <div style="{{ t.shell }}">
+          <div style="{{ artStyle }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">card art · {{ t.name }}</span></div>
+          <div style="{{ captionStyle }}">
+            <div style="{{ captionLeft }}">
+              <div style="{{ metaLine }}">
+                <span style="flex:none;width:8px;height:8px;border-radius:50%;background:var(--success);"></span>
+                <sc-if value="{{ t.metaLock }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" title="Locked" style="position:relative;flex:none;display:inline-block;width:11px;height:13px;"><span style="position:absolute;left:2px;top:0;width:7px;height:7.5px;border:1.6px solid var(--fg-body);border-bottom:none;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:var(--fg-body);"></span><span style="position:absolute;left:4.5px;top:8.75px;width:2px;height:2px;border-radius:50%;background:var(--bg);"></span></span></sc-if>
+              </div>
+              <span style="{{ nameText }}">{{ t.name }}</span>
+            </div>
+            <span style="{{ t.trail }}">
+              <sc-if value="{{ t.trailLock }}" hint-placeholder-val="{{ false }}"><span style="{{ t.lockBox }}"><span aria-hidden="true" style="position:relative;display:inline-block;width:11px;height:13px;"><span style="{{ t.shackle }}"></span><span style="{{ t.leg }}"></span><span style="{{ t.body }}"></span><span style="{{ t.hole }}"></span></span></span></sc-if>
+              <sc-if value="{{ t.trailX }}" hint-placeholder-val="{{ true }}"><span style="{{ t.xInk }}">✕</span></sc-if>
+            </span>
+          </div>
+        </div>
+      </li>
+    </sc-for>
+  </ul>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:480},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;rest&quot;,&quot;mode&quot;,&quot;nomarks&quot;],&quot;default&quot;:&quot;rest&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const v = this.props.variant ?? "rest";
+    const mode = v === "mode";
+    const noMarks = v === "nomarks";
+    const names = [["Lotus Petal", true], ["Mind Stone", false], ["Ornithopter", true], ["Sol Ring", false], ["Ninja of the Deep Hours", false], ["Talisman of Dominance", false]];
+    const list = phone ? names.slice(0, 4) : names;
+
+    // Padlock, 11×13: an arch, a filled body with a keyhole. Open = the arch's right leg stops short of the body and the left leg alone runs down into it.
+    const mk = (on, ink) => ({
+      shackle: { position: "absolute", left: 2, top: 0, width: 7, height: on ? 7.5 : 4.5, border: `1.6px solid ${ink}`, borderBottom: "none", borderRadius: "3.5px 3.5px 0 0" },
+      leg: on ? { display: "none" } : { position: "absolute", left: 2, top: 3.5, width: 1.6, height: 3.5, background: ink },
+      body: { position: "absolute", left: 0, top: 6.5, width: 11, height: 6.5, borderRadius: 2, background: ink },
+      hole: { position: "absolute", left: 4.5, top: 8.75, width: 2, height: 2, borderRadius: "50%", background: "var(--bg)" },
+    });
+    const tiles = list.map(([name, locked0], i) => {
+      const locked = locked0 && !noMarks;
+      const hover = !phone && !mode && i === 3;
+      const ink = locked ? (mode ? "var(--accent)" : "var(--fg-body)") : "var(--fg-muted)";
+      return {
+        name,
+        metaLock: locked && !mode,
+        trailLock: mode,
+        trailX: !mode,
+        shell: { display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: phone ? 9 : 10, background: "var(--surface)", border: `1px solid ${hover ? "var(--border-strong)" : "var(--border)"}` },
+        trail: { flex: "none", alignSelf: "stretch", width: phone ? 44 : 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6 },
+        xInk: { fontSize: 13, color: hover ? "var(--fg-body)" : "var(--border-dashed)", opacity: phone || hover ? 1 : 0 },
+        lockBox: { width: phone ? 36 : 26, height: phone ? 36 : 24, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1px solid ${locked ? "var(--accent)" : "var(--border-strong)"}`, background: locked ? "color-mix(in oklab,var(--accent) 14%,transparent)" : "transparent" },
+        ...mk(locked, ink),
+      };
+    });
+    const bi = mode ? "var(--accent)" : "var(--fg-muted)";
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      tiles, mode,
+      showKey: !noMarks && !mode,
+      modeLabel: mode ? "Done" : "Lock cards",
+      allLabel: phone ? "All" : "All 99",
+      modeBtn: { marginLeft: phone ? 0 : "auto", display: "inline-flex", alignItems: "center", gap: 7, height: phone ? 44 : 30, padding: "0 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 600, color: mode ? "var(--accent)" : "var(--fg-muted)", border: `1px solid ${mode ? "var(--accent)" : "var(--border-strong)"}` },
+      btn: mk(true, bi),
+      keyStyle: { marginLeft: phone ? 0 : 4, display: "inline-flex", alignItems: "center", gap: 7, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, color: "var(--fg-faint)" },
+      rootStyle: { width: phone ? 390 : 1300, background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", gap: 12, padding: phone ? "18px 12px 20px" : "26px 32px 28px" },
+      toolbarStyle: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 },
+      gridStyle: { listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: phone ? "repeat(2,minmax(0,1fr))" : "repeat(6,minmax(0,1fr))", gap: phone ? 10 : 12 },
+      artStyle: { aspectRatio: "63 / 88", background: "repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface-sunken) 6px 12px)", display: "flex", alignItems: "flex-end", padding: 8, borderRadius: phone ? "0 0 9px 9px" : "0 0 10px 10px" },
+      captionStyle: { display: "flex", alignItems: "stretch", minHeight: phone ? 56 : 50 },
+      captionLeft: { flex: "auto", minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 3, padding: phone ? "8px 3px 8px 9px" : "6px 3px 6px 10px" },
+      metaLine: { display: "flex", alignItems: "center", gap: 6, minWidth: 0, height: phone ? 17 : 18 },
+      nameText: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: phone ? 12 : 13, fontWeight: 600, color: "var(--fg)", lineHeight: phone ? "20px" : "17px" },
+    };
+  }
+}
+</script>
+</body>
+</html>

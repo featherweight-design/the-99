@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F; --fact:#8FA6BE;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --fact:#8FA6BE;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d0b09; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<section data-theme="{{ theme }}" data-screen-label="Never cut · R1" style="display:flex;flex-direction:column;gap:64px;padding:56px 64px 110px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1860px;">
+
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Decklist row · card view · Suggested changes · R1</span>
+    <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:34px;line-height:1.15;">Never cut</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">A player can mark a card in a deck as <b style="color:var(--fg);font-weight:600;">never cut</b>, and no tool will offer to take it out. The tuning harness had Suggested changes cutting Lotus Petal and Ornithopter from a Yuriko ninjutsu deck, which is built around cheap evasive bodies. The model couldn't know that. The player does. The mark is a lock, in neutral ink, after the card's name. You set it from the row on desktop, or in the card's <i>In this deck</i> block on any device. It is only ever the player's choice: nothing infers it, and nothing suggests it. Drawn at 1300 and 390. The fixture is HD Yuriko, with Lotus Petal and Ornithopter marked.</p>
+  </header>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">§</span><h2 style="margin:0;font-size:18px;font-weight:600;">The calls</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;max-width:1720px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">1 · A lock after the name, in no colour</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Every hue already means something: accent is in use or to buy, warning is money, success is complete, danger is over-committed. A kept card is none of those, so the lock is --fg-body, the same way the proxy tag spends no colour. It sits after the name, count and fact marks, not in the tag slot, because a kept card can also be a proxy or a card to buy. Its word, <i>never cut</i>, is in the key, in the title and in the row's description.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">2 · The row: a pointer shortcut on desktop, a mark on the phone</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">On desktop, hovering a row shows an outline lock after the name. Pressing it sets the mark, and pressing the solid lock clears it. It takes no space until then, and it's out of the tab order, like the suggestion card's thumbnails. On the phone a third 44px box would cost 44px of name on all 99 rows, so the row only shows the mark. Tapping the row opens the card, where the switch is (<a href="#1a">1a</a>).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">3 · The card view: a second switch in <i>In this deck</i></b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It goes under the proxy switch, behind a hairline, in the same square-tick skin. Like the proxy switch, it's deck-scoped and absent without a deck. It's the full control: keyboard, screen reader and phone. Once on, it says what it does and what it doesn't: tools will leave the card in, and the player can still remove it (<a href="#1b">1b</a>).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">4 · Suggested changes says what it kept</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The manifest adds a row that names the kept cards. The read line adds <i>2 never cut</i>. The model is told, and the validator drops any cut of a kept card anyway. When one is dropped, the lead names it. Marking a card an open suggestion would cut turns that suggestion into a <i>no longer applies</i> row, straight away (<a href="#1c">1c</a>).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">5 · Open: cheaper stand-ins, yes</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Offering stand-ins means offering to cut the card, so a kept card gets none. There's no ⇄ on its Shopping row, even when it's over the limit, and the card view replaces <i>See cheaper stand-ins →</i> with a line saying why. It still counts toward <i>2 over</i>: the limit is a fact about price, not an offer (<a href="#1d">1d</a>).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">5 · Open: the climb, listed but never hidden</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;"><i>What would have to go</i> is arithmetic, not an offer: the sheet already says which cards go is yours. Hiding a kept game changer would make the count lie. So it stays in the list with its lock, sorted last, and the sheet says so. If the marks make a bracket unreachable, the sheet says that plainly (<a href="#1d">1d</a>).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">6 · Open: no cap</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">A cap would be a number the app puts on how much a player may care about their own deck, which is close to a score. The tools already cope with a short list to cut from: the validator returns fewer swaps and the lead says so. The one real edge is logical: if every card but the commander is marked, the panel says there's nothing to cut, the primary action is disabled, and no credit is used (<a href="#1c">1c</a>). <b style="color:var(--warning);font-weight:600;">Hugh's call.</b></p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px dashed var(--border-strong);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">7 · No marks: nothing new drawn</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">With no marks, the deck has no key entry, no manifest row, no read-line clause and no lead clause. The rows are pixel for pixel what ships today. The only new things are an unticked switch in the card view and the lock that shows on desktop hover (<a href="#1e">1e</a>). <i>Reject</i> is still a reject, and it never marks a card. A rejected cut can come back next run unless the player marks it.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="1a" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1a</span><h2 style="margin:0;font-size:18px;font-weight:600;">On the decklist: two kept, one hovered</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Setting it, 1300</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Hovering Sol Ring shows an outline lock in --fg-faint, on a 22px hit box with a 7% tint and the <i>Never cut</i> title. Pressing it sets the mark without opening the modal: the row's open-on-click handler already skips buttons. It's optimistic, just like the proxy switch. A refusal reverts the lock and shows the shipped MutationError under the row.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Reading it</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Solid lock, --fg-body, 9×11, and nothing else on the row changes. It isn't an edge: the inset edges already mean <i>placed by a pass</i>, <i>changed in the draft</i> and <i>over-committed</i>. It isn't a tint either. The key under the toolbar gains <i>never cut</i> only when the view holds a kept row, the same rule as the proxy key. The row's description gains <i>Marked never cut</i>.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">390</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The same lock, inline after the name, as a mark rather than a control. The row keeps its 52px, its meta line and its 44px ✕. The ✕ still works on a kept card: the mark only binds the tools, never the player. Removing a kept card drops the mark with it, and <i>Put back</i> brings back both.</p></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Lotus Petal and Ornithopter kept · hovering Sol Ring</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Rows" variant="marked" theme="{{ theme }}" hint-size="1300px,470px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the mark only</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Rows" phone="{{ true }}" variant="marked" theme="{{ theme }}" hint-size="390px,860px"></dc-import></div></div>
+    </div>
+  </div>
+
+  <div id="1b" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1b</span><h2 style="margin:0;font-size:18px;font-weight:600;">In the card view: off, then on</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">One block, two switches</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">ProxyControl's block is already <i>In this deck</i>, and a kept card is a fact about this deck. So the new switch joins that block rather than starting a second one. The proxy half is unchanged and stays first. A hairline separates them, so the proxy's note clearly belongs to the proxy.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The words</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The label names the deck, as the proxy label does: <i>Never suggest cutting it from HD Yuriko</i>. <i>Suggest</i> is the honest verb, because the player can still cut it. With the switch on, one line names the tools and the one thing still open to the player. The note says it takes effect at once and isn't part of a version, so no commit is needed.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Everywhere the card opens in the deck</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The decklist, Shopping, the Analysis tab, and a suggestion's cut name: all of these open CardModal with the deck's id, so the block is there in all of them. That's how a player marks Ornithopter straight from the suggestion that offered to cut it (<a href="#1c">1c</a>). Opened from /collection, with no deck, the block is absent, as it is today.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:28px 36px;max-width:1780px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Lotus Petal · off · scrolled to In this deck</span><dc-import name="Card View" on="{{ false }}" theme="{{ theme }}" hint-size="824px,625px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · on</span><dc-import name="Card View" on="{{ true }}" theme="{{ theme }}" hint-size="824px,625px"></dc-import></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:28px 36px;max-width:1780px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · off · whole sheet</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Card View" phone="{{ true }}" on="{{ false }}" theme="{{ theme }}" hint-size="390px,1000px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · on · 44px switch rows</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Card View" phone="{{ true }}" on="{{ true }}" theme="{{ theme }}" hint-size="390px,1060px"></dc-import></div></div>
+    </div>
+  </div>
+
+  <div id="1c" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1c</span><h2 style="margin:0;font-size:18px;font-weight:600;">Suggested changes, and how it says it kept them</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;max-width:1720px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Before the run: a fifth manifest row</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;"><i>Cards you marked never cut</i>, with the lock, the names on a second line and <i>2 of 99</i>. It ticks like the others when the pack is built. From four names on, the line reads <i>Lotus Petal, Ornithopter, Gingerbrute and 3 more</i>. The row is absent at zero.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Told, then checked</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The prompt tags kept cards in the decklist as it tags the commander (<i>[never cut]</i>), and the system line that forbids cutting a commander grows to cover them. The validator gets a <b style="color:var(--fg-body);font-weight:600;">neverCut</b> drop straight after <b style="color:var(--fg-body);font-weight:600;">cutInDeck</b>, so a kept cut never renders, whatever the model says.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">After: the read line and the lead</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The read line ends <i>· 2 never cut</i>. A <b style="color:var(--fg-body);font-weight:600;">neverCut</b> drop gets its own clause in the lead, naming the card: <i>One more would have cut Lotus Petal, which you marked never cut, so we dropped it.</i> It's the one drop worth naming, because it shows the mark was read. Other drops keep <i>did not hold up to checking</i>.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Marking mid-set</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The deterministic check that already makes a swap <i>no longer applies</i> (cut gone, or add already in) gains a third reason: the cut is now kept. The row reads <i>You marked Ornithopter never cut.</i> with the lock. Clearing the mark brings the card back open. It's Hugh's harness case, answered in two taps.</p></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Ready · Analysis tab, full width</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" state="ready" theme="{{ theme }}" hint-size="1300px,520px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Ready</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" phone="{{ true }}" state="ready" theme="{{ theme }}" hint-size="390px,640px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Results · one kept cut dropped, and named</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" state="results" theme="{{ theme }}" hint-size="1300px,420px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Results</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" phone="{{ true }}" state="results" theme="{{ theme }}" hint-size="390px,760px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);">1c ii</span><h3 style="margin:0;font-size:15px;font-weight:600;">The harness case: a set from before any marks, then Ornithopter marked from its own suggestion</h3></div>
+      <div style="display:flex;align-items:flex-start;gap:40px;">
+        <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · before · the player opens Ornithopter from the cut name</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" state="before" theme="{{ theme }}" hint-size="1300px,400px"></dc-import></div></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:40px;">
+        <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · after · ticked Never suggest cutting it, closed the card</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" state="after" theme="{{ theme }}" hint-size="1300px,340px"></dc-import></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · after</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" phone="{{ true }}" state="after" theme="{{ theme }}" hint-size="390px,560px"></dc-import></div></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · every card but the commander marked · the one limit</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" state="allmarked" theme="{{ theme }}" hint-size="1300px,220px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" phone="{{ true }}" state="allmarked" theme="{{ theme }}" hint-size="390px,300px"></dc-import></div></div>
+    </div>
+  </div>
+
+  <div id="1d" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1d</span><h2 style="margin:0;font-size:18px;font-weight:600;">The two open calls, drawn: cheaper stand-ins and the climb</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Shopping: still over, no ⇄</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Mana Vault is over the $10 limit and marked kept. The row keeps all three over marks (ring, <i>over $10</i>, the count), because the price is a fact. The ⇄ slot stays empty, as it does on an under-limit row, so the buy tags still line up. The lock after the name says why.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Its card: the link becomes a reason</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">In place of <i>See cheaper stand-ins →</i>, a mono line: <i>No stand-ins: you marked it never cut</i>. A missing link with no reason reads as a bug. The switch below is how to undo it, and clearing the mark brings the link back.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The climb: listed last, still counted</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Sheet 3b keeps its shipped geometry. A kept candidate sorts last, carries the lock, and the note under the rule adds one sentence. When the marks alone exceed what the lower bracket allows, the sentence says that rung can't be reached while they're marked. It states a fact and adds no control.</p></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Shopping · Mana Vault kept and over, Rhystic Study over with ⇄</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Rows" variant="shopping" theme="{{ theme }}" hint-size="1300px,230px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Shopping</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Rows" phone="{{ true }}" variant="shopping" theme="{{ theme }}" hint-size="390px,290px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:28px 36px;max-width:1780px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Mana Vault, opened from Shopping · kept</span><dc-import name="Card View" from="shopping" on="{{ true }}" theme="{{ theme }}" hint-size="824px,625px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Card View" phone="{{ true }}" from="shopping" on="{{ true }}" theme="{{ theme }}" hint-size="390px,1100px"></dc-import></div></div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:28px 36px;max-width:1780px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 sheet (700) · What would have to go · Mana Vault kept</span>
+        <div style="width:700px;background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.45);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);"><span style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border-strong);background:var(--elevated);"></span><span style="flex:1;font-family:var(--display);font-weight:700;font-size:17px;color:var(--fg);">Upgraded, one thing would have to go</span><span style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-body);">✕</span></div>
+          <div style="padding:16px 18px 18px;display:flex;flex-direction:column;gap:13px;">
+            <div style="border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-size:13px;font-weight:600;color:var(--fg);">Game changers</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">4 in the deck · Upgraded allows 3</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <sc-for list="{{ climb }}" as="c" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:10px;min-height:32px;padding:5px 9px;border-radius:7px;background:var(--surface-rail);">
+                    <span aria-hidden="true" style="width:14px;text-align:center;color:var(--fact);">ϟ</span>
+                    <span style="font-size:13px;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ c.name }}</span>
+                    <sc-if value="{{ c.kept }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:9px;height:11px;"><span style="position:absolute;left:1.5px;top:0;width:6px;height:7px;border:1.5px solid var(--fg-body);border-bottom:none;border-radius:3px 3px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:9px;height:6px;border-radius:1.5px;background:var(--fg-body);"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">never cut</span></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Which cards go is yours. You marked Mana Vault never cut, so it is listed last. It still counts.</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">the marks exceed the allowance · all four kept</span>
+        <div style="width:700px;background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.45);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);"><span style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border-strong);background:var(--elevated);"></span><span style="flex:1;font-family:var(--display);font-weight:700;font-size:17px;color:var(--fg);">Upgraded, one thing would have to go</span><span style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-body);">✕</span></div>
+          <div style="padding:16px 18px 18px;display:flex;flex-direction:column;gap:13px;">
+            <div style="border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-size:13px;font-weight:600;color:var(--fg);">Game changers</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">4 in the deck · Upgraded allows 3</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <sc-for list="{{ climbAll }}" as="c" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:10px;min-height:32px;padding:5px 9px;border-radius:7px;background:var(--surface-rail);">
+                    <span aria-hidden="true" style="width:14px;text-align:center;color:var(--fact);">ϟ</span>
+                    <span style="font-size:13px;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ c.name }}</span>
+                    <span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:9px;height:11px;"><span style="position:absolute;left:1.5px;top:0;width:6px;height:7px;border:1.5px solid var(--fg-body);border-bottom:none;border-radius:3px 3px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:9px;height:6px;border-radius:1.5px;background:var(--fg-body);"></span></span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">All four are marked never cut. Upgraded can’t be reached while they are.</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · sheet from 52px</span>
+        <div style="width:390px;background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:14px 14px 0 0;overflow:hidden;">
+          <div style="height:43px;display:flex;align-items:center;gap:9px;padding:0 6px 0 16px;border-bottom:1px solid var(--border);"><span style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border-strong);background:var(--elevated);"></span><span style="flex:1;font-family:var(--display);font-weight:700;font-size:14px;color:var(--fg);">Upgraded, one would have to go</span><span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--fg-body);">✕</span></div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:11px;">
+            <div style="border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:12px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:13px;font-weight:600;color:var(--fg);">Game changers</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">4 in the deck · Upgraded allows 3</span></div>
+              <sc-for list="{{ climb }}" as="c" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 9px;border-radius:7px;background:var(--surface-rail);">
+                  <span aria-hidden="true" style="width:14px;text-align:center;color:var(--fact);">ϟ</span>
+                  <span style="font-size:13px;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ c.name }}</span>
+                  <sc-if value="{{ c.kept }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:9px;height:11px;"><span style="position:absolute;left:1.5px;top:0;width:6px;height:7px;border:1.5px solid var(--fg-body);border-bottom:none;border-radius:3px 3px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:9px;height:6px;border-radius:1.5px;background:var(--fg-body);"></span></span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Which cards go is yours. You marked Mana Vault never cut, so it is listed last. It still counts.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="1e" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1e</span><h2 style="margin:0;font-size:18px;font-weight:600;">A deck with no marks, the default: what ships today</h2></div>
+    <p style="margin:0;max-width:1100px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The same deck with no marks. No key entry, no lock, no reserved width on any row. The manifest has its four shipped rows, and the read line and lead have no new clause. The only new pixels in the product are the unticked switch in <i>In this deck</i> (<a href="#1b">1b</a>, left) and the outline lock on desktop hover.</p>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · no marks</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Rows" variant="nomarks" theme="{{ theme }}" hint-size="1300px,470px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · no marks</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Rows" phone="{{ true }}" variant="nomarks" theme="{{ theme }}" hint-size="390px,840px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Ready · four rows, as shipped</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" state="nomarks" theme="{{ theme }}" hint-size="1300px,460px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Ready</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" phone="{{ true }}" state="nomarks" theme="{{ theme }}" hint-size="390px,580px"></dc-import></div></div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      climb: [{ name: "Force of Will", kept: false }, { name: "Mystical Tutor", kept: false }, { name: "Rhystic Study", kept: false }, { name: "Mana Vault", kept: true }],
+      climbAll: [{ name: "Force of Will" }, { name: "Mana Vault" }, { name: "Mystical Tutor" }, { name: "Rhystic Study" }],
+    };
+  }
+}
+</script>
+</body>
+</html>

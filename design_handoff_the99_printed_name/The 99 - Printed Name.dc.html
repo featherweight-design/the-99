@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Chakra+Petch:wght@500;600&family=Syncopate:wght@400;700&family=Metamorphous&family=Trirong:wght@500;600&family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; border-bottom: 1px solid #6B482A; }
+  a:hover { color: #D8B25E; border-bottom-color: #C9A24B; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R3</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Printed name &middot; addendum to card surfaces &middot; <span style="color:#C9A24B;">audit patch: the tile is the tightest surface</span></div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">Both rows have room. <span style="font-style:italic;">The tile does not.</span></h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;">The brief asks which gives when a printed name is too long for a row, and offers the phone widths as the case. <b style="color:#EDE6D8;font-weight:600;">Measured, no row is the answer.</b> One subtraction from one usable width: the 400px desktop row holds <b style="color:#EDE6D8;font-weight:600;">174px</b> of name after the count, about 27 characters; 390 holds <b style="color:#EDE6D8;font-weight:600;">175px</b>; 320 holds <b style="color:#EDE6D8;font-weight:600;">105px</b>. <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Battle of Olympus</span> measures 108px and fits on all three. <b style="color:#EDE6D8;font-weight:600;">The deck tile caption holds 93&ndash;94px</b> &mdash; sixteen characters &mdash; and is the one surface where the spec's own example clips.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">R3: the numbers above are re-derived, and R1's were wrong.</b> R1 subtracted the row's fixed spend twice and reported a 96px desktop block, which is why it named desktop the tight surface. <b style="color:#EDE6D8;font-weight:600;">The finding survives and moves.</b> The audit also found no two-line clamp in the tree &mdash; both grid captions are single-line truncate &mdash; so the tile is ruled as a second single-line ladder with the <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#10005;</span> moved off the caption line, and <b style="color:#EDE6D8;font-weight:600;">no clamp is added.</b> One consequence worth stating: the ranking is <i>not</i> width-monotonic &mdash; <b style="color:#EDE6D8;font-weight:600;">320 with a count (105px) is tighter than the 400px desktop row (174px)</b>, because the phone row spends 44px on a touch-target <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#10005;</span> out of a smaller budget. Design for the surface with the least name, not the fewest pixels.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">So the name is what gives &mdash; on every surface, by one rule.</b> A decklist of ninety-nine rows cannot wrap one name without going ragged, and everything beside the name on the All tab is already at its floor after the card-surfaces <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">$</span> collapse. <b style="color:#EDE6D8;font-weight:600;">Truncation is not a phone special case</b> &mdash; it is what happens wherever the block is too narrow, which is the desktop row first and the tile caption hardest. The widths anyone was worrying about are not the widths that needed the ruling.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> for both calls and the four locked decisions as drawn, <a href="DENSITY-the-longer-name.md">DENSITY-the-longer-name.md</a> for the measured ladder at 320, 390 and 400, <a href="STATES-printed-name.md">STATES-printed-name.md</a> for the matrix, <a href="printed-name · copy strings.ts">printed-name &middot; copy strings.ts</a> for the two new strings, <a href="READINESS.md">READINESS.md</a> for the &sect;6 items this pass had to assume. Structural and content sibling: <a href="../design_handoff_the99_card_surfaces/README.md">design_handoff_the99_card_surfaces</a>, which owns the row, the tile and the modal this addendum writes into.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#181410;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:10px;">R3 &middot; four claims in R1 that did not survive verification</div>
+    <div style="font-size:13px;color:#A89B84;line-height:1.75;text-wrap:pretty;">
+      <b style="color:#EDE6D8;font-weight:600;">0 &middot; The desktop row does not hold 96px of name. It holds 201px, or 174px after the count.</b> R1 subtracted the row's fixed spend twice, and a measurement of R1's own drawing (194px) would have caught it. <b style="color:#C6B79A;font-weight:600;">This is the one that moved the finding:</b> no row clips <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Battle of Olympus</span>, the deck tile caption at 93&ndash;94px is the tightest block on the feature, and it is the only surface where the spec's own example clips. Re-derived surface by surface in <a href="DENSITY-the-longer-name.md">DENSITY</a>.
+      <div style="height:8px;"></div>
+      <b style="color:#EDE6D8;font-weight:600;">1 &middot; The two-line caption clamp does not exist.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-card-tile.tsx:186</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">collection/grid-view.tsx:88</span> are single-line truncate; the only clamp is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">suggestion-tile.tsx:296</span>, the Consider tile. <b style="color:#C6B79A;font-weight:600;">Called: no clamp &mdash; a second single-line ladder, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10005;</span> leaves the caption line</b>, which buys back 38&ndash;50px on the one surface that needs it.
+      <div style="height:8px;"></div>
+      <b style="color:#EDE6D8;font-weight:600;">2 &middot; The tooltip R1 rejected already ships.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">title={card.name}</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-card-tile.tsx:188</span>. <b style="color:#C6B79A;font-weight:600;">Called: dropped, replaced by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span></b> &mdash; the same rule the row got.
+      <div style="height:8px;"></div>
+      <b style="color:#EDE6D8;font-weight:600;">3 &middot; Two-faced cards.</b> <b style="color:#C6B79A;font-weight:600;">Called: front face alone on rows and tiles; the full <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">printed // printed</span> string in the modal title.</b> The shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">//</span> layout mark keeps saying there is a back.
+      <div style="height:8px;"></div>
+      Everything else is as drawn. Adopted without re-assertion: the deck route <i>does</i> need a printing join (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">lib/decks/read.ts:196-254</span>), #467 has no branch to delete and its truncation is on the Add panel, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-auto</span> already delivers call 2, and the modal field is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set</span>. <b style="color:#EDE6D8;font-weight:600;">The desktop row figures are ceilings</b> &mdash; they omit the AutoTag and the provenance mark.
+    </div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:12px;background:#181410;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">The spec had not landed when this was drawn</div>
+    <div style="font-size:13px;color:#A89B84;line-height:1.75;text-wrap:pretty;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">docs/superpowers/specs/2026-09-09-printed-name-design.md</span> is not in the tree yet. This pass is drawn against the four locked decisions as the covering note states them &mdash; the displayed name follows <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">resolvedPrinting()</span>; a card you do not own keeps its oracle name; rows and tiles show the printed name alone; the modal is the only place the oracle name survives on screen. <b style="color:#EDE6D8;font-weight:600;">Where the spec and this handoff disagree, the spec wins and these drawings are what to correct.</b> Every &sect;6 item this pass had to assume is listed in <a href="READINESS.md">READINESS.md</a> rather than answered silently.
+      <div style="height:10px;"></div>
+      <b style="color:#EDE6D8;font-weight:600;">One fixture note.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SLD 2208 &middot; Battle of Olympus / World at War</span> is the spec's own example and is used as the canonical pair throughout. The 32-character name in the truncation ladder is a <b style="color:#EDE6D8;font-weight:600;">length fixture, not a real printing</b> &mdash; it exists to find the cliff, and the real worst case comes from the printing data.
+    </div>
+  </div>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:20px 24px;margin-bottom:38px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">call 1 &middot; the oracle-name line</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Between the title and the type line, not after it.</b> Body face 13.5px desktop / 13px phone, weight 400, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span>, with a mono 10.5px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> label reading <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">oracle</span>. Gap to the title 5px, gap to the type line 10px &mdash; the pair reads as one unit and the type line stays a separate fact.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">call 2 &middot; what gives on the row</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The name gives &mdash; at both widths, by one rule, and the count never does.</b> The name block is the only shrinking child; the count rides <i>inside</i> it after the name at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-none</span>. <b style="color:#EDE6D8;font-weight:600;">Not a phone special case</b> &mdash; desktop is the tighter row, and the tile caption is tighter still.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">locked 1 &middot; one resolver</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;text-wrap:pretty;">The name follows <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">resolvedPrinting()</span>, the same printing the art already comes from. <b style="color:#EDE6D8;font-weight:600;">Drawn, not decided</b> &mdash; and it is the reason nothing here needs a new query: the surface already knows which printing it is showing.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">locked 2 &middot; the control state</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;text-wrap:pretty;">A card you do not own keeps its oracle name, and a card whose printing prints its own name is <b style="color:#EDE6D8;font-weight:600;">byte-identical to today</b>. Drawn as its own state on every surface, because <i>nothing changes</i> is the state most likely to regress.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:6px;">call 3 &middot; the tile caption</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">No clamp. Single line, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10005;</span> moves to the art corner</b> &mdash; 94px of caption becomes 132px. Equal-height tiles outrank twelve characters.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:6px;">calls 4 &amp; 5 &middot; tooltip, two faces</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;text-wrap:pretty;">The shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">title</span> is <b style="color:#EDE6D8;font-weight:600;">dropped for an <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span></b>. Two-faced cards show the <b style="color:#EDE6D8;font-weight:600;">front face on rows and tiles, both in the modal.</b></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">locked 3 &middot; one name per row</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;text-wrap:pretty;">Rows and tiles show the printed name alone. <b style="color:#EDE6D8;font-weight:600;">No parenthetical, no second line, no marker.</b> The consequence is worth stating: a truncated printed name on a row has no fallback on that surface, which is exactly why call 2 states a floor and why locked 4 matters.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">locked 4 &middot; the modal is the survivor</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;text-wrap:pretty;">The modal is the only place both names appear. So it is also <b style="color:#EDE6D8;font-weight:600;">the recovery path for every truncation this addendum permits</b> &mdash; the name is the modal's own trigger, one tap from the row that clipped it.</div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">1 &middot; <span style="color:#C9A24B;">the decklist row &mdash; three states, three widths</span></div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:470px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Desktop 400 &middot; <span style="color:#C9A24B;">34px, name 13.5px, cost track 40px</span></div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">control &middot; no printed name &mdash; unchanged</div>
+        <div style="width:400px;display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:7px;background:#1E1A15;margin-bottom:16px;">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+          <span style="flex:1;min-width:0;display:flex;align-items:baseline;gap:9px;overflow:hidden;">
+            <span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Cultivate</span>
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">&times;1</span>
+          </span>
+          <span style="flex:none;width:40px;display:flex;justify-content:flex-end;align-items:center;">
+            <span style="width:12px;height:12px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#14110E;">2</span>
+            <span style="width:12px;height:12px;border-radius:999px;background:#4B7A46;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);margin-left:3px;"></span>
+          </span>
+          <span style="flex:none;width:32px;text-align:center;font-size:13px;color:#494037;">&#10005;</span>
+        </div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">printed name &middot; <span style="color:#6FA368;">SLD 2208 &mdash; 17 chars, fits with 66px spare</span></div>
+        <div style="width:400px;display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:7px;background:#1E1A15;margin-bottom:6px;">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+          <span style="flex:1;min-width:0;display:flex;align-items:baseline;gap:9px;overflow:hidden;">
+            <span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Battle of Olympus</span>
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">&times;2</span>
+          </span>
+          <span style="flex:none;width:40px;display:flex;justify-content:flex-end;align-items:center;">
+            <span style="width:12px;height:12px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#14110E;">3</span>
+            <span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);margin-left:-5px;"></span>
+            <span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);margin-left:-5px;"></span>
+          </span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#D9975C;background:#1B1712;border:1px solid #3A3229;border-radius:4px;padding:2px 5px;">none free</span>
+          <span style="flex:none;width:32px;text-align:center;font-size:13px;color:#494037;">&#10005;</span>
+        </div>
+        <div style="font-size:12px;color:#8E8269;line-height:1.6;margin-bottom:16px;">Name block resolves to <b style="color:#C6B79A;font-weight:600;">201px</b>, <b style="color:#C6B79A;font-weight:600;">174px</b> after the count &mdash; about 27 characters. <b style="color:#EDE6D8;font-weight:600;">R3: R1 reported 96px here by subtracting the fixed spend twice</b>, which is what made desktop look like the tight surface. It is not: the row clips at 27 characters, and the drawing above shows the example fitting because it does.</div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">unowned &middot; oracle name kept (locked 2), <span style="color:#C9A24B;">$ collapsed</span></div>
+        <div style="width:400px;display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:7px;background:#1E1A15;">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed #6E6654;"></span>
+          <span style="flex:1;min-width:0;display:flex;align-items:baseline;gap:9px;overflow:hidden;">
+            <span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">World at War</span>
+          </span>
+          <span style="flex:none;width:40px;display:flex;justify-content:flex-end;align-items:center;">
+            <span style="width:12px;height:12px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#14110E;">3</span>
+            <span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);margin-left:-5px;"></span>
+            <span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);margin-left:-5px;"></span>
+          </span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#DEAA29;background:#1B1712;border:1px solid #6B482A;border-radius:4px;padding:2px 5px;">$</span>
+          <span style="flex:none;width:32px;text-align:center;font-size:13px;color:#494037;">&#10005;</span>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#8E8269;line-height:1.6;text-wrap:pretty;">The same oracle card, not owned. <b style="color:#EDE6D8;font-weight:600;">It says <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">World at War</span> and it is right to</b> &mdash; there is no printing in hand to print a name.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Phone 390 &middot; <span style="color:#C9A24B;">52px with the meta line, name 12.5px</span></div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">printed name &middot; <span style="color:#6FA368;">fits, 75px to spare</span></div>
+        <div style="width:358px;display:flex;align-items:center;gap:9px;height:52px;padding:0 8px;border-radius:7px;background:#1E1A15;margin-bottom:16px;">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;overflow:hidden;">
+            <span style="display:flex;align-items:baseline;gap:9px;overflow:hidden;">
+              <span style="font-size:12.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Battle of Olympus</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">&times;2</span>
+            </span>
+            <span style="display:flex;align-items:center;gap:3px;">
+              <span style="width:13px;height:13px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#14110E;">3</span>
+              <span style="width:13px;height:13px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+              <span style="width:13px;height:13px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+            </span>
+          </span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#D9975C;background:#1B1712;border:1px solid #3A3229;border-radius:4px;padding:2px 5px;">none free</span>
+          <span style="flex:none;width:44px;text-align:center;font-size:13px;color:#494037;">&#10005;</span>
+        </div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">length fixture &middot; 32 chars, no count &mdash; <span style="color:#6FA368;">fits, 10px spare</span></div>
+        <div style="width:358px;display:flex;align-items:center;gap:9px;height:52px;padding:0 8px;border-radius:7px;background:#1E1A15;margin-bottom:16px;">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;overflow:hidden;">
+            <span style="display:flex;align-items:baseline;gap:9px;overflow:hidden;">
+              <span style="font-size:12.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Chalice of the Unfathomable Deep</span>
+            </span>
+            <span style="display:flex;align-items:center;gap:3px;">
+              <span style="width:13px;height:13px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#14110E;">1</span>
+              <span style="width:13px;height:13px;border-radius:999px;background:#3A6AA5;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+            </span>
+          </span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#D9975C;background:#1B1712;border:1px solid #3A3229;border-radius:4px;padding:2px 5px;">none free</span>
+          <span style="flex:none;width:44px;text-align:center;font-size:13px;color:#494037;">&#10005;</span>
+        </div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">320 &middot; <span style="color:#DEAA29;">the tight row &mdash; 105px with a count</span></div>
+        <div style="width:288px;display:flex;align-items:center;gap:9px;height:52px;padding:0 8px;border-radius:7px;background:#1E1A15;margin-bottom:6px;">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;overflow:hidden;">
+            <span style="display:flex;align-items:baseline;gap:9px;overflow:hidden;">
+              <span style="font-size:12.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Chalice of the Unfathomable Deep</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">&times;2</span>
+            </span>
+            <span style="display:flex;align-items:center;gap:3px;">
+              <span style="width:13px;height:13px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#14110E;">1</span>
+              <span style="width:13px;height:13px;border-radius:999px;background:#3A6AA5;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+            </span>
+          </span>
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#D9975C;background:#1B1712;border:1px solid #3A3229;border-radius:4px;padding:2px 5px;">none free</span>
+          <span style="flex:none;width:44px;text-align:center;font-size:13px;color:#494037;">&#10005;</span>
+        </div>
+        <div style="font-size:12px;color:#8E8269;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">320 with a count is the tightest row on the feature at 105px</b> &mdash; below the 400px desktop row, because the phone spends 44px on a touch-target <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">&#10005;</span> out of a smaller budget. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Battle of Olympus</span> still fits, with 5px to spare.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:14px;">Call 2 &mdash; the name gives, on every surface, by one rule</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.65;">
+          <div><b style="color:#EDE6D8;font-weight:600;">1 &middot; The name block is the only shrinking child &mdash; and on the row it already is.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-auto</span> on the name block with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-none</span> on every sibling has been the row's shape since <b style="color:#C6B79A;font-weight:600;">#354</b>, which delivers this outcome already. <b style="color:#EDE6D8;font-weight:600;">Keep <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-auto</span>; do not swap it for <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex:1</span>.</b> The only requirement worth restating is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">min-width:0</span>, without which the block refuses to shrink at all.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">2 &middot; The count rides inside the name block, after the name, at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-none</span>.</b> So <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&times;2</span> is never the thing that vanishes: a row that loses its count stops saying how many copies the deck runs, which is a fact the row exists to carry. The name loses characters; the row never loses a field.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">3 &middot; No wrap, ever.</b> A wrapped name makes one row taller than its neighbours, and card-surfaces already ruled that row height may only change at a group boundary. Ninety-nine rows with a ragged edge is a worse read than thirteen characters and an ellipsis.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">4 &middot; Nothing beside the name can pay.</b> The marker is the floor's own slot, the buy tag is already a bare <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">$</span>, the cost track is fixed at 40px so adjacent rows align, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10005;</span> is at its target floor. <b style="color:#C6B79A;font-weight:600;">The row was already spent before this addendum arrived.</b></div>
+          <div><b style="color:#EDE6D8;font-weight:600;">5 &middot; The full printed name goes in the row's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span>, never a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">title</span>.</b> Screen readers get all of it; sighted readers get the modal, which is the name's own trigger. No tooltip &mdash; a hover tooltip on a phone-first row is a control half the users cannot reach. <b style="color:#C6B79A;font-weight:600;">R2: the deck tile ships one today and it goes.</b></div>
+        </div>
+        <div style="margin-top:16px;padding:12px 14px;border:1px solid #3A3229;border-radius:9px;background:#1A1611;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">What call 2 actually costs, after the audit.</b> Less than R1 thought on the row and more elsewhere. <b style="color:#EDE6D8;font-weight:600;">The row needs no shrink-order work</b> &mdash; #354 already gave it &mdash; and #467's truncation turns out to live on the <b style="color:#EDE6D8;font-weight:600;">Add panel</b>, not this row, so there is no branch to delete and nothing to overrule. What remains is real: <b style="color:#C6B79A;font-weight:600;">ratify the row's behaviour as a ruling rather than an accident, extend the same single-line ladder to the tile caption</b> (call 3, the tighter surface), <b style="color:#C6B79A;font-weight:600;">and put the full name in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span> on both.</b> R3: the measurement it rests on has been re-derived &mdash; <b style="color:#EDE6D8;font-weight:600;">the desktop row holds 174px, not 96px</b>, and the surface that actually needs the ruling is the tile at 93px.</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">2 &middot; <span style="color:#C9A24B;">the modal header &mdash; the one place both names live</span></div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:470px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Phone 390 &middot; <span style="color:#C9A24B;">title 22px, oracle line 13px, type line 13px</span></div>
+        <div style="width:358px;border:1px solid #2B241B;border-radius:12px;background:#1E1A15;padding:18px 18px 20px;">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+            <div style="min-width:0;">
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;line-height:1.15;">Battle of Olympus</div>
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:5px;">
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">oracle</span>
+                <span style="font-size:13px;color:#C0B8A6;">World at War</span>
+              </div>
+              <div style="font-size:13px;color:#A59C89;margin-top:10px;">Sorcery</div>
+            </div>
+            <div style="flex:none;display:flex;align-items:center;gap:3px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#14110E;">4</span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+            </div>
+          </div>
+          <div style="margin-top:16px;border-radius:10px;background:#14110E;border:1px solid #2B241B;padding:14px 16px;font-size:13.5px;line-height:1.6;color:#C0B8A6;">Oracle text renders here from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">cards.oracle_text</span> unchanged &mdash; <b style="color:#EDE6D8;font-weight:600;">the rules text is the oracle card's, and this addendum does not touch it.</b></div>
+          <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#2B241B;border:1px solid #2B241B;border-radius:10px;overflow:hidden;">
+            <div style="background:#1E1A15;padding:11px 13px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Set</div><div style="font-size:13px;color:#EDE6D8;margin-top:3px;">Secret Lair Drop</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-top:2px;">SLD &middot; 2208</div></div>
+            <div style="background:#1E1A15;padding:11px 13px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">You own</div><div style="font-size:13px;color:#EDE6D8;margin-top:3px;">&times;2 copies</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#D9975C;margin-top:2px;">none free</div></div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set</span> field is why the label can be one word.</b> The header says which card; the meta grid already says which printing and which number. The oracle line does not have to explain itself, because the explanation is eleven lines below it and was there before this addendum.</div>
+      </div>
+
+      <div style="width:760px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Desktop &middot; <span style="color:#C9A24B;">title 29px, oracle line 13.5px, type line 14px</span></div>
+        <div style="border:1px solid #2B241B;border-radius:14px;background:#1E1A15;padding:26px 28px;">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-right:46px;">
+            <div style="min-width:0;">
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:29px;color:#EDE6D8;line-height:1.1;">Battle of Olympus</div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;">
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">oracle</span>
+                <span style="font-size:13.5px;color:#C0B8A6;">World at War</span>
+              </div>
+              <div style="font-size:14px;color:#A59C89;margin-top:10px;">Sorcery</div>
+            </div>
+            <div style="flex:none;display:flex;align-items:center;gap:4px;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:#14110E;">4</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+            </div>
+          </div>
+          <div style="margin-top:22px;border-radius:10px;background:#14110E;border:1px solid #2B241B;padding:18px 20px;font-size:15px;line-height:1.65;color:#C0B8A6;">Oracle text, unchanged. <b style="color:#EDE6D8;font-weight:600;">Nothing in the rules block, the identity field or the printing field moves</b> &mdash; the addendum adds one line and re-sources one string.</div>
+        </div>
+
+        <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:7px;">Why above the type line, not below it</div>
+            <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">The type line <i>describes</i> the card; the oracle name <i>identifies</i> it. Identity belongs beside identity, and the pair is the thing that just changed &mdash; a reader resolves <i>which card is this</i> in one movement and only then reads what it does. Putting the oracle name after the type line would interleave two answers to two different questions. <b style="color:#EDE6D8;font-weight:600;">Gap 5px to the title, 10px to the type line</b>: the tighter gap is what makes the two names read as one unit rather than two facts.</div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:7px;">Why body face at 13.5px, weight 400</div>
+            <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">The title is the display face at 29px, so nothing at 13.5px in Plex Sans can compete with it &mdash; which is the point: <b style="color:#EDE6D8;font-weight:600;">the printed name is the card's name here, and the oracle name is a gloss.</b> Ink is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span>, one step brighter than the type line's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-muted</span>, because a name outranks a type. 8.77:1 on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface</span> in every theme. <b style="color:#C6B79A;font-weight:600;">No italic</b> &mdash; italic is the modal's reminder-text convention and this is not reminder text.</div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:7px;">Why a label at all</div>
+            <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">Two bare names stacked is a puzzle &mdash; the reader cannot tell which is authoritative, or why the app is showing them a second one. <b style="color:#EDE6D8;font-weight:600;">One mono lowercase word at 10.5px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> settles it</b>, and mono-lowercase-as-field-label is the shipped register (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">no number &middot; &times;1</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SLD &middot; 2208</span>). It costs 38px on a line with room.</div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:7px;">The line is absent, not empty</div>
+            <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">When the printing prints its own name the line <b style="color:#EDE6D8;font-weight:600;">does not render</b> &mdash; no label, no placeholder, no reserved height. The type line moves back up to its shipped 6px and the header is byte-identical to today. <b style="color:#C6B79A;font-weight:600;">This is the state to regression-test</b>, because it is every card but a handful.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:14px;">R2 &middot; two-faced &mdash; the modal undoes the abbreviation</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">the row &mdash; front face alone</div>
+        <div style="display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:7px;background:#1E1A15;margin-bottom:16px;">
+          <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+          <span style="flex:1;min-width:0;display:flex;align-items:baseline;gap:9px;overflow:hidden;">
+            <span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Battle of Olympus</span>
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">&#8260;&#8260;</span>
+          </span>
+          <span style="flex:none;width:32px;text-align:center;font-size:13px;color:#494037;">&#10005;</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">the header &mdash; both faces, both names</div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#1E1A15;padding:18px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;line-height:1.15;">Battle of Olympus // Aftermath</div>
+          <div style="display:flex;align-items:baseline;gap:7px;margin-top:5px;">
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">oracle</span>
+            <span style="font-size:13px;color:#C0B8A6;">World at War // Recover</span>
+          </div>
+          <div style="font-size:13px;color:#A59C89;margin-top:10px;">Sorcery // Instant</div>
+        </div>
+        <div style="margin-top:14px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;">A <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">//</span> string of unpredictable length cannot land in a 93px tile caption or a 105px phone row block, and locked 3 forbids the second line that would rescue it. <b style="color:#EDE6D8;font-weight:600;">The shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">//</span> mark already says there is a back face</b>, so the front-face name is the same abbreviation the row already makes. <b style="color:#C6B79A;font-weight:600;">Both halves render even when only one face is renamed</b> &mdash; that is the case where showing one would mislead.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:14px;">The control header &mdash; unchanged, drawn to prove it</div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#1E1A15;padding:18px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;line-height:1.15;">Cultivate</div>
+          <div style="font-size:13px;color:#A59C89;margin-top:6px;">Sorcery</div>
+        </div>
+        <div style="margin-top:14px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;">Title, then the type line at the shipped 6px. <b style="color:#C6B79A;font-weight:600;">No gap where the oracle line would be.</b> A reserved empty line would make every ordinary card look like it was missing something, and would spend 23px of a 390px sheet to say nothing.</div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #241F19;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">Three things the header does not do.</b> It does not swap which name is the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-labelledby</span> target &mdash; the printed name is the title and the title is the label. It does not link the oracle name anywhere. And it does not repeat the printed name inside the printing field, which already names the set and the number.</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">3 &middot; <span style="color:#C9A24B;">tiles and captions &mdash; deck grid, collection grid, collection row</span></div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:470px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Deck grid tile caption &middot; <span style="color:#C9A24B;">148 desktop &mdash; as shipped vs. R2</span></div>
+        <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:18px;">
+          <div style="width:148px;flex:none;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">as shipped &middot; <span style="color:#C6533F;">94px &mdash; clips</span></div>
+            <div style="border:1px solid #2B241B;border-radius:10px;background:#1E1A15;overflow:hidden;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(152deg,#8E6A3B 0%,#4A3520 58%,#191410 100%);">
+                <span style="position:absolute;top:6px;right:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#EDE6D8;background:rgba(20,17,14,0.86);border:1px solid #3A3229;border-radius:4px;padding:1px 4px;">&times;2</span>
+                <span style="position:absolute;top:6px;left:6px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#D9975C;background:rgba(20,17,14,0.86);border:1px solid #3A3229;border-radius:4px;padding:2px 4px;">none free</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:8px 8px 9px;">
+                <span style="flex:1;min-width:0;font-size:12px;color:#EDE6D8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Battle of Olympus</span>
+                <span style="flex:none;width:32px;text-align:center;font-size:12px;color:#494037;">&#10005;</span>
+              </div>
+            </div>
+          </div>
+          <div style="width:148px;flex:none;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">R2 &middot; <span style="color:#6FA368;">132px &mdash; fits</span></div>
+            <div style="border:1px solid #2B241B;border-radius:10px;background:#1E1A15;overflow:hidden;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(152deg,#8E6A3B 0%,#4A3520 58%,#191410 100%);">
+                <span style="position:absolute;top:6px;left:6px;width:32px;height:32px;border-radius:7px;background:rgba(20,17,14,0.86);border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-size:13px;color:#C6B79A;">&#10005;</span>
+                <span style="position:absolute;top:6px;right:6px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#EDE6D8;background:rgba(20,17,14,0.86);border:1px solid #3A3229;border-radius:4px;padding:1px 4px;">&times;2</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#D9975C;background:rgba(20,17,14,0.86);border:1px solid #3A3229;border-radius:4px;padding:2px 4px;">none free</span>
+                </span>
+              </div>
+              <div style="padding:8px 8px 9px;">
+                <span style="display:block;font-size:12px;color:#EDE6D8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Battle of Olympus</span>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;min-width:150px;font-size:12px;color:#8E8269;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">38px for a control with two free corners beside it.</b> The <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">&#10005;</span> keeps its 32/44px target and its hover rule; the availability chip slides under the count. <b style="color:#C6B79A;font-weight:600;">Tile height does not change</b> &mdash; the art block is a fixed ratio and the caption stays one line.</div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="width:148px;flex:none;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">148 &middot; printed</div>
+            <div style="border:1px solid #2B241B;border-radius:10px;background:#1E1A15;overflow:hidden;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(152deg,#8E6A3B 0%,#4A3520 58%,#191410 100%);">
+                <span style="position:absolute;top:6px;right:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#EDE6D8;background:rgba(20,17,14,0.86);border:1px solid #3A3229;border-radius:4px;padding:1px 4px;">&times;2</span>
+                <span style="position:absolute;top:6px;left:6px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#D9975C;background:rgba(20,17,14,0.86);border:1px solid #3A3229;border-radius:4px;padding:2px 4px;">none free</span>
+                <span style="position:absolute;bottom:6px;left:6px;display:flex;align-items:center;gap:4px;">
+                  <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+                  <span style="width:12px;height:12px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#14110E;">4</span>
+                  <span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);margin-left:-5px;"></span>
+                  <span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);margin-left:-5px;"></span>
+                </span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:8px 8px 9px;">
+                <span style="flex:1;min-width:0;font-size:12px;color:#EDE6D8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Battle of Olympus</span>
+                <span style="flex:none;width:32px;text-align:center;font-size:12px;color:#494037;">&#10005;</span>
+              </div>
+            </div>
+          </div>
+          <div style="width:159px;flex:none;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">159 &middot; <span style="color:#DEAA29;">fixture, single line + ellipsis</span></div>
+            <div style="border:1px solid #2B241B;border-radius:9px;background:#1E1A15;overflow:hidden;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(152deg,#3B5E7A 0%,#22384A 58%,#121820 100%);">
+                <span style="position:absolute;top:6px;left:6px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#D9975C;background:rgba(20,17,14,0.86);border:1px solid #3A3229;border-radius:4px;padding:2px 4px;">none free</span>
+                <span style="position:absolute;bottom:6px;left:6px;display:flex;align-items:center;gap:4px;">
+                  <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+                  <span style="width:12px;height:12px;border-radius:999px;background:#8B8270;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#14110E;">1</span>
+                  <span style="width:12px;height:12px;border-radius:999px;background:#3A6AA5;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);margin-left:-5px;"></span>
+                </span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:6px;padding:8px 8px 9px;">
+                <span style="flex:1;min-width:0;font-size:12px;color:#EDE6D8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Chalice of the Unfathomable Deep</span>
+                <span style="flex:none;width:44px;text-align:center;font-size:12px;color:#494037;">&#10005;</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">One ladder now covers the row and the tile: single line, end ellipsis, full name in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span>, recovery is the modal.</b> R1 gave the tile the softer behaviour on the strength of a clamp that is not in the tree. With it gone the two surfaces have the same problem, so they get the same answer &mdash; and the tile's art block is already the modal's trigger, the largest target on the surface. <b style="color:#C6B79A;font-weight:600;">No clamp is added:</b> two lines makes caption height depend on the data, and equal-height tiles are what makes a grid worth choosing over a list.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Collection grid tile &middot; <span style="color:#C9A24B;">the set caption is dropped on the deck tile, kept here</span></div>
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="width:148px;flex:none;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">printed</div>
+            <div style="border:1px solid #2B241B;border-radius:10px;background:#1E1A15;overflow:hidden;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(152deg,#8E6A3B 0%,#4A3520 58%,#191410 100%);">
+                <span style="position:absolute;top:6px;right:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#EDE6D8;background:rgba(20,17,14,0.86);border:1px solid #3A3229;border-radius:4px;padding:1px 4px;">&times;2</span>
+              </div>
+              <div style="padding:8px 8px 10px;">
+                <div style="font-size:12px;color:#EDE6D8;line-height:1.3;">Battle of Olympus</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;margin-top:3px;">SLD &middot; 2208</div>
+              </div>
+            </div>
+          </div>
+          <div style="width:148px;flex:none;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">control &middot; unchanged</div>
+            <div style="border:1px solid #2B241B;border-radius:10px;background:#1E1A15;overflow:hidden;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(152deg,#4B7A46 0%,#2A4327 58%,#141A13 100%);"></div>
+              <div style="padding:8px 8px 10px;">
+                <div style="font-size:12px;color:#EDE6D8;line-height:1.3;">Cultivate</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;margin-top:3px;">M21 &middot; 177</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:8px;">Collection row caption &middot; 390</div>
+        <div style="width:358px;display:grid;grid-template-columns:38px 40px 1fr auto;align-items:center;gap:10px;height:56px;padding:0 12px;border-radius:7px;background:#1E1A15;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;">&times;2</span>
+          <span style="display:flex;align-items:center;gap:3px;">
+            <span style="width:11px;height:11px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+            <span style="width:11px;height:11px;border-radius:999px;background:#C05A3E;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);margin-left:-5px;"></span>
+          </span>
+          <span style="min-width:0;">
+            <span style="display:block;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Battle of Olympus</span>
+            <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;margin-top:2px;">Sorcery &middot; SLD &middot; 2208</span>
+          </span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#D9975C;">none free</span>
+        </div>
+        <div style="margin-top:14px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The collection surfaces are the easy half.</b> Both already print the set code beside the name, so the printed name arrives next to the one fact that explains it &mdash; a reader seeing <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Battle of Olympus &middot; SLD</span> has the answer in the caption. <b style="color:#C6B79A;font-weight:600;">Nothing is added to either surface</b>; one string is re-sourced. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> lists only what you own, so locked 2's unowned case cannot occur here.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:14px;">The truncation ladder, measured</div>
+        <div style="display:grid;grid-template-columns:1fr auto auto;gap:1px;background:#2B241B;border:1px solid #2B241B;border-radius:9px;overflow:hidden;font-size:12px;">
+          <div style="background:#1A1611;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8B8270;">width</div>
+          <div style="background:#1A1611;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8B8270;text-align:right;">name px</div>
+          <div style="background:#1A1611;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8B8270;text-align:right;">chars</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">deck tile 159, as shipped</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#C6533F;">93</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#C6533F;">~16</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">deck tile 148, as shipped</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#C6533F;">94</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#C6533F;">~17</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">320 phone, count</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#DEAA29;">105</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#DEAA29;">~18</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">320 phone, no count</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#DEAA29;">132</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#DEAA29;">~22</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">collection tile 148</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#DEAA29;">132</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#DEAA29;">~23</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">deck tile 148, <span style="color:#DEAA29;">R2 &mdash; &#10005; moved</span></div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#DEAA29;">132</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#DEAA29;">~23</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">deck tile 159, <span style="color:#DEAA29;">R2 &mdash; &#10005; moved</span></div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">143</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">~25</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">400 desktop, count</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">174</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">~27</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">390 phone, count</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">175</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">~30</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">400 desktop, no count</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">201</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">~32</div>
+          <div style="background:#1E1A15;padding:8px 10px;color:#C6B79A;">390 phone, no count</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">202</div>
+          <div style="background:#1E1A15;padding:8px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;color:#6FA368;">~34</div>
+        </div>
+        <div style="margin-top:14px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;">Sorted tightest first. Character counts come from a measured advance &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Battle of Olympus</span> is 108px at 13.5px, so 6.35px per character, scaled to 5.88 at the 12.5px phone row and 5.64 at the 12px caption. <b style="color:#EDE6D8;font-weight:600;">The two shipped tile captions are the tightest blocks on the feature, 11px under the next surface</b>, and the only ones where the example clips. Note the ranking is not width-monotonic: <b style="color:#C6B79A;font-weight:600;">320-with-a-count sits below the 400px desktop row.</b> The desktop figures are ceilings &mdash; they omit the AutoTag and the provenance mark. Full derivation in <a href="DENSITY-the-longer-name.md">DENSITY-the-longer-name.md</a>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">4 &middot; <span style="color:#C9A24B;">all six themes &mdash; the row, the tile caption, the header pair</span></div>
+    <p style="max-width:1100px;font-size:13.5px;line-height:1.7;color:#8E8269;margin:0 0 22px;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">No new token and no new hex.</b> The oracle line is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--fg-body</span>, its label <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--fg-faint</span>, the title the theme's own display face. The one thing worth checking per theme is the <b style="color:#EDE6D8;font-weight:600;">display face against the body face at 22&ndash;29px over 13.5px</b> &mdash; Cormorant Garamond and Trirong are the two that could read as the same voice as Plex Sans, and at 600 they do not.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:20px;max-width:1400px;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div style="{{ t.cardStyle }}">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:16px;">
+            <div style="{{ t.nameStyle }}">{{ t.name }}</div>
+            <div style="{{ t.metaStyle }}">{{ t.faceLabel }}</div>
+          </div>
+          <div style="{{ t.rowStyle }}">
+            <span style="{{ t.dotStyle }}"></span>
+            <span style="flex:1;min-width:0;display:flex;align-items:baseline;gap:9px;overflow:hidden;">
+              <span style="{{ t.rowNameStyle }}">Battle of Olympus</span>
+              <span style="{{ t.rowCountStyle }}">&times;2</span>
+            </span>
+            <span style="{{ t.chipStyle }}">none free</span>
+            <span style="{{ t.closeStyle }}">&#10005;</span>
+          </div>
+          <div style="{{ t.captionStyle }}">
+            <span style="{{ t.captionNameStyle }}">Battle of Olympus</span>
+            <span style="{{ t.captionSetStyle }}">SLD &middot; 2208</span>
+          </div>
+          <div style="{{ t.headerStyle }}">
+            <div style="{{ t.titleStyle }}">Battle of Olympus</div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:5px;">
+              <span style="{{ t.labelStyle }}">oracle</span>
+              <span style="{{ t.oracleStyle }}">World at War</span>
+            </div>
+            <div style="{{ t.typeStyle }}">Sorcery</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">5 &middot; <span style="color:#C9A24B;">rejected</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px 22px;max-width:1400px;">
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">A parenthetical on the row.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Battle of Olympus (World at War)</span> doubles the widest field on the tightest surface to serve a question the modal answers in one tap. Locked 3 forbids it; the measurement agrees.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">A marker glyph for &ldquo;this name is a printing's name&rdquo;.</b> Card-surfaces spent a whole ruling keeping the row to one small mark, and this would be a second 7&ndash;9px shape meaning something unrelated a few pixels away. The name being unfamiliar is not an error state.</div>
+      <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">A hover tooltip carrying the full name.</b> Pointer-only recovery for a phone-first surface, on a delay, duplicating the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span>. <b style="color:#DEAA29;font-weight:600;">R2: not hypothetical</b> &mdash; it ships on the deck tile today (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-card-tile.tsx:188</span>) and R2 removes it.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Wrapping the name on the row.</b> One taller row shunts the ninety-eight below it, and row height may only change at a group boundary.</div>
+      <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">A two-line clamp on the tile caption.</b> <i>R2.</i> Buys ~12 characters and costs the grid its equal-height read &mdash; the property that makes grid view worth choosing. Reserving two lines up front pays the same on every tile in the app.</div>
+      <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The full <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">//</span> string on a row or tile.</b> <i>R2.</i> Unpredictable length in the tightest block on the surface. Front face on rows and tiles; both faces in the modal.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Dropping the count to buy name width.</b> It is 27px, and losing it costs the row the fact it exists to carry. A row that sometimes omits a field is worse than a name that sometimes ends in an ellipsis.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">A reserved empty oracle line.</b> 23px per card on every ordinary card, to make the ordinary case look incomplete. The line is absent, not blank.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The oracle name below the type line.</b> It interleaves <i>which card is this</i> with <i>what does it do</i>. Identity beside identity.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Italic for the oracle name.</b> Italic is the modal's reminder-text convention. Reusing it here would make a name look like rules flavour.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#1A160F;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">A phone-only truncation rule.</b> 390 is the roomiest surface on the feature. A rule fired there and nowhere else leaves the two tightest &mdash; both deck tile captions, at 93 and 94px &mdash; unruled.</div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1600,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const T = [
+      { key:"amonkhet", name:"Low Sun", face:"Cinzel", stack:"'Cinzel',serif",
+        bg:"#14110E", surface:"#1E1A15", rail:"#1A1611", border:"#2B241B", borderStrong:"#3A3229", dashed:"#494037",
+        fg:"#EDE6D8", body:"#C0B8A6", muted:"#A59C89", faint:"#8B8270", availHard:"#D9975C", success:"#6FA368" },
+      { key:"kamigawa", name:"Neon Rain", face:"Chakra Petch", stack:"'Chakra Petch',sans-serif",
+        bg:"#0E0F14", surface:"#16181F", rail:"#12141B", border:"#181C26", borderStrong:"#262A35", dashed:"#343843",
+        fg:"#E6E8F0", body:"#B1B6C7", muted:"#959AAD", faint:"#6F7486", availHard:"#DF8AA7", success:"#6FA368" },
+      { key:"phyrexia", name:"Oil Haze", face:"Syncopate", stack:"'Syncopate',sans-serif",
+        bg:"#0D0B0E", surface:"#151317", rail:"#110F13", border:"#19161C", borderStrong:"#262329", dashed:"#332F36",
+        fg:"#E4E2E6", body:"#B5B2BB", muted:"#9A96A0", faint:"#78747E", availHard:"#77A9A0", success:"#6FA368" },
+      { key:"kaldheim", name:"First Frost", face:"Metamorphous", stack:"'Metamorphous',serif",
+        bg:"#121217", surface:"#1E1F26", rail:"#181920", border:"#1A1F2B", borderStrong:"#2E3340", dashed:"#424755",
+        fg:"#C6D2D3", body:"#B3C0C2", muted:"#95A4A6", faint:"#7C8A8C", availHard:"#80ABEF", success:"#6FA368" },
+      { key:"ixalan", name:"Canopy", face:"Trirong", stack:"'Trirong',serif",
+        bg:"#0E1310", surface:"#171E19", rail:"#121814", border:"#1D2620", borderStrong:"#2C3830", dashed:"#3B4A3F",
+        fg:"#E0E7DE", body:"#B6C2B3", muted:"#98A695", faint:"#808C7C", availHard:"#ABCB5B", success:"#6FA368" },
+      { key:"eldraine", name:"Witching Hour", face:"Cormorant Garamond", stack:"'Cormorant Garamond',serif",
+        bg:"#120E17", surface:"#1B1821", rail:"#15121B", border:"#241D30", borderStrong:"#342C41", dashed:"#443C52",
+        fg:"#E4DEEE", body:"#B9B2C5", muted:"#9C95A8", faint:"#898395", availHard:"#B795EA", success:"#6FA368" }
+    ];
+    const mono = "font-family:'IBM Plex Mono',monospace;";
+    const themes = T.map(t => ({
+      name: t.name,
+      faceLabel: t.face + " 600 \u00b7 " + t.key,
+      cardStyle: "border:1px solid " + t.borderStrong + ";border-radius:14px;background:" + t.bg + ";padding:20px 22px;",
+      nameStyle: "font-family:" + t.stack + ";font-weight:600;font-size:19px;color:" + t.fg + ";",
+      metaStyle: mono + "font-size:10px;letter-spacing:0.1em;color:" + t.faint + ";",
+      rowStyle: "display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:7px;background:" + t.surface + ";margin-bottom:16px;",
+      dotStyle: "flex:none;width:7px;height:7px;border-radius:999px;background:" + t.success + ";",
+      rowNameStyle: "font-size:13.5px;color:" + t.fg + ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;",
+      rowCountStyle: "flex:none;" + mono + "font-size:11px;color:" + t.faint + ";",
+      chipStyle: "flex:none;" + mono + "font-size:10.5px;color:" + t.availHard + ";background:" + t.rail + ";border:1px solid " + t.borderStrong + ";border-radius:4px;padding:2px 5px;",
+      closeStyle: "flex:none;width:32px;text-align:center;font-size:13px;color:" + t.dashed + ";",
+      captionStyle: "width:148px;padding:8px 8px 9px;border:1px solid " + t.border + ";border-radius:10px;background:" + t.surface + ";margin-bottom:16px;",
+      captionNameStyle: "display:block;font-family:'IBM Plex Sans',sans-serif;font-size:12px;line-height:1.3;color:" + t.fg + ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;",
+      captionSetStyle: "display:block;" + mono + "font-size:10px;color:" + t.faint + ";margin-top:3px;",
+      headerStyle: "border:1px solid " + t.border + ";border-radius:12px;background:" + t.surface + ";padding:16px 18px;",
+      titleStyle: "font-family:" + t.stack + ";font-weight:600;font-size:22px;line-height:1.15;color:" + t.fg + ";",
+      labelStyle: "flex:none;" + mono + "font-size:10.5px;color:" + t.faint + ";",
+      oracleStyle: "font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:" + t.body + ";",
+      typeStyle: "font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:" + t.muted + ";margin-top:10px;"
+    }));
+    return { themes };
+  }
+}
+</script>
+</body>
+</html>

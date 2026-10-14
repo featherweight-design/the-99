@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-rail:#1A1611; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-rail:#12141B; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ROUND · R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Tokens for my deck · /decks/[id]</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">brief 2026-10-11 · four rulings and ten locks closed · for audit</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:34px;margin:0;line-height:1.15;color:var(--fg);max-width:1100px;">A Tokens group at the foot of the deck: each token, the cards that make it, whether you have one.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">Tokens sit after the last type group on Your deck, drawn as decklist rows so they read as part of the list but outside the 99. A token you don’t have offers one control, Add to Shopping. A joined token shows up in its own group at the foot of Shopping and never moves the pill, the status or the deck’s to-buy figure. Card details gain one block, Makes. Aang’s four tokens are the brief’s. Omnath’s and Thorin’s names and every set code are illustrative (G1).</p>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="4">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section id="C0" style="display:flex;flex-direction:column;gap:22px;max-width:1340px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§C0</span>
+      <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">Design’s calls on the eight open questions</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ answers }}" as="a" hint-placeholder-count="8">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--surface-rail);display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">Q{{ a.n }}</span><span style="font-size:13.5px;font-weight:600;color:var(--fg);">{{ a.q }}</span></div>
+          <span style="font-size:12.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ a.a }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ a.where }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="11">
+    <section id="{{ sec.id }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">{{ sec.title }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">STATES {{ sec.id }} · scene {{ sec.scene }}</span>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="Tokens" scene="{{ sec.scene }}" theme="{{ theme }}" hint-size="900px,700px"></dc-import>
+        </div>
+        <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+          <dc-import name="Tokens" scene="{{ sec.scene }}" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,900px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="AB" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+      <div style="display:flex;align-items:baseline;gap:12px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§AB</span>
+        <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">The About entry</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">§G per-entry template · new entry</span>
+      </div>
+      <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">A new entry in chapter 01, after <i>Your shopping list</i>, because adding a token to Shopping is the half a reader wouldn’t find on their own. Drawn on the per-entry template, then at 760 and 390. It ships with the last PR, with the switch, and <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT_VERSION</code> takes the next number (16 if the cart’s 15 lands first; it batches otherwise). Copy is in <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">about - tokens.ts</code>.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="width:560px;flex:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+          <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="11">
+            <div style="{{ sl.cell }}">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ sl.label }}</div>
+              <div style="white-space:pre-line;text-wrap:pretty;">{{ sl.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <sc-for list="{{ aboutViews }}" as="v" hint-placeholder-count="2">
+        <div data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">01 · Your Collection</span>
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+              <h3 style="{{ v.h3 }}">The tokens your deck makes</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">/decks/[id]</span>
+            </div>
+            <sc-for list="{{ captionParas }}" as="cp" hint-placeholder-count="2"><p style="{{ v.para }}">{{ cp }}</p></sc-for>
+            <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface-rail);padding:9px 10px;display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <span style="flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%;border:1px dashed var(--fg-faint);"></span>
+                <span style="flex:none;width:26px;height:36px;border-radius:3px;background:repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--elevated) 5px 10px);box-shadow:inset 0 0 0 1px var(--border-strong);"></span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;">
+                    <span style="font-size:13.5px;color:var(--fg);">Soldier</span>
+                    <span style="width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;background:#E79A6C;color:#121217;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);">R</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">Creature · 2/2</span>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">from Firebender Ascension</span>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding-left:46px;flex-wrap:wrap;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">not in your collection</span>
+                <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:6px;border:1px solid var(--accent);background:color-mix(in oklab, var(--accent) 14%, transparent);font-size:12px;font-weight:500;color:var(--fg);">✓ On Shopping</span>
+              </div>
+            </div>
+            <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;">
+              <sc-for list="{{ keyLines }}" as="k" hint-placeholder-count="4">
+                <li style="display:flex;gap:10px;font-size:13px;line-height:1.55;color:var(--fg-body);"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);padding-top:2px;">{{ k.n }}</span><span style="text-wrap:pretty;">{{ k.t }}</span></li>
+              </sc-for>
+            </ol>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "kaldheim";
+    const calls = [
+      { k: "where tokens live", v: "A Tokens group after the last type group on Your deck, under All. It’s headed like every other group, with not in the 99 beside the count. One line in card details, Makes. No new tab, no sheet, no tile on Stats." },
+      { k: "the row", v: "A decklist row with a small art thumb: name, color pips, type and power/toughness on one line, from Appa, Steadfast Guardian and 2 more under it. The disclosure opens the makers, each a link to that card’s details." },
+      { k: "ownership", v: "The deck row’s dot and one mono fact: in your collection or not in your collection. No verdict word, no warning color. Before the collection has been read for tokens, the dot and the fact are absent, and one band at the head says why." },
+      { k: "Shopping", v: "Add to Shopping on any token you don’t have. A joined token gets its own group at the foot of Shopping, with the shipped buy tag and ✕. It never counts in the pill, the status or the deck’s to-buy figure. The strip adds one + N tokens line." },
+    ];
+    const answers = [
+      { n: 1, q: "Before the collection has been read for tokens", a: "Said once, at the group’s head: Your collection hasn’t been read for tokens yet. Upload it again, and each token here will say whether you have one, with Upload your collection. Rows draw no dot and no fact, because a dashed dot would claim not owned. Add to Shopping stays on every token, since a player often knows they’ve never had a Monk. The band goes away when the read marker (lock 5) exists, even if that upload held zero tokens.", where: "§T0 · §X" },
+      { n: 2, q: "The Copy token", a: "Out as a row, in as a note, which keeps engineering’s exclusion and still explains it. Copy is never counted or listed. A deck that makes one gets a dashed line at the group’s foot: Copy isn’t listed. It stands in for a copy of another card, so there’s nothing to own or buy, plus its maker. Wizards, whose only token is Copy, gets the group with just that note. Hugh’s call: if he wants Copy gone entirely, drop the note and Wizards draws no group.", where: "§T3 · §T2 · §M2" },
+      { n: 3, q: "Which printing is the token", a: "One representative printing, chosen by the deck price rule (lock 6). Its art is the thumb, and its set and number are what Shopping sends. The opened row says it once: pictured and sent: TLA T9 · $0.15 · cheapest of 1 printing. Choosing another printing isn’t drawn this round. Any printing counts as owned (lock 5), so the choice only matters at checkout, and Mana Pool’s own page offers others.", where: "§T1 · §M1" },
+      { n: 4, q: "One tile per deck, and card details", a: "One row per deck. The deck page shows its own tokens and doesn’t list other decks that make Treasure. That’s the cart’s job (Q7). Card details gain a Makes block after Two-card combos, in BracketFactsDetail’s chrome: each token with its type and the ownership fact. Opened from a deck, a This deck’s tokens link closes the modal and lands on the group. Absent when the card makes nothing.", where: "§D1" },
+      { n: 5, q: "A joined token in Shopping", a: "Its own group, Tokens · 2 · not in the deck’s count, pinned after Spoken for. Rows are the shipped Shopping row: dashed dot, name, a mono token · 2/2 R · set and number, the buy tag with its price, ✕ to take it off. Not in the Shopping pill, not in the to-buy figure. The strip keeps the deck’s total and adds + 2 tokens · $0.30. A complete deck stays Complete, with Nothing to buy above the group (S1).", where: "§S1 · §S2" },
+      { n: 6, q: "The link-out", a: "Yes, the player sees it, and yes, a token line is sent with its set and number (Mana Pool’s 4 Plains [M20] 261 form). Card lines stay names and quantities. The line under the link says so: Opens Mana Pool with 64 card lines and 1 token line. That rules out Treasure, Spirit, Ninja and Timeless Witness resolving to the real card. Engineering confirms the mixed form in one URL (G6).", where: "§S1 · §S2" },
+      { n: 7, q: "A token joined in three decks, in the all-decks cart", a: "One copy, for every deck. Lock 8 says one Treasure on the shelf makes it owned in all thirteen decks, so buying three would leave two the app can’t tell apart. The cart draws one token line naming the decks, 1 · Treasure · Omnath, Gishath, Thorin, in its own Tokens group after the cards. Not drawn this round, since it needs the cart’s next round.", where: "README · G7" },
+      { n: 8, q: "When there are too many tokens to draw", a: "Rows at any count, one column, never folded. That’s the decklist’s own rule, and it draws 99 rows. A collapsed row is about 52px on a phone, so Omnath’s 14 tokens make roughly 730px, under one Land group. Makers fold into the row, and that’s where the length was (19 for Thorin’s Treasure). The disclosure keeps a 25-token deck shorter than its Creature group.", where: "§T2 · §M2" },
+    ];
+    const sections = [
+      { id: "T0", scene: "unknown", title: "Aang, before the collection has been read for tokens", note: "This is the first state every player meets (Q1). The group sits after Land, headed Tokens 4 · not in the 99 · from 6 cards. One band under the head says the collection hasn’t been read for tokens, and links to the upload. Rows draw no dot and no fact. A dashed dot would say not owned, which the app doesn’t know. Every token still offers Add to Shopping. The list above is as shipped and drawn faded here." },
+      { id: "T1", scene: "read", title: "Aang, read: owned, not owned, joined", note: "After the first upload with the read marker. Ally is owned: success dot, in your collection, no control. Monk isn’t: dashed dot, not in your collection, Add to Shopping. Soldier and Food are joined: the control holds as ✓ On Shopping, and pressing it again takes the token off. Ally is opened to its three makers, two columns on desktop and one on a phone, each a link to that card’s details, with the representative printing named once under them. Nothing about the deck moved: still Complete, still All 99 · Shopping 0." },
+      { id: "M1", scene: "makersOne", title: "Makers: one card", note: "Food, opened. The row already said from Momo, Playful Pet, so opening it adds the link and the printing line: 63 printings, the cheapest live non-foil pictured and sent. One maker still gets the disclosure, so every row opens the same way." },
+      { id: "M2", scene: "makersMany", title: "Makers: nineteen cards", note: "Thorin’s Treasure, opened, with 19 makers A to Z. That’s three columns at 900 and one 44px link per line at 390. The collapsed row reads from Big Score and 18 more and stays one row tall, so the length only arrives when asked for. The 19 names are illustrative: the brief gives Thorin 19 makers across all eight tokens, and they’re drawn on one token here to test the longest list. Copy sits at the foot as a note." },
+      { id: "T2", scene: "omnath", title: "Omnath: fourteen tokens", note: "Thirteen rows plus the Copy note. The group head counts 13, because Copy isn’t a token the player can hold. Two Elementals show the same-name case: 5/5 red-green and 1/1 red. They’re told apart on the name line by pips and power/toughness, never by a suffix. Treasure, Clue and Food are owned, the 5/5 Elemental is joined, and the rest offer the control. Token names and makers are illustrative (G1)." },
+      { id: "T3", scene: "wizards", title: "Wizards: only Copy", note: "Wizards makes no token a player can own. The group keeps its head, 0 · no token card to list, and draws the Copy note alone, so the player learns why there’s nothing here rather than wondering whether tokens were read. If Hugh rules Copy out entirely (Q2), this group is absent, as for a deck that makes nothing." },
+      { id: "T4", scene: "failed", title: "The token read failed", note: "The catalog link couldn’t be read for this deck. The head drops its count, and one mono line in --fg-locked says so. That isn’t a warning, because the player can’t fix it. A deck that makes no token, or a catalog that hasn’t ingested tokens yet, draws no group at all, matching the combos block’s absence rule." },
+      { id: "S1", scene: "shopping", title: "Shopping on a complete deck: two joined tokens", note: "Aang is Complete and stays Complete. The pill reads Shopping 0. Nothing to buy still sits at the top, and the joined tokens get a group of their own under it: Tokens · 2 · not in the deck’s count. Each is the shipped Shopping row: dashed dot, name, token · 2/2 R · set and number, the buy tag with its price, ✕ to take it off. The buy tag isn’t pressable here (G3). The strip says the deck needs nothing, then + 2 tokens · $0.30, and the link sends each with set and number." },
+      { id: "S2", scene: "shoppingOmnath", title: "Shopping on a deck with cards to buy", note: "Omnath bills 67 copies, $270.48, which matches the tile and the cart to the cent, because tokens never enter that figure. The joined Elemental is the last group, after Ramp and the rest (drawn short). The pill stays 67. The strip adds + 1 token · $0.25 under the deck’s copies, and the sends line splits card lines from the token line." },
+      { id: "D1", scene: "details", title: "Card details: the Makes block", note: "Momo, Playful Pet, opened from Aang. After Two-card combos and before In your collection, in BracketFactsDetail’s chrome: MAKES · 1 token, then Food with its thumb, type, and the ownership fact (not in your collection · on this deck’s Shopping). Always open: one to three rows don’t earn a disclosure. Opened from a deck, This deck’s tokens closes the modal and lands on the group. From /collection there’s no link and no Shopping clause. A card that makes nothing draws no block. Before the read, the fact is absent." },
+      { id: "X", scene: "states", title: "The token row in every state", note: "One row component, four ownership states, and the edge cases from §What Design owns. A double-faced token puts both faces in one type line. Two Soldiers differ by pips and power/toughness. Two red 1/1 Goblins differ only in their text, which the lock 4 token record doesn’t carry, so this needs one more column (G4). The control is the only thing that changes between not owned, not known and joined. The row never gains a border, an edge or a tint." },
+    ];
+    const captionParas = [
+      "Your deck lists the tokens its cards make, below the last group: each token, the cards that make it, and whether your collection has one.",
+      "Don’t have one? Add it to Shopping. Tokens get their own group there, so they never count toward what the deck needs.",
+    ];
+    const keyLines = [
+      { n: 1, t: "Any printing of a token counts. One Treasure in your collection covers every deck that makes one." },
+      { n: 2, t: "Tokens are read from your collection when you upload it. Until your next upload, they don’t say whether you have one." },
+      { n: 3, t: "Open a token to see every card that makes it. Each name opens that card." },
+      { n: 4, t: "A token on Shopping is sent to Mana Pool with its set and number, so it can’t be mistaken for a card of the same name." },
+    ];
+    const full = { gridColumn: "1 / -1" };
+    const slots = [
+      { label: "Title", text: "The tokens your deck makes", cell: {} },
+      { label: "Route", text: "/decks/[id]", cell: {} },
+      { label: "Chapter", text: "01 · Your Collection, after “Your shopping list”", cell: {} },
+      { label: "opens", text: "opens a deck’s tokens", cell: {} },
+      { label: "Caption", text: captionParas.join("\n\n"), cell: full },
+      { label: "Specimen", text: "One token row (TokenRow) in its joined state: dot, thumb, name, pips, type, makers line, ownership fact, the control held. It mounts read-only, with no press.", cell: full },
+      { label: "Fixture props", text: "fixtures.tokens · Soldier · red · Creature 2/2 · makers [Firebender Ascension] · own not · joined true.", cell: full },
+      { label: "Key lines · 4 of 4", text: keyLines.map((k) => `${k.n}. ${k.t}`).join("\n"), cell: full },
+      { label: "Phone reduction", text: "The fact and the control drop to a second line under the name, the control right with a 44px target. The makers line wraps and is never truncated.", cell: full },
+      { label: "since / switch", text: "since next · switch DECK_TOKENS_ENABLED (new, gap G8)", cell: {} },
+      { label: "Strings from", text: "copy/tokens.ts · copy/price.ts", cell: {} },
+    ];
+    const view = (phone) => ({
+      screen: `About · Tokens · ${phone ? 390 : 760}`,
+      frame: { width: phone ? 390 : 760, flex: "none", background: "var(--bg)", color: "var(--fg)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: phone ? "18px 16px 22px" : "22px 24px 26px" },
+      h3: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? 19 : 22, color: "var(--fg)" },
+      para: { margin: 0, fontSize: phone ? 14 : 14.5, lineHeight: 1.65, color: "var(--fg-body)", textWrap: "pretty" },
+    });
+    return { theme, calls, answers, sections, captionParas, keyLines, slots, aboutViews: [view(false), view(true)] };
+  }
+}
+</script>
+</body>
+</html>

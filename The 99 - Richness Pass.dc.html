@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; }
+  a:hover { color: #D8B25E; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes bobSlow { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  @keyframes glow { 0%,100% { opacity: .45; } 50% { opacity: .9; } }
+  @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02) translateY(3px); } }
+  @keyframes dots { 0% { opacity: .25; } 50% { opacity: 1; } 100% { opacity: .25; } }
+  @keyframes rise { 0% { transform: translateY(18px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</helmet>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="crab99" viewBox="0 0 160 110">
+    <g fill="none" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M30 60 L 13 70 L 6 88"/>
+      <path d="M34 72 L 19 84 L 14 101"/>
+      <path d="M43 81 L 33 93 L 30 105"/>
+      <path d="M130 60 L 147 70 L 154 88"/>
+      <path d="M126 72 L 141 84 L 146 101"/>
+      <path d="M117 81 L 127 93 L 130 105"/>
+    </g>
+    <path d="M80 24 C 114 24, 136 40, 134 60 C 132 80, 110 90, 80 90 C 50 90, 28 80, 26 60 C 24 40, 46 24, 80 24 Z" fill="#1E1A15" stroke="#C9A24B" stroke-width="3" stroke-linejoin="round"/>
+    <g fill="#1E1A15" stroke="#C9A24B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M54 76 C 36 72, 22 82, 27 95 C 31 105, 49 109, 59 101 C 66 96, 65 84, 58 79 Z"/>
+      <path d="M59 101 L 49 88" fill="none"/>
+      <path d="M106 76 C 124 72, 138 82, 133 95 C 129 105, 111 109, 101 101 C 94 96, 95 84, 102 79 Z"/>
+      <path d="M101 101 L 111 88" fill="none"/>
+    </g>
+    <ellipse cx="58" cy="18" rx="4.5" ry="6.5" fill="#1E1A15" stroke="#C9A24B" stroke-width="3"/>
+    <ellipse cx="102" cy="18" rx="4.5" ry="6.5" fill="#1E1A15" stroke="#C9A24B" stroke-width="3"/>
+    <circle cx="57" cy="20" r="2" fill="#C9A24B"/>
+    <circle cx="101" cy="20" r="2" fill="#C9A24B"/>
+    <path d="M52 14 L 63 13" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M97 13 L 108 14" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M72 62 L 88 62" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </symbol>
+  <symbol id="kaiju99" viewBox="0 0 480 380">
+    <path d="M132 96 C 142 82, 154 68, 162 60 C 168 80, 168 100, 170 116 C 182 102, 200 88, 214 84 C 216 104, 214 126, 208 142 C 222 126, 244 114, 258 116 C 258 136, 252 160, 244 176 C 258 162, 280 152, 296 156 C 294 176, 284 196, 272 212 C 288 200, 310 196, 326 202 C 320 222, 308 238, 296 252 C 312 244, 332 244, 348 252 C 340 270, 324 282, 310 292 C 324 288, 342 292, 356 302 C 346 316, 334 324, 322 330 Z" fill="rgba(201,162,75,0.16)" stroke="rgba(201,162,75,0.45)" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M56 120 C 54 106, 64 92, 84 86 C 102 80, 120 84, 132 96 C 180 118, 240 160, 280 220 C 300 252, 314 290, 318 330 C 322 344, 328 352, 340 356 C 380 360, 430 352, 456 336 C 430 356, 390 364, 340 364 L 150 364 C 132 356, 126 342, 132 326 C 108 284, 96 232, 98 190 C 99 168, 94 150, 80 142 C 68 136, 58 130, 56 120 Z" fill="#0B0907" stroke="rgba(201,162,75,0.30)" stroke-width="2" stroke-linejoin="round"/>
+    <g stroke="rgba(201,162,75,0.55)" stroke-width="2" fill="none" stroke-linecap="round">
+      <path d="M56 120 C 70 127, 84 127, 97 122"/>
+      <path d="M60 124 L 65 130 L 70 124 L 75 130 L 80 124 L 85 129"/>
+      <path d="M118 214 C 130 218, 136 224, 134 234"/>
+      <path d="M134 234 L 140 236"/>
+      <path d="M134 234 L 138 239"/>
+      <path d="M134 234 L 134 240"/>
+    </g>
+    <circle cx="96" cy="102" r="4" fill="rgba(201,162,75,0.9)"/>
+    <path d="M89 97 L 103 98" stroke="rgba(201,162,75,0.9)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <rect x="396" y="338" width="9" height="9" fill="rgba(201,162,75,0.55)" transform="rotate(45 400 342)"/>
+  </symbol>
+</svg>
+
+<div style="background:#14110E;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;min-height:100vh;padding:0 0 130px;background-image:radial-gradient(1100px 640px at 50% -180px, rgba(201,162,75,0.12), transparent 68%), radial-gradient(700px 500px at 12% 40%, rgba(201,162,75,0.05), transparent 70%);">
+
+  <!-- HEADER -->
+  <header style="max-width:1120px;margin:0 auto;padding:60px 40px 30px;border-bottom:1px solid #3A3229;display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;">
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:#A89B84;">Rebrand · Visual Richness Pass · #51</div>
+      <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:46px;margin:14px 0 0;color:#EDE6D8;">Enter the crab.</h1>
+      <p style="font-size:16px;line-height:1.65;color:#C6B79A;margin:12px 0 0;max-width:560px;">Same candlelit table, same brass, same crown. We're just adding a friend who knows what he's doing — and the giant mess he's calmly keeping in check.</p>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:6px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.42em;text-transform:uppercase;color:#C9A24B;padding-top:6px;">The</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:7px;">
+        <div style="display:flex;gap:5px;transform:translateX(-2px);">
+          <div style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></div>
+          <div style="width:11px;height:11px;background:#C9A24B;transform:rotate(45deg);"></div>
+          <div style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></div>
+        </div>
+        <div style="font-family:'Cinzel',serif;font-weight:800;font-size:58px;line-height:0.9;color:#EDE6D8;">99</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO THESIS -->
+  <section style="max-width:1120px;margin:0 auto;padding:44px 40px 0;">
+    <div style="position:relative;height:460px;border:1px solid #3A3229;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#171310 0%,#120F0C 100%);">
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,#171310 0%,#120F0C 100%);"></div>
+      <div style="position:absolute;right:-30px;bottom:22px;width:500px;max-width:60%;animation:breathe 9s ease-in-out infinite;">
+        <svg viewBox="0 0 480 380" style="width:100%;height:auto;display:block;filter:drop-shadow(0 0 40px rgba(0,0,0,0.6));"><use href="#kaiju99"/></svg>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:52px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,162,75,0.45),transparent);"></div>
+      <div style="position:absolute;left:30%;bottom:34px;width:112px;animation:bob 4.5s ease-in-out infinite;filter:drop-shadow(0 6px 14px rgba(0,0,0,0.5));">
+        <svg viewBox="0 0 160 110" style="width:100%;height:auto;display:block;"><use href="#crab99"/></svg>
+      </div>
+      <div style="position:absolute;left:40px;top:36px;max-width:340px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;">The whole idea, one picture</div>
+        <p style="font-family:'Cinzel',serif;font-weight:600;font-size:24px;line-height:1.3;color:#EDE6D8;margin:12px 0 0;">Small crab. Enormous problem. Completely unbothered.</p>
+        <p style="font-size:14px;line-height:1.6;color:#A89B84;margin:12px 0 0;">The kaiju is the chaos — a 1,204-card dump, a pile that isn't a deck yet. The crab is The 99, quietly having it handled.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 MEET THE CRAB -->
+  <section style="max-width:1120px;margin:0 auto;padding:64px 40px 0;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;">01 — The mascot</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:12px 0 6px;color:#EDE6D8;">Meet the crab</h2>
+    <p style="font-size:16px;line-height:1.65;color:#C6B79A;margin:0 0 24px;max-width:640px;">The calm, competent, slightly-snarky adult in the room — Bob Belcher with a shell. A plain brass line-art creature, built from the same shapes as the crown. Not cute for cute's sake; just self-possessed. He <em style="color:#EDE6D8;font-style:italic;">is</em> the Kitchen Table voice with a face.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:28px;text-align:center;">
+        <div style="height:120px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 160 110" style="width:120px;animation:bob 5s ease-in-out infinite;"><use href="#crab99"/></svg></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-top:16px;">Host · resting</div>
+        <p style="font-size:13px;color:#A89B84;line-height:1.5;margin:8px 0 0;">Empty states &amp; first-run. Deadpan, present, waiting for you to do something.</p>
+      </div>
+      <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:28px;text-align:center;position:relative;">
+        <div style="height:120px;display:flex;align-items:center;justify-content:center;gap:6px;position:relative;">
+          <svg viewBox="0 0 160 110" style="width:104px;"><use href="#crab99"/></svg>
+          <div style="position:absolute;top:22px;right:30px;display:flex;gap:5px;">
+            <span style="width:6px;height:6px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;"></span>
+            <span style="width:6px;height:6px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out .2s infinite;"></span>
+            <span style="width:6px;height:6px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out .4s infinite;"></span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-top:16px;">Working · thinking</div>
+        <p style="font-size:13px;color:#A89B84;line-height:1.5;margin:8px 0 0;">Loading &amp; matching. Same crab, three little dots. This is where most of the motion lives.</p>
+      </div>
+      <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:28px;text-align:center;">
+        <div style="height:120px;display:flex;align-items:center;justify-content:center;gap:14px;">
+          <svg viewBox="0 0 160 110" style="width:64px;opacity:.9;"><use href="#crab99"/></svg>
+          <div style="width:46px;height:66px;border-radius:6px;background:#2A241D;border:1.5px solid #C9A24B;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:15px;color:#C9A24B;">99</span></div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-top:16px;">Holding a card</div>
+        <p style="font-size:13px;color:#A89B84;line-height:1.5;margin:8px 0 0;">The "we can fix this" pose. Pairs the crab with the card-fan mark you already own.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 SCALE GAG -->
+  <section style="max-width:1120px;margin:0 auto;padding:64px 40px 0;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;">02 — The register split</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:12px 0 6px;color:#EDE6D8;">Two scales, one candle</h2>
+    <p style="font-size:16px;line-height:1.65;color:#C6B79A;margin:0 0 24px;max-width:640px;">The crab is human-scale brass line-art. The chaos is a colossal shadow-and-brass silhouette — monster-movie-by-candlelight, no neon, no tech palette. Keeping them visually distinct is the whole effect.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:30px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">The crab — line-art, calm</div>
+        <div style="height:150px;display:flex;align-items:center;justify-content:center;margin-top:14px;"><svg viewBox="0 0 160 110" style="width:130px;"><use href="#crab99"/></svg></div>
+        <p style="font-size:13px;color:#A89B84;line-height:1.55;margin:14px 0 0;">Brass strokes on the base tone. Present in the quiet moments so the big beat lands.</p>
+      </div>
+      <div style="background:#141110;border:1px solid #3A3229;border-radius:12px;padding:30px;overflow:hidden;position:relative;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;position:relative;z-index:2;">The chaos — silhouette, looming</div>
+        <div style="height:150px;display:flex;align-items:flex-end;justify-content:center;margin-top:14px;"><svg viewBox="0 0 480 380" style="width:230px;animation:breathe 9s ease-in-out infinite;"><use href="#kaiju99"/></svg></div>
+        <p style="font-size:13px;color:#A89B84;line-height:1.55;margin:14px 0 0;position:relative;z-index:2;">Reserved for rare wins &amp; the biggest chaos. Never neon — shadow, brass rim, two glowing eyes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 WHERE CHARACTER LIVES -->
+  <section style="max-width:1120px;margin:0 auto;padding:64px 40px 0;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;">03 — Where character lives</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:12px 0 6px;color:#EDE6D8;">The moments, applied</h2>
+    <p style="font-size:16px;line-height:1.65;color:#C6B79A;margin:0 0 24px;max-width:640px;">Working surfaces stay quiet and dense. All the new personality lives at the edges — empty, loading, celebration, the odd non-critical error. Real screens, real copy.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+      <!-- EMPTY STATE -->
+      <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;overflow:hidden;">
+        <div style="padding:14px 20px;border-bottom:1px solid #2A241D;display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Your decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">EMPTY STATE</span></div>
+        <div style="padding:40px 30px 34px;text-align:center;background:radial-gradient(360px 200px at 50% 120%, rgba(201,162,75,0.08), transparent 70%);">
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;height:96px;"><svg viewBox="0 0 160 110" style="width:78px;animation:bobSlow 5s ease-in-out infinite;"><use href="#crab99"/></svg><div style="width:44px;height:62px;border-radius:6px;background:#2A241D;border:1.5px solid #C9A24B;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:14px;color:#C9A24B;">99</span></div></div>
+          <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;color:#EDE6D8;margin:18px 0 0;">No decks yet.</h3>
+          <p style="font-size:14px;line-height:1.6;color:#C6B79A;margin:8px auto 0;max-width:300px;">I've already been through your collection, though. I've got ideas. Let's not let all those cards sit in a box.</p>
+          <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:10px 18px;margin-top:18px;cursor:pointer;">Find my commanders</button>
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;overflow:hidden;">
+        <div style="padding:14px 20px;border-bottom:1px solid #2A241D;display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Reading your collection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">LOADING</span></div>
+        <div style="padding:40px 30px 34px;text-align:center;">
+          <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;height:96px;">
+            <svg viewBox="0 0 160 110" style="width:86px;"><use href="#crab99"/></svg>
+            <div style="position:absolute;top:14px;right:-6px;display:flex;gap:5px;">
+              <span style="width:6px;height:6px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;"></span>
+              <span style="width:6px;height:6px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out .2s infinite;"></span>
+              <span style="width:6px;height:6px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out .4s infinite;"></span>
+            </div>
+          </div>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C6B79A;margin:16px 0 0;">1,204 cards · matching to Oracle…</p>
+          <p style="font-size:13px;line-height:1.6;color:#A89B84;margin:10px auto 0;max-width:280px;">This is the boring part. I'll flag anything that looks off. Stretch or something.</p>
+        </div>
+      </div>
+
+      <!-- CELEBRATION (full width) -->
+      <div style="grid-column:1 / -1;background:#141110;border:1px solid #3A3229;border-radius:12px;overflow:hidden;position:relative;">
+        <div style="padding:14px 20px;border-bottom:1px solid #2A241D;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Krenko, Mob Boss</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">CELEBRATION · the big beat</span></div>
+        <div style="position:relative;height:300px;overflow:hidden;background:linear-gradient(180deg,#171310,#110E0B);">
+          <div style="position:absolute;right:0;bottom:-10px;width:360px;opacity:.94;animation:breathe 10s ease-in-out infinite;"><svg viewBox="0 0 480 380" style="width:100%;filter:drop-shadow(0 0 46px rgba(0,0,0,0.6));"><use href="#kaiju99"/></svg></div>
+          <div style="position:absolute;left:0;right:0;bottom:44px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,162,75,0.4),transparent);"></div>
+          <div style="position:absolute;left:44%;bottom:24px;width:86px;animation:bob 4.5s ease-in-out infinite;"><svg viewBox="0 0 160 110" style="width:100%;"><use href="#crab99"/></svg></div>
+          <div style="position:absolute;left:40px;top:48px;text-align:left;max-width:430px;animation:rise .8s ease-out both;">
+            <div style="display:inline-flex;gap:7px;justify-content:center;margin-bottom:12px;"><span style="width:9px;height:9px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:13px;height:13px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:9px;height:9px;background:#C9A24B;transform:rotate(45deg);"></span></div>
+            <h3 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;color:#EDE6D8;margin:0;">The 99 is complete.</h3>
+            <p style="font-size:15px;line-height:1.6;color:#C6B79A;margin:10px 0 0;max-width:400px;">99 of 99, all owned. Goblins assembled. Try not to let it get to your head at the table.</p>
+          </div><!-- text left, kaiju right -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ERROR STRIP -->
+    <div style="margin-top:20px;background:#1E1A15;border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:8px;padding:16px 20px;display:flex;align-items:center;gap:18px;">
+      <svg viewBox="0 0 160 110" style="width:52px;flex:none;"><use href="#crab99"/></svg>
+      <div style="flex:1;">
+        <div style="font-family:'IBM Plex Sans';font-weight:600;font-size:15px;color:#EDE6D8;">That CSV put up a fight.</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.55;margin-top:2px;">3 rows didn't parse — quantity columns, mostly. Nothing fatal. Want to see the carnage?</div>
+      </div>
+      <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 16px;cursor:pointer;flex:none;">View 3 issues</button>
+    </div>
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin:12px 0 0;">Non-safety-critical error gets the wink. A destructive or data-loss warning stays straight — no crab, no jokes.</p>
+  </section>
+
+  <!-- 04 POSTURE -->
+  <section style="max-width:1120px;margin:0 auto;padding:64px 40px 0;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:#8E8269;">04 — System posture</div>
+    <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:12px 0 24px;color:#EDE6D8;">The dials, set</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:26px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">Density</div>
+        <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin:10px 0 8px;">Loosen the browse, keep the work tight</h3>
+        <p style="font-size:14px;line-height:1.6;color:#A89B84;margin:0;">Deck view, recommendations, and collection browse get room to breathe. Import review, the issue inspector, and editing stay dense and fast. A little global air is fine; the working surfaces are not the place for it.</p>
+      </div>
+      <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:26px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">Motion</div>
+        <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin:10px 0 8px;">Breathe, not chaos</h3>
+        <p style="font-size:14px;line-height:1.6;color:#A89B84;margin:0;">Motion concentrates on the crab, loading, and celebrations. Browse surfaces get gentle life on hover. A little chaos is welcome — he <em style="font-style:italic;color:#C6B79A;">is</em> fighting monsters — but it always settles. Fully usable static; honors reduced-motion.</p>
+      </div>
+      <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:26px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">Material</div>
+        <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin:10px 0 8px;">A whisper, felt not seen</h3>
+        <p style="font-size:14px;line-height:1.6;color:#A89B84;margin:0;">Candle-glow vignettes and warm light pooling behind hero moments. Barely-there grain on big empty areas only. Surfaces stay clean; the glow gives the kaiju something to loom out of. Never on dense data.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 CONTRAST NOTE -->
+  <section style="max-width:1120px;margin:0 auto;padding:56px 40px 0;">
+    <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:30px 34px;display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="flex:1;min-width:280px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Named constraint · not a palette re-open</div>
+        <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;color:#EDE6D8;margin:10px 0 8px;">Contrast &amp; engagement</h3>
+        <p style="font-size:14px;line-height:1.65;color:#C6B79A;margin:0;max-width:560px;">Palette hues stay locked. But the current theme reads low-contrast and a touch inert — so this pass audits text/UI contrast and lifts anything below AA (the way the brand ramp already did once for <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">faint</span>). Engaging comes from the crab and the moments, not from louder color.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:220px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#2A241D;border-radius:8px;"><span style="width:10px;height:10px;border-radius:999px;background:#6FA368;"></span><span style="font-size:13px;color:#EDE6D8;">Character carries "fun"</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#2A241D;border-radius:8px;"><span style="width:10px;height:10px;border-radius:999px;background:#6FA368;"></span><span style="font-size:13px;color:#EDE6D8;">Small text meets WCAG AA</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#2A241D;border-radius:8px;"><span style="width:10px;height:10px;border-radius:999px;background:#C9A24B;"></span><span style="font-size:13px;color:#EDE6D8;">Base stays calm on purpose</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:#8E8269;line-height:1.6;margin:22px 0 0;max-width:720px;font-style:italic;">Voice stays locked: Kitchen Table — friend-at-the-table energy, Discord × kitchen-table Magic. Expressive moments get the wink; utility copy stays straight. No corporate-service-speak, no motivational drift, no fake urgency, no SaaS onboarding phrasing.</p>
+  </section>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] { --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --display:'Cinzel',serif; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033; --accent:#CF8745; --accent-hover:#DE9757; --fact:#8FA6BE; --success:#6FA368; }
+  [data-theme="kamigawa"] { --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --display:'Chakra Petch',sans-serif; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E; --accent:#FF4D9A; --accent-hover:#FF62A9; --fact:#8FA6BE; --success:#6FA368; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ screen }}" style="{{ frame }}">
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="{{ strip }}"></div></sc-if>
+  <div role="dialog" aria-modal="true" style="{{ sheet }}">
+
+    <div style="{{ headStyle }}">
+      <sc-if value="{{ hasScale }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="flex:none;display:grid;grid-template-columns:repeat(5,5px);gap:2px;"><sc-for list="{{ mini }}" as="s" hint-placeholder-count="5"><span style="{{ s.style }}"></span></sc-for></span></sc-if>
+      <sc-if value="{{ isDep }}" hint-placeholder-val="{{ false }}"><span style="{{ pill }}">{{ aside }}</span></sc-if><h2 style="{{ titleStyle }}">{{ title }}</h2>
+      <sc-if value="{{ hasScale }}" hint-placeholder-val="{{ true }}"><span style="min-width:0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);white-space:nowrap;">{{ aside }}</span></sc-if>
+      <span aria-label="{{ closeLabel }}" style="margin-left:auto;margin-right:-10px;flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">×</span>
+    </div>
+
+    <div style="{{ sumStyle }}">
+      <p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ reading }}</p>
+      <sc-if value="{{ hasScale }}" hint-placeholder-val="{{ true }}"><div role="img" aria-label="{{ aria }}" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;">
+        <sc-for list="{{ scale }}" as="s" hint-placeholder-count="5">
+          <span style="display:flex;flex-direction:column;gap:5px;min-width:0;"><span style="{{ s.bar }}"></span><span style="{{ s.label }}">{{ s.word }}</span></span>
+        </sc-for>
+      </div></sc-if>
+      <sc-if value="{{ hasHate }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ brokenBy }}</span>&nbsp; {{ hate }}</p></sc-if>
+      <sc-if value="{{ hasFoot }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ footStyle }}">
+          <sc-if value="{{ hasNote }}" hint-placeholder-val="{{ false }}"><span style="flex:1 1 300px;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">{{ note }}</span></sc-if>
+          <sc-if value="{{ hasLink }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:7px;min-height:{{ hit }};font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);white-space:nowrap;"><span style="border-bottom:1px dotted var(--accent);">{{ link }}</span><span>→</span></span></sc-if>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="1">
+      <div style="{{ g.wrap }}">
+        <div style="display:flex;align-items:baseline;gap:8px;padding:2px 2px 4px;border-bottom:1px solid var(--border);margin-bottom:4px;"><span style="font-family:var(--display);font-weight:700;font-size:15px;line-height:1.2;color:var(--fg);">{{ g.head }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ g.count }}</span></div>
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="6">
+          <div data-card-row="" style="{{ r.rowStyle }}">
+            <span aria-hidden="true" style="{{ r.dot }}"></span>
+            <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+              <span style="flex:1;min-width:0;display:flex;align-items:baseline;gap:9px;overflow:hidden;"><span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;color:var(--fg);">{{ r.name }}</span><span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">{{ r.why }}</span></span>
+              <span style="flex:none;display:flex;align-items:center;justify-content:flex-end;gap:3px;width:72px;"><sc-for list="{{ r.pips }}" as="q" hint-placeholder-count="2"><span style="{{ q.style }}">{{ q.t }}</span></sc-for></span>
+            </sc-if>
+            <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:var(--fg);">{{ r.name }}</span><span style="display:flex;align-items:center;gap:8px;min-width:0;"><span style="display:flex;align-items:center;gap:3px;flex:none;"><sc-for list="{{ r.pips }}" as="q" hint-placeholder-count="2"><span style="{{ q.style }}">{{ q.t }}</span></sc-for></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">{{ r.why }}</span></span></span>
+            </sc-if>
+            <sc-if value="{{ hasPts }}" hint-placeholder-val="{{ true }}"><span style="{{ r.ptsStyle }}">{{ r.pts }}</span></sc-if>
+            <sc-if value="{{ r.hovered }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="{{ r.preview }}"></span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+
+    <sc-for list="{{ combos }}" as="c" hint-placeholder-count="0">
+      <section style="{{ comboStyle }}">
+        <div style="display:flex;flex:none;gap:6px;"><sc-for list="{{ c.plates }}" as="p" hint-placeholder-count="2"><span style="{{ p.style }}"></span></sc-for></div>
+        <div style="display:flex;flex-direction:column;gap:9px;min-width:0;flex:1;">
+          <h3 style="margin:0;font-family:var(--display);font-weight:700;font-size:15px;line-height:1.3;color:var(--fg);"><sc-for list="{{ c.names }}" as="n" hint-placeholder-count="2"><sc-if value="{{ n.plus }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg-faint);font-weight:400;"> + </span></sc-if><span style="border-bottom:1px dotted var(--accent);cursor:pointer;">{{ n.t }}</span></sc-for></h3>
+          <ul style="margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px;"><sc-for list="{{ c.produces }}" as="p" hint-placeholder-count="2"><li style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;border-radius:5px;border:1px solid var(--border-strong);padding:4px 9px;color:var(--fg-body);">{{ p.t }}</li></sc-for></ul>
+          <div style="display:flex;flex-wrap:wrap;gap:8px 22px;align-items:flex-end;">
+            <span style="display:flex;flex-direction:column;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ byT8 }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--fg);">{{ c.odds }}</span></span>
+            <span style="display:flex;flex-direction:column;gap:4px;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ foundBy }}</span><span style="font-size:12.5px;color:var(--fg-muted);">{{ c.tutors }}</span></span>
+            <span style="margin-left:auto;display:inline-flex;align-items:center;min-height:{{ hit }};font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);"><span style="border-bottom:1px solid var(--accent);">{{ spellbook }}</span></span>
+          </div>
+        </div>
+      </section>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:760,&quot;height&quot;:900},&quot;deck&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;gishath&quot;,&quot;elves&quot;,&quot;sultai&quot;,&quot;counter&quot;,&quot;thorin&quot;],&quot;default&quot;:&quot;counter&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;bench&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;velocity&quot;,&quot;flow&quot;,&quot;interaction&quot;,&quot;win&quot;,&quot;deps&quot;],&quot;default&quot;:&quot;deps&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;dep&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;graveyard&quot;,&quot;artifacts&quot;,&quot;combat&quot;],&quot;default&quot;:&quot;artifacts&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;hover&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;overlay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { fx: null };
+  componentDidMount() {
+    import(new URL("benchmark-fixtures.js", document.baseURI).href).then((m) => { this.setState({ fx: m }); this.loadCosts(m); });
+  }
+  // Real mana costs from Scryfall's collection endpoint, 75 names a request, so no cost is hand-typed.
+  async loadCosts(m) {
+    const d = m.deckData(this.props.deck ?? "gishath");
+    const k = this.props.bench ?? "interaction";
+    const b = k === "deps" ? (d.depLedger || {})[this.props.dep ?? "graveyard"] : d[k];
+    const names = [...new Set(((b && b.groups) || []).flatMap((g) => g.rows.map((r) => r.name)))];
+    const costs = {};
+    for (let i = 0; i < names.length; i += 75) {
+      try {
+        const res = await fetch("https://api.scryfall.com/cards/collection", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifiers: names.slice(i, i + 75).map((name) => ({ name })) }) });
+        const j = await res.json();
+        for (const c of j.data || []) costs[c.name] = c.mana_cost ?? (c.card_faces && c.card_faces[0].mana_cost) ?? "";
+      } catch (err) {}
+    }
+    this.setState({ costs });
+  }
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const phone = !!this.props.phone;
+    const k = this.props.bench ?? "interaction";
+    const overlay = !!this.props.overlay;
+    const strip = { height: 52, background: overlay ? "transparent" : "color-mix(in oklab, var(--bg) 72%, #000)" };
+    const frame = phone
+      ? { width: 390, background: overlay ? "transparent" : "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", overflow: "hidden" }
+      : { width: 760, color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif" };
+    const base = { strip, theme, phone, desk: !phone, frame, groups: [], combos: [], mini: [], scale: [] };
+    if (!this.state.fx) return base;
+    const { COPY: C, deckData } = this.state.fx;
+    const d = deckData(this.props.deck ?? "gishath");
+    const isDep = k === "deps";
+    const depKey = this.props.dep ?? "graveyard";
+    const depRow = isDep ? (d.deps.find((r) => r.k === depKey) || { s: "light" }) : null;
+    const b = isDep ? { step: 1, ...(d.depLedger || {})[depKey] } : d[k];
+    const gy = false;
+    const words = C.steps;
+    const on = (i) => (gy ? i === b.step : i <= b.step);
+    const INK = this.state.fx.STEP_INK;
+    const ink = (i) => (gy ? INK[b.step - 1] : INK[i - 1]);
+    const off = gy ? "inset 0 0 0 1px var(--border-dashed)" : "inset 0 0 0 1px var(--border-strong)";
+    const offBg = gy ? "transparent" : "var(--elevated)";
+    const mini = [1, 2, 3, 4, 5].map((i) => ({ style: { display: "block", width: 5, height: 9, borderRadius: 1.5, background: on(i) ? ink(i) : offBg, boxShadow: on(i) ? "none" : off } }));
+    const scale = [1, 2, 3, 4, 5].map((i) => ({
+      word: words[i - 1],
+      bar: { display: "block", height: phone ? 7 : 8, borderRadius: 2, background: on(i) ? ink(i) : offBg, boxShadow: on(i) ? "none" : off },
+      label: { fontFamily: "'IBM Plex Mono',monospace", fontSize: phone ? 8.5 : 9.5, lineHeight: 1.3, color: i === b.step ? "var(--fg)" : "var(--fg-faint)", fontWeight: i === b.step ? 600 : 400 },
+    }));
+    const pad = phone ? "0 16px" : "0 20px";
+    const ptsStyle = (p) => ({ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, textAlign: "right", color: p === "0" || p === "—" ? "var(--fg-faint)" : "var(--fg)", fontWeight: p === "0" || p === "—" ? 400 : 600 });
+    const hasPts = !isDep && k !== "win";
+    // The app's card row (row-shell.ts): 7px radius, --surface-rail ground, 9/10 gap, 34 / 52 tall,
+    // availability dot, name, the view's own tag, CostTrack 72. Only the tag and the points are this view's.
+    const WUBRG = { W: "#F4E9C4", U: "#3A6AA5", B: "#98748F", R: "#C05A3E", G: "#4B7A46" };
+    const costs = this.state.costs || {};
+    const pips = (name) => {
+      const cost = (costs[name] || "").split(" // ")[0];
+      const syms = [...cost.matchAll(/\{([^}]+)\}/g)].map((x) => x[1]).slice(0, 5);
+      const sz = phone ? 13 : 12;
+      return syms.map((sym) => {
+        const parts = sym.split("/");
+        const cols = parts.filter((x) => /^[WUBRG]$/.test(x));
+        const num = parts.find((x) => /^\d+$/.test(x)) || (/^[XC]$/.test(sym) ? sym : "");
+        const bg = cols.length >= 2 ? `linear-gradient(135deg, ${WUBRG[cols[0]]} 50%, ${WUBRG[cols[1]]} 50%)` : cols.length === 1 ? WUBRG[cols[0]] : "var(--fg-faint)";
+        return { t: cols.length ? "" : num, style: { display: "inline-flex", flex: "none", alignItems: "center", justifyContent: "center", width: sz, height: sz, borderRadius: 999, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: Math.round(sz * 0.64), background: bg, color: "var(--bg)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.45)" } };
+      });
+    };
+    const hoverName = this.props.hover || "";
+    const previewImg = (n) => `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}&format=image&version=normal`;
+    let idx = 0;
+    const groups = (b.groups || []).map((g) => ({
+      head: g.head, count: String(g.rows.length),
+      wrap: { display: "flex", flexDirection: "column", gap: 4, padding: phone ? "16px 12px 0" : "18px 20px 0" },
+      rows: g.rows.map((r) => {
+        const owned = idx++ % 5 !== 3;
+        const hovered = !phone && hoverName === r.name;
+        return {
+          ...r, ptsStyle: { ...ptsStyle(r.pts), flex: "none", width: 40 }, pips: pips(r.name), hovered,
+          rowStyle: { position: "relative", display: "flex", alignItems: "center", gap: phone ? 9 : 10, borderRadius: 7, minHeight: phone ? 52 : 34, padding: phone ? "6px 8px" : "7px 9px", background: hovered ? "var(--elevated)" : "var(--surface-rail)", cursor: "pointer" },
+          dot: owned
+            ? { flex: "none", width: 7, height: 7, borderRadius: 999, background: "var(--success)" }
+            : { flex: "none", width: 7, height: 7, borderRadius: 999, border: "1px dashed var(--fg-faint)", boxSizing: "border-box" },
+          preview: { position: "absolute", zIndex: 10, right: 64, top: -40, width: 200, aspectRatio: "63 / 88", borderRadius: 10, backgroundImage: `url("${previewImg(r.name)}")`, backgroundSize: "cover", backgroundColor: "var(--elevated)", boxShadow: "0 18px 40px rgba(0,0,0,0.55)", pointerEvents: "none" },
+        };
+      }),
+    }));
+
+    const img = (n) => `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}&format=image&version=normal`;
+    const pw = phone ? 58 : 72;
+    const combos = (b.combos || []).map((c) => ({
+      ...c,
+      names: c.pieces.map((t, i) => ({ t, plus: i > 0 })),
+      produces: c.produces.map((t) => ({ t })),
+      plates: c.pieces.map((n) => ({ style: { display: "block", width: pw, aspectRatio: "63 / 88", borderRadius: 6, border: "1px solid var(--border-strong)", backgroundColor: "var(--elevated)", backgroundImage: `url("${img(n)}")`, backgroundSize: "cover", backgroundPosition: "center" } })),
+    }));
+    const title = isDep ? `${C.deps.name} · ${C.deps.rows[depKey]}` : C.names[k];
+    const pill = depRow ? { fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap", borderRadius: 4, padding: "2px 7px", color: depRow.s === "heavy" ? "var(--fg)" : "var(--fg-muted)", border: depRow.s === "heavy" ? "1px solid var(--fact)" : "1px solid var(--border-strong)", background: depRow.s === "heavy" ? "color-mix(in oklab, var(--fact) 14%, transparent)" : "transparent" } : {};
+    return {
+      ...base, mini, scale, groups, combos, hasPts,
+      screen: `Ledger · ${title} · ${d.deckName} · ${phone ? 390 : 760}`,
+      hasHate: isDep, brokenBy: C.deps.brokenBy, hate: isDep ? C.deps.hate[depKey] : "",
+      hasScale: !isDep, isDep, pill,
+      title, aside: isDep ? C.deps.strength[depRow.s] : words[b.step - 1], closeLabel: C.ledger.close(title),
+      aria: `${title}: ${words[b.step - 1]}, ${C.stepOf(b.step)}`,
+      reading: b.reading, note: b.note, link: b.link, hasNote: !!b.note, hasLink: !!b.link, hasFoot: !!(b.note || b.link),
+      byT8: C.ledger.byT8, foundBy: C.ledger.foundBy, spellbook: C.ledger.spellbook,
+      hit: phone ? "44px" : "24px",
+      sheet: phone
+        ? { background: "var(--surface-raised)", borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", paddingBottom: 24 }
+        : { background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.45)", paddingBottom: 12 },
+      headStyle: phone
+        ? { display: "flex", alignItems: "center", gap: 9, height: 43, padding: "0 16px", borderBottom: "1px solid var(--border)" }
+        : { display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderBottom: "1px solid var(--border)" },
+      titleStyle: { margin: 0, minWidth: 0, fontFamily: "var(--display)", fontWeight: 700, fontSize: phone ? 15 : 16, lineHeight: 1.2, color: "var(--fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+      sumStyle: { display: "flex", flexDirection: "column", gap: phone ? 12 : 14, padding: phone ? "14px 16px 14px" : "16px 20px 16px", borderBottom: "1px solid var(--border)", background: "var(--surface)" },
+      footStyle: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: phone ? "4px 14px" : "8px 18px", justifyContent: "space-between" },
+      rowStyle: phone
+        ? { display: "grid", gridTemplateColumns: hasPts ? "minmax(0,1fr) 44px" : "minmax(0,1fr)", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 16px", borderTop: "1px solid var(--border)" }
+        : { display: "grid", gridTemplateColumns: hasPts ? "minmax(0,1fr) minmax(0,250px) 48px" : "minmax(0,1fr) minmax(0,300px)", alignItems: "center", gap: 14, minHeight: 36, padding: pad, borderTop: "1px solid var(--border)" },
+      nameCell: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3, minWidth: 0 },
+      comboStyle: phone
+        ? { display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", borderBottom: "1px solid var(--border)" }
+        : { display: "flex", gap: 16, padding: "16px 20px", borderBottom: "1px solid var(--border)" },
+    };
+  }
+}
+</script>
+</body>
+</html>

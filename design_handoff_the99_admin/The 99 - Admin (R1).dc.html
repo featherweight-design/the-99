@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#121217; --surface:#1E1F26; --border:#1A1F2B; --border-strong:#2E3340; --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --accent:#5C86C9; --accent-hover:#6C95D8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div id="A0" style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ADMIN R1 · FOR AUDIT</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Switches and model costs</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">brief docs/superpowers/design-briefs/2026-10-11-admin-ui.md · 2026-10-12</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:34px;margin:0;line-height:1.15;max-width:1100px;">One door in Hugh’s account menu, five pages inside the shell. Every switch shows who it decides for, rung by rung.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">Built for one operator, 21 switches and seven accounts. From the prior art it takes the precedence ladder and the per-switch history, and leaves the density. Switches, groups and accounts are drawn on production with the brief’s fixtures and six illustrative friends (Mara is in testers). The sparse cost page is staging’s October as measured. The busy page is an illustrative production November that keeps the arithmetic. Anything in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">‹ ›</span> is illustrative, and so are environment values, which were not read. All copy is a placeholder for /copy-review.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="9">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ c.where }}</span></div><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="16">
+    <section id="{{ sec.id }}" data-screen-label="{{ sec.id }} {{ sec.title }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;">{{ sec.title }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">STATES {{ sec.id }} · scene {{ sec.scene }}</span>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="Admin" scene="{{ sec.scene }}" hint-size="900px,900px"></dc-import>
+        </div>
+        <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+          <dc-import name="Admin" scene="{{ sec.scene }}" phone="{{ true }}" hint-size="390px,844px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="TH" data-screen-label="TH Six themes" style="display:flex;flex-direction:column;gap:26px;">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§TH</span>
+        <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;">Six themes</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">scene flagSwap · 390</span>
+      </div>
+      <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The admin draws only with theme tokens, so it follows whichever theme Hugh wears. The data inks stay fixed across themes: --success for on, --warning for a disagreement or an alarm, --danger for the kill switch and hard caps, --fact for labels. The model tag and the player series take each theme’s --accent.</p>
+    </div>
+    <div style="display:flex;gap:28px;align-items:flex-start;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ t }}</span>
+          <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+            <dc-import name="Admin" scene="flagSwap" theme="{{ t }}" phone="{{ true }}" hint-size="390px,844px"></dc-import>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      themes: ["kaldheim", "amonkhet", "kamigawa", "ixalan", "phyrexia", "eldraine"],
+      calls: [
+        { k: "Where it lives", where: "A1 · A16", v: "/admin inside the app shell: no separate shell, and nothing in the rail or the tab bar. The door is an Admin row in Hugh’s account menu, after About. Everyone else gets the existing 404, unchanged." },
+        { k: "Five pages", where: "all", v: "Switches, Groups, Accounts, Costs, Models, as one tab strip under the page title. A switch, a group and an account each have their own page under its tab. Every page head carries an environment chip, staging or production." },
+        { k: "Who gets it", where: "A3–A7", v: "Each switch page leads with the resolution ladder: account, group, app-wide, environment, plus the parent for a compound switch. Every rung says what is set there and how many of the 7 accounts it decides for." },
+        { k: "Resolved, as a count", where: "A2", v: "The list doesn’t draw an assumed most-readers value. It counts: On, Off or Mixed with N of 7 on. There are only seven accounts, so the count is exact. Signed-out readers get the app-wide result." },
+        { k: "Spending money", where: "A5", v: "A change that turns a model feature on for more accounts confirms first. The confirm names who, the reservation per press and the credits behind it, the What’s new sheet they’ll see, and the 30-second window." },
+        { k: "Q1 · disagreement", where: "A4 · A8 · A12", v: "Shown as the result with its source, and the source names both groups: friends says off, testers says on; off wins. Warning ink, not an error. It is said where it happens: the switch, the groups page and the account." },
+        { k: "Costs at two densities", where: "A13 · A14", v: "Tiles, then the caps as bars with their lines, the month-to-date line with its pace, player against system, feature by model, refunds, reserved against spent, per account, label runs and eval ledgers. One page; at 390 the tables become rows." },
+        { k: "Caps", where: "A13 · A14", v: "BUDGET_USD, OWNER_SHARE_USD, the alarms and the hard stop are drawn read-only, with where they live. Only the caps outside the code are edited here: the Anthropic account cap, the system ceiling, and elsewhere." },
+        { k: "Open questions", where: "README", v: "All nine are answered in the README: Q1 result and source; Q2 a Plumbing group, app-wide only; Q3 read-only on Models; Q4 Clerk names; Q5 read-only constants; Q6 warn, never silent; Q7 elsewhere entered by hand; Q8 read both, no backfill; Q9 month only." },
+      ],
+      sections: [
+        { id: "A1", title: "The door", scene: "door", note: "Hugh’s account menu gains one row, Admin, after About and before Manage account: a link, like About, with the environment named in mono at the row’s end. The server passes the shell one boolean, so no client bundle carries the allowlist. The highlight here only marks the new row; it carries no fill in the build." },
+        { id: "A2", title: "Switches", scene: "flags", note: "All 21. The 18 features come alphabetically, then the three plumbing switches under their own head (Q2). Each row shows the name, the variable, a one-line description, the environment value, the app-wide override, the overrides beneath it, and the resolved count. Model features carry an accent model tag, and compound ones say what they need. Search matches name and variable. The chips filter: All, Overridden, Off for anyone, Model features. At 390 a row stacks, with the resolved pill on its first line." },
+        { id: "A3", title: "A switch with app and account overrides", scene: "flagCuts", note: "Proposed cuts is off app-wide, with Hugh’s account on. The ladder shows the account rung deciding for 1 and the app-wide rung for 6, so nothing reads as on that isn’t. App-wide is a three-way control: Not set, On, Off. Not set deletes the row, because absence is inheritance. Each override has its note and who set it when. Check an account resolves one account. History lists this switch’s admin_events, newest first." },
+        { id: "A4", title: "A switch with two group overrides", scene: "flagSwap", note: "Swap tools: friends off, testers on. Mara is in both, so off wins for her (locked rule 2). The switch page says so under its groups, names the account override that would settle it, and Check an account shows Mara’s result with both sources." },
+        { id: "A5", title: "Turning a model feature on for more accounts", scene: "flagConfirm", note: "Pressing Not set on Proposed cuts would hand it to the environment (true), turning it on for 6 more accounts. A model feature confirms first. The facts are who, the cost (a $0.240 reservation per press against 5 credits a day, with no priced press yet), the What’s new sheet those 6 will see (Q6), and when. The note is optional and goes into the history. A change that turns a model feature off, or turns on a non-model one, applies in one press with no confirm." },
+        { id: "A6", title: "Compound: the child on, the parent off", scene: "flagCompound", note: "Mark bought is true in the environment, but Collection edit is off, so it resolves off for all 7. The banner says why and links to the parent. The ladder adds a Needs rung under Environment, which decides for all 7. Overrides on the child stay editable, but none of them can turn the parent on (locked rule 1)." },
+        { id: "A7", title: "Kill switch: the environment says off", scene: "flagKill", note: "DECK_BENCHMARKS_ENABLED=off refuses every override (locked rule 3). The danger banner says only a redeploy changes it. The app-wide control and both Add buttons are disabled. Mara’s account override stays listed as refused, with Clear still live. The account rung reads refused, not decides for none." },
+        { id: "A8", title: "Groups", scene: "groups", note: "Two cards, friends and testers, each with its description, members, and the overrides it carries as on and off chips. The disagreement between them is said here too, once, with a link to the account it affects." },
+        { id: "A9", title: "Editing a group: members selected and unselected", scene: "groupEdit", note: "Name and description at the top; renaming is a group_renamed event. Members lists every account with a selection mark: Hugh and Mara are selected, and Theo has just been selected but not saved. Membership is staged rather than instant, because selecting someone can change their switches and show them What’s new. The pending bar says what saving does to Theo before it happens. The group’s overrides and its history follow." },
+        { id: "A10", title: "Account lookup", scene: "accounts", note: "One field matches name, email or Clerk id. With seven accounts the list shows them all, so an empty query already answers most lookups. Each row shows groups, credits now (in the player’s own count wording) and November’s spend. Names and emails come from Clerk, server-side (Q4)." },
+        { id: "A11", title: "An account: Hugh", scene: "accountHugh", note: "Identity, then four tiles: credits now, November spend against the owner share, presses with refunds, and whether the derived Tuning hub draws. Groups, then all 21 switches, each with where it comes from. Overrides are listed first, then off by a rule (the kill switch, a parent that is off), then the environment folded into two name lists. Spend by feature closes the page." },
+        { id: "A12", title: "An account: Mara, with groups that disagree", scene: "accountMara", note: "Mara is in friends and testers. Swap tools reads Off: friends says off, testers says on; off wins, in warning ink, with a banner above the switches (Q1). Deck benchmarks reads Off because the environment refuses her account override, in danger ink." },
+        { id: "A13", title: "Costs, staging’s October (sparse)", scene: "costsSparse", note: "Measured: 26 runs, $1.135, six active days of eleven, one account. Against the caps, the system ceiling reads starts November, and the account cap says elsewhere isn’t entered. The trend draws model calls only, so the $120.95 of label backfills doesn’t flatten it. Labels and evals have their own tables, and player against system makes the 99.4% visible at once. Effort reads not recorded, because these runs predate the parts table (locked rule 13)." },
+        { id: "A14", title: "Costs, a busier month (illustrative production November)", scene: "costsBusy", note: "Seven accounts, 193 runs, the November caps ($100 account, $15 system ceiling). The page opens with a pace banner when player spend is on course to pass the $10 plan. The caps bar hatches the rest of the month on this pace, and the account cap hatches elsewhere. Feature by model now reads the parts table, with efforts, and Look deeper as its two calls." },
+        { id: "A15", title: "Models", scene: "models", note: "The brief’s outline as a reference page: each feature or job, its origin, model and effort, October’s cost so far, and a mono line naming where the constant lives and which switch gates it. Below it, the GitHub job switches, read-only, with where each is read (Q3)." },
+        { id: "A16", title: "Everyone else: the existing 404", scene: "notFound", note: "Unchanged, from src/app/not-found.tsx and shellCopy.notFound. Every /admin route and server action calls notFound() for anyone not in ADMIN_USER_IDS, signed out included. Nothing on the page hints that a route exists." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

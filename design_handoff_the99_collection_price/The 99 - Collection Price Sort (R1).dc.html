@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#2C405F; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">/collection &middot; addendum &middot; sort by price &middot; 2026-10-11</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0;line-height:1.3;text-wrap:pretty;">The price comes with the Price sort and leaves with it. It rides a line each card already has, so no row or tile gets taller.</h1>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:12px 28px;max-width:1320px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="5">
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ c.q }}</b> {{ c.a }}</p>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-for list="{{ sections }}" as="s" hint-placeholder-count="6">
+    <section id="{{ s.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="display:flex;align-items:baseline;gap:14px;border-top:1px solid var(--accent);padding-top:18px;max-width:1340px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:5px;padding:2px 8px;">{{ s.id }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">{{ s.title }}</span>
+      </div>
+      <p style="margin:0;max-width:1080px;font-size:14px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;">{{ s.note }}</p>
+
+      <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;">
+        <!-- desktop 900 -->
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">900 &middot; pointer rail 62</div>
+          <div style="width:900px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+            <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;justify-content:center;padding-top:18px;font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--fg);">99</div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:28px 34px 0;">
+                <div>
+                  <div style="font-family:'Cinzel',serif;font-size:30px;font-weight:700;line-height:45px;color:var(--fg);">Collection</div>
+                  <div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:18px;color:var(--fg-faint);">4,492 cards &middot; 2,926 unique &middot; last updated Oct 2</div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <span style="height:38px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">&#8635; Upload a file</span>
+                  <span style="height:38px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">+ Add cards</span>
+                </div>
+              </div>
+              <div style="margin-top:14px;height:40px;display:flex;align-items:stretch;gap:24px;padding:0 34px;border-bottom:1px solid var(--border);font-size:14px;">
+                <span style="display:flex;align-items:center;color:var(--fg);font-weight:500;border-bottom:2px solid var(--fg);">Cards</span>
+                <span style="display:flex;align-items:center;color:var(--fg-muted);">Sets</span>
+                <span style="display:flex;align-items:center;color:var(--fg-muted);">Proxies</span>
+                <span style="display:flex;align-items:center;color:var(--fg-muted);">History</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;padding:14px 34px 0;position:relative;">
+                <div style="flex:1;min-width:0;height:38px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:13px;color:var(--fg-faint);">&#8981; Search by card name&hellip;</div>
+                <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:8px;background:var(--elevated);font-size:13px;color:var(--fg-body);">Type 0 &#9662;</span>
+                <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:8px;background:var(--elevated);font-size:13px;color:var(--fg-body);">Set 0 &#9662;</span>
+                <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:8px;background:var(--elevated);font-size:13px;color:var(--fg-body);">Availability 0 &#9662;</span>
+                <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:8px;background:var(--elevated);font-size:13px;color:var(--fg);white-space:nowrap;">Sort: {{ s.sortDesk }} &#9662;</span>
+                <sc-if value="{{ s.isPanel }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;right:34px;top:58px;width:248px;z-index:2;background:var(--elevated);border:1px solid var(--border-strong);border-radius:10px;padding:6px;box-shadow:0 18px 40px rgba(0,0,0,0.5);display:flex;flex-direction:column;">
+                    <sc-for list="{{ panelRows }}" as="p" hint-placeholder-count="6">
+                      <div style="height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:7px;background:{{ p.bg }};">
+                        <span style="width:14px;height:14px;border-radius:50%;flex:none;border:{{ p.ring }};display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:50%;background:{{ p.dot }};"></span></span>
+                        <span style="flex:1;font-size:13.5px;color:var(--fg);">{{ p.label }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ p.hint }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 34px 0;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">Showing 2,926 unique &middot; 4,492 total</span>
+                <span style="display:flex;gap:2px;padding:3px;border:1px solid var(--border-strong);border-radius:8px;">
+                  <span style="width:28px;height:24px;border-radius:5px;background:{{ s.listBtn }};display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--fg-muted);">&#8801;</span>
+                  <span style="width:28px;height:24px;border-radius:5px;background:{{ s.gridBtn }};display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--fg-muted);">&#9638;</span>
+                </span>
+              </div>
+
+              <sc-if value="{{ s.isPanel }}" hint-placeholder-val="{{ false }}"><div style="height:240px;"></div></sc-if>
+              <sc-if value="{{ s.isList }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:7px;padding:12px 34px 34px;">
+                  <sc-for list="{{ s.desk.top }}" as="it" hint-placeholder-count="7">
+                    <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px 150px 92px 18px;gap:16px;align-items:center;padding:12px 18px;border-radius:7px;background:var(--surface);border:1px solid var(--border);box-shadow:{{ it.ring }};">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:var(--accent);">{{ it.qty }}</span>
+                      <span style="min-width:0;display:flex;align-items:center;gap:9px;">
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:600;color:var(--fg);">{{ it.name }}</span>
+                        <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:{{ it.avail.ink }};">{{ it.avail.label }}</span>
+                      </span>
+                      <span style="display:flex;justify-content:flex-end;gap:3px;">
+                        <sc-for list="{{ it.pips }}" as="p" hint-placeholder-count="3"><span style="width:14px;height:14px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ p.t }}</span></sc-for>
+                      </span>
+                      <span style="min-width:0;display:flex;align-items:baseline;gap:8px;line-height:18px;">
+                        <sc-if value="{{ it.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;font-variant-numeric:tabular-nums;color:{{ it.priceInk }};">{{ it.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ it.suffix }}</span></span></sc-if>
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--fg-muted);">{{ it.type }}</span>
+                      </span>
+                      <span style="display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:50%;background:{{ it.rarDot }};"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ it.set }}</span></span>
+                      <span style="font-size:14px;color:var(--fg-faint);">&#8250;</span>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ s.desk.hasTail }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:9px;border:1px dashed var(--border-dashed);border-radius:7px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">{{ s.desk.cut }}</div>
+                    <sc-for list="{{ s.desk.tail }}" as="it" hint-placeholder-count="4">
+                      <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px 150px 92px 18px;gap:16px;align-items:center;padding:12px 18px;border-radius:7px;background:var(--surface);border:1px solid var(--border);box-shadow:{{ it.ring }};">
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:var(--accent);">{{ it.qty }}</span>
+                        <span style="min-width:0;display:flex;align-items:center;gap:9px;">
+                          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:600;color:var(--fg);">{{ it.name }}</span>
+                          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:{{ it.avail.ink }};">{{ it.avail.label }}</span>
+                        </span>
+                        <span style="display:flex;justify-content:flex-end;gap:3px;">
+                          <sc-for list="{{ it.pips }}" as="p" hint-placeholder-count="3"><span style="width:14px;height:14px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ p.t }}</span></sc-for>
+                        </span>
+                        <span style="min-width:0;display:flex;align-items:baseline;gap:8px;line-height:18px;">
+                          <sc-if value="{{ it.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;font-variant-numeric:tabular-nums;color:{{ it.priceInk }};">{{ it.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ it.suffix }}</span></span></sc-if>
+                          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--fg-muted);">{{ it.type }}</span>
+                        </span>
+                        <span style="display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:50%;background:{{ it.rarDot }};"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ it.set }}</span></span>
+                        <span style="font-size:14px;color:var(--fg-faint);">&#8250;</span>
+                      </div>
+                    </sc-for>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ s.isGrid }}" hint-placeholder-val="{{ false }}">
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:20px;padding:20px 34px 34px;">
+                  <sc-for list="{{ s.desk.top }}" as="it" hint-placeholder-count="3">
+                    <div style="border-radius:10px;overflow:hidden;background:var(--surface);border:1px solid {{ it.tileEdge }};">
+                      <div style="aspect-ratio:63/88;background:{{ it.grad }};border-radius:0 0 10px 10px;position:relative;"><span style="position:absolute;left:10px;bottom:9px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">card art</span></div>
+                      <div style="min-height:65px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:3px;">
+                        <div style="height:18px;display:flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:{{ it.avail.ink }};">{{ it.avail.label }}</span></div>
+                        <div style="height:17px;display:flex;align-items:center;gap:6px;min-width:0;line-height:17px;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--fg);">{{ it.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ it.trail }}</span></div>
+                        <div style="height:12px;display:flex;align-items:center;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:12px;color:var(--fg-faint);white-space:nowrap;">
+                          <sc-if value="{{ it.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:600;font-variant-numeric:tabular-nums;color:{{ it.priceInk }};">{{ it.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ it.suffix }}</span></span></sc-if>
+                          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">{{ it.subDesk }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ s.desk.hasTail }}" hint-placeholder-val="{{ false }}">
+                    <div style="grid-column:1/-1;padding:9px;border:1px dashed var(--border-dashed);border-radius:7px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">{{ s.desk.cut }}</div>
+                    <sc-for list="{{ s.desk.tail }}" as="it" hint-placeholder-count="3">
+                      <div style="border-radius:10px;overflow:hidden;background:var(--surface);border:1px solid {{ it.tileEdge }};">
+                        <div style="aspect-ratio:63/88;background:{{ it.grad }};border-radius:0 0 10px 10px;position:relative;"><span style="position:absolute;left:10px;bottom:9px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">card art</span></div>
+                        <div style="min-height:65px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:3px;">
+                          <div style="height:18px;display:flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:{{ it.avail.ink }};">{{ it.avail.label }}</span></div>
+                          <div style="height:17px;display:flex;align-items:center;gap:6px;min-width:0;line-height:17px;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--fg);">{{ it.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ it.trail }}</span></div>
+                          <div style="height:12px;display:flex;align-items:center;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:12px;color:var(--fg-faint);white-space:nowrap;">
+                            <sc-if value="{{ it.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:600;font-variant-numeric:tabular-nums;color:{{ it.priceInk }};">{{ it.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ it.suffix }}</span></span></sc-if>
+                            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">{{ it.subDesk }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+
+        <!-- phone 390 -->
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; phone</div>
+          <div style="width:390px;border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;background:var(--bg);position:relative;">
+            <div style="padding:20px 14px 0;">
+              <div style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;line-height:34px;color:var(--fg);">Collection</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:16px;color:var(--fg-faint);">4,492 cards &middot; 2,926 unique</div>
+            </div>
+            <div style="margin-top:10px;height:42px;display:flex;align-items:stretch;gap:18px;padding:0 14px;border-bottom:1px solid var(--border);font-size:13.5px;">
+              <span style="display:flex;align-items:center;color:var(--fg);font-weight:500;border-bottom:2px solid var(--fg);">Cards</span>
+              <span style="display:flex;align-items:center;color:var(--fg-muted);">Sets</span>
+              <span style="display:flex;align-items:center;color:var(--fg-muted);">Proxies</span>
+              <span style="display:flex;align-items:center;color:var(--fg-muted);">History</span>
+            </div>
+            <div style="padding:12px 14px 0;"><div style="height:44px;border:1px solid var(--border-strong);border-radius:9px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--fg-faint);">&#8981; Search by card name&hellip;</div></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px 0;">
+              <span style="height:40px;display:inline-flex;align-items:center;padding:0 12px;border-radius:8px;background:var(--elevated);font-size:13px;color:var(--fg-body);">Filters &#9662;</span>
+              <span style="height:40px;min-width:0;display:inline-flex;align-items:center;padding:0 12px;border-radius:8px;background:var(--elevated);font-size:13px;color:var(--fg);white-space:nowrap;">{{ s.sortPhone }} &#9662;</span>
+              <span style="flex:1;"></span>
+              <span style="display:flex;gap:2px;padding:3px;border:1px solid var(--border-strong);border-radius:8px;">
+                <span style="width:32px;height:32px;border-radius:5px;background:{{ s.listBtn }};display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--fg-muted);">&#8801;</span>
+                <span style="width:32px;height:32px;border-radius:5px;background:{{ s.gridBtn }};display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--fg-muted);">&#9638;</span>
+              </span>
+            </div>
+            <div style="padding:10px 14px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">2,926 unique &middot; 4,492 total</div>
+
+            <sc-if value="{{ s.isList }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:6px;padding:8px 12px 14px;">
+                <sc-for list="{{ s.phone.top }}" as="it" hint-placeholder-count="6">
+                  <div style="display:grid;grid-template-columns:38px minmax(0,1fr) 76px auto;gap:10px;align-items:center;padding:10px 12px;border-radius:7px;background:var(--surface);border:1px solid var(--border);box-shadow:{{ it.ring }};">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--accent);">{{ it.qty }}</span>
+                    <span style="min-width:0;display:flex;flex-direction:column;">
+                      <span style="display:flex;align-items:center;gap:7px;min-width:0;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;color:var(--fg);line-height:20px;">{{ it.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:{{ it.avail.ink }};">{{ it.avail.label }}</span></span>
+                      <span style="display:flex;align-items:baseline;gap:6px;min-width:0;line-height:16px;">
+                        <sc-if value="{{ it.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;font-variant-numeric:tabular-nums;color:{{ it.priceInk }};">{{ it.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ it.suffix }}</span></span></sc-if>
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--fg-faint);">{{ it.type }}</span>
+                      </span>
+                    </span>
+                    <span style="display:flex;justify-content:flex-end;gap:2px;"><sc-for list="{{ it.pips }}" as="p" hint-placeholder-count="3"><span style="width:13px;height:13px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ p.t }}</span></sc-for></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.04em;color:var(--fg-faint);text-align:right;">{{ it.set }}</span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ s.phone.hasTail }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:8px;border:1px dashed var(--border-dashed);border-radius:7px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">{{ s.phone.cut }}</div>
+                  <sc-for list="{{ s.phone.tail }}" as="it" hint-placeholder-count="3">
+                    <div style="display:grid;grid-template-columns:38px minmax(0,1fr) 76px auto;gap:10px;align-items:center;padding:10px 12px;border-radius:7px;background:var(--surface);border:1px solid var(--border);box-shadow:{{ it.ring }};">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--accent);">{{ it.qty }}</span>
+                      <span style="min-width:0;display:flex;flex-direction:column;">
+                        <span style="display:flex;align-items:center;gap:7px;min-width:0;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;color:var(--fg);line-height:20px;">{{ it.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:{{ it.avail.ink }};">{{ it.avail.label }}</span></span>
+                        <span style="display:flex;align-items:baseline;gap:6px;min-width:0;line-height:16px;">
+                          <sc-if value="{{ it.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;font-variant-numeric:tabular-nums;color:{{ it.priceInk }};">{{ it.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ it.suffix }}</span></span></sc-if>
+                          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--fg-faint);">{{ it.type }}</span>
+                        </span>
+                      </span>
+                      <span style="display:flex;justify-content:flex-end;gap:2px;"><sc-for list="{{ it.pips }}" as="p" hint-placeholder-count="3"><span style="width:13px;height:13px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ p.t }}</span></sc-for></span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.04em;color:var(--fg-faint);text-align:right;">{{ it.set }}</span>
+                    </div>
+                  </sc-for>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ s.isGrid }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:8px 14px 14px;">
+                <sc-for list="{{ s.phone.top }}" as="it" hint-placeholder-count="6">
+                  <div style="border-radius:9px;overflow:hidden;background:var(--surface);border:1px solid {{ it.tileEdge }};min-width:0;">
+                    <div style="aspect-ratio:63/88;background:{{ it.grad }};border-radius:0 0 9px 9px;"></div>
+                    <div style="min-height:70px;padding:8px 7px;display:flex;flex-direction:column;justify-content:center;gap:3px;">
+                      <div style="height:17px;display:flex;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:{{ it.avail.ink }};">{{ it.avail.glyph }}</span></div>
+                      <div style="height:20px;display:flex;align-items:center;gap:5px;min-width:0;line-height:16px;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:var(--fg);">{{ it.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ it.trail }}</span></div>
+                      <div style="height:11px;display:flex;align-items:center;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:11px;color:var(--fg-faint);white-space:nowrap;">
+                        <sc-if value="{{ it.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:600;font-variant-numeric:tabular-nums;color:{{ it.priceInk }};">{{ it.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ it.suffix }}</span></span></sc-if>
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">{{ it.subPhone }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ s.phone.hasTail }}" hint-placeholder-val="{{ false }}">
+                  <div style="grid-column:1/-1;padding:8px;border:1px dashed var(--border-dashed);border-radius:7px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">{{ s.phone.cut }}</div>
+                  <sc-for list="{{ s.phone.tail }}" as="it" hint-placeholder-count="3">
+                    <div style="border-radius:9px;overflow:hidden;background:var(--surface);border:1px solid {{ it.tileEdge }};min-width:0;">
+                      <div style="aspect-ratio:63/88;background:{{ it.grad }};border-radius:0 0 9px 9px;"></div>
+                      <div style="min-height:70px;padding:8px 7px;display:flex;flex-direction:column;justify-content:center;gap:3px;">
+                        <div style="height:17px;display:flex;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:{{ it.avail.ink }};">{{ it.avail.glyph }}</span></div>
+                        <div style="height:20px;display:flex;align-items:center;gap:5px;min-width:0;line-height:16px;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:var(--fg);">{{ it.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ it.trail }}</span></div>
+                        <div style="height:11px;display:flex;align-items:center;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:11px;color:var(--fg-faint);white-space:nowrap;">
+                          <sc-if value="{{ it.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:600;font-variant-numeric:tabular-nums;color:{{ it.priceInk }};">{{ it.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ it.suffix }}</span></span></sc-if>
+                          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">{{ it.subPhone }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ s.isPanel }}" hint-placeholder-val="{{ false }}">
+              <div style="height:240px;"></div>
+              <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 72%, transparent);"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--elevated);border-top:1px solid var(--border-strong);border-radius:20px 20px 0 0;padding:10px 12px 22px;">
+                <div style="width:36px;height:4px;border-radius:2px;background:var(--border-dashed);margin:0 auto 12px;"></div>
+                <div style="font-size:15px;font-weight:600;color:var(--fg);padding:0 8px 8px;">Sort</div>
+                <sc-for list="{{ panelRows }}" as="p" hint-placeholder-count="6">
+                  <div style="height:48px;display:flex;align-items:center;gap:12px;padding:0 10px;border-radius:8px;background:{{ p.bg }};">
+                    <span style="width:18px;height:18px;border-radius:50%;flex:none;border:{{ p.ring }};display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:50%;background:{{ p.dot }};"></span></span>
+                    <span style="flex:1;font-size:15px;color:var(--fg);">{{ p.label }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">{{ p.hint }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="C" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:14px;border-top:1px solid var(--accent);padding-top:18px;max-width:1340px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:5px;padding:2px 8px;">C1&ndash;C6</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">the six things a price can say &middot; row and tile, 900 and 390</span>
+    </div>
+    <p style="margin:0;max-width:1080px;font-size:14px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;">One figure per card, always the value of one copy. When the copies differ, the card sorts and shows on its most valuable copy, in both directions, so reversing the sort reverses the list exactly. The word <b style="color:var(--fg);font-weight:600;">max</b> is the only mark that a cheaper copy exists. Cards with no figure sort last both ways, together, A&ndash;Z.</p>
+    <sc-for list="{{ cases }}" as="k" hint-placeholder-count="6">
+      <div id="{{ k.id }}" style="display:grid;grid-template-columns:280px 900px;gap:24px 32px;align-items:start;max-width:1340px;padding:18px 0;border-top:1px solid var(--border);">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:4px;padding:2px 7px;">{{ k.id }}</span><span style="font-size:15px;font-weight:600;color:var(--fg);">{{ k.title }}</span></div>
+          <div style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ k.rule }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-muted);">spoken: {{ k.spoken }}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:16px;">
+          <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px 150px 92px 18px;gap:16px;align-items:center;padding:12px 18px;border-radius:7px;background:var(--surface);border:1px solid var(--border);box-shadow:{{ k.d.ring }};width:770px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:var(--accent);">{{ k.d.qty }}</span>
+            <span style="min-width:0;display:flex;align-items:center;gap:9px;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:600;color:var(--fg);">{{ k.d.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:{{ k.d.avail.ink }};">{{ k.d.avail.label }}</span></span>
+            <span style="display:flex;justify-content:flex-end;gap:3px;"><sc-for list="{{ k.d.pips }}" as="p" hint-placeholder-count="3"><span style="width:14px;height:14px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ p.t }}</span></sc-for></span>
+            <span style="min-width:0;display:flex;align-items:baseline;gap:8px;line-height:18px;">
+              <sc-if value="{{ k.d.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;font-variant-numeric:tabular-nums;color:{{ k.d.priceInk }};">{{ k.d.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ k.d.suffix }}</span></span></sc-if>
+              <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--fg-muted);">{{ k.d.type }}</span>
+            </span>
+            <span style="display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:50%;background:{{ k.d.rarDot }};"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ k.d.set }}</span></span>
+            <span style="font-size:14px;color:var(--fg-faint);">&#8250;</span>
+          </div>
+          <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+            <div style="display:grid;grid-template-columns:38px minmax(0,1fr) 76px auto;gap:10px;align-items:center;padding:10px 12px;border-radius:7px;background:var(--surface);border:1px solid var(--border);box-shadow:{{ k.d.ring }};width:366px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--accent);">{{ k.d.qty }}</span>
+              <span style="min-width:0;display:flex;flex-direction:column;">
+                <span style="display:flex;align-items:center;gap:7px;min-width:0;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;color:var(--fg);line-height:20px;">{{ k.d.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:{{ k.d.avail.ink }};">{{ k.d.avail.label }}</span></span>
+                <span style="display:flex;align-items:baseline;gap:6px;min-width:0;line-height:16px;">
+                  <sc-if value="{{ k.d.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;font-variant-numeric:tabular-nums;color:{{ k.d.priceInk }};">{{ k.d.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ k.d.suffix }}</span></span></sc-if>
+                  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--fg-faint);">{{ k.d.type }}</span>
+                </span>
+              </span>
+              <span style="display:flex;justify-content:flex-end;gap:2px;"><sc-for list="{{ k.d.pips }}" as="p" hint-placeholder-count="3"><span style="width:13px;height:13px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ p.t }}</span></sc-for></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.04em;color:var(--fg-faint);text-align:right;">{{ k.d.set }}</span>
+            </div>
+            <div style="width:243px;border-radius:10px;overflow:hidden;background:var(--surface);border:1px solid {{ k.d.tileEdge }};">
+              <div style="height:80px;background:{{ k.d.grad }};border-radius:0 0 10px 10px;display:flex;align-items:flex-end;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">art cropped &middot; 900 tile</div>
+              <div style="min-height:65px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:3px;">
+                <div style="height:18px;display:flex;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:{{ k.d.avail.ink }};">{{ k.d.avail.label }}</span></div>
+                <div style="height:17px;display:flex;align-items:center;gap:6px;min-width:0;line-height:17px;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--fg);">{{ k.d.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ k.d.trail }}</span></div>
+                <div style="height:12px;display:flex;align-items:center;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:12px;color:var(--fg-faint);white-space:nowrap;">
+                  <sc-if value="{{ k.d.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:600;font-variant-numeric:tabular-nums;color:{{ k.d.priceInk }};">{{ k.d.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ k.d.suffix }}</span></span></sc-if>
+                  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">{{ k.d.subDesk }}</span>
+                </div>
+              </div>
+            </div>
+            <div style="width:115px;border-radius:9px;overflow:hidden;background:var(--surface);border:1px solid {{ k.d.tileEdge }};">
+              <div style="height:80px;background:{{ k.d.grad }};border-radius:0 0 9px 9px;display:flex;align-items:flex-end;padding:6px 7px;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">390 tile</div>
+              <div style="min-height:70px;padding:8px 7px;display:flex;flex-direction:column;justify-content:center;gap:3px;">
+                <div style="height:17px;display:flex;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:{{ k.d.avail.ink }};">{{ k.d.avail.glyph }}</span></div>
+                <div style="height:20px;display:flex;align-items:center;gap:5px;min-width:0;line-height:16px;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:var(--fg);">{{ k.d.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ k.d.trail }}</span></div>
+                <div style="height:11px;display:flex;align-items:center;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:11px;color:var(--fg-faint);white-space:nowrap;">
+                  <sc-if value="{{ k.d.hasFig }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:600;font-variant-numeric:tabular-nums;color:{{ k.d.priceInk }};">{{ k.d.priceText }}<span style="font-weight:400;color:var(--fg-muted);">{{ k.d.suffix }}</span></span></sc-if>
+                  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">{{ k.d.subPhone }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+
+  <section id="states" style="display:flex;flex-direction:column;gap:14px;max-width:1340px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">STATES &middot; also in STATES-collection-price.md</div>
+    <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--surface);">
+      <div style="display:grid;grid-template-columns:70px 120px 260px minmax(0,1fr);gap:14px;padding:9px 14px;background:var(--surface-rail);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);"><span>Id</span><span>Frame</span><span>State</span><span>What draws</span></div>
+      <sc-for list="{{ states }}" as="r" hint-placeholder-count="14">
+        <div style="display:grid;grid-template-columns:70px 120px 260px minmax(0,1fr);gap:14px;padding:11px 14px;border-top:1px solid var(--border);font-size:13px;line-height:1.55;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">{{ r.id }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">{{ r.frame }}</span>
+          <span style="color:var(--fg);">{{ r.state }}</span>
+          <span style="color:var(--fg-body);text-wrap:pretty;">{{ r.draws }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="table" style="display:flex;flex-direction:column;gap:14px;max-width:1340px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">Design table &middot; also in design-tables/collection-price.md</div>
+    <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--surface);">
+      <div style="display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1fr);gap:14px;padding:9px 14px;background:var(--surface-rail);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);"><span>Property</span><span>Mobile (390)</span><span>Desktop (md, 900)</span></div>
+      <sc-for list="{{ table }}" as="r" hint-placeholder-count="14">
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1fr);gap:14px;padding:10px 14px;border-top:1px solid var(--border);font-size:12.5px;line-height:1.55;">
+          <span style="color:var(--fg);font-weight:500;">{{ r.p }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);text-wrap:pretty;">{{ r.m }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);text-wrap:pretty;">{{ r.d }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const C = { W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)" };
+    const NB = "\u00a0";
+    const fmt = (c) => {
+      const [i, d] = (c / 100).toFixed(2).split(".");
+      return "$" + i.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "." + d;
+    };
+    const RAR = { mythic: "var(--warning)", rare: "var(--accent)", uncommon: "var(--fg-body)", common: "var(--fg-muted)" };
+    // [name, type, set, rarity, qty, cost, price, avail]
+    // price: [cents, "foil"|"max"|""] | "nostock" | "silent"
+    const raw = [
+      ["Avatar Aang", "Legendary Creature \u2014 Human Avatar Ally", "TLA", "mythic", 1, "RGWU", [3850, "foil"], "free0"],
+      ["Brazen Borrower", "Creature \u2014 Faerie Rogue", "ELD", "mythic", 2, "1UU", [2700, "max"], null],
+      ["All Will Be One", "Enchantment", "ONE", "mythic", 1, "3RR", [1480, ""], "free0"],
+      ["Bramble Sovereign", "Creature \u2014 Dryad", "BBD", "mythic", 1, "2GG", [1120, ""], "free0"],
+      ["Atreus, Impulsive Son", "Legendary Creature \u2014 God Archer", "SLD", "mythic", 1, "3UR", [960, "foil"], "free0"],
+      ["Avenger of Zendikar", "Creature \u2014 Elemental", "TDC", "mythic", 3, "5GG", [620, "max"], "over1"],
+      ["Bloodline Keeper", "Creature \u2014 Vampire", "INR", "rare", 1, "2BB", [590, ""], null],
+      ["Beorn the Fierce", "Legendary Creature \u2014 Bear Shapeshifter", "HOB", "rare", 1, "3GG", [430, "foil"], null],
+      ["All Is Dust", "Kindred Sorcery \u2014 Eldrazi", "MM2", "mythic", 1, "7", [340, ""], "free0"],
+      ["Alrund, God of the Cosmos", "Legendary Creature \u2014 God", "KHM", "mythic", 1, "3UU", [210, ""], null],
+      ["Arlinn, the Pack's Hope", "Legendary Planeswalker \u2014 Arlinn", "MID", "mythic", 1, "2RG", [175, ""], "free0"],
+      ["Alibou, Ancient Witness", "Legendary Artifact Creature \u2014 Golem", "EOC", "mythic", 1, "3RW", [110, ""], "free0"],
+      ["Ajani Unrelenting", "Legendary Planeswalker \u2014 Ajani", "FRA", "mythic", 1, "4RR", [89, ""], null],
+      ["Bard, King of Dale", "Legendary Creature \u2014 Human Noble Archer", "HOB", "rare", 1, "4WU", [60, ""], null],
+      ["Appa, Steadfast Guardian", "Legendary Creature \u2014 Bison Ally", "TLA", "mythic", 1, "2WW", [45, ""], "free0"],
+      ["Assimilation Aegis", "Artifact \u2014 Equipment", "OTJ", "mythic", 1, "1WU", [30, ""], null],
+      ["Avabruck Caretaker", "Creature \u2014 Human Werewolf", "VOW", "mythic", 1, "4GG", [25, ""], "free0"],
+      ["Brudiclad, Telchor Engineer", "Legendary Artifact Creature \u2014 Phyrexian Artificer", "C18", "mythic", 1, "4UR", "nostock", null],
+      ["Carmen, Cruel Skymarcher", "Legendary Creature \u2014 Vampire Soldier", "LCC", "mythic", 1, "3WB", "nostock", null],
+      ["Cayth, Famed Mechanist", "Legendary Creature \u2014 Dwarf Artificer", "DFT", "mythic", 1, "1RW", "silent", null],
+    ];
+    const card = (r) => ({ name: r[0], type: r[1], set: r[2], rar: r[3], qty: r[4], cost: r[5], price: r[6], avail: r[7] });
+    const all = raw.map(card);
+    const lists = all.filter((c) => c.price !== "silent");
+    const item = (c, showPrice) => {
+      const pips = [];
+      for (const ch of c.cost.match(/\d+|[WUBRG]/g)) pips.push(/\d/.test(ch) ? { bg: "var(--fg-muted)", t: ch } : { bg: C[ch], t: "" });
+      const firstColor = (c.cost.match(/[WUBRG]/) || ["U"])[0];
+      const priced = Array.isArray(c.price);
+      const kind = priced ? "priced" : c.price;
+      const hasFig = showPrice && kind !== "silent";
+      const priceText = kind === "priced" ? fmt(c.price[0]) : kind === "nostock" ? "no stock" : "";
+      const suffix = priced && c.price[1] ? NB + c.price[1] : "";
+      const av = c.avail === "free0" ? { label: "\u25C6 none free", glyph: "\u25C6", ink: "var(--accent)" }
+        : c.avail === "over1" ? { label: "\u25C6\u25C6 short 1", glyph: "\u25C6\u25C6", ink: "var(--danger)" }
+        : { label: "", glyph: "", ink: "var(--fg-faint)" };
+      return {
+        qty: "\u00d7" + c.qty, name: c.name, type: c.type, set: c.set, pips,
+        rarDot: RAR[c.rar], avail: av,
+        ring: c.avail === "over1" ? "inset 0 0 0 1px var(--danger)" : "none",
+        tileEdge: c.avail === "over1" ? "var(--danger)" : "var(--border)",
+        grad: `linear-gradient(155deg, color-mix(in srgb, ${C[firstColor]} 30%, var(--surface-sunken)) 0%, var(--surface-sunken) 70%)`,
+        trail: c.qty > 1 ? "\u00d7" + c.qty : "",
+        hasFig, priceText, suffix,
+        priceInk: kind === "nostock" ? "var(--fg-muted)" : "var(--accent)",
+        subDesk: hasFig ? `${NB}\u00b7 ${c.set} \u00b7 ${c.rar}` : `${c.set} \u00b7 ${c.rar}`,
+        subPhone: hasFig ? `${NB}\u00b7 ${c.set}` : `${c.set} \u00b7 ${c.rar}`,
+      };
+    };
+    const byName = (a, b) => a.name.localeCompare(b.name);
+    const priceSort = (dir) => {
+      const p = lists.filter((c) => Array.isArray(c.price)).sort((a, b) => (dir === "desc" ? b.price[0] - a.price[0] : a.price[0] - b.price[0]) || byName(a, b));
+      const u = lists.filter((c) => !Array.isArray(c.price)).sort(byName);
+      return [...p, ...u];
+    };
+    const desc = priceSort("desc"), asc = priceSort("asc"), name = [...lists].sort(byName);
+    const TOTAL = 2926;
+    const frame = (order, top, tail, show) => ({
+      top: order.slice(0, top).map((c) => item(c, show)),
+      tail: tail ? order.slice(-tail).map((c) => item(c, show)) : [],
+      hasTail: !!tail,
+      cut: tail ? `\u22ef ${(TOTAL - top - tail).toLocaleString()} cards between \u00b7 cut from this frame \u22ef` : "",
+    });
+    const SEL = "var(--surface-raised)";
+    const mk = (id, kind, title, note, sortDesk, sortPhone, desk, phone) => ({
+      id, title, note, sortDesk, sortPhone, desk, phone,
+      isList: kind === "list", isGrid: kind === "grid", isPanel: kind === "panel",
+      listBtn: kind === "grid" ? "transparent" : SEL, gridBtn: kind === "grid" ? SEL : "transparent",
+    });
+    const empty = { top: [], tail: [], hasTail: false, cut: "" };
+    const sections = [
+      mk("L1", "list", "list \u00b7 sort: price \u00b7 highest first", "The figure leads the type line: 150px type column at 900, the line under the name at 390. It sits at the same x on every row, so the figures read as a column. The rest of the type line gives way and truncates. The figure never does. The two no-stock cards close the list.",
+        "Price \u00b7 Highest first", "Price \u00b7 Highest first", frame(desc, 7, 4, true), frame(desc, 6, 3, true)),
+      mk("L2", "list", "list \u00b7 sort: price \u00b7 lowest first", "Reversed, the list runs cheapest first, and no-stock still comes last, not first. A card with no figure isn't cheap. Brazen Borrower sits at $27.00 here too, even though one copy costs $3.10: it sorts on its most valuable copy in both directions (C3).",
+        "Price \u00b7 Lowest first", "Price \u00b7 Lowest first", frame(asc, 7, 4, true), frame(asc, 6, 3, true)),
+      mk("G1", "grid", "grid \u00b7 sort: price \u00b7 highest first", "The figure leads the caption's sub-line, so it reads price \u00b7 SET \u00b7 rarity at 900. On the 3-up phone tile the rarity drops out while the price is on, so the line reads price \u00b7 SET. That is decided by sort key, not by measuring. The caption stays 65 / 70px, and the meta line and name line are untouched.",
+        "Price \u00b7 Highest first", "Price \u00b7 Highest first", frame(desc, 3, 3, true), frame(desc, 6, 3, true)),
+      mk("G2", "grid", "grid \u00b7 sort: price \u00b7 lowest first", "Same caption, reversed order. The tail is the same two no-stock tiles as G1.",
+        "Price \u00b7 Lowest first", "Price \u00b7 Lowest first", frame(asc, 3, 3, true), frame(asc, 6, 3, true)),
+      mk("N1", "list", "list \u00b7 sort: name \u00b7 A\u2013Z \u00b7 the price leaves", "On any other sort the row is exactly what ships today. The price goes on the same render as the sort change, with no fade and no held slot. The price explains the order, so it shows only when the order is by price.",
+        "Name \u00b7 A\u2013Z", "Name \u00b7 A\u2013Z", frame(name, 9, 0, false), frame(name, 8, 0, false)),
+      mk("N2", "grid", "grid \u00b7 sort: name \u00b7 A\u2013Z \u00b7 the price leaves", "The sub-line goes back to SET \u00b7 rarity at both widths, as it ships.",
+        "Name \u00b7 A\u2013Z", "Name \u00b7 A\u2013Z", frame(name, 3, 0, false), frame(name, 6, 0, false)),
+      mk("S1", "panel", "sort control \u00b7 one row added", "Price joins the existing single-select panel as its sixth row. It reuses the shipped mechanics: only the selected row shows a direction hint, and selecting the selected row again reverses it. Its default is Highest first, and its pair is Highest first / Lowest first. Under 480px the trigger drops \u201cSort:\u201d, as ruled in collection surfaces R2 \u00a7B2. The longest new trigger, Sort: Price \u00b7 Highest first, has the same character count as the shipped longest, Sort: Rarity \u00b7 Mythic first. Engineering should confirm the rendered width against R2's 518px budget.",
+        "Price \u00b7 Highest first", "Price \u00b7 Highest first", empty, empty),
+    ];
+    const panelRows = [["Name", ""], ["Quantity", ""], ["Set", ""], ["Rarity", ""], ["Color", ""], ["Price", "Highest first"]].map(([label, hint]) => ({
+      label, hint,
+      bg: hint ? "var(--surface-raised)" : "transparent",
+      ring: hint ? "2px solid var(--accent)" : "2px solid var(--border-dashed)",
+      dot: hint ? "var(--accent)" : "transparent",
+    }));
+    const find = (n) => all.find((c) => c.name === n);
+    const cases = [
+      { id: "C1", n: "Bloodline Keeper", title: "Priced", rule: "One printing, non-foil, stocked. The figure is Mana Pool's figure for that printing, the same one the card detail tag shows.", spoken: "\u2026, $5.90 at ManaPool" },
+      { id: "C2", n: "Atreus, Impulsive Son", title: "Foil copy", rule: "The player owns it in foil, so the foil figure is used, with foil as a suffix in --fg-muted. That follows the shipped priceCopy.tag.foil, and etched works the same way.", spoken: "\u2026, $9.60 foil at ManaPool" },
+      { id: "C3", n: "Brazen Borrower", title: "Copies in different printings", rule: "\u00d72: ELD at $27.00 and MB2 at $3.10. The card sorts and shows on its most valuable copy, in both directions. The suffix max says a cheaper copy exists. The full breakdown is in card detail's printing region.", spoken: "\u2026, $27.00 at ManaPool, the most valuable of 2 printings" },
+      { id: "C4", n: "Avenger of Zendikar", title: "Different printings, top copy foil", rule: "\u00d73: TDC foil at $6.20, ZEN at $2.40, CMM at $1.10. When both apply, max wins the visible suffix and the finish is spoken only. One suffix fits the 390 tile; two don't. A foil and a non-foil copy of the same printing count as different here.", spoken: "\u2026, $6.20 foil at ManaPool, the most valuable of 3 printings" },
+      { id: "C5", n: "Brudiclad, Telchor Engineer", title: "No price: no stock", rule: "Mana Pool answered no: never stocked, or sold out. The words no stock in --fg-muted sit where the figure would. That is card detail's ruled word for the store's no. It sorts last in both directions.", spoken: "\u2026, never stocked at ManaPool (or: sold out at ManaPool)" },
+      { id: "C6", n: "Cayth, Famed Mechanist", title: "No price: nothing reached us", rule: "No feed row or a failed read. The card shows nothing: no dash, no $0.00, no held slot. Silence is ours, by card detail's gap 1. It sorts last with C5, and the two run together A\u2013Z.", spoken: "\u2026 (no price clause)" },
+    ].map((k) => ({ ...k, d: item(find(k.n), true) }));
+
+    const calls = [
+      { q: "1 \u00b7 Only while sorted by price.", a: "Hugh's reason for showing the price is to explain the order, so the price shows only when the order is by price. On the other five sorts the rows and tiles stay exactly as they ship (N1, N2). An always-on price would put a shop's figure on every surface of a collection page that is about your shelf, and card detail already carries it." },
+      { q: "2 \u00b7 It leads a line the card already has.", a: "Rows: the start of the type line, which is the 150px column at 900 and the line under the name at 390. Tiles: the start of the SET \u00b7 rarity sub-line. No column is added and no line is added, so the row and tile heights stay the same at both widths and the grid's measured first screen holds." },
+      { q: "3 \u00b7 No price reads as card detail rules.", a: "no stock in --fg-muted when Mana Pool said no. That covers never stocked and sold out, which are kept apart only in the spoken name. Nothing at all when no answer reached us. Both sort last in both directions, together, A\u2013Z (C5, C6)." },
+      { q: "4 \u00b7 Different printings: the most valuable copy, marked max.", a: "One figure per card, always one copy's value. The card sorts on its most valuable copy in both directions, so reversing the sort reverses the list exactly. The suffix max, in --fg-muted, says a cheaper copy exists (C3, C4)." },
+      { q: "5 \u00b7 One new row and one new direction pair.", a: "Price is added as the sixth row of the Sort panel: Highest first (the default) and Lowest first. No other control changes. The trigger fits within the shipped longest-trigger width (S1). No About entry: agreed. This is a sort option on a known surface." },
+    ];
+
+    const states = [
+      ["L1", "list 900 \u00b7 390", "Sort: Price \u00b7 Highest first", "price leads the type line; most valuable first; no-stock and silent cards last, A\u2013Z"],
+      ["L2", "list 900 \u00b7 390", "Sort: Price \u00b7 Lowest first", "same, cheapest first; no-stock and silent still last"],
+      ["G1", "grid 900 \u00b7 390", "Sort: Price \u00b7 Highest first", "price leads the sub-line: price \u00b7 SET \u00b7 rarity (900), price \u00b7 SET (390)"],
+      ["G2", "grid 900 \u00b7 390", "Sort: Price \u00b7 Lowest first", "same caption, reversed"],
+      ["N1, N2", "list, grid", "any other sort", "no price anywhere; rows and tiles as shipped"],
+      ["S1", "panel 900, sheet 390", "Sort panel, Price selected", "six rows; Price last; hint Highest first on the selected row only"],
+      ["S2", "(no frame)", "Price selected again", "direction reverses to Lowest first; trigger Sort: Price \u00b7 Lowest first; panel dismisses (shipped)"],
+      ["S3", "(no frame)", "another key selected", "that key in its default direction; the price leaves on the same render"],
+      ["S4", "(no frame)", "URL", "?sort=price&dir=desc|asc; dir absent \u2192 desc; reload keeps it (shipped parseSortDirection)"],
+      ["C1\u2013C6", "cases 900 \u00b7 390", "priced, foil, mixed, mixed+foil, no stock, silent", "see the cases section"],
+      ["T1", "(no frame)", "equal figures", "name A\u2013Z tiebreak in both directions (shipped rule, browse.ts:947)"],
+      ["T2", "(no frame)", "filters on", "the order applies inside the filtered set; the price is unchanged"],
+      ["T3", "(no frame)", "Show more", "the next page continues the order; the unpriced tail arrives only on the last pages"],
+      ["F1", "(no frame)", "the price read fails for the whole list", "Price stays selectable; every card is silent, so the order is all ties, i.e. A\u2013Z; one line under Showing: \u2018Prices didn\u2019t load, so this is A\u2013Z.\u2019 (placeholder)"],
+      ["F2", "(no frame)", "price arrives after the row", "never: the figure ships in the list payload when sort=price; no shimmer, no late insert"],
+      ["Must-not", "\u2014", "", "another printing's figure; a dash or $0.00 for no price; the price on a non-price sort; any change to row or tile height; a sum of all copies"],
+    ].map(([id, frame, state, draws]) => ({ id, frame, state, draws }));
+
+    const table = [
+      ["When it draws", "sort === \u201cprice\u201d only", "same"],
+      ["Row: figure", "leads the type line; mono 11 / 500, tabular-nums, --accent, flex:none; gap 6 to the type text; line-height 16 (= the shipped type line)", "leads the 150 type column; mono 11.5 / 500, tabular-nums, --accent, flex:none; gap 8; line-height 18"],
+      ["Row: suffix", "foil / etched / max, 400 --fg-muted, NBSP before it, inside the figure span", "same"],
+      ["Row: no stock", "the words no stock, mono 11 / 500, --fg-muted, same slot", "mono 11.5"],
+      ["Row: silent", "nothing; the type text starts the line", "same"],
+      ["Row: grid / height", "38 1fr 76 auto unchanged; the height is unchanged", "52 1fr 90 150 92 18 unchanged; the height is unchanged"],
+      ["Row: type text", "11.5 --fg-faint, truncates first", "12.5 --fg-muted, truncates first; at 900 a $38.50 foil figure leaves ~70px of type"],
+      ["Tile: figure", "leads the sub-line; mono 9 / 600 --accent tabular-nums; then \u00b7 SET (rarity hidden)", "mono 9.5 / 600; then \u00b7 SET \u00b7 rarity"],
+      ["Tile: suffix / no stock / silent", "as the row, at the sub-line's size", "same"],
+      ["Tile: caption", "70 unchanged (8+17+3+20+3+11+8)", "65 unchanged (6+18+3+17+3+12+6)"],
+      ["Tile: truncation", "figure flex:none; the SET text truncates", "same"],
+      ["Sort panel", "sheet row h48; Price is the 6th row; hint mono 11.5 --fg-faint on the selected row only", "popover row h36; hint mono 11"],
+      ["Trigger", "Price \u00b7 Highest first (no Sort: prefix under 480)", "Sort: Price \u00b7 Highest first"],
+      ["Sort key", "the max over owned copies of priceOf(fact for that copy's printing + finish); unpriced = null", "same"],
+      ["Order", "priced by key (desc|asc), tiebreak name A\u2013Z; then all nulls, A\u2013Z", "same"],
+      ["Spoken", "row/tile aria gains the price clause last, only when sort=price", "same"],
+    ].map(([p, m, d]) => ({ p, m, d }));
+
+    return { calls, sections, panelRows, cases, states, table };
+  }
+}
+</script>
+</body>
+</html>

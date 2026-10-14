@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] { --bg:#14110E; --surface:#1E1A15; --border:#2B241B; --border-strong:#3A3229; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; }
+  [data-theme="kamigawa"] { --bg:#0E0F14; --surface:#16181F; --border:#181C26; --border-strong:#262A35; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0907; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="display:flex;flex-direction:column;gap:64px;padding:48px 56px 80px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1800px;">
+
+  <header style="display:flex;flex-direction:column;gap:10px;max-width:1100px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">The 99 · analysis tab · addendum, 2026-10-10 · the method notice and the free rewrite</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:32px;line-height:1.15;">We changed how overviews are written, and the overview says so, with one free rewrite</h1>
+    <p style="margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">This amends <a href="../The 99 - Analysis Tab.dc.html">the Analysis tab</a> and <a href="../addendum_overview_loading/Overview Loading Addendum.dc.html">the overview-loading addendum</a>, and implements plan §7.4 with Hugh’s override: this is its own notice, not the stale state. The press rewrites the <b>Overview only</b>. It’s free once per deck per method version, with at most 2 attempts, and runs only when the owner presses it. There’s no new tag and no Notices-sheet entry.</p>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">
+      <a href="#1a" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1a eligible</a><span style="color:var(--fg-faint);">→ press →</span>
+      <a href="#1b" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1b writing</a><span style="color:var(--fg-faint);">→</span>
+      <a href="#1c" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1c done</a><span style="color:var(--fg-faint);">or</span>
+      <a href="#1d" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1d failed, 1 left</a><span style="color:var(--fg-faint);">→ fails again →</span>
+      <a href="#1e" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1e both used</a><span style="color:var(--fg-faint);">·</span>
+      <a href="#1f" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1f with the stale banner</a>
+    </div>
+  </header>
+
+  <section style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+    <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Where it sits: in the Overview, not over the tab</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The notice sits under the <i>Overview</i> label, above the held paragraph. It isn’t at the top of the tab, where the stale banner speaks for the whole reading. Placing it here says what the press touches: this text, not the bracket. The bracket box keeps its own date (<i>analyzed 21 Sept</i>) all the way through.</p></div>
+    <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Told apart from the stale banner at a glance</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The stale banner is the reader’s change. It’s solid (<code>--surface-rail</code>, <code>--border-strong</code>) and has the tab’s filled button. The notice is ours. It’s dashed (<code>--border-dashed</code> on <code>--surface-sunken</code>), leads with the app’s <b>i</b> mark (the stats InfoTip’s 18px ring, static here) and has the Overview’s own outlined button, the same one as <b>Write one</b> and <b>Try again</b>. The line starts with <i>We’ve changed</i>, never <i>Your deck</i>.</p></div>
+    <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Not dismissible</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It’s a caption on the text it sits above, like ruling D’s <i>written before your latest changes</i>, so it’s not a promotion to close. It stays true until the overview is rewritten, by this press or by any later write, and then it goes. It’s quiet and stays inside its section, so leaving it costs little. A dismiss control would also throw away the free run without saying so.</p></div>
+  </section>
+
+  <section id="1a" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1a</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Eligible: the notice and its free press</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Wording, from Hugh’s line</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;"><i>The way we analyze decks has changed. Re-analyze your deck.</i> becomes <i>We’ve changed how we write overviews. This one was written the old way.</i> “Analyze” and “Re-analyze” already mean the bracket on this tab, and the plan has ruled that this press doesn’t touch the bracket. So the line names the overview, and the second sentence says which text is affected.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The note says free, whatever the credits</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The label is the shipped <b>Write a new overview</b>. “Free” is said once, in the note under the line: <i>Free, no credit used…</i> and leaves out the credits standing. With 0 credits or the allowance paused it would say <i>0 of 5 left</i> or <i>paused until…</i> beside a press that ignores both. So this frame is the same at full credits, at 0, and while paused. <code>read.ts</code> has to show it in all three.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Scope, stated once</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;"><i>Only the overview is rewritten; your bracket and stats stay as they are.</i> That answers the question the press would raise. Nothing is automatic, and an unpressed deck costs nothing. The held overview stays readable underneath, along with <i>View full overview →</i>.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · eligible · the same at 0 credits or paused</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="mEligible" theme="{{ theme }}" hint-size="1300px,1250px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · eligible</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="mEligible" theme="{{ theme }}" hint-size="390px,2400px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <section id="1b" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1b</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Writing</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The overview-loading addendum’s 1b, reused</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The notice goes on press. The label row shows the pulse and <i>writing a new one with the new method</i>, the held paragraph stays whole, and the new one replaces it in place with a 150ms crossfade. Nothing is inserted above painted text.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The bracket doesn’t move</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">There’s no tab loader and no busy state on the bracket box, the climb or the findings, and <i>analyzed 21 Sept</i> doesn’t change. That’s the visible proof of the scope line in 1a.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The page shrinks by one block</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Removing the notice moves the paragraph up once, about 60 / 140px. That happens on the reader’s own press, where they expect a change. Focus goes to the label row’s status.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · writing over the held overview</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="mWriting" theme="{{ theme }}" hint-size="1300px,1200px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="mWriting" theme="{{ theme }}" hint-size="390px,2300px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <section id="1c" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1c</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Done: the notice is gone</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The ordinary written state</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It’s the shipped paragraph and <i>View full overview →</i>, with no trace of the notice. There’s no “new” marker and no tag, which follows §7.4’s rejection of the Notices kind. <i>Overview ready.</i> is announced once (the overview-loading addendum).</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Never comes back for this version</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The new row is version 8, so the deck is no longer eligible. Later edits bring back the reader’s own stale banner, never this one. A later method change would be a new version and would offer a new free run.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Any rewrite ends it</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">If the overview is rewritten some other way (Re-analyze after edits, as in 1f, or a paid write after 1e), the shown row is version 8 and the notice goes the same way.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · done</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="mDone" theme="{{ theme }}" hint-size="1300px,1200px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · done</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="mDone" theme="{{ theme }}" hint-size="390px,2300px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <section id="1d" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1d</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">The free run failed, one attempt left</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The notice comes back, as the failure</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It returns in the same place and the same dashed form, so the reader sees the same thing they pressed. The mark becomes <b>!</b> and the line is <code>role="alert"</code>: <i>We couldn’t write the new overview. Nothing about your deck changed.</i> That’s the shape of the shipped <code>failed</code> line, with “new” added. There’s no <code>--danger</code>, because this is an outage, not a refusal.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The count is shown, once</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;"><b>Try again</b>, with <i>1 free try left. No credit used.</i> The 2-attempt cap is only stated once it matters. Saying “2 tries” in 1a would make a one-off free rewrite sound like it might fail.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The held overview stays</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The failed write replaced nothing. The old paragraph is still under the notice, and the notice still says which method wrote it.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · failed, 1 attempt left</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="mFailedOne" theme="{{ theme }}" hint-size="1300px,1250px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="mFailedOne" theme="{{ theme }}" hint-size="390px,2400px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <section id="1e" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1e</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Both attempts used: back to the paid action</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Says why, then gives the normal press</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;"><i>We couldn’t write the new overview with the free tries. You can still write one with a credit.</i> The press is the shipped <b>Write a new overview</b> with the shipped credit note (<i>Uses a credit. 4 of 5 left · …</i>).</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">From here, the normal credit rules</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">At 0 credits, paused or past the owner’s share, the press disables and the note becomes the shipped used-up or paused line, the same as the Overview’s <b>Write one</b> (Round 0 state 4). The free wording never appears here.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Still not dismissible</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The overview is still the old method’s, so the caption stays true. It goes on any successful write, paid or through Re-analyze.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · both free attempts used</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="mFailedSpent" theme="{{ theme }}" hint-size="1300px,1250px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="mFailedSpent" theme="{{ theme }}" hint-size="390px,2400px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <section id="1f" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1f</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">The deck was edited and the method changed</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The stale banner leads; one press does both</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The reader’s change ranks first. It can move the bracket, and Re-analyze writes a new overview anyway. Two presses that both write the overview would be one too many. So the notice keeps its line and loses its button, and its note points up: <i>Re-analyze above writes it the new way, free.</i></p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Re-analyze’s credit note changes</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The shipped <i>Also writes the overview, using a credit. 4 of 5 left…</i> becomes <i>Also writes the overview, free this once because we changed how overviews are written.</i> No standing is shown, so it holds at 0 credits and while paused. The bracket read was already free.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">For engineering: the overview half is the system run</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Re-analyze’s overview write goes through <code>origin = 'system'</code> and counts against the 2 attempts. If it fails, 1d / 1e show in the notice, and the bracket half stands. If that can’t be split cleanly, the fallback is for the notice to keep its own free <b>Write a new overview</b> here and for Re-analyze to keep the paid note. Listed in README open 1.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · stale banner + method notice</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="mWithStale" theme="{{ theme }}" hint-size="1300px,1450px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="mWithStale" theme="{{ theme }}" hint-size="390px,2600px"></dc-import></div></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() { return { theme: this.props.theme ?? "amonkhet" }; }
+}
+</script>
+</body>
+</html>

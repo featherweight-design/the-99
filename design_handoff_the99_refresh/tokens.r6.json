@@ -1,0 +1,354 @@
+{
+  "rev": "R6",
+  "date": "2026-09-06",
+  "themes": {
+    "amonkhet": {
+      "label": "Amonkhet",
+      "name": "Low Sun",
+      "face": "Cinzel",
+      "fontWeight": 600,
+      "tokens": {
+        "bg": "#14110E",
+        "surface": "#1E1A15",
+        "surface-raised": "#211D18",
+        "surface-rail": "#1A1611",
+        "surface-sunken": "#18140F",
+        "surface-inset": "#1B1712",
+        "elevated": "#29241F",
+        "elevated-hover": "#201C17",
+        "border": "#2B241B",
+        "border-strong": "#3A3229",
+        "border-dashed": "#494037",
+        "fg": "#EDE6D8",
+        "fg-body": "#C0B8A6",
+        "fg-muted": "#A59C89",
+        "fg-faint": "#8B8270",
+        "fg-locked": "#6E6654",
+        "accent": "#CF8745",
+        "accent-hover": "#DE9757",
+        "accent-strong": "#AB6E37",
+        "accent-shadow": "#6B482A",
+        "accent-dim": "#6B482A",
+        "accent-mid": "#AB6E37",
+        "success": "#6FA368",
+        "warning": "#DEAA29",
+        "danger": "#C6533F",
+        "avail-soft": "var(--fg-muted)",
+        "avail-hard": "var(--accent)",
+        "avail-hard-fg": "#D9975C",
+        "avail-over-fg": "#C46857",
+        "avail-over-border": "#752619",
+        "w": "#F4E9C4",
+        "u": "#3A6AA5",
+        "b": "#98748F",
+        "r": "#C05A3E",
+        "g": "#4B7A46"
+      }
+    },
+    "kamigawa": {
+      "label": "Kamigawa: Neon Dynasty",
+      "name": "Neon Rain",
+      "face": "Chakra Petch",
+      "fontWeight": 600,
+      "tokens": {
+        "bg": "#0E0F14",
+        "surface": "#16181F",
+        "surface-raised": "#191B22",
+        "surface-rail": "#12141B",
+        "surface-sunken": "#101219",
+        "surface-inset": "#13151C",
+        "elevated": "#20222A",
+        "elevated-hover": "#181A21",
+        "border": "#181C26",
+        "border-strong": "#262A35",
+        "border-dashed": "#343843",
+        "fg": "#E6E8F0",
+        "fg-body": "#B1B6C7",
+        "fg-muted": "#959AAD",
+        "fg-faint": "#6F7486",
+        "fg-locked": "#606476",
+        "accent": "#FF4D9A",
+        "accent-hover": "#FF62A9",
+        "accent-strong": "#D33E7E",
+        "accent-shadow": "#843052",
+        "accent-dim": "#843052",
+        "accent-mid": "#D33E7E",
+        "success": "#6FA368",
+        "warning": "#E0913C",
+        "danger": "#C6533F",
+        "avail-soft": "var(--fg-muted)",
+        "avail-hard": "var(--accent)",
+        "avail-hard-fg": "#DF8AA7",
+        "avail-over-fg": "#C26755",
+        "avail-over-border": "#752619",
+        "w": "#F4E9C4",
+        "u": "#3A6AA5",
+        "b": "#98748F",
+        "r": "#C05A3E",
+        "g": "#4B7A46"
+      }
+    },
+    "phyrexia": {
+      "label": "New Phyrexia",
+      "name": "Oil Haze",
+      "face": "Syncopate",
+      "fontWeight": 600,
+      "tokens": {
+        "bg": "#0D0B0E",
+        "surface": "#151317",
+        "surface-raised": "#18161A",
+        "surface-rail": "#110F13",
+        "surface-sunken": "#100E12",
+        "surface-inset": "#131115",
+        "elevated": "#1E1C20",
+        "elevated-hover": "#171519",
+        "border": "#19161C",
+        "border-strong": "#262329",
+        "border-dashed": "#332F36",
+        "fg": "#E4E2E6",
+        "fg-body": "#B5B2BB",
+        "fg-muted": "#9A96A0",
+        "fg-faint": "#78747E",
+        "fg-locked": "#64616A",
+        "accent": "#52827A",
+        "accent-hover": "#629189",
+        "accent-strong": "#3E665F",
+        "accent-shadow": "#213834",
+        "accent-dim": "#213834",
+        "accent-mid": "#3E665F",
+        "success": "#6FA368",
+        "warning": "#E0913C",
+        "danger": "#C6533F",
+        "avail-soft": "var(--fg-muted)",
+        "avail-hard": "var(--accent)",
+        "avail-hard-fg": "#77A9A0",
+        "avail-over-fg": "#BE6453",
+        "avail-over-border": "#752619",
+        "w": "#F4E9C4",
+        "u": "#3A6AA5",
+        "b": "#98748F",
+        "r": "#C05A3E",
+        "g": "#527030"
+      }
+    },
+    "kaldheim": {
+      "label": "Kaldheim",
+      "name": "First Frost",
+      "face": "Metamorphous",
+      "fontWeight": 600,
+      "tokens": {
+        "bg": "#121217",
+        "surface": "#1E1F26",
+        "surface-raised": "#22232B",
+        "surface-rail": "#181920",
+        "surface-sunken": "#16171D",
+        "surface-inset": "#1A1B22",
+        "elevated": "#2D2E35",
+        "elevated-hover": "#212229",
+        "border": "#1A1F2B",
+        "border-strong": "#2E3340",
+        "border-dashed": "#424755",
+        "fg": "#C6D2D3",
+        "fg-body": "#B3C0C2",
+        "fg-muted": "#95A4A6",
+        "fg-faint": "#7C8A8C",
+        "fg-locked": "#5F6D6E",
+        "accent": "#5C86C9",
+        "accent-hover": "#6C95D8",
+        "accent-strong": "#486BA3",
+        "accent-shadow": "#2C405F",
+        "accent-dim": "#2C405F",
+        "accent-mid": "#486BA3",
+        "success": "#6FA368",
+        "warning": "#E0913C",
+        "danger": "#C6533F",
+        "avail-soft": "var(--fg-muted)",
+        "avail-hard": "var(--accent)",
+        "avail-hard-fg": "#80ABEF",
+        "avail-over-fg": "#C86D5B",
+        "avail-over-border": "#752619",
+        "w": "#F4E9C4",
+        "u": "#3A6AA5",
+        "b": "#98748F",
+        "r": "#C05A3E",
+        "g": "#4B7A46"
+      }
+    },
+    "ixalan": {
+      "label": "Ixalan",
+      "name": "Canopy",
+      "face": "Trirong",
+      "fontWeight": 600,
+      "tokens": {
+        "bg": "#0E1310",
+        "surface": "#171E19",
+        "surface-raised": "#1A221C",
+        "surface-rail": "#121814",
+        "surface-sunken": "#101512",
+        "surface-inset": "#141B16",
+        "elevated": "#212A23",
+        "elevated-hover": "#18201A",
+        "border": "#1D2620",
+        "border-strong": "#2C3830",
+        "border-dashed": "#3B4A3F",
+        "fg": "#E0E7DE",
+        "fg-body": "#B6C2B3",
+        "fg-muted": "#98A695",
+        "fg-faint": "#808C7C",
+        "fg-locked": "#626E5E",
+        "accent": "#A3C445",
+        "accent-hover": "#B2D257",
+        "accent-strong": "#85A22F",
+        "accent-shadow": "#3E5220",
+        "accent-dim": "#3E5220",
+        "accent-mid": "#85A22F",
+        "success": "#6FA368",
+        "warning": "#E0913C",
+        "danger": "#C6533F",
+        "avail-soft": "var(--fg-muted)",
+        "avail-hard": "var(--accent)",
+        "avail-hard-fg": "#ABCB5B",
+        "avail-over-fg": "#C56A58",
+        "avail-over-border": "#752619",
+        "w": "#F4E9C4",
+        "u": "#3A6AA5",
+        "b": "#98748F",
+        "r": "#C05A3E",
+        "g": "#4B7A46"
+      },
+      "fontDisplayFace": "\"Trirong\", serif"
+    },
+    "eldraine": {
+      "label": "Wilds of Eldraine",
+      "name": "Witching Hour",
+      "face": "Cormorant Garamond",
+      "fontWeight": 600,
+      "tokens": {
+        "bg": "#120E17",
+        "surface": "#1B1821",
+        "surface-raised": "#1F1C25",
+        "surface-rail": "#15121B",
+        "surface-sunken": "#131018",
+        "surface-inset": "#17141D",
+        "elevated": "#26232C",
+        "elevated-hover": "#1D1A23",
+        "border": "#241D30",
+        "border-strong": "#342C41",
+        "border-dashed": "#443C52",
+        "fg": "#E4DEEE",
+        "fg-body": "#B9B2C5",
+        "fg-muted": "#9C95A8",
+        "fg-faint": "#898395",
+        "fg-locked": "#6A6475",
+        "accent": "#AE88E6",
+        "accent-hover": "#BC9BEE",
+        "accent-strong": "#8E6AC4",
+        "accent-shadow": "#4A3568",
+        "accent-dim": "#4A3568",
+        "accent-mid": "#8E6AC4",
+        "success": "#6FA368",
+        "warning": "#E0913C",
+        "danger": "#C6533F",
+        "avail-soft": "var(--fg-muted)",
+        "avail-hard": "var(--accent)",
+        "avail-hard-fg": "#B795EA",
+        "avail-over-fg": "#C56A58",
+        "avail-over-border": "#752619",
+        "w": "#F4E9C4",
+        "u": "#3A6AA5",
+        "b": "#98748F",
+        "r": "#C05A3E",
+        "g": "#4B7A46"
+      },
+      "fontDisplayFace": "\"Cormorant Garamond\", serif"
+    }
+  },
+  "removed": {
+    "innistrad": {
+      "name": "Moonlit",
+      "reason": "accent 15° from phyrexia",
+      "fallback": "phyrexia"
+    },
+    "duskmourn": {
+      "name": "Screen Glow",
+      "reason": "accent 25° from kaldheim",
+      "fallback": "kaldheim"
+    }
+  },
+  "contract": {
+    "surfaceChromaMax": 0.02,
+    "textChromaMax": 0.03,
+    "borderChromaMax": 0.04,
+    "note": "R6 palettes fit the shipped contract.test.ts caps; the contract was not modified."
+  },
+  "r6Changes": {
+    "ixalan": {
+      "fg-faint": [
+        "#7E8D79",
+        "#808C7C"
+      ],
+      "fg-locked": [
+        "#616E5D",
+        "#626E5E"
+      ]
+    },
+    "eldraine": {
+      "bg": [
+        "#120E18",
+        "#120E17"
+      ],
+      "surface": [
+        "#1C1626",
+        "#1B1821"
+      ],
+      "surface-raised": [
+        "#201A2B",
+        "#1F1C25"
+      ],
+      "surface-rail": [
+        "#16111E",
+        "#15121B"
+      ],
+      "surface-sunken": [
+        "#140F1B",
+        "#131018"
+      ],
+      "surface-inset": [
+        "#181322",
+        "#17141D"
+      ],
+      "elevated": [
+        "#282034",
+        "#26232C"
+      ],
+      "elevated-hover": [
+        "#1E1829",
+        "#1D1A23"
+      ],
+      "fg-body": [
+        "#BAB0CC",
+        "#B9B2C5"
+      ],
+      "fg-muted": [
+        "#9E93B0",
+        "#9C95A8"
+      ],
+      "fg-faint": [
+        "#8B80A0",
+        "#898395"
+      ],
+      "fg-locked": [
+        "#665C77",
+        "#6A6475"
+      ],
+      "border-strong": [
+        "#352B45",
+        "#342C41"
+      ],
+      "border-dashed": [
+        "#463A59",
+        "#443C52"
+      ]
+    }
+  }
+}

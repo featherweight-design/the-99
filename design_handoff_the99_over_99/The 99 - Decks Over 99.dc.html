@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Amendment 3 &middot; decks over 99 &middot; /decks + builder</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">Over is a stage of building, so it is drawn in the building colour.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">Lifting the cap means a list can arrive at 104 and be trimmed back. Nothing about that is an error &mdash; overfilling then cutting is how a deck actually gets built &mdash; so the over state takes <b style="color:#EDE6D8;font-weight:600;">no <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--danger</span>, no <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">role="alert"</span>, no banner and no blocked control.</b> It takes <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--warning</span>, which is the colour <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Building</span> already wears, and it says how many to cut.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">Three changes carry it. <b style="color:#EDE6D8;font-weight:600;">The count keeps its denominator</b> and prints <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">104 / 99</span> with a <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">+5</span>. <b style="color:#EDE6D8;font-weight:600;">The bar re-scales to the total</b>, so the 99 stays green and the overflow is drawn to scale in amber &mdash; the amber segment <i>is</i> the number of cards to cut. <b style="color:#EDE6D8;font-weight:600;">The pill gains a fifth value</b>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Over</span>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Complete</span> narrows to exactly 99.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8B8270;margin:0;">Read <a href="README.md">README.md</a> for the decisions log, <a href="STATES-over-99.md">STATES-over-99.md</a> for the state matrix across both surfaces, <a href="over-99 · copy strings.ts">over-99 &middot; copy strings.ts</a> for production copy, <a href="READINESS.md">READINESS.md</a> for what blocks a green. Mock deck is continuous with the sibling handoffs: Kykar, Wind's Fury, Jeskai, 104 built &middot; 96 owned &middot; 8 to buy.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#18140F;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">The one thing not to get wrong</div>
+    <div style="font-size:13px;color:#A59C89;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">A deck at 104 is not broken, and the app must not act as though it is.</b> It is exportable, it is playable-adjacent, its claims on your collection are as hard as any finished deck's, and the player did it on purpose. Every treatment below was picked by asking whether it would read as <i>"you have work to do"</i> or as <i>"something has gone wrong"</i>. Red, alerts, disabled buttons and warning triangles all read as the second one.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <!-- ============ A · THE THREE CHANGES ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">A &middot; <span style="color:#CF8745;">the three changes, isolated</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:440px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">1 &middot; the count</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;margin-bottom:8px;">at 64 &mdash; shipped, unchanged</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:#EDE6D8;">64<span style="font-weight:400;color:#8B8270;"> / 99</span></span>
+          </div>
+          <div style="background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;margin-bottom:8px;">at 99 &mdash; shipped, unchanged</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:#EDE6D8;">99<span style="font-weight:400;color:#8B8270;"> / 99</span></span>
+          </div>
+          <div style="background:#1E1A15;border:1px solid #6B482A;border-radius:10px;padding:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">at 104 &mdash; called</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:#DEAA29;">104<span style="font-weight:400;color:#8B8270;"> / 99</span><span style="font-weight:600;color:#DEAA29;">&nbsp;&nbsp;+5</span></span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:16px;"><b style="color:#EDE6D8;font-weight:600;">The denominator does not move.</b> 99 is the rule, not a target the deck can outgrow, so <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">104 / 104</span> would be a lie about the format. The built figure takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+5</span> follows it &mdash; a second figure rather than a recolour, because 104 alone next to a 99 is arithmetic the player should not have to do at a glance.</div>
+      </div>
+
+      <div style="width:500px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">2 &middot; the bar &mdash; <span style="color:#CF8745;">denominator max(99, built)</span></div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;margin-bottom:8px;">64 / 99 &mdash; 65% amber, shipped</div>
+            <div style="height:7px;border-radius:999px;background:#29241F;overflow:hidden;display:flex;"><div style="width:65%;height:100%;background:#DEAA29;"></div></div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;margin-bottom:8px;">99 / 99 &mdash; 100% green, shipped</div>
+            <div style="height:7px;border-radius:999px;background:#29241F;overflow:hidden;display:flex;"><div style="width:100%;height:100%;background:#6FA368;"></div></div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">104 &mdash; 95.2% green + 4.8% amber, called</div>
+            <div style="height:7px;border-radius:999px;background:#29241F;overflow:hidden;display:flex;"><div style="width:95.2%;height:100%;background:#6FA368;"></div><div style="width:4.8%;height:100%;background:#DEAA29;box-shadow:inset 1px 0 0 #14110E;"></div></div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">137 &mdash; a whole precon pasted in, 72.3% / 27.7%</div>
+            <div style="height:7px;border-radius:999px;background:#29241F;overflow:hidden;display:flex;"><div style="width:72.3%;height:100%;background:#6FA368;"></div><div style="width:27.7%;height:100%;background:#DEAA29;box-shadow:inset 1px 0 0 #14110E;"></div></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:16px;"><b style="color:#EDE6D8;font-weight:600;">The amber segment is the trim, drawn to scale.</b> Fill is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">99 / max(99, built)</span> in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span>; the remainder is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span>. The 1px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--bg</span> seam at the boundary is the only new pixel &mdash; it keeps the two segments from reading as one gradient at 6px tall. Under 99 the geometry is byte-identical to what ships: one fill, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Math.min</span> and all.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">3 &middot; the pill &mdash; <span style="color:#CF8745;">a fifth value</span></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#A59C89;background:rgba(165,156,137,0.12);">Draft</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;">built === 0</span></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#DEAA29;background:rgba(222,170,41,0.13);">Building</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;">0 &lt; built &lt; 99</span></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#6FA368;background:rgba(111,163,104,0.13);">Playable</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;">built === 99, gaps or unresolved</span></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#6FA368;background:rgba(111,163,104,0.13);">Complete</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;">built === 99, all owned &mdash; <span style="color:#DEAA29;">narrowed</span></span></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#DEAA29;background:rgba(222,170,41,0.13);">Over</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#DEAA29;">built &gt; 99 &mdash; new</span></div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:16px;"><b style="color:#EDE6D8;font-weight:600;">Over shares Building's exact treatment</b> &mdash; same amber, same 13% wash, same geometry. Playable and Complete already share <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span>, so a shared colour across two values is the vocabulary's own pattern, and the pair it makes is the honest one: <i>Building</i> and <i>Over</i> are the two states with work left.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;"><b style="color:#EDE6D8;font-weight:600;">Why a fifth value is cheap here and was not for unresolved rows.</b> The deck-import handoff refused a fifth pill because it would have threaded <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">unresolvedCount</span> &mdash; a new input &mdash; through the server list and the optimistic client list, doubling the surfaces that can disagree mid-mutation. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">statusPill()</span> already takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">built</span>. This is one branch above the existing first test, on an argument that is already there.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ B · DECK CARD ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">B &middot; <span style="color:#CF8745;">/decks &mdash; the deck card, at 99 and at 104</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:470px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Desktop, 99 / 99 &mdash; the state above the change</div>
+        <div style="background:#1E1A15;border:1px solid #2B241B;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:18px;">
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:52px;height:73px;border-radius:8px;background:linear-gradient(140deg,#F4E9C4,#3A6AA5 55%,#C05A3E);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+            <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Kykar Spellslinger</div>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#6FA368;background:rgba(111,163,104,0.13);">Complete</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                <span style="width:12px;height:12px;border-radius:999px;background:#F4E9C4;flex:none;"></span>
+                <span style="width:12px;height:12px;border-radius:999px;background:#3A6AA5;flex:none;"></span>
+                <span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;flex:none;"></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89;margin-left:2px;">Jeskai</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:#EDE6D8;">99<span style="font-weight:400;color:#8B8270;"> / 99</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89;">99 owned &middot; 0 to buy</span>
+            </div>
+            <div style="height:7px;border-radius:999px;background:#29241F;overflow:hidden;display:flex;"><div style="width:100%;height:100%;background:#6FA368;"></div></div>
+          </div>
+          <div style="display:flex;gap:9px;">
+            <span style="flex:1;text-align:center;font-size:13px;font-weight:600;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 0;">Open builder</span>
+            <span style="font-size:13px;color:#A59C89;border:1px solid #2B241B;border-radius:8px;padding:9px 13px;">&ctdot;</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#1A1611;border:1px solid #6B482A;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:14px;">Desktop, 104 &mdash; four elements move, nothing is added</div>
+        <div style="background:#1E1A15;border:1px solid #2B241B;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:18px;">
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:52px;height:73px;border-radius:8px;background:linear-gradient(140deg,#F4E9C4,#3A6AA5 55%,#C05A3E);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+            <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Kykar Spellslinger</div>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#DEAA29;background:rgba(222,170,41,0.13);">Over</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                <span style="width:12px;height:12px;border-radius:999px;background:#F4E9C4;flex:none;"></span>
+                <span style="width:12px;height:12px;border-radius:999px;background:#3A6AA5;flex:none;"></span>
+                <span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;flex:none;"></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89;margin-left:2px;">Jeskai</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:#DEAA29;">104<span style="font-weight:400;color:#8B8270;"> / 99</span><span style="font-weight:600;color:#DEAA29;">&nbsp;&nbsp;+5</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89;">96 owned &middot; 8 to buy</span>
+            </div>
+            <div style="height:7px;border-radius:999px;background:#29241F;overflow:hidden;display:flex;"><div style="width:95.2%;height:100%;background:#6FA368;"></div><div style="width:4.8%;height:100%;background:#DEAA29;box-shadow:inset 1px 0 0 #14110E;"></div></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#DEAA29;margin-top:7px;">5 to cut</div>
+          </div>
+          <div style="display:flex;gap:9px;">
+            <span style="flex:1;text-align:center;font-size:13px;font-weight:600;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 0;">Open builder</span>
+            <span style="font-size:13px;color:#A59C89;border:1px solid #2B241B;border-radius:8px;padding:9px 13px;">&ctdot;</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#DEAA29;">5 to cut</span> takes the slot and the exact type of the unresolved-rows marker (mono 10/10.5px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span>, 6/7px above). <b style="color:#EDE6D8;font-weight:600;">The two can coexist</b> and stack in that order &mdash; over first, unresolved second &mdash; because a deck at 104 with two unnamed lines is one import away and both lines are true.</div>
+      </div>
+
+      <div style="width:390px;flex:none;background:#18140F;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">390px &mdash; the denominator comes back</div>
+        <div style="background:#1E1A15;border:1px solid #2B241B;border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="width:42px;height:59px;border-radius:6px;background:linear-gradient(140deg,#F4E9C4,#3A6AA5 55%,#C05A3E);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+            <div style="min-width:0;flex:1;">
+              <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Kykar Spellslinger</div>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:4px 9px;color:#DEAA29;background:rgba(222,170,41,0.13);">Over</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;margin-top:4px;">
+                <span style="width:11px;height:11px;border-radius:999px;background:#F4E9C4;flex:none;"></span>
+                <span style="width:11px;height:11px;border-radius:999px;background:#3A6AA5;flex:none;"></span>
+                <span style="width:11px;height:11px;border-radius:999px;background:#C05A3E;flex:none;"></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;margin-left:2px;">Jeskai</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:#DEAA29;">104<span style="font-weight:400;color:#8B8270;"> / 99</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;">96 owned &middot; 8 to buy</span>
+            </div>
+            <div style="height:6px;border-radius:999px;background:#29241F;overflow:hidden;display:flex;"><div style="width:95.2%;height:100%;background:#6FA368;"></div><div style="width:4.8%;height:100%;background:#DEAA29;box-shadow:inset 1px 0 0 #14110E;"></div></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;margin-top:6px;">5 to cut</div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">The phone card hides <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/ 99</span> today and must stop hiding it here.</b> It is suppressed because the bar carries the denominator visually &mdash; true while the bar cannot overflow. A bare <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">104</span> with a nearly-full bar reads as a big healthy deck. So <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/ 99</span> returns at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">built &gt; 99</span> only, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+5</span> is dropped rather than shrunk &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">5 to cut</span> below the bar says it in words.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ C · THE SPINE ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">C &middot; <span style="color:#CF8745;">the builder spine &mdash; where the trim line lives</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:0;overflow:hidden;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;padding:18px 20px 0;">Desktop spine at 104 &mdash; <span style="color:#CF8745;">progress block + one line, no band</span></div>
+        <div style="margin:18px 0 0;background:#14110E;">
+          <div style="display:flex;align-items:center;gap:18px;padding:20px 30px;border-bottom:1px solid #2B241B;">
+            <div style="width:72px;height:100px;border-radius:6px;background:linear-gradient(140deg,#F4E9C4,#3A6AA5 55%,#C05A3E);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:#EDE6D8;line-height:1.2;">Kykar Spellslinger</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-top:2px;">Kykar, Wind's Fury &middot; Jeskai</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:3px;margin-left:2px;">
+                <span style="width:10px;height:10px;border-radius:999px;background:#F4E9C4;"></span>
+                <span style="width:10px;height:10px;border-radius:999px;background:#3A6AA5;"></span>
+                <span style="width:10px;height:10px;border-radius:999px;background:#C05A3E;"></span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:4px;margin-top:4px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:#DEAA29;">104</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8B8270;">/ 99</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:#DEAA29;margin-left:6px;">+5</span>
+              </div>
+              <div style="width:170px;height:6px;border-radius:999px;background:#29241F;overflow:hidden;margin-top:6px;display:flex;"><div style="width:95.2%;height:100%;background:#6FA368;"></div><div style="width:4.8%;height:100%;background:#DEAA29;box-shadow:inset 1px 0 0 #14110E;"></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;margin-top:5px;">96 owned &middot; 8 to buy</div>
+              <div style="font-size:12.5px;color:#C0B8A6;margin-top:8px;line-height:1.5;max-width:520px;"><b style="color:#DEAA29;font-weight:600;">Five over the ninety-nine.</b> Cut five and it is legal. Building long and trimming back is a normal way to get there.</div>
+            </div>
+            <div style="flex:none;display:flex;gap:9px;align-items:center;">
+              <span style="font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:8px;padding:11px 18px;">Export</span>
+            </div>
+          </div>
+        </div>
+        <div style="padding:18px 20px 20px;font-size:12.5px;color:#A59C89;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The trim line sits inside the spine's centre column, under the owned/to-buy caption &mdash; not in a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">RollupBands</span> band below it.</b> Those bands are the availability system: they are claims about your <i>collection</i>, and they are red because two decks wanting one card is a real conflict. Being over 99 is a claim about <i>this deck's arithmetic</i>, it is right beside the arithmetic, and putting it in a band would make it the loudest thing on a page where nothing is wrong. <b style="color:#EDE6D8;font-weight:600;">Export stays enabled and stays brass.</b></div>
+      </div>
+
+      <div style="width:390px;flex:none;background:#18140F;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">390px spine at 104</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:32px 16px 12px;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:48px;height:67px;border-radius:5px;background:linear-gradient(140deg,#F4E9C4,#3A6AA5 55%,#C05A3E);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;line-height:1.2;margin-top:8px;">Kykar Spellslinger</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;margin-top:1px;">Kykar, Wind's Fury &middot; Jeskai</div>
+          <div style="display:flex;align-items:baseline;gap:4px;margin-top:6px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:#DEAA29;">104</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#8B8270;">/ 99</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;color:#DEAA29;margin-left:4px;">+5</span>
+          </div>
+          <div style="width:100%;height:5px;border-radius:999px;background:#29241F;overflow:hidden;margin-top:4px;display:flex;"><div style="width:95.2%;height:100%;background:#6FA368;"></div><div style="width:4.8%;height:100%;background:#DEAA29;box-shadow:inset 1px 0 0 #14110E;"></div></div>
+          <div style="font-size:12px;color:#C0B8A6;margin-top:8px;line-height:1.5;text-align:center;"><b style="color:#DEAA29;font-weight:600;">Five over the ninety-nine.</b> Cut five and it is legal.</div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <span style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;border:1px solid #3A3229;border-radius:7px;padding:6px 9px;min-height:44px;align-items:center;">&darr; Export</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;">The phone spine drops the trailing clause &mdash; the same shortening rule <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">RollupBands</span> applies when it stacks two lines. It keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+5</span> here, unlike the deck card, because the spine's figure is 14px and centred with room beside it.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Trimming back &mdash; <span style="color:#6FA368;">99 is a moment, and it survives</span></div>
+        <div style="background:#1E1A15;border:1px solid #6E5B33;border-radius:12px;padding:18px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:9px;height:9px;background:#CF8745;transform:rotate(45deg);flex:none;"></span>
+            <span style="width:9px;height:9px;background:#CF8745;transform:rotate(45deg);flex:none;"></span>
+            <span style="width:9px;height:9px;background:#CF8745;transform:rotate(45deg);flex:none;"></span>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;margin-left:6px;">Ninety-nine.</div>
+          </div>
+          <div style="font-size:13px;color:#C0B8A6;line-height:1.6;margin-top:10px;">That is a deck. Every slot spoken for, and you cut it down to size yourself.</div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">Cutting 104 &rarr; 99 by hand fires the completion reveal, and it should.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shouldCelebrate</span> needs no new argument: the status becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Complete</span> on the removal the player performed, which is not an import arrival and not a fill. The three suppressions that exist stay exactly as they are.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;"><b style="color:#EDE6D8;font-weight:600;">And a deck that arrives over 99 never celebrates</b> &mdash; not because of a new rule, but because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Complete</span> now means exactly 99. That closes the &sect;42 collision from a third direction for free.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ D · WHERE THE CAP WAS ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">D &middot; <span style="color:#CF8745;">what the lifted cap touches everywhere else</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px;max-width:1360px;">
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">The hard stop, and the soft ones that stay</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">add-validation.ts:42</span>'s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">if (deck.built &gt;= 99) return "deck-full"</span> is the cap, and it goes. <b style="color:#EDE6D8;font-weight:600;">Every other stop stays.</b> The two fill controls, the 68-card fill and every suggestion path stop at 99 as they do now &mdash; the app never overfills a deck on the player's behalf, because it cannot know which five they meant to cut. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">planLastSlots</span> needs no edit: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">openSlots &lt;= 0</span> already returns an empty plan, so at 104 the last-31 strip unmounts on its own. <b style="color:#EDE6D8;font-weight:600;">Only a human add and an import can exceed 99.</b></div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Dead copy</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">mutation-result.ts:18</span> &mdash; <i>&ldquo;This deck is already at 99 cards, so there's no room for another.&rdquo;</i> &mdash; becomes unreachable, along with its test. <b style="color:#EDE6D8;font-weight:600;">Deleted, not reworded.</b> A rejection message for a rejection that no longer happens is the kind of string that comes back as a bug report two years later. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-full</span> leaves the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DeckAddRejection</span> union with it.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Availability &mdash; unchanged, and that is a decision</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MATURE_DECK_SIZE = 99</span> gates whether a deck's claims on your collection are <i>hard</i> or <i>soft</i>, and it reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">built &gt;= 99</span>. An over deck therefore claims hard, which is right: 104 sleeved cards are 104 cards you cannot put in another deck. <b style="color:#EDE6D8;font-weight:600;">Do not narrow that comparison to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">=== 99</span> to match the pill.</b> The pill is about legality; this is about physical cards.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Export &mdash; enabled, and it says so</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">Export is disabled at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">built === 0</span> and nowhere else, and that does not change. A 104-card list exports as a 104-card list &mdash; the player is likely pasting it somewhere to do the cutting. <b style="color:#EDE6D8;font-weight:600;">One line is added inside the export dialog</b> when the deck is over: <i>&ldquo;This list is 104 cards. Five over what a Commander deck can hold.&rdquo;</i> Stating a fact in the one place the list leaves the app is not the same as refusing to let it leave.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">No numeric ceiling at all</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">There is no 120, no 200, no &ldquo;sane maximum&rdquo;. A ceiling would need a number nobody can justify, and the failure it guards against &mdash; someone pasting a 400-line collection export into a deck &mdash; is already handled by the import's own byte caps and, past that, reads correctly: a bar that is 25% green and 75% amber is an accurate picture of what just happened. The <b style="color:#EDE6D8;font-weight:600;">bar's re-scaling is what makes an unbounded cap safe to draw</b>, because it never overflows its track no matter the total.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Accessibility</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">The progress bar's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-valuemax</span> becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Math.max(99, built)</span> &mdash; a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">valuenow</span> of 104 against a max of 99 is an invalid range and some readers clamp it to 100%. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span> becomes <i>&ldquo;104 cards, 5 over the 99&rdquo;</i>. The two amber segments are never the only signal: the pill is a word, the trim line is a sentence, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">5 to cut</span> is text. <b style="color:#EDE6D8;font-weight:600;">No live region</b> &mdash; the player performed the add that took it over.</div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

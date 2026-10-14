@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ sheetStyle }}">
+  <div style="{{ headStyle }}">
+    <h2 style="margin:0;font-family:var(--display);font-weight:700;font-size:{{ titlePx }}px;line-height:1.2;color:var(--fg);white-space:nowrap;">Synopsis</h2>
+    <span style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">{{ aside }}</span>
+    <span aria-label="Close synopsis" style="flex:none;width:44px;height:44px;margin-right:-10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">×</span>
+  </div>
+
+  <div style="{{ bodyStyle }}">
+
+    <sc-if value="{{ stale }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="{{ bannerStyle }}">
+        <p style="margin:0;flex:1;min-width:0;font-size:13px;line-height:1.5;color:var(--fg-body);">Your deck has changes since this was written, so parts of it might not match your list.</p>
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-height:{{ btnH }}px;padding:0 16px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:13px;white-space:nowrap;flex:none;">Re-analyze</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ version }}" hint-placeholder-val="{{ false }}">
+      <p style="margin:0;padding-bottom:14px;border-bottom:1px solid var(--border);font-size:12.5px;line-height:1.55;color:var(--fg-muted);">Written for version 3 when it was committed. It describes that list, not your deck as it is now.</p>
+    </sc-if>
+
+    <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="4">
+      <section style="{{ sec.style }}">
+        <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">{{ sec.label }}</h3>
+
+        <sc-if value="{{ sec.refused }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:2px 8px;">not written</span>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-muted);">We wrote this section and it did not check out against your list, so we are not showing it. The rest did. Nothing about your deck changed.</p>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ sec.failed }}</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-height:{{ btnH }}px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-weight:500;font-size:13px;">Try again</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ sec.isPara }}" hint-placeholder-val="{{ true }}">
+          <p style="{{ paraStyle }}"><sc-for list="{{ sec.parts }}" as="p" hint-placeholder-count="1"><sc-if value="{{ p.card }}" hint-placeholder-val="{{ false }}"><b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ p.t }}</b></sc-if><sc-if value="{{ p.plain }}" hint-placeholder-val="{{ true }}">{{ p.t }}</sc-if></sc-for></p>
+        </sc-if>
+
+        <sc-if value="{{ sec.isPrimer }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <h4 style="margin:0;font-size:13.5px;font-weight:600;color:var(--fg);">Core strategy</h4>
+              <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ steps }}" as="st" hint-placeholder-count="5">
+                  <li style="display:grid;grid-template-columns:22px minmax(0,1fr);align-items:baseline;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ st.n }}</span>
+                    <span style="{{ itemStyle }}"><sc-for list="{{ st.parts }}" as="p" hint-placeholder-count="1"><sc-if value="{{ p.card }}" hint-placeholder-val="{{ false }}"><b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ p.t }}</b></sc-if><sc-if value="{{ p.plain }}" hint-placeholder-val="{{ true }}">{{ p.t }}</sc-if></sc-for></span>
+                  </li>
+                </sc-for>
+              </ol>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <h4 style="margin:0;font-size:13.5px;font-weight:600;color:var(--fg);">Mulligan</h4>
+              <div style="{{ mullGrid }}">
+                <sc-for list="{{ mulligan }}" as="mg" hint-placeholder-count="2">
+                  <div style="display:flex;flex-direction:column;gap:8px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:9px;padding:12px 14px;min-width:0;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-body);">{{ mg.label }}</span>
+                    <sc-for list="{{ mg.items }}" as="it" hint-placeholder-count="3">
+                      <span style="display:grid;grid-template-columns:14px minmax(0,1fr);align-items:baseline;font-size:13px;line-height:1.55;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ mg.glyph }}</span><span><sc-for list="{{ it }}" as="p" hint-placeholder-count="1"><sc-if value="{{ p.card }}" hint-placeholder-val="{{ false }}"><b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ p.t }}</b></sc-if><sc-if value="{{ p.plain }}" hint-placeholder-val="{{ true }}">{{ p.t }}</sc-if></sc-for></span></span>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <h4 style="margin:0;font-size:13.5px;font-weight:600;color:var(--fg);">Key tips</h4>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <sc-for list="{{ tips }}" as="tp" hint-placeholder-count="3">
+                  <p style="{{ tipStyle }}"><sc-for list="{{ tp }}" as="p" hint-placeholder-count="1"><sc-if value="{{ p.card }}" hint-placeholder-val="{{ false }}"><b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ p.t }}</b></sc-if><sc-if value="{{ p.plain }}" hint-placeholder-val="{{ true }}">{{ p.t }}</sc-if></sc-for></p>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ sec.isCards }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+            <sc-for list="{{ keyCards }}" as="kc" hint-placeholder-count="7">
+              <div style="{{ kcRow }}">
+                <b style="font-weight:600;font-size:13px;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;justify-self:start;">{{ kc.name }}</b>
+                <span style="font-size:13px;line-height:1.5;color:var(--fg-muted);">{{ kc.job }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ sec.isWeak }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ weak }}" as="w" hint-placeholder-count="3">
+              <p style="{{ weakStyle }}"><span style="width:5px;height:5px;transform:rotate(45deg);background:var(--fg-faint);display:block;margin-top:2px;"></span><span><sc-for list="{{ w }}" as="p" hint-placeholder-count="1"><sc-if value="{{ p.card }}" hint-placeholder-val="{{ false }}"><b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ p.t }}</b></sc-if><sc-if value="{{ p.plain }}" hint-placeholder-val="{{ true }}">{{ p.t }}</sc-if></sc-for></span></p>
+            </sc-for>
+          </div>
+        </sc-if>
+      </section>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:700,&quot;height&quot;:760},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;unrolled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;present&quot;,&quot;partial&quot;,&quot;stale&quot;,&quot;version&quot;],&quot;default&quot;:&quot;present&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const unrolled = !!this.props.unrolled;
+    const state = this.props.state ?? "present";
+    const s = (...parts) => parts.map((p) => (typeof p === "string" ? { t: p, card: false, plain: true } : { t: p[0], card: true, plain: false }));
+    const overview = s("A Dimir ninjutsu deck that hits early with evasive one-drops and swaps them for ", ["Yuriko, the Tiger's Shadow"], " before blockers exist. Every trigger reveals a card and drains each opponent for its mana value, so the list stacks high-cost spells on top with ", ["Brainstone"], " and ", ["Scroll Rack"], ". ", ["Force of Will"], " and ", ["Cyclonic Rift"], " protect the plan, ", ["Rhystic Study"], " keeps the hand full while ninjas return to it, and the deck closes by chaining reveals off ", ["Enter the Infinite"], ".");
+    const steps = [
+      s("Land a one-mana evasive creature on turn one or two: ", ["Ornithopter"], ", ", ["Changeling Outcast"], " or ", ["Faerie Seer"], "."),
+      s("Attack with it and ninjutsu in ", ["Yuriko, the Tiger's Shadow"], " from the command zone, or a cheaper ninja such as ", ["Ingenious Infiltrator"], " while she waits."),
+      s("Before combat damage, set the top of your library with ", ["Scroll Rack"], ", ", ["Brainstone"], " or ", ["Sensei's Divining Top"], " so the reveal is a high-cost card."),
+      s("Hold ", ["Force of Will"], " for the turn Yuriko lands, and let ", ["Rhystic Study"], " and ninja triggers refill the hand."),
+      s("Close with ", ["Enter the Infinite"], " or repeated reveals once each opponent is within reach."),
+    ].map((parts, i) => ({ n: String(i + 1), parts }));
+    const mulligan = [
+      { label: "Keep", glyph: "+", items: [s("Two or three lands and a one-drop evasive creature"), s("A top-of-library tool (", ["Scroll Rack"], ", ", ["Brainstone"], ", ", ["Sensei's Divining Top"], ") with a way to connect"), s(["Force of Will"], " or a counterspell beside a threat")] },
+      { label: "Send back", glyph: "−", items: [s("Five or more lands and no early attacker"), s("Only high-cost spells, with nothing to swing on turn two"), s("No blue source to pay for ninjutsu")] },
+    ];
+    const tips = [
+      s("Put ", ["Draco"], " on top with ", ["Scroll Rack"], " before combat damage: the reveal from ", ["Yuriko, the Tiger's Shadow"], " deals 16 to each opponent."),
+      s("Ninjutsu ", ["Yuriko, the Tiger's Shadow"], " by returning ", ["Ornithopter"], ": it costs nothing to recast, so it attacks again the next turn."),
+      s("With ", ["Brainstone"], " on the field, crack it before blockers, then put back the two highest-cost cards so both of the turn's reveals land."),
+    ];
+    const keyCards = [
+      { name: "Yuriko, the Tiger's Shadow", job: "The engine. Every ninja that connects reveals and drains." },
+      { name: "Ornithopter", job: "A free evasive body to return with ninjutsu, again and again." },
+      { name: "Scroll Rack", job: "Arranges the top of the library before a reveal." },
+      { name: "Brainstone", job: "Draws into, then stacks, two high-cost cards." },
+      { name: "Draco", job: "The largest reveal in the list." },
+      { name: "Rhystic Study", job: "Keeps the hand full while ninjas go back to it." },
+      { name: "Force of Will", job: "Protects Yuriko on the turn she lands." },
+    ];
+    const weak = [
+      s("The plan needs small creatures to connect. One sweeper, or a board of flying blockers, sets it back several turns."),
+      s("Many top-of-library cards do nothing alone; a hand of ", ["Brainstone"], " and ", ["Sensei's Divining Top"], " without an attacker is a slow start."),
+      s("Life gain blunts the reveal damage, and the list has few answers to a board that is already built."),
+    ];
+    const sec = (id, label, extra) => ({ id, label, isPara: false, isPrimer: false, isCards: false, isWeak: false, refused: false, ...extra });
+    let sections = [
+      sec("overview", "Overview", { isPara: true, parts: overview }),
+      sec("primer", "Primer", { isPrimer: true }),
+      sec("cards", "Key cards", { isCards: true }),
+      sec("weak", "Weaknesses", { isWeak: true }),
+    ];
+    if (state === "partial") sections = sections.map((x) => (x.id === "cards" ? { ...x, isCards: false, refused: true, failed: "2 of 7 cards failed checking" } : x));
+    sections = sections.map((x, i) => ({ ...x, style: { display: "flex", flexDirection: "column", gap: phone ? 11 : 12, ...(i > 0 ? { borderTop: "1px solid var(--border)", paddingTop: phone ? 18 : 20 } : {}) } }));
+    const aside = state === "version" ? "version 3 · committed 14 Sep 2026" : state === "stale" ? "HD - Yuriko · written 18 Sep" : "HD - Yuriko · written 2 minutes ago";
+    const ground = "var(--surface-raised)";
+    return {
+      theme: this.props.theme ?? "amonkhet", aside, sections, steps, mulligan, tips, keyCards, weak,
+      stale: state === "stale", version: state === "version",
+      titlePx: phone ? 15 : 16, btnH: phone ? 44 : 34,
+      sheetStyle: phone
+        ? { width: 390, height: unrolled ? "auto" : 792, background: ground, borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" }
+        : { width: 700, maxHeight: unrolled ? "none" : 731, background: ground, border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 24px 60px rgba(0,0,0,0.45)", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" },
+      headStyle: phone
+        ? { flex: "none", height: 43, display: "flex", alignItems: "center", gap: 9, padding: "0 6px 0 16px", borderBottom: "1px solid var(--border)" }
+        : { flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderBottom: "1px solid var(--border)" },
+      bodyStyle: { flex: 1, minHeight: 0, overflowY: unrolled ? "visible" : "auto", padding: phone ? "16px 16px 28px" : "20px 22px 26px", display: "flex", flexDirection: "column", gap: phone ? 18 : 20 },
+      bannerStyle: phone
+        ? { display: "flex", flexDirection: "column", alignItems: "stretch", gap: 11, padding: "13px 14px", borderRadius: 10, background: "var(--surface-rail)", border: "1px solid var(--border-strong)" }
+        : { display: "flex", alignItems: "center", gap: 16, padding: "12px 14px 12px 16px", borderRadius: 10, background: "var(--surface-rail)", border: "1px solid var(--border-strong)" },
+      paraStyle: { margin: 0, fontSize: phone ? 13.5 : 14.5, lineHeight: phone ? 1.65 : 1.7, color: "var(--fg-body)", textWrap: "pretty" },
+      itemStyle: { fontSize: phone ? 13 : 13.5, lineHeight: 1.6, color: "var(--fg-body)" },
+      tipStyle: { margin: 0, paddingLeft: 12, borderLeft: "1px solid var(--border-strong)", fontSize: phone ? 13 : 13.5, lineHeight: 1.6, color: "var(--fg-body)" },
+      weakStyle: { margin: 0, display: "grid", gridTemplateColumns: "14px minmax(0,1fr)", alignItems: "baseline", fontSize: phone ? 13 : 13.5, lineHeight: 1.6, color: "var(--fg-body)" },
+      mullGrid: { display: "grid", gridTemplateColumns: phone ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))", gap: phone ? 8 : 12 },
+      kcRow: phone
+        ? { display: "flex", flexDirection: "column", gap: 3, padding: "10px 13px", borderBottom: "1px solid var(--border)" }
+        : { display: "grid", gridTemplateColumns: "210px minmax(0,1fr)", alignItems: "baseline", gap: 16, padding: "10px 14px", borderBottom: "1px solid var(--border)" },
+    };
+  }
+}
+</script>
+</body>
+</html>

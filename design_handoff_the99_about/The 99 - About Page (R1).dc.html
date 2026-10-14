@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; border-bottom: 1px solid rgba(207,135,69,0.35); }
+  a:hover { color: #DE9757; border-bottom-color: #DE9757; }
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --fg-disabled:#5C5443;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --fg-disabled:#525666;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --fg-disabled:#55525B;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --fg-disabled:#515F60;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --fg-disabled:#545F51;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --fg-disabled:#5B5566;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+  <!-- head -->
+  <section style="max-width:1500px;margin:0 0 34px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ABOUT PAGE R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">nothing in the app explains what the app does</span>
+    </div>
+
+    <div style="border:2px solid #CF8745;border-radius:14px;background:#181318;padding:24px 28px;margin-bottom:22px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">&sect;open for design &middot; all five, answered</div>
+      <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 14px;line-height:1.25;text-wrap:pretty;">It is a <span style="color:#CF8745;">reference document</span>, not a screen &mdash; one column of twenty-six linked entries under four chapter headings, an index in the margin at desktop and in the flow at phone, and a &ldquo;new&rdquo; mark that spends the one thing this app still has: <span style="color:#CF8745;">an inverted plate with a word in it</span>.</h1>
+      <p style="font-size:15px;line-height:1.72;color:#C6B79A;margin:0 0 16px;max-width:1220px;text-wrap:pretty;">The six rulings are taken as given and none of them is reopened. What follows answers the five calls the spec carried into the handoff, in the order it asked them, each with the alternative that lost drawn rather than described.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));gap:14px;">
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#141116;padding:14px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">1 &middot; the entry</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">A row, and the whole row is the link.</b> Title, then the route in mono accent on the same baseline, then one paragraph. <b style="color:#EDE6D8;font-weight:600;">The route <i>is</i> the link affordance</b> &mdash; twenty-six accent titles would be an accent field, and the destination is the thing worth reading anyway. Cards rejected in <a href="#1b">1b</a>.</div>
+        </div>
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#141116;padding:14px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">2 &middot; the mark</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">A mono <span style="font-family:'IBM Plex Mono',monospace;">NEW</span> knocked out of a filled accent plate.</b> Not a shape, because every small geometry is booked; not a dashed box, because that box now means <i>card mark</i>. <b style="color:#EDE6D8;font-weight:600;">Accent is spendable here for one reason:</b> no cardboard appears on this page, so nothing on it can be mistaken for <i>in use</i> or <i>to buy</i>. Three alternatives drawn in <a href="#s2">&sect;2</a>.</div>
+        </div>
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#141116;padding:14px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">3 &middot; one page, index in the margin</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">One scroll at both widths.</b> Desktop gains a 216px sticky index <b style="color:#EDE6D8;font-weight:600;">on the right</b>, never the left &mdash; the left edge is already the app&rsquo;s nav rail and a second column of links there is a sub-nav. Phone gets the same four items <b style="color:#EDE6D8;font-weight:600;">inline, once, under the lede</b>: contents, not a sticky control, and never a second horizontal scroller.</div>
+        </div>
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#141116;padding:14px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">4 &middot; dismiss</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Bottom of the page, in the flow, never sticky.</b> It writes &ldquo;I have read version N&rdquo;, so it must sit where reading ends. <b style="color:#EDE6D8;font-weight:600;">The gate is already cleared by the cookie</b>, so nothing traps a reader who scrolls away &mdash; which is exactly what makes a sticky button unnecessary rather than merely unwelcome. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Got it</span>, and a mono clause naming where it lands you.</div>
+        </div>
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#141116;padding:14px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">5 &middot; the menu row</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">About The 99</span>, first &mdash; above Manage account.</b> The shipped two rows are account <i>acts</i> and the second is destructive; a destination dropped between them splits a pair. <b style="color:#EDE6D8;font-weight:600;">And it carries no badge, ever</b> &mdash; a dot on the avatar is ruling 3&rsquo;s banner with extra steps.</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="max-width:1220px;font-size:15px;line-height:1.72;color:#C6B79A;margin:0;text-wrap:pretty;">Below: five findings read at <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">main</span> that change the work (<a href="#s0">&sect;0</a>), the entry row and the card grid that lost (<a href="#s1">&sect;1</a>), the mark and its three rejected forms (<a href="#s2">&sect;2</a>), the page at full density for a reader at version 0 (<a href="#s3">&sect;3</a>), the behind and current readers (<a href="#s4">&sect;4</a>), all three states at phone (<a href="#s5">&sect;5</a>), the account menu at both widths (<a href="#s6">&sect;6</a>), and the contract (<a href="#s7">&sect;7</a>).</p>
+  </section>
+
+  <!-- §0 findings -->
+  <section id="s0" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;0</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">Five findings from source, three of which cost engineering time the spec does not budget</h2>
+    </div>
+    <p style="max-width:1220px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">The spec calls the menu change &ldquo;a third row&rdquo; and &ldquo;one insertion&rdquo;. Read at <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">main</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">account-menu.tsx</span> is hard-wired to exactly two items in three places, and the new row is the first <i>link</i> the menu has ever held. That is still small, but it is not an array append.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;">
+      <div style="border:1px solid #2B241B;border-left:3px solid #C6533F;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">1 &middot; the roving focus is written for two</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MenuItems</span> holds a two-element ref tuple (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">[useRef(), useRef()]</span> &mdash; hooks, so it cannot be mapped) and wraps with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">(active + delta + 2) % 2</span>. <b style="color:#EDE6D8;font-weight:600;">Both literals are the count.</b> A third row that leaves them is a menu where &darr; skips the new item and never reaches it.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-left:3px solid #C6533F;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">2 &middot; it is a link, and every row is a button</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;">Both shipped rows are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;button type="button"&gt;</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">onClick</span>; About is a navigation and must be a real <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;Link href="/about"&gt;</span> so it opens in a new tab and shows a URL on hover. <b style="color:#EDE6D8;font-weight:600;">Consequences:</b> the ref tuple becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">HTMLElement</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">disabled</span> does not exist on an anchor (use <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-disabled</span> while <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">busy</span>), and the panel must close on press or it survives the navigation.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-left:3px solid #DEAA29;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">3 &middot; inserting first moves a rule</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;">The sheet divides its rows with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">i === 0 ? "" : "border-t"</span>, so the first row is the one without a top rule. Going in first, <b style="color:#EDE6D8;font-weight:600;">About takes that slot and Manage account gains a rule</b> &mdash; correct by the existing expression, and worth naming so it reads as intended rather than as a regression in review.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-left:3px solid #6FA368;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">4 &middot; row-shell is the <i>card</i> row shell</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">row-shell.ts</span> declares itself as what five rows <i>standing for a card</i> share, and already excludes the search result row for being &ldquo;a different object that happens to also be a list item&rdquo;. An about entry is that same kind of not-a-card-row, so it <b style="color:#EDE6D8;font-weight:600;">takes the radius and nothing else</b>: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ROW_RADIUS_PX = 7</span>, imported, with padding and gap its own &mdash; which is exactly the split that file spends its comment defending.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-left:3px solid #6FA368;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">5 &middot; first-run&rsquo;s numerals belong to steps</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">first-run.tsx</span> numbers its items because they are <b style="color:#EDE6D8;font-weight:600;">ordered and lockable</b> &mdash; a 22px box, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">step(1, 3)</span>, a padlock, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> on the two you cannot do yet. <b style="color:#EDE6D8;font-weight:600;">About entries are neither ordered nor lockable</b>, so numerals go on the four chapters and never on the twenty-six entries. What <i>is</i> borrowed: the chapter&rsquo;s mono eyebrow, the display-face heading, and the rule that a locked or faint token never carries a fact a sighted reader needs.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §1 the entry -->
+  <section id="s1" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;1</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The entry &mdash; a row whose route is its link</h2>
+    </div>
+
+    <div id="1a" style="border:1px solid #3A3229;border-radius:14px;background:#141116;padding:20px 22px 24px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">1a</span>
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Title, route, paragraph &mdash; one row, one destination</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;border:1px solid #6FA368;border-radius:5px;padding:2px 7px;">RULED</span>
+      </div>
+      <p style="max-width:1220px;font-size:13.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">The anchor wraps the whole block, so the paragraph is part of the target rather than dead text beside one. Hover is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--elevated</span> at radius 7 &mdash; the account menu&rsquo;s own hover ground, and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">ROW_RADIUS_PX</span>. Three rows below: at rest, hovered, and marked new.</p>
+
+      <div data-theme="{{ theme }}" style="width:760px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:18px 16px;">
+        <div style="padding:10px 12px;border-radius:7px;">
+          <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;">
+            <span style="font-size:15.5px;font-weight:600;color:var(--fg);">Set completion</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection/sets</span>
+          </div>
+          <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">How close each set is to complete, and what is missing from the ones you are closest on. It reads set and collector numbers, so it needs a CSV rather than a pasted list.</div>
+        </div>
+        <div style="padding:10px 12px;border-radius:7px;background:var(--elevated);">
+          <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;">
+            <span style="font-size:15.5px;font-weight:600;color:var(--fg);">What a card costs to buy</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent-hover);">/collection</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens the card detail</span>
+          </div>
+          <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Prices come from ManaPool and refresh weekly. A card with no price was never stocked there, which is not the same as free.</div>
+        </div>
+        <div style="padding:10px 12px;border-radius:7px;">
+          <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;">
+            <span style="font-size:15.5px;font-weight:600;color:var(--fg);">Cards you are proxying</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.1em;color:var(--bg);background:var(--accent);border-radius:3px;padding:2px 5px;">NEW</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span>
+          </div>
+          <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Mark a card in a deck as one you are printing. It stops being something to buy, it does not become something you own, and the deck&rsquo;s list says which rows they are.</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:18px;">
+        <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">why the route carries the accent</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">A page of links whose titles are all accent is <b style="color:#EDE6D8;font-weight:600;">an accent field with paragraphs in it</b>, and accent is this app&rsquo;s loudest token. Moving the link colour onto the route keeps the affordance unmistakable at a fifth of the area &mdash; and the route is the fact the page exists to teach. Titles stay <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg</span> at 600, which is also what lets the mark beside them read.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">display type stops at the chapter</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">Cinzel carries the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">h1</span> and the four chapter titles. <b style="color:#EDE6D8;font-weight:600;">Entry titles are sans at 600</b>: twenty-six display-face labels at 15.5px is a texture rather than a hierarchy, and first-run spends <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">font-display</span> on three items, not twenty-six.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">the &ldquo;opens&rdquo; clause, and when it is absent</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">Where the route is only the way in &mdash; a modal, a tab, a panel &mdash; a mono <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> clause says what opens once you are there. <b style="color:#EDE6D8;font-weight:600;">It is omitted, never empty,</b> when the route <i>is</i> the feature. It is decoration in the accessible name&rsquo;s terms only: the body repeats it in words, because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> must not be the only carrier of a fact.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1b" style="border:1px solid #2B241B;border-radius:14px;background:#131015;padding:20px 22px 22px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C0B8A6;background:#29241F;border-radius:5px;padding:3px 8px;">1b</span>
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#C0B8A6;">A card grid, two up</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;border:1px solid #C6533F;border-radius:5px;padding:2px 7px;">REJECTED</span>
+      </div>
+      <p style="max-width:1220px;font-size:13.5px;line-height:1.7;color:#8E8471;margin:0 0 16px;text-wrap:pretty;">Drawn because it is the obvious shape for &ldquo;a page of features&rdquo; and because it would let a chapter fit on one screen. It loses on three counts, all visible here.</p>
+      <div data-theme="{{ theme }}" style="width:760px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px 16px;opacity:0.86;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="border:1px solid var(--border);border-radius:14px;background:var(--surface-rail);padding:15px 17px;">
+            <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px;">Set completion</div>
+            <div style="font-size:13px;line-height:1.6;color:var(--fg-body);">How close each set is to complete, and what is missing from the ones you are closest on. It reads set and collector numbers, so it needs a CSV.</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);margin-top:11px;">/collection/sets</div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:14px;background:var(--surface-rail);padding:15px 17px;">
+            <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px;">Browse what you own</div>
+            <div style="font-size:13px;line-height:1.6;color:var(--fg-body);">Every card you own, searchable and filterable, with how many copies you have and how many are committed.</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);margin-top:11px;">/collection</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:16px;">
+        <div style="border:1px solid #241E17;border-radius:10px;background:#141116;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:7px;">a grid ranks, a list enumerates</div>
+          <div style="font-size:12.5px;color:#8E8471;line-height:1.65;text-wrap:pretty;">Two columns of equal plates say <i>these are alternatives, pick one</i>. The chapters are <b style="color:#C0B8A6;font-weight:600;">a sequence a player moves through</b>, and ruling 4 is that the order is the design. A grid reads in Z, which throws the order away.</div>
+        </div>
+        <div style="border:1px solid #241E17;border-radius:10px;background:#141116;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:7px;">bodies are not the same length</div>
+          <div style="font-size:12.5px;color:#8E8471;line-height:1.65;text-wrap:pretty;">Availability needs three sentences; <i>Export a decklist</i> needs one. Cards make that a ragged bottom edge or a padded lie, and the honest fix is to cut the long ones &mdash; <b style="color:#C0B8A6;font-weight:600;">letting a container edit the copy on the one page whose product is copy</b>.</div>
+        </div>
+        <div style="border:1px solid #241E17;border-radius:10px;background:#141116;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:7px;">and it collapses to the list anyway</div>
+          <div style="font-size:12.5px;color:#8E8471;line-height:1.65;text-wrap:pretty;">At 390px there is one column, so the phone gets the ruled shape with 14px radii and 17px of padding around every paragraph. <b style="color:#C0B8A6;font-weight:600;">One artifact, one shape</b> &mdash; and the deck tile is this app&rsquo;s card, which is a thing with art on it.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §2 the mark -->
+  <section id="s2" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;2</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The &ldquo;new&rdquo; mark &mdash; the inventory, then the one form left</h2>
+    </div>
+    <p style="max-width:1220px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">The constraint is real and it has been audited twice already in this project. Every small geometry is spent, and the proxies package has since spent the dashed box as well. What is <i>not</i> spent is the filled plate with a word knocked out of it &mdash; and the reason accent can pay for it is that this page has no cards on it.</p>
+
+    <div data-theme="{{ theme }}" style="width:1024px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:20px 24px 22px;margin-bottom:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">the marks already in use &mdash; at their real size</div>
+      <div style="display:flex;align-items:center;gap:26px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:9px;"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--accent);display:inline-block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">menu item</span></span>
+        <span style="display:inline-flex;align-items:center;gap:9px;"><span style="width:10px;height:10px;transform:rotate(45deg);background:var(--accent);display:inline-block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">your pick</span></span>
+        <span style="display:inline-flex;align-items:center;gap:9px;"><span style="width:10px;height:10px;transform:rotate(45deg);border:1px solid var(--fg-muted);display:inline-block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">availability &times;4</span></span>
+        <span style="display:inline-flex;align-items:center;gap:9px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">owned dot</span></span>
+        <span style="display:inline-flex;align-items:center;gap:9px;"><span style="font-size:12px;color:var(--success);">&#10003;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">pass</span></span>
+        <span style="display:inline-flex;align-items:center;gap:9px;"><span style="font-size:12px;color:var(--warning);">&#9679;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">pending</span></span>
+        <span style="display:inline-flex;align-items:center;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:var(--fg);border:1px dashed var(--fg-locked);border-radius:4px;padding:1px 5px;">P</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">proxy</span></span>
+        <span style="display:inline-flex;align-items:center;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:var(--fg);border:1px dashed var(--fg-locked);border-radius:4px;padding:1px 5px;">$</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">to buy</span></span>
+        <span style="display:inline-flex;align-items:center;gap:9px;"><span style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--accent);">&#9819;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">crown</span></span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;">
+      <div style="border:2px solid #CF8745;border-radius:12px;background:#161318;padding:16px 18px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">2a</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;border:1px solid #6FA368;border-radius:5px;padding:2px 7px;">RULED</span>
+        </div>
+        <div data-theme="{{ theme }}" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 14px;margin-bottom:12px;">
+          <div style="display:flex;align-items:baseline;gap:9px;">
+            <span style="font-size:15.5px;font-weight:600;color:var(--fg);">Cards you are proxying</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.1em;color:var(--bg);background:var(--accent);border-radius:3px;padding:2px 5px;">NEW</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Mono 9.5px/600, <span style="font-family:'IBM Plex Mono',monospace;">0.1em</span> tracking, <span style="font-family:'IBM Plex Mono',monospace;">--bg</span> on <span style="font-family:'IBM Plex Mono',monospace;">--accent</span>, radius 3, <span style="font-family:'IBM Plex Mono',monospace;">2px 5px</span>.</b> It is the darkest ink on the brightest fill in every theme, which makes it the highest-contrast pair the palette contains &mdash; no per-theme variant anywhere in the feature. <b style="color:#EDE6D8;font-weight:600;">It is a word, so it needs no key</b>, which is the whole difference between this and every glyph above. And it spends accent without colliding, because <b style="color:#EDE6D8;font-weight:600;">no card, price, deck or copy count appears on <span style="font-family:'IBM Plex Mono',monospace;">/about</span></b> &mdash; <i>in use</i> and <i>to buy</i> have nothing here to be confused with.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:12px;background:#131015;padding:16px 18px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C0B8A6;background:#29241F;border-radius:5px;padding:3px 8px;">2b</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;border:1px solid #C6533F;border-radius:5px;padding:2px 7px;">REJECTED</span>
+          <span style="font-size:12px;color:#8E8471;">a fifth diamond</span>
+        </div>
+        <div data-theme="{{ theme }}" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 14px;margin-bottom:12px;opacity:0.86;">
+          <div style="display:flex;align-items:baseline;gap:9px;">
+            <span style="width:6px;height:6px;transform:rotate(45deg);background:var(--accent);display:inline-block;align-self:center;"></span>
+            <span style="font-size:15.5px;font-weight:600;color:var(--fg);">Cards you are proxying</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#8E8471;line-height:1.66;text-wrap:pretty;">It is <b style="color:#C0B8A6;font-weight:600;">the account menu&rsquo;s own item diamond</b>, at its own size, in its own colour &mdash; and this page is reached <i>from</i> that menu, so the two are minutes apart. It is also availability in four states, the printing picker&rsquo;s pick, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">BY NAME</span>. <b style="color:#C0B8A6;font-weight:600;">A fifth reading is not readable</b>, and the proxies audit already ruled exactly this.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:12px;background:#131015;padding:16px 18px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C0B8A6;background:#29241F;border-radius:5px;padding:3px 8px;">2c</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;border:1px solid #C6533F;border-radius:5px;padding:2px 7px;">REJECTED</span>
+          <span style="font-size:12px;color:#8E8471;">the proxies skin</span>
+        </div>
+        <div data-theme="{{ theme }}" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 14px;margin-bottom:12px;opacity:0.86;">
+          <div style="display:flex;align-items:baseline;gap:9px;">
+            <span style="font-size:15.5px;font-weight:600;color:var(--fg);">Cards you are proxying</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:var(--fg);border:1px dashed var(--fg-locked);border-radius:4px;padding:1px 5px;">NEW</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#8E8471;line-height:1.66;text-wrap:pretty;">Tempting, because it costs no hue and the family is already taught. But that box was just ratified to mean <b style="color:#C0B8A6;font-weight:600;">a mark on a card</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">$</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">P</span> &mdash; and an entry is not a card. Worse, <b style="color:#C0B8A6;font-weight:600;">a dashed edge reads as provisional</b>, which is the opposite of what this mark says: the thing shipped.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:12px;background:#131015;padding:16px 18px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C0B8A6;background:#29241F;border-radius:5px;padding:3px 8px;">2d</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;border:1px solid #C6533F;border-radius:5px;padding:2px 7px;">REJECTED</span>
+          <span style="font-size:12px;color:#8E8471;">accent title, no mark</span>
+        </div>
+        <div data-theme="{{ theme }}" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 14px;margin-bottom:12px;opacity:0.86;">
+          <div style="display:flex;align-items:baseline;gap:9px;">
+            <span style="font-size:15.5px;font-weight:600;color:var(--accent);">Cards you are proxying</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#8E8471;line-height:1.66;text-wrap:pretty;">The cheapest possible mark: no new object at all. It fails because <b style="color:#C0B8A6;font-weight:600;">nothing decodes it</b> &mdash; a reader seeing two accent titles among twenty-six has no way to learn what they share, and the one legend that could say so would be a key on a page that is already all words. <b style="color:#C0B8A6;font-weight:600;">A mark that needs teaching should be a word instead</b>, which is how 2a was arrived at.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin-top:16px;">
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">three carriers, never one</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">The plate on the entry, <b style="color:#EDE6D8;font-weight:600;">the count on its chapter heading</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">2 new</span>), and <b style="color:#EDE6D8;font-weight:600;">the page eyebrow</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">2 new since you were last here</span>). The accessible name adds <i>New in this version</i> as an <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">sr-only</span> span inside the plate, the way <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">BuyTag</span>&rsquo;s collapsed density already does.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">the mark is never on a shipped surface</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">It exists on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/about</span> and nowhere else &mdash; no dot on the avatar, no badge in the account menu, nothing on Home. <b style="color:#EDE6D8;font-weight:600;">That is ruling 3 enforced by inventory:</b> the redirect is the notification, and a second notifier is the banner the ruling refused.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">and it is gone on the next visit</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">The mark renders on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">seen &gt; 0 &amp;&amp; entry.since &gt; seen</span>, and dismiss writes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">seen</span>, so it is <b style="color:#EDE6D8;font-weight:600;">a one-visit object</b>. Nothing in the page decays or needs clearing, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">seen === 0</span> marks nothing at all &mdash; the spec&rsquo;s rule, not an edge case.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §3 desktop, version 0 -->
+  <section id="s3" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;3</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The page at desktop, reader at version 0 &mdash; twenty-six entries, nothing marked, no dismiss</h2>
+    </div>
+    <p style="max-width:1220px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">Drawn at full inventory rather than sampled, because density is the thing a reference page is judged on. <b style="color:#EDE6D8;font-weight:600;">Chapter 3 has eleven entries</b> &mdash; that is the app, not a drafting accident, and a page that pretends otherwise would be redesigned the day it is filled. The eyebrow slot above the <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">h1</span> is <b style="color:#EDE6D8;font-weight:600;">absent</b> here: it exists only when something is new.</p>
+
+    <div data-theme="{{ theme }}" style="width:1180px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+      <!-- rail stand-in -->
+      <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:16px;">
+        <span style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--accent);">99</span>
+        <span style="width:26px;height:26px;border-radius:7px;background:var(--elevated);"></span>
+        <span style="width:26px;height:26px;border-radius:7px;background:var(--surface-inset);"></span>
+        <span style="width:26px;height:26px;border-radius:7px;background:var(--surface-inset);"></span>
+        <span style="width:26px;height:26px;border-radius:7px;background:var(--surface-inset);"></span>
+        <span style="flex:1;"></span>
+        <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HH</span>
+      </div>
+
+      <!-- page -->
+      <div style="flex:1;min-width:0;display:flex;gap:40px;padding:30px 30px 34px;">
+        <div style="flex:1;min-width:0;">
+          <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:29px;line-height:1.2;color:var(--fg);margin:0 0 10px;">What The 99 does</h1>
+          <p style="font-size:14.5px;line-height:1.66;color:var(--fg-body);margin:0 0 4px;max-width:620px;text-wrap:pretty;">Everything here is scored against the cards you actually own &mdash; decks, commanders, set completion and the buy list all read from your collection. Four chapters, in the order you would use them, and every entry links to where it lives.</p>
+
+          <!-- chapter 1 -->
+          <div style="display:flex;align-items:baseline;gap:12px;padding:0 12px;margin:30px 0 7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;color:var(--accent);">01</span>
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);">Your collection</span>
+          </div>
+          <div style="padding:0 12px;font-size:13px;line-height:1.6;color:var(--fg-muted);max-width:600px;margin-bottom:9px;text-wrap:pretty;">Everything downstream is scored against what you own, so this is where the app starts.</div>
+          <div style="height:1px;background:var(--border);margin:0 12px 6px;"></div>
+
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Import a collection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection/replace</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">A CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or a list pasted straight in. An import replaces what is there rather than adding to it, and you see a preview before anything is written.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Rows the import could not place</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection/replace</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens the issue inspector</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Anything that could not be matched to a printing is listed with the reason, in an inspector on the import screen. A pasted list carries no set or collector number, which is why a pasted collection cannot drive set completion.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Browse what you own</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Every card in your collection, searchable and filterable, with how many copies you have and how many of them are committed to a deck.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Set completion</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection/sets</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">How close each set is to complete, and what is missing from the ones you are closest on. It reads set and collector numbers, so it needs a CSV rather than a pasted list.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">What a card costs to buy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens the card detail</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Prices come from ManaPool and refresh weekly. A card with no price was never stocked there, which is not the same as free.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">The card itself &mdash; printings, art, both faces</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens the card detail</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Every printing of a card, its art at full size, and the back of a double-faced card. It opens from a card anywhere in the app, not only here.</div>
+          </div>
+
+          <!-- chapter 2 -->
+          <div style="display:flex;align-items:baseline;gap:12px;padding:0 12px;margin:30px 0 7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;color:var(--accent);">02</span>
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);">Finding a commander</span>
+          </div>
+          <div style="padding:0 12px;font-size:13px;line-height:1.6;color:var(--fg-muted);max-width:600px;margin-bottom:9px;text-wrap:pretty;">Two lanes: what your collection already supports, and what it would support if you bought one card.</div>
+          <div style="height:1px;background:var(--border);margin:0 12px 6px;"></div>
+
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Commanders you can build today</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/commanders</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Ranked by how much of a deck you already own for them. Filter by colour identity and reorder as you like.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Commanders worth acquiring</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/discover</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">The same ranking run over commanders you do not own &mdash; the one card that would unlock the most of what is already on your shelf.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Why this commander</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/commanders</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a commander</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">The reasoning behind a ranking: which themes in your collection it is using, and how much of each it reaches.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">What the deck would be made of</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/commanders</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a commander</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">The cards you already own that would go in, grouped by the job they do, before you commit to building anything.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Partners</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/commanders</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a commander</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Commanders that pair, and what the pair&rsquo;s wider colour identity opens up in your collection.</div>
+          </div>
+
+          <!-- chapter 3 -->
+          <div style="display:flex;align-items:baseline;gap:12px;padding:0 12px;margin:30px 0 7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;color:var(--accent);">03</span>
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);">Building the 99</span>
+          </div>
+          <div style="padding:0 12px;font-size:13px;line-height:1.6;color:var(--fg-muted);max-width:600px;margin-bottom:9px;text-wrap:pretty;">The longest chapter, in the order a deck actually gets built.</div>
+          <div style="height:1px;background:var(--border);margin:0 12px 6px;"></div>
+
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Start a deck</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks/new</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Name it, pick a commander, and the 99 fills from there.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Import a decklist you already have</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks/import</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Paste a list or bring a file. Cards you own are matched to your own copies; the rest arrive as a buy list rather than as a problem.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">The deck page</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">One deck in one place: the list by role, what it still needs, its games and its versions.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Adding cards</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck&rsquo;s Add panel</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Search your collection or all of Magic, with the cards you own marked, and add without leaving the list you are looking at.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Topping off the last slots</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">When a deck is nearly there, this fills the remaining slots from what you own instead of making you search for them one at a time.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Who holds this card</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">A card you own one copy of cannot be in two committed decks at once. The deck that sleeved it first holds it, and the other deck is told which one that is. A card staged into a draft counts against the supply from the moment you add it.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">What you would need to buy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens the shopping roll-up</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Every card your decks want and you do not own, priced and grouped, across the whole library rather than one deck at a time.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Shelves</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Folders for decks. A deck sits on one shelf or on none, and choosing a shelf narrows the library rather than filtering it.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Versions</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck&rsquo;s Versions tab</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">A deck has a committed list and a draft you are working on. Committing the draft cuts a version, and you can read any earlier one.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Reviewing a draft before you commit it</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck&rsquo;s pending banner</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Every add and cut in the draft, beside the committed list, before any of it counts against your collection.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Export a decklist</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">The list as plain text, in the format the other deck sites read.</div>
+          </div>
+
+          <!-- chapter 4 -->
+          <div style="display:flex;align-items:baseline;gap:12px;padding:0 12px;margin:30px 0 7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;color:var(--accent);">04</span>
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);">Playing and tuning</span>
+          </div>
+          <div style="padding:0 12px;font-size:13px;line-height:1.6;color:var(--fg-muted);max-width:600px;margin-bottom:9px;text-wrap:pretty;">Home is the end of the loop rather than the start of it, so it is described here.</div>
+          <div style="height:1px;background:var(--border);margin:0 12px 6px;"></div>
+
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Log a game</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck&rsquo;s Games tab</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Who played, who won, and how long it ran. A few seconds after the game, on the deck you played.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">What the log tells you</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck&rsquo;s Games tab</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">How a deck has done, against whom, and how it has done since the version you are on.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Picking up where you left off</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">Home leads with the deck you touched last and what it is waiting on.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Where your collection is committed</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:600px;text-wrap:pretty;">How much of what you own is in a deck, how much is free, and which decks are asking for more than you have.</div>
+          </div>
+
+          <div style="height:1px;background:var(--border);margin:24px 12px 0;"></div>
+        </div>
+
+        <!-- sticky index -->
+        <div style="width:216px;flex:none;">
+          <div style="position:sticky;top:0;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);padding:0 10px;margin-bottom:10px;">Contents</div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <div style="display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">01</span><span style="font-size:13px;color:var(--fg);">Your collection</span></div>
+              <div style="display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:8px;border:1px solid transparent;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">02</span><span style="font-size:13px;color:var(--fg-muted);">Finding a commander</span></div>
+              <div style="display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:8px;border:1px solid transparent;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">03</span><span style="font-size:13px;color:var(--fg-muted);">Building the 99</span></div>
+              <div style="display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:8px;border:1px solid transparent;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">04</span><span style="font-size:13px;color:var(--fg-muted);">Playing and tuning</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:18px;">
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">the index is on the right, and it is not a nav</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">216px, sticky, four items, <b style="color:#EDE6D8;font-weight:600;">selected drawn as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--elevated</span> under a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span> ring</b> &mdash; the shelf line&rsquo;s ruling and the active filter pill&rsquo;s treatment, so it spends no accent and cannot be read as &ldquo;a filter is on&rdquo;. It appears at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&ge;1000px</span>, the chassis breakpoint, never a Tailwind stop.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">measure, not width</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">Entry bodies cap at <b style="color:#EDE6D8;font-weight:600;">600px</b> and the lede at 620, inside a column that is wider than both. The column is what the hover ground spans; <b style="color:#EDE6D8;font-weight:600;">the paragraph is what a reader&rsquo;s eye spans</b>, and at 13.5px 600px is about 78 characters. Nothing here is centred.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">the page ends on its last entry</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">One hairline and the page stops. <b style="color:#EDE6D8;font-weight:600;">No footer, no &ldquo;that is everything&rdquo;, no link back to Home</b> &mdash; the rail is right there, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">refresh.ts</span>&rsquo; voice rule forbids a sentence whose content is that the reader is finished.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §4 behind and current -->
+  <section id="s4" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;4</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">Desktop, the other two readers &mdash; behind, and current from the menu</h2>
+    </div>
+    <p style="max-width:1220px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">Both cropped to the head, the chapter that changed and the foot, because everything between them is <a href="#s3">&sect;3</a> unchanged. Drawn at <b style="color:#EDE6D8;font-weight:600;">version 2</b>, and its two arrivals are the two features this project has in design right now &mdash; <i>which deck gets a shared copy</i> and <i>cards you are proxying</i>. Neither has an entry in the launch copy, and neither gets one before it merges: that is the honest demonstration of ruling 2, and of the rule that the page describes the app as it is.</p>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="border:1px solid #3A3229;border-radius:14px;background:#141116;padding:18px 20px 20px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">S2</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;">Reader behind &mdash; marks and dismiss</span>
+        </div>
+        <div data-theme="{{ theme }}" style="width:700px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:26px 30px 28px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--accent);margin-bottom:7px;">2 new since you were last here</div>
+          <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:29px;line-height:1.2;color:var(--fg);margin:0 0 10px;">What The 99 does</h1>
+          <p style="font-size:14.5px;line-height:1.66;color:var(--fg-body);margin:0 0 22px;max-width:560px;text-wrap:pretty;">Everything here is scored against the cards you actually own. Four chapters, in the order you would use them, and every entry links to where it lives.</p>
+
+          <div style="display:flex;align-items:baseline;gap:12px;padding:0 12px;margin:0 0 7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;color:var(--accent);">03</span>
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--fg);">Building the 99</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">2 new</span>
+          </div>
+          <div style="padding:0 12px;font-size:13px;line-height:1.6;color:var(--fg-muted);max-width:560px;margin-bottom:9px;text-wrap:pretty;">The longest chapter, in the order a deck actually gets built.</div>
+          <div style="height:1px;background:var(--border);margin:0 12px 6px;"></div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Export a decklist</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:560px;text-wrap:pretty;">The list as plain text, in the format the other deck sites read.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Which deck gets a shared copy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.1em;color:var(--bg);background:var(--accent);border-radius:3px;padding:2px 5px;">NEW</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:560px;text-wrap:pretty;">When more decks want a card than you own copies of, the deck that committed it first gets it &mdash; unless you say otherwise.</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Cards you are proxying</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.1em;color:var(--bg);background:var(--accent);border-radius:3px;padding:2px 5px;">NEW</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);max-width:560px;text-wrap:pretty;">Mark a card in a deck as one you are printing. It stops being something to buy, it does not become something you own, and the deck&rsquo;s list says which rows they are.</div>
+          </div>
+
+          <div style="height:1px;background:var(--border);margin:22px 12px 18px;"></div>
+          <div style="display:flex;align-items:center;gap:14px;padding:0 12px;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:8px;background:var(--fg);font-size:13.5px;font-weight:600;color:var(--bg);">Got it</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">takes you to /decks/kinnan-ramp</span>
+          </div>
+        </div>
+        <div style="width:700px;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;">
+          <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">the eyebrow is the reason they are here</div>
+            <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">A reader sent by a redirect asked for something else, so the first line has to say why they got this instead. <b style="color:#EDE6D8;font-weight:600;">It is the count, not an apology</b>, and it is the only string on the page that exists solely for this state. Accent mono, 11px, above the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">h1</span> &mdash; first-run&rsquo;s kicker slot, at first-run&rsquo;s size.</div>
+          </div>
+          <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">why the button names its destination</div>
+            <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Got it</span> acknowledges; the mono clause beside it says where you land, because <b style="color:#EDE6D8;font-weight:600;">a reader who was redirected does not know whether pressing it resumes their trip or drops them home</b>. Two strings: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">takes you to &lt;path&gt;</span>, or <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">takes you home</span> when <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">next</span> is absent or fails validation. <b style="color:#EDE6D8;font-weight:600;">The clause prints the validated value, never the raw one.</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #2B241B;border-radius:14px;background:#131015;padding:18px 20px 20px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C0B8A6;background:#29241F;border-radius:5px;padding:3px 8px;">S3</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#C0B8A6;">Current, from the menu</span>
+        </div>
+        <div data-theme="{{ theme }}" style="width:420px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:26px 26px 28px;">
+          <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;line-height:1.2;color:var(--fg);margin:0 0 10px;">What The 99 does</h1>
+          <p style="font-size:14px;line-height:1.66;color:var(--fg-body);margin:0 0 22px;text-wrap:pretty;">Everything here is scored against the cards you actually own. Four chapters, in the order you would use them.</p>
+          <div style="display:flex;align-items:baseline;gap:12px;padding:0 12px;margin:0 0 7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;color:var(--accent);">04</span>
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Playing and tuning</span>
+          </div>
+          <div style="height:1px;background:var(--border);margin:8px 12px 6px;"></div>
+          <div style="padding:10px 12px;border-radius:7px;">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15.5px;font-weight:600;color:var(--fg);">Where your collection is committed</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/</span></div>
+            <div style="font-size:13.5px;line-height:1.62;color:var(--fg-body);text-wrap:pretty;">How much of what you own is in a deck, how much is free, and which decks are asking for more than you have.</div>
+          </div>
+          <div style="height:1px;background:var(--border);margin:24px 12px 0;"></div>
+        </div>
+        <div style="width:420px;border:1px solid #2B241B;border-radius:10px;background:#141116;padding:13px 16px;margin-top:16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">nothing stands where the button was</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">No eyebrow, no marks, no button, <b style="color:#EDE6D8;font-weight:600;">and no disabled or &ldquo;already read&rdquo; stand-in</b>. There is nothing to acknowledge, so the page ends on the hairline &mdash; the same hairline <a href="#s3">&sect;3</a> ends on. <b style="color:#EDE6D8;font-weight:600;">This is also the version-0 reader&rsquo;s page</b>: identical foot, identical head, and the only difference between them is that one of them is seeing it because we sent them.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §5 phone -->
+  <section id="s5" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;5</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">Phone, all three readers &mdash; 390px, and the index is content</h2>
+    </div>
+    <p style="max-width:1220px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">The one structural change below 1000px: the margin index becomes <b style="color:#EDE6D8;font-weight:600;">four 44px rows in the flow, under the lede, with the entry count on each</b>. It is the page&rsquo;s table of contents rather than a control &mdash; it does not stick, it does not track scroll, and it is not a chip row, because a second horizontal scroller is the defect the chassis spends a function avoiding.</p>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <!-- P1 -->
+      <div style="border:1px solid #3A3229;border-radius:14px;background:#141116;padding:16px 18px 18px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">P1</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;">Version 0</span>
+        </div>
+        <div data-theme="{{ theme }}" style="width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--accent);">99</span>
+            <span style="flex:1;"></span>
+            <span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span>
+          </div>
+          <div style="padding:18px 16px 22px;">
+            <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;line-height:1.18;color:var(--fg);margin:0 0 9px;">What The 99 does</h1>
+            <p style="font-size:13.5px;line-height:1.62;color:var(--fg-body);margin:0 0 16px;text-wrap:pretty;">Everything here is scored against the cards you actually own. Four chapters, in the order you would use them, and every entry links to where it lives.</p>
+            <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:7px;background:var(--surface-rail);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">01</span><span style="font-size:14.5px;color:var(--fg);flex:1;">Your collection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">6</span></div>
+              <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:7px;background:var(--surface-rail);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">02</span><span style="font-size:14.5px;color:var(--fg);flex:1;">Finding a commander</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">5</span></div>
+              <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:7px;background:var(--surface-rail);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">03</span><span style="font-size:14.5px;color:var(--fg);flex:1;">Building the 99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">11</span></div>
+              <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:7px;background:var(--surface-rail);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">04</span><span style="font-size:14.5px;color:var(--fg);flex:1;">Playing and tuning</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">4</span></div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:11px;margin:22px 0 6px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.18em;color:var(--accent);">01</span>
+              <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:var(--fg);">Your collection</span>
+            </div>
+            <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);margin-bottom:9px;text-wrap:pretty;">Everything downstream is scored against what you own, so this is where the app starts.</div>
+            <div style="height:1px;background:var(--border);margin-bottom:4px;"></div>
+            <div style="padding:11px 0;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">Import a collection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/collection/replace</span></div>
+              <div style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">A CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or a list pasted straight in. An import replaces what is there rather than adding to it.</div>
+            </div>
+            <div style="padding:11px 0;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">Rows the import could not place</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/collection/replace</span></div>
+              <div style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Anything that could not be matched to a printing is listed with the reason. A pasted list carries no set or collector number, which is why it cannot drive set completion.</div>
+            </div>
+            <div style="padding:11px 0;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">Browse what you own</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/collection</span></div>
+              <div style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Every card in your collection, searchable and filterable, with how many copies you have and how many are committed.</div>
+            </div>
+            <div style="padding:11px 0;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">Set completion</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/collection/sets</span></div>
+              <div style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">How close each set is to complete, and what is missing from the ones you are closest on.</div>
+            </div>
+            <div style="padding:11px 0;opacity:0.5;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;"><span style="font-size:15px;font-weight:600;color:var(--fg);">What a card costs to buy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/collection</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P2 -->
+      <div style="border:1px solid #3A3229;border-radius:14px;background:#141116;padding:16px 18px 18px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">P2</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;">Behind &mdash; head, marks, foot</span>
+        </div>
+        <div data-theme="{{ theme }}" style="width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--accent);">99</span>
+            <span style="flex:1;"></span>
+            <span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span>
+          </div>
+          <div style="padding:18px 16px 22px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--accent);margin-bottom:7px;">2 new since you were last here</div>
+            <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;line-height:1.18;color:var(--fg);margin:0 0 9px;">What The 99 does</h1>
+            <p style="font-size:13.5px;line-height:1.62;color:var(--fg-body);margin:0 0 16px;text-wrap:pretty;">Everything here is scored against the cards you actually own. Four chapters, in the order you would use them.</p>
+            <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:6px;">
+              <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:7px;background:var(--surface-rail);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">03</span><span style="font-size:14.5px;color:var(--fg);flex:1;">Building the 99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.1em;color:var(--bg);background:var(--accent);border-radius:3px;padding:2px 5px;">2 NEW</span></div>
+              <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:7px;background:var(--surface-rail);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">04</span><span style="font-size:14.5px;color:var(--fg);flex:1;">Playing and tuning</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">4</span></div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-bottom:18px;">&hellip; chapters 01 and 02 above, unchanged</div>
+            <div style="height:1px;background:var(--border);margin-bottom:4px;"></div>
+            <div style="padding:11px 0;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">Which deck gets a shared copy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.1em;color:var(--bg);background:var(--accent);border-radius:3px;padding:2px 5px;">NEW</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/decks</span></div>
+              <div style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">When more decks want a card than you own copies of, the deck that committed it first gets it &mdash; unless you say otherwise.</div>
+            </div>
+            <div style="padding:11px 0;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">Cards you are proxying</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.1em;color:var(--bg);background:var(--accent);border-radius:3px;padding:2px 5px;">NEW</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/decks</span></div>
+              <div style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Mark a card in a deck as one you are printing. It stops being something to buy and it does not become something you own.</div>
+            </div>
+            <div style="height:1px;background:var(--border);margin:18px 0 16px;"></div>
+            <div style="display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;background:var(--fg);font-size:14.5px;font-weight:600;color:var(--bg);">Got it</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);text-align:center;margin-top:9px;">takes you to /decks/kinnan-ramp</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P3 -->
+      <div style="border:1px solid #2B241B;border-radius:14px;background:#131015;padding:16px 18px 18px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C0B8A6;background:#29241F;border-radius:5px;padding:3px 8px;">P3</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#C0B8A6;">Current, from the menu</span>
+        </div>
+        <div data-theme="{{ theme }}" style="width:390px;background:var(--bg);border:1px solid var(--border);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--accent);">99</span>
+            <span style="flex:1;"></span>
+            <span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span>
+          </div>
+          <div style="padding:18px 16px 22px;">
+            <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;line-height:1.18;color:var(--fg);margin:0 0 9px;">What The 99 does</h1>
+            <p style="font-size:13.5px;line-height:1.62;color:var(--fg-body);margin:0 0 16px;text-wrap:pretty;">Everything here is scored against the cards you actually own. Four chapters, in the order you would use them.</p>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-bottom:16px;">&hellip; contents, then all four chapters</div>
+            <div style="height:1px;background:var(--border);margin-bottom:4px;"></div>
+            <div style="padding:11px 0;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">Picking up where you left off</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/</span></div>
+              <div style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Home leads with the deck you touched last and what it is waiting on.</div>
+            </div>
+            <div style="padding:11px 0;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">Where your collection is committed</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/</span></div>
+              <div style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">How much of what you own is in a deck, how much is free, and which decks are asking for more than you have.</div>
+            </div>
+            <div style="height:1px;background:var(--border);margin-top:18px;"></div>
+          </div>
+        </div>
+        <div style="width:390px;border:1px solid #241E17;border-radius:10px;background:#141116;padding:13px 16px;margin-top:14px;">
+          <div style="font-size:12.5px;color:#8E8471;line-height:1.65;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">No tab bar on this route.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/about</span> is reached from the account menu and returned from by the browser or the rail; it is not a nav pillar (ruling 6), so it gets no tab and no tab-bar selection. The 44px contents rows are the page&rsquo;s only targets besides the entries themselves.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §6 the menu -->
+  <section id="s6" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;6</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The account menu &mdash; one row, first, at both widths</h2>
+    </div>
+    <p style="max-width:1220px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">Both panels are the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">AccountMenu</span> to the pixel &mdash; 300px popover on <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">--surface-raised</span> at radius 14, sheet on <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">--surface</span> at radius 20 with the handle and the 26px + safe-area foot &mdash; with the theme picker unchanged and one row added above Manage account.</p>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="border:1px solid #3A3229;border-radius:14px;background:#141116;padding:18px 20px 20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">M1</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;">Popover &mdash; rail foot, &ge;1000px</span>
+        </div>
+        <div data-theme="{{ theme }}" style="width:300px;background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:14px;padding:8px;box-shadow:0 20px 50px rgba(0,0,0,0.6);">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 12px 14px;border-bottom:1px solid var(--border);">
+            <span style="width:44px;height:44px;flex:none;border-radius:12px;background:var(--bg);border:1px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;">HH</span>
+            <div style="min-width:0;">
+              <div style="font-size:14px;font-weight:600;color:var(--fg);">Hugh Hartigan</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:2px;">hugh@featherweight.design</div>
+            </div>
+          </div>
+          <div style="padding:12px 4px 0;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);padding:0 8px;margin-bottom:8px;">Theme</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 4px;">
+              <span style="height:30px;border-radius:7px;border:1px solid var(--accent);background:var(--elevated);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg);">Amonkhet</span>
+              <span style="height:30px;border-radius:7px;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);">Kamigawa</span>
+              <span style="height:30px;border-radius:7px;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);">Ixalan</span>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:2px;">
+            <div style="display:flex;align-items:center;gap:11px;border-radius:8px;padding:11px 12px;background:var(--elevated);">
+              <span style="width:6px;height:6px;flex:none;transform:rotate(45deg);background:var(--accent);display:inline-block;"></span>
+              <span style="font-size:14px;color:var(--fg);">About The 99</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:11px;border-radius:8px;padding:11px 12px;">
+              <span style="width:6px;height:6px;flex:none;transform:rotate(45deg);background:var(--accent);display:inline-block;"></span>
+              <span style="font-size:14px;color:var(--fg);">Manage account</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:11px;border-radius:8px;padding:11px 12px;">
+              <span style="width:6px;height:6px;flex:none;transform:rotate(45deg);background:var(--danger);display:inline-block;"></span>
+              <span style="font-size:14px;color:var(--fg);">Sign out</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:300px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-top:10px;">About shown hovered &mdash; <span style="color:#A89B84;">--elevated</span>, the shipped row hover</div>
+      </div>
+
+      <div style="border:1px solid #3A3229;border-radius:14px;background:#141116;padding:18px 20px 20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">M2</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;">Sheet &mdash; phone</span>
+        </div>
+        <div data-theme="{{ theme }}" style="width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:150px;background:var(--surface-rail);display:flex;align-items:flex-end;padding:14px 16px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">the page behind, dimmed by the backdrop</span></div>
+          <div style="background:color-mix(in oklab, var(--bg) 72%, transparent);padding:0;">
+            <div style="background:var(--surface);border-top:1px solid var(--border-strong);border-radius:20px 20px 0 0;padding:20px 20px 26px;">
+              <div style="width:40px;height:4px;border-radius:2px;background:var(--border-strong);margin:0 auto 20px;"></div>
+              <div style="display:flex;align-items:center;gap:14px;padding-bottom:18px;border-bottom:1px solid var(--border);">
+                <span style="width:48px;height:48px;flex:none;border-radius:14px;background:var(--bg);border:1px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:15px;">HH</span>
+                <div style="min-width:0;">
+                  <div style="font-size:16px;font-weight:600;color:var(--fg);">Hugh Hartigan</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);margin-top:2px;">hugh@featherweight.design</div>
+                </div>
+              </div>
+              <div style="padding:16px 0 0;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:9px;">Theme</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;">
+                  <span style="height:40px;border-radius:9px;border:1px solid var(--accent);background:var(--elevated);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg);">Amonkhet</span>
+                  <span style="height:40px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-raised);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">Kamigawa</span>
+                  <span style="height:40px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-raised);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">Ixalan</span>
+                </div>
+              </div>
+              <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);display:flex;flex-direction:column;">
+                <div style="display:flex;align-items:center;gap:12px;padding:15px 6px;">
+                  <span style="width:6px;height:6px;flex:none;transform:rotate(45deg);background:var(--accent);display:inline-block;"></span>
+                  <span style="font-size:15px;color:var(--fg);">About The 99</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:15px 6px;border-top:1px solid var(--border);">
+                  <span style="width:6px;height:6px;flex:none;transform:rotate(45deg);background:var(--accent);display:inline-block;"></span>
+                  <span style="font-size:15px;color:var(--fg);">Manage account</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:15px 6px;border-top:1px solid var(--border);">
+                  <span style="width:6px;height:6px;flex:none;transform:rotate(45deg);background:var(--danger);display:inline-block;"></span>
+                  <span style="font-size:15px;color:var(--fg);">Sign out</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-top:10px;">About takes the no-rule slot; Manage account gains the rule it did not have</div>
+      </div>
+
+      <div style="width:360px;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#161318;padding:14px 17px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">why first, and not between</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;">Manage account and Sign out are <b style="color:#EDE6D8;font-weight:600;">two acts on the account, ordered mildest to most destructive</b>. About is neither an act nor about the account; it is a destination. Dropping it in the middle splits a pair and puts a benign navigation one row above a sign-out, <b style="color:#EDE6D8;font-weight:600;">which is the row a misfire hurts most</b>. First keeps the pair intact and leaves Sign out last, where it already is.</div>
+        </div>
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#161318;padding:14px 17px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">the name, and the two that lost</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">About The 99</span></b>. <i>How this works</i> is warmer and more accurate, and it loses because the route is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/about</span>: the row would name the page differently from the URL it shows on hover and from every reference to it in the app. <i>What&rsquo;s new</i> loses outright &mdash; it promises a changelog, which ruling 2 and the &ldquo;Not in scope&rdquo; list both refuse.</div>
+        </div>
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#161318;padding:14px 17px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">the diamond stays accent</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ItemDiamond</span> unchanged: accent for the two non-destructive rows, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span> for Sign out. <b style="color:#EDE6D8;font-weight:600;">No third variant and no icon</b> &mdash; the menu&rsquo;s rows are named by words, and a row that looked different would be claiming to be a different kind of thing than the one below it.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:10px;background:#141116;padding:14px 17px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">and no badge, at any width</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.66;text-wrap:pretty;">No dot on the avatar, no count on the row, nothing while a reader is behind. <b style="color:#EDE6D8;font-weight:600;">The redirect already tells them</b>, and a badge would be the Home banner ruling 3 rejected, relocated. The menu row is a permanent door, and a door with a light on it is a notification.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §7 contract -->
+  <section id="s7" style="max-width:1500px;margin-bottom:20px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;7</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The contract</h2>
+    </div>
+    <div data-theme="{{ theme }}" style="width:1024px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:22px 28px 26px;">
+      <div style="display:grid;grid-template-columns:1fr;gap:0;font-size:13px;">
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:92px;flex:none;">STRUCTURE</span><span style="color:var(--fg-body);line-height:1.6;">One scrolling document. Four <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;section&gt;</span> chapters, each an <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">h2</span> with a blurb and a list of entries; every entry is a single <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;Link&gt;</span> wrapping title, route, optional opens-clause and body. <b style="color:var(--fg);">No tabs, no accordion, no jump control.</b></span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:92px;flex:none;">INDEX</span><span style="color:var(--fg-body);line-height:1.6;">216px sticky column on the <b style="color:var(--fg);">right</b> at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&ge;1000px</span>; four 44px rows in the flow below it, with entry counts. Same four strings, one source. Scroll-spy via <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">IntersectionObserver</span> on the chapter headings, desktop only &mdash; the phone list does not track.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:92px;flex:none;">MARK</span><span style="color:var(--fg-body);line-height:1.6;">Mono 9.5/600, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0.1em</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--bg</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span>, radius 3, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">padding:2px 5px</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-none</span>, with an <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">sr-only</span> &ldquo;New in this version&rdquo;. Rendered on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">seen &gt; 0 &amp;&amp; entry.since &gt; seen</span> and nowhere outside <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/about</span>. Chapter heading carries <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">N new</span>; the page eyebrow carries the total.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:92px;flex:none;">DISMISS</span><span style="color:var(--fg-body);line-height:1.6;">Rendered only when <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">seen &lt; ABOUT_VERSION</span>. In the flow at the foot, after the last entry and its hairline, left-aligned at desktop (36px) and full-width at phone (44px). Primary skin: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg</span> ground, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--bg</span> ink. <b style="color:var(--fg);">Never sticky, never disabled, never a second copy at the top.</b></span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:92px;flex:none;">MENU</span><span style="color:var(--fg-body);line-height:1.6;">One row, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">About The 99</span>, index 0 in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MenuItems</span>&rsquo; list, as a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;Link href="/about"&gt;</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">role="menuitem"</span>, closing the panel on press. <b style="color:var(--fg);">The ref tuple and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">% 2</span> wrap both become the item count</b>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">busy</span> maps to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-disabled</span> on the anchor. No badge, ever.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:92px;flex:none;">A11Y</span><span style="color:var(--fg-body);line-height:1.6;">One <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">h1</span>, four <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">h2</span>, entry titles as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">h3</span> inside the link so the page is navigable by heading. Each link&rsquo;s accessible name is title + route + mark; the route is <b style="color:var(--fg);">spoken, not decorative</b>. The index is a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">nav</span> labelled <i>Contents</i> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-current</span> on the tracked chapter. No live region: nothing on this page changes after load.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:92px;flex:none;">CONTRAST</span><span style="color:var(--fg-body);line-height:1.6;">Bodies are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span>, blurbs <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-muted</span>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> carries only the opens-clause, which the body repeats in words. <b style="color:var(--fg);">Nothing on this page uses <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> or <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-disabled</span></b> &mdash; there is nothing locked here, which is the difference between this page and first run.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:92px;flex:none;">MOTION</span><span style="color:var(--fg-body);line-height:1.6;">None. No entry animation, no scroll effect, no transition on the index&rsquo;s selection. The menu sheet and popover keep the animations they ship with, unchanged. <b style="color:var(--fg);">No reduced-motion state, because there is no motion to reduce.</b></span></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;eldraine&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? "amonkhet" };
+  }
+}
+</script>
+</body>
+</html>

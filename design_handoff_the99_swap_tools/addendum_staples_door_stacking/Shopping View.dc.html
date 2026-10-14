@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#D9975C; --avail-over-fg:#C46857; --avail-over-border:#752619;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#DF8AA7; --avail-over-fg:#C26755; --avail-over-border:#752619;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ rootStyle }}">
+
+  <sc-if value="{{ showHeader }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ headerStyle }}">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Decks / HD Gishath</span>
+      <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:22px;line-height:1.2;color:var(--fg);">HD Gishath</h1>
+      <div style="display:flex;gap:20px;margin-top:4px;">
+        <span style="padding:8px 0;font-size:13px;font-weight:600;color:var(--fg);border-bottom:2px solid var(--accent);">Deck</span>
+        <span style="padding:8px 0;font-size:13px;font-weight:500;color:var(--fg-faint);">Analysis</span>
+        <span style="padding:8px 0;font-size:13px;font-weight:500;color:var(--fg-faint);">Games</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ barStyle }}">
+      <div style="{{ pillRow }}">
+        <span style="{{ pillIdle }}">All 99</span>
+        <span style="{{ pillOn }}">Shopping {{ shoppingCount }}</span>
+        <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span style="flex:1;"></span></sc-if>
+        <span style="{{ groupOn }}">By type</span>
+        <span style="{{ groupIdle }}">By role</span>
+        <span style="{{ groupIdle }}">Sort · Name ▾</span>
+      </div>
+
+      <div style="{{ stripStyle }}">
+        <p style="margin:0;display:flex;align-items:baseline;gap:7px;font-family:'IBM Plex Mono',monospace;"><span style="font-size:14px;font-weight:600;color:var(--fg);">{{ total }}</span></p>
+        <div style="{{ stripLeft }}">
+          <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;color:var(--fg-locked);">prices from ManaPool · last checked 3 hours ago</p>
+          <div style="{{ linkRow }}"><span style="font-size:12.5px;font-weight:500;color:var(--accent);border-bottom:1px solid var(--accent-shadow);">Buy these on ManaPool ↗</span></div>
+        </div>
+      </div>
+
+      <div style="{{ limitStyle }}">
+        <div style="{{ limitRow }}">
+          <span style="font-size:12.5px;color:var(--fg-body);">Marking cards over</span>
+          <sc-if value="{{ editing }}" hint-placeholder-val="{{ false }}">
+            <span style="{{ inputStyle }}"><span style="color:var(--fg-faint);">$</span>25<span style="width:1px;height:15px;background:var(--accent);"></span></span>
+            <span style="{{ saveStyle }}">Save</span>
+            <span style="{{ cancelStyle }}">cancel</span>
+          </sc-if>
+          <sc-if value="{{ notEditing }}" hint-placeholder-val="{{ true }}">
+            <span style="{{ limitBtn }}">{{ limit }}</span>
+            <sc-if value="{{ isDefault }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);border:1px solid var(--border-strong);border-radius:999px;padding:2px 7px;">default</span></sc-if>
+            <sc-if value="{{ isSet }}" hint-placeholder-val="{{ false }}"><span style="{{ resetStyle }}">reset to $10</span></sc-if>
+          </sc-if>
+          <span aria-hidden="true" style="color:var(--border-strong);">·</span>
+          <span style="{{ countStyle }}">{{ overCount }}</span>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5;color:var(--fg-faint);"><span style="color:var(--warning);">⇄</span> on a marked row opens its cheaper stand-ins. Any card’s stand-ins are also in its details.</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showRows }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ listStyle }}">
+      <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ g.name }} <span style="color:var(--fg-locked);">{{ g.count }}</span></span>
+          <div style="{{ gridStyle }}">
+            <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="2">
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <sc-if value="{{ r.receipt }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ receiptStyle }}">
+                    <span aria-hidden="true" style="flex:none;width:8px;height:8px;"></span>
+                    <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-locked);">{{ r.receiptText }}</span>
+                    <span style="{{ putBack }}">Undo swap</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ r.live }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ r.shell }}">
+                    <span aria-hidden="true" style="{{ dotStyle }}"></span>
+                    <div style="{{ nameBlock }}">
+                      <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+                        <span style="{{ nameStyle }}">{{ r.name }}</span>
+                        <sc-if value="{{ r.qty }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ r.qty }}</span></sc-if>
+                      </div>
+                      <span style="{{ metaStyle }}">
+                        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="0"><span style="width:13px;height:13px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;background:var(--elevated);border:1px solid var(--border-strong);color:var(--fg-body);">{{ p }}</span></sc-for><sc-if value="{{ r.pipSep }}" hint-placeholder-val="{{ false }}"><span style="color:var(--border-strong);">·</span></sc-if></sc-if>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);white-space:nowrap;">{{ r.figure }}</span>
+                        <sc-if value="{{ r.over }}" hint-placeholder-val="{{ false }}"><span style="color:var(--border-strong);">·</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);white-space:nowrap;">over {{ limit }}</span></sc-if>
+                      </span>
+                    </div>
+                    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span style="flex:none;width:70px;display:flex;gap:2px;justify-content:flex-end;"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="0"><span style="width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;background:var(--elevated);border:1px solid var(--border-strong);color:var(--fg-body);">{{ p }}</span></sc-for></span></sc-if>
+                    <span style="{{ r.tagStyle }}">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="display:inline-block;min-width:46px;text-align:right;color:var(--fg-body);">{{ r.price }}</span></span>
+                    <sc-if value="{{ r.over }}" hint-placeholder-val="{{ false }}"><span aria-label="{{ r.swapAria }}" style="{{ r.swapStyle }}">⇄</span></sc-if><sc-if value="{{ r.reserve }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="flex:none;width:22px;"></span></sc-if>
+                    <span aria-label="Remove {{ r.name }}" style="{{ xStyle }}">✕</span>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:760},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;default&quot;,&quot;set&quot;,&quot;editing&quot;,&quot;noneover&quot;,&quot;afterbuy&quot;,&quot;afterfree&quot;],&quot;default&quot;:&quot;default&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;crop&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;limit&quot;,&quot;lands&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const wide = !phone;
+    const variant = this.props.variant ?? "default";
+    const crop = this.props.crop ?? "";
+    const mono = "'IBM Plex Mono',monospace";
+    const limitCents = variant === "set" || variant === "editing" ? 2500 : variant === "noneover" ? 30000 : 1000;
+    const limit = "$" + limitCents / 100;
+    const base = [
+      { g: "Creatures", name: "Etali, Primal Conqueror", price: 650, fig: 29, pips: ["5", "R", "R"] },
+      { g: "Creatures", name: "Regisaur Alpha", price: 140, fig: 44, pips: ["3", "R", "G"] },
+      { g: "Artifacts", name: "Mana Vault", price: 3840, fig: 33, pips: ["1"] },
+      { g: "Enchantments", name: "Doubling Season", price: 4260, fig: 36, pips: ["4", "G"] },
+      { g: "Instants", name: "Swords to Plowshares", price: 184, fig: 70, pips: ["W"] },
+      { g: "Lands", name: "Karplusan Forest", price: 110, fig: 38, pips: [] },
+      { g: "Lands", name: "Plateau", price: 29384, fig: 61, pips: [] },
+      { g: "Lands", name: "Wooded Foothills", price: 2210, fig: 47, pips: [] },
+    ];
+    let cards = base.map((c) => ({ ...c }));
+    if (variant === "afterbuy") {
+      cards = cards.map((c) => (c.name === "Plateau" ? { ...c, receipt: "Plateau → Sunbaked Canyon" } : c));
+      cards.push({ g: "Lands", name: "Sunbaked Canyon", price: 112, fig: 12, pips: [], pending: true });
+    }
+    if (variant === "afterfree") cards = cards.map((c) => (c.name === "Plateau" ? { ...c, receipt: "Plateau → Sacred Foundry, your free copy" } : c));
+    const live = cards.filter((c) => !c.receipt);
+    const totalC = live.reduce((s, c) => s + c.price, 0);
+    const fmt = (c) => "$" + (c / 100).toFixed(2);
+    const overN = live.filter((c) => c.price > limitCents).length;
+    const order = ["Creatures", "Artifacts", "Enchantments", "Instants", "Lands"];
+    const shell = (c) => {
+      const edges = [];
+      if (c.pending) edges.push("inset 2px 0 0 0 var(--accent)");
+      return {
+        display: "flex", alignItems: "center", gap: phone ? 9 : 10, borderRadius: 7,
+        padding: phone ? "0 4px 0 8px" : "7px 9px", minHeight: phone ? 52 : 34,
+        background: "var(--surface-rail)", ...(edges.length ? { boxShadow: edges.join(", ") } : {}),
+      };
+    };
+    const row = (c) => {
+      const over = !c.receipt && c.price > limitCents;
+      return {
+        name: c.name, price: fmt(c.price), over, reserve: !over && !phone, qty: c.qty || null, pips: c.pips,
+        pipSep: phone && c.pips.length > 0,
+        figure: phone ? `edhrec ${c.fig}%` : `${c.fig}%`,
+        receipt: !!c.receipt, live: !c.receipt, receiptText: c.receipt,
+        shell: shell(c),
+        swapAria: over ? `Cheaper stand-ins for ${c.name}, over your ${limit} limit` : `Cheaper stand-ins for ${c.name}`,
+        tagStyle: { flex: "none", fontFamily: mono, fontSize: phone ? 9 : 9.5, borderRadius: 4, padding: "1px 5px", color: "var(--warning)", background: "color-mix(in oklab,var(--warning) 13%,transparent)", whiteSpace: "nowrap", ...(over ? { boxShadow: "inset 0 0 0 1px color-mix(in oklab,var(--warning) 60%,transparent)" } : {}) },
+        swapStyle: { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", width: phone ? 44 : 22, height: phone ? 44 : 20, borderRadius: 6, fontFamily: mono, fontSize: 13, lineHeight: 1, color: "var(--warning)", ...(phone ? { marginRight: -9 } : {}) },
+      };
+    };
+    let groups = order.map((g) => ({ name: g, rows: cards.filter((c) => c.g === g).sort((a, b) => a.name.localeCompare(b.name)).map(row) }))
+      .filter((g) => g.rows.length).map((g) => ({ ...g, count: String(g.rows.filter((r) => r.live).length) }));
+    if (crop === "lands") groups = groups.filter((g) => g.name === "Lands");
+    const pill = (on, grp) => ({
+      fontFamily: "'IBM Plex Sans',sans-serif", fontSize: grp ? (phone ? 11.5 : 12.5) : (phone ? 12 : 13), fontWeight: on ? 600 : 500, borderRadius: 999,
+      padding: grp && !on && phone ? "4px 6px" : grp ? (phone ? "4px 10px" : "5px 13px") : (phone ? "4px 11px" : "5px 14px"),
+      color: on ? "var(--fg)" : "var(--fg-faint)", background: on ? "var(--elevated)" : "transparent",
+      border: on ? "1px solid var(--border-strong)" : grp && phone ? "0" : grp ? "1px solid var(--border)" : "1px solid var(--border-strong)", whiteSpace: "nowrap",
+    });
+    const quietBtn = { display: "inline-flex", alignItems: "center", borderRadius: phone ? 8 : 7, fontSize: phone ? 13 : 12.5, fontWeight: 600 };
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      phone, wide, limit,
+      showHeader: crop === "",
+      showBar: crop === "" || crop === "limit",
+      showRows: crop === "" || crop === "lands",
+      editing: variant === "editing", notEditing: variant !== "editing",
+      isDefault: limitCents === 1000, isSet: limitCents !== 1000 && variant !== "editing",
+      shoppingCount: String(live.length),
+      total: fmt(totalC),
+      overCount: overN === 0 ? `none over ${limit}` : `${overN} over`,
+      groups,
+      rootStyle: { width: phone ? 390 : 1300, background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" },
+      headerStyle: { display: "flex", flexDirection: "column", gap: 6, padding: phone ? "16px 16px 0" : "22px 26px 0", borderBottom: "1px solid var(--border)" },
+      barStyle: { display: "flex", flexDirection: "column", padding: phone ? "9px 16px 10px" : "14px 26px 10px", borderBottom: phone ? "1px solid var(--border)" : "0" },
+      pillRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: phone ? 7 : 10 },
+      pillIdle: pill(false, false), pillOn: pill(true, false), groupOn: pill(true, true), groupIdle: pill(false, true),
+      stripStyle: phone
+        ? { marginTop: 10, display: "flex", flexDirection: "column", gap: 5, borderRadius: 9, border: "1px solid var(--border)", padding: "10px 13px 0", background: "var(--surface-sunken)" }
+        : { marginTop: 10, display: "flex", flexDirection: "row-reverse", alignItems: "baseline", justifyContent: "space-between", gap: 14, borderRadius: 9, border: "1px solid var(--border)", padding: "11px 15px", background: "var(--surface-sunken)" },
+      stripLeft: phone ? {} : { marginRight: "auto" },
+      linkRow: phone ? { marginTop: 9, display: "flex", alignItems: "center", minHeight: 44 } : { marginTop: 9 },
+      limitStyle: { marginTop: phone ? 4 : 10, display: "flex", flexDirection: "column", gap: phone ? 0 : 4, padding: phone ? "0 2px 2px" : "0 4px" },
+      limitRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, minHeight: phone ? 44 : 30 },
+      inputStyle: { display: "inline-flex", alignItems: "center", gap: 4, height: phone ? 40 : 30, padding: "0 9px", borderRadius: 7, border: "1px solid var(--accent)", background: "var(--bg)", fontFamily: mono, fontSize: 13, color: "var(--fg)" },
+      limitBtn: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 0, fontFamily: mono, fontSize: 13.5, fontWeight: 600, color: "var(--fg)", borderBottom: "1px dotted var(--accent)", lineHeight: phone ? "44px" : 1.4, ...(phone ? { borderBottom: "0", textDecoration: "underline dotted var(--accent)", textUnderlineOffset: 3 } : {}) },
+      resetStyle: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 0, padding: phone ? "0 4px" : 0, fontFamily: mono, fontSize: 10.5, color: "var(--fg-faint)", textDecoration: "underline", textDecorationColor: "var(--border-strong)", textUnderlineOffset: 2 },
+      saveStyle: { ...quietBtn, height: phone ? 40 : 28, padding: "0 12px", color: "var(--accent)", border: "1px solid var(--accent)" },
+      cancelStyle: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 0, padding: "0 6px", fontSize: phone ? 13 : 12.5, color: "var(--fg-muted)" },
+      countStyle: { fontFamily: mono, fontSize: 11, color: "var(--fg-muted)", whiteSpace: "nowrap" },
+      listStyle: { display: "flex", flexDirection: "column", gap: 16, padding: phone ? "14px 16px 28px" : "10px 26px 30px" },
+      gridStyle: { display: "grid", gridTemplateColumns: phone ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))", gap: phone ? 6 : "6px 10px" },
+      receiptStyle: { display: "flex", alignItems: "center", gap: phone ? 9 : 10, borderRadius: 7, padding: phone ? "0 4px 0 8px" : "7px 9px", minHeight: phone ? 44 : 34, background: "var(--surface-sunken)", border: "1px dashed var(--border-strong)" },
+      putBack: phone
+        ? { flex: "none", display: "flex", alignItems: "center", height: 44, padding: "0 12px", fontSize: 13, fontWeight: 600, color: "var(--accent)" }
+        : { flex: "none", fontSize: 12.5, fontWeight: 600, lineHeight: 1.4, color: "var(--accent)", borderBottom: "1px solid var(--accent-shadow)" },
+      dotStyle: { flex: "none", width: phone ? 7 : 8, height: phone ? 7 : 8, borderRadius: "50%", border: "1px dashed var(--fg-faint)" },
+      nameBlock: phone ? { flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 3 } : { flex: "1 1 auto", minWidth: 0, display: "flex", alignItems: "center", gap: 6 },
+      nameStyle: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: phone ? 12.5 : 13.5, color: "var(--fg)" },
+      metaStyle: { display: "flex", alignItems: "center", gap: 5, minWidth: 0, flex: "none" },
+      xStyle: { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", width: phone ? 44 : "auto", height: phone ? 44 : "auto", fontSize: 13, lineHeight: 1, color: "var(--border-dashed)" },
+    };
+  }
+}
+</script>
+</body>
+</html>

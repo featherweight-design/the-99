@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; border-bottom: 1px solid rgba(207,135,69,0.35); }
+  a:hover { color: #DE9757; border-bottom-color: #DE9757; }
+  /* The 37-key contract, transcribed from src/app/globals.css — identical block to the
+     printing-picker and set-collections canvases. No token is added by this handoff. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1420px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">CARD DETAIL R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">price &middot; zoom &middot; flip &mdash; an amendment to four ratified documents</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 12px;text-wrap:pretty;">The art column is the one region that exists for every card. So that is where the price lives.</h1>
+    <p style="max-width:1120px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;">Three moves, one placement rule between them. <b style="color:#EDE6D8;font-weight:600;">The price is a readout pinned under the sharp art</b> &mdash; not beside the printing region, which an unowned card does not have, and not in the pinned bottom row, which belongs to the link-out. <b style="color:#EDE6D8;font-weight:600;">Zoom is an overlay inside the same dialog</b>, scoped to the modal's own rectangle at desktop and to the sheet at phone &mdash; a layer, never a mode, never a second dialog. <b style="color:#EDE6D8;font-weight:600;">And the flip turns only inside the zoom</b>: outside it the modal's art keeps the swap <a href="../design_handoff_the99_card_surfaces/READINESS.md">card surfaces</a> ratified, so this handoff spends its one unit of motion where the card is big enough to be worth turning.</p>
+    <p style="max-width:1120px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;">Everything below is drawn on the shipped geometry: <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">820&times;620 / max-h 85vh</span> at desktop, the full-bleed sheet with its <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">180px</span> art header at phone. <b style="color:#EDE6D8;font-weight:600;">No token, no component and no geometry is added.</b> The modal does not resize, on any of the three moves &mdash; which is the constraint the printing picker's conflict table already fought for, and the reason zoom overlays rather than pushes.</p>
+    <p style="max-width:1120px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;text-wrap:pretty;">Read <a href="README.md">README.md</a> for the four rulings and the four amendments, <a href="STATES-card-detail.md">STATES-card-detail.md</a> for the matrix (four price states &times; zoom open/closed &times; both faces, both widths), <a href="MOTION-no-token-set.md">MOTION-no-token-set.md</a> for the literal durations and every reduced-motion static state, <a href="card-detail · copy strings.ts">card-detail &middot; copy strings</a>. Governing and amended: <a href="../design_handoff_the99_printing_picker/README.md">printing picker</a> R3, <a href="../design_handoff_the99_full_card/README.md">full card</a> R1, <a href="../design_handoff_the99_card_surfaces/READINESS.md">card surfaces</a> R2, <a href="../design_handoff_the99_linkout/LINKOUT-R3-README.md">link-out</a> R3/R4. Untouched: <a href="../design_handoff_the99_availability/R5-README.md">availability</a> R5.</p>
+  </section>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;max-width:1420px;margin-bottom:34px;">
+    <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#161318;padding:16px 20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">Trap 1 &middot; the unowned card has no printing region</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">A card you do not own renders no picker, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">You own</span> figure and, at one printing, no disclosure &mdash; so <b style="color:#EDE6D8;font-weight:600;">any placement anchored to the printing region has no anchor in the state where a price matters most.</b> The art column is the only region every card has. That is the whole argument for the placement, and it is why the two price states solve as one.</div>
+    </div>
+    <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#161318;padding:16px 20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">Trap 2 &middot; the availability block stays</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">A price is not availability, and neither absorbs the other.</b> The block says what your shelf can spare (<i>none free &mdash; in Gonti Theft</i>); the tag says what the store wants. They sit in different columns and never trade places. Shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">AvailabilityDetail</span> is untouched by this pass &mdash; <a href="../design_handoff_the99_availability/R5-README.md">R5</a> is not reopened.</div>
+    </div>
+    <div style="border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:12px;background:#161318;padding:16px 20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:10px;">The constraint &middot; there is no motion token set</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">Durations are literals in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">globals.css:524-536</span>, so this handoff <b style="color:#EDE6D8;font-weight:600;">quotes existing literals rather than inventing values</b> &mdash; and every animation ships its own static state, not a global disable. Two animations, two statics, both drawn in <a href="#s5">&sect;5</a>.</div>
+    </div>
+  </div>
+
+  <!-- ─────────── §1 anatomy ─────────── -->
+  <section id="s1" style="max-width:1420px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;1</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">Where the price sits</h2>
+    </div>
+    <p style="max-width:1120px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;text-wrap:pretty;">Directly under the sharp art, at both widths, on both the owned and the unowned card. It is the deck-side buy tag verbatim &mdash; mono 10px <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--accent</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">1px solid --accent-dim</span>, radius 4 &mdash; so no new vocabulary enters the modal. <b style="color:#EDE6D8;font-weight:600;">At desktop it sits on flat <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--bg</span> and needs no plate; at phone it sits over the wash and takes the printing picker's badge plate</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">rgba(10,8,6,.72)</span>), which is the only difference between the two.</p>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <!-- desktop modal -->
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">desktop &middot; 820&times;620 &middot; owned, 3 printings, priced</div>
+        <div data-theme="{{ theme }}" style="width:820px;height:620px;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;display:flex;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.55);">
+          <div style="width:320px;flex:none;background:var(--bg);padding:28px;display:flex;flex-direction:column;align-items:center;">
+            <div style="position:relative;width:264px;height:369px;border-radius:11px;overflow:hidden;background:linear-gradient(155deg, color-mix(in srgb, var(--r) 34%, var(--surface-sunken)) 0%, color-mix(in srgb, var(--u) 16%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:flex-end;justify-content:center;padding:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">sharp art &middot; 63/88</span>
+              <span style="position:absolute;left:9px;bottom:9px;width:30px;height:30px;border-radius:7px;background:rgba(10,8,6,0.72);border:1px solid color-mix(in srgb, var(--fg) 18%, transparent);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--fg);">&#9974;</span>
+            </div>
+            <div style="margin-top:10px;display:flex;align-items:center;justify-content:center;width:100%;min-height:20px;">
+              <sc-if value="{{ heroPrice }}" hint-placeholder-val="{{ true }}">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.04em;color:{{ heroInk }};border:1px {{ heroEdge }} {{ heroBorder }};border-radius:4px;padding:2px 7px;">{{ heroPrice }}</span>
+              </sc-if>
+            </div>
+            <div style="margin-top:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">tap the art to hold it</div>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div style="flex:1;min-height:0;padding:30px 32px;overflow:hidden;">
+              <div style="display:flex;align-items:flex-start;gap:16px;padding-right:52px;">
+                <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;margin:0;color:var(--fg);line-height:1.2;">Kykar, Wind's Fury</h3>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--fg-body);letter-spacing:0.06em;">2WUR</span>
+              </div>
+              <div style="font-size:14px;color:var(--fg-muted);margin-top:7px;">Legendary Creature &mdash; Bird Cleric</div>
+              <div style="margin-top:16px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface-sunken);font-size:13.5px;line-height:1.65;color:var(--fg-body);">Flying<br>Whenever you cast a noncreature spell, create a 1/1 white Spirit creature token with flying.<br>Sacrifice a Spirit: Add <b style="color:var(--fg);font-weight:600;">R</b>.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px 26px;margin-top:22px;">
+                <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:5px;">Rarity</div><div style="font-size:14px;color:var(--fg-body);">Mythic</div></div>
+                <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:5px;">You own</div><div style="font-size:14px;color:var(--fg-body);">&times;2 copies</div></div>
+                <div style="grid-column:1 / -1;background:var(--elevated);border:1px solid var(--border-dashed);border-radius:8px;padding:8px 12px;margin:-8px -12px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:5px;">Set</div>
+                  <div style="font-size:14px;color:var(--fg-body);">Commander Legends &middot; CMR 245</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);margin-top:4px;">3 printings you own &#9662;</div>
+                </div>
+              </div>
+              <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+                <span style="width:7px;height:7px;background:var(--warning);transform:rotate(45deg);flex:none;"></span>
+                <span style="font-size:13px;color:var(--fg-body);">none free &mdash; in <b style="color:var(--fg);font-weight:600;">Gonti Theft</b></span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">availability &middot; unchanged</span>
+              </div>
+            </div>
+            <div style="flex:none;border-top:1px solid var(--border);padding:0 32px;min-height:56px;display:flex;align-items:center;gap:16px;">
+              <span style="font-size:14px;color:var(--accent);border-bottom:1px solid var(--accent);">Buy this at Mana Pool &#8599;</span>
+              <span style="margin-left:auto;font-size:13px;color:var(--fg-faint);">&#8249; Prev</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">7 of 99</span>
+              <span style="font-size:13px;color:var(--fg-faint);">Next &#8250;</span>
+            </div>
+          </div>
+          <span style="position:absolute;top:18px;right:18px;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font-size:16px;">&#10005;</span>
+        </div>
+        <div style="margin-top:12px;max-width:820px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">Four things now move together on a pick</b>, where the printing picker had three: the art, the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set</span> field, the tile ring &mdash; and the tag. <b style="color:#C6B79A;font-weight:600;">The tag never joins the pinned row.</b> That row is the link-out's, by <a href="../design_handoff_the99_linkout/LINKOUT-R3-README.md">R3</a>'s corrected rule, and a figure beside a store link is a price <i>on</i> that link.</div>
+      </div>
+
+      <!-- phone -->
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">phone &middot; 390&times;812 &middot; unowned, no printing region</div>
+        <div data-theme="{{ theme }}" style="width:390px;height:812px;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.55);">
+          <div style="position:relative;padding:44px 20px 20px;overflow:hidden;">
+            <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, var(--r) 40%, var(--surface-sunken)) 0%, color-mix(in srgb, var(--r) 12%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:0.45;filter:blur(22px);transform:scale(1.2);"></div>
+            <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+              <div style="position:relative;width:180px;height:251px;border-radius:10px;overflow:hidden;background:linear-gradient(155deg, color-mix(in srgb, var(--r) 34%, var(--surface-sunken)) 0%, color-mix(in srgb, var(--r) 10%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);display:flex;align-items:flex-end;justify-content:center;padding:8px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">sharp art &middot; 180px</span>
+                <span style="position:absolute;left:7px;bottom:7px;width:28px;height:28px;border-radius:7px;background:rgba(10,8,6,0.72);border:1px solid color-mix(in srgb, var(--fg) 18%, transparent);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--fg);">&#9974;</span>
+              </div>
+              <div style="margin-top:9px;min-height:20px;display:flex;align-items:center;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.04em;color:var(--accent);background:rgba(10,8,6,0.72);border:1px solid var(--accent-dim);border-radius:4px;padding:3px 7px;">$68.40</span>
+              </div>
+            </div>
+            <span style="position:absolute;top:22px;right:18px;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:15px;">&#10005;</span>
+          </div>
+          <div style="padding:6px 20px 76px;">
+            <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0;color:var(--fg);">Dockside Extortionist</h3>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+              <span style="font-size:13.5px;color:var(--fg-muted);">Creature &mdash; Goblin Pirate</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:17px;color:var(--fg-body);letter-spacing:0.06em;">1R</span>
+            </div>
+            <div style="margin-top:14px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-inset);font-size:13px;line-height:1.6;color:var(--fg-body);">When Dockside Extortionist enters, create a number of Treasure tokens equal to the number of artifacts and enchantments opponents control.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 22px;margin-top:18px;">
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px;">Set</div><div style="font-size:13.5px;color:var(--fg-body);">Commander 2019 &middot; C19 64</div></div>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px;">Rarity</div><div style="font-size:13.5px;color:var(--fg-body);">Rare</div></div>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px;">Identity</div><div style="font-size:13.5px;color:var(--fg-body);">Red</div></div>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px;">You own</div><div style="font-size:13.5px;color:var(--fg-locked);">none</div></div>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;border-top:1px solid var(--border);min-height:56px;padding:0 20px;display:flex;align-items:center;gap:12px;background:var(--surface-sunken);">
+            <span style="font-size:13.5px;color:var(--accent);border-bottom:1px solid var(--accent);">Buy this at Mana Pool &#8599;</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">1 of 1</span>
+          </div>
+        </div>
+        <div style="margin-top:12px;max-width:390px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">No picker, no disclosure, no figure to sit beside</b> &mdash; and the tag is in the same pixel it occupies on the owned card. <b style="color:#C6B79A;font-weight:600;">Cost: the phone header grows ~29px</b> (9 gap + 20 tag). Stated, not hidden; the sheet scrolls and nothing below it is pinned except the footer, which is already absolute.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────── §2 four price states ─────────── -->
+  <section id="s2" style="max-width:1420px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;2</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">The four price states &mdash; and the one that draws nothing</h2>
+    </div>
+    <p style="max-width:1120px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;text-wrap:pretty;">Copy is ratified and this pass adds no string: <b style="color:#EDE6D8;font-weight:600;">silence is the state</b>. Never an em dash, never <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">$0.00</span>, never a greyed box holding the slot. The slot is not held &mdash; nothing above the tag moves when it is absent, because the tag is the last thing in the column.</p>
+    <div data-theme="{{ theme }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+      <sc-for list="{{ priceStates }}" as="p" hint-placeholder-count="4">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:18px;">
+          <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">{{ p.key }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ p.when }}</span>
+          </div>
+          <div style="display:flex;gap:16px;align-items:flex-end;">
+            <div style="flex:none;display:flex;flex-direction:column;align-items:center;">
+              <div style="width:96px;height:134px;border-radius:8px;background:linear-gradient(155deg, color-mix(in srgb, var(--g) 30%, var(--surface-sunken)) 0%, var(--surface-sunken) 70%);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+              <div style="margin-top:8px;min-height:20px;display:flex;align-items:center;">
+                <sc-if value="{{ p.tag }}" hint-placeholder-val="{{ true }}">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.04em;color:{{ p.ink }};border:1px {{ p.edge }} {{ p.bd }};border-radius:4px;padding:2px 7px;">{{ p.tag }}</span>
+                </sc-if>
+              </div>
+            </div>
+            <div style="flex:1;min-width:0;font-size:12.5px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">{{ p.note }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:16px;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#161318;padding:16px 20px;max-width:1420px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:10px;">One word for two facts, and it is the shipped one</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.7;max-width:1080px;text-wrap:pretty;"><i>Sold out</i> (stocked, zero right now) and <i>never stocked</i> are different facts, and the set-collections tag ships one word for them: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">no stock</span>. <b style="color:#EDE6D8;font-weight:600;">R1 keeps the one word.</b> The player's next action is identical under both &mdash; the store is one tap away and its stock is live where ours is hours old &mdash; and a second word would need a second field the feed does not carry. <b style="color:#C6B79A;font-weight:600;">If the feed ever distinguishes them, this is the row to revisit</b>, and it is in the gap report rather than buried here.</div>
+    </div>
+  </section>
+
+  <!-- ─────────── §3 zoom ─────────── -->
+  <section id="s3" style="max-width:1420px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;3</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">Zoom is a layer inside the dialog, at both widths</h2>
+    </div>
+    <p style="max-width:1120px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;text-wrap:pretty;">Overlay, not replace &mdash; on phone <i>and</i> desktop, for the same reason: the printing picker's decision 4 forbids modal modes, and replacing the panel is a mode by another name (it needs a back control, a title that changes, and a second definition of what <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#10005;</span> closes). <b style="color:#EDE6D8;font-weight:600;">The layer is scoped to the modal's own rectangle, never the viewport</b>: darkening the page would make this a third dialog and would orphan the backdrop's close gesture, which the full-card handoff's decision 4 kept deliberately.</p>
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">desktop &middot; zoom open, inside the 820&times;620 rect &middot; front face</div>
+        <div data-theme="{{ theme }}" style="width:820px;height:620px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.55);background:var(--surface);">
+          <div style="position:absolute;inset:0;display:flex;opacity:0.22;">
+            <div style="width:320px;background:var(--bg);"></div><div style="flex:1;background:var(--surface);"></div>
+          </div>
+          <div style="position:absolute;inset:0;background:color-mix(in srgb, var(--bg) 94%, transparent);backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+            <div style="position:relative;width:372px;height:520px;border-radius:14px;background:linear-gradient(155deg, color-mix(in srgb, var(--r) 34%, var(--surface-sunken)) 0%, color-mix(in srgb, var(--u) 16%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35), 0 24px 60px rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">the whole card &middot; 372&times;520</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;color:var(--fg-muted);">Commander Legends &middot; CMR 245</div>
+          </div>
+          <span style="position:absolute;top:18px;right:18px;width:34px;height:34px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:16px;">&#10005;</span>
+        </div>
+        <div style="margin-top:12px;max-width:820px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">The card is 41% taller than the art column's copy</b> (520 vs 369) and still inside the fixed rect &mdash; the modal does not resize, which is the printing picker's conflict-table constraint holding for a third feature.</div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">phone &middot; 390&times;812 &middot; overlay over the sheet &middot; two-faced card</div>
+        <div data-theme="{{ theme }}" style="width:390px;height:812px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.55);background:var(--surface-sunken);">
+          <div style="position:absolute;inset:0;opacity:0.18;padding:44px 20px;"><div style="width:180px;height:251px;margin:0 auto;border-radius:10px;background:var(--elevated);"></div></div>
+          <div style="position:absolute;inset:0;background:color-mix(in srgb, var(--bg) 94%, transparent);backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:24px;">
+            <div style="position:relative;width:318px;height:444px;border-radius:13px;background:linear-gradient(155deg, color-mix(in srgb, var(--u) 34%, var(--surface-sunken)) 0%, color-mix(in srgb, var(--u) 10%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35), 0 24px 60px rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">front face &middot; 318&times;444</span>
+              <span style="position:absolute;right:12px;bottom:12px;width:44px;height:44px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:var(--bg);font-size:20px;">&#8635;</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--fg-muted);">Innistrad &middot; ISD 51a</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">the shipped corner control, at 44px</div>
+          </div>
+          <span style="position:absolute;top:22px;right:18px;width:32px;height:32px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:15px;">&#10005;</span>
+        </div>
+      </div>
+      <div style="width:330px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#161318;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">What the zoom holds</div>
+          <ul style="margin:0;padding-left:17px;font-size:12.5px;color:#A89B84;line-height:1.8;">
+            <li>The whole card, at the largest 63/88 the rect allows.</li>
+            <li>One mono caption: <b style="color:#C6B79A;font-weight:600;">set &middot; code &middot; collector number</b> &mdash; so you know which printing you are holding.</li>
+            <li>The close <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10005;</span>, in the modal's own slot, at its shipped size.</li>
+            <li>The flip control &mdash; <b style="color:#C6B79A;font-weight:600;">the shipped corner plate, unchanged</b>, at a 44px target. Only on a two-faced card.</li>
+          </ul>
+        </div>
+        <div style="border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:12px;background:#161318;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:10px;">And what it refuses</div>
+          <ul style="margin:0;padding-left:17px;font-size:12.5px;color:#A89B84;line-height:1.8;">
+            <li><b style="color:#EDE6D8;font-weight:600;">The price.</b> A card you are holding has no price printed on it. The tag is behind the layer, one dismissal away.</li>
+            <li><b style="color:#EDE6D8;font-weight:600;">Prev/Next.</b> Paging inside a zoom makes it a browser; the zoom is a look at one card.</li>
+            <li><b style="color:#EDE6D8;font-weight:600;">Oracle text, meta, the picker.</b> All of it is on the card or one dismissal behind it.</li>
+            <li><b style="color:#EDE6D8;font-weight:600;">Pinch-zoom past 1&times;.</b> Not a viewer; the printing picker is where art is compared.</li>
+          </ul>
+        </div>
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#161318;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Dismissal &middot; three doors, one stage</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.75;text-wrap:pretty;">Tap the card, tap the layer, or <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Esc</span>. <b style="color:#C6B79A;font-weight:600;">The zoom takes the first <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Esc</span></b> and the dialog keeps the second &mdash; the same two-stage shape the printing region already ships, so the count of stages does not grow. Focus returns to the art.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────── §4 flip ─────────── -->
+  <section id="s4" style="max-width:1420px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;4</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">The flip &mdash; Y axis, 320ms, and only in here</h2>
+    </div>
+    <p style="max-width:1120px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;text-wrap:pretty;">Rotation about the <b style="color:#EDE6D8;font-weight:600;">vertical axis</b>, because that is how a hand turns a card over; X would tumble it end over end, which no player does. <b style="color:#EDE6D8;font-weight:600;">320ms on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">cubic-bezier(.2,.7,.2,1)</span>, face swapped at the midpoint, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">perspective: 1400px</span>.</b> 320 sits above the disclosure's 160 (this is an object moving, not a box opening) and below half a second, so a second press never queues behind the first.</p>
+    <div data-theme="{{ theme }}" style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:22px;">
+        <sc-for list="{{ flipFrames }}" as="f" hint-placeholder-count="3">
+          <div style="width:190px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+            <div style="height:300px;display:flex;align-items:center;justify-content:center;perspective:1400px;width:100%;">
+              <div style="width:186px;height:260px;border-radius:11px;background:linear-gradient(155deg, color-mix(in srgb, {{ f.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ f.tok }} 10%, var(--surface-sunken)) 58%, var(--surface-sunken) 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35), 0 18px 44px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;transform:{{ f.xform }};">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ f.face }}</span>
+              </div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);">{{ f.t }}</div>
+            <div style="font-size:12px;color:var(--fg-muted);line-height:1.6;text-align:center;text-wrap:pretty;">{{ f.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#161318;padding:18px 20px;">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;color:#A89B84;"><tbody>
+            <sc-for list="{{ flipSpec }}" as="r" hint-placeholder-count="7">
+              <tr><td style="padding:7px 0;border-bottom:1px solid #241F19;color:#C6B79A;width:38%;vertical-align:top;">{{ r.k }}</td><td style="padding:7px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">{{ r.v }}</td></tr>
+            </sc-for>
+          </tbody></table>
+        </div>
+        <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#161318;padding:16px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">The amendment, stated narrowly</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">Card surfaces ratified <b style="color:#EDE6D8;font-weight:600;">zero net motion</b> and a modal flip that <i>swaps</i>. R1 amends that in exactly one place: <b style="color:#EDE6D8;font-weight:600;">inside the zoomed view the flip turns; everywhere else it still swaps.</b> The 180px phone art and the 264px desktop art keep the ratified instant swap, the hover preview keeps its 240/80ms appear, and the row keeps its <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">//</span> mark. <b style="color:#C6B79A;font-weight:600;">One animation is added to the app by this handoff, and it is here.</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────── §5 reduced motion ─────────── -->
+  <section id="s5" style="max-width:1420px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;5</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">Two animations, two static states &mdash; drawn, not promised</h2>
+    </div>
+    <p style="max-width:1120px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;text-wrap:pretty;">There is no motion token set, so there is no global switch to inherit. <b style="color:#EDE6D8;font-weight:600;">Each animation names its own reduced-motion end state, and neither is a disabled feature</b> &mdash; the zoom still opens and the card still turns over. Only the transit is removed.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;">
+      <sc-for list="{{ motionRows }}" as="m" hint-placeholder-count="2">
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#161318;padding:18px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">{{ m.name }}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div style="border:1px solid #241F19;border-radius:9px;padding:12px 14px;background:#120F14;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#6A6152;margin-bottom:8px;">motion allowed</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;line-height:1.7;">{{ m.on }}</div>
+            </div>
+            <div style="border:1px solid #241F19;border-radius:9px;padding:12px 14px;background:#120F14;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#6A6152;margin-bottom:8px;">prefers-reduced-motion</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;line-height:1.7;">{{ m.off }}</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;font-size:12.5px;color:#A89B84;line-height:1.7;text-wrap:pretty;">{{ m.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ─────────── §6 themes ─────────── -->
+  <section id="s6" style="max-width:1420px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;6</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">All six themes &mdash; the tag, the scrim, the flip control</h2>
+    </div>
+    <p style="max-width:1120px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;text-wrap:pretty;">Nothing here is a chosen value. The tag is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--accent</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--accent-dim</span>, the scrim is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--bg</span> at 94%, the control is the shipped corner plate &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--accent</span> with a <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--bg</span> glyph. <b style="color:#EDE6D8;font-weight:600;">The theme supplies every colour in this feature, so the six frames differ only where the theme differs</b> &mdash; and the scrim self-corrects, because it is the theme's own ground over the theme's own surfaces.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(216px,1fr));gap:14px;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div data-theme="{{ t.id }}" style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden;">
+          <div style="padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ t.id }}</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">{{ t.accent }}</span>
+          </div>
+          <div style="position:relative;height:172px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">
+            <div style="width:74px;height:103px;border-radius:7px;background:linear-gradient(155deg, color-mix(in srgb, var(--r) 30%, var(--surface-sunken)) 0%, var(--surface-sunken) 70%);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;">$2.41</span>
+            <div style="position:absolute;right:0;bottom:0;width:96px;top:0;background:color-mix(in srgb, var(--bg) 94%, transparent);border-left:1px dashed var(--border-dashed);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">scrim</span>
+              <span style="width:34px;height:34px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--bg);">&#8635;</span>
+            </div>
+          </div>
+          <div style="padding:11px 14px;font-size:11.5px;color:var(--fg-muted);line-height:1.6;text-wrap:pretty;">{{ t.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ─────────── §7 spec + a11y ─────────── -->
+  <section id="s7" style="max-width:1420px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;7</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">Component table and the a11y ledger</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:16px;">
+      <div style="border:1px solid #3A3229;border-radius:12px;background:#161318;padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Components &mdash; every value a var, no token added</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px;color:#A89B84;"><tbody>
+          <sc-for list="{{ specRows }}" as="r" hint-placeholder-count="8">
+            <tr><td style="padding:8px 0;border-bottom:1px solid #241F19;color:#C6B79A;width:32%;vertical-align:top;">{{ r.k }}</td><td style="padding:8px 0;border-bottom:1px solid #241F19;line-height:1.65;">{{ r.v }}</td></tr>
+          </sc-for>
+        </tbody></table>
+      </div>
+      <div style="border:1px solid #3A3229;border-radius:12px;background:#161318;padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Accessibility</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px;color:#A89B84;"><tbody>
+          <sc-for list="{{ a11yRows }}" as="r" hint-placeholder-count="7">
+            <tr><td style="padding:8px 0;border-bottom:1px solid #241F19;color:#C6B79A;width:32%;vertical-align:top;">{{ r.k }}</td><td style="padding:8px 0;border-bottom:1px solid #241F19;line-height:1.65;">{{ r.v }}</td></tr>
+          </sc-for>
+        </tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────── §8 amendments ─────────── -->
+  <section id="s8" style="max-width:1420px;margin-bottom:20px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;8</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">The four amendments, one line each</h2>
+    </div>
+    <p style="max-width:1120px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">Stated separately so the readiness audit can check them one by one. Full reasoning in <a href="README.md">README.md</a> &sect;Amendments.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;">
+      <sc-for list="{{ amendments }}" as="a" hint-placeholder-count="4">
+        <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:4px;">{{ a.n }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-bottom:10px;">{{ a.doc }}</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">{{ a.text }}</div>
+        </div>
+      </sc-for>
+      <div style="border:1px solid #3A3229;border-left:3px solid #6A6152;border-radius:12px;background:#161318;padding:16px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:4px;">Not amended</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-bottom:10px;">availability R5 &middot; set collections R3</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">The availability block, the pip ring, the vantage-point rule and the buy tag's own definition are read and reused, not changed. <b style="color:#C6B79A;font-weight:600;">This handoff borrows the tag; it does not redefine it.</b></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;ixalan&quot;,&quot;eldraine&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Canvas&quot;},&quot;priceState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;priced&quot;,&quot;foil&quot;,&quot;nostock&quot;,&quot;absent&quot;],&quot;default&quot;:&quot;priced&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Canvas&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const price = this.props.priceState ?? "priced";
+    const heroPrice = { priced: "$2.41", foil: "\u25C6 foil $6.10", nostock: "no stock", absent: "" }[price];
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      heroPrice,
+      heroInk: price === "nostock" ? "var(--fg-locked)" : "var(--accent)",
+      heroBorder: price === "nostock" ? "var(--fg-locked)" : "var(--accent-dim)",
+      heroEdge: price === "nostock" ? "dashed" : "solid",
+      priceStates: [
+        { key: "1 \u00b7 priced", when: "a non-foil is stocked", tag: "$2.41", ink: "var(--accent)", bd: "var(--accent-dim)", edge: "solid",
+          note: "The deck-side buy tag verbatim. Market price of the selected printing in its selected finish \u2014 not a range, not a low-of-N." },
+        { key: "2 \u00b7 foil-only", when: "stocked in foil, not in non-foil", tag: "\u25C6 foil $6.10", ink: "var(--accent)", bd: "var(--accent-dim)", edge: "solid",
+          note: "The diamond does the qualifying, so the figure stays a figure. The prefix is ratified copy \u2014 no parenthetical, no second line." },
+        { key: "3 \u00b7 sold out", when: "known to the feed, unbuyable now", tag: "no stock", ink: "var(--fg-locked)", bd: "var(--fg-locked)", edge: "dashed",
+          note: "A word, not a figure, and dashed so it never reads as a button. It says the store cannot sell it \u2014 the link-out below still goes, because their stock is live and ours is hours old." },
+        { key: "4 \u00b7 absent", when: "no price reached us", tag: "", ink: "var(--fg-locked)", bd: "var(--fg-locked)", edge: "dashed",
+          note: "Nothing renders. No em dash, no $0.00, no held slot. Silence is the state \u2014 the absence is ours, not the store's, and the modal does not editorialise about its own feed." }
+      ],
+      flipFrames: [
+        { t: "0ms", face: "front face", tok: "var(--u)", xform: "rotateY(0deg)", note: "At rest. The control reads Turn it over." },
+        { t: "160ms \u00b7 midpoint", face: "swap here", tok: "var(--b)", xform: "perspective(1400px) rotateY(78deg)", note: "The face swaps behind the edge, so neither face is ever seen mirrored." },
+        { t: "320ms", face: "back face", tok: "var(--r)", xform: "rotateY(0deg)", note: "At rest again. The control reads Turn it back; the caption gains \u00b7 back." }
+      ],
+      flipSpec: [
+        { k: "axis", v: "rotateY \u2014 vertical, as a hand turns a card" },
+        { k: "duration", v: "320ms" },
+        { k: "easing", v: "cubic-bezier(.2,.7,.2,1)" },
+        { k: "perspective", v: "1400px on the zoom layer" },
+        { k: "face swap", v: "at 160ms, behind the edge" },
+        { k: "backface", v: "backface-visibility: hidden, both faces" },
+        { k: "re-press mid-flip", v: "reverses from where it is \u2014 never queues" },
+        { k: "control", v: "the shipped corner plate \u2014 unchanged, at a 44px target" },
+        { k: "where it does NOT turn", v: "the 180 / 264px art \u2014 swap, as ratified" }
+      ],
+      motionRows: [
+        { name: "Zoom \u2014 open and close", on: "open  200ms ease-out\n      opacity 0\u21921\n      scale .94\u21921\nclose 160ms ease-in\n      opacity 1\u21920",
+          off: "open  0ms, opacity 1,\n      no scale\nclose 0ms",
+          note: "The 200/160 pair is asymmetric on purpose: arriving is a reveal, leaving should be out of the way before the hand is. Both sit beside the shipped 0.18s filter sheet and the 160ms disclosure \u2014 no new duration family is introduced. Under reduced motion the layer is simply present or simply gone, at full opacity; the scrim never fades either, since a fading scrim is the same vestibular problem at lower contrast." },
+        { name: "Flip \u2014 front \u2194 back", on: "320ms\ncubic-bezier(.2,.7,.2,1)\nrotateY 0\u2192180\nface swap at 160ms",
+          off: "0ms\nface replaces face\nno rotation, no fade",
+          note: "The static state is not a fallback invented here \u2014 it is the swap card surfaces already ratified for this control. So the reduced-motion path is the shipped path, and the animated one is the amendment. Worth saying in the code comment, because it is the reason this flip needs no separate spec for its off state." }
+      ],
+      themes: [
+        { id: "amonkhet", accent: "#CF8745", note: "The default. Brass tag on warm near-black; the scrim is the warmest of the six." },
+        { id: "kamigawa", accent: "#FF4D9A", note: "Highest-chroma accent. The tag is the loudest element in the modal \u2014 checked, and still reads as a readout because it is 10px and bordered." },
+        { id: "phyrexia", accent: "#52827A", note: "Lowest-contrast accent of the six. The dashed no-stock variant is the one to eye here, not the priced one." },
+        { id: "kaldheim", accent: "#5C86C9", note: "Coolest ground. The flip plate is the only warm-free accent fill of the six and still reads as a control, because the glyph is --bg." },
+        { id: "ixalan", accent: "#A3C445", note: "The accent is near the green identity pip; nothing in this feature puts them adjacent." },
+        { id: "eldraine", accent: "#AE88E6", note: "Scrim over a violet ground; the card's own art is the only warm thing left on screen, which is the point." }
+      ],
+      specRows: [
+        { k: "Price tag", v: "Buy tag verbatim \u2014 mono 10px, --accent on 1px solid --accent-dim, radius 4, padding 2\u00d77. Phone adds rgba(10,8,6,.72) behind it, because it sits over the wash. Foil prefixes \u25C6 foil. Unstocked is the word no stock in --fg-locked on 1px dashed --fg-locked." },
+        { k: "Tag placement", v: "Last child of the art column, 10px under the sharp art (9px at phone), centred on the card. Not a link, no hover state, no target." },
+        { k: "Zoom trigger", v: "The sharp art becomes a button \u2014 the same silent affordance the builder spine and the desktop commander art already use. One visible mark: the \u26F6 glyph at 30px desktop / 28px phone, bottom-LEFT of the art on the printing picker's badge plate, because the right corner is the flip control's." },
+        { k: "Zoom layer", v: "position:absolute; inset:0 inside the dialog element. color-mix(in srgb, var(--bg) 94%, transparent) + backdrop-filter: blur(10px). Never the viewport, never a second dialog." },
+        { k: "Zoomed card", v: "63/88, largest that fits the rect less 28px padding and the caption row: 372\u00d7520 desktop, 318\u00d7444 phone. radius 14 / 13, inset hairline + 0 24px 60px rgba(0,0,0,.6)." },
+        { k: "Zoom caption", v: "One mono 11px line, --fg-muted: set \u00b7 code \u00b7 collector number. Gains \u00b7 back on the reverse face. Never the price." },
+        { k: "Close", v: "The modal's shipped \u2715 \u2014 34px desktop / 32px phone, in its shipped slot, gaining an --elevated plate so it clears the scrim. Its label changes, not its position." },
+        { k: "Flip control", v: "THE SHIPPED CONTROL, UNCHANGED \u2014 the --accent plate with its --bg \u21bb glyph, in the card's bottom-right corner, radius 9. Inside the zoom it grows to a 44px target and gains nothing else: no label, no pill, no move. Renders only when layout says two faces \u2014 never from the // heuristic." },
+        { k: "Corner collision", v: "The flip control owns the card's bottom-right corner, so the zoom mark takes the bottom-LEFT. \u26F6 left, \u21bb right, on every card \u2014 the one-faced card simply has an empty right corner rather than a shifted left one." },
+        { k: "No-art card", v: "Zoom still opens; the layer shows identityGradient at the same 63/88 and the same caption. Nothing is drawn to stand in for a card." }
+      ],
+      a11yRows: [
+        { k: "Zoom trigger", v: "button, aria-expanded, aria-controls=card-zoom. Accessible name from cardDetailCopy.zoomAria(name) \u2014 shared, not bespoke." },
+        { k: "Zoom layer", v: "Not a dialog. A region inside the existing one, aria-label from copy. The shipped focus trap already covers it \u2014 no second trap." },
+        { k: "Focus on open", v: "Moves to the flip control when two-faced, otherwise to \u2715. Returns to the art on close, always." },
+        { k: "Esc", v: "First closes the zoom, second the dialog \u2014 the printing region's shipped two-stage shape, not a new one." },
+        { k: "Flip control", v: "The shipped button, unchanged. aria-pressed absent \u2014 it is not a toggle state, it is a turn. Glyph-only, so the accessible NAME changes (Turn it over / Turn it back) where a labelled control would change its text; the settle is announced by the live region the modal already has." },
+        { k: "Price tag", v: "Not focusable. Read as part of the card's accessible description \u2014 one string from copy, so no screen reader hears a bare figure." },
+        { k: "Absent price", v: "Nothing in the DOM. No aria-hidden placeholder, no empty node \u2014 the absent state must be absent to assistive tech too." },
+        { k: "Contrast", v: "Tag ink is --accent on --bg (\u22654.6:1 in all six). no stock is --fg-locked on --bg, 3.2\u20133.6:1 \u2014 at 10px uppercase mono this is the one row to measure in build, and phyrexia is the floor." },
+        { k: "Reduced motion", v: "Two media-query blocks, named per animation. No global transition:none \u2014 the modal's own shipped transitions stay." }
+      ],
+      amendments: [
+        { n: "Amendment 1", doc: "printing picker \u00b7 R3 \u00b7 decisions 2 and 3",
+          text: "The art column gains one element below the art, and a pick now moves four things rather than three: art, Set field, tile ring, and the price tag. Decision 3's three-signal table is untouched \u2014 the tag is not a selection signal, it is the consequence of one. The 820\u00d7620 geometry and the no-resize rule are unchanged and are what forced the overlay." },
+        { n: "Amendment 2", doc: "full card \u00b7 R1 \u00b7 gap 4",
+          text: "Gap 4 is closed as it predicted: \u201ca zoom on the modal's own art, in cards/, for every card \u2014 not a second surface for one.\u201d The lightbox's poster feel returns as a gesture available on every card in the app, including the commander. No part of the deletion, the label change or decision 3's art-size trade is reopened." },
+        { n: "Amendment 3", doc: "card surfaces \u00b7 R2 \u00b7 rulings 6 and 9",
+          text: "Zero net motion is amended in exactly one place: inside the zoom the flip turns. Outside it the art keeps the ratified swap, the hover preview keeps its 240/80, the row keeps its // mark. Ruling 9's ordering still governs \u2014 the layout column, back-face storage and the catalog re-seed precede the zoom's flip exactly as they precede the swap." },
+        { n: "Amendment 4", doc: "link-out \u00b7 R3 \u00b7 the pinned-row rule",
+          text: "By exclusion, and worth writing down because the temptation is obvious: the price does not join the pinned bottom row and does not become a second door to Mana Pool. R3's corrected rule stands untouched \u2014 that row is the link's. A figure beside a store link reads as a price on that link, and the tag is a readout about a card, not an offer." }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

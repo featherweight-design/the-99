@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#454E50;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#C9D3D6;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ label }}" style="{{ s.root }}">
+
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;"><span style="font-size:9px;letter-spacing:2px;color:var(--accent);">◆◆◆</span><span style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.3em;color:var(--accent);">THE</span><span style="font-family:'Metamorphous',serif;font-size:26px;line-height:1;color:var(--fg);">99</span></span></div>
+      <span style="width:44px;height:44px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent);">HH</span>
+    </div>
+  </sc-if>
+
+  <!-- /decks -->
+  <sc-if value="{{ isDecks }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.decksHead }}">
+      <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:28px;line-height:1.2;color:var(--fg);">Decks</h1>
+      <div style="flex:1;"></div>
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:10px;">
+          <span style="display:inline-flex;align-items:center;height:38px;padding:0 16px;border-radius:9px;border:1px solid var(--border-strong);font-size:14px;color:var(--fg);">Import</span>
+          <span style="display:inline-flex;align-items:center;height:38px;padding:0 16px;border-radius:9px;background:var(--btn, var(--fg));font-size:14px;font-weight:600;color:var(--bg);">New deck</span>
+        </div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:8px;padding:12px 16px 0;">
+        <span style="flex:1;display:inline-flex;justify-content:center;align-items:center;height:44px;border-radius:10px;background:var(--btn, var(--fg));font-size:14px;font-weight:600;color:var(--bg);">New deck</span>
+        <span style="flex:1;display:inline-flex;justify-content:center;align-items:center;height:44px;border-radius:10px;border:1px solid var(--border-strong);font-size:14px;color:var(--fg);">Import a deck</span>
+      </div>
+    </sc-if>
+    <div style="{{ s.doors }}">
+      <div style="display:flex;align-items:center;gap:12px;min-height:56px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);padding:9px 14px;box-shadow:0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent);min-width:0;">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+          <span style="font-size:14px;font-weight:500;color:var(--fg);">Shopping for all decks</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">307 to buy · $843.99 · 7 decks</span>
+        </div>
+        <span style="font-size:18px;color:var(--fg-muted);">›</span>
+      </div>
+      <div data-comment-target="precon-door-line" style="display:flex;align-items:center;gap:12px;min-height:56px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);padding:9px 14px;min-width:0;">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+          <span style="font-size:14px;font-weight:500;color:var(--fg);">Commander precons</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">185 decklists · newest 2 Oct 2026</span>
+        </div>
+        <span style="font-size:18px;color:var(--fg-muted);">›</span>
+      </div>
+    </div>
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:center;gap:6px;padding:10px 22px;border-top:1px solid var(--border);">
+        <sc-for list="{{ shelves }}" as="sh" hint-placeholder-count="6">
+          <span style="{{ sh.style }}">{{ sh.name }} <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ sh.n }}</span></span>
+        </sc-for>
+        <div style="flex:1;"></div>
+        <span style="display:inline-flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;border:1px dashed var(--border-dashed);font-size:12.5px;color:var(--fg-body);">+ New folder</span>
+      </div>
+      <div style="padding:12px 22px 14px;display:flex;flex-direction:column;gap:10px;background:var(--surface-sunken);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="flex:1;min-width:0;display:flex;align-items:center;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-faint);">Search decks</span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 10px;border-radius:8px;background:var(--surface);font-size:12.5px;color:var(--fg);">Status ▾</span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 10px;border-radius:8px;background:var(--surface);font-size:12.5px;color:var(--fg);">Deck state ▾</span>
+          <span style="display:flex;gap:4px;"><sc-for list="{{ bigPips }}" as="pp" hint-placeholder-count="5"><span style="{{ pp }}"></span></sc-for></span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 10px;border-radius:8px;background:var(--surface);font-size:12.5px;color:var(--fg);">Last played ▾</span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg);">Sort · Name</span>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">21 decks</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:6px 16px 8px;display:flex;align-items:center;gap:8px;min-height:44px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">All decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">21</span><span style="font-size:10px;color:var(--fg-faint);">▾</span></div>
+      <div style="padding:12px 16px 14px;background:var(--surface-sunken);display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+        <div style="display:flex;gap:8px;"><span style="width:44px;height:44px;border-radius:9px;border:1px solid var(--border-strong);"></span><div style="flex:1;"></div><span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:9px;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-body);">Sort ▾</span><span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;border-radius:9px;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-body);">Filters</span></div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">21 decks</span>
+      </div>
+    </sc-if>
+    <div style="{{ s.tileGrid }}">
+      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="3">
+        <div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface-sunken);display:flex;flex-direction:column;opacity:0.6;">
+          <div style="position:relative;height:150px;background:repeating-linear-gradient(135deg,var(--surface) 0 8px,var(--surface-rail) 8px 16px);">
+            <span style="position:absolute;top:10px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">commander art</span>
+            <div style="position:absolute;left:13px;right:13px;bottom:10px;display:flex;flex-direction:column;gap:4px;">
+              <span style="font-family:'Metamorphous',serif;font-size:17px;line-height:1.15;color:var(--fg);">{{ t.name }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ t.cmdr }}</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:11px 13px 13px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">as shipped</div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- New deck -->
+  <sc-if value="{{ isNew }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.newHead }}">
+      <h1 style="{{ s.newTitle }}">{{ newTitle }}</h1>
+      <p style="{{ s.newSub }}">{{ newSub }}</p>
+    </div>
+    <div style="{{ s.newBody }}">
+      <div style="{{ s.newList }}">
+        <div style="{{ s.door }}">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+            <p style="{{ s.doorHead }}">Not sure what to build?</p>
+            <p style="{{ s.doorBody }}">Say what you want, and we’ll rank commanders by how well they fit it, owned or not.</p>
+          </div>
+          <span style="{{ s.doorCta }}">Help me choose →</span>
+        </div>
+        <div data-comment-target="precon-door" style="{{ s.door }}">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+            <p style="{{ s.doorHead }}">Start from a precon</p>
+            <p style="{{ s.doorBody }}">Any Commander precon, with how many of its cards you already own. It starts as a draft you can change.</p>
+          </div>
+          <span style="{{ s.doorCta }}">Browse precons →</span>
+        </div>
+        <div style="{{ s.search }}">
+          <span style="font-size:14px;color:var(--fg-faint);flex:1;">Search your commanders</span>
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">412 results</span></sc-if>
+        </div>
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-bottom:16px;border:1px solid var(--border-strong);border-radius:8px;padding:11px 13px;font-size:16px;color:var(--fg-faint);">Deck name</div>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <sc-for list="{{ pickRows }}" as="pr" hint-placeholder-count="3">
+            <div style="{{ s.pickRow }}">
+              <span style="flex:none;width:34px;height:48px;border-radius:4px;background:repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--elevated) 5px 10px);box-shadow:inset 0 0 0 1px var(--border-strong);"></span>
+              <div style="flex:1;min-width:0;">
+                <p style="{{ s.pickName }}">{{ pr.name }}</p>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">
+                  <sc-for list="{{ pr.pips }}" as="p" hint-placeholder-count="2"><span style="{{ p }}"></span></sc-for>
+                  <span>{{ pr.meta }}</span>
+                </div>
+              </div>
+              <span style="flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--border-dashed);"></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:none;width:300px;margin:24px 40px 24px 0;border-radius:12px;background:var(--surface-rail);border:1px solid var(--border);padding:20px;">
+          <p style="margin:0 0 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Selected</p>
+          <p style="margin:0 0 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">No commander selected.</p>
+          <span style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:9px;background:var(--btn, var(--fg));font-size:15px;font-weight:600;color:var(--bg);opacity:0.4;">Create deck</span>
+        </div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:auto;padding:10px 16px 12px;border-top:1px solid var(--border);background:var(--bg);">
+        <p style="margin:0 0 7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">No commander selected</p>
+        <span style="display:flex;align-items:center;justify-content:center;height:48px;border-radius:10px;background:var(--btn, var(--fg));font-size:15px;font-weight:600;color:var(--bg);opacity:0.5;">Create deck</span>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <!-- Precon list -->
+  <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ s.pageHead }}">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);min-height:22px;display:flex;align-items:center;">{{ listBack }}</span>
+      <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:24px;line-height:1.2;color:var(--fg);">Commander precons</h1>
+      <sc-if value="{{ listUp }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-faint);">{{ listSub }}</span></sc-if>
+    </div>
+
+    <sc-if value="{{ listDown }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ s.centre }}">
+        <div style="max-width:420px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;">
+          <span style="font-family:'Metamorphous',serif;font-size:20px;color:var(--fg);">The precons couldn’t be read just now</span>
+          <span style="font-size:13.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Your decks and your collection aren’t affected. The list is read again when you come back.</span>
+          <a href="#" style="display:inline-flex;align-items:center;min-height:44px;font-size:13.5px;">Back to Decks</a>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ listUp }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.chassis }}">
+        <div style="{{ s.chassisRow }}">
+          <span style="{{ s.listSearch }}">{{ searchText }}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="display:flex;gap:4px;"><sc-for list="{{ bigPips }}" as="pp" hint-placeholder-count="5"><span style="{{ pp }}"></span></sc-for></span>
+            <span style="{{ s.sortBtn }}">{{ sortLabel }} ▾</span>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">
+          <span>{{ resultLine }}</span>
+          <sc-if value="{{ hasClear }}" hint-placeholder-val="{{ false }}"><span style="text-decoration:underline;color:var(--fg-faint);">Clear the search</span></sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ emptyBand }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.bandWrap }}">
+          <div style="border-radius:9px;border:1px solid var(--border);background:var(--surface-sunken);padding:10px 13px 6px;display:flex;flex-direction:column;gap:2px;">
+            <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Your collection is empty, so every count reads 0. Upload it and each precon shows how many of its cards you own.</span>
+            <a href="#" style="display:inline-flex;align-items:center;min-height:{{ s.linkH }};font-size:13px;">Upload your collection</a>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.centre }}">
+          <div style="max-width:420px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;">
+            <span style="font-family:'Metamorphous',serif;font-size:20px;color:var(--fg);">No precon matches “Gishath”</span>
+            <span style="font-size:13.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">The search looks at each precon’s name, its commanders and its set.</span>
+            <span style="display:inline-flex;align-items:center;min-height:44px;font-size:13.5px;color:var(--accent);">Clear the search</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="{{ s.years }}">
+        <sc-for list="{{ years }}" as="y" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="{{ s.yearHead }}">
+              <span style="font-family:'Metamorphous',serif;font-size:17px;color:var(--fg);">{{ y.year }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ y.n }}</span>
+            </div>
+            <sc-for list="{{ y.rows }}" as="r" hint-placeholder-count="3">
+              <div style="{{ s.pRow }}">
+                <span style="{{ s.pThumb }}"></span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                  <div style="{{ s.pTop }}">
+                    <span style="{{ s.pName }}">{{ r.name }}</span>
+                    <span style="{{ s.pFig }}"><span style="font-size:10px;color:var(--fg-faint);">you own</span> {{ r.fig }}</span>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ r.cmdr }}</span>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">
+                    <sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="2"><span style="{{ p }}"></span></sc-for>
+                    <span>{{ r.meta }}</span>
+                  </div>
+                  <sc-if value="{{ r.hasBuilt }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);">your deck <span style="color:var(--fg);text-decoration:underline;text-decoration-color:color-mix(in oklab, var(--accent) 55%, transparent);text-underline-offset:3px;">{{ r.built }}</span> · {{ r.builtShare }}</span></sc-if>
+                  <sc-if value="{{ r.hasTwin }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">also sold as a Collector’s Edition · the same 100 cards</span></sc-if>
+                </div>
+                <span style="flex:none;align-self:center;font-size:18px;color:var(--fg-muted);">›</span>
+              </div>
+            </sc-for>
+            <span style="padding:2px 0 0 2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ y.more }}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ hasYearsTail }}" hint-placeholder-val="{{ true }}"><span style="padding:4px 0 0;border-top:1px solid var(--border);padding-top:12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">2023 to 2011 below · 121 decklists</span></sc-if>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <!-- Open precon -->
+  <sc-if value="{{ isOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.openHead }}">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);min-height:22px;display:flex;align-items:center;">‹ Commander precons</span>
+      <div style="{{ s.openTop }}">
+        <div style="display:flex;gap:6px;flex:none;">
+          <sc-for list="{{ p.cmdrs }}" as="c" hint-placeholder-count="1"><span style="{{ s.bigThumb }}"></span></sc-for>
+        </div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Precon decklist · read-only</span>
+          <h1 style="{{ s.openTitle }}">{{ p.name }}</h1>
+          <span style="font-size:13.5px;line-height:1.45;color:var(--fg-body);text-wrap:pretty;">{{ p.cmdrLine }}</span>
+          <div style="display:flex;align-items:flex-start;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-faint);">
+            <span style="flex:none;display:flex;gap:4px;padding-top:3px;"><sc-for list="{{ p.pips }}" as="pp" hint-placeholder-count="2"><span style="{{ pp }}"></span></sc-for></span>
+            <span style="flex:1;min-width:0;text-wrap:pretty;">{{ p.metaLong }}</span>
+          </div>
+        </div>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+          <span style="flex:none;display:inline-flex;align-items:center;height:40px;padding:0 18px;border-radius:9px;background:var(--btn, var(--fg));font-size:14px;font-weight:600;color:var(--bg);">Start a deck from this</span>
+        </sc-if>
+      </div>
+      <div style="{{ s.ownBox }}">
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:14px;color:var(--fg-body);">You own <b style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--fg);">{{ p.own }} of {{ p.of }}</b> of its cards</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ p.basicsNote }}</span>
+        </div>
+        <div style="height:3px;border-radius:2px;background:var(--border-strong);overflow:hidden;"><div style="height:3px;width:{{ p.pct }};background:var(--fg-muted);"></div></div>
+        <sc-if value="{{ p.hasBuilt }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Your deck <span style="color:var(--fg);text-decoration:underline;text-decoration-color:color-mix(in oklab, var(--accent) 55%, transparent);text-underline-offset:3px;">{{ p.built }}</span> has the same commander and {{ p.builtShare }}.</span></sc-if>
+        <sc-if value="{{ p.hasTwin }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Also sold as <b style="font-weight:600;color:var(--fg);">Avengers Assemble Collector’s Edition</b>, with the same 100 cards. One list stands for both.</span></sc-if>
+        <sc-if value="{{ p.hasPair }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">2 commanders and 98 cards · 100 in all</span></sc-if>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ p.listNote }}</span>
+    </div>
+
+    <div style="{{ s.groups }}">
+      <sc-for list="{{ p.groups }}" as="g" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;">
+          <div style="{{ s.gHead }}">
+            <div style="display:flex;align-items:baseline;gap:8px;">
+              <span style="{{ s.gLabel }}">{{ g.label }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ g.count }}</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);text-align:right;">{{ g.note }}</span>
+          </div>
+          <div style="{{ s.gGrid }}">
+            <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+              <div style="{{ s.cRow }}">
+                <span style="{{ r.dot }}"></span>
+                <span style="flex:1;min-width:0;font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.print }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ g.hasBasics }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;padding:8px 9px;border-radius:7px;border:1px dashed var(--border-dashed);">
+              <span style="flex:1;min-width:0;font-size:13px;color:var(--fg-muted);">{{ g.basics }}</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">basic · not counted</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ g.hasMore }}" hint-placeholder-val="{{ false }}"><span style="padding:7px 0 0 2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ g.more }}</span></sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="position:sticky;bottom:0;margin-top:auto;padding:10px 16px 12px;border-top:1px solid var(--border);background:var(--bg);z-index:2;">
+        <p style="margin:0 0 7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.dock }}</p>
+        <span style="display:flex;align-items:center;justify-content:center;height:48px;border-radius:10px;background:var(--btn, var(--fg));font-size:15px;font-weight:600;color:var(--bg);">Start a deck from this</span>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <!-- Arrival -->
+  <sc-if value="{{ isArrival }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.openHead }}">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);min-height:22px;display:flex;align-items:center;">‹ Decks</span>
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <span style="{{ s.bigThumb }}"></span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+          <h1 style="{{ s.openTitle }}">Eldrazi Unbound</h1>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">Ulalek, Fused Atrocity · Colorless</span>
+          <div style="display:flex;gap:8px;margin-top:2px;">
+            <span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;background:color-mix(in oklab, var(--accent) 14%, transparent);border:1px solid color-mix(in oklab, var(--accent) 28%, transparent);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;color:var(--accent);">Draft</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="{{ s.tabsRow }}">
+      <span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 4px;border-bottom:2px solid var(--fg);font-size:14px;font-weight:600;color:var(--fg);">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;color:var(--fg-faint);">100</span></span>
+      <span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 4px;font-size:14px;color:var(--fg-muted);">Shopping <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">11</span></span>
+      <span style="display:inline-flex;align-items:center;height:44px;padding:0 4px;font-size:14px;color:var(--fg-muted);">Stats</span>
+    </div>
+    <div style="{{ s.arrivalWrap }}">
+      <div data-comment-target="arrival-strip" style="display:flex;align-items:flex-start;gap:6px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface-rail);padding:11px 4px 11px 14px;">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+          <span style="font-size:13.5px;font-weight:600;color:var(--fg);">Started from the Eldrazi Unbound precon</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">All 100 cards are in, as the precon lists them. You own 74 of its 85; the 11 you don’t are in Shopping. It’s a draft until you commit it.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">CMM · printings picked from the copies you hold</span>
+        </div>
+        <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;font-size:13px;color:var(--fg-muted);">✕</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;opacity:0.55;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">↓ Your deck, as shipped</span>
+        <div style="{{ s.gHead }}"><div style="display:flex;align-items:baseline;gap:8px;"><span style="{{ s.gLabel }}">Creatures</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">33</span></div><span></span></div>
+        <div style="{{ s.gGrid }}">
+          <sc-for list="{{ arrivalRows }}" as="r" hint-placeholder-count="4">
+            <div style="{{ s.cRow }}">
+              <span style="{{ r.dot }}"></span>
+              <span style="flex:1;min-width:0;font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span>
+              <sc-if value="{{ r.buy }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--warning);border-radius:4px;padding:1px 5px;background:color-mix(in oklab, var(--warning) 13%, transparent);">buy · {{ r.price }}</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Start dialog -->
+  <sc-if value="{{ showStart }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.scrim }}">
+      <div style="{{ s.dialog }}">
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span></sc-if>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;right:18px;top:18px;width:36px;height:36px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--fg-muted);">✕</span></sc-if>
+        <div style="display:flex;flex-direction:column;gap:6px;padding-right:44px;">
+          <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px;line-height:1.25;color:var(--fg);">Start a deck from Eldrazi Unbound</h3>
+          <span style="font-size:13px;line-height:1.5;color:var(--fg-body);">It starts as a draft with the precon’s 100 cards. Change anything before you commit.</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:9px;background:var(--surface-sunken);padding:10px 12px;">
+          <span style="flex:none;width:34px;height:48px;border-radius:4px;background:repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--elevated) 5px 10px);box-shadow:inset 0 0 0 1px var(--border-strong);"></span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+            <span style="font-family:'Metamorphous',serif;font-size:15px;color:var(--fg);">Ulalek, Fused Atrocity</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">Colorless · 99 cards beside it</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Deck name</span>
+          <div style="border:1px solid var(--accent);border-radius:8px;padding:11px 13px;font-size:{{ s.fieldFs }};color:var(--fg);">Eldrazi Unbound</div>
+        </div>
+        <div style="display:flex;flex-direction:column;border-top:1px solid var(--border);">
+          <sc-for list="{{ startFacts }}" as="f" hint-placeholder-count="3">
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);">
+              <span style="font-size:12.5px;color:var(--fg-muted);">{{ f.k }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-body);text-align:right;">{{ f.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="{{ s.dialogFoot }}">
+          <span style="{{ s.cancel }}">Cancel</span>
+          <span style="{{ s.add }}">Start the deck</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.tabbar }}">
+      <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5"><span style="{{ tb }}">{{ tb.name }}</span></sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1000},&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;decks&quot;,&quot;newDeck&quot;,&quot;list&quot;,&quot;listEmpty&quot;,&quot;listNone&quot;,&quot;listDown&quot;,&quot;full&quot;,&quot;partial&quot;,&quot;unowned&quot;,&quot;start&quot;,&quot;arrival&quot;,&quot;twin&quot;,&quot;partners&quot;],&quot;default&quot;:&quot;list&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const theme = this.props.theme ?? "kaldheim";
+    const scene = this.props.scene ?? "list";
+    const M = "'IBM Plex Mono',monospace", D = "'Metamorphous',serif";
+    const PIP = { W: "#F4E9C4", U: "#BFD8EA", B: "#CFC6C2", R: "#E79A6C", G: "#9CC79A", C: "#A8A49F" };
+    const pips = (cs, sz) => cs.split("").map((c) => ({ width: sz, height: sz, borderRadius: "50%", flex: "none", background: PIP[c], boxShadow: "inset 0 0 0 1px rgba(0,0,0,.35)" }));
+    const pz = phone ? 9 : 11;
+
+    const P = {
+      ci: { name: "Counter Intelligence", cmdrs: ["Kilo, Apogee Mind"], colors: "WUR", ident: "Jeskai", set: "EOC", setName: "Edge of Eternities Commander", date: "Aug 2025", own: 91, of: 91, basics: "Island ×4 · Plains ×3 · Mountain ×2", nb: 9, built: "HD Tune - Counter Intelligence", builtShare: "88 of its cards",
+        groups: [["Commander", 1, 1, ["Kilo, Apogee Mind"]], ["Creatures", 24, 24, ["Deceiver Exarch", "Pestermite", "Thrummingbird", "Venser, Shaper Savant"]], ["Instants", 18, 18, ["Counterspell", "Fact or Fiction", "Lightning Helix", "Swords to Plowshares"]], ["Sorceries", 10, 10, ["Faithless Looting", "Ponder", "Preordain", "Distant Melody"]], ["Artifacts", 11, 11, ["Arcane Signet", "Sol Ring", "Talisman of Conviction", "Thousand-Year Elixir"]], ["Enchantments", 6, 6, ["Mystic Remora", "Oath of Teferi", "Rhystic Study", "Smothering Tithe"]], ["Lands", 21, 21, ["Command Tower", "Exotic Orchard", "Glacial Fortress", "Sacred Foundry"]]] },
+      eu: { name: "Eldrazi Unbound", cmdrs: ["Ulalek, Fused Atrocity"], colors: "C", ident: "Colorless", set: "CMM", setName: "Commander Masters", date: "Aug 2023", own: 74, of: 85, basics: "Wastes ×15", nb: 15,
+        groups: [["Commander", 1, 1, ["Ulalek, Fused Atrocity"]], ["Creatures", 33, 29, ["Endbringer", "Matter Reshaper", "Reality Smasher", "Thought-Knot Seer"]], ["Instants", 6, 5, ["Not of This World", "Spatial Contortion", "Titan’s Presence", "Warping Wail"]], ["Sorceries", 7, 6, ["All Is Dust", "Introduction to Annihilation", "Rise of the Eldrazi", "Spawning Pit"]], ["Artifacts", 12, 11, ["Arcane Signet", "Forsaken Monument", "Sol Ring", "Thran Dynamo"]], ["Lands", 26, 22, ["Eldrazi Temple", "Mirrorpool", "Shrine of the Forsaken Gods", "Ugin’s Labyrinth"]]] },
+      wr: { name: "Wretched Ranks", cmdrs: ["Ghoulcaller Gisa"], colors: "B", ident: "Mono-black", set: "FDC", setName: "Foundations Commander", date: "2 Oct 2026", own: 18, of: 67, basics: "Swamp ×33", nb: 33,
+        groups: [["Commander", 1, 1, ["Ghoulcaller Gisa"]], ["Creatures", 30, 7, ["Carrion Feeder", "Diregraf Colossus", "Gravecrawler", "Undead Augur"]], ["Instants", 6, 2, ["Deadly Rollick", "Infernal Grasp", "Snuff Out", "Village Rites"]], ["Sorceries", 8, 2, ["Army of the Damned", "Damnation", "Feed the Swarm", "Reanimate"]], ["Artifacts", 7, 3, ["Arcane Signet", "Skullclamp", "Sol Ring", "Wayfarer’s Bauble"]], ["Enchantments", 3, 0, ["Dictate of Erebos", "Grave Pact", "Phyrexian Arena"]], ["Lands", 12, 3, ["Bojuka Bog", "Cabal Coffers", "Castle Locthwain", "Leechridden Swamp"]]] },
+      aa: { name: "Avengers Assemble", cmdrs: ["‹MSC commander›"], colors: "WUR", ident: "Jeskai", set: "MSC", setName: "Marvel Super Heroes Commander", date: "26 Jun 2026", own: 30, of: 84, basics: "Plains ×6 · Island ×5 · Mountain ×5", nb: 16, twin: true,
+        groups: [["Commander", 1, 0, ["‹MSC commander›"]], ["Creatures", 33, 8, ["Mangara, the Diplomat", "Mentor of the Meek", "Selfless Spirit", "Thalia’s Lancers"]], ["Instants", 10, 5, ["Boros Charm", "Counterspell", "Swords to Plowshares", "Teferi’s Protection"]], ["Sorceries", 7, 2, ["Austere Command", "Faithless Looting", "Ponder", "Wrath of God"]], ["Artifacts", 11, 7, ["Arcane Signet", "Mind Stone", "Sol Ring", "Talisman of Conviction"]], ["Enchantments", 4, 0, ["Anointed Procession", "Intangible Virtue", "Rhystic Study", "Smothering Tithe"]], ["Lands", 18, 8, ["Command Tower", "Exotic Orchard", "Hallowed Fountain", "Sacred Foundry"]]] },
+      ff: { name: "Food and Fellowship", cmdrs: ["Frodo, Adventurous Hobbit", "Sam, Loyal Attendant"], colors: "WBG", ident: "Abzan", set: "LTC", setName: "Tales of Middle-earth Commander", date: "Jun 2023", own: 41, of: 87, basics: "Plains ×5 · Forest ×5 · Swamp ×3", nb: 13, pair: true,
+        groups: [["Commanders", 2, 0, ["Frodo, Adventurous Hobbit", "Sam, Loyal Attendant"]], ["Creatures", 30, 12, ["Academy Manufactor", "Gilded Goose", "Savvy Hunter", "Tireless Provisioner"]], ["Instants", 8, 5, ["Anguished Unmaking", "Beast Within", "Heroic Intervention", "Swords to Plowshares"]], ["Sorceries", 7, 4, ["Cultivate", "Damn", "Farseek", "Rampant Growth"]], ["Artifacts", 12, 9, ["Arcane Signet", "Mind Stone", "Sol Ring", "Witch’s Oven"]], ["Enchantments", 6, 1, ["Anointed Procession", "Doubling Season", "Smothering Tithe", "Trail of Crumbs"]], ["Lands", 22, 10, ["Command Tower", "Gingerbread Cabin", "Indatha Triome", "Scattered Groves"]]] },
+    };
+
+    const SC = {
+      decks: { kind: "decks" }, newDeck: { kind: "new" },
+      list: { kind: "list" }, listEmpty: { kind: "list", empty: true }, listNone: { kind: "list", none: true }, listDown: { kind: "list", down: true },
+      full: { kind: "open", p: "ci" }, partial: { kind: "open", p: "eu" }, unowned: { kind: "open", p: "wr" },
+      start: { kind: "open", p: "eu", start: true }, arrival: { kind: "arrival" },
+      twin: { kind: "open", p: "aa" }, partners: { kind: "open", p: "ff" },
+    };
+    const cfg = SC[scene] ?? SC.list;
+
+    const dotOwn = { flex: "none", width: 8, height: 8, borderRadius: "50%", background: "var(--success)" };
+    const dotNot = { flex: "none", width: 8, height: 8, borderRadius: "50%", border: "1px dashed var(--fg-faint)" };
+    let num = 300;
+    const openP = (key) => {
+      const d = P[key];
+      const cap = phone ? 3 : 4;
+      const groups = d.groups.map(([label, t, o, names], gi) => {
+        const k = Math.min(t, cap, names.length);
+        let oShown = k === t ? o : Math.min(o, Math.max(k - (t - o), Math.round((k * o) / t)));
+        const notIdx = new Set();
+        const nNot = k - oShown;
+        for (let i = 0; i < nNot; i++) notIdx.add(Math.min(k - 1, Math.floor(((i + 0.5) * k) / nNot)));
+        const rows = names.slice(0, k).map((n, i) => ({ name: n, dot: notIdx.has(i) ? dotNot : dotOwn, print: `${d.set} ${num += 7}` }));
+        const isLands = label === "Lands";
+        const noteOwn = label.startsWith("Commander") ? (o === t ? (t > 1 ? "you own both" : "you own it") : o === 0 ? `you own ${t > 1 ? "neither" : "0 of 1"}` : `you own ${o} of ${t}`) : `you own ${o} of ${t}`;
+        return {
+          label, count: isLands ? `${t + d.nb}` : `${t}`,
+          note: isLands ? `${noteOwn} · ${d.nb} basics not counted` : noteOwn,
+          rows, hasMore: t > k, more: `${t - k} more ${label.toLowerCase()} · A–Z`,
+          hasBasics: isLands, basics: d.basics,
+        };
+      });
+      return {
+        ...d,
+        cmdrLine: d.cmdrs.join(" + "),
+        pips: pips(d.colors, pz),
+        metaLong: `${d.ident} · ${d.set} · ${d.setName} · ${d.date}`,
+        basicsNote: `${d.nb} basic lands not counted`,
+        pct: `${Math.round((d.own / d.of) * 100)}%`,
+        hasBuilt: !!d.built, hasTwin: !!d.twin, hasPair: !!d.pair,
+        listNote: phone ? "By type · press a card for its details" : "By type, A–Z within each group · press a card for its details, hover for its art · each row shows the precon’s printing",
+        dock: `${d.name} · 100 cards · you own ${d.own} of ${d.of}`,
+        groups,
+      };
+    };
+    const p = cfg.p ? openP(cfg.p) : openP("eu");
+
+    const row = (name, cmdr, colors, set, date, own, of, extra = {}) => ({
+      name, cmdr, pips: pips(colors, pz), meta: `${set} · ${date}`,
+      fig: cfg.empty ? `0 of ${of}` : `${own} of ${of}`,
+      hasBuilt: !!extra.built && !cfg.empty, built: extra.built ?? "", builtShare: extra.share ?? "",
+      hasTwin: !!extra.twin,
+    });
+    const Y = [
+      { year: "2026", n: "20 decklists", more: "15 more from 2026", rows: [
+        row("Keen Engineering", "‹FDC commander›", "UR", "FDC", "2 Oct", 31, 66),
+        row("Multiverse Reforged", "‹FRC commander›", "WUBRG", "FRC", "2 Oct", 36, 89),
+        row("Wretched Ranks", "Ghoulcaller Gisa", "B", "FDC", "2 Oct", 18, 67),
+        row("Avengers Assemble", "‹MSC commander›", "WUR", "MSC", "26 Jun", 30, 84, { twin: true }),
+        row("Prismari Artistry", "‹SOC commander›", "UR", "SOC", "Apr", 85, 85, { built: "HD Tune - Prismari Artistry", share: "84 shared" }),
+      ] },
+      { year: "2025", n: "18 decklists", more: "16 more from 2025", rows: [
+        row("Counter Intelligence", "Kilo, Apogee Mind", "WUR", "EOC", "Aug", 91, 91, { built: "HD Tune - Counter Intelligence", share: "88 shared" }),
+        row("Sultai Arisen", "Teval, Arbiter of Virtue", "UBG", "TDC", "Apr", 85, 85, { built: "HD Tune - Sultai Arisen", share: "81 shared" }),
+      ] },
+      { year: "2024", n: "26 decklists", more: "24 more from 2024", rows: [
+        row("Mutant Menace", "The Wise Mothman", "UBG", "PIP", "Mar", 83, 85, { built: "HD Tune - Mutant Menace", share: "79 shared" }),
+        row("Scrappy Survivors", "Dogmeat, Ever Loyal", "RGW", "PIP", "Mar", 88, 88, { built: "HD Tune - Scrappy Survivors", share: "86 shared" }),
+      ] },
+    ];
+    const years = phone ? Y.slice(0, 2).map((y, i) => i === 0 ? { ...y, rows: y.rows.slice(0, 4), more: "16 more from 2026" } : { ...y, rows: y.rows.slice(0, 1), more: "17 more from 2025" }) : Y;
+
+    const tabs = ["Home", "Collection", "Commanders", "Discover", "Decks"].map((name, i) => ({ name, display: "flex", alignItems: "flex-end", justifyContent: "center", height: 64, paddingBottom: 12, fontFamily: M, fontSize: 10, color: i === 4 ? "var(--fg)" : "var(--fg-faint)", background: i === 4 ? "var(--surface)" : "transparent" }));
+
+    const s = {
+      root: { width: phone ? 390 : 900, minHeight: phone ? 820 : 640, position: "relative", background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", paddingBottom: phone ? 0 : 28 },
+      decksHead: { display: "flex", alignItems: "center", gap: 12, padding: phone ? "16px 16px 0" : "18px 22px 16px" },
+      doors: phone ? { display: "flex", flexDirection: "column", gap: 8, padding: "14px 16px 12px" } : { display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 12, padding: "0 22px 16px" },
+      tileGrid: { display: "grid", gridTemplateColumns: phone ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 14, padding: phone ? "16px 16px 20px" : "18px 22px 24px" },
+      newHead: { padding: phone ? "20px 18px 14px" : "34px 40px 28px", borderBottom: "1px solid var(--border)" },
+      newTitle: { margin: 0, fontFamily: D, fontWeight: 400, fontSize: phone ? 20 : 28, color: "var(--fg)" },
+      newSub: { margin: phone ? "2px 0 0" : "4px 0 0", fontFamily: phone ? M : "'IBM Plex Sans',sans-serif", fontSize: phone ? 10 : 14, color: phone ? "var(--fg-faint)" : "var(--fg-muted)" },
+      newBody: { display: "flex", alignItems: "flex-start" },
+      newList: { flex: 1, minWidth: 0, padding: phone ? "16px 18px" : "24px 40px" },
+      door: phone ? { marginBottom: 12, display: "flex", flexDirection: "column", gap: 10, borderRadius: 10, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", padding: "13px 14px" } : { marginBottom: 12, display: "flex", alignItems: "center", gap: 18, borderRadius: 11, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", padding: "15px 18px" },
+      doorHead: { margin: 0, fontFamily: D, fontSize: phone ? 14.5 : 16, color: "var(--fg)" },
+      doorBody: { margin: 0, fontSize: phone ? 12.5 : 13, lineHeight: 1.55, color: "var(--fg-body)", textWrap: "pretty" },
+      doorCta: { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", height: phone ? 44 : 38, padding: "0 16px", borderRadius: 8, border: "1px solid var(--accent)", fontSize: 13.5, fontWeight: 600, color: "var(--accent)" },
+      search: { display: "flex", alignItems: "center", gap: 10, margin: "4px 0 16px", borderRadius: phone ? 8 : 9, border: `1px solid ${phone ? "var(--border-strong)" : "var(--accent)"}`, padding: phone ? "9px 12px" : "12px 15px" },
+      pickRow: { display: "flex", alignItems: "center", gap: phone ? 11 : 14, borderRadius: phone ? 10 : 11, background: "var(--surface-rail)", border: "1px solid var(--border)", padding: phone ? "10px 12px" : "12px 15px" },
+      pickName: { margin: 0, fontFamily: D, fontSize: phone ? 14 : 16, lineHeight: 1.3, color: "var(--fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+      pageHead: { padding: phone ? "12px 16px 12px" : "16px 22px 16px", borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 4 },
+      centre: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: phone ? "40px 24px" : "60px 22px", minHeight: phone ? 480 : 420 },
+      chassis: { padding: phone ? "12px 16px 14px" : "12px 22px 14px", background: "var(--surface-sunken)", borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 10 },
+      chassisRow: phone ? { display: "flex", flexDirection: "column", gap: 10 } : { display: "flex", alignItems: "center", gap: 10 },
+      listSearch: { flex: phone ? "none" : 1, minWidth: 0, display: "flex", alignItems: "center", height: phone ? 44 : 36, padding: "0 12px", borderRadius: 8, border: `1px solid ${cfg.none ? "var(--accent)" : "var(--border-strong)"}`, fontSize: 13, color: cfg.none ? "var(--fg)" : "var(--fg-faint)" },
+      sortBtn: { marginLeft: phone ? "auto" : 0, display: "inline-flex", alignItems: "center", height: phone ? 44 : 36, padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 12.5, color: "var(--fg)" },
+      bandWrap: { padding: phone ? "14px 16px 0" : "16px 22px 0" },
+      linkH: phone ? "44px" : "30px",
+      years: { display: cfg.none ? "none" : "flex", flexDirection: "column", gap: 22, padding: phone ? "16px 16px 24px" : "18px 22px 8px" },
+      yearHead: { display: "flex", alignItems: "baseline", gap: 10, paddingBottom: 7, borderBottom: "1px solid var(--border)" },
+      pRow: { display: "flex", alignItems: "flex-start", gap: phone ? 11 : 14, borderRadius: phone ? 10 : 11, background: "var(--surface-rail)", border: "1px solid var(--border)", padding: phone ? "10px 8px 10px 12px" : "11px 12px 11px 15px", minHeight: 44 },
+      pThumb: { flex: "none", width: 34, height: 48, borderRadius: 4, background: "repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--elevated) 5px 10px)", boxShadow: "inset 0 0 0 1px var(--border-strong)" },
+      pTop: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 },
+      pName: { fontFamily: D, fontSize: phone ? 14.5 : 16, lineHeight: 1.3, color: "var(--fg)", minWidth: 0 },
+      pFig: { flex: "none", fontFamily: M, fontSize: phone ? 12 : 13, fontWeight: 500, color: "var(--fg)", whiteSpace: "nowrap" },
+      openHead: { padding: phone ? "12px 16px 14px" : "16px 22px 18px", borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 12 },
+      openTop: { display: "flex", alignItems: "flex-start", gap: 14 },
+      bigThumb: { flex: "none", width: phone ? 46 : 56, height: phone ? 64 : 78, borderRadius: 5, background: "repeating-linear-gradient(135deg,var(--surface) 0 6px,var(--elevated) 6px 12px)", boxShadow: "inset 0 0 0 1px var(--border-strong)" },
+      openTitle: { margin: 0, fontFamily: D, fontWeight: 400, fontSize: phone ? 22 : 26, lineHeight: 1.15, color: "var(--fg)" },
+      ownBox: { display: "flex", flexDirection: "column", gap: 8, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-sunken)", padding: phone ? "11px 13px" : "12px 16px" },
+      groups: { display: "flex", flexDirection: "column", gap: phone ? 16 : 20, padding: phone ? "16px 16px 20px" : "18px 22px 8px" },
+      gHead: phone ? { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 6 } : { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 8, paddingBottom: 7, borderBottom: "1px solid var(--border)" },
+      gLabel: { fontFamily: phone ? "'IBM Plex Sans',sans-serif" : D, fontWeight: phone ? 600 : 400, fontSize: phone ? 12.5 : 15, color: "var(--fg)" },
+      gGrid: phone ? { display: "flex", flexDirection: "column", gap: 3 } : { display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "4px 20px" },
+      cRow: { display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 44 : 36, padding: "0 9px", borderRadius: 7, background: "var(--surface-rail)" },
+      tabsRow: { display: "flex", gap: 22, padding: phone ? "0 16px" : "0 22px", borderBottom: "1px solid var(--border)" },
+      arrivalWrap: { display: "flex", flexDirection: "column", gap: 18, padding: phone ? "14px 16px 20px" : "16px 22px 8px" },
+      scrim: { position: "absolute", inset: 0, zIndex: 5, background: "color-mix(in oklab, var(--bg) 74%, transparent)", display: "flex", justifyContent: "center", alignItems: phone ? "flex-end" : "flex-start", paddingTop: phone ? 0 : 70 },
+      dialog: phone
+        ? { position: "relative", width: "100%", borderRadius: "16px 16px 0 0", borderTop: "1px solid var(--border-strong)", background: "var(--surface)", padding: "10px 18px 18px", display: "flex", flexDirection: "column", gap: 16 }
+        : { position: "relative", width: 500, borderRadius: 14, border: "1px solid var(--border-strong)", background: "var(--surface)", padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 40px 100px rgba(0,0,0,.6)" },
+      fieldFs: phone ? "16px" : "14px",
+      dialogFoot: phone ? { display: "flex", gap: 10 } : { display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 },
+      cancel: { flex: phone ? 1 : "none", display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 46 : 40, padding: "0 18px", borderRadius: phone ? 10 : 8, border: "1px solid var(--border-strong)", fontSize: 14, color: "var(--fg)" },
+      add: { flex: phone ? 1 : "none", display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 46 : 40, padding: "0 20px", borderRadius: phone ? 10 : 8, background: "var(--btn, var(--fg))", fontSize: 14, fontWeight: 600, color: "var(--bg)" },
+      tabbar: { position: phone && cfg.kind === "open" ? "relative" : "relative", marginTop: cfg.kind === "open" || cfg.kind === "new" ? 0 : "auto", display: "grid", gridTemplateColumns: "repeat(5,1fr)", borderTop: "1px solid var(--border)", background: "var(--surface-sunken)" },
+    };
+
+    const arrivalRows = ["Artisan of Kozilek", "Endbringer", "Matter Reshaper", "Reality Smasher"].map((n, i) => ({ name: n, dot: i === 0 ? dotNot : dotOwn, buy: i === 0, price: "$0.45" }));
+
+    return {
+      theme, phone, desktop: !phone, s, p, tabs, years, arrivalRows,
+      label: `Precons · ${scene} · ${phone ? 390 : 900}`,
+      isDecks: cfg.kind === "decks", isNew: cfg.kind === "new", isList: cfg.kind === "list", isOpen: cfg.kind === "open", isArrival: cfg.kind === "arrival",
+      showStart: !!cfg.start,
+      shelves: [["All decks", 21], ["Custom Builds", 11], ["Precon Tune", 6], ["Test", 1], ["WIP", 3], ["Unfiled", 0]].map(([name, n], i) => ({ name, n, style: { display: "inline-flex", alignItems: "center", gap: 6, height: 34, padding: "0 11px", borderRadius: 8, fontSize: 13, fontWeight: i ? 400 : 500, color: i ? "var(--fg-muted)" : "var(--fg)", background: i ? "transparent" : "var(--elevated)", border: i ? "1px solid transparent" : "1px solid var(--border-strong)" } })),
+      bigPips: ["W", "U", "B", "R", "G"].map((c) => ({ width: phone ? 30 : 26, height: phone ? 30 : 26, borderRadius: "50%", background: PIP[c], boxShadow: "inset 0 0 0 2px rgba(0,0,0,.35)" })),
+      tiles: (phone ? [0] : [0, 1, 2]).map((i) => [{ name: "HD - Omnath", cmdr: "Omnath, Locus of Creation · Non-black" }, { name: "HD Tune - Counter Intelligence", cmdr: "Kilo, Apogee Mind · Jeskai" }, { name: "HD Tune - Mutant Menace", cmdr: "The Wise Mothman · Sultai" }][i]),
+      newTitle: phone ? "Pick a commander" : "New deck",
+      newSub: phone ? "From your collection." : "Pick a commander from your collection, start from a precon, or let us help.",
+      pickRows: [["Ghoulcaller Gisa", "B", "Mono-black · 214 cards"], ["Kilo, Apogee Mind", "WUR", "Jeskai · 402 cards"], ["Omnath, Locus of Creation", "WURG", "Non-black · 611 cards"]].slice(0, phone ? 2 : 3).map(([name, c, meta]) => ({ name, pips: pips(c, pz), meta })),
+      listBack: "‹ Decks",
+      listUp: !cfg.down, listDown: !!cfg.down,
+      listSub: phone ? "185 decklists · 2011 to 2026 · basic lands not counted" : "185 decklists, 2011 to 2026 · the count is the cards you own, basic lands not counted",
+      searchText: cfg.none ? "Gishath" : "Search by name, commander or set",
+      sortLabel: "Newest",
+      resultLine: cfg.none ? "0 of 185 decklists" : "185 decklists · newest first",
+      hasClear: !!cfg.none,
+      emptyBand: !!cfg.empty, noMatch: !!cfg.none,
+      hasYearsTail: !phone && !cfg.none,
+      startFacts: [
+        { k: "Cards", v: "all 100, as the precon lists them" },
+        { k: "You own", v: "74 of 85 · basic lands not counted" },
+        { k: "Printings", v: "picked from the copies you hold" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-inset:#1B1712; --elevated:#29241F; --display:'Cinzel',serif;
+    --border:#2B241B; --border-strong:#3A3229;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --bracket-4:#E6D08A; --bracket-5:#FBEFC6; --fact:#8FA6BE;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-inset:#13151C; --elevated:#20222A; --display:'Chakra Petch',sans-serif;
+    --border:#181C26; --border-strong:#262A35;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --warning:#E0913C;
+  }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; }
+</style>
+</helmet>
+<article data-theme="{{ theme }}" data-screen-label="Deck tile" style="{{ box }}">
+  <div style="position:relative;height:248px;flex:none;overflow:hidden;background:var(--bg);">
+    <div style="{{ art }}"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg, transparent 0px, transparent 150px, color-mix(in oklab, var(--bg) 80%, transparent) 202px, var(--bg) 248px);"></div>
+    <span style="position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:8px;background:color-mix(in oklab, var(--bg) 70%, transparent);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:16px;line-height:1;">⋯</span>
+    <div style="position:absolute;left:0;right:0;bottom:0;padding:0 56px 10px 13px;min-width:0;">
+      <h3 style="margin:0;font-family:var(--display);font-size:17px;font-weight:600;line-height:1.15;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,0.85);">{{ deckName }}</h3>
+      <span style="margin-top:4px;display:flex;min-width:0;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.25;color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,0.85);"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ commander }}</span><span style="flex:none;white-space:nowrap;">· {{ colour }}</span></span>
+    </div>
+  </div>
+  <div data-tile-footer="true" style="display:flex;flex-direction:column;gap:9px;height:92px;flex:none;padding:11px 13px 13px;border-top:1px solid var(--border);">
+    <span data-chip-row="true" style="display:flex;flex-wrap:nowrap;align-items:center;gap:8px;height:22px;flex:none;min-width:0;overflow:hidden;">
+      <span style="{{ pill }}">{{ status }}</span>
+      <sc-if value="{{ hasChip }}" hint-placeholder-val="{{ true }}">
+        <span style="{{ chipStyle }}"><img alt="" src="assets/bracket-4-optimized-chip-ink.svg" style="display:block;width:22px;height:22px;flex:none;"><sc-if value="{{ range }}" hint-placeholder-val="{{ false }}"><img alt="" src="assets/bracket-5-cedh-chip-ink.svg" style="display:block;width:22px;height:22px;flex:none;opacity:0.65;"></sc-if><sc-if value="{{ chipWords }}" hint-placeholder-val="{{ true }}"><span>{{ face }}</span></sc-if></span>
+      </sc-if>
+      <sc-if value="{{ tagData }}" hint-placeholder-val="{{ false }}">
+        <span data-notice="data" style="display:inline-flex;align-items:center;gap:5px;flex:none;height:22px;padding:0 7px;border-radius:6px;border:1px solid color-mix(in oklab, var(--fact) 55%, transparent);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fact);white-space:nowrap;"><span style="width:6px;height:6px;border-radius:50%;background:var(--fact);flex:none;"></span>3</span>
+      </sc-if>
+      <sc-if value="{{ tagLegal }}" hint-placeholder-val="{{ false }}">
+        <span data-notice="legal" style="display:inline-flex;align-items:center;gap:6px;flex:none;height:22px;padding:0 8px 0 7px;border-radius:6px;border:1px solid color-mix(in oklab, var(--danger) 70%, transparent);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--danger);white-space:nowrap;"><span style="width:6px;height:6px;border-radius:50%;background:var(--danger);flex:none;"></span>Not legal</span>
+      </sc-if>
+    </span>
+    <div data-bar-row="true" style="flex:none;display:flex;align-items:center;gap:10px;height:14px;">
+      <div data-deck-bar="true" style="position:relative;flex:1;min-width:0;height:3px;border-radius:999px;background:var(--border);"><div style="{{ fill }}"></div></div>
+      <span style="flex:none;width:52px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;font-variant-numeric:tabular-nums;color:var(--fg);">{{ count }}</span>
+    </div>
+    <div data-detail-row="true" style="flex:none;display:flex;align-items:center;gap:10px;height:14px;min-width:0;">
+      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ detail }}</span>
+      <span style="margin-left:auto;flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ played }}</span>
+    </div>
+  </div>
+</article>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:340},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;neither&quot;,&quot;notice&quot;,&quot;read&quot;,&quot;legalChip&quot;,&quot;legalNoChip&quot;],&quot;default&quot;:&quot;notice&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;w&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:340,&quot;tsType&quot;:&quot;number&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.props.state || "notice";
+    const tov = st === "legalNoChip";
+    const cmd = tov ? "Tovolar, Dire Overlord" : "Yuriko, the Tiger's Shadow";
+    const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cmd)}&format=image&version=art_crop`;
+    return {
+      theme: this.props.theme || "amonkhet",
+      box: { width: this.props.w || 340, display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: 14, background: "var(--surface-inset)", border: "1px solid var(--border)", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" },
+      art: { position: "absolute", inset: 0, backgroundImage: `url("${url}")`, backgroundSize: "cover", backgroundPosition: "center 20%" },
+      deckName: tov ? "HD - Tovolar" : "HD - Yuriko", commander: cmd, colour: tov ? "Gruul" : "Dimir",
+      hasChip: !tov && st !== "noAnalysis", tagData: st === "notice", tagLegal: st === "legalChip" || st === "legalNoChip",
+      ...(() => {
+        const w = this.props.w || 340;
+        const built = this.props.built ?? 99;
+        const range = !!this.props.range && !tov;
+        const legal = st === "legalChip" || st === "legalNoChip";
+        // Row A never wraps. First yield: a range chip drops its name when range + Not legal
+        // cannot fit whole (needs a 366px cell); the tile keeps the chip's plate and both marks.
+        const words = !(range && legal && w < 366);
+        const tok = built < 99 ? "--fg-muted" : "--success";
+        return {
+          range, chipWords: words, face: range ? "Optimized or cEDH" : "Optimized",
+          count: `${built} / 99`, status: built < 99 ? "Building" : "Complete",
+          pill: { display: "flex", height: 22, flex: "none", alignItems: "center", borderRadius: 6, padding: "0 8px", fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, letterSpacing: "0.06em", color: `var(${tok})`, background: `color-mix(in srgb, var(${tok}) 18%, var(--bg))`, border: "1px solid var(--border-strong)", whiteSpace: "nowrap" },
+          chipStyle: { display: "inline-flex", alignItems: "center", gap: 5, flex: "none", height: 22, padding: words ? "0 8px 0 2px" : "0 2px", borderRadius: 6, background: "color-mix(in srgb, var(--bracket-4) 12%, var(--bg))", border: "1px solid color-mix(in oklab, var(--bracket-4) 55%, transparent)", fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: "var(--bracket-4)", whiteSpace: "nowrap" },
+          fill: { position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.round((built / 99) * 100)}%`, borderRadius: 999, background: built < 99 ? "var(--fg-muted)" : "var(--success)" },
+          detail: this.props.detail || "", played: this.props.played || "",
+        };
+      })(),
+    };
+  }
+}
+</script>
+</body>
+</html>

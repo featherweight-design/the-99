@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"><rect width="240" height="240" fill="#100D0A"/><g transform="translate(62,44)"><rect x="0" y="0" width="116" height="86" rx="10" fill="none" stroke="#3A3229" stroke-width="4"/><rect x="16" y="20" width="70" height="7" rx="3.5" fill="#8E8269"/><rect x="16" y="38" width="84" height="7" rx="3.5" fill="#8E8269"/><rect x="16" y="56" width="52" height="7" rx="3.5" fill="#E0913C"/><path d="M58 104v34" stroke="#C9A24B" stroke-width="6" stroke-linecap="round"/><path d="M44 126l14 14 14-14" stroke="#C9A24B" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g><text x="120" y="212" text-anchor="middle" font-family="monospace" font-size="11" letter-spacing="2.4" fill="#8E8269">DECK IMPORT</text></svg>
+</template>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+  @keyframes dots { 0%,100% { opacity: .25 } 50% { opacity: 1 } }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">/decks/import</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">R2 · #42 deck import (Moxfield) · rebased on #158</div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;border:1px solid #35502F;background:#1B2418;border-radius:999px;padding:4px 11px;">Built against the repo</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">The deck exists the moment it can. Everything else is carried into it.</h1>
+    <p style="max-width:960px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0;">Nineteen states, phone (392px) first and desktop (1060px) beside it. <b style="color:#EDE6D8;font-weight:600;">There is no review gate</b> — the collection flow makes you clear a matched/unmatched screen because a collection sync is a bulk fact; a deck is a thing you are about to open and use. Lines that don't match become <b style="color:#EDE6D8;font-weight:600;">unresolved rows stored against the deck</b>, and you clear them from inside the builder. The parser and the matcher already exist; this handoff owns the entry point, the seven failures, and the reconciliation surface.</p>
+  </section>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:20px 24px;margin-bottom:22px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Entry</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">One surface, <b style="color:#EDE6D8;font-weight:600;">three modes on a chip row</b> — Moxfield link · Paste · File. The link leads, because that's the ticket.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Failures</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Seven, each with its own copy, in the shipped <b style="color:#EDE6D8;font-weight:600;">warning-banner</b> geometry. <b style="color:#EDE6D8;font-weight:600;">Retry appears once</b> — only where retrying is the advice.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Unresolved row</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">A deck row with a <b style="color:#EDE6D8;font-weight:600;">2px warning rule</b>, the raw string in mono, and an <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">unmatched</span> tag in the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">buy</span> tag's slot. Design call — see Anatomy.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">The header</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">No new pill variant.</b> Unresolved rows never count as built, so the arithmetic already keeps the deck off <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Complete</span>. A banner says why.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Resolution</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">A row-scoped copy of <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">quick-add-bar</span>'s combobox, <b style="color:#EDE6D8;font-weight:600;">seeded with the failed string</b>, in an expander at both widths. Owned-only off. No dialog, no new focus trap.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Silent</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Tokens, emblems, sideboard, a commander duplicated into the 99 — all dropped without a word. Quantity &gt; 1 on a non-basic is the one <b style="color:#EDE6D8;font-weight:600;">parse note</b>.</div></div>
+  </div>
+
+  <div style="border:1px solid #6E4A2A;border-radius:14px;background:#181410;padding:24px 26px 26px;margin-bottom:26px;max-width:1900px;">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#E0913C;">R2 · rebased on the add-panel overhaul (#158)</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">states 13–19 now land on the new builder, not the shipped one</div>
+    </div>
+    <div style="font-size:14px;line-height:1.65;color:#C6B79A;max-width:1080px;margin-bottom:20px;">R1 resolved a row through <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">SearchPane</span> — inline on desktop, the Add panel's bottom sheet on phone. <b style="color:#EDE6D8;font-weight:600;">Both constructs are deleted by #158.</b> The successor, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">quick-add-bar.tsx</span>, is a persistent global combobox pinned to the bottom of the deck column at both widths. Three calls follow from that, and this handoff makes all three.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(370px,1fr));gap:18px;">
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">a · which search resolves a row</div>
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.3;margin-bottom:10px;">A row-scoped variant of the combobox, inside an inline expander — never the global bar.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">The bar's whole premise is that it is <b style="color:#EDE6D8;font-weight:600;">never a mode</b>: it is always mounted, always means <i>add a card to this deck</i>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">↵</span> always adds the top match. Seeding it from a row would break both halves of that. The control sits at the bottom of the screen while the thing it acts on is in the middle of the list, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">↵</span> would have to mean <i>add</i> or <i>resolve</i> depending on invisible state.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;margin-top:10px;">So: <b style="color:#EDE6D8;font-weight:600;">the same row shape, in an expander that belongs to the row.</b> Identical mechanics — combobox, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">↑↓</span> through <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-activedescendant</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Esc</span> to dismiss, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">quick-add-bar</span>'s exact result row including the 30×42 thumb. Three deltas, all scoped: the field is <b style="color:#EDE6D8;font-weight:600;">seeded and selected</b>, the action reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Use this card</span>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">↵</span> resolves this row rather than adding a hundredth card.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;margin-top:10px;"><b style="color:#EDE6D8;font-weight:600;">Same construct at both widths</b>, which is #158's parity constraint. The phone no longer opens a sheet — there is no sheet. While an expander is open on phone the global bar <b style="color:#EDE6D8;font-weight:600;">hides</b>: two search fields on a 392px screen, one of which does something else, is the mode confusion we just removed. It returns on collapse.</div>
+      </div>
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">b · the owned-only default</div>
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.3;margin-bottom:10px;">Resolution overrides it to off. It does not inherit.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">Owned-only is a <b style="color:#EDE6D8;font-weight:600;">build-time</b> filter and it is right to default on there: the question is <i>what can I put in this deck tonight</i>. Resolution asks a different question — <i>what was this line</i> — and it has one correct answer whether you own it or not. Imported decks are exactly where the unowned answer is common; a wishlist deck off Moxfield is mostly cards the player hasn't bought.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;margin-top:10px;">Inheriting <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">true</span> here would hide the right card behind a toggle the user can't see the reason for, and the failure mode is silent: an empty result set that reads as <i>no such card</i> when it means <i>not in your collection</i>.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;margin-top:10px;"><b style="color:#EDE6D8;font-weight:600;">The override is scoped to the expander and stated in the caption</b>, not silent — the toggle renders in the expander in its off position and can be flipped back per-row. The global bar's own setting is untouched on collapse. This is now the <b style="color:#EDE6D8;font-weight:600;">second</b> filter this surface turns off, alongside colour identity, and one caption carries both: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">every card, owned or not — you're naming a line, not shopping</span>.</div>
+      </div>
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">c · no oracle id — where the row sits</div>
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.3;margin-bottom:10px;">Outside both. Neither number moves, and the banner sits above both saying so.</div>
+        <div style="background:#14110E;border:1px solid #2A241D;border-radius:9px;padding:12px 13px;margin-bottom:12px;">
+          <div style="display:flex;align-items:flex-start;gap:9px;background:#211C15;border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:7px;padding:9px 11px;margin-bottom:9px;"><span style="color:#E0913C;font-size:12px;line-height:1.3;">⚠</span><span style="font-size:11.5px;line-height:1.5;color:#C6B79A;">2 lines we couldn't name. They aren't counted in anything below.</span></div>
+          <div style="display:flex;gap:4px;margin-bottom:9px;">
+            <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:6px;padding:5px 6px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Ramp</div><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#C6B79A;">9<span style="font-size:9px;color:#8E8269;">/10</span></div></div>
+            <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:6px;padding:5px 6px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Draw</div><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#C6B79A;">8<span style="font-size:9px;color:#8E8269;">/10</span></div></div>
+            <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:6px;padding:5px 6px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Removal</div><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#C6B79A;">6<span style="font-size:9px;color:#8E8269;">/10</span></div></div>
+            <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:6px;padding:5px 6px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Wipes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#C6B79A;">2<span style="font-size:9px;color:#8E8269;">/3</span></div></div>
+            <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:6px;padding:5px 6px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Land</div><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#C6B79A;">36<span style="font-size:9px;color:#8E8269;">/37</span></div></div>
+          </div>
+          <div style="display:flex;gap:16px;border-top:1px solid #2A241D;padding-top:8px;">
+            <span style="font-size:11.5px;font-weight:600;color:#EDE6D8;border-bottom:2px solid #C9A24B;padding-bottom:4px;">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">97</span></span>
+            <span style="font-size:11.5px;font-weight:500;color:#8E8269;padding-bottom:4px;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;">99</span></span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Consider · 99 is unchanged.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">suggestDeck()</span> iterates the owned pool and dedupes against the deck's oracle ids; a row with no oracle id can neither be suggested nor excluded. The count is what it always was.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;margin-top:10px;"><b style="color:#EDE6D8;font-weight:600;">Your deck · 97 counts what's built</b>, same figure as the spine — not the 99 rows on screen. The unresolved group carries its own <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">2</span> in its header, where it is a heading rather than a second claim about the deck.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;margin-top:10px;"><b style="color:#EDE6D8;font-weight:600;">The strip gains no cell and no asterisk.</b> A role comes from a type line and an oracle text; there is neither. An "unknown" cell would be a sixth column that can never be filled, and a footnote on five cells is five footnotes. Instead the banner sits <b style="color:#EDE6D8;font-weight:600;">directly above the strip and the tabs</b> and takes one extra clause — the one place the reader is about to use those numbers is the one place the caveat belongs.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;margin-top:10px;">On resolve, the row acquires an oracle id and <b style="color:#EDE6D8;font-weight:600;">everything moves in the same optimistic frame</b>: built 97 → 98, the tab, its role cell, and the Consider tile for that card flipping to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">✓ In deck</span> if it was on a shelf. Drawn in state 18.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:52px;max-width:1900px;">
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">Anatomy · <span style="color:#C9A24B;">the two calls this handoff owns</span></div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:520px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:26px 28px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:4px;">An unresolved row among real cards</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-bottom:20px;">It is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">DecklistRow</span> — same <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">#1A160F</span> plate, same 6/7px radius, same height. Three things change, and none of them is colour alone.</div>
+        <div style="display:flex;flex-direction:column;gap:10px;background:#14110E;border:1px solid #2A241D;border-radius:10px;padding:14px;">
+          <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;">
+            <span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span>
+            <span style="flex:1;font-size:13.5px;color:#EDE6D8;">Sol Ring</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;">
+            <span style="width:8px;height:8px;border-radius:999px;border:1px dashed #8E8269;flex:none;"></span>
+            <span style="flex:1;font-size:13.5px;color:#EDE6D8;">Rhystic Study</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">buy</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;border-left:2px solid #E0913C;">
+            <span style="width:8px;height:8px;flex:none;color:#E0913C;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;">?</span>
+            <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C6B79A;">Lighting Bolt</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:18px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">1 · The name is set in mono.</b> Every other row is a card name; this one is a string out of a file. Mono is already the app's voice for raw data — quantities, set codes, collector numbers — so the row says <i>this is text, not a card</i> before you read a word of it.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">2 · The ownership dot becomes a <span style="font-family:'IBM Plex Mono',monospace;">?</span>.</b> Owned and not-owned are the two things a dot can say. A card with no identity is neither, so it doesn't get a dot at all — it keeps the slot and the alignment.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">3 · A 2px warning rule on the leading edge.</b> The same <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--warning</span> left-rule the replace flow's banner uses, at row scale. It is the redundant signal, never the only one.</div>
+          <div style="color:#8E8269;">Deliberately <i>not</i> done: red, strike-through, reduced opacity, or a separate "problems" tray. This is a card the deck wants — the app just can't name it. Danger red is for something you did wrong.</div>
+        </div>
+      </div>
+
+      <div style="width:500px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:26px 28px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:4px;">How the header reads</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-bottom:18px;">The spec blocks <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Complete</span> while any unresolved row exists. Drawing that as a <b style="color:#EDE6D8;font-weight:600;">new pill variant would be redundant</b> — an unresolved row never counts toward <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">built</span>, so the deck is 97/99 and the shipped ladder already puts it at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Building</span>. The block is belt-and-braces for the one deck that reaches 99 built <i>and</i> carries unresolved lines.</div>
+        <div style="background:#14110E;border:1px solid #2A241D;border-radius:10px;padding:16px;">
+          <div style="display:flex;align-items:baseline;gap:6px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:#EDE6D8;">97</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8E8269;">/ 99</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#E0913C;background:rgba(224,145,60,0.13);">Building</span>
+          </div>
+          <div style="width:170px;height:6px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:6px;"><div style="width:98%;height:100%;border-radius:999px;background:#E0913C;"></div></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:5px;">71 owned · 26 to buy</div>
+          <div style="display:flex;align-items:flex-start;gap:12px;background:#211C15;border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:10px;padding:14px 16px;margin-top:14px;">
+            <span style="color:#E0913C;font-size:17px;line-height:1.2;">⚠</span>
+            <div>
+              <div style="font-size:14px;line-height:1.6;color:#C6B79A;">2 lines came over that we couldn't put a card to. They're at the bottom of the list.</div>
+              <div style="font-size:13px;color:#C9A24B;font-weight:600;margin-top:8px;">Take a look →</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:18px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">The banner carries the fact, the pill carries the state.</b> Exact geometry of the replace flow's warning banner — <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--elevated-hover</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">1px --border-strong</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">3px --warning</span> left rule. It sits below the spine, above the role strip, and disappears when the count hits zero.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The count is in the copy, never only in a badge.</b> One number, one place. The unresolved group header repeats it because it is a heading, not a second announcement.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Nothing in the spine changes.</b> No extra figure, no second bar, no "97 + 2". The deck's number is what's built; the exception lives in prose.</div>
+        </div>
+      </div>
+
+      <div style="width:430px;flex:none;display:flex;flex-direction:column;gap:24px;">
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Where they sit</div>
+          <div style="font-size:13.5px;color:#C6B79A;line-height:1.65;">Unresolved rows get <b style="color:#EDE6D8;font-weight:600;">their own group, pinned last</b>, labelled <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Couldn't identify</span>. They cannot go in a type group — a card with no identity has no type line, and inventing one would be a lie the rest of the list can't see. Pinned last rather than first because the deck is the point; these are the tail.</div>
+          <div style="font-size:13.5px;color:#C6B79A;line-height:1.65;margin-top:14px;">The group uses the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">DecklistGroup</span> header with its count, and the same two-column desktop grid. Under <b style="color:#EDE6D8;font-weight:600;">Shopping</b> the group is hidden entirely — the spec keeps unresolved rows out of <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">toBuyCount</span>, so a shopping view that showed them would be showing something you cannot buy.</div>
+        </div>
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Roles &amp; keyboard</div>
+          <div style="background:#14110E;border:1px solid #2A241D;border-radius:10px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.75;color:#C6B79A;white-space:pre;overflow-x:auto;">form
+  input#deck-source[aria-describedby=src-msg]
+  p#src-msg[role=alert]        ← every failure
+
+section[aria-labelledby=unresolved-h]
+  h3#unresolved-h  "Couldn't identify · 2"
+  button[aria-expanded][aria-controls=fix-N]
+    span.sr-only "unmatched line"
+  div#fix-N  ← row-scoped combobox, inline
+    input[role=combobox][aria-expanded][aria-controls=fix-N-list]
+          [aria-activedescendant][aria-describedby=fix-N-hint]
+    ul#fix-N-list[role=listbox] &gt; li[role=option] "Use this card"
+  button "Delete this line"</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+            <div>Every failure message is <b style="color:#EDE6D8;font-weight:600;">programmatically associated</b> with the field it belongs to and announced once via <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">role="alert"</span>. Colour is never the carrier — each one has an icon, a heading and a sentence.</div>
+            <div>Resolution is a <b style="color:#EDE6D8;font-weight:600;">disclosure, not a dialog</b>. No new focus trap. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Esc</span> collapses it and returns focus to the row.</div>
+            <div>Phone controls clear <b style="color:#EDE6D8;font-weight:600;">44px</b>; the seeded search field is 16px so iOS doesn't zoom.</div>
+            <div>Focus is the global <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">:focus-visible</span> from <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">globals.css</span> — <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">2px var(--brass)</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">+2px</span>, not overridden anywhere in this flow.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ENTRY ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">Entry · <span style="color:#C9A24B;">1 empty · 2 fetching · 3 parsing</span></div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">1 · Empty — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#14110E;overflow:hidden;">
+          <div style="padding:34px 18px 12px;border-bottom:1px solid #2A241D;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;margin-bottom:10px;">← Decks</div>
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;margin:0;color:#EDE6D8;">Bring a deck over</h2>
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;margin:3px 0 0;color:#8E8269;">Paste it, drop a file, or hand us a link.</p>
+          </div>
+          <div style="padding:16px 18px 24px;">
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:600;color:#14110E;background:#C9A24B;border:1px solid #C9A24B;border-radius:999px;padding:8px 14px;">Moxfield link</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:#C6B79A;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:8px 14px;">Paste</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:#C6B79A;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:8px 14px;">File</span>
+            </div>
+            <label style="display:block;font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:8px;">Moxfield deck link</label>
+            <div style="display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:12px 13px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8E8269;">⌕</span>
+              <span style="flex:1;font-size:16px;color:#8E8269;">moxfield.com/decks/…</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:8px;letter-spacing:0.04em;">Public or unlisted decks only</div>
+            <button style="width:100%;margin-top:16px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:15px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:13px 0;cursor:pointer;" style-hover="background:#D8B25E;">Import deck →</button>
+            <p style="font-size:12.5px;line-height:1.55;color:#8E8269;margin:16px 0 0;">We'll leave the sideboard behind — Commander doesn't have one.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:1060px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">1 · Empty — desktop <span style="color:#8E8269;">(app rail omitted; unchanged)</span></div>
+        <div style="border:1px solid #3A3229;border-radius:14px;background:#14110E;overflow:hidden;">
+          <div style="padding:34px 40px 26px;border-bottom:1px solid #2A241D;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;margin:0;color:#EDE6D8;">Bring a deck over</h2>
+            <p style="font-size:14px;margin:4px 0 0;color:#A89B84;">You built it somewhere else. Point us at it and we'll set it up here.</p>
+          </div>
+          <div style="max-width:760px;padding:44px 48px;">
+            <div style="display:flex;gap:9px;margin-bottom:22px;">
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border:1px solid #C9A24B;border-radius:999px;padding:9px 16px;">Moxfield link</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#C6B79A;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:9px 16px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Paste a list</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#C6B79A;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:9px 16px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Upload a file</span>
+            </div>
+            <label style="display:block;font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:8px;">Moxfield deck link</label>
+            <div style="display:flex;gap:10px;align-items:stretch;">
+              <div style="flex:1;display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #C9A24B;border-radius:8px;padding:12px 14px;box-shadow:0 0 0 3px rgba(201,162,75,0.16);">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8E8269;">⌕</span>
+                <span style="flex:1;font-size:14.5px;color:#EDE6D8;">https://www.moxfield.com/decks/<span style="color:#8E8269;">|</span></span>
+              </div>
+              <button style="flex:none;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:0 24px;cursor:pointer;white-space:nowrap;" style-hover="background:#D8B25E;">Import deck →</button>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:9px;letter-spacing:0.04em;">Public or unlisted decks only · we don't need your Moxfield account</div>
+            <div style="border-top:1px solid #2A241D;margin-top:26px;padding-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:7px;">What comes over</div>
+                <div style="font-size:13px;line-height:1.6;color:#C6B79A;">The commander and the 99. Sideboard and maybeboard stay behind — Commander doesn't have either.</div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:7px;">If a line won't match</div>
+                <div style="font-size:13px;line-height:1.6;color:#C6B79A;">The deck still gets made. We'll flag the line inside it and you can sort it out there.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-top:32px;">
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">2 · URL fetching — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#14110E;overflow:hidden;">
+          <div style="padding:34px 18px 12px;border-bottom:1px solid #2A241D;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;margin:0;color:#EDE6D8;">Bring a deck over</h2>
+          </div>
+          <div style="padding:16px 18px 24px;">
+            <div style="display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #2A241D;border-radius:8px;padding:12px 13px;opacity:0.55;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8E8269;">⌕</span>
+              <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">moxfield.com/decks/7Qk2vN1pE</span>
+            </div>
+            <div style="margin-top:28px;text-align:center;padding:0 10px;">
+              <div style="display:flex;justify-content:center;gap:6px;margin-bottom:18px;">
+                <span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;"></span>
+                <span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;animation-delay:.2s;"></span>
+                <span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;animation-delay:.4s;"></span>
+              </div>
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;">Asking Moxfield for it</div>
+              <div style="font-size:13px;line-height:1.55;color:#C6B79A;margin-top:8px;">Their servers, their pace. Usually a second or two.</div>
+            </div>
+            <button style="width:100%;margin-top:26px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 0;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Cancel</button>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">A real third-party round-trip, so it gets a real waiting state and a Cancel. <span style="color:#C6B79A;">aria-live="polite"</span> announces the phase once.</div>
+      </div>
+
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">3 · Parsing &amp; matching — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#14110E;overflow:hidden;">
+          <div style="padding:34px 18px 12px;border-bottom:1px solid #2A241D;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;margin:0;color:#EDE6D8;">Bring a deck over</h2>
+          </div>
+          <div style="padding:16px 18px 24px;">
+            <div style="display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #2A241D;border-radius:8px;padding:12px 13px;">
+              <span style="color:#6FA368;font-size:13px;">✓</span>
+              <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Bristly Bill, Spine Sower</span>
+            </div>
+            <div style="margin-top:28px;text-align:center;padding:0 10px;">
+              <div style="display:flex;justify-content:center;gap:6px;margin-bottom:18px;">
+                <span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;"></span>
+                <span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;animation-delay:.2s;"></span>
+                <span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;animation-delay:.4s;"></span>
+              </div>
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;">Reading the list</div>
+              <div style="font-size:13px;line-height:1.55;color:#C6B79A;margin-top:8px;">Putting a card to each of the 100 lines.</div>
+              <div style="width:100%;height:5px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:18px;"><div style="width:64%;height:100%;border-radius:999px;background:#C9A24B;"></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:7px;">64 / 100</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">Local and fast, so it gets a determinate bar and <b style="color:#C6B79A;">no Cancel</b> — a cancel you can't reach isn't a control.</div>
+      </div>
+
+      <div style="width:1060px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">2 &amp; 3 — desktop</div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div style="border:1px solid #3A3229;border-radius:14px;background:#14110E;overflow:hidden;">
+            <div style="max-width:760px;padding:34px 48px;">
+              <div style="display:flex;align-items:center;gap:18px;">
+                <div style="display:flex;gap:6px;flex:none;">
+                  <span style="width:8px;height:8px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;"></span>
+                  <span style="width:8px;height:8px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;animation-delay:.2s;"></span>
+                  <span style="width:8px;height:8px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;animation-delay:.4s;"></span>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Asking Moxfield for it</div>
+                  <div style="font-size:13.5px;color:#C6B79A;margin-top:4px;">Their servers, their pace. Usually a second or two.</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:7px;">moxfield.com/decks/7Qk2vN1pE</div>
+                </div>
+                <button style="flex:none;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:11px 20px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div style="border:1px solid #3A3229;border-radius:14px;background:#14110E;overflow:hidden;">
+            <div style="max-width:760px;padding:34px 48px;">
+              <div style="display:flex;align-items:center;gap:18px;">
+                <div style="display:flex;gap:6px;flex:none;">
+                  <span style="width:8px;height:8px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;"></span>
+                  <span style="width:8px;height:8px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;animation-delay:.2s;"></span>
+                  <span style="width:8px;height:8px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;animation-delay:.4s;"></span>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Reading the list</div>
+                  <div style="font-size:13.5px;color:#C6B79A;margin-top:4px;">Putting a card to each of the 100 lines. Found the commander: <b style="color:#EDE6D8;font-weight:600;">Bristly Bill, Spine Sower</b>.</div>
+                  <div style="width:100%;height:6px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:12px;"><div style="width:64%;height:100%;border-radius:999px;background:#C9A24B;"></div></div>
+                </div>
+                <div style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">64 / 100</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">Both replace the field block in place — same 760px column, same 48px gutters. The page never navigates, so a failure lands the user back on their own input.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ENTRY FAILURES ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">Entry failures · <span style="color:#C9A24B;">4–10 · seven of them, seven pieces of copy</span></div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px 24px;margin-bottom:26px;max-width:1476px;">
+      <div style="font-size:13.5px;line-height:1.65;color:#C6B79A;">All seven use one container — the replace flow's warning banner at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--elevated-hover</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">1px --border-strong</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">3px --warning</span> left rule — sitting <b style="color:#EDE6D8;font-weight:600;">directly under the input it belongs to</b>, wired with <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">aria-describedby</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">role="alert"</span>. What differs is a heading, a sentence and the way out. <b style="color:#EDE6D8;font-weight:600;">Retry appears exactly once</b> — in 7, where it is the advice. On 4, 5, 6, 8, 9 and 10 the same button would just re-fail, so the way out is the mode that will actually work.</div>
+      <div style="font-size:13.5px;line-height:1.65;color:#8E8269;margin-top:10px;">None of them uses <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--danger</span>. A link you mistyped and a server that's busy are not errors you committed; red is reserved for destructive confirmation, which is where the collection flow already spends it.</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:30px;">
+
+      <sc-for list="{{ failures }}" as="f" hint-placeholder-count="7">
+        <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="width:392px;flex:none;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">{{ f.tag }} — phone</div>
+            <div style="border:1px solid #3A3229;border-radius:22px;background:#14110E;overflow:hidden;padding:22px 18px 24px;">
+              <div style="display:flex;gap:8px;margin-bottom:14px;">
+                <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:999px;padding:7px 13px;">{{ f.mode }}</span>
+                <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#C6B79A;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:7px 13px;">{{ f.alt1 }}</span>
+                <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#C6B79A;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:7px 13px;">{{ f.alt2 }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:12px 13px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#8E8269;">{{ f.glyph }}</span>
+                <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">{{ f.value }}</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:10px;background:#211C15;border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:8px;padding:12px 14px;margin-top:12px;">
+                <span style="color:#E0913C;font-size:15px;line-height:1.3;">⚠</span>
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:#EDE6D8;line-height:1.4;">{{ f.head }}</div>
+                  <div style="font-size:12.5px;line-height:1.55;color:#C6B79A;margin-top:5px;">{{ f.body }}</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:9px;margin-top:14px;">
+                <sc-if value="{{ f.retry }}" hint-placeholder-val="{{ true }}">
+                  <button style="width:100%;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:15px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:13px 0;cursor:pointer;" style-hover="background:#D8B25E;">Try again</button>
+                </sc-if>
+                <button style="width:100%;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 0;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">{{ f.action }}</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="width:1060px;flex:none;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">{{ f.tag }} — desktop</div>
+            <div style="border:1px solid #3A3229;border-radius:14px;background:#14110E;overflow:hidden;">
+              <div style="max-width:760px;padding:32px 48px;">
+                <label style="display:block;font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:8px;">{{ f.label }}</label>
+                <div style="display:flex;gap:10px;align-items:stretch;">
+                  <div style="flex:1;display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:12px 14px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8E8269;">{{ f.glyph }}</span>
+                    <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C6B79A;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">{{ f.value }}</span>
+                  </div>
+                  <button style="flex:none;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:0 24px;cursor:pointer;white-space:nowrap;" style-hover="background:#D8B25E;">{{ f.submit }}</button>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:12px;background:#211C15;border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:10px;padding:16px 18px;margin-top:14px;">
+                  <span style="color:#E0913C;font-size:17px;line-height:1.2;">⚠</span>
+                  <div style="flex:1;">
+                    <div style="font-size:15px;font-weight:600;color:#EDE6D8;line-height:1.4;">{{ f.head }}</div>
+                    <div style="font-size:14px;line-height:1.6;color:#C6B79A;margin-top:6px;">{{ f.bodyLong }}</div>
+                    <div style="display:flex;gap:10px;margin-top:14px;">
+                      <sc-if value="{{ f.retry }}" hint-placeholder-val="{{ true }}">
+                        <button style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;" style-hover="background:#D8B25E;">Try again</button>
+                      </sc-if>
+                      <button style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:10px 20px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">{{ f.action }}</button>
+                    </div>
+                  </div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:14px;line-height:1.6;">{{ f.note }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+
+    </div>
+  </div>
+
+  <!-- ===================== COMMANDER ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">Commander · <span style="color:#C9A24B;">11 picker · 12 the dead end</span></div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px 24px;margin-bottom:26px;max-width:1476px;font-size:13.5px;line-height:1.65;color:#C6B79A;">When the source declares a commander we <b style="color:#EDE6D8;font-weight:600;">use it and say nothing</b> — there is no confirm step, no "is this right?", because a wrong guess is the thing being prevented and a correct guess doesn't need a ceremony. The picker only ever appears when the source is silent, and it is the <b style="color:#EDE6D8;font-weight:600;">shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">/decks/new</span> picker row</b> — same 34×48 / 40×56 thumb, same radio, same selected fill — reading from the import rather than the collection.</div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">11 · Commander picker — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#14110E;overflow:hidden;">
+          <div style="padding:30px 18px 14px;border-bottom:1px solid #2A241D;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;margin:0;color:#EDE6D8;">Which one's the commander?</h2>
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;margin:4px 0 0;color:#8E8269;">The list doesn't say, so you tell us.</p>
+          </div>
+          <div style="padding:16px 18px 12px;">
+            <div style="font-size:13px;line-height:1.55;color:#C6B79A;margin-bottom:14px;">Three legendary creatures came over. Pick the one you're building around — it sets the colours and anchors everything we suggest.</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:11px;background:#211C15;border:1px solid #C9A24B;border-radius:10px;padding:10px 12px;min-height:44px;">
+                <div style="width:34px;height:48px;flex:none;border-radius:6px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+                <div style="flex:1;min-width:0;">
+                  <p style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:#EDE6D8;margin:0;line-height:1.3;">Bristly Bill, Spine Sower</p>
+                  <div style="display:flex;align-items:center;gap:5px;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A89B84;">
+                    <span style="width:9px;height:9px;border-radius:999px;background:#4B7A46;flex:none;"></span><span>Mono-Green · line 1</span>
+                  </div>
+                </div>
+                <div style="width:20px;height:20px;flex:none;border-radius:999px;border:2px solid #C9A24B;background:#C9A24B;"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;background:#1A160F;border:1px solid #2A241D;border-radius:10px;padding:10px 12px;min-height:44px;">
+                <div style="width:34px;height:48px;flex:none;border-radius:6px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+                <div style="flex:1;min-width:0;">
+                  <p style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:#EDE6D8;margin:0;line-height:1.3;">Gilanra, Caller of Wirewood</p>
+                  <div style="display:flex;align-items:center;gap:5px;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A89B84;">
+                    <span style="width:9px;height:9px;border-radius:999px;background:#4B7A46;flex:none;"></span><span>Mono-Green · line 22</span>
+                  </div>
+                </div>
+                <div style="width:20px;height:20px;flex:none;border-radius:999px;border:2px solid #4A4033;"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;background:#1A160F;border:1px solid #2A241D;border-radius:10px;padding:10px 12px;min-height:44px;">
+                <div style="width:34px;height:48px;flex:none;border-radius:6px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+                <div style="flex:1;min-width:0;">
+                  <p style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:#EDE6D8;margin:0;line-height:1.3;">Yedora, Grave Gardener</p>
+                  <div style="display:flex;align-items:center;gap:5px;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A89B84;">
+                    <span style="width:9px;height:9px;border-radius:999px;background:#4B7A46;flex:none;"></span><span>Mono-Green · line 57</span>
+                  </div>
+                </div>
+                <div style="width:20px;height:20px;flex:none;border-radius:999px;border:2px solid #4A4033;"></div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:14px 16px 20px;border-top:1px solid #2A241D;background:#1A160F;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-bottom:9px;">Deck name — from Moxfield</div>
+            <div style="background:#181410;border:1px solid #3A3229;border-radius:8px;padding:11px 13px;font-size:14px;color:#EDE6D8;margin-bottom:10px;">Bill's Big Garden</div>
+            <button style="width:100%;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:15px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:13px 0;cursor:pointer;" style-hover="background:#D8B25E;">Make the deck →</button>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">The name comes over pre-filled and editable — the one field the picker adds over <span style="color:#C6B79A;">/decks/new</span>, because the source already named the deck.</div>
+      </div>
+
+      <div style="width:1060px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">11 · Commander picker — desktop</div>
+        <div style="border:1px solid #3A3229;border-radius:14px;background:#14110E;overflow:hidden;">
+          <div style="padding:32px 40px 24px;border-bottom:1px solid #2A241D;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;margin:0;color:#EDE6D8;">Which one's the commander?</h2>
+            <p style="font-size:14px;margin:4px 0 0;color:#A89B84;">This list doesn't say. Pick the one you're building around — it sets the colours, anchors the recommendations, and gives the deck its face.</p>
+          </div>
+          <div style="display:flex;align-items:flex-start;">
+            <div style="flex:1;min-width:0;padding:24px 40px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-bottom:14px;">3 legendary creatures in this import</div>
+              <div style="display:flex;flex-direction:column;gap:11px;">
+                <div style="display:flex;align-items:center;gap:14px;background:#211C15;border:1px solid #C9A24B;border-radius:11px;padding:12px 15px;">
+                  <div style="width:40px;height:56px;flex:none;border-radius:6px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+                  <div style="flex:1;min-width:0;">
+                    <p style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin:0;line-height:1.3;">Bristly Bill, Spine Sower</p>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A89B84;">
+                      <span style="width:11px;height:11px;border-radius:999px;background:#4B7A46;flex:none;"></span><span>Mono-Green · line 1 · you own it</span>
+                    </div>
+                  </div>
+                  <div style="width:22px;height:22px;flex:none;border-radius:999px;border:2px solid #C9A24B;background:#C9A24B;"></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;background:#1A160F;border:1px solid #2A241D;border-radius:11px;padding:12px 15px;cursor:pointer;" style-hover="border-color:#3A3229;background:#211C15;">
+                  <div style="width:40px;height:56px;flex:none;border-radius:6px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+                  <div style="flex:1;min-width:0;">
+                    <p style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin:0;line-height:1.3;">Gilanra, Caller of Wirewood</p>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A89B84;">
+                      <span style="width:11px;height:11px;border-radius:999px;background:#4B7A46;flex:none;"></span><span>Mono-Green · line 22 · you own it</span>
+                    </div>
+                  </div>
+                  <div style="width:22px;height:22px;flex:none;border-radius:999px;border:2px solid #4A4033;"></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;background:#1A160F;border:1px solid #2A241D;border-radius:11px;padding:12px 15px;cursor:pointer;" style-hover="border-color:#3A3229;background:#211C15;">
+                  <div style="width:40px;height:56px;flex:none;border-radius:6px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+                  <div style="flex:1;min-width:0;">
+                    <p style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin:0;line-height:1.3;">Yedora, Grave Gardener</p>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A89B84;">
+                      <span style="width:11px;height:11px;border-radius:999px;background:#4B7A46;flex:none;"></span><span>Mono-Green · line 57 · not in your collection</span>
+                    </div>
+                  </div>
+                  <div style="width:22px;height:22px;flex:none;border-radius:999px;border:2px solid #4A4033;"></div>
+                </div>
+              </div>
+              <div style="font-size:12.5px;color:#8E8269;line-height:1.6;margin-top:16px;">Only legendary creatures from this import are listed. If the one you want isn't here, it didn't come over — make the deck and add it from the builder.</div>
+            </div>
+            <div style="width:300px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px;margin:24px 40px 24px 0;">
+              <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin:0 0 14px;">Selected</p>
+              <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
+                <div style="width:44px;height:62px;flex:none;border-radius:7px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+                <div style="min-width:0;">
+                  <p style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;margin:0;line-height:1.2;">Bristly Bill, Spine Sower</p>
+                  <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A89B84;margin:3px 0 0;">Mono-Green · 99 cards</p>
+                </div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-bottom:7px;">Deck name</div>
+              <div style="background:#181410;border:1px solid #3A3229;border-radius:8px;padding:11px 13px;font-size:14px;color:#EDE6D8;margin-bottom:16px;">Bill's Big Garden</div>
+              <button style="width:100%;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:15px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:13px 0;cursor:pointer;" style-hover="background:#D8B25E;">Make the deck →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-top:32px;">
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">12 · No legendary creature — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#14110E;overflow:hidden;padding:44px 24px 32px;text-align:center;background-image:radial-gradient(400px 220px at 50% 80%, rgba(201,162,75,0.07), transparent 70%);">
+          <div style="position:relative;width:96px;height:104px;margin:0 auto 20px;">
+            <div style="position:absolute;left:50%;top:50%;width:48px;height:68px;border-radius:8px;background:#221D16;border:1.5px solid #3A3229;transform:translate(-50%,-50%) rotate(-15deg) translateX(-18px);"></div>
+            <div style="position:absolute;left:50%;top:50%;width:48px;height:68px;border-radius:8px;background:#2A241D;border:1.5px solid #4A4033;transform:translate(-50%,-50%);"></div>
+            <div style="position:absolute;left:50%;top:50%;width:48px;height:68px;border-radius:8px;background:#241B12;border:1.5px dashed #E0913C;transform:translate(-50%,-50%) rotate(15deg) translateX(18px);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:800;font-size:20px;color:#E0913C;">?</div>
+          </div>
+          <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;margin:0;color:#EDE6D8;">There's no commander in here</h2>
+          <p style="font-size:13.5px;line-height:1.6;color:#C6B79A;margin:10px 0 0;">Every Commander deck needs a legendary creature to lead it, and none of these 100 lines is one. If yours is in there under a name we couldn't read, that's the line to fix.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:24px;">
+            <button style="width:100%;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:15px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:13px 0;cursor:pointer;" style-hover="background:#D8B25E;">Start from a commander instead →</button>
+            <button style="width:100%;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 0;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Back to the list</button>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">The true dead end — no deck is created. The mark is the builder's card fan with the front card <b style="color:#C6B79A;">dashed and warning-toned</b>, not the brass 99, because nothing here is finished.</div>
+      </div>
+
+      <div style="width:1060px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">12 · No legendary creature — desktop</div>
+        <div style="border:1px solid #3A3229;border-radius:14px;background:#14110E;overflow:hidden;padding:64px 40px;text-align:center;background-image:radial-gradient(440px 260px at 50% 78%, rgba(201,162,75,0.07), transparent 70%);">
+          <div style="position:relative;width:112px;height:120px;margin:0 auto 22px;">
+            <div style="position:absolute;left:50%;top:50%;width:56px;height:78px;border-radius:8px;background:#221D16;border:1.5px solid #3A3229;transform:translate(-50%,-50%) rotate(-15deg) translateX(-21px);"></div>
+            <div style="position:absolute;left:50%;top:50%;width:56px;height:78px;border-radius:8px;background:#2A241D;border:1.5px solid #4A4033;transform:translate(-50%,-50%);"></div>
+            <div style="position:absolute;left:50%;top:50%;width:56px;height:78px;border-radius:8px;background:#241B12;border:1.5px dashed #E0913C;transform:translate(-50%,-50%) rotate(15deg) translateX(21px);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:800;font-size:24px;color:#E0913C;">?</div>
+          </div>
+          <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;margin:0;color:#EDE6D8;">There's no commander in here</h2>
+          <p style="font-size:15px;line-height:1.6;color:#C6B79A;margin:12px auto 0;max-width:420px;">Every Commander deck needs a legendary creature to lead it, and none of these 100 lines is one. If yours is in there under a name we couldn't read, that's the line to fix before you bring it over.</p>
+          <div style="display:flex;gap:12px;justify-content:center;margin-top:26px;">
+            <button style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:12px 22px;cursor:pointer;" style-hover="background:#D8B25E;">Start from a commander instead →</button>
+            <button style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 22px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Back to the list</button>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:24px;">Nothing was created · your list is still in the box</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== DECK PAGE ARRIVAL ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">Deck page arrival · <span style="color:#C9A24B;">13 clean · 14 with unresolved rows</span></div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">13 · Clean import — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#100D0A;overflow:hidden;">
+          <div style="display:flex;flex-direction:column;align-items:center;padding:34px 16px 12px;border-bottom:1px solid #2A241D;">
+            <div style="width:30px;height:42px;border-radius:5px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;margin-top:8px;">Bill's Big Garden</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:1px;">Bristly Bill, Spine Sower · Mono-Green</div>
+            <div style="display:flex;align-items:baseline;gap:4px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:#EDE6D8;">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#8E8269;">/ 99</span></div>
+            <div style="width:100%;height:5px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:4px;"><div style="width:100%;height:100%;border-radius:999px;background:#6FA368;"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;padding:10px 16px;background:#1A160F;border-bottom:1px solid #2A241D;">
+            <span style="color:#6FA368;font-size:12px;">✓</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;flex:1;">All 99 came over · from Moxfield, just now</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">✕</span>
+          </div>
+          <div style="padding:14px 16px 20px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;">
+              <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:12.5px;font-weight:600;color:#EDE6D8;">Creatures</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">28</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Scute Swarm</span></div>
+              <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Wall of Roots</span></div>
+              <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #8E8269;flex:none;"></span><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Avenger of Zendikar</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">buy</span></div>
+              <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Sakura-Tribe Elder</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">One dismissible arrival strip, gone on next visit. <b style="color:#C6B79A;">No modal, no "import complete" screen</b> — the deck is the confirmation.</div>
+      </div>
+
+      <div style="width:1060px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">13 · Clean import — desktop <span style="color:#8E8269;">(the 340px Add panel is gone — #158; quick-add bar omitted here, drawn in 14)</span></div>
+        <div style="border:1px solid #3A3229;border-radius:14px;background:#100D0A;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:18px;padding:20px 30px;border-bottom:1px solid #2A241D;">
+            <div style="width:44px;height:62px;flex:none;border-radius:6px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:#EDE6D8;">Bill's Big Garden</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">Bristly Bill, Spine Sower · Mono-Green</div>
+              <div style="display:flex;align-items:baseline;gap:4px;margin-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:#EDE6D8;">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8E8269;">/ 99</span></div>
+              <div style="width:170px;height:6px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:6px;"><div style="width:100%;height:100%;border-radius:999px;background:#6FA368;"></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:5px;">73 owned · 26 to buy</div>
+            </div>
+            <button style="flex:none;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 18px;cursor:pointer;" style-hover="background:#D8B25E;">Export</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:12px 30px;background:#1A160F;border-bottom:1px solid #2A241D;">
+            <span style="color:#6FA368;font-size:14px;">✓</span>
+            <span style="font-size:13.5px;color:#C6B79A;flex:1;">All 99 lines came over clean. Imported from Moxfield a moment ago — nothing needs your attention.</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;cursor:pointer;" style-hover="color:#C9A24B;">Dismiss ✕</span>
+          </div>
+          <div style="padding:18px 30px 24px;">
+            <div style="display:flex;align-items:baseline;gap:10px;padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid #2A241D;">
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Creatures</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">28</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;">
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Scute Swarm</span><span style="color:#4A4033;font-size:13px;">✕</span></div>
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Sakura-Tribe Elder</span><span style="color:#4A4033;font-size:13px;">✕</span></div>
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Wall of Roots</span><span style="color:#4A4033;font-size:13px;">✕</span></div>
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed #8E8269;flex:none;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Avenger of Zendikar</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">buy</span><span style="color:#4A4033;font-size:13px;">✕</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="border:1px solid #6E4A2A;border-left:3px solid #E0913C;border-radius:10px;background:#241B12;padding:14px 18px;margin-top:12px;font-size:13px;line-height:1.6;color:#C6B79A;"><b style="color:#EDE6D8;font-weight:600;">Open question for eng, drawn as-is:</b> a clean 99-line import lands the deck at 99/99, which trips <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">shouldCelebrate</span> and fires the one-shot kaiju reveal <i>on arrival</i>. It burns a persisted flag on a deck the user never built. Recommendation: suppress the reveal when the deck's first render follows an import, and let it fire the first time they add a card themselves. <b style="color:#EDE6D8;font-weight:600;">Confirmed and adopted at the R2 audit</b> — <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">shouldCelebrate()</span> is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">status === "Complete" &amp;&amp; !alreadyCelebrated</span> — pending Hugh's ruling. Drawn either way.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-top:32px;">
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">14 · With unresolved rows — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#100D0A;overflow:hidden;">
+          <div style="display:flex;flex-direction:column;align-items:center;padding:34px 16px 12px;border-bottom:1px solid #2A241D;">
+            <div style="width:30px;height:42px;border-radius:5px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;margin-top:8px;">Bill's Big Garden</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:1px;">Bristly Bill, Spine Sower · Mono-Green</div>
+            <div style="display:flex;align-items:baseline;gap:4px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:#EDE6D8;">97</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#8E8269;">/ 99</span></div>
+            <div style="width:100%;height:5px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:4px;"><div style="width:98%;height:100%;border-radius:999px;background:#E0913C;"></div></div>
+          </div>
+          <div style="padding:12px 16px 0;">
+            <div style="display:flex;align-items:flex-start;gap:10px;background:#211C15;border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:8px;padding:12px 14px;">
+              <span style="color:#E0913C;font-size:15px;line-height:1.3;">⚠</span>
+              <div>
+                <div style="font-size:12.5px;line-height:1.55;color:#C6B79A;">2 lines came over that we couldn't put a card to. They're at the bottom, and they're not in any count below.</div>
+                <div style="font-size:12.5px;color:#C9A24B;font-weight:600;margin-top:7px;">Take a look →</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:12px 16px 10px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#C6B79A;">Recommended mix</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6A6152;">unresolved lines not counted</span></div>
+            <div style="display:flex;gap:4px;">
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:7px;padding:6px 2px;text-align:center;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#8E8269;">Ramp</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C6B79A;">9<span style="font-size:9px;color:#8E8269;">/10</span></div></div>
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:7px;padding:6px 2px;text-align:center;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#8E8269;">Draw</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C6B79A;">8<span style="font-size:9px;color:#8E8269;">/10</span></div></div>
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:7px;padding:6px 2px;text-align:center;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#8E8269;">Rem</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C6B79A;">6<span style="font-size:9px;color:#8E8269;">/10</span></div></div>
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:7px;padding:6px 2px;text-align:center;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#8E8269;">Wipe</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C6B79A;">2<span style="font-size:9px;color:#8E8269;">/3</span></div></div>
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:7px;padding:6px 2px;text-align:center;"><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;color:#8E8269;">Land</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C6B79A;">36<span style="font-size:9px;color:#8E8269;">/37</span></div></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:18px;padding:4px 16px 0;border-bottom:1px solid #2A241D;">
+            <div style="font-size:13.5px;font-weight:600;color:#EDE6D8;padding-bottom:8px;border-bottom:2px solid #C9A24B;">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">97</span></div>
+            <div style="font-size:13.5px;font-weight:500;color:#8E8269;padding-bottom:8px;border-bottom:2px solid transparent;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">99</span></div>
+          </div>
+          <div style="padding:14px 16px 20px;">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-size:12.5px;font-weight:600;color:#EDE6D8;">Lands</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">36</span></div>
+            <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:16px;">
+              <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Forest</span></div>
+              <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;"><span style="width:7px;height:7px;flex:none;"></span><span style="flex:1;font-size:12.5px;color:#8E8269;">+27 more</span></div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-size:12.5px;font-weight:600;color:#EDE6D8;">Couldn't identify</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;">2</span></div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;border-left:2px solid #E0913C;min-height:44px;"><span style="width:7px;flex:none;color:#E0913C;font-size:11px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Lighting Bolt</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span></div>
+              <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;border-left:2px solid #E0913C;min-height:44px;"><span style="width:7px;flex:none;color:#E0913C;font-size:11px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Beast Whisperer (foil)</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span></div>
+            </div>
+            <div style="font-size:12px;line-height:1.55;color:#8E8269;margin-top:10px;">These count toward the 99 but not toward what's built. Tap one to put a card to it.</div>
+          </div>
+          <div style="border-top:1px solid #2A241D;background:#14110E;padding:10px 16px 14px;">
+            <div style="height:44px;border-radius:8px;background:#181410;border:1px solid #3A3229;display:flex;align-items:center;gap:9px;padding:0 12px;"><span style="color:#8E8269;font-size:14px;">⌕</span><span style="font-family:'IBM Plex Sans',sans-serif;font-size:16px;color:#6A6152;">Add a card by name…</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:1060px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">14 · With unresolved rows — desktop</div>
+        <div style="border:1px solid #3A3229;border-radius:14px;background:#100D0A;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:18px;padding:20px 30px;border-bottom:1px solid #2A241D;">
+            <div style="width:44px;height:62px;flex:none;border-radius:6px;background:linear-gradient(150deg,#7fae74,#4B7A46 58%,#2b4a2a);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:#EDE6D8;">Bill's Big Garden</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#E0913C;background:rgba(224,145,60,0.13);">Building</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">Bristly Bill, Spine Sower · Mono-Green</div>
+              <div style="display:flex;align-items:baseline;gap:4px;margin-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:#EDE6D8;">97</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8E8269;">/ 99</span></div>
+              <div style="width:170px;height:6px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:6px;"><div style="width:98%;height:100%;border-radius:999px;background:#E0913C;"></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:5px;">71 owned · 26 to buy</div>
+            </div>
+            <button style="flex:none;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 18px;cursor:pointer;" style-hover="background:#D8B25E;">Export</button>
+          </div>
+          <div style="padding:14px 30px 0;">
+            <div style="display:flex;align-items:flex-start;gap:12px;background:#211C15;border:1px solid #3A3229;border-left:3px solid #E0913C;border-radius:10px;padding:16px 18px;">
+              <span style="color:#E0913C;font-size:17px;line-height:1.2;">⚠</span>
+              <div style="flex:1;">
+                <div style="font-size:14px;line-height:1.6;color:#C6B79A;">2 lines came over that we couldn't put a card to. They're sitting at the bottom of the list, they aren't counted in the mix or in either tab below, and they'll keep the deck off <b style="color:#EDE6D8;font-weight:600;">Complete</b> until you sort them out.</div>
+              </div>
+              <button style="flex:none;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:10px 18px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Take a look →</button>
+            </div>
+          </div>
+          <div style="padding:14px 30px 12px;">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#C6B79A;">Recommended mix</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">a guide, not a gate</span></div>
+            <div style="display:flex;gap:8px;">
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:8px;padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Ramp</div><div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#C6B79A;margin-top:3px;">9 <span style="font-size:11px;color:#8E8269;">/ 10</span></div></div>
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:8px;padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Draw</div><div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#C6B79A;margin-top:3px;">8 <span style="font-size:11px;color:#8E8269;">/ 10</span></div></div>
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:8px;padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Removal</div><div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#C6B79A;margin-top:3px;">6 <span style="font-size:11px;color:#8E8269;">/ 10</span></div></div>
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:8px;padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Wipes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#C6B79A;margin-top:3px;">2 <span style="font-size:11px;color:#8E8269;">/ 3</span></div></div>
+              <div style="flex:1;background:#181410;border:1px solid #2A241D;border-radius:8px;padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">Land</div><div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#C6B79A;margin-top:3px;">36 <span style="font-size:11px;color:#8E8269;">/ 37</span></div></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:22px;padding:4px 30px 0;border-bottom:1px solid #2A241D;">
+            <div style="font-size:14px;font-weight:600;color:#EDE6D8;padding-bottom:10px;border-bottom:2px solid #C9A24B;">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">97</span></div>
+            <div style="font-size:14px;font-weight:500;color:#8E8269;padding-bottom:10px;border-bottom:2px solid transparent;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">99</span></div>
+            <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;padding-bottom:10px;">both figures exclude the 2 unresolved lines — see the banner above</div>
+          </div>
+          <div style="padding:18px 30px 24px;">
+            <div style="display:flex;align-items:baseline;gap:10px;padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid #2A241D;">
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Lands</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">36</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin-bottom:20px;">
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Forest</span><span style="color:#4A4033;font-size:13px;">✕</span></div>
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;"><span style="width:8px;height:8px;flex:none;"></span><span style="flex:1;font-size:13.5px;color:#8E8269;">+27 more</span></div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:10px;padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid #2A241D;">
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Couldn't identify</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">2</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;">counted in the 99, not in what's built</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;">
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;border-left:2px solid #E0913C;cursor:pointer;" style-hover="background:#221D16;"><span style="width:8px;flex:none;color:#E0913C;font-size:12px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C6B79A;">Lighting Bolt</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span><span style="font-size:12px;color:#C9A24B;font-weight:600;">Fix</span></div>
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;border-left:2px solid #E0913C;cursor:pointer;" style-hover="background:#221D16;"><span style="width:8px;flex:none;color:#E0913C;font-size:12px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C6B79A;">Beast Whisperer (foil)</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span><span style="font-size:12px;color:#C9A24B;font-weight:600;">Fix</span></div>
+            </div>
+            <div style="font-size:12.5px;line-height:1.6;color:#8E8269;margin-top:12px;">Both lines are still in the deck's total of 99 — they're cards the deck wants. They just aren't cards we can name yet, so they don't count as built or owned, and they stay out of the shopping list.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== RESOLUTION ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">Resolution · <span style="color:#C9A24B;">15 at rest · 16 search &amp; pick · 17 nothing found · 18 resolved · 19 deleted</span></div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px 24px;margin-bottom:26px;max-width:1476px;font-size:13.5px;line-height:1.65;color:#C6B79A;">The row is a <b style="color:#EDE6D8;font-weight:600;">disclosure</b>, and it is <b style="color:#EDE6D8;font-weight:600;">the same disclosure at both widths</b> — it expands in place inside the decklist on desktop, and in place inside the deck column on phone. R1 sent the phone to the Add panel's bottom sheet; #158 deletes that sheet along with the 340px rail, so there is nowhere to send it and nowhere it needs to go. Inside the expander is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">quick-add-bar</span>'s combobox and its result row, <b style="color:#EDE6D8;font-weight:600;">seeded with the raw string</b> and selected, so the usual fix — a typo — is one keystroke. Two filters are off in this scope and one caption says so: <b style="color:#EDE6D8;font-weight:600;">colour identity</b>, and <b style="color:#EDE6D8;font-weight:600;">owned-only</b>, which #158 defaults on everywhere else. <b style="color:#EDE6D8;font-weight:600;">Editing the raw text and re-matching is not offered</b>, per the spec: it is a guessing game against a matcher you can't see. You pick a real card or you delete the line.</div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">15 · At rest — phone (rest · pressed · focus)</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#100D0A;padding:20px 16px;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;border-left:2px solid #E0913C;min-height:44px;"><span style="width:7px;flex:none;color:#E0913C;font-size:11px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Lighting Bolt</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span></div>
+            <div style="display:flex;align-items:center;gap:9px;background:#221D16;border-radius:6px;padding:6px 8px;border-left:2px solid #E0913C;min-height:44px;"><span style="width:7px;flex:none;color:#E0913C;font-size:11px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Lighting Bolt</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span></div>
+            <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;border-left:2px solid #E0913C;min-height:44px;outline:2px solid #C9A24B;outline-offset:2px;"><span style="width:7px;flex:none;color:#E0913C;font-size:11px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Lighting Bolt</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span></div>
+            <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;border-left:2px solid #E0913C;min-height:44px;"><span style="width:7px;flex:none;color:#E0913C;font-size:11px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Swamp</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">×4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:14px;line-height:1.7;">rest · pressed (--surface-raised) · focus-visible (global 2px brass, +2px) · quantity &gt; 1 keeps its count</div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">16 · Search &amp; pick — phone, inline in the deck column</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#100D0A;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="padding:18px 16px 0;">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-size:12.5px;font-weight:600;color:#EDE6D8;">Couldn't identify</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;">2</span></div>
+          </div>
+          <div style="margin:0 16px 16px;background:#181410;border:1px solid #3A3229;border-left:2px solid #E0913C;border-radius:9px;padding:13px 14px 16px;">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;"><span style="color:#E0913C;font-size:11px;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;">Lighting Bolt</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">Collapse ▴</span></div>
+            <div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">What was this meant to be?</div>
+            <div style="font-size:12.5px;line-height:1.55;color:#C6B79A;margin-top:5px;">The list said <span style="font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">Lighting Bolt</span>. Pick the card you meant.</div>
+            <div style="display:flex;align-items:center;gap:10px;background:#14110E;border:1px solid #C9A24B;border-radius:8px;padding:11px 13px;margin-top:14px;box-shadow:0 0 0 3px rgba(201,162,75,0.16);">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8E8269;">⌕</span>
+              <span style="flex:1;font-size:16px;color:#14110E;background:#C9A24B;border-radius:2px;padding:0 2px;">Lighting Bolt</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">3 results</span>
+              <label style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#A89B84;"><span style="position:relative;display:inline-block;width:30px;height:17px;border-radius:999px;background:#2A241D;"><span style="position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:999px;background:#8E8269;"></span></span>Owned only</label>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:5px;line-height:1.5;">every card, owned or not — you're naming a line, not shopping</div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
+              <div style="background:#1E1A15;border:1px solid #C9A24B;border-radius:9px;padding:8px 10px;display:flex;align-items:center;gap:10px;min-height:56px;">
+                <div style="width:32px;height:45px;flex:none;border-radius:5px;background:linear-gradient(158deg,#8E3B2E 0%,#3A211B 62%,#161311 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);"></div>
+                <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Light<span style="color:#C9A24B;">ning Bolt</span></div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:1px;">Instant · ×1 owned</div></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;">↵</span>
+              </div>
+              <div style="background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:8px 10px;display:flex;align-items:center;gap:10px;min-height:56px;">
+                <div style="width:32px;height:45px;flex:none;border-radius:5px;background:linear-gradient(158deg,#7C7458 0%,#2E2A21 62%,#161311 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);"></div>
+                <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Light<span style="color:#C9A24B;">ning Greaves</span></div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:1px;">Artifact — Equipment · ×1 owned</div></div>
+                <button style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;color:#C9A24B;background:transparent;border:1px solid #3A3229;border-radius:7px;padding:0 12px;height:40px;cursor:pointer;flex:none;">Use this</button>
+              </div>
+              <div style="background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:8px 10px;display:flex;align-items:center;gap:10px;min-height:56px;">
+                <div style="width:32px;height:45px;flex:none;border-radius:5px;background:linear-gradient(158deg,#8E3B2E 0%,#3A211B 62%,#161311 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);"></div>
+                <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Light<span style="color:#C9A24B;">ning Bolt</span> (Secret Lair)</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;margin-top:1px;">Instant · not owned</div></div>
+                <button style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;color:#C9A24B;background:transparent;border:1px solid #3A3229;border-radius:7px;padding:0 12px;height:40px;cursor:pointer;flex:none;">Use this</button>
+              </div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:9px;line-height:1.5;">1 Lighting Bolt · line 41 of the import</div>
+            <div style="display:flex;gap:9px;margin-top:14px;">
+              <button style="flex:1;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 0;cursor:pointer;min-height:44px;" style-hover="border-color:#C9A24B;color:#D8B25E;">Delete this line</button>
+              <button style="flex:1;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 0;cursor:pointer;min-height:44px;" style-hover="border-color:#C9A24B;color:#D8B25E;">Leave it for now</button>
+            </div>
+          </div>
+          <div style="padding:0 16px;">
+            <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;border-left:2px solid #E0913C;min-height:44px;"><span style="width:7px;flex:none;color:#E0913C;font-size:11px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Beast Whisperer (foil)</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span></div>
+          </div>
+          <div style="margin:16px 0 0;border-top:1px dashed #2A241D;padding:11px 16px 14px;display:flex;align-items:center;gap:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;line-height:1.5;">the global quick-add bar is hidden while a row is open — one search field on screen, and it means one thing</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">Two filters are <b style="color:#C6B79A;">off</b> in this scope. <b style="color:#C6B79A;">Colour identity</b>, because the user is telling us what a line already in the deck was and hiding the answer would be perverse. And <b style="color:#C6B79A;">owned-only</b>, which #158 defaults on — an imported deck is exactly where the right answer is a card you haven't bought. Both are scoped to the expander; the bar's own toggle is untouched on collapse.</div>
+      </div>
+
+      <div style="width:1060px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">16 · Search &amp; pick — desktop, inline in the list</div>
+        <div style="border:1px solid #3A3229;border-radius:14px;background:#100D0A;padding:18px 30px 24px;">
+          <div style="display:flex;align-items:baseline;gap:10px;padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid #2A241D;">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Couldn't identify</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">2</span>
+          </div>
+          <div style="background:#181410;border:1px solid #3A3229;border-left:2px solid #E0913C;border-radius:9px;padding:14px 16px;margin-bottom:4px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+              <span style="color:#E0913C;font-size:12px;">?</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">Lighting Bolt</span>
+              <span style="font-size:13px;color:#A89B84;">— what was this meant to be?</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;cursor:pointer;" style-hover="color:#C9A24B;">Collapse ▴</span>
+            </div>
+            <div style="display:flex;gap:20px;align-items:flex-start;">
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:10px;background:#14110E;border:1px solid #C9A24B;border-radius:8px;padding:11px 13px;box-shadow:0 0 0 3px rgba(201,162,75,0.16);">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8E8269;">⌕</span>
+                  <span style="flex:1;font-size:14.5px;color:#14110E;background:#C9A24B;border-radius:2px;padding:0 2px;">Lighting Bolt</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;margin-top:11px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">3 results</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">↑↓ to move · ↵ to use the top match · Esc to collapse</span>
+                  <label style="margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12px;color:#A89B84;"><span style="position:relative;display:inline-block;width:30px;height:17px;border-radius:999px;background:#2A241D;"><span style="position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:999px;background:#8E8269;"></span></span>Owned only</label>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;margin-top:6px;">every card, owned or not, in every colour — you're naming a line that's already in the deck, not shopping for a new one</div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
+                  <div style="background:#1E1A15;border:1px solid #C9A24B;border-radius:9px;padding:8px 12px;display:flex;align-items:center;gap:12px;min-height:52px;">
+                    <div style="width:30px;height:42px;flex:none;border-radius:5px;background:linear-gradient(158deg,#8E3B2E 0%,#3A211B 62%,#161311 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);"></div>
+                    <div style="width:230px;flex:none;font-size:14px;font-weight:600;color:#EDE6D8;">Light<span style="color:#C9A24B;">ning Bolt</span></div>
+                    <div style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">Instant</div>
+                    <div style="width:80px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">×1 owned</div>
+                    <span style="width:96px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">↵ use this</span>
+                  </div>
+                  <div style="background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:8px 12px;display:flex;align-items:center;gap:12px;min-height:52px;" style-hover="border-color:#3A3229;">
+                    <div style="width:30px;height:42px;flex:none;border-radius:5px;background:linear-gradient(158deg,#7C7458 0%,#2E2A21 62%,#161311 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);"></div>
+                    <div style="width:230px;flex:none;font-size:14px;font-weight:600;color:#EDE6D8;">Light<span style="color:#C9A24B;">ning Greaves</span></div>
+                    <div style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">Artifact — Equipment</div>
+                    <div style="width:80px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">×1 owned</div>
+                    <button style="width:96px;flex:none;font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:600;color:#C9A24B;background:transparent;border:1px solid #3A3229;border-radius:7px;padding:6px 0;cursor:pointer;" style-hover="border-color:#C9A24B;">Use this card</button>
+                  </div>
+                  <div style="background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:8px 12px;display:flex;align-items:center;gap:12px;min-height:52px;" style-hover="border-color:#3A3229;">
+                    <div style="width:30px;height:42px;flex:none;border-radius:5px;background:linear-gradient(158deg,#8E3B2E 0%,#3A211B 62%,#161311 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);"></div>
+                    <div style="width:230px;flex:none;font-size:14px;font-weight:600;color:#EDE6D8;">Light<span style="color:#C9A24B;">ning Bolt</span> (Secret Lair)</div>
+                    <div style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">Instant</div>
+                    <div style="width:80px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">not owned</div>
+                    <button style="width:96px;flex:none;font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:600;color:#C9A24B;background:transparent;border:1px solid #3A3229;border-radius:7px;padding:6px 0;cursor:pointer;" style-hover="border-color:#C9A24B;">Use this card</button>
+                  </div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:9px;line-height:1.6;">The row that would be hidden if resolution inherited the on-by-default owned filter is the third one — and on an imported list it is often the right answer.</div>
+              </div>
+              <div style="width:220px;flex:none;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">The line as it came</div>
+                <div style="background:#14110E;border:1px solid #2A241D;border-radius:8px;padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;line-height:1.6;">1 Lighting Bolt<div style="color:#6E6353;font-size:10.5px;margin-top:5px;">line 41 of the import</div></div>
+                <button style="width:100%;margin-top:12px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:10px 0;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Delete this line</button>
+                <div style="font-size:11.5px;line-height:1.55;color:#8E8269;margin-top:10px;">Deleting drops it from the deck's total too — 100 becomes 99.</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;border-left:2px solid #E0913C;width:calc(50% - 10px);"><span style="width:8px;flex:none;color:#E0913C;font-size:12px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C6B79A;">Beast Whisperer (foil)</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span><span style="font-size:12px;color:#C9A24B;font-weight:600;">Fix</span></div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">The expanded row takes the full width and the group drops to one column while it's open — a two-column grid with one tall cell leaves a hole. Only one row expands at a time.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-top:32px;">
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">17 · Nothing found — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#100D0A;padding:18px 16px 20px;">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;"><span style="font-size:12.5px;font-weight:600;color:#EDE6D8;">Couldn't identify</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;">2</span></div>
+          <div style="background:#181410;border:1px solid #3A3229;border-left:2px solid #E0913C;border-radius:9px;padding:13px 14px 16px;">
+          <div style="display:flex;align-items:center;gap:10px;background:#14110E;border:1px solid #C9A24B;border-radius:8px;padding:11px 13px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8E8269;">⌕</span>
+            <span style="flex:1;font-size:16px;color:#EDE6D8;">Lighting Bolt of the Gathering</span>
+          </div>
+          <div style="text-align:center;padding:30px 8px 8px;">
+            <div style="width:34px;height:34px;border-radius:999px;border:1px dashed #4A4033;color:#8E8269;font-size:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">?</div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;">Nothing by that name</div>
+            <div style="font-size:13px;line-height:1.55;color:#C6B79A;margin-top:8px;">Try a shorter piece of it — we match on any part of a card's name. If it isn't a real card, the line can go.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px;">
+            <button style="width:100%;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 0;cursor:pointer;min-height:44px;" style-hover="border-color:#C9A24B;color:#D8B25E;">Delete this line</button>
+            <button style="width:100%;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 0;cursor:pointer;min-height:44px;" style-hover="border-color:#C9A24B;color:#D8B25E;">Leave it for now</button>
+          </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">Deliberately <b style="color:#C6B79A;">not</b> the crab no-results state — that mark belongs to browsing a collection you own. This is a text field that came up empty, inside a row. Note it also can't borrow the quick-add bar's escape hatch (<i>drop the owned filter</i>): that filter is <b style="color:#C6B79A;">already off here</b>, so an empty result really does mean no card by that name.</div>
+      </div>
+
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">18 · Resolved — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#100D0A;padding:20px 16px;">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-size:12.5px;font-weight:600;color:#EDE6D8;">Instants</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">7</span></div>
+          <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:18px;">
+            <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;outline:2px solid #C9A24B;outline-offset:2px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Lightning Bolt</span></div>
+            <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:12.5px;color:#EDE6D8;">Heroic Intervention</span></div>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-size:12.5px;font-weight:600;color:#EDE6D8;">Couldn't identify</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;">1</span></div>
+          <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;border-left:2px solid #E0913C;min-height:44px;"><span style="width:7px;flex:none;color:#E0913C;font-size:11px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Beast Whisperer (foil)</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span></div>
+          <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border:1px solid #2A241D;border-radius:8px;padding:10px 12px;margin-top:16px;">
+            <span style="color:#6FA368;font-size:12px;">✓</span>
+            <span style="flex:1;font-size:12.5px;color:#C6B79A;">That's <b style="color:#EDE6D8;font-weight:600;">Lightning Bolt</b>. 98 built now.</span>
+            <span style="font-size:12px;color:#C9A24B;font-weight:600;">Undo</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">The row <b style="color:#C6B79A;">leaves the group and joins its real type</b>, carrying focus with it so the keyboard doesn't lose its place. Everything that couldn't see it moves in the same optimistic frame: built 97 → 98, the <span style="color:#C6B79A;">Your deck</span> tab with it, group 2 → 1, the <span style="color:#C6B79A;">Removal</span> cell 6 → 7 now the line has a role, and the Consider tile for that card — if it was on a shelf — flips to <b style="color:#C6B79A;">✓ In deck</b>.</div>
+      </div>
+
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">19 · Deleted — phone</div>
+        <div style="border:1px solid #3A3229;border-radius:22px;background:#100D0A;padding:20px 16px;">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-size:12.5px;font-weight:600;color:#EDE6D8;">Couldn't identify</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;">1</span></div>
+          <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border-radius:6px;padding:6px 8px;border-left:2px solid #E0913C;min-height:44px;"><span style="width:7px;flex:none;color:#E0913C;font-size:11px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Beast Whisperer (foil)</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span></div>
+          <div style="display:flex;align-items:center;gap:9px;background:#1A160F;border:1px solid #2A241D;border-radius:8px;padding:10px 12px;margin-top:16px;">
+            <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;font-size:12px;">−</span>
+            <span style="flex:1;font-size:12.5px;color:#C6B79A;">Dropped <span style="font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">Lighting Bolt</span>. The deck wants 99 now.</span>
+            <span style="font-size:12px;color:#C9A24B;font-weight:600;">Undo</span>
+          </div>
+          <div style="margin-top:26px;padding:18px 14px;text-align:center;border:1px dashed #2A241D;border-radius:10px;">
+            <div style="font-size:13px;color:#C6B79A;line-height:1.55;">When the last one goes, the group and the banner go with it — quietly, no fanfare.</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">Deletion drops the line from the deck's <b style="color:#C6B79A;">total</b>, not just from the group — an unresolved row was a card the deck wanted, and you've said it doesn't. Undo restores both.</div>
+      </div>
+
+      <div style="width:1060px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">17 · 18 · 19 — desktop</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="border:1px solid #3A3229;border-radius:14px;background:#100D0A;padding:18px 30px;">
+            <div style="background:#181410;border:1px solid #3A3229;border-left:2px solid #E0913C;border-radius:9px;padding:14px 16px;">
+              <div style="display:flex;gap:20px;align-items:flex-start;">
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:10px;background:#14110E;border:1px solid #C9A24B;border-radius:8px;padding:11px 13px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8E8269;">⌕</span>
+                    <span style="flex:1;font-size:14.5px;color:#EDE6D8;">Lighting Bolt of the Gathering</span>
+                  </div>
+                  <div style="text-align:center;padding:26px 0 6px;">
+                    <div style="width:34px;height:34px;border-radius:999px;border:1px dashed #4A4033;color:#8E8269;font-size:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">?</div>
+                    <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#EDE6D8;">Nothing by that name</div>
+                    <div style="font-size:13.5px;line-height:1.6;color:#C6B79A;margin-top:8px;max-width:400px;margin-left:auto;margin-right:auto;">Try a shorter piece of it — we match on any part of a card's name. If it isn't a real card, the line can go.</div>
+                  </div>
+                </div>
+                <div style="width:220px;flex:none;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">The line as it came</div>
+                  <div style="background:#14110E;border:1px solid #2A241D;border-radius:8px;padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">1 Lighting Bolt</div>
+                  <button style="width:100%;margin-top:12px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:10px 0;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Delete this line</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="border:1px solid #3A3229;border-radius:14px;background:#100D0A;padding:18px 30px;">
+            <div style="display:flex;align-items:baseline;gap:10px;padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid #2A241D;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Instants</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">7</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin-bottom:18px;">
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;outline:2px solid #C9A24B;outline-offset:2px;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Lightning Bolt</span><span style="color:#4A4033;font-size:13px;">✕</span></div>
+              <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Heroic Intervention</span><span style="color:#4A4033;font-size:13px;">✕</span></div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:10px;padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid #2A241D;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Couldn't identify</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">1</span></div>
+            <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;border-left:2px solid #E0913C;width:calc(50% - 10px);"><span style="width:8px;flex:none;color:#E0913C;font-size:12px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C6B79A;">Beast Whisperer (foil)</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span><span style="font-size:12px;color:#C9A24B;font-weight:600;">Fix</span></div>
+            <div style="display:flex;align-items:center;gap:11px;background:#1A160F;border:1px solid #2A241D;border-radius:9px;padding:12px 14px;margin-top:16px;">
+              <span style="color:#6FA368;font-size:14px;">✓</span>
+              <span style="flex:1;font-size:13.5px;color:#C6B79A;">That line was <b style="color:#EDE6D8;font-weight:600;">Lightning Bolt</b> — it's in with the instants now, and you own it. 98 built, 1 line left. Removal is 7 of 10.</span>
+              <span style="font-size:13px;color:#C9A24B;font-weight:600;cursor:pointer;">Undo</span>
+            </div>
+          </div>
+
+          <div style="border:1px solid #3A3229;border-radius:14px;background:#100D0A;padding:18px 30px;">
+            <div style="display:flex;align-items:baseline;gap:10px;padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid #2A241D;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Couldn't identify</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">1</span></div>
+            <div style="display:flex;align-items:center;gap:10px;background:#1A160F;border-radius:7px;padding:7px 9px;border-left:2px solid #E0913C;width:calc(50% - 10px);"><span style="width:8px;flex:none;color:#E0913C;font-size:12px;text-align:center;">?</span><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C6B79A;">Beast Whisperer (foil)</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:#E0913C;background:rgba(224,145,60,0.13);">unmatched</span><span style="font-size:12px;color:#C9A24B;font-weight:600;">Fix</span></div>
+            <div style="display:flex;align-items:center;gap:11px;background:#1A160F;border:1px solid #2A241D;border-radius:9px;padding:12px 14px;margin-top:16px;">
+              <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;font-size:13px;">−</span>
+              <span style="flex:1;font-size:13.5px;color:#C6B79A;">Dropped <span style="font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">Lighting Bolt</span>. The deck wants 99 cards now instead of 100.</span>
+              <span style="font-size:13px;color:#C9A24B;font-weight:600;cursor:pointer;">Undo</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:9px;line-height:1.6;">Both outcomes report into the same inline note under the group — <b style="color:#C6B79A;">one live region, polite</b>, reused by resolve and delete. It replaces its own text rather than stacking, and Undo lives in it rather than in a floating toast that can time out before a screen reader reaches it.</div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1900,&quot;height&quot;:1200}}">class Component extends DCLogic {
+  renderVals() {
+    const url = { mode: 'Moxfield link', alt1: 'Paste', alt2: 'File', glyph: '⌕', label: 'Moxfield deck link', submit: 'Import deck →' };
+    return {
+      failures: [
+        { ...url, tag: '4 · Invalid or non-Moxfield link', value: 'archidekt.com/decks/7213884',
+          head: "That's not a Moxfield deck link",
+          body: 'We only read Moxfield links right now. If your list lives somewhere else, paste it in instead.',
+          bodyLong: 'We only read Moxfield deck links right now — they look like moxfield.com/decks/AbC123. If your list lives somewhere else, paste it in instead and we\u2019ll read it the same way.',
+          action: 'Paste the list instead', retry: false,
+          note: 'Fails on the client before any request goes out, so there is nothing to retry. The way out is the mode that will work.' },
+
+        { ...url, tag: '5 · Deck is private', value: 'moxfield.com/decks/7Qk2vN1pE',
+          head: 'That deck is set to private',
+          body: "Moxfield won't hand it over. Make it public or unlisted there, then come back.",
+          bodyLong: 'Moxfield won\u2019t hand it over unless the deck is public or unlisted. Flip it over there and come back \u2014 or paste the list straight in and skip the round trip.',
+          action: 'Paste the list instead', retry: false,
+          note: 'No Try again: the permission has not changed in the two seconds since. The fix is on Moxfield, and the sentence says so.' },
+
+        { ...url, tag: '6 · Deck not found or deleted', value: 'moxfield.com/decks/7Qk2vN1pF',
+          head: "There's no deck at that link",
+          body: 'Moxfield says nothing is there. It may be deleted, or a character may be off.',
+          bodyLong: 'Moxfield says there\u2019s nothing there. Either the deck was deleted, or a character in the link is off \u2014 they\u2019re case-sensitive, which catches people out.',
+          action: 'Edit the link', retry: false,
+          note: 'The link stays in the field, selected, so a one-character fix is one keystroke away. Retrying a 404 gets the same 404.' },
+
+        { ...url, tag: '7 · Moxfield unreachable or rate-limited', value: 'moxfield.com/decks/7Qk2vN1pE',
+          head: "Moxfield isn't answering",
+          body: 'Could be them, could be us knocking too often. Give it a minute.',
+          bodyLong: 'Could be them, could be us knocking too often. Give it a minute and try again \u2014 nothing is lost, the link is still here.',
+          action: 'Paste the list instead', retry: true,
+          note: 'The only state in the family where Try again is the advice, so it is the only one that offers it. Primary; the paste route sits beside it as the impatient option.' },
+
+        { mode: 'File', alt1: 'Moxfield link', alt2: 'Paste', glyph: '⎘', label: 'Deck file',
+          submit: 'Choose file', tag: '8 · File rejected', value: 'commander-deck.xlsx · 4.1 MB',
+          head: "We can't open that file",
+          body: 'We need a .csv or .txt under 2 MB. That one is a .xlsx at 4.1 MB.',
+          bodyLong: 'We need a .csv or a .txt under 2 MB. That one is a .xlsx at 4.1 MB. Export it as CSV from wherever it came from and we\u2019ll take it.',
+          action: 'Choose another file', retry: false,
+          note: 'The rejected file is named back at the user with both reasons it failed. A generic "unsupported file" makes people guess which of the two rules they broke.' },
+
+        { mode: 'Paste', alt1: 'Moxfield link', alt2: 'File', glyph: '¶', label: 'Your list',
+          submit: 'Import 0 cards', tag: '9 · Nothing matched', value: 'Commander (1) · Deck (99) · Maybeboard (14)',
+          head: "We couldn't find any of these cards",
+          body: 'All 14 lines read fine \u2014 none of them matched a card we know.',
+          bodyLong: 'All 14 lines read fine, and not one of them matched a card we know. Check you copied the decklist itself and not the page around it.',
+          action: 'Clear and start over', retry: false,
+          note: 'Corrected at R2. Every line parses \u2014 parsePasteList falls through to quantity 1 for any non-blank line \u2014 so this is a MATCH failure, not a parse failure. The copy says so: it does not tell the user their paste is malformed, because it is not. The paste stays in the box, and the submit label already reads 0.' },
+
+        { ...url, tag: '10 · Source parsed but empty', value: 'moxfield.com/decks/2Bn9xQ4rT',
+          head: 'That deck is empty',
+          body: "It read fine \u2014 there just aren't any cards in it yet.",
+          bodyLong: 'It read fine \u2014 there just aren\u2019t any cards in it yet. Nothing to bring over. Add some in Moxfield and we\u2019ll be here.',
+          action: 'Try a different deck', retry: false,
+          note: 'A success that produced nothing, not a failure \u2014 so the copy does not apologise. Same container, because the user still cannot proceed and the block belongs to the field.' },
+      ],
+    };
+  }
+}</script>
+</body>
+</html>

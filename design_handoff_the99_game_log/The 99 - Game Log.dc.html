@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Win/loss tracking &middot; #9 &middot; the Games tab</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">The denominator is the design.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">A third tab on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">/decks/[id]</span>, beside Decklist and Consider. Four things stacked: a record line, a form that opens in place, the aggregated axes, and the history. The eight axes are <b style="color:#EDE6D8;font-weight:600;">one polarity-neutral vocabulary</b> &mdash; the same label in both columns &mdash; so <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">card_flow</span> nets to one number instead of two phrases nobody can join.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">&sect;5 imposes no minimum-games gate, so confidence is drawn rather than gated.</b> Three dials do it: the denominator travels with every figure, the heading is a <i>description</i> below three games and a <i>finding</i> at three or more, and colour is earned at three. Nothing is ever hidden for being thin &mdash; it is quieter, and it says how thin it is.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> for the decisions log, <a href="STATES-log-form.md">STATES-log-form.md</a> for the form matrix, <a href="LOW-N-summary.md">LOW-N-summary.md</a> for the &sect;8.5 ladder in full, <a href="game-log · copy strings.ts">game-log &middot; copy strings.ts</a> for production copy. <b style="color:#C6B79A;font-weight:600;">Phase 2 only</b> &mdash; &sect;6 leaves schema, actions and the read module ungated.</p>
+  </section>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:20px 24px;margin-bottom:20px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;8.1 The eight labels</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Plain nouns, plus a gloss that flips per column.</b> The label is shared and stable; the small line under it is direction-specific, which is what stops a tired player ticking the wrong side.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;8.2 Is Mixed shown</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Yes &mdash; as one line, not a third group.</b> It is a real finding and it ranks nothing. A third heading beside Fix would claim a parity it does not have.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;8.3 Form presentation</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Inline, expanding in place.</b> The builder is dense; <i>this tab is not</i>. A dialog interrupts a busy surface &mdash; here it would hide the history you are logging against, and cost a full-screen sheet at 390px the product does not own.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;8.4 The empty state</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">It pitches the <b style="color:#EDE6D8;font-weight:600;">third game</b>, not the first &mdash; the payoff is counting, so the copy says so out loud, and says plainly that this tab names the weakness and stops.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;8.5 Low N</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Denominator, heading, ink.</b> One game gets no buckets and no colour &mdash; it gets a record. Two gets buckets in muted ink. Three earns the finding voice and the state colours. <b style="color:#EDE6D8;font-weight:600;">No percentages, ever.</b></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Reused, not reinvented</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">role-counter-strip</span>'s cell carries the axes verbatim &mdash; same box, same 5px bar, <b style="color:#EDE6D8;font-weight:600;">split into two segments</b> instead of one fraction. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">BuilderTabs</span> gains a third pill and nothing else.</div></div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;background:#181410;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Locked upstream &mdash; drawn as written, not re-litigated</div>
+    <div style="font-size:13px;color:#A89B84;line-height:1.7;">Eight axes and their <b style="color:#EDE6D8;font-weight:600;">keys</b> &middot; one polarity-neutral vocabulary in two columns, <i>What worked</i> and <i>What let me down</i> &middot; result and pod size are the only other fields &middot; two-to-four marks is the expected load, and a game with none is valid &middot; the composite key makes one axis in both columns <b style="color:#EDE6D8;font-weight:600;">unrepresentable</b> &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">summarizeGames</span> returns Keep / Fix / Mixed regardless of what the UI shows &middot; no minimum-games gate &middot; and the hard line: <b style="color:#EDE6D8;font-weight:600;">this surface names a weakness and never suggests a card.</b> That is #10.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <!-- ============ VOCABULARY ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">&sect;8.1 &middot; <span style="color:#C9A24B;">the eight labels, and the gloss that flips</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="display:flex;gap:10px;padding:0 12px 8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;">
+          <span style="width:112px;flex:none;">key</span>
+          <span style="width:150px;flex:none;color:#C9A24B;">label</span>
+          <span style="flex:1;">gloss &mdash; what worked</span>
+          <span style="flex:1;">gloss &mdash; what let me down</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <sc-for list="{{ vocab }}" as="a" hint-placeholder-count="8">
+            <div style="display:flex;align-items:center;gap:10px;min-height:40px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:6px 12px;">
+              <span style="width:112px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">{{ a.key }}</span>
+              <span style="width:150px;flex:none;font-size:13.5px;font-weight:600;color:#EDE6D8;">{{ a.label }}</span>
+              <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6FA368;">{{ a.worked }}</span>
+              <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#E0913C;">{{ a.hurt }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:16px;">Order is fixed and is the order of the constant &mdash; roughly the order a game happens in, from the opening turns to the last. It is not alphabetical and it is not by frequency: a list that reorders itself as data arrives is a list you have to re-read every time.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Why nouns, and why a gloss at all</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">The label must survive both columns, so it carries no direction.</b> &ldquo;Speed out of the gate&rdquo; is fine under <i>What worked</i> and slightly odd under <i>What let me down</i>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Speed</span> is fine under both, and it is the word said at the table.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">A bare noun is ambiguous about which side it belongs on</b> &mdash; which is the one error that actually corrupts the aggregate, because a mis-sided tick does not just fail to count, it counts backwards. So each row carries a mono gloss, and <b style="color:#EDE6D8;font-weight:600;">the gloss is the column's</b>: <span style="color:#6FA368;">kept drawing</span> on the left, <span style="color:#E0913C;">ran out of gas</span> on the right. One vocabulary, two readings, no new keys.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Rejected: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Card flow</span></b> &mdash; the placeholder, and the clearest case. Nobody says it. &ldquo;Cards in hand&rdquo; is what running out of gas actually feels like, and it is what a player would search for.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Rejected: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Interaction</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Resilience</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">The engine</span></b> &mdash; all three are correct and all three are the language of a deck review, not of a Tuesday night. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Answers</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Comebacks</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">The deck's plan</span> say the same things in words already in use. &ldquo;The engine&rdquo; also assumes every deck has one; plenty do not.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Rejected: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Finishing</span></b> for <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">closing</span>. In this product &ldquo;finish&rdquo; already means foil or nonfoil (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">collection_items_finish_check</span>). <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Closing the game</span> is longer and unambiguous.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The keys are untouched.</b> Eight labels, eight glosses &times; two, zero key changes &mdash; so #10 still joins on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">card_flow</span> and relabelling stays a copy change, exactly as &sect;3 promised.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ TAB ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">The tab &middot; <span style="color:#C9A24B;">BuilderTabs, one more pill</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:900px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Games selected &mdash; three logged</div>
+        <div style="display:flex;gap:10px;align-items:center;padding:0 0 16px;border-bottom:1px solid #2A241D;">
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;background:transparent;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Decklist &middot; 99</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;background:transparent;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Consider</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border-radius:999px;padding:5px 14px;">Games &middot; 3</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin:18px 0 12px;">No games yet &mdash; the count is absent, the tab is not</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border-radius:999px;padding:5px 14px;">Decklist &middot; 99</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;background:transparent;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Consider</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;background:transparent;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Games</span>
+        </div>
+      </div>
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">The count rule</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div>The shipped pill takes a count when it has one (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Shopping &middot; 8</span>) and the shipped convention is that <b style="color:#EDE6D8;font-weight:600;">a control with nothing to say is absent</b>. Applied here that lands on the <i>count</i>, never the tab: at zero games the pill reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Games</span>, because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Games &middot; 0</span> is a tab advertising its own emptiness, and hiding the tab hides the feature from every player who has not used it.</div>
+          <div>The count is <b style="color:#EDE6D8;font-weight:600;">games logged, not the record</b>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Games &middot; 2&ndash;1</span> in a pill row that otherwise counts things is a different kind of number wearing the same clothes.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Geometry unchanged</b> &mdash; 999px pill, brass solid when selected, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1px --border</span> ghost at rest, 13px. No new tab construct, no icon, no badge.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EMPTY STATE ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">&sect;8.4 &middot; <span style="color:#C9A24B;">the empty state, which has to carry the pitch</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="margin-left:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">/decks/gisa-zombies</span></div>
+        <div style="background:#14110E;padding:22px 26px 30px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0;color:#EDE6D8;">Gisa, Glorious Resurrector</h2>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;">99 / 99 &middot; complete</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;padding-bottom:18px;border-bottom:1px solid #2A241D;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;background:transparent;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Decklist &middot; 99</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;background:transparent;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Consider</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border-radius:999px;padding:5px 14px;">Games</span>
+          </div>
+
+          <div style="display:flex;gap:34px;align-items:center;padding:44px 24px 34px;">
+            <div style="width:150px;height:150px;flex:none;display:flex;align-items:center;justify-content:center;position:relative;">
+              <div style="position:absolute;width:56px;height:84px;border-radius:8px;background:#2A241D;border:1.5px solid #3A3229;transform:rotate(-18deg) translateX(-21px);"></div>
+              <div style="position:absolute;width:56px;height:84px;border-radius:8px;background:#33291F;border:1.5px solid #4A4033;"></div>
+              <div style="position:absolute;width:56px;height:84px;border-radius:8px;background:#3E3020;border:1.5px solid #C9A24B;transform:rotate(18deg) translateX(21px);display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:22px;color:#C9A24B;">99</span></div>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;margin:0;color:#EDE6D8;">Three games is a pattern.</h3>
+              <p style="font-size:14.5px;color:#C6B79A;line-height:1.65;margin:12px 0 0;max-width:520px;">One game you already remember. The third one is where this tab earns its keep &mdash; it starts saying things like <i style="color:#EDE6D8;">ran out of gas, 3 of 3 games</i>, which is the kind of sentence you can actually act on.</p>
+              <p style="font-size:14.5px;color:#C6B79A;line-height:1.65;margin:10px 0 0;max-width:520px;">Logging takes about fifteen seconds: did you win, how big was the pod, and the two or three things that decided it.</p>
+              <div style="display:flex;align-items:center;gap:16px;margin-top:22px;flex-wrap:wrap;">
+                <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border-radius:8px;padding:11px 20px;">Log your first game</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">nothing to fill in twice &mdash; the deck is already here</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:11px;margin-top:26px;background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:12px 15px;max-width:560px;">
+                <span style="width:20px;height:20px;border-radius:999px;border:1.5px solid #C9A24B;color:#C9A24B;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;font-family:'Cinzel',serif;font-weight:700;">i</span>
+                <div style="font-size:12.5px;color:#C6B79A;line-height:1.55;">This tab tells you <b style="color:#EDE6D8;font-weight:600;">what is letting the deck down</b>. What to do about it stays your call.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;">
+        <div style="padding:38px 16px 12px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;margin:0;color:#EDE6D8;">Gisa Zombies</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;">99 / 99</span></div>
+          <div style="display:flex;gap:7px;margin-top:12px;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;">Decklist</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;">Consider</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#14110E;background:#C9A24B;border-radius:999px;padding:5px 12px;">Games</span>
+          </div>
+        </div>
+        <div style="padding:34px 20px 40px;text-align:center;">
+          <div style="width:96px;height:96px;margin:0 auto;display:flex;align-items:center;justify-content:center;position:relative;">
+            <div style="position:absolute;width:38px;height:58px;border-radius:6px;background:#2A241D;border:1.5px solid #3A3229;transform:rotate(-18deg) translateX(-14px);"></div>
+            <div style="position:absolute;width:38px;height:58px;border-radius:6px;background:#33291F;border:1.5px solid #4A4033;"></div>
+            <div style="position:absolute;width:38px;height:58px;border-radius:6px;background:#3E3020;border:1.5px solid #C9A24B;transform:rotate(18deg) translateX(14px);display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:15px;color:#C9A24B;">99</span></div>
+          </div>
+          <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;margin:22px 0 0;color:#EDE6D8;">Three games is a pattern.</h3>
+          <p style="font-size:13.5px;color:#C6B79A;line-height:1.6;margin:11px 0 0;">One game you already remember. By the third, this tab starts saying things like <i style="color:#EDE6D8;">ran out of gas, 3 of 3 games</i>.</p>
+          <p style="font-size:13.5px;color:#C6B79A;line-height:1.6;margin:9px 0 0;">Fifteen seconds: result, pod size, the two or three things that decided it.</p>
+          <div style="margin-top:20px;font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border-radius:8px;padding:13px 18px;">Log your first game</div>
+          <div style="font-size:12px;color:#8E8269;line-height:1.55;margin-top:16px;text-align:left;background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:11px 13px;">This tab tells you <b style="color:#C6B79A;font-weight:600;">what is letting the deck down</b>. What to do about it stays your call.</div>
+        </div>
+      </div></div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">What the copy is doing</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">It pitches the third game, not the first.</b> &sect;1 says the log is worth close to nothing until the app can count across games, so the headline is the count and not the act. &ldquo;Track your wins&rdquo; would sell the worthless half.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">It quotes the payoff verbatim</b> &mdash; <i>ran out of gas, 3 of 3 games</i> is a real sentence from the aggregate panel, italicised because it is the app talking. Showing the output is the only honest way to pitch an output.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">It states the cost in seconds</b>, because the objection is friction, not value. Fifteen seconds is three taps and a number.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">It draws the scope line in the player's favour</b>: this tab names the weakness, and what to do stays their call. True today, no roadmap promised, and #10 arrives as a gift rather than a correction.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The card-fan mark is the brand sheet's, for exactly this job</b> &mdash; &ldquo;decorative mark for marketing and empty states&rdquo;. No new illustration, no new construct.</div>
+          <div>Below the fold there is <b style="color:#EDE6D8;font-weight:600;">no history heading and no empty aggregate panel</b>. An empty Keep / Fix strip is three boxes explaining they have nothing in them.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ THE FORM ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">&sect;8.3 &middot; <span style="color:#C9A24B;">the log form, open in place</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Desktop &mdash; <span style="color:#C9A24B;">expanded, three marks in, ready to save</span></div>
+
+        <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:20px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;">Log a game</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">played <span style="color:#C6B79A;border-bottom:1px dashed #4A4033;">tonight</span></span>
+          </div>
+
+          <div style="display:flex;gap:34px;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Result</div>
+              <div style="display:flex;gap:8px;">
+                <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;color:#14110E;background:#6FA368;border-radius:8px;padding:9px 20px;">Won</span>
+                <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:#C6B79A;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 20px;">Lost</span>
+                <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:#C6B79A;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 20px;">Draw</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Pod size &mdash; <span style="color:#6A6152;text-transform:none;letter-spacing:0;">players at the table</span></div>
+              <div style="display:flex;gap:6px;">
+                <sc-for list="{{ pods }}" as="p" hint-placeholder-count="7">
+                  <span style="width:40px;height:40px;border-radius:8px;border:1px solid {{ p.bd }};background:{{ p.bg }};color:{{ p.fg }};font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ p.n }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:9px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">What worked</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">2 marked</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <sc-for list="{{ formW }}" as="a" hint-placeholder-count="8">
+                  <div style="display:flex;align-items:center;gap:11px;min-height:46px;background:{{ a.rowBg }};border:1px solid {{ a.rowBd }};border-radius:8px;padding:5px 12px;">
+                    <span style="width:18px;height:18px;flex:none;border-radius:5px;border:1px solid {{ a.boxBd }};background:{{ a.boxBg }};color:#6FA368;font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">{{ a.mark }}</span>
+                    <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                      <span style="font-size:13.5px;color:#EDE6D8;">{{ a.label }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ a.glossColor }};">{{ a.gloss }}</span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:9px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#E0913C;">What let me down</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">1 marked</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <sc-for list="{{ formH }}" as="a" hint-placeholder-count="8">
+                  <div style="display:flex;align-items:center;gap:11px;min-height:46px;background:{{ a.rowBg }};border:1px solid {{ a.rowBd }};border-radius:8px;padding:5px 12px;">
+                    <span style="width:18px;height:18px;flex:none;border-radius:5px;border:1px solid {{ a.boxBd }};background:{{ a.boxBg }};color:#E0913C;font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">{{ a.mark }}</span>
+                    <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                      <span style="font-size:13.5px;color:#EDE6D8;">{{ a.label }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ a.glossColor }};">{{ a.gloss }}</span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:16px;margin-top:20px;padding-top:18px;border-top:1px solid #2A241D;flex-wrap:wrap;">
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border-radius:8px;padding:11px 20px;">Save this game</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:#A89B84;border:1px solid #3A3229;border-radius:8px;padding:11px 18px;">Cancel</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">marks are optional &mdash; a result on its own is a game</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#A89B84;line-height:1.5;margin-top:18px;">
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">shape</span><span>The form <b style="color:#EDE6D8;font-weight:600;">replaces the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Log a game</span> row in place</b>, above the aggregate and the history, both of which stay on screen. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1px --border-strong</span>, radius 12px, padding 20px &mdash; the shipped panel box, one step brighter than the tab behind it.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">result</span><span>Three 40px segments, <b style="color:#EDE6D8;font-weight:600;">no default</b>. It is the one field only the player knows, and a pre-picked result is a mislogged result. Won fills <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span>; Lost and Draw fill nothing when chosen but take <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1px --accent</span> &mdash; losing is not an error and never wears <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span>.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">pod</span><span>Seven 40px squares, 2&ndash;8, <b style="color:#EDE6D8;font-weight:600;">defaulting to 4</b>. Four is the standard table, so the common case is zero taps; the check is 2&ndash;8 so the control simply <i>is</i> the range and cannot be out of it. Not a stepper, not a select &mdash; both cost two interactions for a one-digit answer.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">columns</span><span>Two columns, <b style="color:#EDE6D8;font-weight:600;">the same eight rows in the same order</b>, so the pair reads as one vocabulary seen twice rather than two lists. 46px rows &mdash; 44px plus the gloss line. Whole row is the target, not the 18px box.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">save</span><span>Enabled once a result is picked. Marks are optional by &sect;3, and the line says so &mdash; otherwise an empty pair of columns reads as a required field you cannot see the requirement of.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">date</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">played tonight</span>, dashed-underlined, opens a date field. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">playedAt</span> exists so the morning-after log sorts to the night it happened &mdash; and it defaults, so it costs nothing when it is right.</span></div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;">
+        <div style="padding:38px 16px 14px;border-bottom:1px solid #2A241D;display:flex;align-items:baseline;justify-content:space-between;">
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;">Log a game</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">played <span style="color:#C6B79A;border-bottom:1px dashed #4A4033;">tonight</span></span>
+        </div>
+        <div style="padding:16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Result</div>
+          <div style="display:flex;gap:7px;margin-bottom:16px;">
+            <span style="flex:1;height:44px;font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;color:#14110E;background:#6FA368;border-radius:8px;display:flex;align-items:center;justify-content:center;">Won</span>
+            <span style="flex:1;height:44px;font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:#C6B79A;border:1px solid #3A3229;border-radius:8px;display:flex;align-items:center;justify-content:center;">Lost</span>
+            <span style="flex:1;height:44px;font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:#C6B79A;border:1px solid #3A3229;border-radius:8px;display:flex;align-items:center;justify-content:center;">Draw</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Pod size</div>
+          <div style="display:flex;gap:5px;margin-bottom:18px;">
+            <sc-for list="{{ pods }}" as="p" hint-placeholder-count="7">
+              <span style="flex:1;height:44px;border-radius:8px;border:1px solid {{ p.bd }};background:{{ p.bg }};color:{{ p.fg }};font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ p.n }}</span>
+            </sc-for>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">What worked</div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;">
+            <sc-for list="{{ mobileW }}" as="a" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:11px;min-height:48px;background:{{ a.rowBg }};border:1px solid {{ a.rowBd }};border-radius:8px;padding:5px 12px;">
+                <span style="width:20px;height:20px;flex:none;border-radius:5px;border:1px solid {{ a.boxBd }};background:{{ a.boxBg }};color:#6FA368;font-family:'IBM Plex Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center;">{{ a.mark }}</span>
+                <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                  <span style="font-size:13.5px;color:#EDE6D8;">{{ a.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ a.glossColor }};">{{ a.gloss }}</span>
+                </span>
+              </div>
+            </sc-for>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;padding:4px 2px;">&hellip; 4 more</div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#E0913C;margin-bottom:8px;">What let me down</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <sc-for list="{{ mobileH }}" as="a" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:11px;min-height:48px;background:{{ a.rowBg }};border:1px solid {{ a.rowBd }};border-radius:8px;padding:5px 12px;">
+                <span style="width:20px;height:20px;flex:none;border-radius:5px;border:1px solid {{ a.boxBd }};background:{{ a.boxBg }};color:#E0913C;font-family:'IBM Plex Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center;">{{ a.mark }}</span>
+                <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                  <span style="font-size:13.5px;color:#EDE6D8;">{{ a.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ a.glossColor }};">{{ a.gloss }}</span>
+                </span>
+              </div>
+            </sc-for>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;padding:4px 2px;">&hellip; 6 more</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:18px;padding-top:16px;border-top:1px solid #2A241D;">
+            <span style="height:48px;font-family:'IBM Plex Sans';font-weight:600;font-size:14.5px;color:#14110E;background:#C9A24B;border-radius:8px;display:flex;align-items:center;justify-content:center;">Save this game</span>
+            <span style="height:44px;font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;color:#A89B84;border:1px solid #3A3229;border-radius:8px;display:flex;align-items:center;justify-content:center;">Cancel</span>
+          </div>
+        </div>
+      </div></div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Inline, and why not a dialog</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">&sect;8.3's premise is that the builder is dense &mdash; and it is, on the other two tabs.</b> This one is a record line, a strip and a list. There is nothing here worth interrupting, and a dialog exists to interrupt.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The history is context, not clutter.</b> People log by comparison &mdash; &ldquo;same as last time but I drew better&rdquo; &mdash; and a modal covers exactly the thing being compared against.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">At 390px a dialog becomes a full-screen sheet</b>, a construct the product does not own. Inline needs none: the phone form is the same form in one column, and the two columns become two stacked blocks with their own headings, which is <i>clearer</i> than side-by-side at that width.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The empty state's button opens this same form expanded</b>, so the first log has no extra step and no second surface. One form, one place, two entry points.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Cost, stated:</b> the tab gets long &mdash; expanded form plus aggregate plus history is a scroll at 390px. Accepted, because the form collapses back to a 44px row the moment it is saved or cancelled, and that is its resting state on every visit but the first.</div>
+          <div>Mobile draws <b style="color:#EDE6D8;font-weight:600;">four rows then &ldquo;4 more&rdquo;</b> here purely to fit the frame on this canvas &mdash; <b style="color:#EDE6D8;font-weight:600;">in the build all eight render in both columns</b>. There is no disclosure on the axis list: eight is not a long list, and hiding half of a fixed vocabulary teaches the wrong shape.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ ONE GAME ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">One game logged &middot; <span style="color:#C9A24B;">a record, not a finding</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="margin-left:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">/decks/gisa-zombies</span></div>
+        <div style="background:#14110E;padding:22px 26px 28px;">
+          <div style="display:flex;gap:10px;align-items:center;padding-bottom:18px;border-bottom:1px solid #2A241D;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Decklist &middot; 99</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Consider</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border-radius:999px;padding:5px 14px;">Games &middot; 1</span>
+          </div>
+
+          <div style="display:flex;align-items:baseline;gap:14px;margin:20px 0 6px;flex-wrap:wrap;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:#EDE6D8;">One game logged.</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C6B79A;font-variant-numeric:tabular-nums;">1&ndash;0 &middot; won it</span>
+          </div>
+          <div style="font-size:13.5px;color:#8E8269;line-height:1.6;max-width:620px;">Nothing to read into yet &mdash; it is on the record. Two more and this turns into something you can act on.</div>
+
+          <div style="margin-top:20px;display:flex;align-items:center;gap:14px;">
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;color:#C9A24B;background:transparent;border:1px solid #C9A24B;border-radius:8px;padding:10px 18px;">Log a game</span>
+          </div>
+
+          <div style="margin-top:24px;background:#181410;border:1px solid #2A241D;border-radius:11px;padding:16px 18px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">What that one game said</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <sc-for list="{{ n1cells }}" as="c" hint-placeholder-count="3">
+                <div style="width:200px;flex:none;background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:11px 14px;">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#C6B79A;flex:none;">{{ c.fig }}</span></div>
+                  <div style="height:5px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:8px;display:flex;"><div style="height:100%;width:{{ c.wPct }};background:#4A4033;"></div></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;margin-top:6px;">{{ c.sub }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;margin-top:13px;">no Keep, no Fix, no colour &mdash; one game does not have sides yet</div>
+          </div>
+
+          <div style="margin-top:22px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">History</div>
+            <sc-for list="{{ history1 }}" as="g" hint-placeholder-count="1">
+              <div style="display:flex;align-items:center;gap:14px;min-height:52px;background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:8px 12px 8px 14px;">
+                <span style="width:26px;height:26px;flex:none;border-radius:7px;border:1px solid {{ g.pillBd }};color:{{ g.pillFg }};font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ g.pill }}</span>
+                <span style="width:132px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">{{ g.meta }}</span>
+                <span style="flex:auto;min-width:0;display:flex;gap:6px;flex-wrap:wrap;">
+                  <sc-for list="{{ g.marks }}" as="m" hint-placeholder-count="3">
+                    <span style="display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;background:#2A241D;border-radius:999px;padding:4px 11px 4px 8px;"><span style="width:6px;height:6px;border-radius:999px;background:{{ m.dot }};flex:none;"></span>{{ m.label }}</span>
+                  </sc-for>
+                </span>
+                <span style="width:30px;height:30px;flex:none;border-radius:7px;border:1px solid #2A241D;color:#6A6152;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">&times;</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;">
+        <div style="padding:38px 16px 12px;border-bottom:1px solid #2A241D;display:flex;gap:7px;">
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;">Decklist</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;">Consider</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#14110E;background:#C9A24B;border-radius:999px;padding:5px 12px;">Games &middot; 1</span>
+        </div>
+        <div style="padding:18px 16px 24px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:#EDE6D8;">One game logged.</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;margin-top:5px;">1&ndash;0 &middot; won it</div>
+          <div style="font-size:13px;color:#8E8269;line-height:1.6;margin-top:9px;">Nothing to read into yet &mdash; it is on the record.</div>
+          <div style="margin-top:16px;height:44px;font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;color:#C9A24B;border:1px solid #C9A24B;border-radius:8px;display:flex;align-items:center;justify-content:center;">Log a game</div>
+          <div style="margin-top:18px;background:#181410;border:1px solid #2A241D;border-radius:10px;padding:13px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">What that one game said</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ n1cells }}" as="c" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 12px;">
+                  <span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;">{{ c.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;flex:none;">{{ c.sub }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C6B79A;flex:none;">{{ c.fig }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div></div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Tier one, in full</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">The heading is a count, not a claim.</b> <i>One game logged.</i> &mdash; a description. At three it becomes <i>Cards in hand is letting this deck down.</i> The grammar is the confidence signal, and it costs nothing to read.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">No Keep and no Fix at N=1.</b> A bucket named &ldquo;Fix&rdquo; from a single game is the app giving an instruction on one data point. The marks are still all shown, under <i>What that one game said</i> &mdash; which is a true title.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">No state colour.</b> Figures in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span>, the bar's single segment in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> are earned at three, and a green figure on one game is a verdict in a colour.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The figure is a direction and a count &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 down</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 up</span> &mdash; never a net and never a percentage.</b> A net of &minus;1 invites arithmetic across games that has not happened; &ldquo;100%&rdquo; from one game is the single most dishonest number this feature could print.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Nothing is hidden.</b> &sect;5 forbids a gate, and hiding thin figures <i>is</i> a gate wearing presentation's clothes. Every mark the player made is on screen; it is just not shouting.</div>
+          <div>The nudge &mdash; <i>two more and this turns into something you can act on</i> &mdash; is the only forward-looking line, and it promises a <b style="color:#EDE6D8;font-weight:600;">count</b>, not a recommendation.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ THREE GAMES ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">Three games, a clear pattern &middot; <span style="color:#C9A24B;">the payoff surface</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="margin-left:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">/decks/gisa-zombies</span></div>
+        <div style="background:#14110E;padding:22px 26px 28px;">
+          <div style="display:flex;gap:10px;align-items:center;padding-bottom:18px;border-bottom:1px solid #2A241D;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Decklist &middot; 99</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">Consider</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border-radius:999px;padding:5px 14px;">Games &middot; 3</span>
+          </div>
+
+          <div style="display:flex;align-items:baseline;gap:14px;margin:20px 0 6px;flex-wrap:wrap;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:#EDE6D8;">Cards in hand is letting this deck down.</span>
+          </div>
+          <div style="font-size:13.5px;color:#C6B79A;line-height:1.6;max-width:640px;">Marked in <b style="color:#EDE6D8;font-weight:600;">3 of 3 games</b> &mdash; every one you have logged. Record <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;font-variant-numeric:tabular-nums;">2&ndash;1 across 3 games</span>.</div>
+
+          <div style="margin-top:20px;display:flex;align-items:center;gap:14px;">
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;color:#C9A24B;background:transparent;border:1px solid #C9A24B;border-radius:8px;padding:10px 18px;">Log a game</span>
+          </div>
+
+          <div style="margin-top:24px;background:#181410;border:1px solid #2A241D;border-radius:11px;padding:16px 18px;">
+            <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:11px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#E0913C;">Fix</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">marked against you more often than for you</span>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <sc-for list="{{ fixCells }}" as="c" hint-placeholder-count="2">
+                <div style="width:200px;flex:none;background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:11px 14px;">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#E0913C;flex:none;font-variant-numeric:tabular-nums;">{{ c.fig }}</span></div>
+                  <div style="height:5px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:8px;display:flex;"><div style="height:100%;width:{{ c.wPct }};background:#6FA368;"></div><div style="height:100%;width:{{ c.hPct }};background:#E0913C;"></div></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;margin-top:6px;">{{ c.sub }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;align-items:baseline;gap:9px;margin:20px 0 11px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">Keep</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">marked for you more often than against</span>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <sc-for list="{{ keepCells }}" as="c" hint-placeholder-count="2">
+                <div style="width:200px;flex:none;background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:11px 14px;">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#6FA368;flex:none;font-variant-numeric:tabular-nums;">{{ c.fig }}</span></div>
+                  <div style="height:5px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:8px;display:flex;"><div style="height:100%;width:{{ c.wPct }};background:#6FA368;"></div><div style="height:100%;width:{{ c.hPct }};background:#E0913C;"></div></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;margin-top:6px;">{{ c.sub }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;align-items:baseline;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #2A241D;flex-wrap:wrap;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">Mixed</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A89B84;">Mana &mdash; 1 up, 1 down. Cut both ways so far.</span>
+            </div>
+          </div>
+
+          <div style="margin-top:22px;">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">History</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">newest first</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ history3 }}" as="g" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:14px;min-height:52px;background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:8px 12px 8px 14px;">
+                  <span style="width:26px;height:26px;flex:none;border-radius:7px;border:1px solid {{ g.pillBd }};color:{{ g.pillFg }};font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ g.pill }}</span>
+                  <span style="width:132px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">{{ g.meta }}</span>
+                  <span style="flex:auto;min-width:0;display:flex;gap:6px;flex-wrap:wrap;">
+                    <sc-for list="{{ g.marks }}" as="m" hint-placeholder-count="3">
+                      <span style="display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;background:#2A241D;border-radius:999px;padding:4px 11px 4px 8px;"><span style="width:6px;height:6px;border-radius:999px;background:{{ m.dot }};flex:none;"></span>{{ m.label }}</span>
+                    </sc-for>
+                  </span>
+                  <span style="width:30px;height:30px;flex:none;border-radius:7px;border:1px solid #2A241D;color:#6A6152;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">&times;</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;">
+        <div style="padding:38px 16px 12px;border-bottom:1px solid #2A241D;display:flex;gap:7px;">
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;">Decklist</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#A89B84;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;">Consider</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#14110E;background:#C9A24B;border-radius:999px;padding:5px 12px;">Games &middot; 3</span>
+        </div>
+        <div style="padding:18px 16px 24px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;line-height:1.25;color:#EDE6D8;">Cards in hand is letting this deck down.</div>
+          <div style="font-size:13px;color:#C6B79A;line-height:1.6;margin-top:9px;">Marked in <b style="color:#EDE6D8;font-weight:600;">3 of 3 games</b>. Record <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">2&ndash;1</span>.</div>
+          <div style="margin-top:16px;height:44px;font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;color:#C9A24B;border:1px solid #C9A24B;border-radius:8px;display:flex;align-items:center;justify-content:center;">Log a game</div>
+
+          <div style="margin-top:18px;background:#181410;border:1px solid #2A241D;border-radius:10px;padding:13px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#E0913C;margin-bottom:9px;">Fix</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ fixCells }}" as="c" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 12px;">
+                  <span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;">{{ c.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;flex:none;">{{ c.sub }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#E0913C;flex:none;">{{ c.fig }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin:15px 0 9px;">Keep</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ keepCells }}" as="c" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 12px;">
+                  <span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;">{{ c.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;flex:none;">{{ c.sub }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#6FA368;flex:none;">{{ c.fig }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A89B84;margin-top:14px;padding-top:12px;border-top:1px solid #2A241D;"><span style="letter-spacing:0.14em;text-transform:uppercase;font-size:9.5px;color:#8E8269;">Mixed</span> &nbsp;Mana &mdash; 1 up, 1 down.</div>
+          </div>
+        </div>
+      </div></div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">The panel, and &sect;8.2</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Fix is drawn above Keep.</b> The reason to open this tab is the thing that is wrong; Keep is what you protect while fixing it. It is also what #10 reads first, so the surface and its successor agree on what matters.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The cell is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">role-counter-cell</span> unchanged</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface</span> box on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1px --border</span>, radius 9px, padding 11px 14px, mono 10px uppercase label, mono 16px figure, 5px bar, 9.5px sub-line. One change, and it is to the bar's <i>meaning</i>: role counters fill one segment toward a target; here it is <b style="color:#EDE6D8;font-weight:600;">split &mdash; worked in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span>, hurt in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span></b>, and the whole bar is the games that marked the axis, not the games played.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The figure is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">3 of 3</span>, not <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&minus;3</span>.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">net</span> sorts the buckets and never shows its face: a signed integer needs a legend, and &ldquo;3 of 3&rdquo; carries its own denominator, which is the whole low-N strategy in four characters.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">&sect;8.2 &mdash; Mixed is one line, under a rule.</b> It is a real finding: mana cutting both ways is not the same as mana being fine. But it ranks nothing and prescribes nothing, and a third heading with its own strip of cells would claim equal standing with the bucket that is the point of the tab. So it prints as a sentence, always, with the same counts and no colour.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The headline is the single strongest Fix</b>, in the finding voice, with its denominator inside the sentence. If Fix is empty it becomes the strongest Keep, phrased as a keep; if both are empty and only Mixed exists, it states that plainly. Never a bare record line &mdash; the record is the small figure, not the finding.</div>
+          <div>Sorting is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">summarizeGames</span>' own: <b style="color:#EDE6D8;font-weight:600;">magnitude of net descending, then key ascending</b>. Design adds no second sort, so the panel's order is the pure function's order and stays testable.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ LOW-N LADDER ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">&sect;8.5 &middot; <span style="color:#C9A24B;">the same axis at one, two and five games</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">One axis &mdash; <span style="color:#C9A24B;">cards in hand</span> &mdash; as the denominator grows</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+          <sc-for list="{{ ladder }}" as="t" hint-placeholder-count="3">
+            <div style="background:#181410;border:1px solid {{ t.frameBd }};border-radius:11px;padding:16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.tierColor }};margin-bottom:10px;">{{ t.tier }}</div>
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;line-height:1.3;color:#EDE6D8;min-height:62px;">{{ t.headline }}</div>
+              <div style="font-size:12px;color:#8E8269;line-height:1.55;min-height:52px;margin-top:6px;">{{ t.caption }}</div>
+              <div style="background:#1E1A15;border:1px solid #2A241D;border-radius:9px;padding:11px 14px;margin-top:12px;">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">cards in hand</span><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:{{ t.figColor }};font-variant-numeric:tabular-nums;">{{ t.fig }}</span></div>
+                <div style="height:5px;border-radius:999px;background:#2A241D;overflow:hidden;margin-top:8px;display:flex;"><div style="height:100%;width:{{ t.barPct }};background:{{ t.barColor }};"></div></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;margin-top:6px;">{{ t.sub }}</div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:10px;line-height:1.5;">{{ t.bucket }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#A89B84;line-height:1.5;margin-top:18px;">
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">dial 1</span><span><b style="color:#EDE6D8;font-weight:600;">The denominator is always in the figure</b>, never beside it and never as a percentage. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 of 1</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">4 of 5</span> are self-describing; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">100%</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">80%</span> are the same claim with the evidence deleted.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">dial 2</span><span><b style="color:#EDE6D8;font-weight:600;">The heading changes grammar at three.</b> Below three it describes what was logged; at three and above it states a finding about the deck. One sentence, two moods, and the mood is the confidence.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">dial 3</span><span><b style="color:#EDE6D8;font-weight:600;">Colour is earned at three.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> below three would put a verdict's colour on an anecdote. Below three, figures are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span> and the bar is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span>.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">not a dial</span><span><b style="color:#EDE6D8;font-weight:600;">Nothing is hidden, dimmed to unreadable, or disclaimed away.</b> No &ldquo;low confidence&rdquo; badge, no asterisk, no tooltip, no progress-to-three meter. Three is a threshold in the <i>presentation</i>; it is never a gate on the data, and it is never spoken of as a rule the player has to satisfy.</span></div>
+        </div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Why three, and what was rejected</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Three is the spec's own number</b>, twice: &sect;1's <i>three games is enough for a person to notice</i>, and <i>this happened three times out of three</i> as the sentence the feature exists to print. Design did not pick a threshold; it drew the one already in the document.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Rejected: opacity.</b> Fading the panel at low N makes thin data <i>harder to read</i> rather than easier to weigh, and it fails contrast at exactly the moment a new player is deciding whether this tab is worth using.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Rejected: a confidence badge or a star rating.</b> A second scale to interpret, invented here, with no definition anywhere in the data. The denominator is already the confidence and it is already exact.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Rejected: &ldquo;2 more games for a pattern&rdquo; as a progress meter.</b> It reinstates the gate &sect;5 refused, in copy, and turns logging into a chore with a target. The one nudge that survives sits at N=1 and promises a count, not an unlock.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Rejected: percentages at any N.</b> Not a low-N rule but a permanent one, because it is what makes the low-N rule unnecessary elsewhere: &ldquo;3 of 3&rdquo; cannot be quoted out of context, and &ldquo;100%&rdquo; is designed to be.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The threshold lives in one constant</b> beside the copy, not scattered across three components. If the audit wants four games instead of three, that is one number and no redraw.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ CONFLICT / HISTORY / CONTRACT ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">The conflict case &middot; <span style="color:#C9A24B;">drawn as a move, because it cannot be a state</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Mana is marked in <span style="color:#6FA368;">What worked</span>. The player taps it in <span style="color:#E0913C;">What let me down</span>.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin-bottom:9px;">What worked</div>
+            <div style="display:flex;align-items:center;gap:11px;min-height:46px;background:#1E1A15;border:1px dashed #4A4033;border-radius:8px;padding:5px 12px;">
+              <span style="width:18px;height:18px;flex:none;border-radius:5px;border:1px solid #3A3229;background:transparent;"></span>
+              <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:13.5px;color:#8E8269;">Mana</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">moved to <i>what let me down</i></span>
+              </span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:9px;line-height:1.5;">unticked, and it says where it went. Dashed border for one beat, then the row returns to rest.</div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#E0913C;margin-bottom:9px;">What let me down</div>
+            <div style="display:flex;align-items:center;gap:11px;min-height:46px;background:#211C15;border:1px solid #6E5B33;border-radius:8px;padding:5px 12px;">
+              <span style="width:18px;height:18px;flex:none;border-radius:5px;border:1px solid #C9A24B;background:rgba(201,162,75,0.12);color:#E0913C;font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">&#10003;</span>
+              <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:13.5px;color:#EDE6D8;">Mana</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A89B84;">screwed or flooded</span>
+              </span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:9px;line-height:1.5;">ticked. One tap, no dialog, no undo prompt, no error.</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#A89B84;line-height:1.5;margin-top:18px;">
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">the rule</span><span><b style="color:#EDE6D8;font-weight:600;">Ticking an axis on one side unticks it on the other.</b> The composite primary key makes both-at-once unrepresentable in the data; the form makes it unreachable in the UI, by the same logic and not by a validator.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">rejected</span><span><b style="color:#EDE6D8;font-weight:600;">Disabling the opposite row</b> &mdash; eight disabled rows on the right after four ticks on the left, and a player who changes their mind has to find and untick the original first. <b style="color:#EDE6D8;font-weight:600;">An error on save</b> &mdash; a rejection for a thing the interface let them do. <b style="color:#EDE6D8;font-weight:600;">A three-state toggle per row</b> (worked / neutral / hurt) &mdash; tidier in the data model, and it deletes the two column headings that are doing all the teaching.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">announced</span><span>The move is spoken once on the live region &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Mana moved to what let me down</span> &mdash; because for a screen-reader user two rows changed and only one was touched.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">server</span><span>The validation in &sect;4 stays exactly as specified. It is not dead code &mdash; it is what a crafted request meets. The UI simply never generates one.</span></div>
+        </div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">History row &mdash; <span style="color:#C9A24B;">anatomy</span></div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#A89B84;line-height:1.5;">
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:66px;">result</span><span>26px square, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">W</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">L</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">D</span>. W takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span>; <b style="color:#EDE6D8;font-weight:600;">L and D are neutral</b> &mdash; a list of losses in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span> reads as a list of errors, and this is a diary, not a lint report.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:66px;">meta</span><span>Mono 11px: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">4-player &middot; 12 Aug</span>. Pod size first because it is the thing that changes how a game read; the date is a locator.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:66px;">marks</span><span>Chips with a 6px dot &mdash; <span style="color:#6FA368;">success</span> worked, <span style="color:#E0913C;">warning</span> hurt. <b style="color:#EDE6D8;font-weight:600;">Direction is the dot, not the order</b>, so the chips stay in vocabulary order and the row does not resort itself. Worked chips first would sort two lists inside one row.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:66px;">delete</span><span>30px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&times;</span> at the row's end, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> at rest, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span> on hover. 44px at phone. <b style="color:#EDE6D8;font-weight:600;">One confirm step</b>, inline in the row &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Delete this game?</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Delete</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Keep</span> &mdash; because &sect;4 has no edit action, so delete-and-relog is the correction path and a stray tap loses the only copy.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:66px;">no marks</span><span>A game with none is valid. The chip area holds <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&mdash;</span> in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span>: absence, never an empty gap that reads as a rendering fault.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:66px;">phone</span><span>Result and meta on line one, chips wrapping on line two, 64px minimum. No truncation of the mark list &mdash; four chips is the ceiling the form imposes.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:66px;">length</span><span>Full list, newest first, <b style="color:#EDE6D8;font-weight:600;">no pagination and no cap</b>. Dozens of rows is the stated scale; a deck with sixty games logged has earned sixty rows.</span></div>
+        </div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Token / a11y / motion contract</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">No new token, no new hex, no new motion class, no new empty-state construct, no modal, no toast, no tray.</b> Everything here is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">globals.css</span> as it ships.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Colour is never the only carrier.</b> Worked and hurt are two headed columns in the form, two headed groups in the panel, and a dot plus a position in history. The dots are 6px and repeat a mark this product already uses for owned / unowned.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Targets:</b> 46px form rows (desktop), 48px (phone); 40px result and pod squares desktop, 44px phone; 30px delete desktop, 44px phone. The whole form row is the label &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;label&gt;</span> wrapping a real checkbox, so the 18px box is decoration and the hit area is the row.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Semantics:</b> two <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">fieldset</span>s with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">legend</span>s carrying the column headings, so the accessible name of every box is &ldquo;what worked, mana&rdquo; and not &ldquo;mana&rdquo; twice. Result and pod are radio groups. The gloss is the box's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-describedby</span>, not part of its name.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Live region:</b> the existing one. One message per settle &mdash; the move, the save (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Game logged. 2&ndash;1 across 3 games.</span>), the delete. Never one per tick.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Motion:</b> the form's open and close is the only animated thing, and it is the shipped panel transition. No count-up on the figures, no bar animation &mdash; a bar that grows on load makes a two-game figure look like a measurement being taken.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Focus:</b> global <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">:focus-visible</span>, 2px brass at +2px, not overridden. Opening the form moves focus to the result group; saving returns it to the collapsed <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Log a game</span> row.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Refusal:</b> the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MutationError</span> under the save button, form state preserved. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">logGame</span> returns <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DeckMutationResult</span>, so this needs no new surface.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const AX = [
+      ['speed', 'Speed', 'got going fast', 'started too slow'],
+      ['card_flow', 'Cards in hand', 'kept drawing', 'ran out of gas'],
+      ['mana', 'Mana', 'hit every land drop', 'screwed or flooded'],
+      ['interaction', 'Answers', 'answered the threats', 'nothing for their threats'],
+      ['board', 'Board presence', 'built a board', 'got outsized'],
+      ['resilience', 'Comebacks', 'recovered from a wipe', 'never recovered'],
+      ['engine', 'The deck\u2019s plan', 'the plan fired', 'never came together'],
+      ['closing', 'Closing the game', 'converted the win', 'stalled out'],
+    ];
+    const vocab = AX.map(a => ({ key: a[0], label: a[1], worked: a[2], hurt: a[3] }));
+
+    const col = (dir, on) => AX.map(a => {
+      const isOn = on.indexOf(a[0]) >= 0;
+      return {
+        key: a[0], label: a[1], gloss: dir === 'w' ? a[2] : a[3],
+        rowBg: isOn ? '#211C15' : '#1E1A15',
+        rowBd: isOn ? '#6E5B33' : '#2A241D',
+        boxBd: isOn ? '#C9A24B' : '#3A3229',
+        boxBg: isOn ? 'rgba(201,162,75,0.12)' : 'transparent',
+        mark: isOn ? '\u2713' : '',
+        glossColor: isOn ? '#A89B84' : '#8E8269',
+      };
+    });
+
+    const formW = col('w', ['board', 'engine']);
+    const formH = col('h', ['card_flow']);
+
+    const pods = [2, 3, 4, 5, 6, 7, 8].map(n => ({
+      n: String(n),
+      bd: n === 4 ? '#C9A24B' : '#3A3229',
+      bg: n === 4 ? 'rgba(201,162,75,0.12)' : 'transparent',
+      fg: n === 4 ? '#C9A24B' : '#C6B79A',
+    }));
+
+    // N=1 — one game, no buckets, no colour
+    const n1cells = [
+      { label: 'Board presence', fig: '1 up', sub: '1 game', wPct: '100%' },
+      { label: 'The deck\u2019s plan', fig: '1 up', sub: '1 game', wPct: '100%' },
+      { label: 'Cards in hand', fig: '1 down', sub: '1 game', wPct: '100%' },
+    ];
+
+    // N=3 — Gisa Zombies, 2-1
+    const fixCells = [
+      { label: 'Cards in hand', fig: '3 of 3', sub: '0 up \u00b7 3 down', wPct: '0%', hPct: '100%' },
+      { label: 'Answers', fig: '1 of 3', sub: '0 up \u00b7 1 down', wPct: '0%', hPct: '100%' },
+    ];
+    const keepCells = [
+      { label: 'Board presence', fig: '2 of 3', sub: '2 up \u00b7 0 down', wPct: '100%', hPct: '0%' },
+      { label: 'The deck\u2019s plan', fig: '2 of 3', sub: '2 up \u00b7 0 down', wPct: '100%', hPct: '0%' },
+    ];
+
+    const W = '#6FA368', H = '#E0913C';
+    const g = (pill, meta, marks) => ({
+      pill,
+      pillBd: pill === 'W' ? '#6FA368' : '#3A3229',
+      pillFg: pill === 'W' ? '#6FA368' : '#C6B79A',
+      meta, marks,
+    });
+    const m = (label, dot) => ({ label, dot });
+
+    const history1 = [
+      g('W', '4-player \u00b7 12 Aug', [m('Board presence', W), m('The deck\u2019s plan', W), m('Cards in hand', H)]),
+    ];
+    const history3 = [
+      g('W', '5-player \u00b7 26 Aug', [m('Cards in hand', H), m('Mana', H), m('Board presence', W), m('The deck\u2019s plan', W)]),
+      g('L', '4-player \u00b7 19 Aug', [m('Cards in hand', H), m('Mana', W), m('Answers', H)]),
+      g('W', '4-player \u00b7 12 Aug', [m('Board presence', W), m('The deck\u2019s plan', W), m('Cards in hand', H)]),
+    ];
+
+    const ladder = [
+      {
+        tier: 'N = 1 \u00b7 a record',
+        tierColor: '#8E8269',
+        frameBd: '#2A241D',
+        headline: 'One game logged.',
+        caption: 'Nothing to read into yet \u2014 it is on the record. Two more and this turns into something you can act on.',
+        fig: '1 down', figColor: '#C6B79A', barPct: '100%', barColor: '#4A4033',
+        sub: '1 game',
+        bucket: 'no bucket heading \u00b7 no state colour \u00b7 no net',
+      },
+      {
+        tier: 'N = 2 \u00b7 a leaning',
+        tierColor: '#A89B84',
+        frameBd: '#2A241D',
+        headline: 'Cards in hand went wrong both times.',
+        caption: 'Two games. Both of them, which is worth noticing and not yet worth calling a pattern.',
+        fig: '2 of 2', figColor: '#C6B79A', barPct: '100%', barColor: '#4A4033',
+        sub: '0 up \u00b7 2 down',
+        bucket: 'Fix and Keep appear \u00b7 figures still --fg-body \u00b7 bar still neutral',
+      },
+      {
+        tier: 'N = 5 \u00b7 a finding',
+        tierColor: '#C9A24B',
+        frameBd: '#4A4033',
+        headline: 'Cards in hand is letting this deck down.',
+        caption: 'Marked against you in four of the five games you have logged.',
+        fig: '4 of 5', figColor: '#E0913C', barPct: '100%', barColor: '#E0913C',
+        sub: '0 up \u00b7 4 down',
+        bucket: 'finding voice \u00b7 state colour \u00b7 headline is this axis',
+      },
+    ];
+
+    return {
+      vocab, formW, formH, pods,
+      mobileW: formW.slice(0, 4), mobileH: formH.slice(0, 2),
+      n1cells, fixCells, keepCells, history1, history3, ladder,
+    };
+  }
+}
+</script>
+</body>
+</html>

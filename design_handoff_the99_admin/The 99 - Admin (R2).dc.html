@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#121217; --surface:#1E1F26; --border:#1A1F2B; --border-strong:#2E3340; --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --accent:#5C86C9; --accent-hover:#6C95D8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div id="A0" style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ADMIN R2 · FOR AUDIT</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Switches and model costs</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">R1 notes applied, 2026-10-12 · R1 kept as The 99 - Admin (R1)</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:34px;margin:0;line-height:1.15;max-width:1100px;">Filters stay put and tables scroll. One group per account. Spend is drawn against the plan line, and by model.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">Frames are fixed at 900×820 and 390×844 and scroll live: drag inside a list or a cost page. Copy is terse because there is one reader. Fixtures as R1, except that Mara is in testers only and friends holds the other five. Clerk ids other than Hugh’s, names, and env values are illustrative.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="9">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ c.where }}</span></div><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="16">
+    <section id="{{ sec.id }}" data-screen-label="{{ sec.id }} {{ sec.title }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;">{{ sec.title }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">STATES {{ sec.id }} · scene {{ sec.scene }}</span>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="Admin R2" scene="{{ sec.scene }}" hint-size="900px,820px"></dc-import>
+        </div>
+        <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+          <dc-import name="Admin R2" scene="{{ sec.scene }}" phone="{{ true }}" hint-size="390px,844px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="TH" data-screen-label="TH Six themes" style="display:flex;flex-direction:column;gap:26px;">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§TH</span>
+        <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;">Six themes</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">scene flagSwap · 390</span>
+      </div>
+      <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">Tokens only. The data inks hold across themes: --success for on, --warning for alarms and compound, --danger for the env-var kill and hard caps, --fact for labels. The model tag and the player series take the theme’s --accent.</p>
+    </div>
+    <div style="display:flex;gap:28px;align-items:flex-start;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ t }}</span>
+          <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+            <dc-import name="Admin R2" scene="flagSwap" theme="{{ t }}" phone="{{ true }}" hint-size="390px,844px"></dc-import>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      themes: ["kaldheim", "amonkhet", "kamigawa", "ixalan", "phyrexia", "eldraine"],
+      calls: [
+        { k: "Pinned filters", where: "A2 · A10 · A13 · A14", v: "The page head and its filters (search and chips, or the month) stay fixed. On Switches and Accounts the table fills the rest of the height and scrolls inside itself, with its column head sticky. On detail and cost pages, everything under the head scrolls." },
+        { k: "Env var wording", where: "all", v: "“Env var” everywhere, never “environment”: the ladder rung, the list column, sources (env var, env var is off) and the kill banner (Off: the env var is off)." },
+        { k: "Notes", where: "A3 · A7", v: "The quoted lines are each override’s optional note: why Hugh set it. It is stored on flag_overrides.note and admin_events.note. They’re now labelled Note: so they don’t read as data." },
+        { k: "One group per account", where: "A8 · A9 · A12", v: "An account is in at most one group, so groups can never disagree and every disagreement banner is gone. Selecting a member who is in another group moves them, and the pending bar says from where. This needs a unique constraint on flag_group_members.user_id." },
+        { k: "User ids", where: "A3 · A9 · A10", v: "The Clerk id sits under the email on every member row, every account row and every account override." },
+        { k: "Plan line", where: "A13 · A14", v: "The month-to-date chart is now player presses, the series the plan counts. It has a solid $10 plan line and dashed $8 and $5 alarm lines, so the pace line visibly runs toward or past them. Free rewrites are system spend and are left out." },
+        { k: "Budgets: set where", where: "A13 · A14", v: "Each cap row is tagged. IN CODE: the $10 plan, $5 owner share, alarms and $20 hard stop (constants in spend-rule.ts, changed by a commit). SET HERE: the system ceiling, the Anthropic account cap and elsewhere (the admin settings table)." },
+        { k: "By model", where: "A13 · A14", v: "A new block under the trend gives each model a total, share and calls, split into player, free rewrite and label inks. Evals are one row, not split, because each ledger tests its own model." },
+        { k: "Still open", where: "README", v: "Q1 becomes moot under one group per account (the off-wins rule stays as a backstop). Whether the in-code caps should move to settings is your call. See the README." },
+      ],
+      sections: [
+        { id: "A1", title: "The door", scene: "door", note: "Unchanged from R1. An Admin row in Hugh’s account menu, after About, with the env named at the row’s end." },
+        { id: "A2", title: "Switches", scene: "flags", note: "Search and the filter chips are pinned under the tabs. The list fills the remaining height and scrolls with its column head sticky. The column reads Env var." },
+        { id: "A3", title: "App and account overrides", scene: "flagCuts", note: "Proposed cuts: off app-wide, on for Hugh’s account. The account row shows Hugh’s Clerk id. The quoted line is the override’s note, now labelled Note." },
+        { id: "A4", title: "Group overrides", scene: "flagSwap", note: "Swap tools: friends off, testers on. With one group per account nobody can be in both, so the disagreement banner is gone. Check an account shows Theo: Off · group friends." },
+        { id: "A5", title: "Turning a model feature on for more accounts", scene: "flagConfirm", note: "As R1, terser: clearing app-wide off falls back to the env var (true) and spends money. Who, cost, What’s new and when, then Turn on for 6." },
+        { id: "A6", title: "Compound", scene: "flagCompound", note: "Off: needs Collection edit, which is off. Overrides here can’t turn the parent on." },
+        { id: "A7", title: "Kill: the env var is off", scene: "flagKill", note: "DECK_BENCHMARKS_ENABLED=off refuses every override, and only a redeploy changes it. Mara’s override is listed as refused, with her id; Clear still works." },
+        { id: "A8", title: "Groups", scene: "groups", note: "friends (5) and testers (2). One group per account, so no account is in both and there is no disagreement banner. The head counts accounts in no group." },
+        { id: "A9", title: "Editing a group", scene: "groupEdit", note: "Each member row carries name, email and Clerk id, plus the group it’s in now. Theo is selected and not saved, and moves from friends. The pending bar says what he gains." },
+        { id: "A10", title: "Account lookup", scene: "accounts", note: "The search runs the full width at 900 and is pinned. The list fills the height and scrolls with a sticky head. Each row shows the Clerk id under the email, and its one group." },
+        { id: "A11", title: "An account: Hugh", scene: "accountHugh", note: "Group, now singular, then switches with their sources. Sources read env var, not environment." },
+        { id: "A12", title: "An account: Mara", scene: "accountMara", note: "In testers only. Overview v2 and Swap tools come from testers. Deck benchmarks is off because the env var is off and her override is refused." },
+        { id: "A13", title: "Costs, staging’s October (sparse)", scene: "costsSparse", note: "The month bar is pinned and the rest scrolls. Cap rows are tagged in code or set here. The player line sits far under the $10 plan line, which is the point at this density. By model shows sonnet-4-5 labels at 88% and evals unsplit. The player daily split is illustrative: the brief gives per-day totals, and the three system rows are placed on 6 and 11 Oct." },
+        { id: "A14", title: "Costs, a busier month (illustrative production November)", scene: "costsBusy", note: "The pace line crosses the $8 alarm line and ends past the $10 plan at $11.76, which the banner also says. By model: sonnet-5-5 $4.89, sonnet-5 $3.41, sonnet-4-5 labels $3.12, haiku-5-5 $0.16, and evals $6.80 not split." },
+        { id: "A15", title: "Models", scene: "models", note: "Unchanged from R1." },
+        { id: "A16", title: "Everyone else: the existing 404", scene: "notFound", note: "Unchanged." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

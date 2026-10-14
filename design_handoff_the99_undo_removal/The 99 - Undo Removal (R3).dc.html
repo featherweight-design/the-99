@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#100D0A"/><rect x="16" y="44" width="88" height="14" rx="4" fill="#1A1713"/><text x="60" y="90" font-family="Georgia,serif" font-size="15" font-weight="700" fill="#C9A24B" text-anchor="middle">R3</text></svg></template>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R3</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Undo a removal &middot; one link that always works</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">A restore cannot be refused, so nothing here refuses.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">R2 modelled the restore on the pull flow, and that was the wrong parent.</b> A pull is contended &mdash; it mutates another deck. <b style="color:#EDE6D8;font-weight:600;">A restore mutates only your own draft.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Put back</span> is an add, and in this app adds never refuse on claims &mdash; they price them. <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">DeckAddRejection</span> is three values, all about legality and identity, and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">addCardToDeck</span> does not read availability at all.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Every gate is closed by construction.</b> A row under <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Going out</span> was in this deck's committed list, so it already passed legality and colour identity; and a commander is not a <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">deck_cards</span> row, so <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">is-commander</span> cannot fire either. <b style="color:#EDE6D8;font-weight:600;">The claim gates were never open in the first place.</b></p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">So R3 deletes both refusal states and everything that existed to serve them: the <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">claimed</span> tag word, the commander row's empty-control variant, the 32px shared slot, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Pull it &rarr; Pull</span> demotion. <b style="color:#EDE6D8;font-weight:600;">Each of those had exactly one reason to exist, and the reason was a refused row.</b> Two review rounds of alignment work on the price column goes with them &mdash; there is no second price to align to.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">And R3 drops one more thing the audit did not ask for.</b> R2 kept the row through the round trip because the refusal was drawn on it. With no refusal to draw, <b style="color:#EDE6D8;font-weight:600;">that argument retires too</b> &mdash; so the restore is optimistic, and the in-flight state disappears rather than shrinking. See <a href="#whyoptimistic">3</a>.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">What is left: <b style="color:#C6B79A;font-weight:600;">one always-succeeding link, one edited string, and the focus ruling.</b> Diff against <a href="The 99 - Undo Removal (R2).dc.html">R2</a> &middot; <a href="README.md">README</a> &middot; <a href="STATES-restore.md">matrix</a> &middot; <a href="undo-removal - copy strings.ts">copy</a> &middot; <a href="READINESS.md">READINESS</a>.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:12px;background:#181410;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:12px;">Deleted in R3 &mdash; and the single reason each one existed</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px 26px;">
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Both refusal states.</b> Unreachable: a restore is an add, adds price contention rather than refusing it, and this row already passed every gate an add has.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">claimed</span> tag word.</b> R2's one new word in the whole feature. It named a refusal. <b style="color:#EDE6D8;font-weight:600;">R3 introduces no new vocabulary at all.</b></div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The commander row's empty-control variant.</b> A commander is not a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck_cards</span> row, so it never appears under <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out</span> to begin with.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The 32px shared slot.</b> It existed to put two refused rows' prices in a column. One price does not need a column.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it &rarr; Pull</span> demotion.</b> It bought a refused row one line at 390px. <b style="color:#EDE6D8;font-weight:600;">R3 touches no shipped control</b> &mdash; the pull keeps its border and its pronoun.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">&ldquo;A refusal is a route into the pull flow&rdquo;</b> (R2 §7/§9), and the whole three-outcome framing of pull / buy / leave it out.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The money case.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">8 to buy &middot; $254.10 &rarr; 9 to buy &middot; $263.00</span> comes off the canvas. See <a href="#money">4</a> &mdash; it was wrong twice over.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The in-flight state.</b> Not asked for. Its only job was holding a row for a refusal to land on. See <a href="#whyoptimistic">3</a>.</div>
+    </div>
+    <div style="font-size:13px;color:#C6B79A;line-height:1.6;margin-top:13px;padding-top:13px;border-top:1px solid #2A241D;"><b style="color:#EDE6D8;font-weight:600;">Kept, and not re-opened:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out</span> ships alone with #185 untouched &middot; the restored row leaves the list &middot; the focus ruling &middot; the two clocks &middot; two labels &middot; no bulk restore &middot; no motion &middot; no expiry warning &middot; nothing blocks on the cap &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">review.outNote</span>'s edit.</div>
+  </div>
+
+  <section data-screen-label="01" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">1 &middot; Going out, with Put back</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;">the whole of R3 &middot; /decks/[id]/changes</span>
+    </div>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#A89B84;margin:0 0 18px;">One link in an action slot reserved and empty since R1.2. <b style="color:#EDE6D8;font-weight:600;">Every row carries it and every row's is live</b> &mdash; there is no variant, no guard, no tag and no absent control. The pull rows in the other column keep <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Pull it</span> exactly as shipped.</p>
+
+    <div style="background:#14110E;border:1px solid #2A241D;border-radius:14px;padding:22px 24px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:8px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:6px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#6FA368;">19</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">in</span></div>
+        <div style="display:flex;align-items:center;gap:8px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:6px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E0913C;">17</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">out</span></div>
+        <div style="display:flex;align-items:center;gap:8px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:6px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E0913C;">8</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">to buy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">$254.10</span></div>
+        <div style="display:flex;align-items:center;gap:8px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:6px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">5</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">can be pulled</span></div>
+      </div>
+
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:1px solid #2A241D;padding-bottom:10px;margin-bottom:10px;max-width:660px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#E0913C;">Going out &middot; 17</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">all back in the pool on commit</span>
+      </div>
+      <div style="font-size:12.5px;color:#A89B84;line-height:1.6;max-width:660px;margin-bottom:16px;">All 17 go back in the pool when you commit. <b style="color:#EDE6D8;font-weight:600;">Put one back and it never left</b> &mdash; the deck takes its copy again if it is still free.</div>
+
+      <div style="max-width:660px;">
+        <div style="display:flex;align-items:baseline;gap:10px;border-bottom:1px solid #574463;padding-bottom:7px;margin-bottom:9px;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:#EDE6D8;">Creatures</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">7</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
+          <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Fauna Shaman</span><span style="display:flex;align-items:center;justify-content:flex-end;gap:3px;width:90px;flex:none;"><span style="width:18px;height:18px;border-radius:999px;background:#2A241D;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;flex:none;">1</span><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;padding:0 3px;min-height:34px;display:flex;align-items:center;flex:none;">Put back</span></div>
+          <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Hermit Druid</span><span style="display:flex;align-items:center;justify-content:flex-end;gap:3px;width:90px;flex:none;"><span style="width:18px;height:18px;border-radius:999px;background:#2A241D;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;flex:none;">1</span><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;padding:0 3px;min-height:34px;display:flex;align-items:center;flex:none;">Put back</span></div>
+          <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Lotleth Troll</span><span style="display:flex;align-items:center;justify-content:flex-end;gap:3px;width:90px;flex:none;"><span style="width:18px;height:18px;border-radius:999px;background:#2A241D;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;flex:none;">1</span><span style="width:11px;height:11px;border-radius:999px;background:#5B5566;flex:none;"></span><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;padding:0 3px;min-height:34px;display:flex;align-items:center;flex:none;">Put back</span></div>
+          <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Necrotic Ooze</span><span style="display:flex;align-items:center;justify-content:flex-end;gap:3px;width:90px;flex:none;"><span style="width:18px;height:18px;border-radius:999px;background:#2A241D;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;flex:none;">2</span><span style="width:11px;height:11px;border-radius:999px;background:#5B5566;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;padding:0 3px;min-height:34px;display:flex;align-items:center;flex:none;">Put back</span></div>
+          <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sidisi, Brood Tyrant</span><span style="display:flex;align-items:center;justify-content:flex-end;gap:3px;width:90px;flex:none;"><span style="width:18px;height:18px;border-radius:999px;background:#2A241D;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;flex:none;">1</span><span style="width:11px;height:11px;border-radius:999px;background:#5B5566;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;padding:0 3px;min-height:34px;display:flex;align-items:center;flex:none;">Put back</span></div>
+        </div>
+
+        <div style="display:flex;align-items:baseline;gap:10px;border-bottom:1px solid #574463;padding-bottom:7px;margin-bottom:9px;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:#EDE6D8;">Lands</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Swamp <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">9 &rarr; 7</span></span><span style="display:flex;align-items:center;justify-content:flex-end;gap:3px;width:90px;flex:none;"><span style="width:11px;height:11px;border-radius:999px;background:#5B5566;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;padding:0 3px;min-height:34px;display:flex;align-items:center;flex:none;">Put back</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:18px;max-width:1180px;">
+      <div><b style="color:#EDE6D8;font-weight:600;">Sidisi, Brood Tyrant is now an ordinary row.</b> In R2 it was the commander refusal. It is here as a plain restorable row because <b style="color:#EDE6D8;font-weight:600;">the case it illustrated cannot occur</b>: a commander is not a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck_cards</span> row, so no commander of any deck ever appears under <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out</span>.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">The dot is availability, and it is not a guard.</b> A card another deck now holds still reads <span style="color:#C9A24B;">its real colour</span> and still restores &mdash; because the deck already owns the copy it is taking back. <b style="color:#EDE6D8;font-weight:600;">The dot informs; it never gates.</b></div>
+      <div><b style="color:#EDE6D8;font-weight:600;">One shipped string is edited, and it is the only one.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">review.outNote</span>'s first clause &mdash; <i>&ldquo;No per-row toggle&rdquo;</i> &mdash; is now false. The second clause is true and R3 leans on it: putting one back <i>is</i> adding it to the deck, which is exactly why it cannot be refused. <b style="color:#EDE6D8;font-weight:600;">R2's second edit, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">review.pull</span>, is withdrawn.</b></div>
+      <div><b style="color:#EDE6D8;font-weight:600;">A quantity move restores the quantity, not the card.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Swamp 9 &rarr; 7</span> puts both back and the row leaves &mdash; one of the cases #185's receipt cannot reach, since a decrement keeps its row and never becomes a spent slot.</div>
+    </div>
+  </section>
+
+  <section data-screen-label="02" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">2 &middot; The Out pane at 390px</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">one line per row, one label, nothing to align</span>
+    </div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:390px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;padding:14px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px;">
+          <div style="display:flex;align-items:center;gap:7px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">19</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;">in</span></div>
+          <div style="display:flex;align-items:center;gap:7px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">16</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;">out</span></div>
+          <div style="display:flex;align-items:center;gap:7px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">8</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;">to buy</span></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:13px;">
+          <span style="flex:1;font-family:'IBM Plex Sans';font-weight:500;font-size:12.5px;color:#8E8269;border:1px solid #3A3229;border-radius:999px;min-height:38px;display:flex;align-items:center;justify-content:center;">Coming in &middot; 19</span>
+          <span style="flex:1;font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:#EDE6D8;background:#2A241D;border-radius:999px;min-height:38px;display:flex;align-items:center;justify-content:center;">Going out &middot; 16</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;line-height:1.5;">all 16 go back in the pool when you commit. put one back and it never left.</div>
+        <div style="display:flex;align-items:baseline;gap:9px;border-bottom:1px solid #574463;padding-bottom:7px;margin-bottom:9px;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:#EDE6D8;">Creatures</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">6</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="min-height:46px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 4px 0 8px;display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Fauna Shaman</span><span style="display:flex;align-items:center;gap:3px;flex:none;"><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:#C9A24B;flex:none;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;">Put back</span></div>
+          <div style="min-height:46px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 4px 0 8px;display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Necrotic Ooze</span><span style="display:flex;align-items:center;gap:3px;flex:none;"><span style="width:11px;height:11px;border-radius:999px;background:#5B5566;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:#C9A24B;flex:none;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;">Put back</span></div>
+          <div style="min-height:46px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 4px 0 8px;display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Lotleth Troll</span><span style="display:flex;align-items:center;gap:3px;flex:none;"><span style="width:11px;height:11px;border-radius:999px;background:#5B5566;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:#C9A24B;flex:none;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;">Put back</span></div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:300px;max-width:620px;display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+        <div><b style="color:#EDE6D8;font-weight:600;">One label on every row, so the column is free.</b> R2 spent two review rounds aligning a 32px slot and a right-edge rule because it had two labels of different widths and two prices to line up. <b style="color:#EDE6D8;font-weight:600;">With one label there is nothing to align to</b> &mdash; the defect class is gone rather than fixed. The right-align rule stays because it is still what keeps the labels on one edge, and it now costs nothing to hold.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Borderless brass link, 34px tall, 44px square target.</b> The one metric R3 needs. No row is two-line at any width, and no row has a second control to fit beside it.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">The out chip reads 16.</b> One restore has been taken in this frame &mdash; every figure moved together, and nothing animated.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">The segmented pair is untouched.</b> No new tab, no filter, no &ldquo;restorable only&rdquo; toggle &mdash; <b style="color:#EDE6D8;font-weight:600;">every row is restorable, always</b>, so a filter would sort on a constant.</div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="03" id="whyoptimistic" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">3 &middot; Two states, and why the in-flight one went</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">R1 had five &middot; R2 had four &middot; R3 has two</span>
+    </div>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#A89B84;margin:0 0 18px;"><b style="color:#EDE6D8;font-weight:600;">This is the one thing R3 changes that the audit did not ask for</b>, and it follows from the finding rather than going beyond it.</p>
+
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:1180px;">
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:11px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#8E8269;border-radius:4px;padding:2px 7px;">01</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C6B79A;">Restorable</span><span style="font-size:12.5px;color:#8E8269;">every row, always &mdash; there is no other resting state</span></div>
+        <div style="min-height:44px;background:#1A1713;border:1px solid #26211B;border-radius:7px;padding:0 6px 0 9px;display:flex;align-items:center;gap:9px;max-width:660px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Necrotic Ooze</span><span style="display:flex;align-items:center;justify-content:flex-end;gap:3px;width:90px;flex:none;"><span style="width:18px;height:18px;border-radius:999px;background:#2A241D;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;flex:none;">2</span><span style="width:11px;height:11px;border-radius:999px;background:#5B5566;flex:none;"></span></span><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;padding:0 3px;min-height:34px;display:flex;align-items:center;flex:none;">Put back</span></div>
+      </div>
+
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:11px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#6FA368;border-radius:4px;padding:2px 7px;">02</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;">Taken</span><span style="font-size:12.5px;color:#8E8269;">on tap &mdash; the row leaves and every figure moves with it</span></div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:290px;">
+            <div style="min-height:44px;background:#161310;border:1px dashed #2A241D;border-radius:7px;padding:0 9px;display:flex;align-items:center;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">Necrotic Ooze is no longer going out</span></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><div style="display:flex;align-items:center;gap:7px;background:#1E1A15;border:1px solid #3A3229;border-radius:999px;padding:5px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">16</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;">out</span></div><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">was 17</span></div>
+          </div>
+          <div style="flex:1;min-width:290px;font-size:12.5px;color:#A89B84;line-height:1.6;">The row leaves because the list is derived and the card is no longer in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">draftDiff.removes</span>. Announced once: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Necrotic Ooze is back in the deck. 101 cards, 16 going out.</span> <b style="color:#EDE6D8;font-weight:600;">No animation on any figure.</b> Focus goes to the group heading the row left &mdash; never the next row's control, which would put a live restore under a finger that just used one. <b style="color:#EDE6D8;font-weight:600;">The focus ruling is unchanged from R2.</b></div>
+        </div>
+      </div>
+
+      <div style="background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:11px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:10px;">Why there is no third state</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#A89B84;line-height:1.65;">
+          <div><b style="color:#EDE6D8;font-weight:600;">R2's in-flight state existed for one reason: the refusal was drawn on the row, so the row had to outlive the round trip.</b> That was #185's argument and R2 accepted it correctly. <b style="color:#EDE6D8;font-weight:600;">With no refusal to draw, the argument retires with the states it protected</b> &mdash; and a disabled control held for a round trip on an action that cannot fail is exactly the ceremony R1 was criticised for.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">So the restore is optimistic: the row leaves on tap.</b> This is also the only reading consistent with #185, whose undo is <i>not</i> optimistic because <i>its</i> receipt is the thing that must survive to state a refusal. Same principle, opposite conclusion, because the two surfaces draw their outcome in opposite places &mdash; <b style="color:#EDE6D8;font-weight:600;">here the row leaving <i>is</i> the success</b>, so there is nothing an optimistic apply can destroy.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Rule 4 is satisfied rather than departed from.</b> R1 asked to break <i>nothing unmounts mid-write</i> and was refused. R3 does not need to: the write cannot be refused, so the unmount is not mid-write in any meaningful sense &mdash; there is no branch in which the row should come back. <b style="color:#EDE6D8;font-weight:600;">R1's requested ruling is withdrawn, not granted.</b></div>
+          <div><b style="color:#EDE6D8;font-weight:600;">A transport failure is the one thing left, and it keeps its shipped treatment.</b> If the request never reaches the server the row returns and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MutationError</span> says so &mdash; the app's existing behaviour for every optimistic write, not a state this feature designs. <b style="color:#EDE6D8;font-weight:600;">It is not a refusal</b>: nothing was decided, and trying again is the whole remedy.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="04" id="money" style="max-width:1400px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">4 &middot; The edges</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">a restore can dissolve the surface it sits on</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;max-width:1400px;">
+      <div style="background:#181410;border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:9px;">No money moves. Ever.</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">8 to buy &middot; $254.10</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">unchanged by any restore</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">R2's headline money case was wrong twice over</b>, and the second reason is the deeper one. The money block is scoped to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">draftDiff.adds</span> &mdash; but that scoping is not why nothing happens. <b style="color:#EDE6D8;font-weight:600;">A restored card is in neither list:</b> putting a cut back returns the draft to <i>no change</i> on that card, so it leaves <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out</span> and never enters <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Coming in</span>. <b style="color:#EDE6D8;font-weight:600;">Nothing is bought, because the deck already holds it.</b></div>
+      </div>
+      <div style="background:#181410;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Restoring the last remove</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">1 out</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3A3229;">&rarr;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6A6152;">Going out is absent</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.65;">The whole column goes, the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">out</span> chip with it, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Coming in</span> takes the full width &mdash; matrix state 17, already specified, reached by a new route. <b style="color:#EDE6D8;font-weight:600;">No count of nought is ever drawn.</b></div>
+      </div>
+      <div style="background:#181410;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Restoring the last <i>change</i></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">&minus;1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3A3229;">&rarr;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6A6152;">the banner is not there</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.65;">The draft equals v2 again, so the banner, the caption and the review route all cease &mdash; matrix state 12, and the route <b style="color:#EDE6D8;font-weight:600;">redirects to the deck page</b> per state 25. <b style="color:#EDE6D8;font-weight:600;">A restore is the only control in the feature that can delete the surface it sits on</b>, and now the only one that does it without asking.</div>
+      </div>
+      <div style="background:#181410;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Over the cap after a restore</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">102 / 99 &middot; 3 over</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.65;">Putting a card back can push a deck further over 99. <b style="color:#EDE6D8;font-weight:600;">Nothing is blocked and nothing warns</b> &mdash; the shipped over-99 count moves and that is all. <b style="color:#EDE6D8;font-weight:600;">The cap is a status, not a refusal</b>, confirmed by the audit.</div>
+      </div>
+      <div style="background:#181410;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Another deck holds the copy</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">restores anyway</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.65;">The row restores and no tag appears. <b style="color:#EDE6D8;font-weight:600;">The deck is taking back a copy it already owns</b>, so there is nothing to contend for &mdash; and making <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Put back</span> refuse would make a restore <i>stricter</i> than adding the same card from the deck page one route away.</div>
+      </div>
+      <div style="background:#181410;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Discard is untouched</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6533F;">Discard 36 changes?</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.65;">Still the confirm, still unrecoverable, still naming the number and the version it lands on. <b style="color:#EDE6D8;font-weight:600;">The restore does not make discard safer and must not be sold as making it so</b> &mdash; what changed is that discard is no longer the only reversal.</div>
+      </div>
+      <div style="background:#181410;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">After a commit</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6A6152;">no restore anywhere</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.65;">The cut is a version boundary now. The v2&rarr;v3 diff shows it under <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Out</span> with <b style="color:#EDE6D8;font-weight:600;">no dot, no price and no control</b>, as specified. <b style="color:#EDE6D8;font-weight:600;">&ldquo;No restore, no revert, no rollback&rdquo; in history is unchanged.</b></div>
+      </div>
+      <div style="background:#181410;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">A cut, then a reload</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6A6152;">#185's receipt is gone; Going out is not</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.65;">The spent slot is decklist state and does not survive the route. <b style="color:#EDE6D8;font-weight:600;">Every cut is still under <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out</span></b>, so nothing was lost &mdash; only the shortcut. This is the clearest case for shipping both, and why no surface warns about a window closing.</div>
+      </div>
+      <div style="background:#181410;border:1px solid #3A3229;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">An un-add</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6A6152;">not in Going out at all</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.65;">Cut a card this draft added and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">draftDiff</span> files it as <b style="color:#EDE6D8;font-weight:600;">no change</b> &mdash; it was never in v2, so nothing went out and no row appears. <b style="color:#EDE6D8;font-weight:600;">#185's receipt still covers the tap.</b> Note this is the same mechanism as the money case: a restore produces exactly this no-change state.</div>
+      </div>
+    </div>
+  </section>
+
+  <sc-if value="{{ showEngNotes }}" hint-placeholder-val="{{ true }}">
+  <section data-screen-label="05" style="max-width:1400px;margin-bottom:20px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">5 &middot; The contract</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">one link, one edited string, one focus ruling</span>
+    </div>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:320px;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The whole inventory</div>
+        <div style="background:#1A1713;border:1px solid #26211B;border-radius:9px;padding:12px 14px;margin-bottom:10px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#C9A24B;padding:0 3px;min-height:34px;display:flex;align-items:center;">Put back</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;">the only new thing in R3</span></div><div style="font-size:12.5px;color:#A89B84;line-height:1.6;">Borderless brass link, 12px 600 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span>, 34px tall, 44px square target at 390px, right-aligned in the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out</span> row's reserved action slot. Stops propagation. <b style="color:#EDE6D8;font-weight:600;">One variant. No guard, no tag, no disabled state.</b> Calls <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">addCardToDeck</span> optimistically.</div></div>
+        <div style="background:#161310;border:1px dashed #3A3229;border-radius:9px;padding:12px 14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6A6152;margin-bottom:7px;">Not in R3 &mdash; nothing else at all</div><div style="font-size:12.5px;color:#8E8269;line-height:1.6;">No new token, no new hex, no new tag word, no new vocabulary, no new motion class, no client state, no new storage, no new mutation, no modal, no toast, no confirm, no tooltip, no spinner, no disabled state, no guard branch &mdash; and <b style="color:#C6B79A;font-weight:600;">no change to any shipped control</b>, including <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">decklist-row.tsx</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-card-undo-tile.tsx</span>.</div></div>
+      </div>
+
+      <div style="flex:1;min-width:320px;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Notes for engineering</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">The restore is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">addCardToDeck</span>, unwrapped</b> &mdash; the same call #185's undo makes. <b style="color:#EDE6D8;font-weight:600;">No new mutation.</b> R2's thin-wrapper escape hatch (&ldquo;justified only if the guard vocabulary cannot name the holding deck&rdquo;) is withdrawn: there is no holding deck to name.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">No refusal enum, and no refusal handling.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DeckAddRejection</span>'s three values are all closed by construction for a row under <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out</span>. If one of them ever fires, it is a bug in the diff and not a state to draw.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Optimistic.</b> The row leaves on tap. A transport failure returns it and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MutationError</span> states it &mdash; shipped behaviour, not a designed state.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Revalidation needs nothing new:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">revalidateClaims</span> is already what <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">addCardToDeck</span> calls, per the audit.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Seniority is free.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">versions.ts:175</span> inherits <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">since</span> at commit by oracle id, so any restore inside a draft preserves it.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">No new storage and no client state.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out</span> is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">draftDiff.removes</span>.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">One shipped string is edited: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">review.outNote</span></b>, whose first clause is now false. <b style="color:#EDE6D8;font-weight:600;">R2's second edit is withdrawn</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">review.pull</span> (the correct key; R2 twice called it <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">pullCta</span>) keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull it</span> unchanged.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Flagged, not edited: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">review.lede</span></b> &mdash; &ldquo;nothing here is a decision except the pulls&rdquo; is now wrong by one, though <b style="color:#EDE6D8;font-weight:600;">less wrong than in R2</b>: a restore is a decision but never a contended one. A ratification question.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">One live-region message per settle:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Necrotic Ooze is back in the deck. 101 cards, 16 going out.</span> <b style="color:#EDE6D8;font-weight:600;">No motion anywhere.</b></div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Focus after a restore:</b> the group heading the row left &mdash; never the next row's control. <b style="color:#EDE6D8;font-weight:600;">The one ruling carried intact through all three rounds</b>, and the only one left.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:18px 20px;margin-top:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Card-row parity</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px 26px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+        <div><b style="color:#EDE6D8;font-weight:600;">Name + one availability slot:</b> held trivially. R3 adds no tag, no price and no second marker to any row.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Every addition names what it displaced:</b> the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Going out</span> action slot was <b style="color:#EDE6D8;font-weight:600;">reserved and empty</b> since R1.2. Nothing is displaced, and nothing is added to a decklist row.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">No row's grid template changes, no row grows, none is two-line</b> &mdash; at any width. With one label and no refusal variant, <b style="color:#EDE6D8;font-weight:600;">this now holds by construction rather than by measurement.</b></div>
+        <div><b style="color:#EDE6D8;font-weight:600;">Words, never colour alone:</b> the only new element is a text label. No hue is load-bearing anywhere in R3.</div>
+      </div>
+    </div>
+  </section>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showEngNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Canvas sections&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { showEngNotes: this.props.showEngNotes ?? true };
+  }
+}
+</script>
+</body>
+</html>

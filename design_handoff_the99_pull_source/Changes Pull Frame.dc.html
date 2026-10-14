@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+<div data-theme="amonkhet" data-screen-label="Changes 1300" style="position:relative;width:1300px;height:640px;overflow:hidden;background:var(--bg);font-family:'IBM Plex Sans',sans-serif;color:var(--fg);">
+  <header style="padding:24px 26px 0;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">← Kykar, Wind's Fury</span>
+    <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:12px 0 8px;color:var(--fg);">6 changes since v4</h1>
+    <p style="margin:0 0 18px;max-width:680px;font-size:14px;line-height:1.6;color:var(--fg-body);">The deck page already shows this list: this is what it costs to lock in as v5.</p>
+  </header>
+  <div style="padding:0 26px;">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;">
+      <span style="display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 14px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--success);">4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">coming in</span></span>
+      <span style="display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 14px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--warning);">2</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">going out</span></span>
+      <span style="display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 14px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--warning);">{{ buyCount }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">to buy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);">{{ buyTotal }}</span></span>
+      <span style="display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 14px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">{{ pullCount }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">can be pulled</span></span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;">
+      <section>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid var(--elevated);">
+          <h2 style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.16em;margin:0;color:var(--success);">Coming in</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ inNote }}</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.13em;color:var(--fg-faint);margin-bottom:6px;">Lands · 2</div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
+          <div style="position:relative;">
+            <div style="min-height:44px;display:flex;align-items:center;gap:10px;padding:5px 5px 5px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+              <span style="font-size:13px;color:var(--fg);flex:none;">Fabled Passage</span>
+              <sc-if value="{{ fabledPullable }}" hint-placeholder-val="{{ true }}">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);flex:1;min-width:0;">in 2 decks</span>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy $0.39</span>
+                <button type="button" onClick="{{ openList }}" style="flex:none;display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 11px;border-radius:7px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12px;color:var(--accent);background:{{ pullBtnBg }};border:1px solid var(--border-strong);cursor:pointer;">Pull it<span style="font-size:9px;color:var(--fg-faint);">▾</span></button>
+              </sc-if>
+              <sc-if value="{{ after }}" hint-placeholder-val="{{ false }}">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);flex:1;min-width:0;">pulled from <a href="#" style="color:var(--accent);">{{ selName }}</a></span>
+                <button type="button" onClick="{{ reset }}" style="flex:none;min-height:34px;padding:0 4px;background:transparent;border:0;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);cursor:pointer;">replay</button>
+              </sc-if>
+            </div>
+            <sc-if value="{{ deskPop }}" hint-placeholder-val="{{ false }}">
+              <div role="dialog" aria-label="Pull Fabled Passage from" style="position:absolute;top:calc(100% + 6px);right:0;width:372px;z-index:5;padding:14px;border-radius:11px;background:var(--surface-raised);border:1px solid var(--border-strong);box-shadow:0 18px 40px rgba(0,0,0,0.5);">
+                <div style="font-size:13.5px;font-weight:600;color:var(--fg);">Pull Fabled Passage from</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.13em;color:var(--fg-faint);margin:6px 0 8px;">In the order they committed it</div>
+                <div role="radiogroup" style="display:flex;flex-direction:column;gap:4px;opacity:{{ listOpacity }};">
+                  <div role="radio" onClick="{{ pickAang }}" style="display:flex;align-items:center;gap:11px;min-height:48px;padding:6px 10px;border-radius:7px;background:var(--bg);border:1px solid {{ aangBorder }};cursor:pointer;">
+                    <span style="flex:none;width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid {{ aangMark }};background:{{ aangFill }};"><span style="width:6px;height:6px;border-radius:999px;background:var(--bg);"></span></span>
+                    <span style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
+                      <span style="font-size:13px;color:var(--fg);">HD - Avatar Aang</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">v7 · 2 Aug · → 98 cards · new draft</span>
+                    </span>
+                  </div>
+                  <div role="radio" onClick="{{ pickPrismari }}" style="display:flex;align-items:center;gap:11px;min-height:48px;padding:6px 10px;border-radius:7px;background:var(--bg);border:1px solid {{ prisBorder }};cursor:pointer;">
+                    <span style="flex:none;width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid {{ prisMark }};background:{{ prisFill }};"><span style="width:6px;height:6px;border-radius:999px;background:var(--bg);"></span></span>
+                    <span style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
+                      <span style="font-size:13px;color:var(--fg);">Prismari Artistry</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">v3 · 19 Sep · → 97 cards · joins its draft</span>
+                    </span>
+                  </div>
+                  <div role="radio" aria-disabled="true" style="display:flex;align-items:center;gap:11px;min-height:48px;padding:6px 10px;border-radius:7px;background:transparent;border:1px dashed var(--border);">
+                    <span style="flex:none;width:16px;height:16px;border-radius:999px;border:1px solid var(--fg-disabled);"></span>
+                    <span style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
+                      <span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--fg-muted);">Atraxa Counters<span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.1em;border-radius:4px;padding:1px 5px;border:1px solid var(--border-strong);color:var(--fg-muted);">locked</span></span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);">v12 · 30 Jun · locked there, so Pull it passes it by</span>
+                    </span>
+                  </div>
+                </div>
+                <p style="margin:12px 0 0;font-size:12px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ consequence }}</p>
+                <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px;">
+                  <button type="button" onClick="{{ cancel }}" style="min-height:34px;padding:0 11px;border-radius:7px;background:transparent;border:0;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12px;color:var(--fg-muted);cursor:pointer;">Cancel</button>
+                  <button type="button" onClick="{{ confirm }}" style="min-height:34px;padding:0 13px;border-radius:7px;background:transparent;border:1px solid var(--accent);font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12px;color:var(--accent);opacity:{{ confirmOpacity }};cursor:pointer;">{{ confirmLabel }}</button>
+                </div>
+                <sc-if value="{{ refused }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin:10px 0 0;padding-left:9px;border-left:3px solid var(--danger);font-size:11.5px;line-height:1.5;color:var(--fg-body);">{{ refusal }}</p>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+          <div style="min-height:44px;display:flex;align-items:center;gap:10px;padding:5px 5px 5px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--fg);flex:1;min-width:0;">Exotic Orchard</span>
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy $0.31</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.13em;color:var(--fg-faint);margin-bottom:6px;">Artifacts · 2</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="min-height:44px;display:flex;align-items:center;gap:10px;padding:5px 5px 5px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--fg);flex:none;">Arcane Signet</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);flex:1;min-width:0;">in Prismari Artistry</span>
+            <sc-if value="{{ signetIdle }}" hint-placeholder-val="{{ true }}">
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy $0.25</span>
+              <button type="button" onClick="{{ signetPress }}" style="flex:none;min-height:34px;padding:0 11px;border-radius:7px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12px;color:var(--accent);background:transparent;border:1px solid var(--border-strong);cursor:pointer;">Pull it</button>
+            </sc-if>
+            <sc-if value="{{ signetConfirm }}" hint-placeholder-val="{{ false }}">
+              <span style="flex:none;font-size:12px;color:var(--fg-body);">Pull from Prismari Artistry?</span>
+              <button type="button" onClick="{{ reset }}" style="flex:none;min-height:34px;padding:0 9px;border-radius:7px;background:transparent;border:0;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12px;color:var(--fg-muted);cursor:pointer;">Cancel</button>
+              <button type="button" onClick="{{ reset }}" style="flex:none;min-height:34px;padding:0 11px;border-radius:7px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12px;color:var(--accent);background:transparent;border:1px solid var(--accent);cursor:pointer;">Pull it</button>
+            </sc-if>
+          </div>
+          <div style="min-height:44px;display:flex;align-items:center;gap:10px;padding:5px 5px 5px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--fg);flex:1;min-width:0;">Talisman of Curiosity</span>
+          </div>
+        </div>
+      </section>
+      <section>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid var(--elevated);">
+          <h2 style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.16em;margin:0;color:var(--warning);">Going out</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">2 back in the pool when you commit</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.13em;color:var(--fg-faint);margin-bottom:6px;">Lands · 1</div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
+          <div style="min-height:44px;display:flex;align-items:center;gap:10px;padding:5px 5px 5px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--fg);flex:1;min-width:0;">Evolving Wilds</span>
+            <span style="flex:none;display:inline-flex;align-items:center;min-height:34px;padding:0 11px;border-radius:7px;font-weight:600;font-size:12px;color:var(--fg-body);border:1px solid var(--border-strong);">Put back</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.13em;color:var(--fg-faint);margin-bottom:6px;">Instants · 1</div>
+        <div style="min-height:44px;display:flex;align-items:center;gap:10px;padding:5px 5px 5px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+          <span style="font-size:13px;color:var(--fg);flex:1;min-width:0;">Opt</span>
+          <span style="flex:none;display:inline-flex;align-items:center;min-height:34px;padding:0 11px;border-radius:7px;font-weight:600;font-size:12px;color:var(--fg-body);border:1px solid var(--border-strong);">Put back</span>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+<div data-theme="amonkhet" data-screen-label="Changes 390" style="position:relative;width:390px;height:800px;overflow:hidden;background:var(--bg);font-family:'IBM Plex Sans',sans-serif;color:var(--fg);">
+  <header style="padding:38px 14px 12px;border-bottom:1px solid var(--border);">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">← Kykar, Wind's Fury</span>
+    <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;margin:9px 0 0;color:var(--fg);">6 changes since v4</h1>
+  </header>
+  <div style="padding:13px 14px 0;">
+    <div style="display:flex;gap:6px;margin-bottom:13px;">
+      <span style="display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:999px;background:var(--elevated);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);">Coming in · 4</span>
+      <span style="display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">Going out · 2</span>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.13em;color:var(--fg-faint);margin-bottom:6px;">Lands · 2</div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
+      <div style="min-height:56px;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+        <span style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;">
+          <span style="font-size:13.5px;color:var(--fg);">Fabled Passage</span>
+          <sc-if value="{{ fabledPullable }}" hint-placeholder-val="{{ true }}">
+            <span style="display:flex;align-items:center;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">in 2 decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy $0.39</span></span>
+          </sc-if>
+          <sc-if value="{{ after }}" hint-placeholder-val="{{ false }}">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">pulled from <a href="#" style="color:var(--accent);">{{ selName }}</a></span>
+          </sc-if>
+        </span>
+        <sc-if value="{{ fabledPullable }}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{ openList }}" style="flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:7px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12.5px;color:var(--accent);background:{{ pullBtnBg }};border:1px solid var(--border-strong);cursor:pointer;">Pull it<span style="font-size:9px;color:var(--fg-faint);">▾</span></button>
+        </sc-if>
+        <sc-if value="{{ after }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ reset }}" style="flex:none;min-height:44px;padding:0 6px;background:transparent;border:0;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);cursor:pointer;">replay</button>
+        </sc-if>
+      </div>
+      <div style="min-height:56px;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+        <span style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;">
+          <span style="font-size:13.5px;color:var(--fg);">Exotic Orchard</span>
+          <span style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy $0.31</span></span>
+        </span>
+      </div>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.13em;color:var(--fg-faint);margin-bottom:6px;">Artifacts · 2</div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div style="min-height:56px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:6px 6px 6px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+        <span style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;">
+          <span style="font-size:13.5px;color:var(--fg);">Arcane Signet</span>
+          <span style="display:flex;align-items:center;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">in Prismari Artistry</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy $0.25</span></span>
+        </span>
+        <sc-if value="{{ signetIdle }}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{ signetPress }}" style="flex:none;min-height:44px;padding:0 16px;border-radius:7px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12.5px;color:var(--accent);background:transparent;border:1px solid var(--border-strong);cursor:pointer;">Pull it</button>
+        </sc-if>
+        <sc-if value="{{ signetConfirm }}" hint-placeholder-val="{{ false }}">
+          <span style="flex-basis:100%;display:flex;align-items:center;gap:8px;">
+            <span style="flex:1;font-size:12.5px;color:var(--fg-body);">Pull from Prismari Artistry?</span>
+            <button type="button" onClick="{{ reset }}" style="flex:none;min-height:44px;padding:0 10px;background:transparent;border:0;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12.5px;color:var(--fg-muted);cursor:pointer;">Cancel</button>
+            <button type="button" onClick="{{ reset }}" style="flex:none;min-height:44px;padding:0 16px;border-radius:7px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12.5px;color:var(--accent);background:transparent;border:1px solid var(--accent);cursor:pointer;">Pull it</button>
+          </span>
+        </sc-if>
+      </div>
+      <div style="min-height:56px;display:flex;align-items:center;padding:6px 6px 6px 11px;border-radius:7px;background:var(--surface-sunken);border:1px solid var(--border);">
+        <span style="font-size:13.5px;color:var(--fg);">Talisman of Curiosity</span>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ phoneSheet }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ cancel }}" style="position:absolute;inset:0;background:rgba(8,6,4,0.62);"></div>
+    <div role="dialog" aria-label="Pull Fabled Passage from" style="position:absolute;left:0;right:0;bottom:0;padding:10px 14px 22px;border-radius:14px 14px 0 0;background:var(--surface-raised);border-top:1px solid var(--border-strong);">
+      <div style="width:36px;height:4px;border-radius:999px;background:var(--border-dashed);margin:0 auto 14px;"></div>
+      <div style="font-size:15px;font-weight:600;color:var(--fg);">Pull Fabled Passage from</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.13em;color:var(--fg-faint);margin:6px 0 10px;">In the order they committed it</div>
+      <div role="radiogroup" style="display:flex;flex-direction:column;gap:5px;opacity:{{ listOpacity }};">
+        <div role="radio" onClick="{{ pickAang }}" style="display:flex;align-items:center;gap:12px;min-height:58px;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid {{ aangBorder }};cursor:pointer;">
+          <span style="flex:none;width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid {{ aangMark }};background:{{ aangFill }};"><span style="width:7px;height:7px;border-radius:999px;background:var(--bg);"></span></span>
+          <span style="display:flex;flex-direction:column;gap:3px;min-width:0;flex:1;">
+            <span style="font-size:14px;color:var(--fg);">HD - Avatar Aang</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">v7 · 2 Aug · → 98 cards · new draft</span>
+          </span>
+        </div>
+        <div role="radio" onClick="{{ pickPrismari }}" style="display:flex;align-items:center;gap:12px;min-height:58px;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid {{ prisBorder }};cursor:pointer;">
+          <span style="flex:none;width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid {{ prisMark }};background:{{ prisFill }};"><span style="width:7px;height:7px;border-radius:999px;background:var(--bg);"></span></span>
+          <span style="display:flex;flex-direction:column;gap:3px;min-width:0;flex:1;">
+            <span style="font-size:14px;color:var(--fg);">Prismari Artistry</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">v3 · 19 Sep · → 97 cards · joins its draft</span>
+          </span>
+        </div>
+        <div role="radio" aria-disabled="true" style="display:flex;align-items:center;gap:12px;min-height:58px;padding:8px 12px;border-radius:8px;background:transparent;border:1px dashed var(--border);">
+          <span style="flex:none;width:18px;height:18px;border-radius:999px;border:1px solid var(--fg-disabled);"></span>
+          <span style="display:flex;flex-direction:column;gap:3px;min-width:0;flex:1;">
+            <span style="display:flex;align-items:center;gap:7px;font-size:14px;color:var(--fg-muted);">Atraxa Counters<span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.1em;border-radius:4px;padding:1px 5px;border:1px solid var(--border-strong);color:var(--fg-muted);">locked</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">locked there, so Pull it passes it by</span>
+          </span>
+        </div>
+      </div>
+      <p style="margin:13px 0 0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ consequence }}</p>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:14px;">
+        <button type="button" onClick="{{ confirm }}" style="min-height:44px;border-radius:8px;background:transparent;border:1px solid var(--accent);font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13.5px;color:var(--accent);opacity:{{ confirmOpacity }};cursor:pointer;">{{ confirmLabel }}</button>
+        <button type="button" onClick="{{ cancel }}" style="min-height:44px;border-radius:8px;background:transparent;border:0;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13.5px;color:var(--fg-muted);cursor:pointer;">Cancel</button>
+      </div>
+      <sc-if value="{{ refused }}" hint-placeholder-val="{{ false }}">
+        <p style="margin:10px 0 0;padding-left:9px;border-left:3px solid var(--danger);font-size:12px;line-height:1.5;color:var(--fg-body);">{{ refusal }}</p>
+      </sc-if>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:640},&quot;w&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;1300&quot;,&quot;390&quot;],&quot;default&quot;:&quot;1300&quot;,&quot;tsType&quot;:&quot;\&quot;1300\&quot; | \&quot;390\&quot;&quot;},&quot;s&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;closed&quot;,&quot;list&quot;,&quot;pending&quot;,&quot;refused&quot;,&quot;after&quot;],&quot;default&quot;:&quot;list&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;sel&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;aang&quot;,&quot;prismari&quot;],&quot;default&quot;:&quot;aang&quot;,&quot;tsType&quot;:&quot;\&quot;aang\&quot; | \&quot;prismari\&quot;&quot;}}">
+class Component extends DCLogic {
+  state = { s: null, sel: null };
+  componentDidUpdate(prev) {
+    if (prev.s !== this.props.s || prev.sel !== this.props.sel) this.setState({ s: null, sel: null });
+  }
+  renderVals() {
+    const desk = String(this.props.w ?? "1300") === "1300";
+    const s = this.state.s ?? this.props.s ?? "closed";
+    const sel = this.state.sel ?? this.props.sel ?? "aang";
+    const SRC = {
+      aang: { name: "HD - Avatar Aang", note: "HD - Avatar Aang goes into a draft with Fabled Passage going out. Discard that draft and the card goes back." },
+      prismari: { name: "Prismari Artistry", note: "Fabled Passage goes out in Prismari Artistry's draft, beside its other changes. Discard that draft and the card goes back." },
+    };
+    const open = s === "list" || s === "pending" || s === "refused";
+    const after = s === "after";
+    const go = (k) => () => this.setState({ s: k });
+    const pick = (k) => () => { if (s === "pending") return; this.setState({ sel: k, s: s === "refused" ? "list" : s }); };
+    const on = (k) => sel === k;
+    return {
+      desk, phone: !desk,
+      deskPop: open && desk, phoneSheet: open && !desk,
+      fabledPullable: !after, after,
+      pullBtnBg: open ? "var(--elevated)" : "transparent",
+      refused: s === "refused",
+      refusal: `${SRC[sel].name} changed while this was open. Nothing moved; try again.`,
+      listOpacity: s === "pending" ? 0.5 : 1,
+      confirmOpacity: s === "pending" ? 0.5 : 1,
+      confirmLabel: s === "pending" ? "Pulling…" : `Pull from ${SRC[sel].name}`,
+      consequence: SRC[sel].note,
+      selName: SRC[sel].name,
+      aangBorder: on("aang") ? "var(--accent)" : "transparent",
+      aangMark: on("aang") ? "var(--accent)" : "var(--fg-faint)",
+      aangFill: on("aang") ? "var(--accent)" : "transparent",
+      prisBorder: on("prismari") ? "var(--accent)" : "transparent",
+      prisMark: on("prismari") ? "var(--accent)" : "var(--fg-faint)",
+      prisFill: on("prismari") ? "var(--accent)" : "transparent",
+      signetIdle: s !== "singleConfirm", signetConfirm: s === "singleConfirm",
+      buyCount: after ? 2 : 3, buyTotal: after ? "$0.56" : "$0.95",
+      pullCount: after ? 1 : 2,
+      inNote: after ? "2 free · 1 can be pulled · 1 to buy" : "1 free · 2 can be pulled · 1 to buy",
+      openList: go("list"), cancel: go("closed"), reset: go(this.props.s === "singleConfirm" ? "singleConfirm" : "closed"),
+      confirm: () => { if (s === "pending") return; this.setState({ s: "pending" }); setTimeout(() => this.setState({ s: "after" }), 700); },
+      signetPress: () => {},
+      pickAang: pick("aang"), pickPrismari: pick("prismari"),
+    };
+  }
+}
+</script>
+</body>
+</html>

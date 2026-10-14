@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d0b09; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<section data-theme="{{ theme }}" data-screen-label="Never cut · R2" style="display:flex;flex-direction:column;gap:64px;padding:56px 64px 110px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1860px;">
+
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Decklist rows · card tiles · Suggested changes · R2</span>
+    <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:34px;line-height:1.15;">Locked cards</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">R2, after Hugh’s feedback. The card modal gains nothing. Locking happens on the deck page, in the list and in the card tiles. Suggested changes treats locked cards as out of bounds without saying so. The word is now <b style="color:var(--fg);font-weight:600;">locked</b>, which is what the lock already says. R1 (<a href="The 99 - Never Cut.dc.html">The 99 - Never Cut.dc.html</a>) is kept as history.</p>
+  </header>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">§</span><h2 style="margin:0;font-size:18px;font-weight:600;">The feedback, answered</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;max-width:1720px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">Nothing in the card modal: agreed</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The switch is gone. That means the row and the tile have to carry the whole job, phone and keyboard included. That's what drove the call on the right. The only change the modal still sees: a locked card opened from Shopping has no <i>See cheaper stand-ins →</i> link. Nothing is added in its place, because the lock on the row is the reason.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">Beside the ✕ on desktop: yes. On the phone: not as a standing control</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">On desktop, a hover lock just left of the ✕ reads well. The two targets are 22px and 13px with 10px between them, and both mistakes undo in one press. On the phone, any lock control that's always there costs 44px of name on every row, and on a 178px tile it leaves about 80px for the name. Yes, that's too busy (<a href="#2a">2a</a>). Left of the name is worse: it moves every name, or reserves space on every row.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">Recommended: a <i>Lock cards</i> mode, and the ✕ steps aside</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">One button in the toolbar, in both views and at both widths. In the mode, every row's ✕ slot and every tile's ✕ column becomes a lock toggle, and <i>Done</i> puts the ✕ back. A row or tile never carries both controls, nothing is added at rest, and a player locking five cards does it in one pass. Outside the mode, a locked card shows the lock as a mark. On desktop rows, hovering is still a shortcut (<a href="#2b">2b</a>, <a href="#2c">2c</a>).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">No fifth manifest row: agreed</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Locked cards are left out without comment. The prompt is told and the validator drops any locked cut. Such a drop isn't named or counted in the lead: the model was told, so it's plumbing. The one trace left is the one the player causes. Lock a card that an open suggestion cuts, and that suggestion becomes <i>no longer applies · You locked Ornithopter.</i> Unlock it and the suggestion opens again (<a href="#2d">2d</a>).</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="2a" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2a</span><h2 style="margin:0;font-size:18px;font-weight:600;">Where the lock could go, and what each costs</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">A · Beside the ✕, always there</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Desktop: good, and kept as the hover shortcut (<a href="#2b">2b</a>). Phone: a 44px lock box next to the 44px ✕ on all 99 rows. That leaves 88px of controls at the right edge, and names clip much earlier (<i>Ninja of the Deep…</i>). It's also a column of 99 unlocked locks for a feature most decks use two or three times.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">B · Left of the name</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It reads as a status first, which is nice. But the left edge is the ownership dot's column and the rule edges' home. On desktop the name has to shift for locked rows (ragged) or reserve 14px on every row. On the phone, the 44px control has to sit left of every name, and the hit box presses into the row's own tap-to-open.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Is the row getting too busy?</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">A desktop row already carries a dot, name, count, fact marks, pips, availability, the buy or proxy tag, auto and ✕. One more hover-only control is fine there. A phone row already spends its width on the name. That's the floor the card-rows handoff set, and a standing lock breaks it. So the phone gets the mark at rest and the control in the mode.</p></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">A · 390 · a lock control beside every ✕</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Rows v2" phone="{{ true }}" variant="altA" theme="{{ theme }}" hint-size="390px,780px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">B · 390 · a lock control left of every name</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Rows v2" phone="{{ true }}" variant="altB" theme="{{ theme }}" hint-size="390px,780px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">B · 1300 · left of the name, hovering Sol Ring</span><div style="width:1000px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><div style="width:1300px;transform:scale(0.769);transform-origin:top left;height:300px;"><dc-import name="Deck Rows v2" variant="altB" theme="{{ theme }}" hint-size="1300px,390px"></dc-import></div></div></div>
+    </div>
+  </div>
+
+  <div id="2b" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2b</span><h2 style="margin:0;font-size:18px;font-weight:600;">Recommended · the list: at rest, then in Lock cards</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">At rest, 1300</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">A 22px slot just left of the ✕. A locked row shows the solid lock there, and pressing it unlocks. Hovering an unlocked row shows the open lock with the title <i>Lock</i> (Sol Ring). The slot is reserved on every row so hovering never nudges the pips. That's 22px of name spent with no visible pixels, and it's the one cost a no-lock deck pays.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">At rest, 390</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">A locked row shows the lock as a 14px-wide mark just left of the 44px ✕. Tapping it opens the card, like the rest of the row. Unlocked rows are exactly as shipped. The key reads <i>locked</i> only when the view holds a locked row.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Lock cards</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The toolbar button turns to <i>Done</i> in accent, and one line says what locking does, with the count. Each ✕ becomes a lock toggle in the same slot: 44px on the phone, a 26×22 bordered box on desktop. Unlocked is an <b style="color:var(--fg-body);font-weight:600;">open</b> lock (the shackle raised and swung clear of the body) in --fg-muted on a --border-strong box, so a deck with no locks reads as a column of open locks rather than faint ones; locked is a solid lock in --accent on an --accent edge with a 14% accent fill, the same ink as <i>Done</i>. Each toggle is a real <b style="color:var(--fg-body);font-weight:600;">aria-pressed</b> button, so the keyboard and screen reader get their path here instead of in the modal. Rows still open their card.</p></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · at rest · Lotus Petal and Ornithopter locked · hovering Sol Ring</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Rows v2" variant="rest" theme="{{ theme }}" hint-size="1300px,440px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · at rest</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Rows v2" phone="{{ true }}" variant="rest" theme="{{ theme }}" hint-size="390px,860px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Lock cards</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Rows v2" variant="mode" theme="{{ theme }}" hint-size="1300px,470px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Lock cards · the ✕ steps aside</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Rows v2" phone="{{ true }}" variant="mode" theme="{{ theme }}" hint-size="390px,900px"></dc-import></div></div>
+    </div>
+  </div>
+
+  <div id="2c" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2c</span><h2 style="margin:0;font-size:18px;font-weight:600;">Recommended · card tiles: at rest, then in Lock cards</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">At rest: on the meta line</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The caption's meta line is where a tile's marks already live: the dot, the one slot, the count, then the fact marks. The lock goes after the dot and the slot, before the facts, because it's about this deck's slot, not the card. Nothing goes on the art, and the caption keeps its fixed 50 / 56px.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">No hover shortcut on tiles</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The tile's full-height ✕ column (32px, shown on hover) is its only way to remove a card, and it takes the floor rather than the shortcut exception. Splitting it into a lock over a ✕ gives two 25px targets. So the tiles lock only in the mode, at both widths.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Lock cards</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The ✕ column becomes the lock toggle: always drawn, 32px on desktop and 44px on the phone. Locked takes the accent box and a solid accent lock, as in the list. The meta-line lock hides while the mode is on, so the state shows in one place. The toolbar button and the line are the list's own.</p></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · at rest · hovering Sol Ring (the ✕ shows, as shipped)</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Tiles" variant="rest" theme="{{ theme }}" hint-size="1300px,440px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · at rest</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Tiles" phone="{{ true }}" variant="rest" theme="{{ theme }}" hint-size="390px,760px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Lock cards</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Tiles" variant="mode" theme="{{ theme }}" hint-size="1300px,470px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Lock cards</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Tiles" phone="{{ true }}" variant="mode" theme="{{ theme }}" hint-size="390px,800px"></dc-import></div></div>
+    </div>
+  </div>
+
+  <div id="2d" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2d</span><h2 style="margin:0;font-size:18px;font-weight:600;">Suggested changes: implicit</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Ready and results, as shipped</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Four manifest rows, the shipped read line, the shipped lead. A validator drop for a locked cut is left out of <i>did not hold up to checking</i> as well, because it wasn't a failure of the model's reasoning. The lead counts only real rejections.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Locking mid-set</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It's the harness case. The player sees <i>Ornithopter → Faerie Seer</i>, goes to the list and locks Ornithopter. The card is already a <i>no longer applies</i> row in its slot: <i>You locked Ornithopter.</i> This is the existing deterministic check with a third reason. Unlocking reopens it.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The one limit</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Still no cap (Hugh's call). If every card but the commander is locked, Ready says there's nothing to cut, the primary action is disabled, and no credit is used. It's the only place the panel mentions locks unprompted, because otherwise the button would spend a credit on an empty answer.</p></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · results · nothing new</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" state="v2results" theme="{{ theme }}" hint-size="1300px,400px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · results</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" phone="{{ true }}" state="v2results" theme="{{ theme }}" hint-size="390px,740px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Ornithopter locked while its suggestion was open</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" state="v2after" theme="{{ theme }}" hint-size="1300px,340px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" phone="{{ true }}" state="v2after" theme="{{ theme }}" hint-size="390px,540px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · everything but the commander locked</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" state="v2allmarked" theme="{{ theme }}" hint-size="1300px,220px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Tuning Panel" phone="{{ true }}" state="v2allmarked" theme="{{ theme }}" hint-size="390px,300px"></dc-import></div></div>
+    </div>
+  </div>
+
+  <div id="2e" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2e</span><h2 style="margin:0;font-size:18px;font-weight:600;">Shopping, the climb, and a deck with no locks</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Shopping</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Mana Vault is locked and over $10. It keeps its over marks, has no ⇄, and shows the lock beside the ✕. Rhystic Study, over and unlocked, keeps its ⇄. The stand-ins link is absent from a locked card's modal.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The climb, unchanged from R1</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;"><i>What would have to go</i> still lists a locked game changer, last and with its lock, and still counts it. It's arithmetic, not an offer. See R1 1d. Its sentence now reads <i>You locked Mana Vault, so it is listed last. It still counts.</i></p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">No locks</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The list and tiles are as shipped, plus one toolbar button, <i>Lock cards</i>. On desktop rows, the reserved 22px slot is invisible until hover. There's no key entry and the panel is untouched.</p></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Shopping</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Rows v2" variant="shopping" theme="{{ theme }}" hint-size="1300px,230px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Shopping</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Rows v2" phone="{{ true }}" variant="shopping" theme="{{ theme }}" hint-size="390px,290px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · no locks</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Rows v2" variant="nomarks" theme="{{ theme }}" hint-size="1300px,440px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · no locks</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Tiles" phone="{{ true }}" variant="nomarks" theme="{{ theme }}" hint-size="390px,760px"></dc-import></div></div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? "amonkhet" };
+  }
+}
+</script>
+</body>
+</html>

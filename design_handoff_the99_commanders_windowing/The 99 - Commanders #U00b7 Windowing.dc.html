@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section id="intro" style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">/commanders</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Addendum · list windowing · issue #52</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">How far down the ranks do we show?</h1>
+    <p style="max-width:880px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0;">A large collection can produce a <b style="color:#EDE6D8;font-weight:600;">~200-general</b> ranked list. This addendum adds <b style="color:#EDE6D8;font-weight:600;">one control</b> to the shipped Commanders surface — a <b style="color:#EDE6D8;font-weight:600;">Show more</b> reveal at the end of the list, matching the pattern Collection already ships (<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;">browser.tsx:23</span>). Nothing else changes: the recommendation card is reused unchanged, the sequence stays one fixed rank order, and there is no filtering, jump-to-page, or page number anywhere. Five states below, phone first, desktop beside it.</p>
+  </section>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:20px 24px;margin-bottom:38px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Pattern</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Show more</b>, in-flow at the end of the list — Collection's control, restyled to nothing new.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Batch size</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">{{ batch }}</b> cards — one screen-and-a-bit of scroll, and the shipped 24-general case never sees the control.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Remaining count</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Two figures that can't be mistaken for the shipped filter count — <span style="font-family:'IBM Plex Mono',monospace;">{{ shown1 }} shown · {{ remaining1 }} more below</span> in the header, <span style="font-family:'IBM Plex Mono',monospace;">{{ remaining1 }} remaining</span> in the control. Neither says “showing N of M”.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">No batch seams</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">No divider, no “batch 2” label — the rank numerals already say where you are, and seams read as pages.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Exhausted</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">The control is <b style="color:#EDE6D8;font-weight:600;">removed</b>, not disabled, and a quiet end-of-ranking rule takes its place.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Announcement</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Focus lands on the first revealed card; a polite live region reads the new range and the count.</div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:52px;max-width:1900px;">
+
+  <!-- ============================== CONTROL SPEC ============================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">The control · <span style="color:#C9A24B;">anatomy, states, accessibility</span></div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:760px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:26px 28px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:4px;">Reveal control — desktop</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-bottom:22px;">Secondary button, full width of the list column, sitting in the card stack's own <span style="font-family:'IBM Plex Mono',monospace;">12px</span> gap. Same fill and border as a recommendation card so it reads as the list's last row rather than a page footer — brass is reserved for <i>Build this deck</i>.</div>
+
+        <div style="display:flex;flex-direction:column;gap:22px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Rest</div>
+            <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:15px 20px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;">
+              <span style="font-size:14px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">{{ remaining1 }} remaining</span>
+              <span style="color:#8E8269;font-size:13px;line-height:1;">↓</span>
+            </button>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Hover</div>
+            <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#211C15;border:1px solid #4A4033;border-radius:8px;padding:15px 20px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;">
+              <span style="font-size:14px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#A89B84;">{{ remaining1 }} remaining</span>
+              <span style="color:#C9A24B;font-size:13px;line-height:1;">↓</span>
+            </button>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Focus-visible · keyboard</div>
+            <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#211C15;border:1px solid #4A4033;border-radius:8px;padding:15px 20px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;outline:2px solid #C9A24B;outline-offset:2px;">
+              <span style="font-size:14px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#A89B84;">{{ remaining1 }} remaining</span>
+              <span style="color:#C9A24B;font-size:13px;line-height:1;">↓</span>
+            </button>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Working · client-side slice, one frame</div>
+            <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1B1711;border:1px solid #3A3229;border-radius:8px;padding:15px 20px;cursor:default;font-family:'IBM Plex Sans',sans-serif;">
+              <span style="font-size:14px;font-weight:600;color:#8E8269;">Revealing…</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6E6353;">{{ shown2 }} of {{ total }}</span>
+            </button>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Exhausted — the control is gone, this replaces it</div>
+            <div style="display:flex;align-items:center;gap:14px;padding:6px 0;">
+              <span style="flex:1;height:1px;background:#2A241D;"></span>
+              <span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">End of ranking · {{ total }} of {{ total }}</span>
+              <span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span>
+              <span style="flex:1;height:1px;background:#2A241D;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:520px;flex:none;display:flex;flex-direction:column;gap:24px;">
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Mobile form</div>
+          <div style="background:#14110E;border:1px solid #2A241D;border-radius:11px;padding:14px;">
+            <button style="width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:14px 16px;min-height:52px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;">
+              <span style="font-size:14.5px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more ↓</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ remaining1 }} remaining</span>
+            </button>
+          </div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-top:14px;">Full-bleed inside the list's <span style="font-family:'IBM Plex Mono',monospace;">14px</span> padding, two lines so the count never truncates, <b style="color:#EDE6D8;font-weight:600;">52px</b> min height, and <span style="font-family:'IBM Plex Mono',monospace;">24px</span> clearance above the bottom tab bar. Never sticky — a floating reveal would compete with the tabs and hide rank continuity.</div>
+        </div>
+
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Keyboard &amp; announcement</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">TAB</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Native <span style="font-family:'IBM Plex Mono',monospace;">&lt;button&gt;</span> — last stop after the final card's <i>View breakdown</i> link.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">↵ / ␣</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Reveals the next batch, then moves focus to the first new card so the keyboard user's position is inside the new material, not thrown to the top.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">SR</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;"><span style="font-family:'IBM Plex Mono',monospace;">aria-live=“polite”</span> region announces the new range and total.</div></div>
+          </div>
+          <div style="margin-top:16px;background:#221D16;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:8px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;line-height:1.6;">“{{ announce }}”</div>
+          <div style="font-size:12.5px;color:#8E8269;line-height:1.6;margin-top:14px;">Accessible name carries the count too — <span style="font-family:'IBM Plex Mono',monospace;color:#A89B84;">“Show {{ batch }} more commanders, {{ remaining1 }} remaining”</span>. Rest label {{ contrastLabel }} on surface: AA at 14px/600.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================== STATE 1 · DEFAULT ============================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">1 · Default · <span style="color:#C9A24B;">first {{ batch }} shown, {{ remaining1 }} hidden</span> · {{ total }} generals from a 11,204-card collection</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">Frames are scrolled to the end of the list — that's where the control lives. Cards above are unchanged from the shipped surface.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:20px 18px 12px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div><h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0;color:#EDE6D8;">Commanders</h2><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">{{ total }} generals ranked from 11,204 cards</div></div>
+            <div style="width:34px;height:34px;border-radius:10px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">AR</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:8px 11px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8E8269;">COLORS</span><span style="width:14px;height:14px;border-radius:999px;background:#E8E4D6;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#4A7FB5;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#5B5566;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#C05A48;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#6B9E63;opacity:0.35;"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;"><span><b style="color:#C6B79A;font-weight:600;">{{ shown1 }}</b> shown · {{ remaining1 }} more below</span><span>Fit ↓ · fixed</span></div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 14px 0;display:flex;flex-direction:column;">
+          <div style="height:34px;flex:none;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:0 -14px;"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ tailDefault }}" as="c" hint-placeholder-count="3">
+              <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:12px 13px;display:flex;flex-direction:column;gap:9px;">
+                <div style="display:flex;align-items:center;gap:11px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:800;font-size:17px;color:#8E8269;width:22px;text-align:center;">{{ c.rank }}</span>
+                  <div style="width:36px;height:50px;border-radius:6px;background:{{ c.art }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+                  <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.short }}</div><div style="font-size:11px;color:#A89B84;">{{ c.poolLabel }} · {{ c.pool }} cards</div></div>
+                  <div style="text-align:right;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#EDE6D8;">{{ c.fit }}</span><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:#8E8269;">FIT</div></div>
+                </div>
+                <div style="height:6px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">own <b style="color:#C6B79A;font-weight:600;">{{ c.edOwn }}</b> of top {{ c.edTop }} · <span style="color:#6E6353;">{{ c.receiptsShort }}</span></div>
+              </div>
+            </sc-for>
+            <button style="width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:14px 16px;min-height:52px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;margin-top:2px;">
+              <span style="font-size:14.5px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more ↓</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ remaining1 }} remaining</span>
+            </button>
+          </div>
+        </div>
+        <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Home</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Commanders</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Decks</span></div>
+        </div>
+      </div></div>
+
+      <div style="width:1300px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;"></span><div style="margin-left:14px;width:320px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/commanders</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">DEFAULT · {{ shown1 }} OF {{ total }}</span></div>
+        <div style="display:flex;background:#14110E;min-height:700px;">
+          <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;">
+            <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;"><div style="display:flex;align-items:flex-end;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><div style="display:flex;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span></div></div></div>
+            <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span>Home</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span>Collection</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);"></span>Commanders</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span>Decks</div>
+            </div>
+            <div style="margin-top:auto;padding:14px 12px;"><div style="display:flex;align-items:center;gap:12px;background:#221D16;border:1px solid #3A3229;padding:2px 12px 2px 2px;border-radius:14px;"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div><div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div><span style="margin-left:auto;color:#8E8269;font-size:15px;line-height:1;">⋯</span></div></div>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div style="padding:22px 34px 10px;display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Ranked for your collection · <span style="color:#C6B79A;">{{ shown1 }} shown · {{ remaining1 }} more below</span> · Order: Fit ↓ · fixed</div>
+              <div style="display:flex;align-items:center;gap:6px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:7px 10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.1em;margin-right:2px;">COLORS</span>
+                <span style="width:14px;height:14px;border-radius:999px;background:#E8E4D6;opacity:0.4;"></span><span style="width:14px;height:14px;border-radius:999px;background:#4A7FB5;opacity:0.4;"></span><span style="width:14px;height:14px;border-radius:999px;background:#5B5566;opacity:0.4;"></span><span style="width:14px;height:14px;border-radius:999px;background:#C05A48;opacity:0.4;"></span><span style="width:14px;height:14px;border-radius:999px;background:#6B9E63;opacity:0.4;"></span>
+              </div>
+            </div>
+            <div style="height:40px;flex:none;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:0 34px;"></div>
+            <div style="padding:0 34px 30px;display:flex;flex-direction:column;gap:12px;">
+              <sc-for list="{{ tailDefault }}" as="c" hint-placeholder-count="3">
+                <div style="display:grid;grid-template-columns:52px 100px 1fr 236px;gap:20px;align-items:stretch;padding:18px 20px;border-radius:12px;background:#1E1A15;border:1px solid #2A241D;">
+                  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;color:#8E8269;line-height:1;">{{ c.rank }}</span><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span></div>
+                  <div style="aspect-ratio:63/88;border-radius:8px;background:{{ c.art }};box-shadow:inset 0 -30px 34px -26px rgba(0,0,0,0.65),inset 0 0 0 1px rgba(0,0,0,0.28);position:relative;"><div style="position:absolute;left:6px;right:6px;bottom:6px;display:flex;gap:3px;"><sc-for list="{{ c.idsChips }}" as="pip" hint-placeholder-count="2"><span style="width:11px;height:11px;border-radius:999px;background:{{ pip.hex }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></sc-for></div></div>
+                  <div style="min-width:0;display:flex;flex-direction:column;gap:9px;">
+                    <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;color:#EDE6D8;line-height:1.1;">{{ c.name }}</div><div style="font-size:12.5px;color:#A89B84;margin-top:2px;">{{ c.type }} · {{ c.pool }} cards in your {{ c.poolLabel }} pool</div></div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                      <sc-for list="{{ c.roles }}" as="r" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:#2A241D;border:1px solid {{ r.border }};border-radius:999px;padding:4px 10px;"><span style="text-transform:uppercase;letter-spacing:0.05em;color:#8E8269;">{{ r.k }}</span><b style="font-weight:600;color:{{ r.color }};">{{ r.have }}</b><span style="color:#E0913C;">{{ r.suffix }}</span></span></sc-for>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Synergy</span><div style="width:120px;height:6px;border-radius:999px;background:#2A241D;overflow:hidden;"><div style="width:{{ c.edW }};height:100%;background:#C9A24B;"></div></div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">own <b style="color:#EDE6D8;font-weight:600;">{{ c.edOwn }}</b> of top {{ c.edTop }}</span></div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="color:#8E8269;">receipts:</span> {{ c.receipts }}</div>
+                  </div>
+                  <div style="border-left:1px solid #2A241D;padding-left:20px;display:flex;flex-direction:column;justify-content:center;gap:10px;">
+                    <div style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;color:#EDE6D8;line-height:1;">{{ c.fit }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8E8269;">/100</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-left:2px;">Fit</span></div>
+                    <div style="height:8px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                    <div style="display:flex;gap:12px;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;"><span style="width:7px;height:7px;border-radius:2px;background:{{ s.color }};"></span>{{ s.label }}</span></sc-for></div>
+                    <a href="#intro" style="font-size:12.5px;font-weight:600;color:#C9A24B;">View breakdown →</a>
+                  </div>
+                </div>
+              </sc-for>
+              <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:15px 20px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;" style-hover="background:#211C15;border-color:#4A4033;">
+                <span style="font-size:14px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">{{ remaining1 }} remaining</span>
+                <span style="color:#8E8269;font-size:13px;line-height:1;">↓</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================== STATE 1B · FILTER ACTIVE ============================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">1b · Default with a <span style="color:#C9A24B;">color filter active</span> · the two counts side by side, final copy</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">The shipped filter count keeps its wording — <span style="color:#A89B84;">Showing {{ filtTotal }} of {{ total }}</span>, candidates matching the filter. The window count never uses “showing … of”: <span style="color:#A89B84;">{{ shown1 }} shown · {{ filtRemaining }} more below</span>, counted against the filtered {{ filtTotal }}. Filtering resets the window to one batch, and ranks stay the global Fit ranks — {{ batch }} is filtered out here, which is why the sequence skips.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:1060px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/commanders?c=B</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">FILTER ACTIVE · {{ shown1 }} OF {{ filtTotal }}</span></div>
+        <div style="background:#14110E;padding:0 0 28px;">
+          <div style="padding:22px 30px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;padding-top:6px;">Ranked for your collection<div style="margin-top:7px;letter-spacing:0.12em;"><span style="color:#C6B79A;">{{ shown1 }} shown · {{ filtRemaining }} more below</span> · Order: Fit ↓ · fixed</div></div>
+            <div style="flex:none;">
+              <div style="display:flex;align-items:center;gap:6px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:7px 10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.1em;margin-right:2px;">COLOR IDENTITY</span>
+                <span style="width:16px;height:16px;border-radius:999px;background:#E8E4D6;opacity:0.35;"></span><span style="width:16px;height:16px;border-radius:999px;background:#4A7FB5;opacity:0.35;"></span><span style="width:16px;height:16px;border-radius:999px;background:#5B5566;box-shadow:0 0 0 2px #C9A24B;"></span><span style="width:16px;height:16px;border-radius:999px;background:#C05A48;opacity:0.35;"></span><span style="width:16px;height:16px;border-radius:999px;background:#6B9E63;opacity:0.35;"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;margin-top:10px;justify-content:flex-end;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">FILTER:</span>
+                <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:5px 8px 5px 11px;"><span style="width:9px;height:9px;border-radius:999px;background:#5B5566;"></span>Black<span style="color:#8E8269;">✕</span></span>
+                <a href="#intro" style="font-size:12px;color:#C9A24B;">Clear all</a>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">Showing {{ filtTotal }} of {{ total }}</span>
+              </div>
+            </div>
+          </div>
+          <div style="height:34px;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:14px 30px 0;"></div>
+          <div style="padding:0 30px;display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ tailFiltered }}" as="c" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:52px 74px 1fr 200px;gap:18px;align-items:stretch;padding:16px 18px;border-radius:12px;background:#1E1A15;border:1px solid #2A241D;">
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;color:#8E8269;line-height:1;">{{ c.rank }}</span><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span></div>
+                <div style="aspect-ratio:63/88;border-radius:8px;background:{{ c.art }};box-shadow:inset 0 -24px 28px -22px rgba(0,0,0,0.65),inset 0 0 0 1px rgba(0,0,0,0.28);position:relative;"><div style="position:absolute;left:5px;right:5px;bottom:5px;display:flex;gap:3px;"><sc-for list="{{ c.idsChips }}" as="pip" hint-placeholder-count="2"><span style="width:10px;height:10px;border-radius:999px;background:{{ pip.hex }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></sc-for></div></div>
+                <div style="min-width:0;display:flex;flex-direction:column;gap:8px;">
+                  <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.15;">{{ c.name }}</div><div style="font-size:12px;color:#A89B84;margin-top:2px;">{{ c.pool }} cards in your {{ c.poolLabel }} pool</div></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    <sc-for list="{{ c.roles }}" as="r" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:#2A241D;border:1px solid {{ r.border }};border-radius:999px;padding:4px 10px;"><span style="text-transform:uppercase;letter-spacing:0.05em;color:#8E8269;">{{ r.k }}</span><b style="font-weight:600;color:{{ r.color }};">{{ r.have }}</b><span style="color:#E0913C;">{{ r.suffix }}</span></span></sc-for>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="color:#8E8269;">receipts:</span> {{ c.receipts }}</div>
+                </div>
+                <div style="border-left:1px solid #2A241D;padding-left:18px;display:flex;flex-direction:column;justify-content:center;gap:9px;">
+                  <div style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:#EDE6D8;line-height:1;">{{ c.fit }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">/100</span></div>
+                  <div style="height:8px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                  <a href="#intro" style="font-size:12.5px;font-weight:600;color:#C9A24B;">View breakdown →</a>
+                </div>
+              </div>
+            </sc-for>
+            <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:15px 20px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;" style-hover="background:#211C15;border-color:#4A4033;">
+              <span style="font-size:14px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">{{ filtRemaining }} remaining</span>
+              <span style="color:#8E8269;font-size:13px;line-height:1;">↓</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:20px 18px 12px;border-bottom:1px solid #2A241D;">
+          <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 12px;color:#EDE6D8;">Commanders</h2>
+          <div style="display:flex;align-items:center;gap:8px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:8px 11px;margin-bottom:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8E8269;">COLORS</span><span style="width:14px;height:14px;border-radius:999px;background:#E8E4D6;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#4A7FB5;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#5B5566;box-shadow:0 0 0 2px #C9A24B;"></span><span style="width:14px;height:14px;border-radius:999px;background:#C05A48;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#6B9E63;opacity:0.35;"></span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;">{{ filtTotal }} of {{ total }}</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;"><span><b style="color:#C6B79A;font-weight:600;">{{ shown1 }}</b> shown · {{ filtRemaining }} more below</span><span>Fit ↓ · fixed</span></div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 14px;display:flex;flex-direction:column;">
+          <div style="height:34px;flex:none;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:0 -14px;"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ tailFiltered }}" as="c" hint-placeholder-count="3">
+              <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:12px 13px;display:flex;flex-direction:column;gap:9px;">
+                <div style="display:flex;align-items:center;gap:11px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:800;font-size:17px;color:#8E8269;width:22px;text-align:center;">{{ c.rank }}</span>
+                  <div style="width:36px;height:50px;border-radius:6px;background:{{ c.art }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+                  <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.short }}</div><div style="font-size:11px;color:#A89B84;">{{ c.poolLabel }} · {{ c.pool }} cards</div></div>
+                  <div style="text-align:right;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#EDE6D8;">{{ c.fit }}</span><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:#8E8269;">FIT</div></div>
+                </div>
+                <div style="height:6px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">own <b style="color:#C6B79A;font-weight:600;">{{ c.edOwn }}</b> of top {{ c.edTop }} · <span style="color:#6E6353;">{{ c.receiptsShort }}</span></div>
+              </div>
+            </sc-for>
+            <button style="width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:14px 16px;min-height:52px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;margin-top:2px;">
+              <span style="font-size:14.5px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more ↓</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ filtRemaining }} remaining</span>
+            </button>
+          </div>
+        </div>
+        <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Home</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Commanders</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Decks</span></div>
+        </div>
+      </div></div>
+
+    </div>
+  </div>
+
+  <!-- ============================== STATE 2 · MID-LIST ============================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">2 · Mid-list · <span style="color:#C9A24B;">after one reveal</span> · {{ shown2 }} of {{ total }}, control still offered</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">No seam is drawn where batch 2 begins — the rank numerals carry position. The join inset shows what a keyboard or screen-reader user gets instead.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:20px 18px 12px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div><h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0;color:#EDE6D8;">Commanders</h2><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">{{ total }} generals ranked from 11,204 cards</div></div>
+            <div style="width:34px;height:34px;border-radius:10px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">AR</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;"><span><b style="color:#C6B79A;font-weight:600;">{{ shown2 }}</b> shown · {{ remaining2 }} more below</span><span>Fit ↓ · fixed</span></div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 14px;display:flex;flex-direction:column;">
+          <div style="height:34px;flex:none;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:0 -14px;"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ tailMid }}" as="c" hint-placeholder-count="3">
+              <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:12px 13px;display:flex;flex-direction:column;gap:9px;">
+                <div style="display:flex;align-items:center;gap:11px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:800;font-size:17px;color:#8E8269;width:22px;text-align:center;">{{ c.rank }}</span>
+                  <div style="width:36px;height:50px;border-radius:6px;background:{{ c.art }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+                  <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.short }}</div><div style="font-size:11px;color:#A89B84;">{{ c.poolLabel }} · {{ c.pool }} cards</div></div>
+                  <div style="text-align:right;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#EDE6D8;">{{ c.fit }}</span><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:#8E8269;">FIT</div></div>
+                </div>
+                <div style="height:6px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">own <b style="color:#C6B79A;font-weight:600;">{{ c.edOwn }}</b> of top {{ c.edTop }} · <span style="color:#6E6353;">{{ c.receiptsShort }}</span></div>
+              </div>
+            </sc-for>
+            <button style="width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:14px 16px;min-height:52px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;margin-top:2px;">
+              <span style="font-size:14.5px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more ↓</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ remaining2 }} remaining</span>
+            </button>
+          </div>
+        </div>
+        <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Home</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Commanders</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Decks</span></div>
+        </div>
+      </div></div>
+
+      <div style="width:860px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;"></span><span style="margin-left:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/commanders</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">MID-LIST · {{ shown2 }} OF {{ total }}</span></div>
+        <div style="background:#14110E;padding:0 0 26px;">
+          <div style="padding:20px 30px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Ranked · <span style="color:#C6B79A;">{{ shown2 }} shown · {{ remaining2 }} more below</span> · Order: Fit ↓ · fixed <span style="color:#6E6353;text-transform:none;letter-spacing:0;">— rail unchanged from the shell, omitted here</span></div>
+          <div style="height:36px;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:0 30px;"></div>
+          <div style="padding:0 30px;display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ tailMid }}" as="c" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:52px 74px 1fr 200px;gap:18px;align-items:stretch;padding:16px 18px;border-radius:12px;background:#1E1A15;border:1px solid #2A241D;">
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;color:#8E8269;line-height:1;">{{ c.rank }}</span><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span></div>
+                <div style="aspect-ratio:63/88;border-radius:8px;background:{{ c.art }};box-shadow:inset 0 -24px 28px -22px rgba(0,0,0,0.65),inset 0 0 0 1px rgba(0,0,0,0.28);position:relative;"><div style="position:absolute;left:5px;right:5px;bottom:5px;display:flex;gap:3px;"><sc-for list="{{ c.idsChips }}" as="pip" hint-placeholder-count="2"><span style="width:10px;height:10px;border-radius:999px;background:{{ pip.hex }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></sc-for></div></div>
+                <div style="min-width:0;display:flex;flex-direction:column;gap:8px;">
+                  <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.15;">{{ c.name }}</div><div style="font-size:12px;color:#A89B84;margin-top:2px;">{{ c.pool }} cards in your {{ c.poolLabel }} pool</div></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    <sc-for list="{{ c.roles }}" as="r" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:#2A241D;border:1px solid {{ r.border }};border-radius:999px;padding:4px 10px;"><span style="text-transform:uppercase;letter-spacing:0.05em;color:#8E8269;">{{ r.k }}</span><b style="font-weight:600;color:{{ r.color }};">{{ r.have }}</b><span style="color:#E0913C;">{{ r.suffix }}</span></span></sc-for>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="color:#8E8269;">receipts:</span> {{ c.receipts }}</div>
+                </div>
+                <div style="border-left:1px solid #2A241D;padding-left:18px;display:flex;flex-direction:column;justify-content:center;gap:9px;">
+                  <div style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:#EDE6D8;line-height:1;">{{ c.fit }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">/100</span></div>
+                  <div style="height:8px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                  <a href="#intro" style="font-size:12.5px;font-weight:600;color:#C9A24B;">View breakdown →</a>
+                </div>
+              </div>
+            </sc-for>
+            <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:15px 20px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;" style-hover="background:#211C15;border-color:#4A4033;">
+              <span style="font-size:14px;font-weight:600;color:#EDE6D8;">Show {{ batch }} more</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">{{ remaining2 }} remaining</span>
+              <span style="color:#8E8269;font-size:13px;line-height:1;">↓</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Join inset · ranks {{ batch }} → {{ firstNew }}</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-bottom:16px;">Where the old batch meets the new: no rule, no label. Focus moves to the first revealed card and the live region speaks.</div>
+        <div style="background:#14110E;border:1px solid #2A241D;border-radius:11px;padding:12px;display:flex;flex-direction:column;gap:10px;">
+          <sc-for list="{{ joinCards }}" as="c" hint-placeholder-count="2">
+            <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:11px 12px;display:flex;align-items:center;gap:11px;outline:{{ c.ring }};outline-offset:2px;">
+              <span style="font-family:'Cinzel',serif;font-weight:800;font-size:16px;color:#8E8269;width:22px;text-align:center;">{{ c.rank }}</span>
+              <div style="width:32px;height:44px;border-radius:6px;background:{{ c.art }};flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+              <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.short }}</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">{{ c.noteLabel }}</div></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:#EDE6D8;">{{ c.fit }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:14px;background:#221D16;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:8px;padding:11px 13px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:5px;">aria-live · polite</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;line-height:1.6;">{{ announce }}</div>
+        </div>
+        <div style="font-size:12.5px;color:#8E8269;line-height:1.6;margin-top:14px;">The reveal is a client-side slice of a list already in memory, so there is no spinner longer than a frame and no request. Scroll position is untouched — the page grows downward beneath the reader.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================== STATE 3 · EXHAUSTED ============================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">3 · Exhausted · <span style="color:#C9A24B;">all {{ total }} shown, control gone</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">Removed rather than disabled — a dead button invites clicking. The end rule is the only flavor allowed this far down; the data UI stays quiet.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:20px 18px 12px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div><h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0;color:#EDE6D8;">Commanders</h2><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">{{ total }} generals ranked from 11,204 cards</div></div>
+            <div style="width:34px;height:34px;border-radius:10px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">AR</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;"><span>all <b style="color:#C6B79A;font-weight:600;">{{ total }}</b> shown</span><span>Fit ↓ · fixed</span></div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 14px;display:flex;flex-direction:column;">
+          <div style="height:34px;flex:none;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:0 -14px;"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ tailEnd }}" as="c" hint-placeholder-count="3">
+              <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:12px 13px;display:flex;flex-direction:column;gap:9px;">
+                <div style="display:flex;align-items:center;gap:11px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:800;font-size:16px;color:#8E8269;width:28px;text-align:center;">{{ c.rank }}</span>
+                  <div style="width:36px;height:50px;border-radius:6px;background:{{ c.art }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+                  <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.short }}</div><div style="font-size:11px;color:#A89B84;">{{ c.poolLabel }} · {{ c.pool }} cards</div></div>
+                  <div style="text-align:right;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#EDE6D8;">{{ c.fit }}</span><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:#8E8269;">FIT</div></div>
+                </div>
+                <div style="height:6px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">own <b style="color:#C6B79A;font-weight:600;">{{ c.edOwn }}</b> of top {{ c.edTop }} · <span style="color:#6E6353;">{{ c.receiptsShort }}</span></div>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;gap:10px;padding:14px 0 4px;">
+              <span style="flex:1;height:1px;background:#2A241D;"></span>
+              <span style="width:5px;height:5px;background:#3A3229;transform:rotate(45deg);"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">End of ranking · {{ total }} of {{ total }}</span>
+              <span style="width:5px;height:5px;background:#3A3229;transform:rotate(45deg);"></span>
+              <span style="flex:1;height:1px;background:#2A241D;"></span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Home</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Commanders</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Decks</span></div>
+        </div>
+      </div></div>
+
+      <div style="width:860px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;"></span><span style="margin-left:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/commanders</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">EXHAUSTED · ALL {{ total }}</span></div>
+        <div style="background:#14110E;padding:0 0 30px;">
+          <div style="padding:20px 30px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Ranked · <span style="color:#C6B79A;">all {{ total }} shown</span> · Order: Fit ↓ · fixed</div>
+          <div style="height:36px;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:0 30px;"></div>
+          <div style="padding:0 30px;display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ tailEnd }}" as="c" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:52px 74px 1fr 200px;gap:18px;align-items:stretch;padding:16px 18px;border-radius:12px;background:#1E1A15;border:1px solid #2A241D;">
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:22px;color:#8E8269;line-height:1;">{{ c.rank }}</span><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span></div>
+                <div style="aspect-ratio:63/88;border-radius:8px;background:{{ c.art }};box-shadow:inset 0 -24px 28px -22px rgba(0,0,0,0.65),inset 0 0 0 1px rgba(0,0,0,0.28);position:relative;"><div style="position:absolute;left:5px;right:5px;bottom:5px;display:flex;gap:3px;"><sc-for list="{{ c.idsChips }}" as="pip" hint-placeholder-count="2"><span style="width:10px;height:10px;border-radius:999px;background:{{ pip.hex }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></sc-for></div></div>
+                <div style="min-width:0;display:flex;flex-direction:column;gap:8px;">
+                  <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.15;">{{ c.name }}</div><div style="font-size:12px;color:#A89B84;margin-top:2px;">{{ c.pool }} cards in your {{ c.poolLabel }} pool</div></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    <sc-for list="{{ c.roles }}" as="r" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:#2A241D;border:1px solid {{ r.border }};border-radius:999px;padding:4px 10px;"><span style="text-transform:uppercase;letter-spacing:0.05em;color:#8E8269;">{{ r.k }}</span><b style="font-weight:600;color:{{ r.color }};">{{ r.have }}</b><span style="color:#E0913C;">{{ r.suffix }}</span></span></sc-for>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="color:#8E8269;">receipts:</span> {{ c.receipts }}</div>
+                </div>
+                <div style="border-left:1px solid #2A241D;padding-left:18px;display:flex;flex-direction:column;justify-content:center;gap:9px;">
+                  <div style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:#EDE6D8;line-height:1;">{{ c.fit }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">/100</span></div>
+                  <div style="height:8px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                  <a href="#intro" style="font-size:12.5px;font-weight:600;color:#C9A24B;">View breakdown →</a>
+                </div>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;gap:14px;padding:16px 0 0;">
+              <span style="flex:1;height:1px;background:#2A241D;"></span>
+              <span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">End of ranking · {{ total }} of {{ total }}</span>
+              <span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span>
+              <span style="flex:1;height:1px;background:#2A241D;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================== STATE 4 · SHORT LIST ============================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">4 · Short list · <span style="color:#C9A24B;">{{ shortTotal }} generals — the control never appears</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">The shipped 1,418-card / {{ shortTotal }}-general case. {{ shortTotal }} ≤ {{ batch }}, so no reveal, no “showing N of M”, no end rule — the surface is byte-for-byte what ships today.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:20px 18px 12px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div><h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0;color:#EDE6D8;">Commanders</h2><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">{{ shortTotal }} generals ranked from 1,418 cards</div></div>
+            <div style="width:34px;height:34px;border-radius:10px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">AR</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:8px 11px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8E8269;">COLORS</span><span style="width:14px;height:14px;border-radius:999px;background:#E8E4D6;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#4A7FB5;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#5B5566;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#C05A48;opacity:0.35;"></span><span style="width:14px;height:14px;border-radius:999px;background:#6B9E63;opacity:0.35;"></span></div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 14px;display:flex;flex-direction:column;">
+          <div style="height:34px;flex:none;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:0 -14px;"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ tailShort }}" as="c" hint-placeholder-count="3">
+              <div style="border-radius:11px;background:#1E1A15;border:1px solid #2A241D;padding:12px 13px;display:flex;flex-direction:column;gap:9px;">
+                <div style="display:flex;align-items:center;gap:11px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:800;font-size:17px;color:#8E8269;width:22px;text-align:center;">{{ c.rank }}</span>
+                  <div style="width:36px;height:50px;border-radius:6px;background:{{ c.art }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+                  <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.short }}</div><div style="font-size:11px;color:#A89B84;">{{ c.poolLabel }} · {{ c.pool }} cards</div></div>
+                  <div style="text-align:right;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#EDE6D8;">{{ c.fit }}</span><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:#8E8269;">FIT</div></div>
+                </div>
+                <div style="height:6px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">own <b style="color:#C6B79A;font-weight:600;">{{ c.edOwn }}</b> of top {{ c.edTop }} · <span style="color:#6E6353;">{{ c.receiptsShort }}</span></div>
+              </div>
+            </sc-for>
+            <div style="height:22px;"></div>
+          </div>
+        </div>
+        <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Home</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Commanders</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);"></span><span style="font-size:10px;color:#8E8269;">Decks</span></div>
+        </div>
+      </div></div>
+
+      <div style="width:860px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;"></span><span style="margin-left:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/commanders</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">SHORT LIST · NO CONTROL</span></div>
+        <div style="background:#14110E;padding:0 0 30px;">
+          <div style="padding:20px 30px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Ranked for your collection · Order: Fit ↓ · fixed</div>
+          <div style="height:36px;background:linear-gradient(#14110E,rgba(20,17,14,0));margin:0 30px;"></div>
+          <div style="padding:0 30px;display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ tailShort }}" as="c" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:52px 74px 1fr 200px;gap:18px;align-items:stretch;padding:16px 18px;border-radius:12px;background:#1E1A15;border:1px solid #2A241D;">
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;color:#8E8269;line-height:1;">{{ c.rank }}</span><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span></div>
+                <div style="aspect-ratio:63/88;border-radius:8px;background:{{ c.art }};box-shadow:inset 0 -24px 28px -22px rgba(0,0,0,0.65),inset 0 0 0 1px rgba(0,0,0,0.28);position:relative;"><div style="position:absolute;left:5px;right:5px;bottom:5px;display:flex;gap:3px;"><sc-for list="{{ c.idsChips }}" as="pip" hint-placeholder-count="2"><span style="width:10px;height:10px;border-radius:999px;background:{{ pip.hex }};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);"></span></sc-for></div></div>
+                <div style="min-width:0;display:flex;flex-direction:column;gap:8px;">
+                  <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.15;">{{ c.name }}</div><div style="font-size:12px;color:#A89B84;margin-top:2px;">{{ c.pool }} cards in your {{ c.poolLabel }} pool</div></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    <sc-for list="{{ c.roles }}" as="r" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:#2A241D;border:1px solid {{ r.border }};border-radius:999px;padding:4px 10px;"><span style="text-transform:uppercase;letter-spacing:0.05em;color:#8E8269;">{{ r.k }}</span><b style="font-weight:600;color:{{ r.color }};">{{ r.have }}</b><span style="color:#E0913C;">{{ r.suffix }}</span></span></sc-for>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="color:#8E8269;">receipts:</span> {{ c.receipts }}</div>
+                </div>
+                <div style="border-left:1px solid #2A241D;padding-left:18px;display:flex;flex-direction:column;justify-content:center;gap:9px;">
+                  <div style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:#EDE6D8;line-height:1;">{{ c.fit }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">/100</span></div>
+                  <div style="height:8px;border-radius:999px;background:#2A241D;overflow:hidden;display:flex;"><div style="width:{{ c.fitW }};display:flex;height:100%;"><sc-for list="{{ c.segments }}" as="s" hint-placeholder-count="3"><div style="flex-grow:{{ s.grow }};background:{{ s.color }};height:100%;"></div></sc-for></div></div>
+                  <a href="#intro" style="font-size:12.5px;font-weight:600;color:#C9A24B;">View breakdown →</a>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================== HANDOFF NOTES ============================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">What changes in code</div>
+    <div style="max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;margin-bottom:8px;">commanders-view.tsx</div>
+        <div style="font-size:13.5px;color:#C6B79A;line-height:1.6;">One state value — <span style="font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">shown</span>, initialised to <span style="font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">REVEAL_STEP</span> — plus a slice on the already-sorted array and the control below the map. Mirror Collection's naming so the two read as one pattern.</div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;margin-bottom:8px;">rec-card.tsx</div>
+        <div style="font-size:13.5px;color:#C6B79A;line-height:1.6;">Untouched. It gains a forwarded ref only if focus-on-reveal is implemented there rather than by querying the list container.</div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;margin-bottom:8px;">Tokens</div>
+        <div style="font-size:13.5px;color:#C6B79A;line-height:1.6;">Theme-aware values come from <span style="font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">globals.css</span> — surface, elevated, line, text-faint. Nothing new is added; the control borrows the card's own fill and border.</div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;margin-bottom:8px;">Filter interaction</div>
+        <div style="font-size:13.5px;color:#C6B79A;line-height:1.6;">Changing the color filter resets <span style="font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">shown</span> to one batch and recomputes the remaining count against the filtered length — the reveal window is a property of the current result set, not the session.</div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;margin-bottom:8px;">Degraded states</div>
+        <div style="font-size:13.5px;color:#C6B79A;line-height:1.6;">Unaffected. The global EDHREC banner and per-commander notes sit inside cards; windowing only decides how many cards render.</div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;margin-bottom:8px;">Empty states</div>
+        <div style="font-size:13.5px;color:#C6B79A;line-height:1.6;">No-candidates and filtered-to-zero never render the control — zero results means zero remaining.</div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:900},&quot;batchSize&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:25,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:10,&quot;max&quot;:50,&quot;step&quot;:5,&quot;unit&quot;:&quot;cards&quot;,&quot;section&quot;:&quot;Windowing&quot;},&quot;totalGenerals&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:214,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:30,&quot;max&quot;:400,&quot;step&quot;:1,&quot;section&quot;:&quot;Windowing&quot;},&quot;shortListTotal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:24,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:3,&quot;max&quot;:60,&quot;step&quot;:1,&quot;section&quot;:&quot;Windowing&quot;}}">
+class Component extends DCLogic {
+  renderVals(){
+    const batch = this.props.batchSize ?? 25;
+    const total = this.props.totalGenerals ?? 214;
+    const shortTotal = this.props.shortListTotal ?? 24;
+    const W='#E8E4D6',U='#4A7FB5',B='#5B5566',R='#C05A48',G='#6B9E63';
+    const pipHex={W,U,B,R,G};
+    const art={
+      W:['#efe9d8','#cbbf9c','#9d8f6b'], U:['#6a9bcb','#305c88','#1c3a57'],
+      B:['#5a5464','#2c2833','#17151d'], R:['#cf7157','#8c3627','#571f16'],
+      G:['#84b277','#406f3b','#264823'], C:['#b3a488','#726755','#453e31']
+    };
+    const artOf=ids=>{
+      if(!ids.length){const c=art.C;return `linear-gradient(150deg,${c[0]},${c[1]} 58%,${c[2]})`;}
+      if(ids.length===1){const c=art[ids[0]];return `linear-gradient(150deg,${c[0]},${c[1]} 58%,${c[2]})`;}
+      const a=art[ids[0]],b=art[ids[1]],c=art[ids[ids.length-1]];
+      return `linear-gradient(130deg,${a[1]},${a[0]} 34%,${b[0]} 55%,${c[1]} 82%,${c[2]})`;
+    };
+    const SEG=['#6E5B33','#A9863E','#C9A24B'], LAB=['Pool','Roles','Synergy'];
+    const mkRoles=arr=>arr.map(([k,have,gap])=>({k,have,gap,color:gap?'#E0913C':'#EDE6D8',border:gap?'#4A3A24':'#3A3229',suffix:gap?' gap':''}));
+    const cmd=o=>({
+      rank:o.rank, name:o.name, short:o.short||o.name, type:o.type,
+      idsChips:o.ids.map(i=>({hex:pipHex[i],code:i})), art:artOf(o.ids),
+      pool:o.pool, poolLabel:o.poolLabel, roles:mkRoles(o.roles),
+      edOwn:o.edOwn, edTop:40, edW:Math.round(o.edOwn/40*100)+'%',
+      receipts:o.receipts, receiptsShort:o.receiptsShort||o.receipts,
+      fit:o.fit, fitW:o.fit+'%',
+      segments:o.grows.map((g,i)=>({grow:g,color:SEG[i],label:LAB[i]}))
+    });
+
+    const c23=cmd({rank:23,name:'Lathril, Blade of the Elves',type:'Legendary Creature — Elf Noble',ids:['B','G'],pool:331,poolLabel:'Golgari',roles:[['Ramp',9,false],['Draw',6,true],['Removal',7,true],['Wipes',2,true]],edOwn:14,receipts:'Elvish Archdruid · Marwyn, the Nurturer · Wellwisher +11',receiptsShort:'Elvish Archdruid, Marwyn +12',fit:40,grows:[38,34,28]});
+    const c24=cmd({rank:24,name:'Anje Falkenrath',type:'Legendary Creature — Vampire',ids:['B','R'],pool:356,poolLabel:'Rakdos',roles:[['Ramp',10,false],['Draw',9,false],['Removal',6,true],['Wipes',1,true]],edOwn:12,receipts:'Faithless Looting · Bone Miser · Big Score +9',receiptsShort:'Faithless Looting, Bone Miser +10',fit:39,grows:[40,33,27]});
+    const c25=cmd({rank:25,name:'Zada, Hedron Grinder',type:'Legendary Creature — Goblin Ally',ids:['R'],pool:198,poolLabel:'mono-red',roles:[['Ramp',7,true],['Draw',5,true],['Removal',8,false],['Wipes',1,true]],edOwn:11,receipts:'Expedite · Crimson Wisps · Reckless Charge +8',receiptsShort:'Expedite, Crimson Wisps +9',fit:38,grows:[36,36,28]});
+    const c26=cmd({rank:26,name:'Slimefoot, the Stowaway',type:'Legendary Creature — Fungus',ids:['B','G'],pool:331,poolLabel:'Golgari',roles:[['Ramp',9,false],['Draw',6,true],['Removal',7,true],['Wipes',2,true]],edOwn:11,receipts:'Sporemound · Fungal Plots · Grave Pact +8',receiptsShort:'Sporemound, Grave Pact +9',fit:37,grows:[38,35,27]});
+
+    const tailDefault=[c23,c24,c25];
+    const tailMid=[
+      cmd({rank:48,name:'Tatyova, Benthic Druid',type:'Legendary Creature — Merfolk Druid',ids:['G','U'],pool:274,poolLabel:'Simic',roles:[['Ramp',8,false],['Draw',7,true],['Removal',4,true],['Wipes',1,true]],edOwn:8,receipts:'Exploration · Azusa, Lost but Seeking · Ramunap Excavator +5',receiptsShort:'Exploration, Azusa +6',fit:29,grows:[40,36,24]}),
+      cmd({rank:49,name:'Nekusar, the Mindrazer',type:'Legendary Creature — Zombie Wizard',ids:['U','B','R'],pool:389,poolLabel:'Grixis',roles:[['Ramp',7,true],['Draw',9,false],['Removal',6,true],['Wipes',2,true]],edOwn:7,receipts:'Rhystic Study · Whispering Madness · Fate Unraveler +4',receiptsShort:'Rhystic Study, Fate Unraveler +5',fit:28,grows:[38,40,22]}),
+      cmd({rank:50,name:'Sidisi, Brood Tyrant',type:'Legendary Creature — Naga Wizard',ids:['B','G','U'],pool:402,poolLabel:'Sultai',roles:[['Ramp',9,false],['Draw',6,true],['Removal',5,true],['Wipes',2,true]],edOwn:7,receipts:'Splinterfright · Stitcher\u2019s Supplier · Eternal Witness +4',receiptsShort:'Splinterfright, Stitcher\u2019s +5',fit:28,grows:[42,36,22]})
+    ];
+    const tailEnd=[
+      cmd({rank:total-2,name:'Sisay, Weatherlight Captain',type:'Legendary Creature — Human Soldier',ids:['W','U','B','R','G'],pool:612,poolLabel:'5-color',roles:[['Ramp',6,true],['Draw',3,true],['Removal',4,true],['Wipes',1,true]],edOwn:3,receipts:'Captain Sisay · Jegantha, the Wellspring +1',receiptsShort:'Captain Sisay +2',fit:9,grows:[52,36,12]}),
+      cmd({rank:total-1,name:'Kaalia of the Vast',type:'Legendary Creature — Human Cleric',ids:['W','B','R'],pool:341,poolLabel:'Mardu',roles:[['Ramp',5,true],['Draw',3,true],['Removal',5,true],['Wipes',1,true]],edOwn:2,receipts:'Master of Cruelties · Angel of Despair',receiptsShort:'Master of Cruelties +1',fit:8,grows:[54,36,10]}),
+      cmd({rank:total,name:'Gishath, Sun\u2019s Avatar',type:'Legendary Creature — Dinosaur Avatar',ids:['R','G','W'],pool:318,poolLabel:'Naya',roles:[['Ramp',6,true],['Draw',2,true],['Removal',4,true],['Wipes',0,true]],edOwn:1,receipts:'Ranging Raptors',receiptsShort:'Ranging Raptors',fit:7,grows:[56,36,8]})
+    ];
+    const filtTotal = 96;
+    const tailFiltered=[c23,c24,c26];
+    const tailShort=[
+      cmd({rank:shortTotal-2,name:'Talrand, Sky Summoner',type:'Legendary Creature — Merfolk Wizard',ids:['U'],pool:212,poolLabel:'mono-blue',roles:[['Ramp',8,true],['Draw',11,false],['Removal',7,true],['Wipes',2,true]],edOwn:13,receipts:'Ponder · Brainstorm · Counterspell +10',receiptsShort:'Ponder, Counterspell +11',fit:42,grows:[34,38,28]}),
+      c23, c24
+    ];
+
+    const shown1 = batch, shown2 = batch*2;
+    const firstNew = batch+1;
+    return {
+      batch, total, shortTotal, shown1, shown2, firstNew,
+      remaining1: total - shown1, remaining2: total - shown2,
+      announce: `Showing ${shown2} of ${total} commanders. Ranks ${firstNew} to ${shown2} added.`,
+      contrastLabel: '#EDE6D8 on #1E1A15 — 11.6:1',
+      filtTotal, filtRemaining: filtTotal - shown1,
+      tailDefault, tailMid, tailEnd, tailShort, tailFiltered,
+      joinCards: [
+        Object.assign({}, c25, {ring:'none', noteLabel:'last of batch 1'}),
+        Object.assign({}, c26, {ring:'2px solid #C9A24B', noteLabel:'focus lands here'})
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

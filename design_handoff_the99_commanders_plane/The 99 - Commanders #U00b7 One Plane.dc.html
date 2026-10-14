@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R6</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Commanders as one plane &middot; filters, search, an honest empty &middot; track 1 &middot; stage 1</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;text-wrap:pretty;">Six controls is the wrong count. There are four, and two of them carry a modifier.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;text-wrap:pretty;">&sect;7 asks whether six controls can sit above one list at 375px. <b style="color:#EDE6D8;font-weight:600;">They can, because two of the six are not controls in their own right.</b> The join mode is an attribute of the pip row and appears only once a pip is lit; search takes the row the window count already occupies and moves the count inside its own field. In the default state the stack is <b style="color:#EDE6D8;font-weight:600;">the same height as shipped</b> &mdash; a 38px field and a 38px trigger make the row the shipped count and trigger made. No sheet, no disclosure, no restructure.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">R1 answered for the default state only, and that was the wrong scope for the question.</b> A4 draws the phone in its worst reachable state &mdash; query present, pips lit, modifier row shown, a report above the first row &mdash; and measures it against the same state shipped. As R1 drew it that stack reaches <b style="color:#EDE6D8;font-weight:600;">605px</b>. With the <b style="color:#EDE6D8;font-weight:600;">one-report rule</b> it reaches <b style="color:#EDE6D8;font-weight:600;">503px against shipped's 330px</b> &mdash; <b style="color:#EDE6D8;font-weight:600;">+173px</b>, and about three rows of list on an 812px phone. (R2 mis-totalled the shipped column, giving +196px; R3 counted <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">revealBand</span> above the first row, where it never renders, inflating both absolutes by 40px. The difference has been +173px throughout.) The modifier argument survives that measurement; whether the number is acceptable does not follow from it, and A4 hands it to Hugh with the two ways out.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">And the list says what it took.</b> One new element carries &sect;4.4's sentence: an <b style="color:#EDE6D8;font-weight:600;">exclusion line</b> between the bar and the first row, naming what each active control removed and what the nearest miss was. <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">FloorEmpty</span> is that same sentence when nothing survives &mdash; one sentence, two homes, the idiom the discovery handoff already set with the no-decks banner.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8B8270;margin:0 0 12px;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">R3 closed four keys that had no data path.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">heldHeading</span> now takes the full <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">name</span> (<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">DiscoveryItem</span> carries no short name) and the body drops the repeat; <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">noneBody</span> loses its index-total slot; <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">floorPool.ctaNote</span> is deleted rather than fed by a second query; and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">justifyEdit.distanceNear</span> keeps the shipped two arguments and drops a subtraction over disjoint sets. <b style="color:#C0B8A6;font-weight:600;">R4 corrects the shipped-string count from one to two</b> &mdash; the row&rsquo;s floor note needs the threshold argument as well; see &sect;D.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8B8270;margin:0;">Read <a href="README.md">README.md</a> for the decisions log, <a href="CONTROLS-six-above-one-list.md">CONTROLS-six-above-one-list.md</a> for the &sect;7 answer with the rejected structures and the measured stack, <a href="STATES-search-and-exclusions.md">STATES-search-and-exclusions.md</a> for the search matrix and the five exclusion sentences, <a href="commanders-plane · copy strings.ts">commanders-plane &middot; copy strings.ts</a> for production copy. <b style="color:#C46857;font-weight:600;">Partly gated</b> &mdash; &sect;0 lists the controls, bar, row and empties as shipped in #322 / #326 / #327, and they are. But &sect;4.3&rsquo;s scope and floor exclusion sentences need a server route that does not exist, so <b style="color:#C0B8A6;font-weight:600;">two of five are gated</b>; blocker 9.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#18140F;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Locked in &sect;4 &mdash; drawn as written, not re-litigated</div>
+    <div style="font-size:13px;color:#A59C89;line-height:1.7;">4.1 &middot; one plane, and <b style="color:#EDE6D8;font-weight:600;">no unified score across scopes</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DiscoveryItem</span> carries no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">score</span> field and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">page.tsx:68-71</span> says why in the code &middot; 4.2 &middot; <b style="color:#EDE6D8;font-weight:600;">contains-all stays the default</b>, an &ldquo;exactly these&rdquo; modifier is added, <b style="color:#EDE6D8;font-weight:600;">no OR mode</b> &middot; 4.3 &middot; search <b style="color:#EDE6D8;font-weight:600;">narrows in place</b> and names the control that excluded a match &middot; 4.4 &middot; the novelty floor <b style="color:#EDE6D8;font-weight:600;">scales with the pool it measures</b>, and the list always names what it excluded &middot; 4.5 &middot; the header wrap is <b style="color:#EDE6D8;font-weight:600;">conformant to the drawn table</b> (gap 2), so it is Design's call and not an eng fix.</div>
+  </div>
+
+  <div style="border:1px solid #2B241B;border-radius:14px;background:#1A1611;padding:20px 24px;margin-bottom:38px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">&sect;7 &mdash; six above one list at 375px</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">No restructure. The count is four.</b> Join mode belongs to the pips and is absent until one is lit; search occupies the count row and absorbs the count. <b style="color:#EDE6D8;font-weight:600;">Default: +0px.</b> <b style="color:#EDE6D8;font-weight:600;">Worst reachable: +173px, and that is Hugh's call to accept</b> &mdash; drawn and measured in A4 (503px against shipped's 330px).</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">&sect;4.2 &mdash; the join-mode modifier</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Two words inside the pip wrapper, behind a hairline.</b> Type, never a swatch, so it cannot read as a sixth pip. The active word is always printed &mdash; no hover, no icon. Mobile: its own 38px row, present only with colours active.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">&sect;4.3 &mdash; search</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Leads the narrow tier, and carries its own count.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FIND</span> label inside the field, mirroring <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">COLORS</span>. An excluded match names <b style="color:#EDE6D8;font-weight:600;">one</b> control &mdash; the outermost &mdash; and offers its correction.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:6px;">Settled &mdash; which population each surface prints</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Each surface prints the population that answers its own question.</b> The <b style="color:#EDE6D8;font-weight:600;">subtitle</b> keeps the full pool &mdash; &ldquo;how many commanders could I lead&rdquo;, which does not depend on the sort. The <b style="color:#EDE6D8;font-weight:600;">pip row and the in-field count</b> print the rows actually on screen. The <b style="color:#EDE6D8;font-weight:600;">exclusion line</b> bridges the two and names both departing groups, which is what keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">total &minus; excluded = rows</span> checkable. This is what R5 drew, so nothing is redrawn &mdash; blocker 6 is closed by decision.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C46857;margin-bottom:6px;">Gated &mdash; &sect;0 was wrong</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">&sect;4.3&rsquo;s excluded-match promise needs a lookup nothing currently does.</b> A row removed by scope or the floor never reached the client, so naming it requires a server-side match against the full index &mdash; and while <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">src/app/commanders/</span> has routes, <b style="color:#EDE6D8;font-weight:600;">none of them searches that index</b>. R1&ndash;R3 called this handoff not gated; <b style="color:#EDE6D8;font-weight:600;">two of the five exclusion sentences are.</b></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">&sect;4.4 &mdash; the exclusion line</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">One mono line above the first row, two clauses at most.</b> Tier order, never magnitude order. The floor is now variable, so it prints its own percentage every time it is claimed &mdash; the denominator rule, applied to a threshold.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">&sect;5 / #343 &mdash; archetype overflow</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">The count becomes the button, and the sentence grows in place.</b> No popover, no card, no second surface &mdash; the row wraps by the lines the names need and the slot keeps its leading.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">&sect;5 / #344 &mdash; the nearest deck</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Kept, reframed, and it ends on the residue.</b> The deck becomes a reference point and the last figure is what is still new. <b style="color:#EDE6D8;font-weight:600;">There is no per-sort fork to build</b> &mdash; the fit sort does not render this clause at all.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">&sect;4.5 &mdash; the header wrap</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">The subtitle gets its own row.</b> Title and scope on row 1, subtitle full-width on row 2. The only thing whose length changes can no longer push the control. Zero added height, no copy shortened, no colour or type touched.</div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2400px;">
+
+  <!-- ============ A · THE COUNT IS FOUR ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">A &middot; <span style="color:#CF8745;">&sect;7 &mdash; four tiers, six things, one list</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:1180px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">Desktop 1280px &mdash; discovery scope, no colours lit, no query. This is the default state and it is one row.</div>
+
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;overflow:hidden;">
+          <!-- header, two rows (§4.5) -->
+          <div style="padding:28px 34px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;">
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:0;color:#EDE6D8;">Commanders</h2>
+              <div style="display:flex;align-items:center;gap:10px;flex:none;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Show</span>
+                <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;">
+                  <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:500;color:#C0B8A6;white-space:nowrap;">Commanders I own</span>
+                  <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:600;color:#14110E;background:#CF8745;white-space:nowrap;">Something to play</span>
+                </div>
+              </div>
+            </div>
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;margin:4px 0 0;color:#8B8270;">3,326 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards &middot; every card you own</p>
+          </div>
+
+          <!-- filter bar -->
+          <div style="padding:18px 34px 14px;border-bottom:1px solid #2B241B;margin-top:20px;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <!-- search -->
+              <div style="display:flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;height:30px;padding:0 10px;width:280px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;flex:none;">FIND</span>
+                <span style="font-size:12.5px;color:#6E6654;flex:1;">Commander name</span>
+              </div>
+              <!-- pips -->
+              <div style="display:flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:8px 12px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;">COLORS</span>
+                <span style="display:block;width:16px;height:16px;border-radius:999px;background:#F4E9C4;opacity:0.35;"></span>
+                <span style="display:block;width:16px;height:16px;border-radius:999px;background:#3A6AA5;opacity:0.35;"></span>
+                <span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;opacity:0.35;"></span>
+                <span style="display:block;width:16px;height:16px;border-radius:999px;background:#C05A3E;opacity:0.35;"></span>
+                <span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;opacity:0.35;"></span>
+              </div>
+              <!-- score against -->
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Score against</span>
+                <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;">
+                  <span style="display:flex;align-items:center;justify-content:center;height:30px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:600;color:#14110E;background:#CF8745;white-space:nowrap;">Everything I own</span>
+                  <span style="display:flex;align-items:center;justify-content:center;height:30px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:500;color:#C0B8A6;white-space:nowrap;">What&rsquo;s free</span>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Sort</span>
+                <span style="font-family:'IBM Plex Mono',monospace;display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:8px;background:#18140F;border:1px solid #3A3229;color:#EDE6D8;font-size:12px;">Best fit <span style="color:#CF8745;">&#9662;</span></span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">Showing 3,326 of 3,326</span>
+            </div>
+          </div>
+          <div style="padding:14px 34px 22px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6E6654;">&mdash; nothing excluded, so no exclusion line &mdash;</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:104px 1fr;gap:9px 12px;margin-top:16px;font-size:13px;color:#C0B8A6;line-height:1.6;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">tier 1</span><span><b style="color:#EDE6D8;font-weight:600;">Scope</b> &mdash; which commanders exist. Page header, unchanged in geometry, moved off the subtitle&rsquo;s row per &sect;4.5.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">tier 2</span><span><b style="color:#EDE6D8;font-weight:600;">Search, then colours</b> &mdash; both narrow the same list. The precise instrument leads the coarse one. The join mode is an attribute of the coarse one.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">tier 3</span><span><b style="color:#EDE6D8;font-weight:600;">Score against</b> &mdash; which cards count. Shipped position, shipped geometry, shipped pixels. Nothing here touches it.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">tier 4</span><span><b style="color:#EDE6D8;font-weight:600;">Sort</b> &mdash; the order. Still the slot the inert <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Order: Fit &darr; &middot; fixed</span> label held.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;padding-top:2px;">the move</span><span>Search at the leading edge moves the pip wrapper and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Score against</span> right by 292px without changing a declared value. <b style="color:#EDE6D8;font-weight:600;">R1 disclosed that as a decision; R2 does not decide it</b> &mdash; both placements are drawn and costed in A5, and the pick is Hugh&rsquo;s.</span>
+        </div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">375px &mdash; the measured stack</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:12px;">
+          <div style="display:flex;flex-direction:column;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;">
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;background:#1E1A15;border:1px solid #2B241B;border-radius:6px;"><span style="color:#C0B8A6;">title + subtitle</span><span style="color:#8B8270;">66px</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;background:#1E1A15;border:1px solid #2B241B;border-radius:6px;"><span style="color:#C0B8A6;">scope &middot; 38px halves</span><span style="color:#8B8270;">44px</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;background:#1E1A15;border:1px solid #2B241B;border-radius:6px;"><span style="color:#C0B8A6;">colour pips + N/M</span><span style="color:#8B8270;">34px</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;background:#1E1A15;border:1px solid #2B241B;border-radius:6px;"><span style="color:#C0B8A6;">score against + label</span><span style="color:#8B8270;">60px</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;background:#211D18;border:1px solid #3A3229;border-radius:6px;"><span style="color:#EDE6D8;">search + sort &middot; one row</span><span style="color:#CF8745;">44px</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;background:#1E1A15;border:1px solid #2B241B;border-radius:6px;"><span style="color:#C0B8A6;">gaps between rows &middot; 4 &times; 10px</span><span style="color:#8B8270;">40px</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-top:1px solid #2B241B;margin-top:4px;"><span style="color:#EDE6D8;font-weight:600;">before the first row</span><span style="color:#EDE6D8;font-weight:600;">288px</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:0 10px;"><span style="color:#6E6654;">shipped discovery, same rows</span><span style="color:#6E6654;">288px</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:2px 10px 0;"><span style="color:#6FA368;">difference</span><span style="color:#6FA368;">0px</span></div>
+          </div>
+        </div>
+        <p style="margin:14px 0 0;font-size:13px;line-height:1.65;color:#C0B8A6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Zero, in the default state.</b> Search does not add a row because the row it wants already exists: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">WindowCount</span> is a <i>statement</i>, and a statement can move. A 38px field and a 38px trigger make the same 44px row the shipped count and trigger made, so the drawn default and the shipped default are the same height &mdash; <b style="color:#EDE6D8;font-weight:600;">R1&rsquo;s +6px and R2&rsquo;s +8px were both artefacts of counting the two sides on different bases.</b></p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#C0B8A6;text-wrap:pretty;">The join mode costs <b style="color:#EDE6D8;font-weight:600;">38+8px, and only once a pip is lit</b> &mdash; the same state that already pays for the chip row. A player who never touches colour never sees it and never pays for it.</p>
+        <p style="margin:10px 0 0;font-size:12.5px;line-height:1.6;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">What the substitution costs.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">WindowCount</span> says &ldquo;25 shown &middot; 3,301 more below&rdquo;; the in-field count says <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">3/3,326</span>. Those are different facts, and <b style="color:#C0B8A6;font-weight:600;">the bar has no line beneath this row to move the displaced one onto</b> &mdash; R3 promised one, and it does not exist. So the reveal count is not relocated: it is <b style="color:#C0B8A6;font-weight:600;">already stated inside the list</b> by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">RevealControl</span>, where the player acts on it. Design&rsquo;s claim is that the bar does not need to say it twice; <b style="color:#C0B8A6;font-weight:600;">that is a deletion of shipped content and it is blocker 7</b>, not a free substitution.</p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">Nothing new becomes sticky.</b> Unchanged from the discovery ruling, and now load-bearing: five stacked controls pinned would leave under half the viewport for the list.</p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">One basis, both columns:</b> row heights include their own padding, and the total counts <b style="color:#C0B8A6;font-weight:600;">gaps between rows only</b> &mdash; 10px, and 8px between the pip row and its chips &mdash; excluding the gap before the first list row. R1&rsquo;s +6px and R2&rsquo;s +8px both came from measuring the two sides differently.</p>
+      </div>
+
+      <div style="width:560px;flex:none;background:#1A1611;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:14px;padding:20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">A4</span>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;">375px &mdash; the worst reachable state</div>
+        </div>
+        <div style="font-size:13px;color:#C0B8A6;line-height:1.6;margin-bottom:14px;text-wrap:pretty;">Query present &middot; two pips lit &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Exactly</span> &middot; chips shown &middot; a report above the first row. Every row is reachable in one session, and the shipped column is the same state on the shipped bar.</div>
+
+        <div style="width:343px;background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+          <h4 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0;color:#EDE6D8;">Commanders</h4>
+          <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;margin-top:8px;">
+            <span style="flex:1;display:flex;align-items:center;justify-content:center;height:38px;border-radius:6px;font-size:13px;font-weight:500;color:#C0B8A6;">I own</span>
+            <span style="flex:1;display:flex;align-items:center;justify-content:center;height:38px;border-radius:6px;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;">To play</span>
+          </div>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;margin:4px 0 0;color:#8B8270;">3,326 commanders you have not built &middot; ranked by what is new to you &middot; read against 2,805 cards &middot; every card you own</p>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.45;color:#6E6654;margin:5px 0 0;padding-left:9px;border-left:2px solid #6FA368;">settled &mdash; the subtitle prints the <span style="color:#C0B8A6;">full pool</span> (&ldquo;how many could I lead&rdquo;, sort-independent); the pip row and field print <span style="color:#C0B8A6;">rows on screen</span>; the exclusion line bridges them.</p>
+
+          <div style="display:flex;align-items:center;gap:7px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:8px 11px;margin-top:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8B8270;">COLORS</span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#F4E9C4;opacity:0.35;"></span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#3A6AA5;opacity:0.35;"></span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #CF8745;"></span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#C05A3E;opacity:0.35;"></span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #CF8745;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;margin-left:auto;">3/3,326</span>
+          </div>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.45;color:#6E6654;margin:5px 0 0;padding-left:9px;border-left:2px solid #3A3229;">pip count is <span style="color:#C0B8A6;">filteredTotal/activeTotal</span> and search narrows the same array &mdash; so with a query it reads 3/3,326, not 61/3,326. Field count suppressed here; see blocker 8.</p>
+
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin:10px 0 6px;">Colour match</p>
+          <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;">
+            <span style="flex:1;display:flex;align-items:center;justify-content:center;height:38px;border-radius:6px;font-size:13px;font-weight:500;color:#C0B8A6;">Contains</span>
+            <span style="flex:1;display:flex;align-items:center;justify-content:center;height:38px;border-radius:6px;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;">Exactly</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-left:2px solid #3A3229;padding-left:9px;margin-top:7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.45;color:#6E6654;text-decoration:line-through;">exact identity &mdash; 61 of 3,326 are Green &middot; Black and nothing else</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:#CF8745;flex:none;">suppressed</span>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#EDE6D8;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:4px 8px 4px 10px;"><span style="display:block;width:9px;height:9px;border-radius:999px;background:#98748F;"></span>Black <span style="color:#8B8270;">&#10005;</span></span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#EDE6D8;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:4px 8px 4px 10px;"><span style="display:block;width:9px;height:9px;border-radius:999px;background:#4B7A46;"></span>Green <span style="color:#8B8270;">&#10005;</span></span>
+          </div>
+
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin:10px 0 6px;">Score against</p>
+          <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;">
+            <span style="flex:1;display:flex;align-items:center;justify-content:center;height:38px;border-radius:6px;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;">Everything</span>
+            <span style="flex:1;display:flex;align-items:center;justify-content:center;height:38px;border-radius:6px;font-size:13px;font-weight:500;color:#C0B8A6;">What&rsquo;s free</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+            <div style="flex:1;display:flex;align-items:center;gap:7px;background:#18140F;border:1px solid #3A3229;border-radius:8px;height:38px;padding:0 10px;min-width:0;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8B8270;flex:none;">FIND</span>
+              <span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">atraxa</span>
+              <span style="font-size:12px;color:#8B8270;flex:none;">&#10005;</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 10px;border-radius:8px;background:#18140F;border:1px solid #3A3229;color:#EDE6D8;font-size:11px;flex:none;">New <span style="color:#CF8745;">&#9662;</span></span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:7px;margin-top:10px;padding-left:9px;border-left:2px solid #3A3229;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.45;color:#6E6654;text-decoration:line-through;">1,622 excluded by the Green &middot; Black colour filter &middot; 1,047 fall below the 30% support floor for this pool</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:#CF8745;flex:none;">suppressed</span>
+          </div>
+
+          <div style="margin-top:10px;background:#201C17;border:1px solid #3A3229;border-left:2px solid #CF8745;border-radius:8px;padding:10px 12px;">
+            <p style="margin:0;font-size:12px;line-height:1.55;color:#A59C89;"><b style="color:#EDE6D8;font-weight:600;">Atraxa, Praetors&rsquo; Voice</b> also matches, but <b style="color:#EDE6D8;font-weight:600;">Exactly</b> Green &middot; Black excludes it &mdash; its identity is White &middot; Blue &middot; Black &middot; Green.<br><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;">Switch to Contains</span></p>
+          </div>
+
+          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;background:#1E1A15;border:1px solid #2B241B;border-radius:11px;padding:12px 13px;">
+            <span style="font-family:'Cinzel',serif;font-weight:800;font-size:17px;color:#8B8270;min-width:16px;text-align:center;">7</span>
+            <span style="width:6px;height:6px;transform:rotate(45deg);background:#CF8745;flex:none;"></span>
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:#EDE6D8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Atraxa, Grand Unifier</span>
+          </div>
+          <div style="height:22px;background:linear-gradient(#1E1A15,rgba(30,26,21,0));border-radius:0 0 11px 11px;margin:0 1px;"></div>
+        </div>
+
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:12px;margin-top:14px;">
+          <div style="display:grid;grid-template-columns:1fr 52px 52px;gap:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;align-items:center;">
+            <span style="color:#6E6654;"></span><span style="color:#8B8270;text-align:right;">shipped</span><span style="color:#CF8745;text-align:right;">drawn</span>
+            <span style="color:#C0B8A6;padding:5px 8px;background:#1E1A15;border-radius:5px;">title + subtitle</span><span style="color:#8B8270;text-align:right;">66</span><span style="color:#C0B8A6;text-align:right;">66</span>
+            <span style="color:#C0B8A6;padding:5px 8px;background:#1E1A15;border-radius:5px;">scope</span><span style="color:#8B8270;text-align:right;">44</span><span style="color:#C0B8A6;text-align:right;">44</span>
+            <span style="color:#C0B8A6;padding:5px 8px;background:#1E1A15;border-radius:5px;">pips + count</span><span style="color:#8B8270;text-align:right;">34</span><span style="color:#C0B8A6;text-align:right;">34</span>
+            <span style="color:#EDE6D8;padding:5px 8px;background:#211D18;border-radius:5px;">modifier label + row</span><span style="color:#6E6654;text-align:right;">&mdash;</span><span style="color:#CF8745;text-align:right;">65</span>
+            <span style="color:#6E6654;padding:5px 8px;background:#18140F;border-radius:5px;">&mdash; exact note &middot; suppressed</span><span style="color:#6E6654;text-align:right;">&mdash;</span><span style="color:#6E6654;text-align:right;">0</span>
+            <span style="color:#C0B8A6;padding:5px 8px;background:#1E1A15;border-radius:5px;">colour chips</span><span style="color:#8B8270;text-align:right;">34</span><span style="color:#C0B8A6;text-align:right;">34</span>
+            <span style="color:#C0B8A6;padding:5px 8px;background:#1E1A15;border-radius:5px;">score against + label</span><span style="color:#8B8270;text-align:right;">60</span><span style="color:#C0B8A6;text-align:right;">60</span>
+            <span style="color:#EDE6D8;padding:5px 8px;background:#211D18;border-radius:5px;">search + sort</span><span style="color:#8B8270;text-align:right;">44</span><span style="color:#CF8745;text-align:right;">44</span>
+            <span style="color:#EDE6D8;padding:5px 8px;background:#211D18;border-radius:5px;">the one report &middot; aside</span><span style="color:#6E6654;text-align:right;">&mdash;</span><span style="color:#CF8745;text-align:right;">88</span>
+            <span style="color:#6E6654;padding:5px 8px;background:#18140F;border-radius:5px;">&mdash; exclusion line &middot; suppressed</span><span style="color:#6E6654;text-align:right;">&mdash;</span><span style="color:#6E6654;text-align:right;">0</span>
+            <span style="color:#8B8270;padding:5px 8px;background:#1E1A15;border-radius:5px;">rows, summed</span><span style="color:#8B8270;text-align:right;">282</span><span style="color:#C0B8A6;text-align:right;">435</span>
+            <span style="color:#C0B8A6;padding:5px 8px;background:#1E1A15;border-radius:5px;">gaps between rows</span><span style="color:#8B8270;text-align:right;">48</span><span style="color:#C0B8A6;text-align:right;">68</span>
+            <span style="color:#EDE6D8;padding:7px 8px 0;border-top:1px solid #2B241B;font-weight:600;">before the first row</span><span style="color:#8B8270;text-align:right;padding-top:7px;border-top:1px solid #2B241B;font-weight:600;">330</span><span style="color:#EDE6D8;text-align:right;padding-top:7px;border-top:1px solid #2B241B;font-weight:600;">503</span>
+            <span style="color:#C46857;padding:2px 8px 0;">difference</span><span style="color:#6E6654;text-align:right;"></span><span style="color:#C46857;text-align:right;">+173</span>
+            <span style="color:#6E6654;padding:0 8px;">as R1 drew it</span><span style="color:#6E6654;text-align:right;">330</span><span style="color:#6E6654;text-align:right;">605</span>
+          </div>
+        </div>
+
+        <p style="margin:14px 0 0;font-size:13px;line-height:1.65;color:#C0B8A6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The two struck rows in the frame are R2&rsquo;s one-report rule.</b> At 375px, at most one thing below the bar explains the list: <b style="color:#EDE6D8;font-weight:600;">the aside wins over the exclusion line</b> (it names a row the player just typed; the line describes the pool), and the <b style="color:#EDE6D8;font-weight:600;">exact note is suppressed whenever a report already names the mode</b> &mdash; otherwise the same fact prints twice, 100px apart. Desktop renders both; it has the width and no viewport problem.</p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#C0B8A6;text-wrap:pretty;">That rule takes 102px off the R1 stack and still leaves <b style="color:#EDE6D8;font-weight:600;">503px before the first row</b> &mdash; on an 812px phone, about <b style="color:#EDE6D8;font-weight:600;">three rows</b> of list visible.</p>
+        <p style="margin:10px 0 0;font-size:12.5px;line-height:1.6;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">Basis, stated once:</b> row heights include their own padding; the column counts <b style="color:#C0B8A6;font-weight:600;">gaps between rows only</b> and excludes the gap before the first list row, on both sides.</p>
+        <p style="margin:10px 0 0;font-size:12.5px;line-height:1.6;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">R3 counted a row that is not there.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">revealBand</span> is a prop of <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">RevealControl</span>, rendered <i>inside</i> the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;ul&gt;</span> after the sliced items and only when more remain (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">discovery-view.tsx:316-333</span>) &mdash; it is never above the first row. R4 removes it from both columns, which takes <b style="color:#C0B8A6;font-weight:600;">40px off each side</b>: the absolutes drop from 543/370 to <b style="color:#C0B8A6;font-weight:600;">503/330</b>, and the visible-rows claim from two and a half to about three. <b style="color:#C0B8A6;font-weight:600;">The difference Hugh is asked to accept is unchanged at +173px</b>, because the row was double-counted on both sides.</p>
+        <div style="margin-top:14px;padding:12px 14px;background:#211D18;border:1px solid #3A3229;border-left:2px solid #CF8745;border-radius:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">Hugh&rsquo;s call &mdash; blocker 1</div>
+          <div style="font-size:13px;color:#C0B8A6;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The modifier argument holds and the number is still large.</b> Two ways out, and Design will not pick between them unprompted: <b style="color:#EDE6D8;font-weight:600;">(a) accept it</b> &mdash; the state is self-inflicted, every row in it is something the player turned on, and scrolling puts the whole block away at once; or <b style="color:#EDE6D8;font-weight:600;">(b) the phone gets a disclosure for tier 2 only</b> &mdash; pips, mode and chips behind one summary row, search and the rest staying put. (b) costs ~130px and reintroduces, for one tier on one width, exactly what &sect;7&rsquo;s answer rejected for the bar.</div>
+        </div>
+      </div>
+
+      <div style="width:600px;flex:none;background:#1A1611;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:14px;padding:20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">A5</span>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;">Where search sits &mdash; Hugh&rsquo;s call, blocker 2</div>
+        </div>
+        <div style="font-size:13px;color:#C0B8A6;line-height:1.6;margin-bottom:14px;text-wrap:pretty;">R1 put search at the leading edge and disclosed the 292px shift. <b style="color:#EDE6D8;font-weight:600;">A shift in shipped geometry is not Design&rsquo;s to disclose away</b> &mdash; both placements are drawn, both costed, neither picked.</div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="background:#14110E;border:1px solid #3A3229;border-radius:10px;padding:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#CF8745;margin-bottom:10px;">Option 1 &mdash; leading edge (R1&rsquo;s drawing)</div>
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:11px;">
+              <span style="display:flex;align-items:center;gap:6px;background:#211D18;border:1px solid #CF8745;border-radius:7px;height:28px;padding:0 9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#8B8270;">FIND</span><span style="font-size:11.5px;color:#6E6654;">Commander name</span></span>
+              <span style="display:flex;align-items:center;gap:5px;background:#18140F;border:1px solid #3A3229;border-radius:7px;height:28px;padding:0 9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#8B8270;">COLORS</span><span style="display:block;width:11px;height:11px;border-radius:999px;background:#98748F;opacity:0.35;"></span><span style="display:block;width:11px;height:11px;border-radius:999px;background:#4B7A46;opacity:0.35;"></span></span>
+              <span style="display:flex;align-items:center;background:#18140F;border:1px solid #3A3229;border-radius:7px;height:28px;padding:0 9px;font-size:11.5px;color:#C0B8A6;">Score against</span>
+              <span style="display:flex;align-items:center;background:#18140F;border:1px solid #3A3229;border-radius:7px;height:28px;padding:0 9px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;margin-left:auto;">Sort</span>
+            </div>
+            <div style="display:grid;grid-template-columns:76px 1fr;gap:6px 10px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;">for</span><span>Reading order is <b style="color:#C0B8A6;font-weight:600;">narrow &rarr; score &rarr; order</b>, and the precise instrument leads the coarse one. The field sits nearest the sentence that explains it.</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C46857;">cost</span><span>The pip wrapper and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Score against</span> <b style="color:#C0B8A6;font-weight:600;">move right 292px</b>. No declared value changes and no <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">ScoreAgainst</span> geometry is touched &mdash; but shipped x-positions move, and gap-report rules 1, 8 and 15 cover that region.</span>
+            </div>
+          </div>
+
+          <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;margin-bottom:10px;">Option 2 &mdash; trailing edge, before the sort trigger</div>
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:11px;">
+              <span style="display:flex;align-items:center;gap:5px;background:#18140F;border:1px solid #3A3229;border-radius:7px;height:28px;padding:0 9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#8B8270;">COLORS</span><span style="display:block;width:11px;height:11px;border-radius:999px;background:#98748F;opacity:0.35;"></span><span style="display:block;width:11px;height:11px;border-radius:999px;background:#4B7A46;opacity:0.35;"></span></span>
+              <span style="display:flex;align-items:center;background:#18140F;border:1px solid #3A3229;border-radius:7px;height:28px;padding:0 9px;font-size:11.5px;color:#C0B8A6;">Score against</span>
+              <span style="display:flex;align-items:center;gap:6px;background:#211D18;border:1px solid #CF8745;border-radius:7px;height:28px;padding:0 9px;margin-left:auto;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#8B8270;">FIND</span><span style="font-size:11.5px;color:#6E6654;">Commander name</span></span>
+              <span style="display:flex;align-items:center;background:#18140F;border:1px solid #3A3229;border-radius:7px;height:28px;padding:0 9px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;">Sort</span>
+            </div>
+            <div style="display:grid;grid-template-columns:76px 1fr;gap:6px 10px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;">for</span><span><b style="color:#C0B8A6;font-weight:600;">Every shipped x-position is preserved.</b> Nothing in the region the gap report protects moves by a pixel, at any width.</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C46857;">cost</span><span>A narrowing control lands <i>after</i> the scoring control, so the bar&rsquo;s left-to-right order no longer reads <b style="color:#C0B8A6;font-weight:600;">narrow &rarr; score &rarr; order</b> &mdash; the one thing that order is for. The field also sits furthest from the exclusion line it explains.</span>
+            </div>
+          </div>
+        </div>
+        <p style="margin:14px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">Identical at 375px.</b> The phone stacks one control per row, so search takes its own row in both options and the mobile stack in A4 is unaffected by the pick. Every other state in this handoff is drawn at the leading edge; if Hugh takes option 2, the only redraw is the desktop bar&rsquo;s order.</p>
+      </div>
+
+      <sc-if value="{{ showRejected }}" hint-placeholder-val="{{ true }}">
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">Rejected structures</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="background:#18140F;border:1px solid #2B241B;border-left:2px solid #6E6654;border-radius:8px;padding:12px 14px;">
+            <div style="font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:5px;">A filter sheet</div>
+            <div style="font-size:12.5px;line-height:1.6;color:#A59C89;">Puts four of the five behind a trigger, so the player cannot see which control changed the list &mdash; the exact failure the discovery handoff refused, and worse now that a control can <i>exclude a named commander</i>. A sheet also has to summarise itself, and the summary is a fifth control.</div>
+          </div>
+          <div style="background:#18140F;border:1px solid #2B241B;border-left:2px solid #6E6654;border-radius:8px;padding:12px 14px;">
+            <div style="font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:5px;">A collapsed summary row</div>
+            <div style="font-size:12.5px;line-height:1.6;color:#A59C89;">Reads well at rest and badly in use: every correction the exclusion sentence offers is a one-tap fix on a control that is now two taps away. The offers are the whole point of &sect;4.3.</div>
+          </div>
+          <div style="background:#18140F;border:1px solid #2B241B;border-left:2px solid #6E6654;border-radius:8px;padding:12px 14px;">
+            <div style="font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:5px;">Join mode as a sixth pip</div>
+            <div style="font-size:12.5px;line-height:1.6;color:#A59C89;">A swatch that is not a colour, in a row of five that are. &sect;4.2 forbids it by name, and it fails the same way a <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">C</span> pip for colourless would: the row&rsquo;s vocabulary is hue, not logic.</div>
+          </div>
+          <div style="background:#18140F;border:1px solid #2B241B;border-left:2px solid #6E6654;border-radius:8px;padding:12px 14px;">
+            <div style="font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:5px;">Join mode as a third <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Score against</span> segment</div>
+            <div style="font-size:12.5px;line-height:1.6;color:#A59C89;">Mixes the colour axis into the collection axis, and touches shipped geometry the gap report lists as required-to-preserve. Two must-nots for one placement.</div>
+          </div>
+          <div style="background:#18140F;border:1px solid #2B241B;border-left:2px solid #6E6654;border-radius:8px;padding:12px 14px;">
+            <div style="font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:5px;">Search in the app shell</div>
+            <div style="font-size:12.5px;line-height:1.6;color:#A59C89;">A global field cannot narrow <i>this</i> list in place, and &sect;4.3 rules that it must. It would also promise results across decks and collection, which is a different feature.</div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <!-- ============ B · THE JOIN-MODE MODIFIER ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">B &middot; <span style="color:#CF8745;">&sect;4.2 &mdash; the join mode, attached to the pip row</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:660px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Desktop &mdash; three states</div>
+
+        <div style="display:flex;flex-direction:column;gap:18px;">
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-bottom:7px;">1 &middot; no colours lit &mdash; the modifier does not render</div>
+            <div style="display:inline-flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:8px 12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;">COLORS</span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#F4E9C4;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#3A6AA5;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#C05A3E;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;opacity:0.35;"></span>
+            </div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:7px;">An empty selection returns every result unchanged (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">filter.ts</span>), so there is nothing for a join mode to join. Absent, not disabled.</div>
+          </div>
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-bottom:7px;">2 &middot; G + B lit, <b style="color:#C0B8A6;">Contains</b> &mdash; the default, and the shipped semantics</div>
+            <div style="display:inline-flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:8px 12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;">COLORS</span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#F4E9C4;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#3A6AA5;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #CF8745;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#C05A3E;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #CF8745;"></span>
+              <span style="display:block;width:1px;height:16px;background:#3A3229;margin:0 2px;"></span>
+              <span style="display:flex;gap:2px;background:#14110E;border:1px solid #3A3229;border-radius:6px;padding:2px;">
+                <span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;background:#CF8745;color:#14110E;">Contains</span>
+                <span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#6E6654;">Exactly</span>
+              </span>
+            </div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:7px;">Golgari, Jund, Sultai, Abzan and every five-colour commander. <b style="color:#C0B8A6;font-weight:600;">Correct, and the source of the &ldquo;behaves like OR&rdquo; report</b> &mdash; which the printed word now answers before the list has to.</div>
+          </div>
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-bottom:7px;">3 &middot; G + B lit, <b style="color:#C0B8A6;">Exactly</b> &mdash; the modifier, plus its note</div>
+            <div style="display:inline-flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:8px 12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;">COLORS</span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#F4E9C4;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#3A6AA5;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #CF8745;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#C05A3E;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #CF8745;"></span>
+              <span style="display:block;width:1px;height:16px;background:#3A3229;margin:0 2px;"></span>
+              <span style="display:flex;gap:2px;background:#14110E;border:1px solid #3A3229;border-radius:6px;padding:2px;">
+                <span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#6E6654;">Contains</span>
+                <span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;background:#CF8745;color:#14110E;">Exactly</span>
+              </span>
+            </div>
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin:8px 0 0;">exact identity &mdash; <span style="color:#C0B8A6;">61</span> of the <span style="color:#C0B8A6;">3,326</span> you have not built are Green &middot; Black and nothing else</p>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:7px;">The note takes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">freeNoteLong</span>&rsquo;s slot and register &mdash; mono 11px <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-faint</span>, under the row, present only in the non-default mode. One idiom, two controls.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid #2B241B;font-size:13px;color:#C0B8A6;line-height:1.65;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Why type and not a swatch.</b> The pip row&rsquo;s vocabulary is hue: five circles, each one a colour. A sixth circle would have to mean <i>logic</i> in a row where everything means <i>colour</i>. Two words behind a hairline are unmistakably a different kind of thing, and the active one is printed at all times &mdash; &sect;4.2&rsquo;s &ldquo;legible at a glance rather than only on hover&rdquo; is satisfied by there being no hidden state at all.</div>
+      </div>
+
+      <div style="width:375px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">375px &mdash; its own row, only when lit</div>
+        <div style="width:343px;background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:8px 11px;width:100%;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8B8270;">COLORS</span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#F4E9C4;opacity:0.35;"></span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#3A6AA5;opacity:0.35;"></span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #CF8745;"></span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#C05A3E;opacity:0.35;"></span>
+            <span style="display:block;width:14px;height:14px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #CF8745;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;margin-left:auto;">61/3,326</span>
+          </div>
+
+          <div style="margin-top:10px;">
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin:0 0 6px;">Colour match</p>
+            <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;">
+              <span style="flex:1;display:flex;align-items:center;justify-content:center;height:38px;border-radius:6px;font-size:13px;font-weight:500;color:#C0B8A6;">Contains</span>
+              <span style="flex:1;display:flex;align-items:center;justify-content:center;height:38px;border-radius:6px;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;">Exactly</span>
+            </div>
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:#8B8270;margin:7px 0 0;">exact identity &mdash; <span style="color:#C0B8A6;">61</span> of <span style="color:#C0B8A6;">3,326</span> are Green &middot; Black and nothing else</p>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#EDE6D8;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:4px 8px 4px 10px;"><span style="display:block;width:9px;height:9px;border-radius:999px;background:#98748F;"></span>Black <span style="color:#8B8270;">&#10005;</span></span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#EDE6D8;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:4px 8px 4px 10px;"><span style="display:block;width:9px;height:9px;border-radius:999px;background:#4B7A46;"></span>Green <span style="color:#8B8270;">&#10005;</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;align-self:center;">Clear</span>
+          </div>
+        </div>
+        <p style="margin:14px 0 0;font-size:13px;line-height:1.65;color:#C0B8A6;text-wrap:pretty;">At 375px the modifier cannot ride inside the wrapper &mdash; the row is already <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">COLORS</span>, five pips and the count. So it becomes a peer row, at the shipped 38px halves, with the label register the mobile <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Score against</span> uses. <b style="color:#EDE6D8;font-weight:600;">A 20px control is not a touch target;</b> the tiering is carried by conditional presence instead of by size.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ C · SEARCH ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">C &middot; <span style="color:#CF8745;">&sect;4.3 &mdash; search narrows in place, and names the control that took the match</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:560px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">The field &mdash; four states, desktop 30px / mobile 38px</div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-bottom:7px;">default &mdash; placeholder, no count</div>
+            <div style="display:flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;height:30px;padding:0 10px;width:280px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;flex:none;">FIND</span>
+              <span style="font-size:12.5px;color:#6E6654;flex:1;">Commander name</span>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-bottom:7px;">focused &mdash; brand focus-visible ring, inherited from <span style="font-family:'IBM Plex Mono',monospace;">globals.css</span></div>
+            <div style="display:flex;align-items:center;gap:8px;background:#18140F;border:1px solid #CF8745;border-radius:8px;height:30px;padding:0 10px;width:280px;box-shadow:0 0 0 2px #6B482A;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;flex:none;">FIND</span>
+              <span style="font-size:12.5px;color:#EDE6D8;flex:1;">atra<span style="display:inline-block;width:1px;height:13px;background:#CF8745;vertical-align:-2px;"></span></span>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-bottom:7px;">narrowing &mdash; the count moves inside the field, and a dismiss appears</div>
+            <div style="display:flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;height:30px;padding:0 10px;width:280px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;flex:none;">FIND</span>
+              <span style="font-size:12.5px;color:#EDE6D8;flex:1;">atraxa</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;flex:none;">3/3,326</span>
+              <span style="font-size:11px;color:#8B8270;flex:none;">&#10005;</span>
+            </div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:7px;">Two figures, always: the matches and the pool they were found in. Same rule as every other figure on this surface.</div>
+            <div style="font-size:12.5px;color:#8B8270;line-height:1.6;margin-top:7px;padding-left:11px;border-left:2px solid #C46857;"><b style="color:#C0B8A6;font-weight:600;">Blocker 7 &mdash; this figure and the pip row&rsquo;s are the same number.</b> The pip row renders <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">{filteredTotal}/{activeTotal}</span> from <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">filtered.length</span>, and search narrows that same array &mdash; so with a query the pip row <i>already</i> reads <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">3/3,326</span>. Drawing it in the field too prints it twice, against this handoff&rsquo;s own rule. <b style="color:#C0B8A6;font-weight:600;">Two exits, and Design does not pick:</b> <b style="color:#EDE6D8;font-weight:600;">(a)</b> the field count is dropped and the pip row keeps the figure &mdash; A4 draws this, and it costs search its own feedback; <b style="color:#EDE6D8;font-weight:600;">(b)</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">FilterBar</span>&rsquo;s prop is re-scoped to pre-query <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">colourFiltered.length</span> so the two figures mean different things (61 and 3) &mdash; the states here draw that, and it changes a shipped prop&rsquo;s meaning.</div>
+          </div>
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-bottom:7px;">no match at all &mdash; the field is not the error, the list is</div>
+            <div style="display:flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;height:30px;padding:0 10px;width:280px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;flex:none;">FIND</span>
+              <span style="font-size:12.5px;color:#EDE6D8;flex:1;">atrxa</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;flex:none;">0/3,326</span>
+              <span style="font-size:11px;color:#8B8270;flex:none;">&#10005;</span>
+            </div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:7px;"><b style="color:#C0B8A6;font-weight:600;">No red border, no shake, no inline error.</b> A zero count is a fact about the pool, and the sentence explaining it belongs where the rows were.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:760px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">The list region &mdash; empty result, and the two excluded-match shapes</div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:34px 24px;text-align:center;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;"><span style="flex:1;height:1px;background:#2B241B;"></span><span style="width:6px;height:6px;transform:rotate(45deg);background:#3A3229;flex:none;"></span><span style="flex:1;height:1px;background:#2B241B;"></span></div>
+            <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;margin:0 0 10px;color:#EDE6D8;">No commander is named &ldquo;atrxa&rdquo;</h3>
+            <p style="max-width:430px;margin:0 auto 16px;font-size:13.5px;line-height:1.65;color:#C0B8A6;">Nothing in the <b style="color:#EDE6D8;font-weight:600;">3,326 you have not built</b> has that in its name, and neither does anything you have. Check the spelling.</p>
+            <span style="display:inline-flex;align-items:center;height:40px;padding:0 18px;border:1px solid #CF8745;border-radius:8px;font-size:13.5px;font-weight:600;color:#CF8745;">Clear the search</span>
+          </div>
+
+          <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:34px 24px;text-align:center;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;"><span style="flex:1;height:1px;background:#2B241B;"></span><span style="width:6px;height:6px;transform:rotate(45deg);background:#3A3229;flex:none;"></span><span style="flex:1;height:1px;background:#2B241B;"></span></div>
+            <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;margin:0 0 10px;color:#EDE6D8;">Krenko, Mob Boss is here &mdash; a filter is holding it back</h3>
+            <p style="max-width:470px;margin:0 auto 16px;font-size:13.5px;line-height:1.65;color:#C0B8A6;">It matches, but the <b style="color:#EDE6D8;font-weight:600;">Green &middot; Black</b> colour filter excludes it &mdash; its identity is Red.</p>
+            <span style="display:inline-flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;">
+              <span style="display:inline-flex;align-items:center;height:40px;padding:0 18px;border:1px solid #CF8745;border-radius:8px;font-size:13.5px;font-weight:600;color:#CF8745;">Clear the colour filter</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;">1 match, 0 shown</span>
+            </span>
+            <div style="font-size:12.5px;color:#8B8270;line-height:1.6;margin-top:16px;padding-top:14px;border-top:1px solid #2B241B;text-align:left;"><b style="color:#C0B8A6;font-weight:600;">Shape 1 &mdash; every match is excluded.</b> The state replaces the list, because there is no list. It names <b style="color:#C0B8A6;font-weight:600;">one</b> control, the outermost one that removed the row, and its single action is that control&rsquo;s correction.</div>
+          </div>
+
+          <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:16px;">
+            <div style="display:flex;align-items:flex-start;gap:11px;background:#201C17;border:1px solid #3A3229;border-left:2px solid #CF8745;border-radius:8px;padding:11px 14px;">
+              <div style="flex:1;font-size:12.5px;line-height:1.6;color:#A59C89;"><b style="color:#EDE6D8;font-weight:600;">Atraxa, Praetors&rsquo; Voice</b> also matches, but <b style="color:#EDE6D8;font-weight:600;">Exactly</b> Green &middot; Black excludes it &mdash; its identity is White &middot; Blue &middot; Black &middot; Green.</div>
+              <button type="button" style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;flex:none;padding:1px 0 0;background:none;border:0;cursor:pointer;text-align:left;">Switch to Contains</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px;margin-top:12px;">
+              <div style="display:flex;align-items:center;gap:14px;background:#1E1A15;border:1px solid #2B241B;border-radius:11px;padding:14px 16px;">
+                <span style="font-family:'Cinzel',serif;font-weight:800;font-size:22px;color:#8B8270;min-width:22px;text-align:center;">7</span>
+                <span style="width:6px;height:6px;transform:rotate(45deg);background:#CF8745;flex:none;"></span>
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;flex:1;">Atraxa, Grand Unifier</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C0B8A6;">184 <span style="color:#8B8270;">of 271</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;background:#1E1A15;border:1px solid #2B241B;border-radius:11px;padding:14px 16px;">
+                <span style="font-family:'Cinzel',serif;font-weight:800;font-size:22px;color:#8B8270;min-width:22px;text-align:center;">41</span>
+                <span style="width:6px;height:6px;transform:rotate(45deg);border:1.5px solid #6E6654;flex:none;"></span>
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;flex:1;">Atraxa&rsquo;s Skitterfang</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C0B8A6;">62 <span style="color:#8B8270;">of 149</span></span>
+              </div>
+            </div>
+            <div style="font-size:12.5px;color:#8B8270;line-height:1.6;margin-top:14px;padding-top:14px;border-top:1px solid #2B241B;"><b style="color:#C0B8A6;font-weight:600;">Shape 2 &mdash; some matches survive.</b> The list is the answer, so the list stays and the excluded row is reported <i>above</i> it as an aside, in <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">NoDecksBanner</span>&rsquo;s furniture: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--surface</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">border-left 2px --accent</span>. The correction is a trailing link, not a button &mdash; the primary action is still reading the rows. <b style="color:#C0B8A6;font-weight:600;">One aside, never a stack:</b> if two controls excluded matches, the outermost is named and the sentence pluralises to a count.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:375px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">375px &mdash; the search + sort row</div>
+        <div style="width:343px;background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;display:flex;align-items:center;gap:7px;background:#18140F;border:1px solid #3A3229;border-radius:8px;height:38px;padding:0 10px;min-width:0;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8B8270;flex:none;">FIND</span>
+              <span style="font-size:13px;color:#EDE6D8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">atraxa</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;flex:none;">3/3,326</span>
+              <span style="font-size:12px;color:#8B8270;flex:none;">&#10005;</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 11px;border-radius:8px;background:#18140F;border:1px solid #3A3229;color:#EDE6D8;font-size:11px;flex:none;">Best fit <span style="color:#CF8745;">&#9662;</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;margin-top:8px;padding-left:9px;border-left:2px solid #3A3229;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.45;color:#6E6654;text-decoration:line-through;">25 shown &middot; 3,301 more below</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:#CF8745;flex:none;">removed &mdash; blocker 6</span>
+          </div>
+          <div style="margin-top:12px;display:flex;align-items:flex-start;gap:10px;background:#201C17;border:1px solid #3A3229;border-left:2px solid #CF8745;border-radius:8px;padding:10px 12px;">
+            <div style="flex:1;font-size:12px;line-height:1.55;color:#A59C89;"><b style="color:#EDE6D8;font-weight:600;">Atraxa, Praetors&rsquo; Voice</b> also matches, but <b style="color:#EDE6D8;font-weight:600;">Exactly</b> Green &middot; Black excludes it &mdash; its identity is White &middot; Blue &middot; Black &middot; Green.<br><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;">Switch to Contains</span></div>
+          </div>
+        </div>
+        <p style="margin:14px 0 0;font-size:13px;line-height:1.65;color:#C0B8A6;text-wrap:pretty;">The count row becomes the search row, and the match count rides in the field. <b style="color:#EDE6D8;font-weight:600;">The row search displaces renders <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">WindowCount</span></b> &mdash; &ldquo;25 shown &middot; 3,301 more below&rdquo; (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-bar.tsx:420-427</span>) &mdash; not <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">revealBand</span>, which lives inside the list. R3 named the wrong string here and in CONTROLS; the substitution still works, and &sect;C states what it costs.</p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;">On the phone the aside&rsquo;s correction wraps to its own line rather than sitting at the trailing edge. Same element, same border rule, two lines instead of one.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ D · THE EXCLUSION LINE ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">D &middot; <span style="color:#CF8745;">&sect;4.4 &mdash; the exclusion line, and the floor that scales</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:860px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">In place &mdash; between the bar and the first row</div>
+
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;overflow:hidden;">
+          <div style="padding:14px 34px 13px;border-bottom:1px solid #2B241B;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;height:30px;padding:0 10px;width:200px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;flex:none;">FIND</span>
+              <span style="font-size:12.5px;color:#6E6654;flex:1;">Commander name</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:8px 12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;">COLORS</span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#F4E9C4;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#3A6AA5;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #CF8745;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#C05A3E;opacity:0.35;"></span>
+              <span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #CF8745;"></span>
+              <span style="display:block;width:1px;height:16px;background:#3A3229;margin:0 2px;"></span>
+              <span style="display:flex;gap:2px;background:#14110E;border:1px solid #3A3229;border-radius:6px;padding:2px;">
+                <span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;background:#CF8745;color:#14110E;">Contains</span>
+                <span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#6E6654;">Exactly</span>
+              </span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:8px;background:#18140F;border:1px solid #3A3229;color:#EDE6D8;font-size:12px;margin-left:auto;">Something new <span style="color:#CF8745;">&#9662;</span></span>
+          </div>
+
+          <div style="padding:14px 34px 0;display:flex;align-items:baseline;gap:10px;">
+            <span style="width:6px;height:6px;transform:rotate(45deg);background:#3A3229;flex:none;margin-top:5px;"></span>
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;color:#8B8270;margin:0;"><span style="color:#C0B8A6;">1,622</span> excluded by the Green &middot; Black colour filter &middot; <span style="color:#C0B8A6;">1,047</span> fall below the <span style="color:#C0B8A6;">30%</span> support floor for this pool and <span style="color:#C0B8A6;">212</span> have no tags to measure</p>
+          </div>
+          <div style="padding:10px 34px 0;display:flex;align-items:baseline;gap:10px;">
+            <span style="width:6px;height:6px;transform:rotate(45deg);background:#3A3229;flex:none;margin-top:5px;"></span>
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;color:#8B8270;margin:0;"><span style="color:#C0B8A6;">3,089</span> commanders fall below the <span style="color:#C0B8A6;">30%</span> support floor for this pool and <span style="color:#C0B8A6;">212</span> have no tags to measure. The closest is at <span style="color:#C0B8A6;">22%</span>. <span style="color:#6E6654;">&mdash; the floor-only form</span></p>
+          </div>
+
+          <div style="padding:14px 34px 22px;display:flex;flex-direction:column;gap:9px;">
+            <div style="display:flex;align-items:center;gap:14px;background:#1E1A15;border:1px solid #2B241B;border-radius:11px;padding:14px 16px;">
+              <span style="font-family:'Cinzel',serif;font-weight:800;font-size:22px;color:#8B8270;min-width:22px;text-align:center;">1</span>
+              <span style="width:6px;height:6px;transform:rotate(45deg);border:1.5px solid #6E6654;flex:none;"></span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;flex:1;">Meren of Clan Nel Toth</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C0B8A6;">6 <span style="color:#8B8270;">of 6 tags</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;background:#1E1A15;border:1px solid #2B241B;border-radius:11px;padding:14px 16px;">
+              <span style="font-family:'Cinzel',serif;font-weight:800;font-size:22px;color:#8B8270;min-width:22px;text-align:center;">2</span>
+              <span style="width:6px;height:6px;transform:rotate(45deg);background:#CF8745;flex:none;"></span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;flex:1;">Slimefoot, the Stowaway</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C0B8A6;">5 <span style="color:#8B8270;">of 7 tags</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:118px 1fr;gap:9px 12px;margin-top:16px;font-size:13px;color:#C0B8A6;line-height:1.6;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">one line</span><span>Mono 11.5px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span>, figures <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span>, a 6px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span> diamond leading. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">EndOfRanking</span>&rsquo;s furniture, at the other end of the list.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">two clauses</span><span>At most, joined by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&middot;</span> and ordered by <b style="color:#EDE6D8;font-weight:600;">tier, never magnitude</b> &mdash; colour or mode, then floor. A third clause makes it a paragraph, and a paragraph above a list is read as an error.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">not scope</span><span><b style="color:#EDE6D8;font-weight:600;">Scope has no clause here, and R2 deletes the key R1 wrote for it.</b> Under the discovery scope every built commander is excluded by scope on every load, so a scope clause would print always &mdash; against &ldquo;absent when nothing was excluded&rdquo;, and it would report the plane&rsquo;s own definition as a loss. The subtitle already states the population. Scope still names itself in the <i>excluded-match</i> sentence, where a specific row the player searched for is what went missing.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">floor prints</span><span>The floor clause carries its percentage in <b style="color:#EDE6D8;font-weight:600;">both</b> forms &mdash; the two-clause one and the floor-only sentence with its nearest miss. R1&rsquo;s floor-only string took a nearest-miss figure and no floor, which made it the one call site claiming the floor without printing it.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">the pool case</span><span><b style="color:#EDE6D8;font-weight:600;">A pool exclusion is the floor&rsquo;s sub-case, not a fifth cause.</b> R5 cut the comparative clause and took the pool keys&rsquo; only trigger with it &mdash; the precedence table puts the floor above <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Score against</span>, so the floor branch won every time and the three pool strings could never fire. The discriminator is now <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">clearsAgainstCollection</span>: when the floor is the cause <i>and</i> the row would clear against the full collection, the pool sentence is selected; otherwise <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">excluded.floor</span> covers it. One flag, one branch, and the pool keys are reachable.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">two groups</span><span><b style="color:#EDE6D8;font-weight:600;">Under <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">New</span> the sort removes two populations, and R5 names both in one clause.</b> Rows measured and found below the floor, and rows with <b style="color:#EDE6D8;font-weight:600;">no tag data to measure at all</b> &mdash; R4 counted only the first, so the printed total minus the excluded count did not equal the rows on screen and the second group was named nowhere. Both are the sort&rsquo;s own doing, so <b style="color:#EDE6D8;font-weight:600;">they share one clause with two figures</b> rather than taking both of the two available. Tier order is unaffected and the cap holds. Chosen over printing a pre-filtered denominator, which would hide a population the player can act on by switching sort, and over dropping the arithmetic, which would make every figure on the surface unverifiable.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">no accent</span><span>The line is a receipt, not a control and not a ranking. Brass would put it in competition with the sort key, which decision 1 of the discovery handoff reserves.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">absent</span><span>With nothing excluded, <b style="color:#EDE6D8;font-weight:600;">the line does not render</b> &mdash; no &ldquo;0 excluded&rdquo;, no reserved height. Missing data is omitted, never zeroed, and an absence of exclusions is missing data.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">not live</span><span>Static content, read on demand. The page&rsquo;s existing live region already announces the re-rank; announcing the exclusions too would say the same event twice.</span>
+        </div>
+      </div>
+
+      <div style="width:500px;flex:none;display:flex;flex-direction:column;gap:20px;">
+        <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">The same sentence when nothing survives</div>
+          <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:30px 22px;text-align:center;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;"><span style="flex:1;height:1px;background:#2B241B;"></span><span style="width:6px;height:6px;transform:rotate(45deg);background:#3A3229;flex:none;"></span><span style="flex:1;height:1px;background:#2B241B;"></span></div>
+            <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;margin:0 0 10px;color:#EDE6D8;">Nothing clears the bar for &ldquo;new&rdquo; against free cards</h3>
+            <p style="max-width:470px;margin:0 auto 16px;font-size:13.5px;line-height:1.65;color:#C0B8A6;">Something new only shows commanders you could actually build &mdash; <b style="color:#EDE6D8;font-weight:600;">at least 30% of their support list already in your collection</b>. Read against the <b style="color:#EDE6D8;font-weight:600;">214 free cards</b> in this pool, 3,114 of the 3,326 fall below that bar and 212 have no tags to measure. <b style="color:#EDE6D8;font-weight:600;">1,679 of them would clear it against everything you own.</b></p>
+            <span style="display:inline-flex;align-items:center;height:40px;padding:0 18px;border:1px solid #CF8745;border-radius:8px;font-size:13.5px;font-weight:600;color:#CF8745;">Score against everything I own</span>
+          </div>
+          <p style="margin:14px 0 0;font-size:13px;line-height:1.65;color:#C0B8A6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">#341 was filed against the wrong cause, so the fix is a sentence and a CTA.</b> The shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FloorEmpty</span> offers <i>the other sort</i>; when the pool is the cause it offers <b style="color:#EDE6D8;font-weight:600;">the other pool</b> instead, because that is the control that took the rows.</p>
+          <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">The comparative figure is back, and it has moved into the body.</b> R2&rsquo;s aside (&ldquo;1,704 clear it there&rdquo;) and R4&rsquo;s comparative clause were both cut because knowing a row&rsquo;s standing in the <i>other</i> pool meant a second ranking pass. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">clearsAgainstCollection</span> supplies it from one extra column, so the figure now sits <b style="color:#C0B8A6;font-weight:600;">inside the sentence</b> rather than in a separate aside &mdash; one voice, and the evidence the CTA rests on.</p>
+          <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;">Ruling: <b style="color:#C0B8A6;font-weight:600;">still never a looser floor.</b> Two doors out, both of them honest: change the pool, or change the sort. The floor itself is not negotiable from the UI.</p>
+          <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">The populations sum to the pool.</b> R5 fixed this on the exclusion line and left the same fault here: &ldquo;3,301 of the 3,326 fall below it&rdquo; leaves <b style="color:#C0B8A6;font-weight:600;">25 unaccounted for</b>, which reads as 25 rows that cleared &mdash; in a state whose entire premise is that none did. Below-floor plus unmeasurable now equals the candidate count exactly, and the state can be checked against its own heading.</p>
+          <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">The last clause is the CTA&rsquo;s evidence, and it is affordable now.</b> R5 cut every &ldquo;would clear against everything you own&rdquo; claim because it needed a second ranking pass. Hugh&rsquo;s decision supplies it from <b style="color:#C0B8A6;font-weight:600;">one extra column in a query that already runs</b>, so the sentence says what the R4 draft wanted to say &mdash; truthfully, and at a cost engineering has accepted. <b style="color:#C0B8A6;font-weight:600;">1,679 would clear it elsewhere</b> is what makes the CTA an offer rather than a shrug.</p>
+          <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">The free-pool figure stays</b> in all four strings that print it. The payload carries the collection&rsquo;s size, not the pool&rsquo;s; engineering is adding the one number. Naming the pool the figures were read against is &sect;4.4&rsquo;s premise, and &ldquo;this pool&rdquo; without its size is a denominator the player cannot check.</p>
+        </div>
+
+        <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">The floor is variable now, so it prints</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;gap:12px;align-items:baseline;background:#18140F;border:1px solid #2B241B;border-radius:8px;padding:11px 13px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;width:96px;flex:none;">everything</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.6;">30% of the support list</span></div>
+            <div style="display:flex;gap:12px;align-items:baseline;background:#18140F;border:1px solid #2B241B;border-radius:8px;padding:11px 13px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;width:96px;flex:none;">what&rsquo;s free</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.6;">scaled to the free pool &mdash; <span style="color:#C0B8A6;">25</span> of 3,326 clear it</span></div>
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.45;color:#6E6654;margin:0;padding-left:9px;border-left:2px solid #3A3229;">only the active pool has a count. The other pool&rsquo;s would need a second ranking pass &mdash; R5 cut that claim from every string.</p>
+          </div>
+          <p style="margin:14px 0 0;font-size:13px;line-height:1.65;color:#C0B8A6;text-wrap:pretty;">&sect;4.4 makes the threshold a function of the pool, which turns <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">NOVELTY_FLOOR</span> from a constant into a figure. <b style="color:#EDE6D8;font-weight:600;">Every figure prints its denominator</b> &mdash; so the row&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">clears the floor &mdash; you own 41% of its list</span> now needs the bar it cleared, and the exclusion line and the empty state must print the same number the ranking applied. One source, <b style="color:#EDE6D8;font-weight:600;">seven call sites</b> &mdash; the row note at both widths, both forms of the exclusion line, the pool empty state, the excluded-match floor sentence, and <b style="color:#EDE6D8;font-weight:600;">the collection-variant <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FloorEmpty</span></b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">emptyCopy.floorBody</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">.floorEmphasis</span>, which hardcodes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Math.round(NOVELTY_FLOOR * 100)</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">discovery-view.tsx:243-248</span>) &mdash; and the same figure in every one. R3 enumerated six and missed the seventh, which would have kept the constant while the rest scaled.</p>
+          <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">This edits a second shipped string, and R1&ndash;R3 said there was one.</b> The row note ships as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">justify.floorNote(pct)</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">.floorNoteShort(pct)</span> &mdash; the threshold was a constant, so it was never passed. Printing it needs <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">(floorPct, pct)</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">discovery-row.tsx:401</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">:542</span>. So the count is <b style="color:#C0B8A6;font-weight:600;">two</b> &mdash; this and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">justify.distanceNear</span> (&sect;F) &mdash; exported as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">floorNoteEdit</span> so the diff is explicit. <b style="color:#C0B8A6;font-weight:600;">Must-not 3 and the gap report are audited against that count</b>, which is why it is stated here rather than found at review: blocker 5.</p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">Naming.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">floorPct</span> here means the <i>threshold</i>; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">novelty.ts:15-18</span> uses the same name for a row&rsquo;s own support percentage. In every drawn string the threshold is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">floorPct</span> and the row&rsquo;s figure is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">pct</span>; one needs renaming, and Design&rsquo;s preference is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">supportPct</span> for the row&rsquo;s.</p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">Design does not set the scaling function.</b> It sets the contract: whatever the function returns is printed wherever the floor is claimed, and the drawn strings carry a slot for it. The function itself is a &sect;4.4 engineering call &mdash; flagged in the gap report.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ E · #343 ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">E &middot; <span style="color:#CF8745;">#343 &mdash; the archetype overflow, disclosed in place</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:1000px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Desktop &mdash; collapsed, then open. Same slot, same leading, no popover.</div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:grid;grid-template-columns:40px 100px 1fr 236px;gap:20px;align-items:stretch;background:#1E1A15;border:1px solid #2B241B;border-radius:12px;padding:24px 26px;">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;color:#8B8270;line-height:1;">4</span><span style="width:6px;height:6px;transform:rotate(45deg);background:#CF8745;"></span></div>
+            <div style="background:#18140F;border:1px solid #2B241B;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#6E6654;text-align:center;padding:6px;">commander<br>art</div>
+            <div style="display:flex;flex-direction:column;gap:13px;min-width:0;">
+              <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;margin:0;color:#EDE6D8;line-height:1.1;">Atraxa, Praetors&rsquo; Voice</h3>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A59C89;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">ramp 21</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A59C89;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">removal 18</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A59C89;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">draw 14</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;flex:none;">New to you</span>
+                <span style="font-size:13.5px;line-height:1.5;color:#C0B8A6;"><b style="color:#CF8745;font-weight:600;">proliferate &middot; counters &middot; infect</b> &mdash; and <span style="border-bottom:1px dotted #8B8270;color:#C0B8A6;">4 more</span>. Your closest build, <b style="color:#EDE6D8;font-weight:600;">Kaalia</b>, plays counters &mdash; the rest are new.</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;"><span style="width:6px;height:6px;transform:rotate(45deg);background:#CF8745;"></span><span style="color:#D9975C;">in your collection, never built</span> &middot; 1,204 cards fit &middot; 42 already in use</div>
+            </div>
+            <div style="display:flex;flex-direction:column;justify-content:center;gap:10px;border-left:1px solid #2B241B;padding-left:20px;">
+              <div style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:34px;color:#EDE6D8;line-height:1;">7</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8B8270;">of 7 tags</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;">Unplayed tags</span></div>
+              <p style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.5;color:#8B8270;margin:0;">clears the 30% floor &mdash; you own <span style="color:#C0B8A6;">41%</span> of its support list</p>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:40px 100px 1fr 236px;gap:20px;align-items:stretch;background:#201C17;border:1px solid #3A3229;border-radius:12px;padding:24px 26px;">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;color:#8B8270;line-height:1;">4</span><span style="width:6px;height:6px;transform:rotate(45deg);background:#CF8745;"></span></div>
+            <div style="background:#18140F;border:1px solid #2B241B;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#6E6654;text-align:center;padding:6px;">commander<br>art</div>
+            <div style="display:flex;flex-direction:column;gap:13px;min-width:0;">
+              <h3 style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;margin:0;color:#EDE6D8;line-height:1.1;">Atraxa, Praetors&rsquo; Voice</h3>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A59C89;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">ramp 21</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A59C89;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">removal 18</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A59C89;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">draw 14</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;flex:none;">New to you</span>
+                <span style="font-size:13.5px;line-height:1.5;color:#C0B8A6;"><b style="color:#CF8745;font-weight:600;">proliferate &middot; counters &middot; infect &middot; toxic &middot; lifegain &middot; blink &middot; superfriends</b> &mdash; <span style="border-bottom:1px dotted #8B8270;color:#C0B8A6;">show fewer</span>. Your closest build, <b style="color:#EDE6D8;font-weight:600;">Kaalia</b>, plays counters &mdash; the rest are new.</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;"><span style="width:6px;height:6px;transform:rotate(45deg);background:#CF8745;"></span><span style="color:#D9975C;">in your collection, never built</span> &middot; 1,204 cards fit &middot; 42 already in use</div>
+            </div>
+            <div style="display:flex;flex-direction:column;justify-content:center;gap:10px;border-left:1px solid #2B241B;padding-left:20px;">
+              <div style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:34px;color:#EDE6D8;line-height:1;">7</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8B8270;">of 7 tags</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;">Unplayed tags</span></div>
+              <p style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.5;color:#8B8270;margin:0;">clears the 30% floor &mdash; you own <span style="color:#C0B8A6;">41%</span> of its support list</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:118px 1fr;gap:9px 12px;margin-top:16px;font-size:13px;color:#C0B8A6;line-height:1.6;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">the trigger</span><span>The count clause is already the only text in that sentence that stands for hidden content, so it <b style="color:#EDE6D8;font-weight:600;">becomes the button</b>: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">4 more</span> &rarr; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">show fewer</span>. 1px dotted <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> underline, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span> label. No new control, no new glyph, no chevron.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">not brass</span><span>The trigger is <i>not</i> accented even though it sits inside the accented run: brass is the sort key, and a disclosure is not evidence. The names it reveals <b style="color:#EDE6D8;font-weight:600;">are</b> brass, because they are the same kind of thing as the first three.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">scan rhythm</span><span>The row grows by the lines the names need &mdash; one at seven tags, at most two at the observed maximum &mdash; and every other element keeps its position. <b style="color:#EDE6D8;font-weight:600;">The list does not become a stack of cards</b> because nothing about the row&rsquo;s composition changes; one sentence wraps.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">no fetch</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">item.unplayedLabels</span> already carries the full array to the client (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">discovery-row.tsx:105-117</span>), so this is presentation over data the row holds. No query, no field, no loading state.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;padding-top:2px;">rejected</span><span>A hover tooltip (dead on touch, and 3,300 rows of floating layer), a popover (a second surface for seven words), and a link to the detail page (leaves the list to read a list).</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;padding-top:2px;">a11y</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;button aria-expanded&gt;</span> inside the sentence, labelled <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show all 7 archetypes for Atraxa, Praetors&rsquo; Voice</span>. The visible sentence stays <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span> as shipped; the row&rsquo;s accessible name already carries <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">distanceAria</span>&rsquo;s N-of-M, so opening announces the names and nothing else.</span>
+        </div>
+      </div>
+
+      <div style="width:375px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">375px &mdash; identical rule, three lines instead of one</div>
+        <div style="width:343px;background:#1E1A15;border:1px solid #2B241B;border-radius:11px;padding:12px 13px;display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <div style="width:44px;height:60px;background:#18140F;border:1px solid #2B241B;border-radius:6px;flex:none;"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-family:'Cinzel',serif;font-weight:800;font-size:17px;color:#8B8270;min-width:16px;text-align:center;line-height:1;">4</span>
+                <span style="width:6px;height:6px;transform:rotate(45deg);background:#CF8745;flex:none;"></span>
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Atraxa, Praetors&rsquo; Voice</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:none;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:#EDE6D8;line-height:1;">7</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">of 7 tags</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A59C89;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:3px 8px;">ramp 21</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A59C89;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:3px 8px;">removal 18</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A59C89;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:3px 8px;">draw 14</span>
+          </div>
+          <p style="margin:0;font-size:12.5px;line-height:1.5;color:#C0B8A6;"><b style="color:#CF8745;font-weight:600;">proliferate &middot; counters &middot; infect &middot; toxic &middot; lifegain &middot; blink &middot; superfriends</b> &mdash; <span style="border-bottom:1px dotted #8B8270;">show fewer</span>. Your closest build, <b style="color:#EDE6D8;font-weight:600;">Kaalia</b>, plays counters &mdash; the rest are new.</p>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.55;color:#8B8270;"><span style="color:#D9975C;">yours, never built</span> &middot; 1,204 fit &middot; 42 in use</div>
+          <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">clears the 30% floor &mdash; you own <span style="color:#C0B8A6;">41%</span> of its list</p>
+        </div>
+        <p style="margin:14px 0 0;font-size:13px;line-height:1.65;color:#C0B8A6;text-wrap:pretty;">The phone pays the most for this and still pays only in wrapped lines. <b style="color:#EDE6D8;font-weight:600;">The tile&rsquo;s composition is untouched:</b> one paragraph in the same place, at the same 12.5px/1.5, taller by two lines while open.</p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.65;color:#8B8270;text-wrap:pretty;">Hit target: the trigger is a text run inside a sentence, so it carries <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">padding:6px 2px;margin:-6px -2px</span> to reach 44px without moving a pixel of the sentence.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ F · #344 ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">F &middot; <span style="color:#CF8745;">#344 &mdash; the nearest-deck clause, reframed rather than deleted</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:700px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="background:#18140F;border:1px solid #2B241B;border-left:2px solid #6E6654;border-radius:10px;padding:14px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6E6654;margin-bottom:8px;">Shipped &mdash; <span style="text-transform:none;letter-spacing:0;">justify.distanceNear</span></div>
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#A59C89;"><b style="color:#CF8745;font-weight:600;">proliferate &middot; counters &middot; infect</b> &mdash; and 4 more. <b style="color:#C0B8A6;font-weight:600;">Closest is your Kaalia list, which shares counters.</b></p>
+            <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:#8B8270;">Under a sort whose claim is <i>this is new to you</i>, the sentence ends on the one thing that is not. It reads as a caveat the product added to its own recommendation.</p>
+          </div>
+
+          <div style="background:#18140F;border:1px solid #3A3229;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Drawn &mdash; the deck becomes the reference point, the newness is the point</div>
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#C0B8A6;"><b style="color:#CF8745;font-weight:600;">proliferate &middot; counters &middot; infect</b> &mdash; and 4 more. <b style="color:#EDE6D8;font-weight:600;">Your closest build, Kaalia, plays counters &mdash; the rest are new.</b></p>
+            <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:#8B8270;">Same two facts, same clause, same two arguments &mdash; <b style="color:#C0B8A6;font-weight:600;">the shipped signature is genuinely unchanged</b>. The deck moves to the front as the <i>yardstick</i> and the sentence ends on newness rather than on the overlap. Nothing is hidden: a player who plays counters still learns that they do.</p>
+            <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:#8B8270;"><b style="color:#C0B8A6;font-weight:600;">No count in the clause, on purpose.</b> R2 drew &ldquo;the other 6 are new&rdquo;, computed as unplayed tags minus shared ones &mdash; <b style="color:#C0B8A6;font-weight:600;">disjoint sets, so the subtraction was meaningless</b>. The figure the row needs is already printed beside it (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">7 of 7 tags</span>), so the clause says &ldquo;the rest&rdquo; and adds no third argument.</p>
+          </div>
+
+          <div style="background:#18140F;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:8px;">Unchanged &mdash; <span style="text-transform:none;letter-spacing:0;">justify.distanceNone</span></div>
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#C0B8A6;"><b style="color:#CF8745;font-weight:600;">proliferate &middot; counters &middot; infect</b> &mdash; and 4 more. Nothing you have built plays these.</p>
+            <p style="margin:8px 0 0;font-size:12.5px;line-height:1.6;color:#8B8270;">Already a reason <i>for</i>, already plain, already does not congratulate. Left alone.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:620px;flex:none;background:#1E1A15;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:14px;padding:20px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Finding for the audit &mdash; there is no per-sort fork to build</div>
+        <p style="margin:0 0 12px;font-size:14.5px;line-height:1.7;color:#C0B8A6;text-wrap:pretty;">&sect;5 asks &ldquo;whether the nearest-deck clause belongs under the novelty sort at all&rdquo; and notes it &ldquo;is genuinely useful under the fit sort, so this is a per-sort decision, not a delete.&rdquo;</p>
+        <p style="margin:0 0 12px;font-size:14.5px;line-height:1.7;color:#C0B8A6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The fit sort does not render the clause.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">discovery-row.tsx</span> computes <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">const tags = fit ? null : tagSentence(item)</span>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">tagSentence</span> is the only producer of <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">distanceNear</span>. Under Best fit the justification slot holds the overlap sentence and its bar; the tags, the count and the deck clause are all absent at both widths.</p>
+        <p style="margin:0 0 12px;font-size:14.5px;line-height:1.7;color:#C0B8A6;text-wrap:pretty;">So the clause exists in exactly one place &mdash; the sort the brief says it contradicts. <b style="color:#EDE6D8;font-weight:600;">One string changes, and nothing branches.</b> That is the smallest possible fix and it is also the whole fix.</p>
+        <p style="margin:0;font-size:14.5px;line-height:1.7;color:#8B8270;text-wrap:pretty;"><b style="color:#C0B8A6;font-weight:600;">Adding it to the fit sort is a separate question</b>, and this handoff does not answer it: the fit slot is a bar, a label and a sentence at 12px mono, and a second sentence there would put two justifications in a slot decision 1 of the discovery handoff reserved for one. Logged as gap 3.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ G · §4.5 HEADER ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">G &middot; <span style="color:#CF8745;">&sect;4.5 &mdash; the control that moves when you use it</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:820px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6E6654;margin-bottom:10px;">Today at 1024px &mdash; conformant to the table, and it still moves under the cursor</div>
+
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:28px 34px 18px;margin-bottom:10px;">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+            <div>
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:0;color:#EDE6D8;">Commanders</h2>
+              <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;margin:4px 0 0;color:#8B8270;">242 commanders you own &middot; ranked by fit &middot; read against 2,805 cards &middot; every card you own</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex:none;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Show</span>
+              <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;">
+                <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:600;color:#14110E;background:#CF8745;white-space:nowrap;">Commanders I own</span>
+                <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:500;color:#C0B8A6;white-space:nowrap;">Something to play</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#14110E;border:1px solid #3A3229;border-radius:10px;padding:28px 34px 18px;">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+            <div style="max-width:620px;">
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:0;color:#EDE6D8;">Commanders</h2>
+              <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;margin:4px 0 0;color:#8B8270;">3,326 commanders you have not built &middot; ranked by what is new to you &middot; read against 2,805 cards &middot; every card you own</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex:none;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Show</span>
+              <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;">
+                <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:500;color:#C0B8A6;white-space:nowrap;">Commanders I own</span>
+                <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:600;color:#14110E;background:#CF8745;white-space:nowrap;">Something to play</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C46857;margin:12px 0 0;">&uarr; the segment the player just clicked is now on the row below where they clicked it</p>
+        </div>
+
+        <div style="font-size:13px;color:#C0B8A6;line-height:1.65;margin-top:14px;text-wrap:pretty;">Gaps 1 and 2 of the gap report put <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">gap: 24px</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-wrap: wrap</span> on this row <i>to match the table</i>. The implementation is right and the drawing is what has the defect &mdash; which is why #335 was refiled from bug to design.</div>
+      </div>
+
+      <div style="width:820px;flex:none;background:#1A1611;border:1px solid #3A3229;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:10px;">Drawn &mdash; the subtitle gets its own row, and stops being able to push anything</div>
+
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:28px 34px 18px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:0;color:#EDE6D8;">Commanders</h2>
+            <div style="display:flex;align-items:center;gap:10px;flex:none;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Show</span>
+              <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;">
+                <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:600;color:#14110E;background:#CF8745;white-space:nowrap;">Commanders I own</span>
+                <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:500;color:#C0B8A6;white-space:nowrap;">Something to play</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;margin:4px 0 0;color:#8B8270;">242 commanders you own &middot; ranked by fit &middot; read against 2,805 cards &middot; every card you own</p>
+        </div>
+
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:28px 34px 18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:0;color:#EDE6D8;">Commanders</h2>
+            <div style="display:flex;align-items:center;gap:10px;flex:none;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Show</span>
+              <div style="display:flex;gap:3px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:3px;">
+                <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:500;color:#C0B8A6;white-space:nowrap;">Commanders I own</span>
+                <span style="display:flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:6px;font-size:12.5px;font-weight:600;color:#14110E;background:#CF8745;white-space:nowrap;">Something to play</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;margin:4px 0 0;color:#8B8270;">3,326 commanders you have not built &middot; ranked by what is new to you &middot; read against 2,805 cards &middot; every card you own</p>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6FA368;margin:12px 0 0;">&uarr; the control has not moved, and the subtitle may grow to any length</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:118px 1fr;gap:9px 12px;margin-top:16px;font-size:13px;color:#C0B8A6;line-height:1.6;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">row 1</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">h1</span> and the scope control, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">space-between</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">align-items:center</span> (was <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-end</span>, which only existed to baseline the control against the subtitle), <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">gap:24px</span> kept, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-wrap</span> no longer needed &mdash; a 30px title and a 32px control cannot collide at any width.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">row 2</span><span>The subtitle, full width, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">margin-top:4px</span>. Byte-identical type, colour and copy. It may wrap to two lines at 1024px and that is now harmless.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">cost</span><span><b style="color:#EDE6D8;font-weight:600;">Zero added height.</b> The subtitle already occupied its own line; it now occupies its own <i>row</i>. No padding, colour, size or string changes &mdash; must-not 3 and must-not 5 both hold.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">mobile</span><span>Unchanged. The stacked column already put the subtitle above a full-width control, so 375px has always had this layout &mdash; desktop is being brought into line with the phone, not the other way round.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;padding-top:2px;">rejected</span><span><b style="color:#C0B8A6;font-weight:600;">Preventing the wrap</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">nowrap</span> plus a min-width on the text block) fixes one breakpoint and one string. The control&rsquo;s position stays a function of a sentence&rsquo;s length, so the next copy change reopens #335 &mdash; and must-not 5 guarantees that sentence keeps growing.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;padding-top:2px;">table</span><span>This amends <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">discovery-controls.md</span>: the header row becomes two rows, and gap 2&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-wrap: wrap</span> is superseded rather than reverted. Gap 1&rsquo;s 24px survives on row 1.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ H · SIX THEMES ============ -->
+  <sc-if value="{{ showThemeStrip }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">H &middot; <span style="color:#CF8745;">the three new elements, in all six shipped themes</span></div>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+
+      <div style="width:440px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:18px;">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Amonkhet</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">default &middot; #CF8745</span></div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;height:30px;padding:0 10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8B8270;">FIND</span><span style="font-size:12.5px;color:#EDE6D8;flex:1;">atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">3/3,326</span></div>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#18140F;border:1px solid #3A3229;border-radius:8px;padding:8px 12px;align-self:flex-start;"><span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #CF8745;"></span><span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #CF8745;"></span><span style="display:block;width:1px;height:16px;background:#3A3229;"></span><span style="display:flex;gap:2px;background:#14110E;border:1px solid #3A3229;border-radius:6px;padding:2px;"><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#6E6654;">Contains</span><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;background:#CF8745;color:#14110E;">Exactly</span></span></div>
+          <div style="display:flex;align-items:baseline;gap:9px;"><span style="width:6px;height:6px;transform:rotate(45deg);background:#3A3229;flex:none;margin-top:4px;"></span><p style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:#8B8270;margin:0;"><span style="color:#C0B8A6;">1,622</span> excluded by the colour filter &middot; <span style="color:#C0B8A6;">1,047</span> below the <span style="color:#C0B8A6;">30%</span> floor for this pool</p></div>
+        </div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#12141B;border:1px solid #181C26;border-radius:14px;padding:18px;">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#E6E8F0;">Kamigawa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6F7486;">#FF4D9A</span></div>
+        <div style="background:#0E0F14;border:1px solid #181C26;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;align-items:center;gap:8px;background:#101219;border:1px solid #262A35;border-radius:8px;height:30px;padding:0 10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#6F7486;">FIND</span><span style="font-size:12.5px;color:#E6E8F0;flex:1;">atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6F7486;">3/3,326</span></div>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#101219;border:1px solid #262A35;border-radius:8px;padding:8px 12px;align-self:flex-start;"><span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #FF4D9A;"></span><span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #FF4D9A;"></span><span style="display:block;width:1px;height:16px;background:#262A35;"></span><span style="display:flex;gap:2px;background:#0E0F14;border:1px solid #262A35;border-radius:6px;padding:2px;"><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#606476;">Contains</span><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;background:#FF4D9A;color:#0E0F14;">Exactly</span></span></div>
+          <div style="display:flex;align-items:baseline;gap:9px;"><span style="width:6px;height:6px;transform:rotate(45deg);background:#262A35;flex:none;margin-top:4px;"></span><p style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:#6F7486;margin:0;"><span style="color:#B1B6C7;">1,622</span> excluded by the colour filter &middot; <span style="color:#B1B6C7;">1,047</span> below the <span style="color:#B1B6C7;">30%</span> floor for this pool</p></div>
+        </div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#15191A;border:1px solid #1C2224;border-radius:14px;padding:18px;">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#DDE3E1;">Innistrad</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#737D7B;">#8AAFA1</span></div>
+        <div style="background:#101314;border:1px solid #1C2224;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;align-items:center;gap:8px;background:#131718;border:1px solid #2B3133;border-radius:8px;height:30px;padding:0 10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#737D7B;">FIND</span><span style="font-size:12.5px;color:#DDE3E1;flex:1;">atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#737D7B;">3/3,326</span></div>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#131718;border:1px solid #2B3133;border-radius:8px;padding:8px 12px;align-self:flex-start;"><span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #8AAFA1;"></span><span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #8AAFA1;"></span><span style="display:block;width:1px;height:16px;background:#2B3133;"></span><span style="display:flex;gap:2px;background:#101314;border:1px solid #2B3133;border-radius:6px;padding:2px;"><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#606A68;">Contains</span><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;background:#8AAFA1;color:#101314;">Exactly</span></span></div>
+          <div style="display:flex;align-items:baseline;gap:9px;"><span style="width:6px;height:6px;transform:rotate(45deg);background:#2B3133;flex:none;margin-top:4px;"></span><p style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:#737D7B;margin:0;"><span style="color:#B3BDBB;">1,622</span> excluded by the colour filter &middot; <span style="color:#B3BDBB;">1,047</span> below the <span style="color:#B3BDBB;">30%</span> floor for this pool</p></div>
+        </div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#110F13;border:1px solid #19161C;border-radius:14px;padding:18px;">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#E4E2E6;">New Phyrexia</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#78747E;">#52827A</span></div>
+        <div style="background:#0D0B0E;border:1px solid #19161C;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;align-items:center;gap:8px;background:#100E12;border:1px solid #262329;border-radius:8px;height:30px;padding:0 10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#78747E;">FIND</span><span style="font-size:12.5px;color:#E4E2E6;flex:1;">atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#78747E;">3/3,326</span></div>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#100E12;border:1px solid #262329;border-radius:8px;padding:8px 12px;align-self:flex-start;"><span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #52827A;"></span><span style="display:block;width:16px;height:16px;border-radius:999px;background:#527030;box-shadow:0 0 0 2px #52827A;"></span><span style="display:block;width:1px;height:16px;background:#262329;"></span><span style="display:flex;gap:2px;background:#0D0B0E;border:1px solid #262329;border-radius:6px;padding:2px;"><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#64616A;">Contains</span><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;background:#52827A;color:#0D0B0E;">Exactly</span></span></div>
+          <div style="display:flex;align-items:baseline;gap:9px;"><span style="width:6px;height:6px;transform:rotate(45deg);background:#262329;flex:none;margin-top:4px;"></span><p style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:#78747E;margin:0;"><span style="color:#B5B2BB;">1,622</span> excluded by the colour filter &middot; <span style="color:#B5B2BB;">1,047</span> below the <span style="color:#B5B2BB;">30%</span> floor for this pool</p></div>
+        </div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#15131C;border:1px solid #1F2933;border-radius:14px;padding:18px;">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#D8DBE0;">Duskmourn</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#646D7E;">#49A9DC</span></div>
+        <div style="background:#100E15;border:1px solid #1F2933;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;align-items:center;gap:8px;background:#13111A;border:1px solid #2F3A44;border-radius:8px;height:30px;padding:0 10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#646D7E;">FIND</span><span style="font-size:12.5px;color:#D8DBE0;flex:1;">atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#646D7E;">3/3,326</span></div>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#13111A;border:1px solid #2F3A44;border-radius:8px;padding:8px 12px;align-self:flex-start;"><span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #49A9DC;"></span><span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #49A9DC;"></span><span style="display:block;width:1px;height:16px;background:#2F3A44;"></span><span style="display:flex;gap:2px;background:#100E15;border:1px solid #2F3A44;border-radius:6px;padding:2px;"><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#5D6676;">Contains</span><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;background:#49A9DC;color:#100E15;">Exactly</span></span></div>
+          <div style="display:flex;align-items:baseline;gap:9px;"><span style="width:6px;height:6px;transform:rotate(45deg);background:#2F3A44;flex:none;margin-top:4px;"></span><p style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:#646D7E;margin:0;"><span style="color:#AFB8C8;">1,622</span> excluded by the colour filter &middot; <span style="color:#AFB8C8;">1,047</span> below the <span style="color:#AFB8C8;">30%</span> floor for this pool</p></div>
+        </div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#181920;border:1px solid #1A1F2B;border-radius:14px;padding:18px;">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#C6D2D3;">Kaldheim</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8A8C;">#5C86C9</span></div>
+        <div style="background:#121217;border:1px solid #1A1F2B;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;align-items:center;gap:8px;background:#16171D;border:1px solid #2E3340;border-radius:8px;height:30px;padding:0 10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#7C8A8C;">FIND</span><span style="font-size:12.5px;color:#C6D2D3;flex:1;">atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8A8C;">3/3,326</span></div>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#16171D;border:1px solid #2E3340;border-radius:8px;padding:8px 12px;align-self:flex-start;"><span style="display:block;width:16px;height:16px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #5C86C9;"></span><span style="display:block;width:16px;height:16px;border-radius:999px;background:#4B7A46;box-shadow:0 0 0 2px #5C86C9;"></span><span style="display:block;width:1px;height:16px;background:#2E3340;"></span><span style="display:flex;gap:2px;background:#121217;border:1px solid #2E3340;border-radius:6px;padding:2px;"><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#5F6D6E;">Contains</span><span style="font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;background:#5C86C9;color:#121217;">Exactly</span></span></div>
+          <div style="display:flex;align-items:baseline;gap:9px;"><span style="width:6px;height:6px;transform:rotate(45deg);background:#2E3340;flex:none;margin-top:4px;"></span><p style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:#7C8A8C;margin:0;"><span style="color:#B3C0C2;">1,622</span> excluded by the colour filter &middot; <span style="color:#B3C0C2;">1,047</span> below the <span style="color:#B3C0C2;">30%</span> floor for this pool</p></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:16px;max-width:1400px;background:#1A1611;border:1px solid #2B241B;border-radius:12px;padding:16px 20px;font-size:13px;line-height:1.65;color:#C0B8A6;">
+      <b style="color:#EDE6D8;font-weight:600;">No new token, no new hex.</b> Every element above is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1px --border-strong</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> labels and one <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span> fill; the mana pips keep their own five hexes, which are theme-independent by design. The only per-theme judgement is the active modifier segment, where <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--bg</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span> at mono 10px/600 is the same pairing the shipped segments already use at 12.5px &mdash; <b style="color:#EDE6D8;font-weight:600;">Kaldheim is the tightest at 5.4:1</b> and clears AA.
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2B241B;color:#8B8270;"><b style="color:#C0B8A6;font-weight:600;">Note for the audit.</b> These are the six in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">globals.css</span> and named in &sect;3. <a href="../design_handoff_the99_theme_replacement/The 99 - Theme Replacement Candidates.dc.html">Theme replacement R6</a> retires Innistrad and Duskmourn for Ixalan &middot; Canopy and Eldraine &middot; Witching Hour. If R6 lands, the last two cards swap accent hue and nothing else on this surface changes &mdash; no geometry here is keyed to a hue.</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ I · CONTRACT ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">I &middot; <span style="color:#CF8745;">token, a11y and motion contract</span></div>
+
+    <div style="display:flex;gap:26px;flex-wrap:wrap;">
+      <div style="width:660px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">Accessibility</div>
+        <div style="display:grid;grid-template-columns:118px 1fr;gap:10px 12px;font-size:13px;color:#C0B8A6;line-height:1.6;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">join mode</span><span>A two-option <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">radiogroup</span>, roving tab stop, selection follows focus &mdash; the pattern <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ScopeControl</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ScoreAgainst</span> both ship. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span> on the group at both widths (the desktop caption is inside the wrapper and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span>, per the gap report&rsquo;s note on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">display:none</span> labels).</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">search</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;input type="search"&gt;</span> with a visible-but-<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FIND</span> caption and its own <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span>. The in-field count is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span>; the match count is announced once per settle on the page&rsquo;s existing live region, debounced with the re-rank message.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">exclusion line</span><span>Static text, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">role</span>-less, before the list in DOM order so a reader meets it before the first row. Not a live region.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">the aside</span><span>The excluded-match aside is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">role="status"</span> &mdash; it appears in response to typing and its whole value is being noticed. Its correction is a real <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">button</span>, in the tab order, not a link.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">disclosure</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-expanded</span> on the count trigger; label names the commander and the total. 44px effective target via negative-margin padding.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">contrast</span><span>Every drawn pairing is at or above the shipped values it borrows. The exclusion line at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--bg</span> matches the shipped subtitle, and its figures step up to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span>.</span>
+        </div>
+      </div>
+
+      <div style="width:660px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">Motion, and what does not move</div>
+        <div style="display:grid;grid-template-columns:118px 1fr;gap:10px 12px;font-size:13px;color:#C0B8A6;line-height:1.6;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">no animation</span><span>Neither the join flip, the query, nor the disclosure animates the list. The discovery ruling stands and the reason is stronger at 3,326 rows: a dimmed or sliding list makes a local state change look like a fetch.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">no debounce jump</span><span>Search narrows on input, and the row region does not reserve or collapse height between keystrokes. The count in the field is the only thing that changes per character.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">URL</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?join=exact</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?q=</span> round-trip beside the existing <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?c=</span>, non-defaults only &mdash; the rule <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?avail</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?scope</span> already follow.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">window reset</span><span>A query or a join flip resets <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shown</span> to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">REVEAL_STEP</span>, as every other narrowing does. The disclosure does not.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">nothing new</span><span>No new token, no new hex, no new motion class, no new modal, no new component &mdash; one new <i>element</i>, the exclusion line, built from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">EndOfRanking</span>&rsquo;s furniture.</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;padding-top:2px;">not sticky</span><span>The bar keeps its shipped stickiness and gains nothing. Search is inside it and scrolls away with it.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <div style="max-width:1400px;margin-top:56px;padding-top:20px;border-top:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6E6654;line-height:1.8;">
+    Mock data: the player owns 2,805 cards and has built 8 decks; 3,342 commanders indexed, 3,326 unbuilt, 214 free cards in the current pool. Commander names, colour identities and archetype lists are real in shape and <b style="color:#8B8270;font-weight:600;">fabricated in value</b>. Verified against <span style="color:#8B8270;">origin/main</span> at <span style="color:#8B8270;">20b8c1d</span> via the brief; component geometry read from <span style="color:#8B8270;">filter-bar.tsx</span>, <span style="color:#8B8270;">page-header.tsx</span>, <span style="color:#8B8270;">scope-control.tsx</span>, <span style="color:#8B8270;">sort-menu.tsx</span>, <span style="color:#8B8270;">discovery-row.tsx</span> and <span style="color:#8B8270;">discovery-empty.tsx</span> on that commit.
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showRejected&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Canvas&quot;,&quot;label&quot;:&quot;Show rejected shapes&quot;},&quot;showThemeStrip&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Canvas&quot;,&quot;label&quot;:&quot;Show the six-theme strip&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      showRejected: this.props.showRejected ?? true,
+      showThemeStrip: this.props.showThemeStrip ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>

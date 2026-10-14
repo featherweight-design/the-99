@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; border-bottom: 1px solid rgba(207,135,69,0.35); }
+  a:hover { color: #DE9757; border-bottom-color: #DE9757; }
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+  <!-- ═══════════ head ═══════════ -->
+  <section style="max-width:1500px;margin:0 0 34px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">DECK FOLDERS R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">a shelf to put decks on</span>
+    </div>
+
+    <div style="border:2px solid #CF8745;border-radius:14px;background:#181318;padding:24px 28px;margin-bottom:22px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">&sect;5 answered first &middot; for the chassis build, today</div>
+      <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 14px;line-height:1.25;text-wrap:pretty;">A folder is a <span style="color:#CF8745;">nav level</span>, not a filter dimension &mdash; and the chassis needs no redraw, no density pass and no sixth control to make that true. One call site changes one number.</h1>
+      <p style="font-size:15px;line-height:1.72;color:#C6B79A;margin:0 0 14px;max-width:1180px;text-wrap:pretty;">Branch <b style="color:#EDE6D8;font-weight:600;">(b)</b>. The level is <b style="color:#EDE6D8;font-weight:600;">one 34px line above the chassis</b> carrying the shelves and their counts; the chassis keeps its four dimensions and its trailing sort slot exactly as shipped, and filters <i>within</i> the shelf. What the chassis team has to do: <b style="color:#EDE6D8;font-weight:600;">pass the shelf&rsquo;s deck count as <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">total</span> to the result line</b> instead of the library&rsquo;s (<span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">decks-view.tsx</span>, one argument). Nothing else. No slot, no panel, no chip, no new clear scope.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#141116;padding:14px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">the kill shot for (a)</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.68;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Under (a) a new folder is born disabled.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">listFolders</span> returns empty folders with <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">deckCount: 0</span>, and every panel dimension on this route disables a zero-count row (<span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">decks-view.tsx</span>&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">disabled: count === 0</span>). So the only surface naming the folder you just made refuses to be clicked, and there is no route to file the first deck into it. A shelf you cannot reach is not a shelf.</div>
+        </div>
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#141116;padding:14px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">and the row cannot hold it</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.68;text-wrap:pretty;">A sixth control fits <b style="color:#EDE6D8;font-weight:600;">by zero pixels at rest and overflows the moment a folder is chosen</b> &mdash; measured against the shipped literals in &sect;2. A folder is also the only dimension on <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">/decks</span> whose value is <b style="color:#EDE6D8;font-weight:600;">player-typed and unbounded</b>; every other one has a fixed vocabulary of two, five or six short words.</div>
+        </div>
+        <div style="border:1px solid #3A3229;border-radius:10px;background:#141116;padding:14px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">one way to narrow, not two</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.68;text-wrap:pretty;">There is <b style="color:#EDE6D8;font-weight:600;">no folder chip, no folder panel and no folder in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">DeckFilters</span></b>. The shelf lives on <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">ViewState</span> beside the filters, never inside them, which is what makes <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">EMPTY_FILTERS</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">activeFilterCount</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Clear all filters</span> incapable of touching it &mdash; by construction, not by care.</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="max-width:1180px;font-size:15px;line-height:1.72;color:#C6B79A;margin:0;text-wrap:pretty;">Below: four corrections to the brief read from <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">main</span> (&sect;0), the density arithmetic that decides &sect;5 (&sect;2), the nav model with its rejected alternative (&sect;1), the three empty states and the precedence ladder that keeps five kinds of nothing from colliding (&sect;4), move / create / rename / delete (&sect;5b), and the contract (&sect;6).</p>
+  </section>
+
+  <!-- ═══════════ §0 corrections ═══════════ -->
+  <section id="s0" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;0</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">Four corrections, read at <span style="font-family:'IBM Plex Mono',monospace;font-size:20px;">main</span> rather than recalled</h2>
+    </div>
+    <p style="max-width:1180px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">The brief was verified at <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">e4b40752</span> and describes the chassis as landing. It has landed. That changes the shape of the &sect;5 question from <i>what should the chassis do about folders</i> to <i>what can be added to a frame that is already built and audited</i> &mdash; which is a better question, and it has a measurable answer.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;">
+      <div style="border:1px solid #2B241B;border-left:3px solid #6FA368;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">1 &middot; the chassis is shipped, not building</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">src/components/ui/filter-chassis.tsx</span> exists and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">decks-view.tsx</span> mounts it, with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ColourPips</span>, two <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FilterPanel</span> mounts and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DeckSortMenu</span> in the trailing slot. So this handoff amends a live component rather than a drawing.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-left:3px solid #6FA368;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;margin-bottom:8px;">2 &middot; the sidebar is already gone</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;">&sect;4 says &ldquo;that sidebar is going&rdquo;. It went: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-filter-column.tsx</span> is now three exported helpers (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">toggleIn</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SearchField</span>, two label maps) and draws no column. The 262px is already spent. <b style="color:#EDE6D8;font-weight:600;">This round must not ask for any of it back</b>, and does not &mdash; the level is horizontal.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-left:3px solid #DEAA29;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">3 &middot; the breakpoint is 1000, not 900</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CHASSIS_WIDE_MIN_PX = 1000</span>, and the component says why: the chassis handoff&rsquo;s own 887px total was wrong (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> needs 987). <b style="color:#EDE6D8;font-weight:600;">Every frame here switches at 1000</b>, and the shelf line takes that breakpoint rather than a Tailwind stop &mdash; the same trap <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-filter-sheet.tsx</span> already fixed with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">max-[999px]:flex</span>.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-left:3px solid #DEAA29;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">4 &middot; the compact row is already three controls</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;">Below 1000 the shipped row is a 44px search icon, then <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sort</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Filters</span> as a trailing cluster &mdash; not five inline controls. There is <b style="color:#EDE6D8;font-weight:600;">no room in it for a fourth</b>, which is the compact half of the (a) arithmetic and needs no measurement.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ §2 arithmetic ═══════════ -->
+  <section id="s2" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;2</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The density pass branch (a) would have needed, done &mdash; it fails by 108px</h2>
+    </div>
+    <p style="max-width:1180px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">The wide form&rsquo;s narrowest case is a 1000px viewport: 62px of nav rail leaves a 938px content region, and the chassis&rsquo;s own <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">px-[22px]</span> leaves <b style="color:#EDE6D8;font-weight:600;">894px of row</b>. Row 1 may never wrap (chassis decision 18) and search is its only shrinking child, with a 132px floor. Padding, gaps, pip sizes and the trigger&rsquo;s span cap below are literals from the shipped files; the label widths are estimated at IBM Plex Sans 13px medium and are the only soft figures in the table.</p>
+
+    <div data-theme="{{ theme }}" style="width:1024px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:24px 30px 26px;margin-bottom:18px;">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:var(--fg);">Row 1 at 894px</span>
+        <span style="flex:1;height:1px;background:var(--border);"></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">each control carrying one value</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 92px 92px;gap:0;font-family:'IBM Plex Mono',monospace;font-size:12px;">
+        <div style="padding:8px 0;color:var(--fg-faint);border-bottom:1px solid var(--border);">control</div>
+        <div style="padding:8px 0;color:var(--fg-faint);text-align:right;border-bottom:1px solid var(--border);">shipped</div>
+        <div style="padding:8px 0;color:var(--fg-faint);text-align:right;border-bottom:1px solid var(--border);">with folder</div>
+
+        <div style="padding:7px 0;color:var(--fg-body);border-bottom:1px solid var(--border);">Search field &middot; floor, never below</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">132</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">132</div>
+
+        <div style="padding:7px 0;color:var(--fg-body);border-bottom:1px solid var(--border);"><span style="color:var(--fg);">Status &middot; Building</span> &nbsp;28 pad + 8 gap + 9 chevron + label</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">155</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">155</div>
+
+        <div style="padding:7px 0;color:var(--fg-body);border-bottom:1px solid var(--border);">Colour pips &nbsp;5 &times; 22 + 4 &times; 6</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">134</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">134</div>
+
+        <div style="padding:7px 0;color:var(--fg-body);border-bottom:1px solid var(--border);"><span style="color:var(--fg);">Last played &middot; This month</span></div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">195</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">195</div>
+
+        <div style="padding:7px 0;color:var(--warning);border-bottom:1px solid var(--border);"><span style="color:var(--warning);">Folder &middot; Commander night</span> &nbsp;&mdash; the new slot</div>
+        <div style="padding:7px 0;color:var(--fg-locked);text-align:right;border-bottom:1px solid var(--border);">&mdash;</div>
+        <div style="padding:7px 0;color:var(--warning);text-align:right;border-bottom:1px solid var(--border);">197</div>
+
+        <div style="padding:7px 0;color:var(--fg-body);border-bottom:1px solid var(--border);">Gaps inside the leading group &nbsp;8px each</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">24</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">32</div>
+
+        <div style="padding:7px 0;color:var(--fg-body);border-bottom:1px solid var(--border);">Hairline + its two gaps</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">17</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">17</div>
+
+        <div style="padding:7px 0;color:var(--fg-body);border-bottom:1px solid var(--border);"><span style="color:var(--fg);">Sort &middot; last played</span> &nbsp;trailing slot, 32px tall</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">140</div>
+        <div style="padding:7px 0;color:var(--fg);text-align:right;border-bottom:1px solid var(--border);">140</div>
+
+        <div style="padding:10px 0 0;color:var(--fg);font-weight:600;">Row</div>
+        <div style="padding:10px 0 0;color:var(--success);text-align:right;font-weight:600;">797</div>
+        <div style="padding:10px 0 0;color:var(--danger);text-align:right;font-weight:600;">1002</div>
+
+        <div style="padding:4px 0 0;color:var(--fg-faint);">of 894 available</div>
+        <div style="padding:4px 0 0;color:var(--success);text-align:right;">97 spare</div>
+        <div style="padding:4px 0 0;color:var(--danger);text-align:right;">108 over</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;">
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">at rest it fits by zero</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;">A <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Folder &#9662;</span> trigger with nothing chosen is 28 + 44 + 8 + 9 = <b style="color:#EDE6D8;font-weight:600;">89px, plus its 8px gap: 97</b> &mdash; exactly the spare. A frame that fits at rest and breaks on first use is worse than one that never fit, because the defect ships.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">the structural ceiling is worse</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-panel.tsx</span> caps a one-value trigger span at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">max-w-[230px]</span>, so a trigger&rsquo;s ceiling is <b style="color:#EDE6D8;font-weight:600;">275px</b>. Three of those plus pips plus search plus sort is 1280 &mdash; <b style="color:#EDE6D8;font-weight:600;">386 over</b>. Folder names cap at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DECK_NAME_MAX</span>, so the ceiling is reachable by typing.</div>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#141116;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">and the level costs 34px of height</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;">The brief&rsquo;s objection to (b) is &ldquo;a second piece of chrome on a route that just gave up its sidebar&rdquo;. The trade, in the same units: the sidebar returned <b style="color:#EDE6D8;font-weight:600;">262px of 1378</b> (19% of width at 1440); the shelf line takes <b style="color:#EDE6D8;font-weight:600;">34px of ~940</b> (3.6% of height), and no deck art narrows by a pixel. Height is the cheap axis on a page that already scrolls.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ §1 the nav model ═══════════ -->
+  <section id="s1" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;1</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The nav model &mdash; a shelf line, its own pattern, a parameter rather than a route</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin-bottom:22px;">
+      <div style="border:1px solid #3A3229;border-radius:10px;background:#161318;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">&sect;3.1 &middot; not the breadcrumb</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;">The set pages&rsquo; line is a <b style="color:#EDE6D8;font-weight:600;">trail between two real pages</b> &mdash; a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;Link&gt;</span> to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection/sets</span> above a title. A breadcrumb here would promise a parent page to climb to and would sit <i>above</i> the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">h1</span>, where the reader is not choosing anything. Folders get their own pattern; the set breadcrumb is untouched.</div>
+      </div>
+      <div style="border:1px solid #3A3229;border-radius:10px;background:#161318;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">&sect;3.1 &middot; a place you go, and the URL says so</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?folder=&lt;id&gt;</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?folder=none</span> for Unfiled, absent for All decks &mdash; written with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">replaceState</span> through the existing <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">apply()</span>, added to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">OWNED_PARAMS</span>. <b style="color:#EDE6D8;font-weight:600;">Not a route:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">page.tsx</span> would refetch an identical list and throw the filter state away. Shareable without being a navigation.</div>
+      </div>
+      <div style="border:1px solid #3A3229;border-radius:10px;background:#161318;padding:14px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">the selected shelf spends no accent</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.68;text-wrap:pretty;">Selected is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--elevated</span> under a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span> ring &mdash; verbatim what the active <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">By type</span> pill already draws, and what card-surfaces&rsquo; reconciliation ruled for exactly this case. Accent stays reserved for <i>in use</i> and <i>to buy</i>, and the chassis keeps accent as its own &ldquo;this filter is on&rdquo; &mdash; which is a second reason the two lines never read as the same kind of control.</div>
+      </div>
+    </div>
+
+    <!-- 1a -->
+    <div id="1a" style="border:1px solid #3A3229;border-radius:14px;background:#141116;padding:20px 22px 24px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">1a</span>
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">The shelf line &mdash; counted segments above the chassis</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;border:1px solid #6FA368;border-radius:5px;padding:2px 7px;">RULED</span>
+      </div>
+      <p style="max-width:1180px;font-size:13.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">One 34px line on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--bg</span>, above the chassis&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--surface-sunken</span> ground, so the two are different surfaces as well as different heights. <b style="color:#EDE6D8;font-weight:600;">Every shelf and its count is on screen without opening anything</b> &mdash; which is what makes a feature nothing currently draws discoverable at all, and it is why this wins over <a href="#1b">1b</a>.</p>
+
+      <div data-theme="{{ theme }}" style="width:940px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+        <!-- header -->
+        <div style="display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border);">
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Decks</span>
+          <span style="flex:1;"></span>
+          <span style="display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg);">Import</span>
+          <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg);font-size:12.5px;font-weight:600;color:var(--bg);">New deck</span>
+        </div>
+        <!-- shelf line -->
+        <div style="display:flex;align-items:center;gap:6px;padding:10px 22px;">
+          <span style="display:inline-flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:13px;font-weight:500;color:var(--fg);white-space:nowrap;">All decks <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-left:7px;">12</span></span>
+          <span style="display:inline-flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;border:1px solid transparent;font-size:13px;color:var(--fg-muted);white-space:nowrap;">Commander night <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-left:7px;">4</span></span>
+          <span style="display:inline-flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;border:1px solid transparent;font-size:13px;color:var(--fg-muted);white-space:nowrap;">Cube night <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-left:7px;">3</span></span>
+          <span style="display:inline-flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;border:1px solid transparent;font-size:13px;color:var(--fg-muted);white-space:nowrap;">Unfiled <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-left:7px;">5</span></span>
+          <span style="flex:1;"></span>
+          <span style="display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 11px;border-radius:8px;border:1px dashed var(--border-dashed);font-size:12.5px;color:var(--fg-body);white-space:nowrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">+</span> New folder</span>
+        </div>
+        <!-- chassis, unchanged -->
+        <div style="background:var(--surface-sunken);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:12px 22px 10px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="display:inline-flex;align-items:center;gap:9px;height:34px;flex:1;min-width:0;padding:0 11px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);font-size:12.5px;color:var(--fg-faint);">&#9906; Search decks</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated);font-size:13px;font-weight:500;color:var(--fg);white-space:nowrap;">Status <span style="color:var(--fg-faint);">&#9662;</span></span>
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+              <span style="width:22px;height:22px;border-radius:50%;background:var(--w);"></span>
+              <span style="width:22px;height:22px;border-radius:50%;background:var(--u);"></span>
+              <span style="width:22px;height:22px;border-radius:50%;background:var(--b);"></span>
+              <span style="width:22px;height:22px;border-radius:50%;background:var(--r);"></span>
+              <span style="width:22px;height:22px;border-radius:50%;background:var(--g);"></span>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated);font-size:13px;font-weight:500;color:var(--fg);white-space:nowrap;">Last played <span style="color:var(--fg-faint);">&#9662;</span></span>
+            <span style="width:1px;height:20px;background:var(--border);"></span>
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;font-weight:500;color:var(--fg-body);white-space:nowrap;">Sort &middot; last played</span>
+          </div>
+          <div style="display:flex;align-items:center;min-height:22px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:14px;color:var(--fg-faint);">No filters on</span>
+            <span style="flex:1;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:14px;color:var(--fg-locked);text-decoration:underline;">Clear all filters</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">12 decks</div>
+        </div>
+        <!-- grid stand-in -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:18px 22px;">
+          <div style="height:132px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset) repeating-linear-gradient(135deg, rgba(255,255,255,0.022) 0 7px, transparent 7px 14px);display:flex;align-items:flex-end;padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">deck tile</div>
+          <div style="height:132px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset) repeating-linear-gradient(135deg, rgba(255,255,255,0.022) 0 7px, transparent 7px 14px);"></div>
+          <div style="height:132px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset) repeating-linear-gradient(135deg, rgba(255,255,255,0.022) 0 7px, transparent 7px 14px);"></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:18px;">
+        <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">order</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">All decks, then folders by name, then Unfiled.</b> Name order is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">listFolders</span>&rsquo; own <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">orderBy(asc(name))</span> and its reason carries here verbatim: a creation order moves a shelf the moment one is added. Unfiled is last because it is the residue, not a shelf you chose.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">the counts are never filter-dependent</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">The shelf is above the filters, so its figures are too: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deckCount</span> from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">listFolders</span> for named shelves, and the loaded list for All decks and Unfiled. <b style="color:#EDE6D8;font-weight:600;">The one filter-dependent figure on the route is the result line</b>, and it now reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">4 of 7 decks match</span> against the shelf above it &mdash; the same 7, twice, auditable by looking up.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:10px;background:#161318;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">what wrapping does</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">Unlike row 1 this line <b style="color:#EDE6D8;font-weight:600;">may wrap to a second line</b>, and at many folders it does. That is legitimate here and forbidden there for one reason: the chassis promises a fixed height so the list never moves under a reader mid-filter; the shelf line moves the list only when the reader changes shelf, which moves the list anyway. Ceiling: past two lines it scrolls horizontally rather than growing a third.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1b -->
+    <div id="1b" style="border:1px solid #2B241B;border-radius:14px;background:#131015;padding:20px 22px 22px;margin-bottom:0;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C0B8A6;background:#29241F;border-radius:5px;padding:3px 8px;">1b</span>
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#C0B8A6;">The shelf as the title &mdash; zero added height</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;border:1px solid #C6533F;border-radius:5px;padding:2px 7px;">REJECTED</span>
+      </div>
+      <p style="max-width:1180px;font-size:13.5px;line-height:1.7;color:#8E8471;margin:0 0 16px;text-wrap:pretty;">The <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">h1</span> becomes the shelf and carries the picker, so the level costs <b style="color:#C0B8A6;font-weight:600;">no pixels at all</b> &mdash; the strongest possible answer to the brief&rsquo;s chrome objection, and drawn because of it.</p>
+      <div data-theme="{{ theme }}" style="width:640px;background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;opacity:0.86;">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Decks /</span>
+          <span style="display:inline-flex;align-items:baseline;gap:8px;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Commander night</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">7</span><span style="color:var(--fg-muted);font-size:13px;">&#9662;</span></span>
+          <span style="flex:1;"></span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">&hellip;</span>
+        </div>
+        <div style="background:var(--surface-sunken);padding:12px 22px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">the chassis, unchanged</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:16px;">
+        <div style="border:1px solid #2B241B;border-left:3px solid #C6533F;border-radius:10px;background:#141116;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:7px;">why it loses</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Nothing draws folders today, so the level has to teach that it exists.</b> Behind a title menu, the shelves, their counts and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">New folder</span> are all invisible until a reader opens a control they have no reason to open. 1a is the same information at one tap and no discovery cost.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-left:3px solid #C6533F;border-radius:10px;background:#141116;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:7px;">and it is a breadcrumb after all</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">A faint <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Decks /</span> above a title is the set pages&rsquo; line, which is the pattern &sect;3.1 says does not fit &mdash; it promises a parent route. Rebuilt honestly it stops being free, which was its only advantage.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:10px;background:#141116;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">what it lends 1a</div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.65;text-wrap:pretty;">Its <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&hellip;</span> placement survives: <b style="color:#EDE6D8;font-weight:600;">folder actions belong to the shelf you are standing on</b>, never to all seven segments at once &mdash; a menu per segment is seven controls in a 34px line and unreachable on a phone.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ §3 compact ═══════════ -->
+  <section id="s3" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;3</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">Below 1000px the level is a trigger and a sheet &mdash; the one shape change, and its reason</h2>
+    </div>
+    <p style="max-width:1180px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;text-wrap:pretty;">Chassis decision 23 says a control keeps its shape across both forms. The shelf line is not a chassis control, and it cannot keep this one: <b style="color:#EDE6D8;font-weight:600;">three player-named shelves at a 44px target are already past 358px</b>, and a second horizontal scroller directly above the chassis is the defect <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">scrollCompactControls</span> exists to contain, not to duplicate. So the level becomes what every dimension in this app already becomes at this width: a trigger that opens a sheet. What must not happen is it <i>reading</i> like one &mdash; four carriers keep it apart, listed under the frames.</p>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">390px &middot; standing on a shelf</div>
+        <div data-theme="{{ theme }}" style="width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:10px;padding:16px 16px 0;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:var(--fg);">Decks</span>
+          </div>
+          <div style="display:flex;gap:8px;padding:12px 16px 0;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;flex:1;height:44px;border-radius:10px;background:var(--fg);font-size:14px;font-weight:600;color:var(--bg);">New deck</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;flex:1;height:44px;border-radius:10px;border:1px solid var(--border-strong);font-size:14px;color:var(--fg);">Import</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;">
+            <span style="display:inline-flex;align-items:center;gap:8px;height:44px;min-width:0;flex:1;padding:0 12px;border-radius:10px;background:var(--elevated);border:1px solid var(--border-strong);">
+              <span style="font-size:15px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Commander night</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">7</span>
+              <span style="margin-left:auto;color:var(--fg-muted);font-size:13px;">&#9662;</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-body);">&hellip;</span>
+          </div>
+          <div style="background:var(--surface-sunken);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:9px;border:1px solid var(--border-strong);color:var(--fg-body);">&#9906;</span>
+              <span style="flex:1;"></span>
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:15px;">&#8645;</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 12px;border-radius:9px;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-body);">Filter decks</span>
+            </div>
+            <div style="display:flex;align-items:center;min-height:22px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:14px;color:var(--fg-faint);">No filters on</span>
+              <span style="flex:1;"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:14px;color:var(--fg-locked);text-decoration:underline;">Clear all filters</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">7 decks</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;padding:14px 16px;">
+            <div style="height:96px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset) repeating-linear-gradient(135deg, rgba(255,255,255,0.022) 0 7px, transparent 7px 14px);"></div>
+            <div style="height:96px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset) repeating-linear-gradient(135deg, rgba(255,255,255,0.022) 0 7px, transparent 7px 14px);"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">390px &middot; the shelf sheet</div>
+        <div data-theme="{{ theme }}" style="width:390px;background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:16px 16px 12px 12px;overflow:hidden;">
+          <div style="display:flex;justify-content:center;padding:9px 0 4px;"><span style="width:36px;height:4px;border-radius:2px;background:var(--border-strong);"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:var(--fg);">Shelves</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface-raised);font-size:13px;color:var(--fg-muted);">&#10005;</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:48px;padding:12px 16px;border-top:1px solid var(--border);">
+            <span style="width:18px;height:18px;border-radius:50%;background:var(--accent);border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:var(--bg);">&#9679;</span>
+            <span style="flex:1;font-size:14.5px;color:var(--fg);">Commander night</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">7</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:48px;padding:12px 16px;border-top:1px solid var(--border);">
+            <span style="width:18px;height:18px;border-radius:50%;border:1px dashed var(--border-dashed);background:var(--bg);"></span>
+            <span style="flex:1;font-size:14.5px;color:var(--fg);">All decks</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">12</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:48px;padding:12px 16px;border-top:1px solid var(--border);">
+            <span style="width:18px;height:18px;border-radius:50%;border:1px dashed var(--border-dashed);background:var(--bg);"></span>
+            <span style="flex:1;font-size:14.5px;color:var(--fg);">Cube night</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">3</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;min-height:48px;padding:12px 16px;border-top:1px solid var(--border);">
+            <span style="width:18px;height:18px;border-radius:50%;border:1px dashed var(--border-dashed);background:var(--bg);"></span>
+            <span style="flex:1;font-size:14.5px;color:var(--fg);">Unfiled</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">5</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:12px 16px;border-top:1px solid var(--border);color:var(--fg-body);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;">+</span>
+            <span style="font-size:14.5px;">New folder&hellip;</span>
+          </div>
+          <div style="padding:12px 16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+            <span style="display:inline-flex;align-items:center;height:44px;padding:0 22px;border-radius:10px;background:var(--fg);font-size:13.5px;font-weight:600;color:var(--bg);">Done</span>
+          </div>
+        </div>
+      </div>
+      <div style="max-width:380px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">four carriers keep it out of the filter register</div>
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#161318;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.7;">
+          <div style="margin-bottom:10px;"><b style="color:#EDE6D8;font-weight:600;">1 &middot; It is a name, not a label.</b> The trigger prints the shelf at 15px semibold &mdash; the register of a title. A filter trigger prints its dimension at 12.5&ndash;13px medium and only then a value.</div>
+          <div style="margin-bottom:10px;"><b style="color:#EDE6D8;font-weight:600;">2 &middot; Different ground.</b> It sits on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--bg</span>, above the hairline that starts the chassis&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span> block.</div>
+          <div style="margin-bottom:10px;"><b style="color:#EDE6D8;font-weight:600;">3 &middot; Single-select, and the sheet says so with a round mark</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-panel.tsx</span>&rsquo;s own rule: &ldquo;a square tick on a one-of-many list promises you can have two&rdquo;. One deck, one folder, drawn.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">4 &middot; It carries a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&hellip;</span>.</b> No filter control in this app has actions on it. A place you can rename is not a filter value.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#141116;padding:14px 18px;margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.7;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">order in the sheet</div>
+          The <b style="color:#EDE6D8;font-weight:600;">current shelf is pinned first</b>, then All decks, then folders by name, then Unfiled &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-panel.tsx</span>&rsquo;s pin-on-open rule, which exists so the first visible row is the one you are on. The pin is computed once, on open.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ §4 empty states ═══════════ -->
+  <section id="s4" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;4</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">&sect;3.2 &mdash; five kinds of nothing, one occupant, and a strict ladder</h2>
+    </div>
+    <p style="max-width:1180px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 18px;text-wrap:pretty;">The route already distinguishes two. Folders add two more, and the brief&rsquo;s third turns out not to be an empty state at all. <b style="color:#EDE6D8;font-weight:600;">The grid region has exactly one occupant, chosen in this order</b>, and the chassis and the shelf line are never replaced by any of them &mdash; whatever caused the emptiness must stay on screen and stay reversible.</p>
+
+    <div data-theme="{{ theme }}" style="width:1024px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:22px 28px;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:34px 1fr 260px;font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;">
+        <div style="padding:8px 0;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">#</div>
+        <div style="padding:8px 0;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">when</div>
+        <div style="padding:8px 0;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">what the grid region holds</div>
+
+        <div style="padding:10px 0;font-family:'IBM Plex Mono',monospace;color:var(--accent);border-bottom:1px solid var(--border);">1</div>
+        <div style="padding:10px 0;color:var(--fg-body);border-bottom:1px solid var(--border);line-height:1.6;"><b style="color:var(--fg);">No decks at all.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">decks.length === 0</span> &mdash; and the shelf line does not draw either, because a shelf for nothing is furniture. First folder is reachable once the first deck exists.</div>
+        <div style="padding:10px 0;color:var(--fg);border-bottom:1px solid var(--border);line-height:1.6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DecksZero</span>, unchanged</div>
+
+        <div style="padding:10px 0;font-family:'IBM Plex Mono',monospace;color:var(--accent);border-bottom:1px solid var(--border);">2</div>
+        <div style="padding:10px 0;color:var(--fg-body);border-bottom:1px solid var(--border);line-height:1.6;"><b style="color:var(--fg);">A named shelf holds no decks.</b> &sect;3.2 (ii). Reachable the instant a folder is created, which is the loop: create &rarr; land on the shelf &rarr; the state names where filing happens.</div>
+        <div style="padding:10px 0;color:var(--fg);border-bottom:1px solid var(--border);line-height:1.6;"><b>S2</b>, drawn below</div>
+
+        <div style="padding:10px 0;font-family:'IBM Plex Mono',monospace;color:var(--accent);border-bottom:1px solid var(--border);">3</div>
+        <div style="padding:10px 0;color:var(--fg-body);border-bottom:1px solid var(--border);line-height:1.6;"><b style="color:var(--fg);">Unfiled is empty &mdash; everything is filed.</b> &sect;3.2 (iii). The only one of the five that is not a problem, and the copy must not treat it as one.</div>
+        <div style="padding:10px 0;color:var(--fg);border-bottom:1px solid var(--border);line-height:1.6;"><b>S3</b>, drawn below</div>
+
+        <div style="padding:10px 0;font-family:'IBM Plex Mono',monospace;color:var(--accent);border-bottom:1px solid var(--border);">4</div>
+        <div style="padding:10px 0;color:var(--fg-body);border-bottom:1px solid var(--border);line-height:1.6;"><b style="color:var(--fg);">The shelf holds decks and the filters emptied it.</b> Names the filter, never the shelf &mdash; the reader set the filter and the shelf is not the thing to undo.</div>
+        <div style="padding:10px 0;color:var(--fg);border-bottom:1px solid var(--border);line-height:1.6;">shipped filtered empty + <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear filters</span>, unchanged</div>
+
+        <div style="padding:10px 0;font-family:'IBM Plex Mono',monospace;color:var(--fg-locked);">&mdash;</div>
+        <div style="padding:10px 0;color:var(--fg-body);line-height:1.6;"><b style="color:var(--fg);">&ldquo;No folders exist at all&rdquo; &mdash; &sect;3.2 (i) &mdash; is not an empty state.</b> Every deck is unfiled, so the reader is standing everywhere at once. The line draws <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">All decks &middot; 12</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">New folder</span>, and <b style="color:var(--fg);">no Unfiled segment</b>: a bucket equal to the whole list is a distinction without a difference. Unfiled appears when the first folder does.</div>
+        <div style="padding:10px 0;color:var(--fg);line-height:1.6;">the grid, full of decks</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">S2 &middot; a shelf with nothing on it</div>
+        <div data-theme="{{ theme }}" style="width:560px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:6px;padding:10px 22px;">
+            <span style="display:inline-flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;border:1px solid transparent;font-size:13px;color:var(--fg-muted);">All decks <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-left:7px;">12</span></span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 8px 0 11px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:13px;font-weight:500;color:var(--fg);">Draft pile <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">0</span> <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;border:1px solid var(--border-strong);background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);">&hellip;</span></span>
+            <span style="display:inline-flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;border:1px solid transparent;font-size:13px;color:var(--fg-muted);">Unfiled <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-left:7px;">12</span></span>
+          </div>
+          <div style="background:var(--surface-sunken);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:12px 22px 10px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-flex;align-items:center;gap:9px;height:34px;flex:1;padding:0 11px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg-faint);">&#9906; Search decks</span>
+              <span style="display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated);font-size:13px;color:var(--fg);">Status <span style="color:var(--fg-faint);">&#9662;</span></span>
+              <span style="width:1px;height:20px;background:var(--border);"></span>
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg-body);white-space:nowrap;">Sort &middot; last played</span>
+            </div>
+            <div style="display:flex;align-items:center;min-height:22px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:14px;color:var(--fg-faint);">No filters on</span>
+              <span style="flex:1;"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:14px;color:var(--fg-locked);text-decoration:underline;">Clear all filters</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">0 decks</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:46px 22px 50px;text-align:center;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Nothing filed here</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Draft pile &middot; 0 decks</div>
+            <div style="font-size:13.5px;color:var(--fg-muted);max-width:340px;line-height:1.65;">A deck is filed from its own <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&hellip;</span> menu.</div>
+            <span style="display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg);margin-top:2px;">All decks</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">S3 &middot; unfiled, and everything is filed</div>
+        <div data-theme="{{ theme }}" style="width:420px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:6px;padding:10px 18px;">
+            <span style="display:inline-flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;font-size:13px;color:var(--fg-muted);">All decks <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-left:7px;">12</span></span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 8px 0 11px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:13px;font-weight:500;color:var(--fg);">Unfiled <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">0</span></span>
+          </div>
+          <div style="background:var(--surface-sunken);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:12px 18px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">the chassis, mounted and quiet &mdash; <span style="color:var(--fg-faint);">0 decks</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:42px 20px 46px;text-align:center;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:var(--fg);">Nothing unfiled</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">12 decks across 3 folders</div>
+            <span style="display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg);margin-top:2px;">All decks</span>
+          </div>
+        </div>
+        <div style="width:420px;border:1px solid #2B241B;border-radius:12px;background:#141116;padding:14px 18px;margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.7;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">why S3 is a figure and not a sentence</div>
+          It has <b style="color:#EDE6D8;font-weight:600;">no body copy and no route out but the shelf you came from</b>. Nothing is wrong, nothing needs doing, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">refresh.ts</span>&rsquo; voice rule forbids explaining that a state is fine. <b style="color:#EDE6D8;font-weight:600;">A count is the honest form of that sentence:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">12 decks across 3 folders</span> says everything landed somewhere, in figures, with both denominators the app already counts in.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ §5b move, create, rename, delete ═══════════ -->
+  <section id="s5b" style="max-width:1500px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;5b</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">Move both ways, create, rename, delete &mdash; every act inside a menu the app already has</h2>
+    </div>
+    <p style="max-width:1180px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 20px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">&sect;3.3: the move control lives on the deck, and nowhere else.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">deck-card-overflow.tsx</span> is already a 186px panel with two modes and a mode switch; filing is a third mode in it, which is one new row in the menu and no new component, no new target on the tile, and nothing on the art. <b style="color:#EDE6D8;font-weight:600;">Filing and unfiling are one control</b>, because <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">moveDeck</span> takes <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">null</span> for exactly that: <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Unfiled</span> is a row in the list, not a second affordance.</p>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;margin-bottom:22px;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">the deck menu &middot; the Move row names the current shelf</div>
+        <div data-theme="{{ theme }}" style="width:186px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;">
+          <div style="display:flex;align-items:center;height:38px;padding:0 13px;font-size:13px;color:var(--fg);">Update from a list</div>
+          <div style="display:flex;align-items:center;height:38px;padding:0 13px;border-top:1px solid var(--elevated);font-size:13px;color:var(--fg);">Rename</div>
+          <div style="display:flex;align-items:center;gap:6px;height:38px;padding:0 13px;border-top:1px solid var(--elevated);font-size:13px;color:var(--fg);"><span>Move</span><span style="color:var(--fg-faint);">&middot;</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg-body);">Cube night</span></div>
+          <div style="display:flex;align-items:center;height:38px;padding:0 13px;border-top:1px solid var(--elevated);font-size:13px;color:var(--danger);">Delete</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">move mode &middot; one list, both directions</div>
+        <div data-theme="{{ theme }}" style="width:186px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 13px;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Move to</div>
+          <div style="display:flex;align-items:center;gap:9px;height:38px;padding:0 13px;font-size:13px;color:var(--fg);"><span style="width:14px;height:14px;border-radius:50%;border:1px dashed var(--border-dashed);"></span>Unfiled</div>
+          <div style="display:flex;align-items:center;gap:9px;height:38px;padding:0 13px;border-top:1px solid var(--elevated);font-size:13px;color:var(--fg);"><span style="width:14px;height:14px;border-radius:50%;border:1px dashed var(--border-dashed);"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Commander night</span></div>
+          <div style="display:flex;align-items:center;gap:9px;height:38px;padding:0 13px;border-top:1px solid var(--elevated);font-size:13px;color:var(--fg);background:var(--elevated);"><span style="width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid var(--accent);"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cube night</span></div>
+          <div style="display:flex;align-items:center;gap:9px;height:38px;padding:0 13px;border-top:1px solid var(--elevated);font-size:13px;color:var(--fg);"><span style="width:14px;height:14px;border-radius:50%;border:1px dashed var(--border-dashed);"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Draft pile</span></div>
+          <div style="display:flex;align-items:center;gap:9px;height:38px;padding:0 13px;border-top:1px solid var(--border);font-size:13px;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;width:14px;text-align:center;">+</span>New folder&hellip;</div>
+        </div>
+      </div>
+      <div style="max-width:420px;">
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#161318;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.7;">
+          <div style="margin-bottom:11px;"><b style="color:#EDE6D8;font-weight:600;">The label is the receipt.</b> On <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">All decks</span> a move changes nothing on screen &mdash; the deck is still in the list. So the panel returns to its menu with the Move row now reading <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Move &middot; Draft pile</span>: visible, permanent, and exactly where the act happened. No toast, no new pattern. On a named shelf the tile also leaves the grid, which is receipt enough on its own.</div>
+          <div style="margin-bottom:11px;"><b style="color:#EDE6D8;font-weight:600;">&sect;3.6 answered by this row, not by the tile.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">folderName</span> rides on every deck, but a tile stating its shelf repeats the segment above it on every tile of a scoped grid, and the only row with space for it is the one carrying commander and colour &mdash; the row card-surfaces already ruled must not give. <b style="color:#EDE6D8;font-weight:600;">The fact lives where it is changeable</b>, and in the accessible name of the control that changes it.</div>
+          <div style="margin-bottom:11px;"><b style="color:#EDE6D8;font-weight:600;">No drag and drop.</b> The whole tile is an absolute-inset <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;Link&gt;</span> and a drag would fight it for every gesture; on the compact form there is no rail to drop onto at all. A shelf line is a destination for a tap, not for a pointer.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Multi-select: asked for as slice B, not drawn here.</b> It needs a selection mode over a grid of links &mdash; the pattern <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">top-off-list.tsx</span>&rsquo; selection head already establishes &mdash; and filing eleven decks one at a time is the only thing in this round that is merely tolerable. It changes no decision here, which is why it can wait.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">&sect;3.5 create &middot; and the one refusal the UI must state</div>
+        <div data-theme="{{ theme }}" style="width:300px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:10px;">New folder</div>
+          <div style="display:flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;border:1px solid var(--danger);background:var(--surface-sunken);font-size:13px;color:var(--fg);margin-bottom:8px;">Cube night</div>
+          <div style="font-size:12px;color:var(--danger);line-height:1.55;margin-bottom:12px;">A folder named &ldquo;Cube night&rdquo; already exists.</div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;font-size:12.5px;color:var(--fg-muted);">Cancel</span>
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg-locked);font-size:12.5px;font-weight:600;color:var(--bg);">Create</span>
+          </div>
+        </div>
+        <div style="width:300px;border:1px solid #2B241B;border-radius:10px;background:#141116;padding:13px 16px;margin-top:12px;font-size:12px;color:#A89B84;line-height:1.65;">Only two refusals are reachable. <b style="color:#EDE6D8;font-weight:600;">Empty disables Create</b> and needs no sentence; <b style="color:#EDE6D8;font-weight:600;">duplicate is the unique index&rsquo;s answer</b> and must be said. Length cannot be reached &mdash; the field takes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">maxLength = FOLDER_NAME_MAX</span>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">folder-name.ts</span> is pure so the client checks the same rule the server throws on.</div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">&sect;3.5 rename &middot; drawn, so it becomes one merged function</div>
+        <div data-theme="{{ theme }}" style="width:300px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;">
+          <div style="padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:10px;">Rename folder</div>
+            <div style="display:flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;border:1px solid var(--accent);background:var(--surface-sunken);font-size:13px;color:var(--fg);margin-bottom:12px;">Commander night<span style="width:1px;height:16px;background:var(--fg);margin-left:1px;"></span></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;font-size:12.5px;color:var(--fg-muted);">Cancel</span>
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg);font-size:12.5px;font-weight:600;color:var(--bg);">Save</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:300px;border:1px solid #2B241B;border-radius:10px;background:#141116;padding:13px 16px;margin-top:12px;font-size:12px;color:#A89B84;line-height:1.65;">Same field, same two buttons, same guard as the deck rename the app already ships: <b style="color:#EDE6D8;font-weight:600;">blur commits, but never an invalid value</b> &mdash; empty or unchanged reverts. Cost to engineering: one <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">renameFolder</span> beside <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">createFolder</span>, validating through the same <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">validateFolderName</span> and refused by the same unique index.</div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">&sect;3.4 delete &middot; the sentence is the whole design</div>
+        <div data-theme="{{ theme }}" style="width:320px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:14px;">
+          <div style="font-size:13.5px;font-weight:600;color:var(--fg);margin-bottom:8px;">Delete &ldquo;Commander night&rdquo;?</div>
+          <div style="font-size:12.5px;color:var(--fg-body);line-height:1.6;margin-bottom:14px;">Its 4 decks return to Unfiled. No deck is deleted.</div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;font-size:12.5px;color:var(--fg-muted);">Cancel</span>
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--danger);font-size:12.5px;font-weight:600;color:var(--bg);">Delete folder</span>
+          </div>
+        </div>
+        <div style="width:320px;border:1px solid #2B241B;border-radius:10px;background:#141116;padding:13px 16px;margin-top:12px;font-size:12px;color:#A89B84;line-height:1.65;">
+          <div style="margin-bottom:9px;"><b style="color:#EDE6D8;font-weight:600;">Second sentence, not a warning.</b> The foreign key is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">on delete set null</span>, so &ldquo;no deck is deleted&rdquo; is a promise the database keeps however the folder goes. A safe act reads as destructive only if the copy lets it.</div>
+          <div style="margin-bottom:9px;"><b style="color:#EDE6D8;font-weight:600;">The button does take <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--danger</span></b>, unlike the keep-all confirm that was amended away from it: this destroys a thing the player named, with no undo and no restore. What is safe is the decks, and the sentence says so.</div>
+          <div>Empty folder swaps one line: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Nothing is filed here.</span> Confirm either way &mdash; <i>confirm where there is no undo</i>. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">deleteFolder</span> returning false is <b style="color:#EDE6D8;font-weight:600;">done, never an error</b>, and selection falls back to All decks.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ §6 contract ═══════════ -->
+  <section id="s6" style="max-width:1500px;margin-bottom:20px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;6</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The contract</h2>
+    </div>
+    <div data-theme="{{ theme }}" style="width:1024px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:22px 28px 26px;">
+      <div style="display:grid;grid-template-columns:1fr;gap:0;font-size:13px;">
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:74px;flex:none;">CHASSIS</span><span style="color:var(--fg-body);line-height:1.6;">No new slot, no new dimension, no new chip, no density pass. <b style="color:var(--fg);">One change, at the call site:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">resultLine</span> takes the shelf&rsquo;s count as its denominator. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-chassis.tsx</span> itself is untouched.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:74px;flex:none;">STATE</span><span style="color:var(--fg-body);line-height:1.6;">A third field on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ViewState</span> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shelf: string | null | &quot;none&quot;</span> &mdash; never a fifth field on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DeckFilters</span>. That is what makes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">EMPTY_FILTERS</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">activeFilterCount</span>, the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Filters</span> badge and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all filters</span> unable to touch the shelf.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:74px;flex:none;">URL</span><span style="color:var(--fg-body);line-height:1.6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">folder</span> joins <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">OWNED_PARAMS</span>; written by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">apply()</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">replaceState</span>, read once on mount beside the filters. An unknown id falls back to All decks, the same way <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">readList</span> already makes a hand-edited value harmless.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:74px;flex:none;">QUERIES</span><span style="color:var(--fg-body);line-height:1.6;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">listFolders</span> added to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/decks/page.tsx</span>&rsquo;s <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Promise.all</span> &mdash; required, because a deck row cannot name a folder holding no decks. One new function, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">renameFolder</span>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">moveDeck</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">createFolder</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deleteFolder</span> are used as merged.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:74px;flex:none;">FILTERING</span><span style="color:var(--fg-body);line-height:1.6;">The shelf narrows the list <b style="color:var(--fg);">before</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filterDecks</span>, in the same client-side pass over the same loaded payload. The panels&rsquo; per-option counts are computed within the shelf too, so a status reading 0 means 0 <i>on this shelf</i> &mdash; which is what the reader is looking at.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:74px;flex:none;">TARGETS</span><span style="color:var(--fg-body);line-height:1.6;">34px segments at the wide form (the chassis&rsquo;s own control rhythm), a real 44px trigger and 48px sheet rows below 1000. The shelf line switches at 1000 with everything else, never at a Tailwind stop.</span></div>
+        <div style="display:flex;gap:14px;padding:11px 0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);width:74px;flex:none;">MOTION</span><span style="color:var(--fg-body);line-height:1.6;">None on the shelf line, matching the chassis: selection changes instantly and the sheet reuses the existing entry animation. No reduced-motion state, because there is no motion to reduce.</span></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;eldraine&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? "amonkhet" };
+  }
+}
+</script>
+</body>
+</html>

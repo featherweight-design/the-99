@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --elevated-hover:#34353D; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#34507D; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">collection edit &middot; canvas 1 of 4 &middot; &sect;A upload choice + &sect;E short-deck warning &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;line-height:1.25;">An upload asks one question before its review, and every lowering shares one warning.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">&sect;A &mdash; The choice is its own step, between the file and the review.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">STEP 2 OF 4</span>. Two option cards, neither preselected, each with its after-figure, so the player picks knowing the result. The review that follows is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">ReviewScreen</span> chassis (matched banner, issue sections, sticky confirm bar) with a mode-specific middle. The first import onto an empty collection never sees step 2 (Hugh, 2026-10-09) and stays <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">STEP 2 OF 3</span> as shipped.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">&sect;E &mdash; One component, rows are always decks.</b> The figure on a deck's row is what it will be short of. For one card that's <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">short 1</span>; for an upload or a revert it's <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">3 cards short</span>, and the row expands to name them. <b style="color:var(--fg);font-weight:600;">Three decks are named, the rest are counted</b> behind <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">and N more</span>. That's the same rule at both widths: three rows fit a 390 sheet above its buttons with no scroll. It's a dialog on desktop and a bottom sheet on the phone, and inside the Replace review it's embedded as a section.</p>
+  </section>
+
+  <!-- A1 choice -->
+  <section id="a1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A1 &middot; <span style="color:var(--accent);">the choice &middot; /collection/replace step 2 &middot; Replace warning in both forms</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; at rest, nothing picked &middot; count form</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:baseline;gap:12px;padding:18px 18px 14px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;">Replace or add?</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">manabox-oct.csv</span>
+          </div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+            <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-muted);">4,388 cards read. Nothing changes until you confirm on the next screen.</p>
+            <div role="radio" style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:14px 14px 14px 12px;display:flex;gap:12px;">
+              <span style="width:22px;height:22px;flex:none;border-radius:50%;border:2px solid var(--border-dashed);margin-top:1px;"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+                <span style="font-size:15px;font-weight:600;">Replace my collection</span>
+                <span style="font-size:13px;line-height:1.5;color:var(--fg-body);">Your collection becomes exactly this file. Anything not in it leaves.</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">4,492 &rarr; <span style="color:var(--fg);">4,380</span> cards</span>
+                <div style="margin-top:4px;display:flex;gap:8px;align-items:flex-start;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:9px 10px;">
+                  <span style="color:var(--warning);font-size:13px;line-height:1.3;">&#9888;</span>
+                  <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">12 changes you made in the app</b> since your 12 Sep upload will be overwritten.</span>
+                </div>
+              </div>
+            </div>
+            <div role="radio" style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:14px 14px 14px 12px;display:flex;gap:12px;">
+              <span style="width:22px;height:22px;flex:none;border-radius:50%;border:2px solid var(--border-dashed);margin-top:1px;"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+                <span style="font-size:15px;font-weight:600;">Add these cards</span>
+                <span style="font-size:13px;line-height:1.5;color:var(--fg-body);">The file's quantities are added to yours. Nothing is removed, and your art picks stay.</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">4,492 &rarr; <span style="color:var(--fg);">8,880</span> cards</span>
+                <div style="margin-top:4px;display:flex;gap:8px;align-items:flex-start;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);padding:9px 10px;">
+                  <span style="color:var(--fg-faint);font-size:13px;line-height:1.3;">&#9432;</span>
+                  <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);">You already own 97% of these cards. Adding the file doubles those copies.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:auto;padding:12px 18px 14px;background:var(--surface-rail);border-top:1px solid var(--border-strong);display:flex;gap:10px;">
+            <span style="height:46px;padding:0 18px;border:1px solid var(--border-strong);border-radius:10px;display:inline-flex;align-items:center;font-size:14px;color:var(--fg-body);">Cancel</span>
+            <span aria-disabled="true" style="flex:1;height:46px;border-radius:10px;background:var(--accent);opacity:0.4;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--bg);">Continue &rarr;</span>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Nothing is preselected: Replace is destructive, and Add usually doubles a full export, so neither is a safe default. Continue stays disabled until a card is picked. The &#9432; note appears on Add when 80% or more of the file's matched cards are already owned. That's the &ldquo;every row already owned&rdquo; case. Quantities still rise, and the note says by how much.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">1300 &middot; Replace picked &middot; no-count form (last upload older than 90 days)</div>
+        <div style="width:1300px;height:640px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;position:relative;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;justify-content:center;padding-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">rail</div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div style="flex:1;padding:36px 56px 20px;max-width:1280px;">
+              <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;color:var(--fg-faint);">STEP 2 OF 4 &middot; manabox-oct.csv &middot; 4,388 rows</p>
+              <h2 style="margin:12px 0 6px;font-family:'Cinzel',serif;font-weight:700;font-size:29px;">Replace your collection, or add to it?</h2>
+              <p style="margin:0 0 24px;font-size:14px;color:var(--fg-muted);">Nothing changes until you confirm on the next screen.</p>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;">
+                <div role="radio" aria-checked="true" style="border:1px solid var(--accent);box-shadow:0 0 0 1px var(--accent);border-radius:12px;background:var(--surface);padding:22px;display:flex;gap:16px;">
+                  <span style="width:22px;height:22px;flex:none;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin-top:2px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--accent);"></span></span>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+                    <span style="font-size:17px;font-weight:600;">Replace my collection</span>
+                    <span style="font-size:14px;line-height:1.55;color:var(--fg-body);">Your collection becomes exactly this file. Anything not in it leaves.</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-muted);">4,492 &rarr; <span style="color:var(--fg);">4,380</span> cards</span>
+                    <div style="margin-top:6px;display:flex;gap:10px;align-items:flex-start;border-radius:10px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:12px 14px;">
+                      <span style="color:var(--warning);font-size:15px;line-height:1.3;">&#9888;</span>
+                      <span style="font-size:13.5px;line-height:1.55;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">Changes you made in the app may be overwritten.</b> Your last upload was 2 Jun, before the 90 days history keeps, so we can't count them.</span>
+                    </div>
+                  </div>
+                </div>
+                <div role="radio" aria-checked="false" style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:22px;display:flex;gap:16px;">
+                  <span style="width:22px;height:22px;flex:none;border-radius:50%;border:2px solid var(--border-dashed);margin-top:2px;"></span>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+                    <span style="font-size:17px;font-weight:600;">Add these cards</span>
+                    <span style="font-size:14px;line-height:1.55;color:var(--fg-body);">The file's quantities are added to yours. Nothing is removed, and your art picks stay.</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-muted);">4,492 &rarr; <span style="color:var(--fg);">8,880</span> cards</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="padding:16px 56px;background:var(--surface-rail);border-top:1px solid var(--border-strong);display:flex;align-items:center;gap:20px;">
+              <span style="font-size:13.5px;color:var(--fg-body);">Next: a review of every card this replace moves.</span>
+              <span style="margin-left:auto;display:flex;gap:12px;">
+                <span style="padding:12px 20px;border:1px solid var(--border-strong);border-radius:8px;font-size:14px;color:var(--fg-body);">Cancel</span>
+                <span style="padding:12px 24px;border-radius:8px;background:var(--accent);font-size:14px;font-weight:600;color:var(--bg);white-space:nowrap;">Review the replace &rarr;</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1300px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The two cards share one row at <span style="font-family:'IBM Plex Mono',monospace;">md</span>, as the review's summary does. Picked: the shipped 2px <span style="font-family:'IBM Plex Mono',monospace;">--accent</span> radio and ring. The warning is the shipped replace-flow banner. Its count form needs history to reach back to the last upload (<span style="font-family:'IBM Plex Mono',monospace;">collection_history</span> entries newer than the last <span style="font-family:'IBM Plex Mono',monospace;">upload_*</span>). If that upload has aged out, there's no number and the sentence says why. The Continue label names the next step: <span style="font-family:'IBM Plex Mono',monospace;">Review the replace &rarr;</span> or <span style="font-family:'IBM Plex Mono',monospace;">Review the add &rarr;</span>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- A2 replace preview -->
+  <section id="a2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A2 &middot; <span style="color:var(--accent);">Replace preview &middot; overwrites hand edits &middot; leaves decks short &middot; unmatched rows</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">1300 &middot; step 3 of 4</div>
+        <div style="width:1300px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;justify-content:center;padding-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">rail</div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div style="padding:36px 56px 20px;">
+              <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;color:var(--fg-faint);">STEP 3 OF 4 &middot; manabox-oct.csv &middot; 4,388 rows &middot; <span style="color:var(--fg-muted);">Replace</span> &middot; <span style="color:var(--accent);text-decoration:underline;">change</span></p>
+              <h2 style="margin:12px 0 0;font-family:'Cinzel',serif;font-weight:700;font-size:29px;">Review before you replace</h2>
+              <div style="margin-top:24px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;">
+                <sc-for list="{{ replaceTiles }}" as="t" hint-placeholder-count="4">
+                  <div style="border-radius:12px;background:var(--surface);border:1px solid var(--border);padding:16px 18px;display:flex;flex-direction:column;gap:4px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:{{ t.ink }};">{{ t.n }}</span>
+                    <span style="font-size:13px;color:var(--fg-muted);">{{ t.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:16px;display:flex;gap:12px;align-items:flex-start;border-radius:10px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:14px 18px;">
+                <span style="color:var(--warning);font-size:16px;line-height:1.3;">&#9888;</span>
+                <span style="flex:1;font-size:14px;line-height:1.55;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">This overwrites 12 changes you made in the app</b> since your 12 Sep upload. They're the cards marked <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border:1px solid var(--warning);border-radius:4px;padding:0 5px;">edited</span> below. You can revert the replace from History afterwards.</span>
+              </div>
+
+              <div style="margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;">
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--danger);">Decks that will read short &middot; 3</div>
+                  <div style="border-radius:12px;background:var(--surface);border:1px solid var(--border);padding:6px 0;">
+                    <sc-for list="{{ replaceDecks }}" as="d" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;min-height:44px;">
+                        <span style="font-size:14px;color:var(--fg);flex:1;min-width:0;">{{ d.name }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">{{ d.fig }}</span>
+                        <span style="font-size:12px;color:var(--fg-faint);">{{ d.chev }}</span>
+                      </div>
+                      <sc-if value="{{ d.open }}" hint-placeholder-val="{{ false }}">
+                        <div style="padding:0 16px 10px 32px;display:flex;flex-direction:column;gap:4px;">
+                          <sc-for list="{{ d.cards }}" as="c" hint-placeholder-count="3">
+                            <div style="display:flex;font-size:13px;color:var(--fg-body);"><span style="flex:1;">{{ c.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--danger);">{{ c.short }}</span></div>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:12.5px;line-height:1.55;color:var(--fg-muted);">Nothing about these decks changes. Each will show its short cards and add them to its shopping list.</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Leaving your collection &middot; 112</div>
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    <sc-for list="{{ leaving }}" as="r" hint-placeholder-count="4">
+                      <div style="display:flex;align-items:center;gap:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);padding:10px 14px;">
+                        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;">{{ r.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.set }}</span></span>
+                        <sc-if value="{{ r.edited }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--warning);border-radius:4px;padding:1px 5px;">edited</span></sc-if>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">{{ r.delta }}</span>
+                      </div>
+                    </sc-for>
+                    <span style="font-size:13px;color:var(--accent);padding:6px 0;">Show all 112</span>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:22px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;">
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Going down &middot; 38</div>
+                  <sc-for list="{{ down }}" as="r" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);padding:10px 14px;">
+                      <span style="flex:1;font-size:14px;">{{ r.name }}</span>
+                      <sc-if value="{{ r.edited }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--warning);border-radius:4px;padding:1px 5px;">edited</span></sc-if>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">{{ r.delta }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Going up or new &middot; 64</div>
+                  <sc-for list="{{ up }}" as="r" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);padding:10px 14px;">
+                      <span style="flex:1;font-size:14px;">{{ r.name }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--success);">{{ r.delta }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="margin-top:22px;display:flex;align-items:center;gap:16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);padding:16px 20px;">
+                <span style="width:9px;height:9px;border-radius:50%;background:var(--warning);"></span>
+                <span style="font-size:13.5px;color:var(--fg-body);flex:1;"><span style="font-family:'IBM Plex Mono',monospace;color:var(--warning);">4</span> unmatched names won't be imported. The shipped issue sections and Issue Inspector, unchanged.</span>
+                <span style="padding:10px 18px;border:1px solid var(--border-strong);border-radius:8px;font-size:13.5px;">See all 4 issues</span>
+              </div>
+            </div>
+            <div style="padding:16px 56px;background:var(--surface-rail);border-top:1px solid var(--border-strong);display:flex;align-items:center;gap:20px;">
+              <span style="font-size:13.5px;color:var(--fg-body);">Replaces your 4,492 cards with 4,380. 3 decks will read short.</span>
+              <span style="margin-left:auto;display:flex;gap:12px;">
+                <span style="padding:12px 20px;border:1px solid var(--border-strong);border-radius:8px;font-size:14px;color:var(--fg-body);">Cancel</span>
+                <span style="padding:12px 24px;border-radius:8px;background:var(--accent);font-size:14px;font-weight:600;color:var(--bg);white-space:nowrap;">Replace collection</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1300px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Order of reading is the order of risk: the four figures, then overwritten edits, then decks, then the card lists. The deck section is &sect;E embedded. It's the same rows, one expanded, with no buttons of its own, because the confirm bar is its confirm. The bar names the short decks, so no second dialog follows. Each list shows 8 rows then <span style="font-family:'IBM Plex Mono',monospace;">Show all N</span>, the shipped <span style="font-family:'IBM Plex Mono',monospace;">INITIAL_LIMIT</span>. <span style="font-family:'IBM Plex Mono',monospace;">edited</span> marks a row whose current quantity came from an in-app change. That's the warning's 12, made findable. The matched banner is folded into the four figures: <span style="font-family:'IBM Plex Mono',monospace;">Unchanged</span> plus the three moves account for every matched row.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; the same review, first screen</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:baseline;gap:12px;padding:18px 18px 14px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;">Review the replace</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">manabox-oct.csv</span>
+          </div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px;">
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
+              <sc-for list="{{ replaceTiles }}" as="t" hint-placeholder-count="4">
+                <div style="border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);padding:10px 12px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;color:{{ t.ink }};">{{ t.n }}</div>
+                  <div style="font-size:11px;margin-top:3px;color:var(--fg-faint);">{{ t.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:12px 14px;">
+              <span style="color:var(--warning);font-size:15px;">&#9888;</span>
+              <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">Overwrites 12 changes</b> you made in the app since 12 Sep. Marked <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);">edited</span> below.</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--danger);">Decks that will read short &middot; 3</div>
+            <div style="border-radius:10px;background:var(--surface);border:1px solid var(--border);">
+              <sc-for list="{{ replaceDecks }}" as="d" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:10px;padding:0 14px;min-height:48px;border-bottom:1px solid var(--border);">
+                  <span style="font-size:13.5px;flex:1;min-width:0;">{{ d.name }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--danger);">{{ d.fig }}</span>
+                  <span style="font-size:12px;color:var(--fg-faint);">{{ d.chev }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Leaving your collection &middot; 112</div>
+            <sc-for list="{{ leavingShort }}" as="r" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);padding:9px 12px;">
+                <span style="flex:1;min-width:0;font-size:13px;">{{ r.name }}</span>
+                <sc-if value="{{ r.edited }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--warning);border:1px solid var(--warning);border-radius:4px;padding:1px 4px;">edited</span></sc-if>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ r.delta }}</span>
+              </div>
+            </sc-for>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);text-align:center;">&darr; going down &middot; going up &middot; unmatched follow</div>
+          </div>
+          <div style="padding:12px 18px 14px;background:var(--surface-rail);border-top:1px solid var(--border-strong);">
+            <p style="margin:0 0 10px;text-align:center;font-size:11.5px;color:var(--fg-faint);">4,492 &rarr; 4,380 cards &middot; 3 decks read short</p>
+            <div style="display:flex;gap:10px;">
+              <span style="height:46px;padding:0 18px;border:1px solid var(--border-strong);border-radius:10px;display:inline-flex;align-items:center;font-size:14px;color:var(--fg-body);">Cancel</span>
+              <span style="flex:1;height:46px;border-radius:10px;background:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--bg);">Replace collection</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The phone stacks the same sections in the same order. The four figures use the shipped <span style="font-family:'IBM Plex Mono',monospace;">MiniStat</span> cell in a 2&times;2 grid. Deck rows are 48px tall and expand in place.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- A3 add preview -->
+  <section id="a3" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A3 &middot; <span style="color:var(--accent);">Add preview &middot; a booster haul &middot; and every row already owned &middot; unmatched</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">1300 &middot; step 3 of 4 &middot; 3 unmatched</div>
+        <div style="width:1300px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;justify-content:center;padding-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">rail</div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div style="padding:36px 56px 20px;">
+              <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;color:var(--fg-faint);">STEP 3 OF 4 &middot; dsk-prerelease.csv &middot; 94 rows &middot; <span style="color:var(--fg-muted);">Add</span> &middot; <span style="color:var(--accent);text-decoration:underline;">change</span></p>
+              <h2 style="margin:12px 0 0;font-family:'Cinzel',serif;font-weight:700;font-size:29px;">Review before you add</h2>
+              <div style="margin-top:24px;display:flex;gap:16px;">
+                <div style="flex:1.4;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);padding:20px 22px;display:flex;align-items:center;gap:16px;">
+                  <span style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab, var(--success) 15%, transparent);color:var(--success);font-size:20px;">+</span>
+                  <div><div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;">+118</div><div style="font-size:13px;color:var(--fg-muted);margin-top:4px;">copies added across 91 cards &middot; 4,492 &rarr; 4,610</div></div>
+                </div>
+                <div style="flex:1;border-radius:12px;background:var(--surface);border:1px solid var(--border);padding:16px 18px;display:flex;flex-direction:column;justify-content:center;gap:10px;">
+                  <div style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;">67</span><span style="font-size:13px;color:var(--fg-muted);">new to your collection</span></div>
+                  <div style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;">24</span><span style="font-size:13px;color:var(--fg-muted);">you already own, now more</span></div>
+                  <div style="font-size:11.5px;padding-top:9px;border-top:1px solid var(--border);color:var(--fg-faint);">Nothing is removed. Art picks stay as they are.</div>
+                </div>
+              </div>
+              <div style="margin-top:24px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:10px;">What gets added &middot; 91</div>
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 22px;">
+                <sc-for list="{{ addRows }}" as="r" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;gap:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);padding:10px 14px;">
+                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;">{{ r.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.set }}</span></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">{{ r.before }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--success);">{{ r.after }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <span style="display:inline-block;font-size:13px;color:var(--accent);padding:10px 0;">Show all 91</span>
+              <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--warning);margin-bottom:10px;">Unmatched names: 3</div>
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 22px;">
+                <sc-for list="{{ unmatched }}" as="u" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warning);padding:11px 14px;">
+                    <span><span style="display:block;font-size:14px;">{{ u.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ u.line }}</span></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">{{ u.q }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="padding:16px 56px;background:var(--surface-rail);border-top:1px solid var(--border-strong);display:flex;align-items:center;gap:20px;">
+              <span style="font-size:13.5px;color:var(--fg-body);">Adding 118 copies and skipping 3 rows. Your 4,492 cards stay.</span>
+              <span style="margin-left:auto;display:flex;gap:12px;">
+                <span style="padding:12px 20px;border:1px solid var(--border-strong);border-radius:8px;font-size:14px;color:var(--fg-body);">Cancel</span>
+                <span style="padding:12px 24px;border-radius:8px;background:var(--accent);font-size:14px;font-weight:600;color:var(--bg);white-space:nowrap;">Add 118 copies</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1300px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The shipped matched banner, with <span style="font-family:'IBM Plex Mono',monospace;">+</span> in the success circle. Rows read <span style="font-family:'IBM Plex Mono',monospace;">before &rarr; after</span>, and <span style="font-family:'IBM Plex Mono',monospace;">new</span> stands in for &times;0. Add never lowers anything, so there's no deck section, and it never warns.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; every row already owned</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:baseline;gap:12px;padding:18px 18px 14px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;">Review the add</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">manabox-oct.csv</span>
+          </div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+            <div style="border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);padding:16px;display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab, var(--success) 15%, transparent);color:var(--success);">+</span>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;">+4,388</div><div style="font-size:11.5px;color:var(--fg-faint);margin-top:2px;">copies &middot; 4,492 &rarr; 8,880</div></div>
+            </div>
+            <div style="display:flex;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:12px 14px;">
+              <span style="color:var(--warning);font-size:15px;">&#9888;</span>
+              <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">You already own every card in this file.</b> Adding it doubles them: 2,926 cards go up, none are new. If this is a fresh export of your whole collection, Replace is the one you want.</span>
+            </div>
+            <span style="align-self:flex-start;font-size:13px;color:var(--accent);">Switch to Replace</span>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">What gets added &middot; 2,926</div>
+            <sc-for list="{{ addOwned }}" as="r" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);padding:9px 12px;">
+                <span style="flex:1;font-size:13px;">{{ r.name }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ r.before }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--success);">{{ r.after }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:12px 18px 14px;background:var(--surface-rail);border-top:1px solid var(--border-strong);">
+            <p style="margin:0 0 10px;text-align:center;font-size:11.5px;color:var(--fg-faint);">Adds 4,388 copies &middot; skips 0 rows</p>
+            <div style="display:flex;gap:10px;">
+              <span style="height:46px;padding:0 18px;border:1px solid var(--border-strong);border-radius:10px;display:inline-flex;align-items:center;font-size:14px;color:var(--fg-body);">Cancel</span>
+              <span style="flex:1;height:46px;border-radius:10px;background:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--bg);">Add 4,388 copies</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">It's not &ldquo;nothing to do&rdquo;. The confirm still adds, and the banner says what that means. <span style="font-family:'IBM Plex Mono',monospace;">Switch to Replace</span> goes back to step 2 with Replace picked. It doesn't skip a review. The banner fires on the same 80% threshold as step 2's note.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- A4/A5 pending + failed -->
+  <section id="a4" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A4 &middot; A5 &middot; A6 &middot; <span style="color:var(--accent);">the pending write &middot; a failed write &middot; the first import (no question)</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">A4 &middot; 390 confirm bar &middot; pending</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);">
+          <div style="height:90px;padding:16px 18px;opacity:0.6;"><div style="height:12px;width:60%;border-radius:4px;background:var(--surface);"></div><div style="margin-top:10px;height:12px;width:80%;border-radius:4px;background:var(--surface);"></div></div>
+          <div style="padding:12px 18px 14px;background:var(--surface-rail);border-top:1px solid var(--border-strong);">
+            <p style="margin:0 0 10px;text-align:center;font-size:11.5px;color:var(--fg-faint);">4,492 &rarr; 4,380 cards &middot; 3 decks read short</p>
+            <div style="display:flex;gap:10px;">
+              <span style="height:46px;padding:0 18px;border:1px solid var(--border-strong);border-radius:10px;display:inline-flex;align-items:center;font-size:14px;color:var(--fg-body);opacity:0.6;">Cancel</span>
+              <span style="flex:1;height:46px;border-radius:10px;background:var(--accent);opacity:0.6;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--bg);cursor:wait;">Replacing&hellip;</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is the shipped pending pattern. Both buttons go to .6 and Cancel is disabled, because a write in flight can't be taken back (#1097). Add reads <span style="font-family:'IBM Plex Mono',monospace;">Adding&hellip;</span>. On success the shipped arrivals receipt opens. For Add it's unchanged. For Replace it gains <span style="font-family:'IBM Plex Mono',monospace;">See it in History</span>.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">A5 &middot; 390 &middot; failed write, top of the review</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);">
+          <div style="display:flex;align-items:baseline;gap:12px;padding:18px 18px 14px;border-bottom:1px solid var(--border);"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;">Review the replace</span></div>
+          <div style="padding:16px 18px;">
+            <div role="alert" style="display:flex;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:12px 14px;">
+              <span style="color:var(--warning);font-size:15px;">&#9888;</span>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <span style="font-size:14px;font-weight:600;">That didn't go through</span>
+                <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);">Nothing changed. Your collection is exactly as it was, and this review is still here.</span>
+                <span style="font-size:13px;color:var(--accent);font-weight:600;">Try again</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This uses the deck-import failure banner (<span style="font-family:'IBM Plex Mono',monospace;">role=alert</span>), placed above the four figures, and focus moves to it. <span style="font-family:'IBM Plex Mono',monospace;">Try again</span> re-runs the confirm, including &sect;E's re-check, so a retry never writes past a warning that went stale.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">A6 &middot; first import onto an empty collection</div>
+        <div style="width:420px;border:1px dashed var(--border-dashed);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">file &rarr; <span style="text-decoration:line-through;color:var(--fg-locked);">replace or add?</span> &rarr; ReviewScreen &rarr; <span style="color:var(--fg);">Continue to import &rarr;</span></div>
+          <div style="font-size:13px;line-height:1.6;color:var(--fg-body);">This is unchanged from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">main</span>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">isInitialImport</span> keeps the shipped copy and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">STEP 2 OF 3</span>. The write still makes one history entry, an <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">upload_replace</span> from empty, so it's revertible like any other upload. The question first appears on the first upload after the player holds cards, whether those came from a file or from Add cards.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- E -->
+  <section id="e" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">E &middot; <span style="color:var(--accent);">the warning before a deck reads short &middot; one component for C, D, A and F</span></div>
+    <p style="max-width:1080px;font-size:14px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;">The <b style="color:var(--fg);font-weight:600;">title names the action and the decks</b>. The body says the one thing ruling 5 promises: nothing about the deck changes. Each row is a deck link (opens in place on desktop, at the deck on the phone), with the shortfall in the availability marker's own <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">short N</span> ink. The confirm's verb comes from the source: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Remove anyway</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Save anyway</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Revert anyway</span>. Replace is confirmed by its own bar (A2). Cancel holds focus, so a reflexive Enter doesn't save. It's not destructive red either. The deck isn't harmed, it just reads short.</p>
+
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">E1 &middot; desktop dialog &middot; one deck</div>
+        <div style="width:480px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.55);padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;">
+          <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:20px;line-height:1.3;">Removing Sol Ring leaves a deck short</h3>
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">Nothing about the deck changes. It'll show Sol Ring as short and put it on its shopping list.</p>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:12px;padding:0 14px;min-height:44px;"><span style="flex:1;font-size:14px;text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:2px;">HD - Kinnan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">&#9670; short 1</span></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
+            <span style="padding:10px 18px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:8px;font-size:14px;">Cancel</span>
+            <span style="padding:10px 18px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:14px;font-weight:600;">Remove anyway</span>
+          </div>
+        </div>
+        <div style="width:480px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The confirm is the elevated secondary, not the accent primary. Cancel shows its focus ring because focus starts there.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">E2 &middot; desktop &middot; several decks (from C, lowering)</div>
+        <div style="width:480px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.55);padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;">
+          <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:20px;line-height:1.3;">Saving leaves 3 decks short</h3>
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">Nothing about these decks changes. Each will show Arcane Signet as short and put it on its shopping list.</p>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+            <sc-for list="{{ threeDecks }}" as="d" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:0 14px;min-height:44px;border-bottom:1px solid var(--border);"><span style="flex:1;font-size:14px;text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:2px;">{{ d.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">{{ d.fig }}</span></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
+            <span style="padding:10px 18px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:8px;font-size:14px;">Cancel</span>
+            <span style="padding:10px 18px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:14px;font-weight:600;">Save anyway</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">E3 &middot; desktop &middot; long list, from a revert (cards per deck)</div>
+        <div style="width:480px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.55);padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;">
+          <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:20px;line-height:1.3;">Reverting leaves 9 decks short</h3>
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">Nothing about these decks changes. Each will show what it's short of and put it on its shopping list.</p>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+            <sc-for list="{{ longDecks }}" as="d" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:0 14px;min-height:44px;border-bottom:1px solid var(--border);"><span style="flex:1;font-size:14px;">{{ d.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">{{ d.fig }}</span><span style="font-size:12px;color:var(--fg-faint);">&#9662;</span></div>
+            </sc-for>
+            <div style="display:flex;align-items:center;padding:0 14px;min-height:44px;"><span style="font-size:13.5px;color:var(--accent);">and 6 more decks</span></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
+            <span style="padding:10px 18px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:8px;font-size:14px;">Cancel</span>
+            <span style="padding:10px 18px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:14px;font-weight:600;">Revert anyway</span>
+          </div>
+        </div>
+        <div style="width:480px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This shows three rows, then <span style="font-family:'IBM Plex Mono',monospace;">and N more decks</span>. Pressing it expands the list in place, capped at 320px with a scroll, and moves focus to row 4. Decks are ordered by most cards short, then by commit seniority, the order that decides who keeps a copy. Each <span style="font-family:'IBM Plex Mono',monospace;">N cards short</span> row expands to its cards (as in A2).</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">E1 &middot; 390 &middot; bottom sheet &middot; one deck</div>
+        <div style="width:390px;height:520px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);position:relative;">
+          <div style="position:absolute;inset:0;background:rgba(5,5,8,0.62);"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;border-radius:16px 16px 0 0;background:var(--surface);border-top:1px solid var(--border-strong);padding:10px 18px 18px;display:flex;flex-direction:column;gap:12px;">
+            <span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span>
+            <h3 style="margin:4px 0 0;font-family:'Cinzel',serif;font-weight:700;font-size:18px;line-height:1.3;">Removing Sol Ring leaves a deck short</h3>
+            <p style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);">Nothing about the deck changes. It'll show Sol Ring as short and put it on its shopping list.</p>
+            <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);"><div style="display:flex;align-items:center;gap:12px;padding:0 14px;min-height:48px;"><span style="flex:1;font-size:14px;">HD - Kinnan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">&#9670; short 1</span></div></div>
+            <div style="display:flex;gap:10px;margin-top:4px;">
+              <span style="flex:1;height:46px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;">Cancel</span>
+              <span style="flex:1;height:46px;border-radius:10px;background:var(--elevated);border:1px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;">Remove anyway</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">E3 &middot; 390 &middot; long list, expanded</div>
+        <div style="width:390px;height:520px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);position:relative;">
+          <div style="position:absolute;inset:0;background:rgba(5,5,8,0.62);"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;top:40px;border-radius:16px 16px 0 0;background:var(--surface);border-top:1px solid var(--border-strong);padding:10px 18px 18px;display:flex;flex-direction:column;gap:12px;">
+            <span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span>
+            <h3 style="margin:4px 0 0;font-family:'Cinzel',serif;font-weight:700;font-size:18px;line-height:1.3;">Reverting leaves 9 decks short</h3>
+            <div style="flex:1;min-height:0;overflow:hidden;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+              <sc-for list="{{ allDecks }}" as="d" hint-placeholder-count="7">
+                <div style="display:flex;align-items:center;gap:10px;padding:0 14px;min-height:44px;border-bottom:1px solid var(--border);"><span style="flex:1;font-size:13.5px;">{{ d.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--danger);">{{ d.fig }}</span></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <span style="flex:1;height:46px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;">Cancel</span>
+              <span style="flex:1;height:46px;border-radius:10px;background:var(--elevated);border:1px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;">Revert anyway</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">When expanded, the sheet rises to 40px from the top. The list scrolls and the two buttons stay pinned. The body copy steps aside to make room, but the title keeps the count.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">E4 &middot; the pending check, at its source (C's save bar, D's row)</div>
+        <div style="width:420px;display:flex;flex-direction:column;gap:12px;">
+          <div style="border-radius:10px;background:var(--surface-rail);border:1px solid var(--border-strong);padding:12px 14px;display:flex;align-items:center;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);flex:1;">&minus;2 &middot; 1 printing</span>
+            <span style="padding:9px 14px;border:1px solid var(--border-strong);border-radius:8px;font-size:13.5px;opacity:0.6;">Cancel</span>
+            <span aria-busy="true" style="padding:9px 16px;border-radius:8px;background:var(--accent);opacity:0.6;font-size:13.5px;font-weight:600;color:var(--bg);cursor:wait;">Checking decks<span style="letter-spacing:2px;">&hellip;</span></span>
+          </div>
+          <div style="border-radius:8px;background:var(--surface);border:1px solid var(--border);padding:0 6px 0 14px;height:56px;display:flex;align-items:center;gap:10px;opacity:0.55;">
+            <span style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;">Sol Ring</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Checking your decks&hellip;</span></span>
+            <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">&#8943;</span>
+          </div>
+          <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The press starts the save, and the save checks the decks inside it. Between the press and either result (the write, or the warning), the pressed control reads <span style="font-family:'IBM Plex Mono',monospace;">Checking decks&hellip;</span> with the shipped <span style="font-family:'IBM Plex Mono',monospace;">.anim-dots</span>, and everything that could change the request is disabled. The label shows from the first frame. A fast check just flips it straight to <span style="font-family:'IBM Plex Mono',monospace;">Saving&hellip;</span> or done. Nothing moves or reflows. A row being checked stays at its height at .55, as D's pending state does.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">E5 &middot; the confirm, pending</div>
+        <div style="width:480px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;">
+          <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:20px;">Saving leaves 3 decks short</h3>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);opacity:0.6;">
+            <sc-for list="{{ threeDecks }}" as="d" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:0 14px;min-height:44px;border-bottom:1px solid var(--border);"><span style="flex:1;font-size:14px;">{{ d.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">{{ d.fig }}</span></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;">
+            <span style="padding:10px 18px;border:1px solid var(--border-strong);border-radius:8px;font-size:14px;opacity:0.6;">Cancel</span>
+            <span aria-busy="true" style="padding:10px 18px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:14px;font-weight:600;opacity:0.6;cursor:wait;">Saving&hellip;</span>
+          </div>
+        </div>
+        <div style="width:480px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The confirm re-checks the decks as the write runs. If the answer still matches, the save lands and the dialog closes. Focus returns to the control that opened it (or to its row's neighbour, if that row has gone).</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">E6 &middot; the confirm came back changed</div>
+        <div style="width:480px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;">
+          <div role="status" style="display:flex;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:10px 12px;">
+            <span style="color:var(--warning);font-size:14px;">&#8635;</span>
+            <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">This changed while you were deciding.</b> Your collection was edited somewhere else, so here's the answer as of now. Nothing was saved.</span>
+          </div>
+          <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:20px;">Saving leaves 4 decks short</h3>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+            <sc-for list="{{ changedDecks }}" as="d" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:10px;padding:0 14px;min-height:44px;border-bottom:1px solid var(--border);">
+                <span style="flex:1;font-size:14px;">{{ d.name }}</span>
+                <sc-if value="{{ d.isNew }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:4px;padding:1px 5px;">new</span></sc-if>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">{{ d.fig }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;">
+            <span style="padding:10px 18px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:8px;font-size:14px;">Cancel</span>
+            <span style="padding:10px 18px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:14px;font-weight:600;">Save anyway</span>
+          </div>
+        </div>
+        <div style="width:480px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The same dialog redraws in place. There's no second dialog, and focus goes back to Cancel. The notice is a polite live region read once. A deck that wasn't on the earlier list gets <span style="font-family:'IBM Plex Mono',monospace;">new</span>, and a changed figure simply reads its new value. If the re-check finds no deck short any more, the save goes through and nothing is redrawn. If the change in the other tab already did what this save would, the dialog says <span style="font-family:'IBM Plex Mono',monospace;">Already done somewhere else</span> and offers only Close.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">E7 &middot; cancel</div>
+        <div style="width:300px;border:1px dashed var(--border-dashed);border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.6;color:var(--fg-body);">The dialog closes, nothing is written and no history entry is made. The source returns to what it was <i>before the press</i>. In C the edited quantities stay as typed, because the player may want to adjust rather than abandon. In D the row is back at rest. In F the entry is unchanged. Escape, the backdrop and a downward drag of the sheet all count as Cancel.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const d = (name, fig) => ({ name, fig });
+    return {
+      replaceTiles: [
+        { n: "4,226", label: "unchanged", ink: "var(--fg)" },
+        { n: "64", label: "going up or new", ink: "var(--success)" },
+        { n: "38", label: "going down", ink: "var(--fg)" },
+        { n: "112", label: "leaving", ink: "var(--warning)" },
+      ],
+      replaceDecks: [
+        { name: "HD - Kinnan", fig: "3 cards short", chev: "▴", open: true, cards: [
+          { name: "Arcane Signet", short: "short 1" }, { name: "Basalt Monolith", short: "short 1" }, { name: "Thrasios, Triton Hero", short: "short 1" }] },
+        { name: "Atraxa Counters", fig: "1 card short", chev: "▾", open: false, cards: [] },
+        { name: "Meren Value", fig: "1 card short", chev: "▾", open: false, cards: [] },
+      ],
+      leaving: [
+        { name: "Thrasios, Triton Hero", set: "C16 · #46", delta: "×1 → 0", edited: true },
+        { name: "Basalt Monolith", set: "CMM · #368", delta: "×1 → 0", edited: false },
+        { name: "Ornithopter", set: "M21 · #232", delta: "×2 → 0", edited: false },
+        { name: "Llanowar Elves", set: "DOM · #168", delta: "×4 → 0", edited: true },
+      ],
+      leavingShort: [
+        { name: "Thrasios, Triton Hero", delta: "×1 → 0", edited: true },
+        { name: "Basalt Monolith", delta: "×1 → 0", edited: false },
+      ],
+      down: [
+        { name: "Arcane Signet", delta: "×4 → ×2", edited: true },
+        { name: "Command Tower", delta: "×9 → ×7", edited: false },
+      ],
+      up: [
+        { name: "Cultivate", delta: "×2 → ×3" },
+        { name: "Heliod, Sun-Crowned", delta: "new ×1" },
+      ],
+      addRows: [
+        { name: "Overlord of the Hauntwoods", set: "DSK · #194", before: "new", after: "×1" },
+        { name: "Valgavoth, Terror Eater", set: "DSK · #120", before: "new", after: "×1" },
+        { name: "Unholy Annex", set: "DSK · #118", before: "×1", after: "→ ×2" },
+        { name: "Enduring Curiosity", set: "DSK · #51", before: "new", after: "×1 foil" },
+        { name: "Swamp", set: "DSK · #279", before: "×12", after: "→ ×16" },
+        { name: "Cult Healer", set: "DSK · #3", before: "new", after: "×3" },
+      ],
+      unmatched: [
+        { name: "Valgavoth Terror Eater (Showcase)", line: "Line 41 · DSK", q: "×1" },
+        { name: "Token: Spirit", line: "Line 77", q: "×2" },
+        { name: "Glimmerlight", line: "Line 88 · DSK", q: "×1" },
+      ],
+      addOwned: [
+        { name: "Sol Ring", before: "×5", after: "→ ×10" },
+        { name: "Command Tower", before: "×9", after: "→ ×18" },
+        { name: "Cultivate", before: "×2", after: "→ ×4" },
+      ],
+      threeDecks: [d("HD - Kinnan", "◆ short 1"), d("Atraxa Counters", "◆ short 1"), d("Meren Value", "◆ short 1")],
+      longDecks: [d("HD - Kinnan", "12 cards short"), d("Atraxa Counters", "7 cards short"), d("Meren Value", "5 cards short")],
+      allDecks: [d("HD - Kinnan", "12 cards"), d("Atraxa Counters", "7 cards"), d("Meren Value", "5 cards"), d("HD - Gishath", "4 cards"), d("Korvold Treats", "3 cards"), d("Squirrels!", "2 cards"), d("Prossh Food", "1 card"), d("Bristly Bill", "1 card"), d("Just precons · Lathril", "1 card")],
+      changedDecks: [
+        { name: "HD - Kinnan", fig: "◆ short 1", isNew: false },
+        { name: "Atraxa Counters", fig: "◆ short 2", isNew: false },
+        { name: "Meren Value", fig: "◆ short 1", isNew: false },
+        { name: "HD - Gishath", fig: "◆ short 1", isNew: true },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

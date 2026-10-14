@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Chakra+Petch:wght@400;600;700&family=Syncopate:wght@400;700&family=Metamorphous&family=Trirong:wght@400;600;700&family=Cormorant+Garamond:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A09; }
+  a { color: #C6B79A; text-decoration: none; border-bottom: 1px solid #8E8269; }
+  a:hover { color: #EDE6D8; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;background:#0B0A09;padding:40px;min-height:100vh;">
+
+<header style="max-width:1180px;margin:0 0 40px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0B0A09;background:#EDE6D8;border-radius:5px;padding:3px 9px;letter-spacing:0.08em;">4a</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;">Home and Decks &middot; all six themes</span>
+  </div>
+  <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:36px;line-height:1.15;margin:0 0 16px;color:#EDE6D8;">The refresh, rendered from the theme tokens.</h1>
+  <p style="max-width:900px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">The current set &mdash; <b style="color:#EDE6D8;font-weight:600;">Low Sun, Neon Rain, Oil Haze, First Frost, Canopy, Witching Hour</b> &mdash; read from <a href="design_handoff_the99_theme_replacement/tokens.json">the R6 tokens</a>, including the corrected <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--b</span> of <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">#98748F</span>. Moonlit and Screen Glow are gone. Nothing below is hand-picked per theme.</p>
+  <p style="max-width:900px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Two things stay constant on purpose: commander art, which is photography and not a token, and the status meanings &mdash; Draft is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--fg-faint</span>, Building <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--fg-body</span>, Over <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--danger</span>, Unresolved <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--warning</span>, To buy <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--accent</span>, Complete <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--success</span>. Canopy is the row to read closely: its accent, success and green pip are three greens at once, and the deck grid puts <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">To buy</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Complete</span> next to each other at size &mdash; the screenshot READINESS.md asked for.</p>
+</header>
+
+<div style="display:flex;flex-direction:column;gap:46px;">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+  <div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px;border-top:1px solid #2A241D;padding-top:16px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;">{{ t.n }}</span>
+      <span style="font-size:19px;font-weight:600;color:#EDE6D8;font-family:{{ t.faceStack }};">{{ t.label }}</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ t.face }} &middot; accent {{ t.accent }} &middot; bg {{ t.bg }}</span>
+    </div>
+
+    <div style="display:flex;gap:22px;flex-wrap:wrap;">
+
+      <!-- HOME -->
+      <div style="width:1180px;flex:none;border:1px solid {{ t.border }};border-radius:16px;overflow:hidden;background:{{ t.bg }};display:flex;height:624px;">
+        <div style="width:62px;flex:none;background:{{ t.rail }};border-right:1px solid {{ t.border }};display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+          <span style="width:26px;height:26px;transform:rotate(45deg);border:1.5px solid {{ t.accent }};border-radius:4px;margin-bottom:16px;"></span>
+          <span style="width:38px;height:38px;border-radius:10px;background:{{ t.elevated }};color:{{ t.fg }};display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:{{ t.faint }};display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:{{ t.faint }};display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:{{ t.faint }};display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg></span>
+          <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid {{ t.borderStrong }};background:{{ t.surface }};"></span>
+        </div>
+
+        <div style="flex:auto;min-width:0;display:flex;flex-direction:column;">
+          <div style="padding:22px 26px 0;display:flex;align-items:flex-end;gap:16px;">
+            <div style="flex:auto;min-width:0;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:{{ t.faint }};margin-bottom:7px;">1,284 cards &middot; read 2 days ago</div>
+              <div style="font-family:{{ t.faceStack }};font-weight:700;font-size:28px;color:{{ t.fg }};line-height:1;">Welcome back</div>
+            </div>
+            <span style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid {{ t.borderStrong }};border-radius:8px;font-size:12.5px;color:{{ t.body }};flex:none;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 10a6.5 6.5 0 1 1-2.1-4.8"></path><path d="M16.8 3.4v3.2h-3.2"></path></svg>Update collection</span>
+            <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:{{ t.fg }};color:{{ t.bg }};font-size:12.5px;font-weight:600;flex:none;">New deck</span>
+          </div>
+
+          <div style="flex:auto;min-height:0;display:flex;gap:20px;padding:20px 26px 26px;">
+            <div style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:11px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.faint }};">Ready to build</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <sc-for list="{{ t.heroes }}" as="h" hint-placeholder-count="2">
+                  <div style="position:relative;border-radius:14px;overflow:hidden;border:1px solid {{ t.border }};height:250px;background:{{ h.art }};">
+                    <span style="position:absolute;inset:0;background:{{ t.scrimHero }};"></span>
+                    <span style="position:absolute;top:11px;left:12px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:{{ t.plate }};font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ t.fg }};">{{ h.fit }}</span>
+                    <div style="position:absolute;left:0;right:0;bottom:0;padding:14px;">
+                      <div style="font-family:{{ t.faceStack }};font-weight:600;font-size:18px;color:{{ t.fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ h.name }}</div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-top:7px;">
+                        <span style="display:flex;gap:3px;">
+                          <sc-for list="{{ h.pips }}" as="p" hint-placeholder-count="2">
+                            <span style="width:9px;height:9px;border-radius:2px;background:{{ p.c }};border:1px solid {{ t.borderStrong }};"></span>
+                          </sc-for>
+                        </span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ t.body }};">{{ h.fitLine }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ t.accent }};">{{ h.inUse }}</span>
+                      </div>
+                      <div style="display:flex;gap:8px;margin-top:12px;">
+                        <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:{{ t.fg }};color:{{ t.bg }};font-size:12.5px;font-weight:600;">Start this deck</span>
+                        <span style="display:flex;align-items:center;height:32px;padding:0 13px;border:1px solid {{ t.borderDashed }};border-radius:8px;font-size:12.5px;color:{{ t.fg }};background:{{ t.plate }};">See the pool</span>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ t.faint }};">7 more scored 70 or better</span>
+                <span style="display:flex;align-items:center;height:32px;padding:0 13px;border:1px solid {{ t.borderStrong }};border-radius:8px;font-size:12.5px;color:{{ t.fg }};">All commanders</span>
+              </div>
+
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.faint }};margin-top:6px;">Pick up where you left off</div>
+              <div style="display:flex;gap:12px;">
+                <sc-for list="{{ t.resume }}" as="r" hint-placeholder-count="2">
+                  <div style="flex:1;min-width:0;display:flex;align-items:center;gap:11px;background:{{ t.inset }};border:1px solid {{ t.border }};border-radius:12px;padding:10px 12px;">
+                    <span style="width:30px;height:42px;border-radius:5px;background:{{ r.art }};flex:none;"></span>
+                    <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                      <span style="font-family:{{ t.faceStack }};font-weight:600;font-size:14.5px;color:{{ t.fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span>
+                      <span style="display:flex;align-items:center;gap:8px;"><span style="display:flex;align-items:center;height:19px;padding:0 7px;border-radius:5px;background:{{ r.pillBg }};font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ r.pillFg }};">{{ r.status }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ t.faint }};">{{ r.meta }}</span></span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="width:316px;flex:none;display:flex;flex-direction:column;gap:11px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.faint }};">Your decks &middot; 6</div>
+              <div style="background:{{ t.inset }};border:1px solid {{ t.border }};border-radius:14px;overflow:hidden;">
+                <sc-for list="{{ t.rail4 }}" as="d" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-left:3px solid {{ d.key }};border-bottom:1px solid {{ t.border }};">
+                    <span style="flex:auto;min-width:0;font-family:{{ t.faceStack }};font-weight:600;font-size:14px;color:{{ t.fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.name }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ d.key }};flex:none;">{{ d.status }}</span>
+                  </div>
+                </sc-for>
+                <div style="padding:9px 13px;display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ t.faint }};">2 more</span>
+                  <span style="font-size:12.5px;color:{{ t.body }};">All decks</span>
+                </div>
+              </div>
+
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.faint }};margin-top:4px;">Commitments</div>
+              <div style="background:{{ t.inset }};border:1px solid {{ t.border }};border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:11px;">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;">
+                  <span style="font-size:13px;color:{{ t.body }};">Cards in use</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ t.accent }};font-variant-numeric:tabular-nums;">312 of 1,284</span>
+                </div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;">
+                  <span style="font-size:13px;color:{{ t.body }};">Spoken for twice</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ t.danger }};font-variant-numeric:tabular-nums;">3 cards</span>
+                </div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;">
+                  <span style="font-size:13px;color:{{ t.body }};">To buy, all decks</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ t.fg }};font-variant-numeric:tabular-nums;">18 &middot; $94.80</span>
+                </div>
+                <span style="display:flex;align-items:center;justify-content:center;height:32px;border:1px solid {{ t.borderStrong }};border-radius:8px;font-size:12.5px;color:{{ t.fg }};margin-top:2px;">Review commitments</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DECKS -->
+      <div style="width:1180px;flex:none;border:1px solid {{ t.border }};border-radius:16px;overflow:hidden;background:{{ t.bg }};display:flex;height:636px;">
+        <div style="width:62px;flex:none;background:{{ t.rail }};border-right:1px solid {{ t.border }};display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+          <span style="width:26px;height:26px;transform:rotate(45deg);border:1.5px solid {{ t.accent }};border-radius:4px;margin-bottom:16px;"></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:{{ t.faint }};display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:{{ t.faint }};display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:{{ t.faint }};display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;background:{{ t.elevated }};color:{{ t.fg }};display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg></span>
+          <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid {{ t.borderStrong }};background:{{ t.surface }};"></span>
+        </div>
+
+        <div style="flex:auto;min-width:0;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid {{ t.border }};">
+            <span style="font-family:{{ t.faceStack }};font-weight:700;font-size:20px;color:{{ t.fg }};">Decks</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ t.faint }};">6 of 6</span>
+            <span style="flex:auto;"></span>
+            <span style="display:flex;border:1px solid {{ t.border }};border-radius:8px;overflow:hidden;">
+              <span style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:{{ t.elevated }};color:{{ t.fg }};"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="6" height="6" rx="1"></rect><rect x="11" y="3" width="6" height="6" rx="1"></rect><rect x="3" y="11" width="6" height="6" rx="1"></rect><rect x="11" y="11" width="6" height="6" rx="1"></rect></svg></span>
+              <span style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-left:1px solid {{ t.border }};color:{{ t.muted }};"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 5.5h12M4 10h12M4 14.5h12"></path></svg></span>
+            </span>
+            <span style="display:flex;align-items:center;height:32px;padding:0 13px;border:1px solid {{ t.borderStrong }};border-radius:8px;font-size:12.5px;color:{{ t.body }};">Sort &middot; last played</span>
+            <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:{{ t.fg }};color:{{ t.bg }};font-size:12.5px;font-weight:600;">New deck</span>
+          </div>
+
+          <div style="flex:auto;min-height:0;display:flex;">
+            <div style="width:262px;flex:none;border-right:1px solid {{ t.border }};background:{{ t.rail }};display:flex;flex-direction:column;">
+              <div style="padding:14px 16px 12px;border-bottom:1px solid {{ t.border }};">
+                <div style="display:flex;align-items:center;gap:9px;height:34px;padding:0 11px;background:{{ t.sunken }};border:1px solid {{ t.borderStrong }};border-radius:8px;color:{{ t.faint }};">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="9" r="5.4"></circle><path d="m13.2 13.2 3.3 3.3"></path></svg>
+                  <span style="font-size:12.5px;">Search decks</span>
+                </div>
+              </div>
+              <div style="flex:auto;min-height:0;">
+                <div style="padding:13px 16px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.faint }};">Status</div>
+                <sc-for list="{{ t.statusRows }}" as="s" hint-placeholder-count="6">
+                  <span style="display:flex;align-items:center;height:32px;padding:0 16px;font-size:13px;color:{{ t.fg }};border-left:3px solid {{ s.key }};background:{{ t.surface }};">{{ s.label }}</span>
+                </sc-for>
+                <div style="padding:14px 16px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.faint }};border-top:1px solid {{ t.border }};margin-top:12px;">Colour identity</div>
+                <div style="padding:0 16px;display:flex;gap:6px;">
+                  <sc-for list="{{ t.wubrg }}" as="p" hint-placeholder-count="5">
+                    <span style="width:28px;height:28px;border-radius:7px;border:1px solid {{ t.borderStrong }};background:{{ p.c }};"></span>
+                  </sc-for>
+                </div>
+                <div style="padding:14px 16px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.faint }};border-top:1px solid {{ t.border }};margin-top:14px;">Last played</div>
+                <span style="display:flex;align-items:center;height:32px;padding:0 16px;font-size:13px;color:{{ t.body }};">This month</span>
+                <span style="display:flex;align-items:center;height:32px;padding:0 16px;font-size:13px;color:{{ t.body }};">Never</span>
+              </div>
+              <div style="padding:12px 16px;border-top:1px solid {{ t.border }};display:flex;align-items:center;gap:10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ t.faint }};">all statuses on</span>
+                <span style="margin-left:auto;display:flex;align-items:center;height:32px;padding:0 13px;border:1px solid {{ t.borderStrong }};border-radius:8px;font-size:12.5px;color:{{ t.fg }};">Clear</span>
+              </div>
+            </div>
+
+            <div style="flex:auto;min-width:0;padding:18px 22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-content:start;">
+              <sc-for list="{{ t.decks }}" as="d" hint-placeholder-count="6">
+                <div style="border-radius:14px;overflow:hidden;background:{{ t.inset }};border:1px solid {{ t.border }};">
+                  <div style="position:relative;height:118px;background:{{ d.art }};">
+                    <span style="position:absolute;inset:0;background:{{ t.scrimCard }};"></span>
+                    <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:{{ d.pillBg }};border:1px solid {{ d.pillBd }};font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ d.pillFg }};">{{ d.status }}</span>
+                    <span style="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;background:{{ t.plate }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ t.body }};">&hellip;</span>
+                    <div style="position:absolute;left:0;right:0;bottom:0;padding:0 13px 10px;">
+                      <div style="font-family:{{ t.faceStack }};font-weight:600;font-size:15px;color:{{ d.nameColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.name }}</div>
+                    </div>
+                  </div>
+                  <div style="padding:11px 13px 13px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span style="display:flex;gap:3px;">
+                        <sc-for list="{{ d.pips }}" as="p" hint-placeholder-count="2">
+                          <span style="width:9px;height:9px;border-radius:2px;background:{{ p.c }};border:1px solid {{ t.borderStrong }};"></span>
+                        </sc-for>
+                      </span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ t.faint }};">{{ d.colours }}</span>
+                      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ d.countColor }};font-variant-numeric:tabular-nums;">{{ d.count }}</span>
+                    </div>
+                    <div style="height:3px;border-radius:2px;background:{{ t.elevated }};margin:9px 0 0;position:relative;overflow:hidden;">
+                      <span style="position:absolute;left:0;top:0;bottom:0;width:{{ d.barW }};background:{{ d.barColor }};border-radius:2px;"></span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ d.metaColor }};">{{ d.meta }}</span>
+                      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ t.faint }};">{{ d.when }}</span>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</sc-for>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:900}}">
+const RAW = [
+  { key: "amonkhet", label: "Low Sun", face: "Cinzel 600 \u00b7 Amonkhet", faceStack: "'Cinzel',serif",
+    bg:"#14110E", surface:"#1E1A15", rail:"#1A1611", inset:"#1B1712", sunken:"#18140F", elevated:"#29241F",
+    border:"#2B241B", borderStrong:"#3A3229", borderDashed:"#494037",
+    fg:"#EDE6D8", body:"#C0B8A6", muted:"#A59C89", faint:"#8B8270",
+    accent:"#CF8745", success:"#6FA368", warning:"#DEAA29", danger:"#C6533F",
+    w:"#F4E9C4", u:"#3A6AA5", b:"#98748F", r:"#C05A3E", g:"#4B7A46" },
+  { key: "kamigawa", label: "Neon Rain", face: "Chakra Petch 600 \u00b7 Kamigawa", faceStack: "'Chakra Petch',sans-serif",
+    bg:"#0E0F14", surface:"#16181F", rail:"#12141B", inset:"#13151C", sunken:"#101219", elevated:"#20222A",
+    border:"#181C26", borderStrong:"#262A35", borderDashed:"#343843",
+    fg:"#E6E8F0", body:"#B1B6C7", muted:"#959AAD", faint:"#6F7486",
+    accent:"#FF4D9A", success:"#6FA368", warning:"#E0913C", danger:"#C6533F",
+    w:"#F4E9C4", u:"#3A6AA5", b:"#98748F", r:"#C05A3E", g:"#4B7A46" },
+  { key: "phyrexia", label: "Oil Haze", face: "Syncopate 600 \u00b7 New Phyrexia", faceStack: "'Syncopate',sans-serif",
+    bg:"#0D0B0E", surface:"#151317", rail:"#110F13", inset:"#131115", sunken:"#100E12", elevated:"#1E1C20",
+    border:"#19161C", borderStrong:"#262329", borderDashed:"#332F36",
+    fg:"#E4E2E6", body:"#B5B2BB", muted:"#9A96A0", faint:"#78747E",
+    accent:"#52827A", success:"#6FA368", warning:"#E0913C", danger:"#C6533F",
+    w:"#F4E9C4", u:"#3A6AA5", b:"#98748F", r:"#C05A3E", g:"#527030" },
+  { key: "kaldheim", label: "First Frost", face: "Metamorphous 600 \u00b7 Kaldheim", faceStack: "'Metamorphous',serif",
+    bg:"#121217", surface:"#1E1F26", rail:"#181920", inset:"#1A1B22", sunken:"#16171D", elevated:"#2D2E35",
+    border:"#1A1F2B", borderStrong:"#2E3340", borderDashed:"#424755",
+    fg:"#C6D2D3", body:"#B3C0C2", muted:"#95A4A6", faint:"#7C8A8C",
+    accent:"#5C86C9", success:"#6FA368", warning:"#E0913C", danger:"#C6533F",
+    w:"#F4E9C4", u:"#3A6AA5", b:"#98748F", r:"#C05A3E", g:"#4B7A46" },
+  { key: "ixalan", label: "Canopy", face: "Trirong 600 \u00b7 Ixalan", faceStack: "'Trirong',serif",
+    bg:"#0E1310", surface:"#171E19", rail:"#121814", inset:"#141B16", sunken:"#101512", elevated:"#212A23",
+    border:"#1D2620", borderStrong:"#2C3830", borderDashed:"#3B4A3F",
+    fg:"#E0E7DE", body:"#B6C2B3", muted:"#98A695", faint:"#808C7C",
+    accent:"#A3C445", success:"#6FA368", warning:"#E0913C", danger:"#C6533F",
+    w:"#F4E9C4", u:"#3A6AA5", b:"#98748F", r:"#C05A3E", g:"#4B7A46" },
+  { key: "eldraine", label: "Witching Hour", face: "Cormorant Garamond 600 \u00b7 Wilds of Eldraine", faceStack: "'Cormorant Garamond',serif",
+    bg:"#120E17", surface:"#1B1821", rail:"#15121B", inset:"#17141D", sunken:"#131018", elevated:"#26232C",
+    border:"#241D30", borderStrong:"#342C41", borderDashed:"#443C52",
+    fg:"#E4DEEE", body:"#B9B2C5", muted:"#9C95A8", faint:"#898395",
+    accent:"#AE88E6", success:"#6FA368", warning:"#E0913C", danger:"#C6533F",
+    w:"#F4E9C4", u:"#3A6AA5", b:"#98748F", r:"#C05A3E", g:"#4B7A46" }
+];
+
+const ART = {
+  atraxa: "linear-gradient(150deg,#2E3B2C,#4A4A33 55%,#2A2430)",
+  yuriko: "linear-gradient(150deg,#22283A,#2E2A3F 55%,#161520)",
+  krenko: "linear-gradient(150deg,#4A2A22,#6B3527 60%,#2A1A14)",
+  kess: "linear-gradient(150deg,#2A2430,#43304A 55%,#1A1520)",
+  tatyova: "linear-gradient(150deg,#2A3438,#3B4A47 55%,#181F22)",
+  urdragon: "linear-gradient(150deg,#3A2E22,#5A452C 55%,#241C14)"
+};
+
+class Component extends DCLogic {
+  renderVals() {
+    const themes = RAW.map((t, i) => {
+      const pip = (c) => ({ c });
+      const soft = (hex, a) => hex + a;
+      const statusColor = {
+        Draft: t.faint, Building: t.body, Over: t.danger,
+        Unresolved: t.warning, "To buy": t.accent, Complete: t.success
+      };
+      const pillFor = (s) => ({
+        pillBg: soft(statusColor[s], "2E"),
+        pillBd: soft(statusColor[s], "80"),
+        pillFg: statusColor[s]
+      });
+      const deck = (o) => Object.assign({}, o, pillFor(o.status));
+      return Object.assign({}, t, {
+        n: String(i + 1).padStart(2, "0"),
+        plate: soft(t.bg, "D6"),
+        scrimHero: "linear-gradient(180deg," + soft(t.bg, "26") + " 0%," + soft(t.bg, "B8") + " 52%," + soft(t.bg, "F5") + " 100%)",
+        scrimCard: "linear-gradient(180deg," + soft(t.bg, "1A") + "," + soft(t.inset, "F5") + ")",
+        wubrg: [t.w, t.u, t.b, t.r, t.g].map(pip),
+        heroes: [
+          { art: ART.atraxa, name: "Atraxa, Praetors\u2019 Voice", fit: "74 /100 fit", fitLine: "92 of your cards fit", inUse: "12 in use", pips: [t.w, t.u, t.b, t.g].map(pip) },
+          { art: ART.yuriko, name: "Yuriko, the Tiger\u2019s Shadow", fit: "71 /100 fit", fitLine: "88 of your cards fit", inUse: "", pips: [t.u, t.b].map(pip) }
+        ],
+        resume: [
+          Object.assign({ art: ART.atraxa, name: "Atraxa, Praetors\u2019 Voice", status: "To buy", meta: "99 / 99 \u00b7 3 unowned" }, pillFor("To buy")),
+          Object.assign({ art: ART.yuriko, name: "Yuriko, the Tiger\u2019s Shadow", status: "Building", meta: "87 / 99" }, pillFor("Building"))
+        ],
+        rail4: [
+          { name: "Atraxa, Praetors\u2019 Voice", status: "To buy", key: t.accent },
+          { name: "Krenko, Mob Boss", status: "Complete", key: t.success },
+          { name: "Kess, Dissident Mage", status: "Unresolved", key: t.warning },
+          { name: "Tatyova, Benthic Druid", status: "Over", key: t.danger }
+        ],
+        statusRows: [
+          { label: "Draft", key: t.faint }, { label: "Building", key: t.body },
+          { label: "Over", key: t.danger }, { label: "Unresolved", key: t.warning },
+          { label: "To buy", key: t.accent }, { label: "Complete", key: t.success }
+        ],
+        decks: [
+          deck({ art: ART.atraxa, name: "Atraxa, Praetors\u2019 Voice", nameColor: t.fg, status: "To buy", pips: [t.w, t.u, t.b, t.g].map(pip), colours: "4-colour", count: "99 / 99", countColor: t.fg, barW: "100%", barColor: t.accent, meta: "3 unowned \u00b7 $18.40", metaColor: t.faint, when: "2 days ago" }),
+          deck({ art: ART.krenko, name: "Krenko, Mob Boss", nameColor: t.fg, status: "Complete", pips: [t.r].map(pip), colours: "Mono-red", count: "99 / 99", countColor: t.fg, barW: "100%", barColor: t.success, meta: "all owned", metaColor: t.faint, when: "3 days ago" }),
+          deck({ art: ART.yuriko, name: "Yuriko, the Tiger\u2019s Shadow", nameColor: t.fg, status: "Building", pips: [t.u, t.b].map(pip), colours: "Dimir", count: "87 / 99", countColor: t.fg, barW: "88%", barColor: t.body, meta: "4 in use elsewhere", metaColor: t.accent, when: "last week" }),
+          deck({ art: ART.kess, name: "Kess, Dissident Mage", nameColor: t.fg, status: "Unresolved", pips: [t.u, t.b, t.r].map(pip), colours: "Grixis", count: "99 / 99", countColor: t.fg, barW: "100%", barColor: t.warning, meta: "2 lines unresolved", metaColor: t.warning, when: "3 weeks ago" }),
+          deck({ art: ART.tatyova, name: "Tatyova, Benthic Druid", nameColor: t.fg, status: "Over", pips: [t.u, t.g].map(pip), colours: "Simic", count: "104 / 99", countColor: t.fg, barW: "100%", barColor: t.danger, meta: "5 over", metaColor: t.danger, when: "never played" }),
+          deck({ art: ART.urdragon, name: "The Ur-Dragon", nameColor: t.fg, status: "Draft", pips: [t.w, t.u, t.b, t.r, t.g].map(pip), colours: "5-colour", count: "0 / 99", countColor: t.muted, barW: "0%", barColor: t.faint, meta: "created today", metaColor: t.faint, when: "" })
+        ]
+      });
+    });
+    return { themes };
+  }
+}
+</script>
+</body>
+</html>

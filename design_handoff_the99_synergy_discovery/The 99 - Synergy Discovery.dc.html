@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Synergy discovery, and the last 31 &middot; track 2 &middot; stage 1</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">Two figures, and only one of them is the ranking.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">The EDHREC Synergy panel stops being an ownership audit and becomes a <b style="color:#EDE6D8;font-weight:600;">synergy ranking of ~260 real cards</b> &mdash; one column of 44px rows at both widths, creatures led, every row a control, every row selectable into the build. On <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">/decks/[id]</span> the same ranked list becomes a Consider shelf and the path from 68 to 99: an owned-only fill, an explicit buying top-up, and the shipped sweep, held apart on purpose.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Synergy is signed points in brass. Inclusion is an unsigned percentage in neutral.</b> Different units, different colours, different columns, and only the brass one sorts the list. That is the whole §5 constraint, and it is the one thing in here that must not be drawn away.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> for the decisions log, <a href="DENSITY-synergy-panel.md">DENSITY-synergy-panel.md</a> for the §7.1 density call, <a href="STATES-fill-controls.md">STATES-fill-controls.md</a> for the §7.5 matrix, <a href="synergy-discovery · copy strings.ts">synergy-discovery &middot; copy strings.ts</a> for production copy. <b style="color:#C6B79A;font-weight:600;">Not gated</b> &mdash; §0's ingest has landed; what is missing is a read path.</p>
+  </section>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:20px 24px;margin-bottom:20px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;7.1 Density at ~260</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">One column of 44px rows, both widths.</b> Not tiles &mdash; the data contract has no image. Not two columns &mdash; a rank order read in columns is not a rank order. Plain overflow.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;7.2 The ladder</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">One facet strip, one disclosure.</b> Types are a strip defaulting to Creatures; depth is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show all N</span>. Two mechanisms, not a ladder of reveals.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;7.3 Ownership</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Filled dot vs. hollow ring</b> &mdash; both already on this panel today. The dashed border does not survive 258 rows, and no ownership filter: that is the audit ruling 1 deleted.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;7.4 Select into build</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">A <b style="color:#EDE6D8;font-weight:600;">34px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+</span> &rarr; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10003;</span> toggle</b> at the row's end. The locked promise strings stay as the zero-selection copy; a <b style="color:#EDE6D8;font-weight:600;">third string</b> branches when selection is non-empty.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;7.5 The three controls</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">They <b style="color:#EDE6D8;font-weight:600;">never sit side by side</b>. The two adds live in a last-31 strip under the provenance line; the sweep stays where it ships, in the toolbar. Brass outline &gt; neutral ghost &gt; a whole row away.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;7.6 Short of 99</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">The owned fill <b style="color:#EDE6D8;font-weight:600;">never promises 99</b> &mdash; its label states what it can place. Stopping short reuses the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">provenanceShort</span> clause verbatim, and the top-up is the way forward.</div></div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;background:#181410;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Locked in &sect;6 &mdash; drawn as written, not re-litigated</div>
+    <div style="font-size:13px;color:#A89B84;line-height:1.7;">1 &middot; synergy ranking, creatures the emphasis and not the whole panel, percentage headline stays &middot; 2 &middot; EDHREC's figure is the ranking, nothing derived &middot; 3 &middot; hide only what Role Coverage already draws, and unowned role staples stay &middot; 4 &middot; selection on both surfaces, no tray, no confirm, no wizard &middot; 5 &middot; the fill is owned-only and buying is a second explicit control &middot; 6 &middot; the 68 baseline is unchanged and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">stickyPromise</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">seedNote</span> keep their strings &middot; 7 &middot; everything either control adds is an <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto</span> card, no new marker. Voice is Kitchen Table; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">null</span> renders as absence on <b style="color:#EDE6D8;font-weight:600;">both</b> figures, never 0.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <!-- ============ ANATOMY ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Anatomy &middot; <span style="color:#C9A24B;">the synergy row, and the two figures</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Desktop row &mdash; <span style="color:#C9A24B;">44px, one column, six slots</span></div>
+
+        <div style="display:flex;gap:10px;padding:0 6px 6px 12px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;">
+          <span style="width:7px;flex:none;"></span>
+          <span style="flex:auto;">card</span>
+          <span style="width:150px;flex:none;">type</span>
+          <span style="width:64px;flex:none;text-align:right;color:#C9A24B;">synergy</span>
+          <span style="width:46px;flex:none;text-align:right;">decks</span>
+          <span style="width:34px;flex:none;"></span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;">
+            <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+            <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Murmuring Mystic</span>
+            <span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Bird Wizard</span>
+            <span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+47 pts</span>
+            <span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">31%</span>
+            <span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#211C15;border:1px solid #6E5B33;border-radius:8px;padding:0 6px 0 12px;">
+            <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+            <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Monastery Mentor</span>
+            <span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Monk</span>
+            <span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+36 pts</span>
+            <span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">28%</span>
+            <span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #C9A24B;background:rgba(201,162,75,0.10);color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">&#10003;</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;outline:2px solid #C9A24B;outline-offset:2px;">
+            <span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span>
+            <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Third Path Iconoclast</span>
+            <span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Artificer</span>
+            <span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+44 pts</span>
+            <span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">24%</span>
+            <span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#A89B84;line-height:1.5;margin-top:18px;">
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">row</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1px --border</span>, radius 8px, min-height 44px, padding <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 6px 0 12px</span>. This is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CoverageRow</span>'s geometry, taken whole &mdash; the shipped phone density becomes the density at both widths.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">trigger</span><span>The row's name and type are one <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CardDetailTrigger</span>; siblings are the facet's ordered oracle ids, so Prev/Next pages the ranking. The toggle is a second, adjacent target &mdash; the same two-target arrangement <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">AutoTag</span> ships on a decklist row.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">synergy</span><span><b style="color:#EDE6D8;font-weight:600;">Signed, in points, brass.</b> Mono 11.5px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span>, tabular, right. It is the sort key, so it is the only figure that gets the accent.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">inclusion</span><span><b style="color:#EDE6D8;font-weight:600;">Unsigned, a percentage, neutral.</b> Mono 11px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span>, tabular, right. Secondary context, per &sect;5 &mdash; and never brighter than the name, which is the sibling handoff's chip rule inverted on purpose: <i>there</i> the number was the claim, <i>here</i> the brass column is.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">selected</span><span>Row background <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--elevated-hover</span>, border <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent-shadow</span>, toggle <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10003;</span> in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span>. The row changes, not just the button: at 44px in a 480px scroller a lone glyph is not enough.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;width:86px;">focus</span><span>Global <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">:focus-visible</span> &mdash; 2px brass at +2px, not overridden. Drawn on row three.</span></div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Phone row &mdash; <span style="color:#C9A24B;">52px, figures on a meta line</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;">
+            <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+            <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Murmuring Mystic</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;font-variant-numeric:tabular-nums;"><span style="color:#C9A24B;">+47 pts</span> &middot; edhrec 31%</span>
+            </span>
+            <span style="width:44px;height:44px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:17px;display:flex;align-items:center;justify-content:center;">+</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#211C15;border:1px solid #6E5B33;border-radius:8px;padding:0 6px 0 12px;">
+            <span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span>
+            <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Third Path Iconoclast</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;font-variant-numeric:tabular-nums;"><span style="color:#C9A24B;">+44 pts</span> &middot; edhrec 24%</span>
+            </span>
+            <span style="width:44px;height:44px;flex:none;border-radius:7px;border:1px solid #C9A24B;background:rgba(201,162,75,0.10);color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">&#10003;</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;">390px cannot hold a name, a type line, two figures and a 44px target on one line. So the <b style="color:#EDE6D8;font-weight:600;">type line yields first</b> &mdash; it is on the card detail one tap away &mdash; and the two figures drop to a meta line at 52px, exactly the Shopping row the recommendations addendum drew. Prefix <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">edhrec</span> is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shopping.rowFigure</span> convention; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">pts</span> needs no prefix because the sign and the unit already say what it is.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">&sect;5 &mdash; the four figure cases, in one column</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 12px;">
+            <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+            <span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Murmuring Mystic</span>
+            <span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+47 pts</span>
+            <span style="width:42px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">31%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 12px;">
+            <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+            <span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Command Tower</span>
+            <span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+1 pt</span>
+            <span style="width:42px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">82%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 12px;">
+            <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+            <span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Reliquary Tower</span>
+            <span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6A6152;font-variant-numeric:tabular-nums;">&minus;5 pts</span>
+            <span style="width:42px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">24%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 12px;">
+            <span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span>
+            <span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Sea Gate Stormcaller</span>
+            <span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6A6152;">&mdash;</span>
+            <span style="width:42px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">6%</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#C6B79A;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Command Tower is the brief's Sol Ring.</b> 82% of decks run it and it means nothing about this commander &mdash; the brass column says <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+1</span> and it sorts near the floor. Sol Ring itself cannot appear here when you own it: ruling 3 removes it, because Role Coverage draws it. <b style="color:#EDE6D8;font-weight:600;">Negative synergy is dim, never red</b> &mdash; a card played less here than generally is information, not a fault. <b style="color:#EDE6D8;font-weight:600;">A null synergy is an em dash and keeps its inclusion</b>: the two figures are absent independently, so one dash never suppresses the other.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE A · AT REST ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface A &middot; <span style="color:#C9A24B;">/commanders/kykar-wind-s-fury &mdash; the panel at rest, creatures led</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:940px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &middot; right column &mdash; <span style="color:#C9A24B;">headline kept, facet strip, 10 rows, one disclosure</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;padding:26px 28px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;color:#EDE6D8;">EDHREC Synergy</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:2px;">258 cards EDHREC associates with this commander, ranked by synergy</div>
+
+          <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:18px 20px;margin-top:16px;">
+
+            <div style="display:flex;align-items:center;gap:14px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:30px;color:#EDE6D8;">62</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#8E8269;">of top 258</span>
+              <span style="flex:1;height:10px;border-radius:999px;background:#2A241D;overflow:hidden;display:block;"><span style="display:block;height:100%;width:24%;background:#C9A24B;"></span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">24% owned</span>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 10px;">
+              <span style="display:inline-flex;align-items:baseline;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;align-items:center;">Creatures <span style="color:#C9A24B;font-size:10.5px;">66</span></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Instants &amp; sorceries <span style="color:#6A6152;font-size:10.5px;">71</span></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Artifacts <span style="color:#6A6152;font-size:10.5px;">39</span></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Enchantments <span style="color:#6A6152;font-size:10.5px;">26</span></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Lands <span style="color:#6A6152;font-size:10.5px;">56</span></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:transparent;border:1px dashed #3A3229;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">All <span style="color:#6A6152;font-size:10.5px;">258</span></span>
+            </div>
+
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;"><span style="color:#C9A24B;">+pts</span> = how much more often it appears here than in decks generally &middot; % = decks running it &middot; &mdash; = no figure</div>
+
+            <div style="display:flex;gap:10px;padding:0 6px 6px 12px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;">
+              <span style="width:7px;flex:none;"></span><span style="flex:auto;">card</span><span style="width:150px;flex:none;">type</span><span style="width:64px;flex:none;text-align:right;color:#C9A24B;">synergy</span><span style="width:46px;flex:none;text-align:right;">decks</span><span style="width:34px;flex:none;"></span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Murmuring Mystic</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Bird Wizard</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+47 pts</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">31%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Third Path Iconoclast</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Artificer</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+44 pts</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">24%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Docent of Perfection</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Wizard</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+39 pts</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">12%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Monastery Mentor</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Monk</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+36 pts</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">28%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Young Pyromancer</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Shaman</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+34 pts</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">41%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Storm-Kiln Artificer</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Dwarf Artificer</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+31 pts</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">38%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Talrand, Sky Summoner</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Merfolk Wizard</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+28 pts</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">19%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Thermo-Alchemist</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Shaman</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+22 pts</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">14%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Archaeomancer</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Wizard</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+9 pts</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">8%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Sea Gate Stormcaller</span><span style="width:150px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Wizard</span><span style="width:64px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6A6152;">&mdash;</span><span style="width:46px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">6%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px dashed #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">Show all 66 creatures &rarr;</div>
+            </div>
+
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:12px;">Ordering is <span style="color:#8E8269;">synergy descending, absent last</span> &mdash; the same rule the coverage chips use for inclusion, applied to the figure that ranks this panel. Owned and unowned are interleaved: ruling 1 deleted the two-list split, so ownership never reorders anything.</div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &middot; scrolling body &mdash; <span style="color:#C9A24B;">facet strip scrolls, 6 rows, one disclosure</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;height:820px;">
+          <div style="height:88px;flex:none;background:linear-gradient(158deg,#3A3229 0%,#241F19 62%,#161311 100%);position:relative;">
+            <div style="position:absolute;left:16px;right:16px;bottom:10px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">Rank 1 &middot; your best fit</div>
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;margin-top:3px;">Kykar, Wind&rsquo;s Fury</div>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:16px 14px;display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <div style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;color:#EDE6D8;">EDHREC Synergy</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;margin-top:2px;">258 cards, ranked by synergy</div>
+            </div>
+            <div style="background:#1A160F;border:1px solid #2A241D;border-radius:10px;padding:13px 14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">EDHREC synergy</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;">62 / 258 owned</span>
+              </div>
+              <div style="height:6px;border-radius:999px;background:#2A241D;overflow:hidden;margin-bottom:12px;"><span style="display:block;height:100%;width:24%;background:#C9A24B;"></span></div>
+
+              <div style="display:flex;gap:6px;overflow:hidden;margin-bottom:10px;">
+                <span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">Creatures <span style="color:#C9A24B;font-size:10px;">66</span></span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Instants <span style="color:#6A6152;font-size:10px;">71</span></span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Artif&hellip;</span>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;margin-bottom:10px;"><span style="color:#C9A24B;">+pts</span> = synergy vs. all decks &middot; % = decks running it</div>
+
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Murmuring Mystic</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;font-variant-numeric:tabular-nums;"><span style="color:#C9A24B;">+47 pts</span> &middot; edhrec 31%</span></span><span style="width:44px;height:44px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:17px;display:flex;align-items:center;justify-content:center;">+</span></div>
+                <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Third Path Iconoclast</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;font-variant-numeric:tabular-nums;"><span style="color:#C9A24B;">+44 pts</span> &middot; edhrec 24%</span></span><span style="width:44px;height:44px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:17px;display:flex;align-items:center;justify-content:center;">+</span></div>
+                <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Docent of Perfection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;font-variant-numeric:tabular-nums;"><span style="color:#C9A24B;">+39 pts</span> &middot; edhrec 12%</span></span><span style="width:44px;height:44px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:17px;display:flex;align-items:center;justify-content:center;">+</span></div>
+                <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#211C15;border:1px solid #6E5B33;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Monastery Mentor</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;font-variant-numeric:tabular-nums;"><span style="color:#C9A24B;">+36 pts</span> &middot; edhrec 28%</span></span><span style="width:44px;height:44px;flex:none;border-radius:7px;border:1px solid #C9A24B;background:rgba(201,162,75,0.10);color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">&#10003;</span></div>
+                <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Young Pyromancer</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;font-variant-numeric:tabular-nums;"><span style="color:#C9A24B;">+34 pts</span> &middot; edhrec 41%</span></span><span style="width:44px;height:44px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:17px;display:flex;align-items:center;justify-content:center;">+</span></div>
+                <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Storm-Kiln Artificer</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;font-variant-numeric:tabular-nums;"><span style="color:#C9A24B;">+31 pts</span> &middot; edhrec 38%</span></span><span style="width:44px;height:44px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:17px;display:flex;align-items:center;justify-content:center;">+</span></div>
+                <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border:1px dashed #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">Show all 66 creatures</div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:none;border-top:1px solid #3A3229;background:#1A160F;padding:12px 16px 24px;display:flex;align-items:center;gap:12px;">
+            <div style="flex:1;display:flex;flex-direction:column;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">READY TO BUILD</span>
+              <span style="font-size:12px;color:#C6B79A;">We&rsquo;ll fill 68, plus your 1 &mdash; 69 of the 99</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;margin-top:2px;">Clear selection</span>
+            </div>
+            <span style="flex:none;background:#C9A24B;color:#14110E;font-weight:600;font-size:14px;border-radius:8px;padding:12px 18px;white-space:nowrap;">Build this deck &rarr;</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:10px;line-height:1.6;">The facet strip is a horizontal scroller at 390px &mdash; six facets do not wrap into a block without pushing the first row below the fold. The sticky bar is where selection becomes visible on the phone, and it is the only place it appears.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE A · FACETS EXPANDED + RULING 3 ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface A &middot; <span style="color:#C9A24B;">the full list, and what ruling 3 takes out of it</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:620px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">All &middot; expanded &mdash; <span style="color:#C9A24B;">258 rows in a 480px scroller, no count truncation</span></div>
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+            <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Creatures <span style="color:#6A6152;font-size:10.5px;">66</span></span>
+            <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All <span style="color:#C9A24B;font-size:10.5px;">258</span></span>
+            <span style="margin-left:auto;display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">Show fewer</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;max-height:480px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Murmuring Mystic</span><span style="width:104px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature</span><span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+47 pts</span><span style="width:40px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">31%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Third Path Iconoclast</span><span style="width:104px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature</span><span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+44 pts</span><span style="width:40px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">24%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Metallurgic Summonings</span><span style="width:104px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Enchantment</span><span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+42 pts</span><span style="width:40px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">9%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Monastery Mentor</span><span style="width:104px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature</span><span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+36 pts</span><span style="width:40px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">28%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Smothering Tithe</span><span style="width:104px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Enchantment</span><span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+7 pts</span><span style="width:40px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">51%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Mana Crypt</span><span style="width:104px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Artifact</span><span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+2 pts</span><span style="width:40px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">32%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Command Tower</span><span style="width:104px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Land</span><span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;font-variant-numeric:tabular-nums;">+1 pt</span><span style="width:40px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">82%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Reliquary Tower</span><span style="width:104px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Land</span><span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6A6152;font-variant-numeric:tabular-nums;">&minus;5 pts</span><span style="width:40px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">24%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:0 6px 0 12px;opacity:0.55;"><span style="width:7px;height:7px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Sea Gate Stormcaller</span><span style="width:104px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">Creature</span><span style="width:60px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6A6152;">&mdash;</span><span style="width:40px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;font-variant-numeric:tabular-nums;">6%</span><span style="width:34px;height:34px;flex:none;border-radius:7px;border:1px solid #3A3229;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:15px;display:flex;align-items:center;justify-content:center;">+</span></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:10px;">The type column drops to the card type alone in the All facet &mdash; a full type line is the facet's own job when a facet is selected, and a mixed list needs the type to be scannable, not complete.</div>
+        </div>
+      </div>
+
+      <div style="width:520px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Ruling 3 &mdash; the exclusion, drawn as a rule not a filter</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;background:#1A160F;border:1px solid #2A241D;border-radius:9px;padding:12px 14px;">
+            <span style="flex:none;width:96px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#C6533F;">excluded</span>
+            <span style="flex:auto;font-size:12.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Owned</b> cards Role Coverage already draws for ramp, draw, removal or wipes. Sol Ring, Arcane Signet, Swords to Plowshares. They are on the page, forty rows up.</span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;background:#1A160F;border:1px solid #2A241D;border-radius:9px;padding:12px 14px;">
+            <span style="flex:none;width:96px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#6FA368;">stays</span>
+            <span style="flex:auto;font-size:12.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Unowned</b> role staples &mdash; Mana Crypt above is ramp, unowned, and drawn. Nothing else on this page shows it, and ruling 3 rejects excluding the four roles outright for exactly that reason.</span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;background:#1A160F;border:1px solid #2A241D;border-radius:9px;padding:12px 14px;">
+            <span style="flex:none;width:96px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#6FA368;">stays</span>
+            <span style="flex:auto;font-size:12.5px;color:#C6B79A;line-height:1.55;">Everything that is not one of those four roles, owned or not &mdash; creatures, enchantments, lands, the whole point of the panel.</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#C6B79A;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The exclusion is silent.</b> No &ldquo;12 hidden&rdquo; note, no toggle to show them. A player cannot act on the fact that a card is drawn elsewhere on the same page, and a count of hidden things invites a control to reveal them &mdash; which is the ownership audit coming back through the side door. The facet counts are <b style="color:#EDE6D8;font-weight:600;">post-exclusion</b>, so <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">66</span> is the number of creature rows that exist, and the headline <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">of top 258</span> is the number EDHREC associates &mdash; those two disagree by design, and the headline is the one ruling 1 locked.<br><br><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">Creatures are never excluded in practice: <span style="font-family:'IBM Plex Mono',monospace;">classifyRoles</span> can class a creature as ramp or draw, so a few do drop out of the default facet. That is the rule working, not an edge case &mdash; and it is the one place the default facet count moves with the player's collection.</span></div>
+      </div>
+
+      <div style="width:390px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Absent &amp; degraded &mdash; <span style="color:#C9A24B;">the panel's two null states</span></div>
+        <div style="display:flex;align-items:flex-start;gap:9px;border-radius:8px;background:#211C15;border:1px solid #3A3229;border-left:2px solid #8E8269;padding:9px 13px;margin-bottom:12px;">
+          <span style="color:#8E8269;font-size:13px;line-height:1.4;flex:none;">&#9888;</span>
+          <span style="font-size:12.5px;color:#A89B84;line-height:1.45;"><b style="color:#C6B79A;font-weight:600;">No synergy data</b> &mdash; EDHREC doesn&rsquo;t track this commander, so there is nothing to rank. The panel is not drawn.</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:9px;border-radius:8px;background:#181410;border:1px solid #3A3229;border-left:3px solid #E0913C;padding:9px 13px;margin-bottom:14px;">
+          <span style="color:#E0913C;font-size:13px;line-height:1.4;flex:none;">&#9888;</span>
+          <span style="font-size:12.5px;color:#A89B84;line-height:1.45;"><b style="color:#C6B79A;font-weight:600;">Synergy data unavailable</b> &mdash; we couldn&rsquo;t reach EDHREC. <span style="color:#C9A24B;text-decoration:underline;">Try again</span></span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;">Both are shipped strings and shipped shapes, unchanged. What changes is the consequence: today an outage hides two chip lists; now it hides <b style="color:#EDE6D8;font-weight:600;">the panel's ordering principle</b>, so there is no degraded rendering to fall back to. Absent gets no retry, degraded gets one &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FitHero</span>'s distinction, held.<br><br><b style="color:#EDE6D8;font-weight:600;">A per-row null is different and does not trigger either.</b> One card with no synergy figure among 257 that have one is an em dash, which is legible because its neighbours give it meaning &mdash; the recommendations handoff's rule, and it applies here to each figure independently.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE A · SELECTION ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface A &middot; <span style="color:#C9A24B;">&sect;7.4 selection into the build, and the promise that stops being true</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:520px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop left column &mdash; <span style="color:#C9A24B;">three states of one button</span></div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:18px 20px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">Nothing selected &mdash; the locked strings, byte for byte</div>
+            <div style="background:#C9A24B;color:#14110E;font-weight:600;font-size:15px;border-radius:8px;padding:14px 0;text-align:center;">Build this deck &rarr;</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;text-align:center;line-height:1.5;margin-top:12px;">We&rsquo;ll fill 68 of the 99 &mdash; roles and lands. The rest is yours.</div>
+          </div>
+
+          <div style="background:#1A160F;border:1px solid #6E5B33;border-radius:12px;padding:18px 20px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">7 selected, all owned &mdash; a third string, not an edit to those two</div>
+            <div style="background:#C9A24B;color:#14110E;font-weight:600;font-size:15px;border-radius:8px;padding:14px 0;text-align:center;">Build this deck &rarr;</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;text-align:center;line-height:1.5;margin-top:12px;">We&rsquo;ll fill 68, plus your 7 &mdash; <span style="color:#EDE6D8;">75 of the 99</span>.</div>
+            <div style="text-align:center;margin-top:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">Clear selection &middot; 7</span></div>
+          </div>
+
+          <div style="background:#1A160F;border:1px solid #6E5B33;border-radius:12px;padding:18px 20px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">7 selected, 2 of them unowned &mdash; the buying is said out loud, here</div>
+            <div style="background:#C9A24B;color:#14110E;font-weight:600;font-size:15px;border-radius:8px;padding:14px 0;text-align:center;">Build this deck &rarr;</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;text-align:center;line-height:1.5;margin-top:12px;">We&rsquo;ll fill 68, plus your 7 &mdash; <span style="color:#EDE6D8;">75 of the 99</span>. <span style="color:#E0913C;">2 you don&rsquo;t own yet.</span></div>
+            <div style="text-align:center;margin-top:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">Clear selection &middot; 7</span></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">How ruling 6 and the copy tension are both satisfied</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;">&sect;7.4 names the tension: the button promises &ldquo;We&rsquo;ll fill 68 of the 99&rdquo;, which stops being true the moment something is selected. Ruling 6 locks <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">stickyPromise</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">seedNote</span>.<br><br><b style="color:#EDE6D8;font-weight:600;">Both hold, because the two locked strings are the zero-selection copy and the new one is a branch.</b> Nothing is edited, nothing is deleted, and the default state of the page is unchanged &mdash; which is what ruling 6 is protecting. Two new keys, one per width.<br><br><b style="color:#EDE6D8;font-weight:600;">The button label never changes and never takes a count.</b> The promise line under it holds the arithmetic; a badge on the face would print the same number twice, and the label is the one thing on this page a player has already learned.<br><br><b style="color:#EDE6D8;font-weight:600;">Selecting an unowned card is allowed, and it says so.</b> The row already told you (hollow ring); the promise line names the count in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span>. Ruling 5 requires that <i>buying be explicit</i>, not that it be impossible &mdash; and a selection the player made by hand, card by card, with the ownership mark on every row, is the most explicit buying in the product.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Selection lifetime &mdash; <span style="color:#C9A24B;">no tray, so: page state</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.7;">Ruling 4 forbids a tray that outlives the page. So selection is <b style="color:#EDE6D8;font-weight:600;">client state on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/commanders/[slug]</span></b> and nothing else:<br><br>&middot; <b style="color:#EDE6D8;font-weight:600;">Cleared</b> by navigating to another commander, by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear selection</span>, and by the build itself.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">Not restored</b> by back-navigation. A restored selection the player does not remember making is worse than an empty one they can redo in four taps.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">Survives</b> facet changes and expansion &mdash; a card selected under Creatures is still selected when the facet is All, and the toggle shows it. This is the one thing the facet strip must not reset.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">Not capped.</b> A player who selects 40 cards gets a deck at 99 and no room for the fill &mdash; which is a legitimate way to use this panel, and the promise line reports it honestly (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">plus your 40 &mdash; 99 of the 99</span>). Past 99 the count clamps and the line says so; that is the only refusal.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE B · ARRIVAL + THE STRIP ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface B &middot; <span style="color:#C9A24B;">/decks/[id] &mdash; the deck at 68, and where the last 31 lives</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:940px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &mdash; <span style="color:#C9A24B;">provenance line, the last-31 strip, then the toolbar. Three controls, never adjacent.</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;padding:22px 24px;">
+
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">68 / 99</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">Building</span>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <div style="flex:1;background:#1A160F;border:1px solid #2A241D;border-radius:8px;padding:9px 12px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Ramp</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#6FA368;margin-top:3px;">10 / 10</div></div>
+            <div style="flex:1;background:#1A160F;border:1px solid #2A241D;border-radius:8px;padding:9px 12px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Card draw</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#6FA368;margin-top:3px;">10 / 10</div></div>
+            <div style="flex:1;background:#1A160F;border:1px solid #2A241D;border-radius:8px;padding:9px 12px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Removal</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#6FA368;margin-top:3px;">8 / 8</div></div>
+            <div style="flex:1;background:#1A160F;border:1px solid #2A241D;border-radius:8px;padding:9px 12px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Wipes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#6FA368;margin-top:3px;">3 / 3</div></div>
+            <div style="flex:1;background:#1A160F;border:1px solid #2A241D;border-radius:8px;padding:9px 12px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">Lands</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#6FA368;margin-top:3px;">37 / 37</div></div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:11px;background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:11px 15px;margin-bottom:12px;">
+            <span style="flex:none;width:20px;height:20px;border-radius:999px;border:1px solid #6E5B33;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">i</span>
+            <span style="font-size:12.5px;color:#C6B79A;line-height:1.6;">We filled the roles and the mana base &mdash; 68 cards, 7 of them from outside your collection. The other 31 are yours: that is where this commander actually happens, and it is where we are worst.</span>
+          </div>
+
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:11px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">The last 31</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">31 slots open &middot; ranked by synergy for this commander</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #C9A24B;border-radius:8px;background:transparent;color:#C9A24B;font-size:13px;font-weight:600;padding:10px 16px;">Fill 24 from my collection</span>
+              <span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #3A3229;border-radius:8px;background:transparent;color:#EDE6D8;font-size:13px;padding:10px 16px;">Top up with cards to buy <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">31</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;flex:1;min-width:200px;">Your collection has 24 in-colour cards left that EDHREC ranks for Kykar. The first control never promises 99.</span>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #2A241D;padding-top:14px;">
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All 68</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Shopping 7</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;margin-left:auto;">68 cards are yours now &mdash; 0 kept</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid #3A3229;border-radius:8px;background:transparent;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 13px;">Clear all auto &middot; 68</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;margin-bottom:3px;">Ramp &middot; 10 &middot; <span style="color:#6A6152;">10 auto</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 10px;"><span style="width:6px;height:6px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;">Arcane Signet</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;border:1px solid transparent;background:#2A241D;border-radius:4px;padding:1px 5px;">auto</span><span style="width:16px;text-align:center;color:#6A6152;font-size:13px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 10px;"><span style="width:6px;height:6px;border-radius:999px;border:1px solid #6A6152;background:transparent;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;">Smothering Tithe</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#E0913C;border:1px solid #4A3A24;border-radius:4px;padding:1px 5px;">buy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;background:#2A241D;border-radius:4px;padding:1px 5px;">auto</span><span style="width:16px;text-align:center;color:#6A6152;font-size:13px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 10px;"><span style="width:6px;height:6px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13px;color:#EDE6D8;">Monastery Mentor</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#C9A24B;border:1px solid #6E5B33;background:#2A241D;border-radius:4px;padding:1px 5px;">keep &#10003;</span><span style="width:16px;text-align:center;color:#6A6152;font-size:13px;">&#10005;</span></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:10px;">Row three is the shipped <span style="color:#8E8269;">AutoTag</span> on hover &mdash; unchanged, and it is what a card selected on surface A also arrives wearing. Ruling 7: no new marker, no new provenance vocabulary.</div>
+
+        </div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">&sect;7.5 &mdash; why the three controls are not side by side</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;">Two of them add cards and one removes 68 of them. Put in one toolbar they are three ghost buttons of related shape, and one of them is the undo of the other two.<br><br><b style="color:#EDE6D8;font-weight:600;">So they live in two different rows, separated by a rule.</b> The two adds sit in a <b style="color:#EDE6D8;font-weight:600;">last-31 strip</b> directly under the provenance line &mdash; because they are about the open slots, which is exactly what that line just told you about. The sweep stays <b style="color:#EDE6D8;font-weight:600;">exactly where it ships</b>, right-aligned in the decklist toolbar beside the All / Shopping filter. Nothing moves that already shipped.<br><br><b style="color:#EDE6D8;font-weight:600;">Three weights, in order:</b> brass outline (add, owned, the main action) &rarr; neutral ghost with a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> count (add, buying) &rarr; neutral ghost, a rule and a whole row away (remove).<br><br><span style="color:#8E8269;">Rejected: filling the owned control brass-solid.</span> It would out-shout <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Build this deck</span>, the only solid brass button on the previous screen, and make reaching 99 look like the app&rsquo;s goal rather than the player&rsquo;s. Ruling 6 says the opposite: 99 is opt-in.<br><br><span style="color:#8E8269;">Rejected: a segmented control with owned / buy as two halves.</span> It reads as a filter, and the second half spends money.</div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &mdash; <span style="color:#C9A24B;">the strip stacks, the sweep stays in the toolbar</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:flex-start;gap:9px;background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:10px 12px;">
+            <span style="flex:none;width:18px;height:18px;border-radius:999px;border:1px solid #6E5B33;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;">i</span>
+            <span style="font-size:12px;color:#C6B79A;line-height:1.55;">We filled the roles and the mana base &mdash; 68 cards, 7 from outside your collection. The other 31 are yours.</span>
+          </div>
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:13px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">The last 31</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-bottom:11px;">31 slots open &middot; ranked by synergy</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <span style="display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid #C9A24B;border-radius:8px;color:#C9A24B;font-size:14px;font-weight:600;">Fill 24 from my collection</span>
+              <span style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-size:14px;">Top up with cards to buy <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">31</span></span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All 68</span>
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Shopping 7</span>
+            <span style="margin-left:auto;display:inline-flex;align-items:center;min-height:44px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:0 12px;">Clear auto &middot; 68</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:10px;line-height:1.6;">At 390px the two adds stack full-width at 44px, per the add-panel addendum&rsquo;s mobile CTA rule. The sweep does not join them &mdash; it stays on the filter row, which is what keeps the opposites apart when the strip is one column.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE B · STATES MATRIX (KEY FRAMES) ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface B &middot; <span style="color:#C9A24B;">&sect;7.5 states matrix &mdash; the six frames the table cannot carry</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;margin:-8px 0 16px;">All eleven states are tabled in <a href="STATES-fill-controls.md">STATES-fill-controls.md</a>. Drawn here: the ones where a control changes shape, disappears, or has to keep its place.</div>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">2 &middot; Shallow pool</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">12 owned candidates, 31 open</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;border:1px solid #C9A24B;border-radius:8px;color:#C9A24B;font-size:13px;font-weight:600;padding:10px 16px;">Fill 12 from my collection</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-size:13px;padding:10px 16px;">Top up with cards to buy <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">31</span></span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">The label states <b style="color:#EDE6D8;font-weight:600;">what it can place</b>, not the gap. &ldquo;Fill the rest&rdquo; would be a promise the pool cannot keep, and &sect;7.6 exists because this is the common case.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">3 &middot; Owned fill in flight</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">The other two are disabled, not hidden</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #6E5B33;border-radius:8px;color:#8E8269;font-size:13px;font-weight:600;padding:10px 16px;">Sleeving 24 cards&hellip;</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #2A241D;border-radius:8px;color:#6A6152;font-size:13px;padding:10px 16px;opacity:0.5;">Top up with cards to buy <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">31</span></span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;"><b style="color:#EDE6D8;font-weight:600;">Nothing unmounts mid-action.</b> Hiding the top-up while the fill runs moves the sweep under the cursor &mdash; the exact reason the suggestion tile keeps its slot once added. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sleeving N cards&hellip;</span> is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">fill.fillingRows</span> string, reused.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">5 &middot; Stopped short &mdash; &sect;7.6</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">92 / 99, pool exhausted, owned control gone</div>
+        <div style="display:flex;align-items:flex-start;gap:10px;background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:11px 13px;margin-bottom:12px;">
+          <span style="flex:none;width:18px;height:18px;border-radius:999px;border:1px solid #6E5B33;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;">i</span>
+          <span style="font-size:12.5px;color:#C6B79A;line-height:1.6;">92 of 99. Your collection ran out 7 short &mdash; you own what you own, EDHREC knows what it knows, and that is everything we have.</span>
+        </div>
+        <span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-size:13px;padding:10px 16px;">Top up with cards to buy <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">7</span></span>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">The clause is <b style="color:#EDE6D8;font-weight:600;">lifted verbatim</b> from the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">fill.provenanceShort</span>. It already says this exact thing about the 68-card fill; saying it differently about the last 31 would be two voices for one fact. The owned control is <b style="color:#EDE6D8;font-weight:600;">absent, not disabled</b> &mdash; the sweep's shipped precedent.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">4 &middot; Reached 99</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">Both adds gone; the strip goes with them</div>
+        <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #2A241D;padding-top:12px;">
+          <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All 99</span>
+          <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Shopping 7</span>
+          <span style="margin-left:auto;display:inline-flex;align-items:center;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 13px;">Clear all auto &middot; 92</span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">A deck with no open slots has nothing to fill, so the whole strip unmounts &mdash; not two disabled buttons under a heading reading &ldquo;the last 31&rdquo; on a deck at 99. <b style="color:#EDE6D8;font-weight:600;">One collision to flag:</b> 99/99 satisfies <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shouldCelebrate</span>, so the kaiju reveal fires on a deck two clicks filled it. See the README.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">7 &middot; Nothing auto left</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">68 kept by hand &mdash; the sweep goes, the adds stay</div>
+        <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #2A241D;padding-top:12px;">
+          <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All 68</span>
+          <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Shopping 7</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">68 cards are yours now</span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">The toolbar row keeps its <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">keptNote</span> and loses its button, which is the shipped behaviour at 0 auto. The two adds are unaffected: <b style="color:#EDE6D8;font-weight:600;">how a card got here has nothing to do with whether there is room for another one.</b></div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">10 &middot; The fill was refused</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">Error under the control that was clicked</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;border:1px solid #C9A24B;border-radius:8px;color:#C9A24B;font-size:13px;font-weight:600;padding:10px 16px;">Fill 24 from my collection</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-size:13px;padding:10px 16px;">Top up with cards to buy <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E0913C;">31</span></span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;">We couldn&rsquo;t fill those. The deck is unchanged.</div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">The shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MutationError</span> under the clicked control, exactly as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">AutoTag</span> stacks its refusal. <b style="color:#EDE6D8;font-weight:600;">The other control stays enabled</b> &mdash; one refused write is not evidence the other one will fail, and the wording is the shipped sweep's refusal with one noun changed.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE B · CONSIDER SHELF ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface B &middot; <span style="color:#C9A24B;">the synergy shelf in Consider &mdash; no new component at all</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:940px;flex:none;background:#100D0A;border:1px solid #2A241D;border-radius:16px;padding:20px 24px;">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:11px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">Synergy &middot; Kykar</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">ranked by synergy &middot; 24 to consider</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">Show all 24 &rarr;</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:8px;background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:9px 9px 10px;">
+            <div style="position:relative;"><div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(158deg,#3A3229 0%,#241F19 62%,#161311 100%);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.3);"></div><span style="position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:999px;background:#6FA368;box-shadow:0 0 0 2px rgba(16,13,10,0.7);"></span></div>
+            <div style="font-size:12.5px;font-weight:600;color:#EDE6D8;line-height:1.25;min-height:2.5em;">Murmuring Mystic</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Bird Wizard</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6A6152;">edhrec</span><span style="flex:1;height:4px;border-radius:999px;background:#2A241D;overflow:hidden;display:block;"><span style="display:block;height:100%;width:31%;background:#C9A24B;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;font-variant-numeric:tabular-nums;">31%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E5B33;">+47 pts vs. all decks</div>
+            <div style="text-align:center;background:#C9A24B;color:#14110E;font-weight:600;font-size:12px;border-radius:7px;padding:7px 0;">Add</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:9px 9px 10px;">
+            <div style="position:relative;"><div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(158deg,#3A3229 0%,#241F19 62%,#161311 100%);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.3);"></div><span style="position:absolute;left:6px;top:6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#E0913C;border:1px solid #4A3A24;background:#1A160F;border-radius:4px;padding:1px 5px;">buy</span></div>
+            <div style="font-size:12.5px;font-weight:600;color:#EDE6D8;line-height:1.25;min-height:2.5em;">Third Path Iconoclast</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Artificer</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6A6152;">edhrec</span><span style="flex:1;height:4px;border-radius:999px;background:#2A241D;overflow:hidden;display:block;"><span style="display:block;height:100%;width:24%;background:#C9A24B;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;font-variant-numeric:tabular-nums;">24%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E5B33;">+44 pts vs. all decks</div>
+            <div style="text-align:center;border:1px solid #3A3229;color:#EDE6D8;font-size:12px;border-radius:7px;padding:6px 0;">Add</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:9px 9px 10px;">
+            <div style="position:relative;"><div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(158deg,#3A3229 0%,#241F19 62%,#161311 100%);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.3);"></div><span style="position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:999px;background:#6FA368;box-shadow:0 0 0 2px rgba(16,13,10,0.7);"></span></div>
+            <div style="font-size:12.5px;font-weight:600;color:#EDE6D8;line-height:1.25;min-height:2.5em;">Young Pyromancer</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Shaman</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6A6152;">edhrec</span><span style="flex:1;height:4px;border-radius:999px;background:#2A241D;overflow:hidden;display:block;"><span style="display:block;height:100%;width:41%;background:#C9A24B;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;font-variant-numeric:tabular-nums;">41%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E5B33;">+34 pts vs. all decks</div>
+            <div style="text-align:center;background:#C9A24B;color:#14110E;font-weight:600;font-size:12px;border-radius:7px;padding:7px 0;">Add</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:9px 9px 10px;opacity:0.62;">
+            <div style="position:relative;"><div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(158deg,#3A3229 0%,#241F19 62%,#161311 100%);filter:grayscale(.6);opacity:.5;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.3);"></div></div>
+            <div style="font-size:12.5px;font-weight:600;color:#A89B84;line-height:1.25;min-height:2.5em;">Monastery Mentor</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Monk</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#3A3229;">edhrec</span><span style="flex:1;height:4px;border-radius:999px;background:#2A241D;overflow:hidden;display:block;"><span style="display:block;height:100%;width:28%;background:#6E5B33;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;font-variant-numeric:tabular-nums;">28%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E5B33;">+36 pts vs. all decks</div>
+            <div style="text-align:center;border:1px solid #2A241D;color:#6FA368;font-weight:600;font-size:12px;border-radius:7px;padding:6px 0;">In deck</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:9px 9px 10px;">
+            <div style="position:relative;"><div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(158deg,#3A3229 0%,#241F19 62%,#161311 100%);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.3);"></div><span style="position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:999px;background:#6FA368;box-shadow:0 0 0 2px rgba(16,13,10,0.7);"></span></div>
+            <div style="font-size:12.5px;font-weight:600;color:#EDE6D8;line-height:1.25;min-height:2.5em;">Storm-Kiln Artificer</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Dwarf Artificer</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6A6152;">edhrec</span><span style="flex:1;height:4px;border-radius:999px;background:#2A241D;overflow:hidden;display:block;"><span style="display:block;height:100%;width:38%;background:#C9A24B;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;font-variant-numeric:tabular-nums;">38%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E5B33;">+31 pts vs. all decks</div>
+            <div style="text-align:center;background:#C9A24B;color:#14110E;font-weight:600;font-size:12px;border-radius:7px;padding:7px 0;">Add</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:9px 9px 10px;">
+            <div style="position:relative;"><div style="aspect-ratio:63/88;border-radius:7px;background:linear-gradient(158deg,#3A3229 0%,#241F19 62%,#161311 100%);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.3);"></div><span style="position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:999px;background:#6FA368;box-shadow:0 0 0 2px rgba(16,13,10,0.7);"></span></div>
+            <div style="font-size:12.5px;font-weight:600;color:#EDE6D8;line-height:1.25;min-height:2.5em;">Sea Gate Stormcaller</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Creature &mdash; Human Wizard</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6A6152;">edhrec</span><span style="flex:1;height:4px;border-radius:999px;background:#2A241D;overflow:hidden;display:block;"><span style="display:block;height:100%;width:6%;background:#C9A24B;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;font-variant-numeric:tabular-nums;">6%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;">no synergy figure</div>
+            <div style="text-align:center;background:#C9A24B;color:#14110E;font-weight:600;font-size:12px;border-radius:7px;padding:7px 0;">Add</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:12px;line-height:1.6;">This is <span style="color:#8E8269;">SuggestionTile</span> unmodified &mdash; art, ownership dot, buy tag, the <span style="color:#8E8269;">Evidence</span> bar, the lift line, the kept slot on an added tile. One shelf is added to <span style="color:#8E8269;">buildShelves</span>, ordered by synergy rather than by gap, and it sorts above the unowned append and below the coverage shelves. Nothing else on this surface changes.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">The tile already draws &sect;5 &mdash; and one shipped condition is now wrong</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Evidence</span> already prints inclusion as a bar with a percentage and synergy as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+N pts vs. all decks</span>. The two figures were <b style="color:#EDE6D8;font-weight:600;">already drawn differently on this surface</b>, and surface A's row is that distinction ported to a list &mdash; not a new idea. That is why there is no new tile and no new shelf component.<br><br><b style="color:#EDE6D8;font-weight:600;">But the lift line is gated on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">suggestion.owned</span></b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">suggestion-tile.tsx</span>, and design table &sect;8-6 already flags it as unresolved). On a shelf whose entire ordering <i>is</i> synergy, hiding the figure on unowned tiles means the second tile in the row cannot show why it is second.<br><br><b style="color:#EDE6D8;font-weight:600;">Called: the lift line prints regardless of ownership.</b> It is drawn on the unowned tile above. This closes &sect;8-6 rather than deferring it again &mdash; the open question was whether the gate was about ownership or about thin data, and &sect;0 answers it: all 879,329 rows carry both figures, so the data is not thinner for a card you do not own.<br><br><span style="color:#8E8269;">A null synergy still drops to a sentence</span> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">no synergy figure</span>, the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">noInclusion</span> pattern, one key wider. Never a zero-width bar and never <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+0 pts</span>.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ CONTRACT ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Contract &middot; <span style="color:#C9A24B;">tokens, a11y, motion &mdash; and what this pass does not add</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:520px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Tokens spent &mdash; <span style="color:#C9A24B;">no new hex, no new token</span></div>
+        <div style="display:flex;flex-direction:column;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#C9A24B;flex:none;"></span><span style="color:#C6B79A;">--accent</span><span style="color:#6A6152;margin-left:auto;">synergy figure, facet selected, disclosure</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#6E5B33;flex:none;"></span><span style="color:#C6B79A;">--accent-shadow</span><span style="color:#6A6152;margin-left:auto;">selected row border, tile lift line</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#8E8269;flex:none;"></span><span style="color:#C6B79A;">--fg-faint</span><span style="color:#6A6152;margin-left:auto;">inclusion figure, facet counts</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#6A6152;flex:none;"></span><span style="color:#C6B79A;">--fg-locked</span><span style="color:#6A6152;margin-left:auto;">type line, em dash, negative synergy</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#6FA368;flex:none;"></span><span style="color:#C6B79A;">--success</span><span style="color:#6A6152;margin-left:auto;">owned dot, filled 7px</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#E0913C;flex:none;"></span><span style="color:#C6B79A;">--warning</span><span style="color:#6A6152;margin-left:auto;">to-buy counts, degraded rule</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#C6533F;flex:none;"></span><span style="color:#C6B79A;">--danger</span><span style="color:#6A6152;margin-left:auto;">a refused write, nothing else</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#211C15;border:1px solid #3A3229;flex:none;"></span><span style="color:#C6B79A;">--elevated-hover</span><span style="color:#6A6152;margin-left:auto;">selected row fill</span></div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:16px;"><b style="color:#EDE6D8;font-weight:600;">The hollow ownership ring takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> at 1px</b>, which is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MissingChip</span>'s dot verbatim. Nothing in this handoff needs a value that is not already in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">globals.css</span>, at any of the six themes.</div>
+      </div>
+
+      <div style="width:520px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">A11y &mdash; <span style="color:#C9A24B;">two targets per row, and both figures spoken</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.75;">&middot; The row's name is a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CardDetailTrigger</span>; its accessible name carries <b style="color:#EDE6D8;font-weight:600;">both figures and the ownership</b>, because all three are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span> visual marks: <i>&ldquo;Murmuring Mystic. Owned. Synergy plus 47 points. In 31% of decks.&rdquo;</i><br>&middot; The toggle is a separate button, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-pressed</span>, named <i>&ldquo;Add Murmuring Mystic to the build&rdquo;</i> / <i>&ldquo;Remove &hellip; from the build&rdquo;</i>. 34px at desktop, 44px at phone.<br>&middot; Ownership is <b style="color:#EDE6D8;font-weight:600;">not colour alone</b>: filled vs. hollow is a shape, the count is in the headline, and the word is in the accessible name.<br>&middot; The two figures are <b style="color:#EDE6D8;font-weight:600;">not colour alone</b> either &mdash; one is signed and in points, the other unsigned and a percentage, in fixed columns under a header row.<br>&middot; The facet strip is a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">radiogroup</span>, not tabs: it filters one list rather than swapping panels, and <b style="color:#EDE6D8;font-weight:600;">arrow keys must not change the facet</b> while a selection exists without announcing the new count.<br>&middot; The disclosure keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-expanded</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-controls</span> and <b style="color:#EDE6D8;font-weight:600;">does not steal focus</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CoverageDisclosure</span>'s shipped contract.<br>&middot; Selection count changes announce <b style="color:#EDE6D8;font-weight:600;">on the existing live region</b>, debounced &mdash; one message per settle, never one per toggle. Twelve fast taps is one announcement.<br>&middot; Focus ring is the global <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">:focus-visible</span>, unmodified, on both the row and the toggle.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Motion, and the list of things not added</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">No motion class is added.</b> Selecting a row is an instant state change &mdash; a 258-row list where rows animate on toggle is a list that flinches. Expansion is a height change with no transition, per the shipped disclosure. The crab and the kaiju do not appear on either surface: these are working surfaces, and the richness pass says working surfaces stay quiet.<br><br><b style="color:#EDE6D8;font-weight:600;">Not added:</b> no new panel, no new modal, no new empty state, no tray, no confirm step, no toast, no new tag, no ownership filter, no price, no derived score, no virtualisation, no per-row bar on surface A, no second figure column on the phone, no count of hidden cards.<br><br><b style="color:#EDE6D8;font-weight:600;">One shipped construct is deliberately reused against its current condition</b> &mdash; the tile's lift line, ungated from ownership. That is the only behavioural change to an existing component, and it closes an already-open flag.</div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

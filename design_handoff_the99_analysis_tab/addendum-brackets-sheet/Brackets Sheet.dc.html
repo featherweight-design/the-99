@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6; --fact:#8FA6BE;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ sheetStyle }}">
+  <div style="{{ headStyle }}">
+    <h2 style="margin:0;flex:1;font-family:var(--display);font-weight:700;font-size:{{ titlePx }}px;line-height:1.2;color:var(--fg);white-space:nowrap;">All brackets</h2>
+    <span aria-label="Close all brackets" style="flex:none;width:44px;height:44px;margin-right:-10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">×</span>
+  </div>
+
+  <div style="{{ bodyStyle }}">
+    <p style="flex:none;margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">What each bracket allows in a deck, then how we read each rule, with one line of Wizards' own under it.</p>
+
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+      <div role="table" aria-label="Cards allowed by bracket" style="flex:none;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div role="row" style="display:grid;grid-template-columns:168px repeat(5,minmax(0,1fr));">
+          <span role="columnheader" style="padding:10px 10px 11px 12px;align-self:end;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">cards allowed</span>
+          <sc-for list="{{ brackets }}" as="b" hint-placeholder-count="5">
+            <span role="columnheader" style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:11px 8px;">{{ b.mark }}<span style="font-size:12px;font-weight:600;line-height:1.2;color:var(--fg-body);white-space:nowrap;">{{ b.name }}</span></span>
+          </sc-for>
+        </div>
+        <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4">
+          <div role="row" style="display:grid;grid-template-columns:168px repeat(5,minmax(0,1fr));border-top:1px solid var(--border);">
+            <span role="rowheader" style="display:flex;align-items:center;gap:8px;padding:11px 10px 11px 12px;">{{ r.mark }}<span style="font-size:12.5px;font-weight:600;line-height:1.3;color:var(--fg);white-space:nowrap;">{{ r.name }}</span></span>
+            <sc-for list="{{ r.cells }}" as="x" hint-placeholder-count="5">
+              <span role="cell" style="display:flex;align-items:center;padding:11px 8px;"><span style="{{ x.textStyle }}">{{ x.text }}</span></span>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div role="table" aria-label="Cards allowed by bracket" style="flex:none;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div role="row" style="display:grid;grid-template-columns:116px repeat(4,minmax(0,1fr));">
+          <span role="columnheader" style="padding:10px 6px 10px 11px;align-self:end;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">cards allowed</span>
+          <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4">
+            <span role="columnheader" style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 4px;">{{ r.mark }}<span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;line-height:1.3;letter-spacing:0.04em;text-transform:uppercase;color:var(--fg-body);">{{ r.name }}</span></span>
+          </sc-for>
+        </div>
+        <sc-for list="{{ brackets }}" as="b" hint-placeholder-count="5">
+          <div role="row" style="display:grid;grid-template-columns:116px repeat(4,minmax(0,1fr));border-top:1px solid var(--border);">
+            <span role="rowheader" style="display:flex;align-items:center;gap:7px;padding:9px 6px 9px 11px;">{{ b.mark }}<span style="font-size:11.5px;font-weight:600;color:var(--fg-body);white-space:nowrap;">{{ b.name }}</span></span>
+            <sc-for list="{{ b.cells }}" as="x" hint-placeholder-count="4">
+              <span role="cell" style="display:flex;align-items:center;padding:9px 4px;"><span style="{{ x.textStyle }}">{{ x.text }}</span></span>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="flex:none;display:flex;flex-direction:column;">
+      <sc-for list="{{ notes }}" as="n" hint-placeholder-count="6">
+        <div style="{{ n.rowStyle }}">
+          <span style="display:flex;gap:4px;padding-top:1px;">{{ n.markA }}{{ n.markB }}</span>
+          <div style="display:flex;flex-direction:column;gap:5px;min-width:0;">
+            <span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;">
+              <span style="font-size:12.5px;font-weight:600;line-height:1.3;color:var(--fg);">{{ n.name }}</span>
+              <sc-if value="{{ n.chip }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);border:1px solid var(--border-strong);border-radius:999px;padding:2px 6px;white-space:nowrap;">no limit</span></sc-if>
+            </span>
+            <sc-if value="{{ n.reading }}" hint-placeholder-val="{{ true }}"><p style="margin:0;font-size:12px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">{{ n.reading }}</p></sc-if>
+            <p style="{{ quoteStyle }}">“{{ n.quote }}”<span style="{{ tagStyle }}">{{ n.tag }}</span></p>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex:none;display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--border);padding-top:12px;">
+      <span style="font-size:12px;line-height:1.5;color:var(--fg-muted);">Commander Brackets beta update, February 9, 2026</span>
+      <span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;">
+        <a href="https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-february-9-2026" target="_blank" rel="noreferrer" style="{{ srcLink }}"><span style="border-bottom:1px solid var(--accent);">Wizards of the Coast ↗</span></a>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Rules as published, checked 22 Sep 2026.</span>
+      </span>
+      <span style="display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Quoted from</span>
+        <a href="https://magic.wizards.com/en/news/announcements/introducing-commander-brackets-beta" target="_blank" rel="noreferrer" style="{{ srcLink }}"><span style="border-bottom:1px solid var(--accent);">Feb 2025 ↗</span></a>
+        <a href="https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-october-21-2025" target="_blank" rel="noreferrer" style="{{ srcLink }}"><span style="border-bottom:1px solid var(--accent);">Oct 2025 ↗</span></a>
+      </span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:700,&quot;height&quot;:760},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;unrolled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { art: {} };
+  componentDidMount() {
+    const keys = ["bracket-1-exhibition-chip", "bracket-2-core-chip", "bracket-3-upgraded-chip", "bracket-4-optimized-chip", "bracket-5-cedh-chip", "fact-game-changer", "fact-mass-land-denial", "fact-extra-turns", "fact-two-card-infinite", "fact-tutors"];
+    Promise.all(keys.map(async (k) => {
+      try {
+        const r = await fetch(new URL(`assets/${k}.svg`, this.base()).href);
+        let t = await r.text();
+        t = t.replace(/<metadata>[\s\S]*?<\/metadata>/, "")
+          .replace(/<svg([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/, '<svg$1 width="100%" height="100%"')
+          .replace(/fill="#000(000)?"/g, 'fill="currentColor"')
+          .replace(/stroke="#000(000)?"/g, 'stroke="currentColor"');
+        return [k, t];
+      } catch (e) { return [k, ""]; }
+    })).then((pairs) => this.setState({ art: Object.fromEntries(pairs) }));
+  }
+  base() {
+    const u = new URL(document.baseURI);
+    return u.pathname.includes("addendum-brackets-sheet") ? u.href : new URL("addendum-brackets-sheet/", u).href;
+  }
+  renderVals() {
+    const phone = !!this.props.phone;
+    const unrolled = !!this.props.unrolled;
+    const art = this.state.art;
+    const mark = (key, px, color) => React.createElement("span", { "aria-hidden": true, dangerouslySetInnerHTML: { __html: art[key] || "" }, style: { display: "block", flex: "none", width: px, height: px, color } });
+    const ink = (b) => `var(--bracket-${b})`;
+    const names = { 1: "Exhibition", 2: "Core", 3: "Upgraded", 4: "Optimized", 5: "cEDH" };
+    const chip = { 1: "bracket-1-exhibition-chip", 2: "bracket-2-core-chip", 3: "bracket-3-upgraded-chip", 4: "bracket-4-optimized-chip", 5: "bracket-5-cedh-chip" };
+    const fs = phone ? 10.5 : 11;
+    const cell = (k) => ({
+      text: k === "cap" ? "no cap" : String(k),
+      textStyle: { fontFamily: "'IBM Plex Mono',monospace", fontSize: k === "cap" ? fs - 0.5 : fs + 1, fontWeight: k === 3 ? 600 : 400, whiteSpace: "nowrap", color: k === "cap" ? "var(--fg-faint)" : k === 3 ? "var(--fg)" : "var(--fg-body)", ...(k === "cap" ? { borderBottom: "1px dashed var(--border-dashed)" } : {}) },
+    });
+    const spec = [
+      ["fact-game-changer", "Game changers", [0, 0, 3, "cap", "cap"]],
+      ["fact-mass-land-denial", "Mass land denial", [0, 0, 0, "cap", "cap"]],
+      ["fact-extra-turns", "Extra turns", [0, "cap", "cap", "cap", "cap"]],
+      ["fact-two-card-infinite", "Two-card infinites", [0, 0, "cap", "cap", "cap"]],
+    ];
+    const rules = spec.map(([f, name, s]) => ({ mark: mark(f, 16, "var(--fact)"), name, cells: s.map(cell) }));
+    const brackets = [1, 2, 3, 4, 5].map((b) => ({ name: names[b], mark: mark(chip[b], 22, ink(b)), cells: spec.map(([, , s]) => cell(s[b - 1])) }));
+    const feb = "Wizards · Feb 2025", oct = "Wizards · Oct 2025";
+    const noteRow = (first) => ({ display: "grid", gridTemplateColumns: phone ? "40px 1fr" : "48px 1fr", gap: phone ? 8 : 10, padding: "12px 0", borderTop: first ? "none" : "1px solid var(--border)" });
+    const note = (i, markA, markB, name, reading, quote, tag, chip) => ({ rowStyle: noteRow(i === 0), markA, markB, name, reading, quote, tag, chip: !!chip });
+    const notes = [
+      note(0, mark("fact-game-changer", 16, "var(--fact)"), null, "Game changers", "Counted card by card against Wizards' published Game Changer list.", "Up to three cards from the Game Changers list.", feb),
+      note(1, mark("fact-mass-land-denial", 16, "var(--fact)"), null, "Mass land denial", null, "you should not expect to see these cards anywhere in Brackets 1–3.", feb),
+      note(2, mark("fact-extra-turns", 16, "var(--fact)"), null, "Extra turns", "At Core and Upgraded the rule is about chaining extra turns, and a decklist cannot show that. We count them and give no verdict. Only a two-card combo that loops turns puts a deck past Upgraded.", "Extra-turn cards should only appear in low quantities and are not intended to be chained in succession or looped.", feb),
+      note(3, mark("fact-two-card-infinite", 16, "var(--fact)"), null, "Two-card infinites", "Upgraded allows them late in a game. A list cannot show when a combo lands, so we ask whether this deck can find both halves rather than draw into them. If it can, that is Optimized.", "No intentional early-game two-card infinite combos.", feb),
+      note(4, mark("fact-tutors", 16, "var(--fact)"), null, "Tutors", "Wizards removed the tutor limit in October 2025, finding that tutors are not all alike. We count them in the findings. They move no bracket on their own: they only tell us whether a combo can be found rather than drawn.", "remove the tutor restrictions from Commander Brackets entirely", oct, true),
+      note(5, mark(chip[4], 20, ink(4)), mark(chip[5], 20, ink(5)), "Optimized and cEDH", "No card limits on any of the four. Only the banned list applies, and which of the two a deck is, is how you play it.", "There are no restrictions (other than the banned list).", feb),
+    ];
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      phone, wide: !phone,
+      titlePx: phone ? 15 : 16, rules, brackets, notes,
+      quoteStyle: { margin: 0, fontStyle: "italic", fontSize: phone ? 11.5 : 12, lineHeight: 1.5, color: "var(--fg-body)", textWrap: "pretty" },
+      tagStyle: { marginLeft: 8, fontStyle: "normal", fontFamily: "'IBM Plex Mono',monospace", fontSize: phone ? 9 : 9.5, letterSpacing: "0.04em", color: "var(--fg-faint)", whiteSpace: "nowrap" },
+      srcLink: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 0, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, color: "var(--accent)" },
+      sheetStyle: phone
+        ? { width: 390, height: unrolled ? "auto" : 792, background: "var(--surface-raised)", borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" }
+        : { width: 700, maxHeight: unrolled ? "none" : 731, background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 24px 60px rgba(0,0,0,0.45)", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" },
+      headStyle: phone
+        ? { flex: "none", height: 43, display: "flex", alignItems: "center", gap: 9, padding: "0 6px 0 16px", borderBottom: "1px solid var(--border)" }
+        : { flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderBottom: "1px solid var(--border)" },
+      bodyStyle: { flex: 1, minHeight: 0, overflowY: unrolled ? "visible" : "auto", padding: phone ? "14px 16px 24px" : "16px 18px 18px", display: "flex", flexDirection: "column", gap: phone ? 12 : 14 },
+    };
+  }
+}
+</script>
+</body>
+</html>

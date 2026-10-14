@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D; --surface-inset:#191A21;
+    --elevated:#2D2E35; --elevated-hover:#34353D; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#34507D; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">collection edit &middot; canvas 2 of 4 &middot; &sect;B add cards &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;line-height:1.25;">A side sheet you can keep typing into, a list you can fix before it saves, and one save.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Design's call &mdash; a 480px right side sheet on desktop, not a centred dialog.</b> Adding is a session of ten or forty cards, and the collection behind it should stay visible: the grid is how a player checks &ldquo;did I already enter that?&rdquo;. A side sheet leaves 760px of the list in view at 1300. A dialog would cover it, and would make the sheet's growing list compete with its own search. On the phone it's full height, as the brief says.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Design's call &mdash; the exact same card, printing and finish entered twice is combined, not flagged.</b> The second entry adds its quantity to the existing line, the line moves to the top and pulses once, and the live region says <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Already on the list &middot; now &times;2</span>. A flag would ask a question with one sensible answer. A different printing or finish is a different holding and always gets its own line.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The printing is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">PrintingRegion</span>, opened under its line in a <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">choose</span> role.</b> It has the same tiles, search, finish chips and roving radios. Three things differ, and all three are props, not a fork. The list is every catalog printing, not owned ones only. The <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Your pick</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Shown now</span> badges are withheld, because they mean art. And the intro reads <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Which printing are you adding?</span>. Nothing in this sheet writes an art preference.</p>
+  </section>
+
+  <!-- B0 entries -->
+  <section id="b0" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B0 &middot; <span style="color:var(--accent);">the ways in &middot; the place head, /collection's empty state, Home's first-run step one</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">1300 &middot; place head with a collection</div>
+        <div style="width:900px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:28px 34px 0;">
+            <div>
+              <div style="font-family:'Cinzel',serif;font-size:30px;font-weight:700;line-height:45px;">Collection</div>
+              <div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:18px;color:var(--fg-faint);">4,492 cards &middot; 2,926 unique &middot; last updated today</div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true" style="display:block;flex:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16"></path><path d="M13.5 1.5v3.2h-3.2"></path></svg>Upload a file</span>
+              <span style="height:38px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);"><span style="font-size:15px;line-height:1;">+</span> Add cards</span>
+            </div>
+          </div>
+          <div style="margin-top:14px;height:40px;display:flex;align-items:stretch;gap:4px;padding:0 24px;border-bottom:1px solid var(--border);">
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Cards</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:500;color:var(--fg-muted);">Sets</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:500;color:var(--fg-muted);">Proxies</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:500;color:var(--fg-muted);">History</span>
+          </div>
+        </div>
+        <div style="max-width:900px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Add cards sits beside the shipped ghost button, at the same height and in the same chrome, as the brief places it. <b style="color:var(--fg-body);font-weight:600;">Replace collection is renamed <span style="font-family:'IBM Plex Mono',monospace;">Upload a file</span></b> while the switch is on. Its route now asks Replace or Add, so a label that promises Replace would be wrong half the time. It keeps the &#8635; mark and its 213 slot. Both sit right-aligned in the title block, so the strip stays at y 109 (R2 &sect;Q1). History is the fourth tab. See canvas 4.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; the strip with a collection</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);">
+          <div style="height:48px;display:flex;align-items:stretch;gap:2px;padding:0 4px 0 8px;border-bottom:1px solid var(--border);">
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Cards</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Sets</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Proxies</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">History</span>
+            <span style="margin-left:auto;display:flex;align-items:center;min-height:44px;padding:0 10px;font-size:13px;color:var(--accent);"><span style="font-size:15px;margin-right:6px;">+</span>Add</span>
+          </div>
+          <div style="padding:14px 18px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">&darr; the pinned head (R2), unchanged</div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The strip has room for one trailing control beside four tabs: 262px of tabs plus 70 fits 360 with 28 to spare. <span style="font-family:'IBM Plex Mono',monospace;">&#8635; Replace</span> needs 92, so it doesn't fit. On the phone, <b style="color:var(--fg-body);font-weight:600;">the trailing slot becomes <span style="font-family:'IBM Plex Mono',monospace;">+ Add</span>, and the upload moves inside the Add sheet</b> as its first line (B1). That's two taps to upload instead of one. Open question 1 in the README.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; /collection empty</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);">
+          <div style="height:48px;display:flex;align-items:stretch;gap:2px;padding:0 4px 0 8px;border-bottom:1px solid var(--border);">
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Cards</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Proxies</span>
+          </div>
+          <div style="padding:40px 22px 36px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div style="width:120px;height:84px;border:1px dashed var(--border-dashed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);margin-bottom:22px;">CardFan mobile</div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;line-height:1.25;">Your collection is empty</div>
+            <p style="margin:12px 0 0;max-width:320px;font-size:15px;line-height:1.55;color:var(--fg-body);">A pile of possibilities waiting for a commander. Bring a file over, or add cards one at a time.</p>
+            <div style="margin-top:24px;width:100%;display:grid;grid-template-columns:1fr;gap:10px;">
+              <div style="display:flex;align-items:center;gap:12px;text-align:left;border-radius:12px;background:var(--surface);border:1px solid var(--border-strong);padding:14px 16px;min-height:64px;">
+                <span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--accent);"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true" style="display:block;flex:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16"></path><path d="M13.5 1.5v3.2h-3.2"></path></svg></span>
+                <span style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:15px;font-weight:600;">Upload a file</span><span style="font-size:12.5px;color:var(--fg-muted);">A CSV from ManaBox, Moxfield, Archidekt or Deckbox</span></span>
+                <span style="color:var(--fg-faint);">&rsaquo;</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;text-align:left;border-radius:12px;background:var(--surface);border:1px solid var(--border-strong);padding:14px 16px;min-height:64px;">
+                <span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:17px;">+</span>
+                <span style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:15px;font-weight:600;">Add cards</span><span style="font-size:12.5px;color:var(--fg-muted);">Search by name and add them one by one</span></span>
+                <span style="color:var(--fg-faint);">&rsaquo;</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The single <span style="font-family:'IBM Plex Mono',monospace;">Upload your CSV</span> primary becomes two door tiles of equal weight. Neither is primary, so neither reads as the right answer, and each says what it takes. The strip still has no History tab on an empty collection with no entries (canvas 4, F0).</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">1300 &middot; /collection empty</div>
+        <div style="width:760px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:28px 34px 0;"><div style="font-family:'Cinzel',serif;font-size:30px;font-weight:700;line-height:45px;">Collection</div><div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">0 cards &middot; 0 unique</div></div>
+          <div style="margin-top:14px;height:40px;display:flex;gap:4px;padding:0 24px;border-bottom:1px solid var(--border);">
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Cards</span>
+            <span style="display:flex;align-items:center;padding:0 10px;font-size:14px;color:var(--fg-muted);">Proxies</span>
+          </div>
+          <div style="padding:48px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div style="width:180px;height:110px;border:1px dashed var(--border-dashed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);margin-bottom:26px;">CardFan desktop</div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;">Your collection is empty</div>
+            <p style="margin:12px 0 0;max-width:420px;font-size:16px;line-height:1.55;color:var(--fg-body);">A pile of possibilities waiting for a commander. Bring a file over, or add cards one at a time.</p>
+            <div style="margin-top:26px;display:grid;grid-template-columns:repeat(2,260px);gap:14px;">
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;border-radius:12px;background:var(--surface);border:1px solid var(--border-strong);padding:18px;">
+                <span style="width:34px;height:34px;border-radius:9px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--accent);"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true" style="display:block;flex:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16"></path><path d="M13.5 1.5v3.2h-3.2"></path></svg></span>
+                <span style="font-size:15px;font-weight:600;">Upload a file</span><span style="font-size:13px;line-height:1.5;color:var(--fg-muted);">A CSV from ManaBox, Moxfield, Archidekt or Deckbox</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;border-radius:12px;background:var(--surface);border:1px solid var(--border-strong);padding:18px;">
+                <span style="width:34px;height:34px;border-radius:9px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:17px;">+</span>
+                <span style="font-size:15px;font-weight:600;">Add cards</span><span style="font-size:13px;line-height:1.5;color:var(--fg-muted);">Search by name and add them one by one</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:760px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The head shows neither button on an empty collection, as shipped (<span style="font-family:'IBM Plex Mono',monospace;">hasCollection</span> gate). The two doors live here instead. Saving the first hand-added cards takes the player out of this state, as a first upload does.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; Home first run, step one at rest</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;background:var(--bg);padding:16px;">
+          <div style="border-radius:14px;border:1px solid var(--accent);background:var(--surface-inset);padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;">
+            <div style="width:84px;height:60px;border:1px dashed var(--border-dashed);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-locked);">fan</div>
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;">Add your collection</span>
+            <p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-muted);">Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox, or add cards by hand.</p>
+            <div style="width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <span style="height:44px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--bg);">Choose a file</span>
+              <span style="height:44px;border-radius:10px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:14px;">Paste a list</span>
+              <span style="grid-column:1 / -1;height:44px;border-radius:10px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;"><span style="color:var(--accent);font-size:16px;">+</span> Add cards by hand</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The upload's own pair stays as <span style="font-family:'IBM Plex Mono',monospace;">ReplaceFlow entry="buttons"</span> draws it. Add cards by hand joins as a full-width third button in the ghost chrome, the same as Paste. The short body gains a clause. It opens the same sheet over Home. Saving drops the player into step two, as the first upload does.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">1300 &middot; Home first run, step one</div>
+        <div style="width:760px;border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:24px;">
+          <div style="border-radius:14px;border:1px solid var(--accent);background:var(--surface-inset);padding:18px;display:flex;gap:18px;align-items:flex-start;">
+            <div style="width:110px;height:78px;flex:none;border:1px dashed var(--border-dashed);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-locked);">fan</div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:7px;">
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;">Add your collection</span>
+              <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-muted);">Export your collection as a CSV from Moxfield, Archidekt, Deckbox or Manabox and drop it here. No export? Add cards by hand and The 99 starts from those.</p>
+              <div style="margin-top:6px;display:flex;gap:8px;">
+                <span style="height:40px;padding:0 18px;border-radius:8px;background:var(--accent);display:flex;align-items:center;font-size:13.5px;font-weight:600;color:var(--bg);">Choose a file</span>
+                <span style="height:40px;padding:0 18px;border-radius:8px;border:1px solid var(--border-strong);display:flex;align-items:center;font-size:13.5px;">Paste a list</span>
+                <span style="height:40px;padding:0 18px;border-radius:8px;border:1px solid var(--border-strong);display:flex;align-items:center;gap:6px;font-size:13.5px;"><span style="color:var(--accent);">+</span> Add cards by hand</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:760px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">At desktop width the three buttons sit on one row. <span style="font-family:'IBM Plex Mono',monospace;">Choose a file</span> stays primary because it's the shipped control. The ruling's &ldquo;as equals&rdquo; holds at the level of the door: same row, same height, no secondary-link styling.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B1-B3 sheet: empty, typing, none -->
+  <section id="b1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B1 &middot; B2 &middot; B3 &middot; <span style="color:var(--accent);">empty sheet &middot; typing with results &middot; no results</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B1 &middot; 1300 &middot; side sheet over /collection, empty</div>
+        <div style="width:1300px;height:700px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;position:relative;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);"></div>
+          <div style="flex:1;padding:28px 34px;display:flex;flex-direction:column;gap:20px;">
+            <div style="font-family:'Cinzel',serif;font-size:30px;font-weight:700;">Collection</div>
+            <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;width:700px;">
+              <sc-for list="{{ plates }}" as="p" hint-placeholder-count="10"><div style="aspect-ratio:63/88;border-radius:9px;background:{{ p }};"></div></sc-for>
+            </div>
+          </div>
+          <div style="position:absolute;top:0;bottom:0;right:0;width:480px;background:var(--surface);border-left:1px solid var(--border-strong);box-shadow:-24px 0 60px rgba(0,0,0,0.45);display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;gap:12px;padding:20px 22px 14px;">
+              <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:21px;flex:1;">Add cards</h3>
+              <span style="width:34px;height:34px;border-radius:8px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+            </div>
+            <div style="padding:0 22px;">
+              <div style="height:46px;border:1px solid var(--accent);box-shadow:0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14px;color:var(--fg-faint);">&#8981; Search any card by name<span style="width:1px;height:18px;background:var(--fg);margin-left:-6px;"></span></div>
+            </div>
+            <div style="flex:1;padding:28px 22px;display:flex;flex-direction:column;gap:10px;">
+              <p style="margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);">Search every card, not just ones you own. Pick one and it goes on the list below. Set its printing, foil and how many, then keep going.</p>
+              <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-muted);">Nothing is saved until you press Save.</p>
+            </div>
+            <div style="padding:14px 22px 18px;border-top:1px solid var(--border-strong);background:var(--surface-rail);display:flex;align-items:center;gap:12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);flex:1;">Nothing on the list yet</span>
+              <span style="padding:11px 20px;border-radius:8px;background:var(--accent);opacity:0.4;font-size:14px;font-weight:600;color:var(--bg);">Save</span>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1300px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The sheet opens with focus in the search, using the shipped <span style="font-family:'IBM Plex Mono',monospace;">SearchField</span> with its focus-within ring. No scrim: the collection stays readable and scrollable behind it, but it's <span style="font-family:'IBM Plex Mono',monospace;">inert</span> while the sheet is open, so the sheet is a dialog to assistive tech (<span style="font-family:'IBM Plex Mono',monospace;">role=dialog aria-modal</span>). The desktop sheet has no upload line, because the head's <span style="font-family:'IBM Plex Mono',monospace;">Upload a file</span> sits right beside the button that opened it.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B1 &middot; 390 &middot; full height, empty</div>
+        <div style="width:390px;height:760px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px;">
+            <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:19px;flex:1;">Add cards</h3>
+            <span style="width:44px;height:44px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+          </div>
+          <div style="padding:0 18px;"><div style="height:48px;border:1px solid var(--accent);box-shadow:0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:16px;color:var(--fg-faint);">&#8981; Search any card by name</div></div>
+          <div style="padding:20px 18px;display:flex;flex-direction:column;gap:14px;">
+            <p style="margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);">Search every card, not just ones you own. Pick one and it goes on the list. Nothing is saved until you press Save.</p>
+            <div style="display:flex;align-items:center;gap:12px;border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:0 14px;min-height:52px;">
+              <span style="color:var(--accent);display:flex;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true" style="display:block;flex:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16"></path><path d="M13.5 1.5v3.2h-3.2"></path></svg></span>
+              <span style="flex:1;font-size:14px;">Have a file? <span style="color:var(--accent);">Upload it instead</span></span>
+              <span style="color:var(--fg-faint);">&rsaquo;</span>
+            </div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="height:260px;background:#0E0F13;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">keyboard (stand-in)</div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The search field is 16px so iOS doesn't zoom. The upload line only shows while the list is empty, then gives way to the list. It goes to <span style="font-family:'IBM Plex Mono',monospace;">/collection/replace</span>. The Save bar hides behind the keyboard until there's something to save.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B2 &middot; 390 &middot; typing &ldquo;sol r&rdquo;, with results</div>
+        <div style="width:390px;height:760px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px;">
+            <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:19px;flex:1;">Add cards</h3>
+            <span style="width:44px;height:44px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+          </div>
+          <div style="padding:0 18px;"><div style="height:48px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:16px;">&#8981; sol r<span style="width:1px;height:18px;background:var(--fg);margin-left:-8px;"></span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">4</span></div></div>
+          <div role="listbox" style="padding:10px 18px;display:flex;flex-direction:column;gap:6px;">
+            <sc-for list="{{ results }}" as="r" hint-placeholder-count="4">
+              <div role="option" style="display:flex;align-items:center;gap:12px;border-radius:9px;background:#1A1B22;border:1px solid {{ r.edge }};padding:6px 12px;min-height:56px;">
+                <span style="width:32px;height:45px;flex:none;border-radius:4px;background:{{ r.art }};"></span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                  <span style="font-size:14px;font-weight:600;"><span style="color:var(--accent);">{{ r.hit }}</span>{{ r.rest }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.meta }}</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ r.right }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="height:260px;background:#0E0F13;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">keyboard (stand-in)</div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is the quick-add bar's combobox and result row verbatim: thumb, matched substring in accent, <span style="font-family:'IBM Plex Mono',monospace;">&#8629; add</span> on the active row. Results search the whole catalog. The meta line says <span style="font-family:'IBM Plex Mono',monospace;">you own &times;5</span> where it applies, so a player sees a duplicate before adding it. <span style="font-family:'IBM Plex Mono',monospace;">&#8629;</span> or a tap puts the result on the list and opens its printing picker straight away (B4a). Nothing is added until a printing is chosen. A card with only one printing goes straight on at nonfoil, &times;1.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B3 &middot; 390 &middot; no results</div>
+        <div style="width:390px;height:520px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px;">
+            <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:19px;flex:1;">Add cards</h3>
+            <span style="width:44px;height:44px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+          </div>
+          <div style="padding:0 18px;"><div style="height:48px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:16px;">&#8981; glimmerlite</div></div>
+          <div role="status" style="padding:26px 18px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;">
+            <span style="width:34px;height:34px;border-radius:50%;border:1.5px dashed var(--border-dashed);display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">?</span>
+            <span style="font-family:'Cinzel',serif;font-size:17px;font-weight:600;">No card is named &ldquo;glimmerlite&rdquo;</span>
+            <span style="font-size:13.5px;line-height:1.55;color:var(--fg-body);max-width:300px;">Check the spelling, or try part of the name. Tokens and emblems aren't in the catalog.</span>
+          </div>
+          
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is the deck-import resolver's no-results block (a dashed <span style="font-family:'IBM Plex Mono',monospace;">?</span>, a Cinzel heading, one sentence), not the crab <span style="font-family:'IBM Plex Mono',monospace;">NoResults</span>, which belongs to browsing cards you own. Lines already on the list stay below it, unchanged. There's no &ldquo;add it anyway&rdquo;: a hand-added card is always a real catalog card (ruling 3).</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B4a flow -->
+  <section id="b4a" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B4a &middot; <span style="color:var(--accent);">how a line gets here &middot; the printing is chosen before the line exists</span></div>
+    <p style="max-width:1080px;font-size:14px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The printing is a required step, with no default</b> (Hugh, 2026-10-09). A guessed printing that's saved in a hurry would be fixed later in History. It's cheaper to ask now. Picking a result puts the line on the list with its printing picker open and nothing selected. The card search is paused until a printing is chosen. Choosing one completes the line at nonfoil, &times;1, and hands focus back to the search. <b style="color:var(--fg);font-weight:600;">A card with only one printing skips the step</b>, because there's nothing to choose. Foil and quantity are the only defaults left: both are visible on the line, and neither depends on telling printings apart.</p>
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:300px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">1 &middot; type, pick</div>
+        <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="height:40px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:14px;">&#8981; sol ring</div>
+          <div style="display:flex;align-items:center;gap:10px;border-radius:9px;background:#1A1B22;border:1px solid var(--accent);padding:6px 10px;min-height:52px;">
+            <span style="width:28px;height:39px;border-radius:4px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></span>
+            <span style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;font-weight:600;"><span style="color:var(--accent);">Sol Ring</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">Artifact &middot; you own &times;5</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">&#8629; add</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.55;color:var(--fg-muted);">Enter or a tap. The line opens with its printing picker, and focus moves there.</div>
+      </div>
+      <div style="width:300px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">2 &middot; choose a printing (blocking)</div>
+        <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="height:40px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--fg-faint);opacity:0.4;">&#8981; Search any card by name</div>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:12px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="width:28px;height:39px;border-radius:4px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></span><span style="flex:1;display:flex;flex-direction:column;gap:4px;"><span style="font-size:13.5px;font-weight:600;">Sol Ring</span><span style="align-self:flex-start;height:24px;display:inline-flex;align-items:center;padding:0 8px;border-radius:6px;border:1px dashed var(--warning);color:var(--warning);font-size:11.5px;">Choose a printing &#9652;</span></span><span style="font-size:12px;color:var(--fg-faint);">&#10005;</span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-top:1px dashed var(--border-dashed);padding-top:10px;">
+              <div style="aspect-ratio:63/88;border-radius:6px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></div>
+              <div style="aspect-ratio:63/88;border-radius:6px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></div>
+              <div style="aspect-ratio:63/88;border-radius:6px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.55;color:var(--fg-muted);">The line opens with its picker and no tile selected. The card search dims and is disabled, and focus moves into the picker's own search. Escape or &#10005; cancels this add, and the line goes.</div>
+      </div>
+      <div style="width:300px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">3 &middot; chosen, then adjust</div>
+        <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="height:40px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--fg-faint);">&#8981; Search any card by name<span style="width:1px;height:16px;background:var(--fg);margin-left:4px;"></span></div>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="width:28px;height:39px;border-radius:4px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></span><span style="flex:1;display:flex;flex-direction:column;gap:4px;"><span style="font-size:13.5px;font-weight:600;">Sol Ring</span><span style="align-self:flex-start;height:24px;display:inline-flex;align-items:center;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;">SLD &middot; #1512 &#9662;</span></span></div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;background:var(--accent);color:var(--bg);font-size:12px;">&#9670; Foil</span><span style="height:28px;display:inline-flex;align-items:center;padding:0 10px;border:1px solid var(--border-strong);border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&minus; 1 +</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">new to you</span></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.55;color:var(--fg-muted);">A tile completes the line at nonfoil, &times;1, closes the picker, and gives focus back to the card search. Here the player then pressed Foil. The chip reopens the picker if the pick was wrong.</div>
+      </div>
+      <div style="width:300px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">4 &middot; the same card again</div>
+        <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:10px 12px;display:flex;align-items:center;gap:10px;"><span style="width:22px;height:31px;border-radius:3px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></span><span style="flex:1;font-size:13px;font-weight:600;">Sol Ring <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:400;color:var(--fg-muted);">C21 &middot; #263 &middot; &times;1</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--success);">new line</span></div>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:10px 12px;display:flex;align-items:center;gap:10px;"><span style="width:22px;height:31px;border-radius:3px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></span><span style="flex:1;font-size:13px;font-weight:600;">Sol Ring <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:400;color:var(--fg-muted);">SLD &middot; #1512 &middot; foil &middot; &times;1</span></span></div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.55;color:var(--fg-muted);">A second Sol Ring asks again. Choosing C21 doesn't match the SLD foil line, so it gets its own line. A match on card, printing and finish counts up instead (B5), and that check runs at the moment the printing is chosen.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B4-B5 list -->
+  <section id="b4" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B4 &middot; B5 &middot; <span style="color:var(--accent);">a list of several &middot; same card, two printings &middot; already owned &middot; printing picker open &middot; exact duplicate combined</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B4 &middot; 480 side sheet &middot; five lines &middot; the top line's printing reopened to change it</div>
+        <div style="width:480px;height:820px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:20px 22px 14px;">
+            <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:21px;flex:1;">Add cards</h3>
+            <span style="width:34px;height:34px;border-radius:8px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+          </div>
+          <div style="padding:0 22px;"><div style="height:46px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14px;color:var(--fg-faint);">&#8981; Search any card by name</div></div>
+          <div style="padding:18px 22px 6px;display:flex;align-items:baseline;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">On the list &middot; 5</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">newest first</span>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:0 22px;display:flex;flex-direction:column;gap:8px;">
+            <sc-for list="{{ lines }}" as="l" hint-placeholder-count="5">
+              <div style="border-radius:10px;background:var(--bg);border:1px solid {{ l.edge }};padding:12px 12px 10px;display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:12px;align-items:flex-start;">
+                  <span style="width:30px;height:42px;flex:none;border-radius:4px;background:{{ l.art }};"></span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                    <span style="font-size:14px;font-weight:600;">{{ l.name }}</span>
+                    <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">{{ l.printing }} <span style="color:var(--fg-faint);">{{ l.caret }}</span></span>
+                  </div>
+                  <span style="width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);font-size:13px;">&#10005;</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="height:28px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:{{ l.foilBg }};color:{{ l.foilInk }};font-size:12px;">&#9670; Foil</span>
+                  <span style="display:inline-flex;align-items:center;height:28px;border:1px solid var(--border-strong);border-radius:7px;overflow:hidden;">
+                    <span style="width:28px;text-align:center;color:var(--fg-muted);">&minus;</span>
+                    <span style="min-width:30px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;border-left:1px solid var(--border-strong);border-right:1px solid var(--border-strong);line-height:28px;">{{ l.qty }}</span>
+                    <span style="width:28px;text-align:center;color:var(--fg-muted);">+</span>
+                  </span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ l.owned }}</span>
+                </div>
+                <sc-if value="{{ l.picker }}" hint-placeholder-val="{{ false }}">
+                  <div style="border-top:1px dashed var(--border-dashed);padding-top:12px;display:flex;flex-direction:column;gap:10px;">
+                    <span style="font-size:13px;color:var(--fg-muted);">Which printing are you adding? 23 printings.</span>
+                    <div style="height:36px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:13px;color:var(--fg-faint);">&#8981; Set, code or number</div>
+                    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">
+                      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="3">
+                        <div style="display:flex;flex-direction:column;gap:5px;">
+                          <div style="aspect-ratio:63/88;border-radius:8px;background:{{ t.art }};outline:{{ t.ring }};outline-offset:3px;"></div>
+                          <span style="font-size:11.5px;">{{ t.set }} <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ t.code }}</span></span>
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ t.meta }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:14px 22px 18px;border-top:1px solid var(--border-strong);background:var(--surface-rail);display:flex;align-items:center;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);flex:1;">5 lines &middot; 8 copies</span>
+            <span style="padding:11px 20px;border-radius:8px;background:var(--accent);font-size:14px;font-weight:600;color:var(--bg);">Save 8 copies</span>
+          </div>
+        </div>
+        <div style="width:480px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">A line holds the four things an upload row holds. The printing is a mono chip (<span style="font-family:'IBM Plex Mono',monospace;">C21 &middot; #263 &#9662;</span>) that opens the region under its own line. Only one line's region is open at a time. Foil is a pressed chip: the line's finish, not a filter. <span style="font-family:'IBM Plex Mono',monospace;">&times;</span> drops the line. The owned figure reads <span style="font-family:'IBM Plex Mono',monospace;">you own &times;5 &rarr; &times;6</span> against that printing and finish. A card owned in another printing says so (<span style="font-family:'IBM Plex Mono',monospace;">you own &times;2 in other printings</span>). The two Sol Ring lines are two holdings and stay apart. A printing that has no foil disables the chip, with <span style="font-family:'IBM Plex Mono',monospace;">no foil printing</span> as its name.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B5 &middot; 390 &middot; exact duplicate, combined</div>
+        <div style="width:390px;height:820px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px;">
+            <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:19px;flex:1;">Add cards</h3>
+            <span style="width:44px;height:44px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+          </div>
+          <div style="padding:0 18px;"><div style="height:48px;border:1px solid var(--accent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:16px;color:var(--fg-faint);">&#8981; Search any card by name</div></div>
+          <div role="status" style="margin:12px 18px 0;border-radius:8px;background:var(--surface-rail);border:1px solid var(--border);padding:10px 12px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--fg-body);"><span style="color:var(--success);">&#10003;</span> Cultivate was already on the list &middot; now &times;2</div>
+          <div style="padding:14px 18px 6px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">On the list &middot; 3</div>
+          <div style="padding:0 18px;display:flex;flex-direction:column;gap:8px;">
+            <sc-for list="{{ phoneLines }}" as="l" hint-placeholder-count="3">
+              <div style="border-radius:10px;background:var(--bg);border:1px solid {{ l.edge }};box-shadow:{{ l.glow }};padding:12px;display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:12px;align-items:flex-start;">
+                  <span style="width:30px;height:42px;flex:none;border-radius:4px;background:{{ l.art }};"></span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+                    <span style="font-size:14px;font-weight:600;">{{ l.name }}</span>
+                    <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:7px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">{{ l.printing }} <span style="color:var(--fg-faint);">&#9662;</span></span>
+                  </div>
+                  <span style="width:44px;height:44px;margin:-8px -8px 0 0;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">&#10005;</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="height:44px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;border-radius:999px;border:1px solid var(--border-strong);background:{{ l.foilBg }};color:{{ l.foilInk }};font-size:12.5px;">&#9670; Foil</span>
+                  <span style="display:inline-flex;align-items:center;height:44px;border:1px solid var(--border-strong);border-radius:9px;overflow:hidden;">
+                    <span style="width:44px;text-align:center;color:var(--fg-muted);">&minus;</span>
+                    <span style="min-width:36px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:14px;border-left:1px solid var(--border-strong);border-right:1px solid var(--border-strong);line-height:44px;">{{ l.qty }}</span>
+                    <span style="width:44px;text-align:center;color:var(--fg-muted);">+</span>
+                  </span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ l.owned }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="padding:12px 18px 14px;border-top:1px solid var(--border-strong);background:var(--surface-rail);display:flex;align-items:center;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);flex:1;">3 lines &middot; 5 copies</span>
+            <span style="height:46px;padding:0 22px;border-radius:10px;background:var(--accent);display:flex;align-items:center;font-size:15px;font-weight:600;color:var(--bg);">Save 5 copies</span>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The combined line moves to the top, its edge pulses <span style="font-family:'IBM Plex Mono',monospace;">--accent</span> once (240ms, none under reduced motion), and the status line reads it out. Focus stays in the search, as it does after any add. Combining only happens on an exact match of card, printing and finish, and the same rule applies when a line's printing or finish is changed so it collides with another. Every control on a phone line is 44px.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B4m phone picker -->
+  <section id="b4m" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B4m &middot; <span style="color:var(--accent);">the printing picker on the phone &middot; the required step, nothing chosen &middot; searching printings with the keyboard up</span></div>
+    <p style="max-width:1080px;font-size:14px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;">At 390, a 3-column grid of 23 printings would push the rest of the list a screen away. On the phone the picker is <b style="color:var(--fg);font-weight:600;">one swipeable row</b>: three tiles and a peek of the fourth, so the open line stays about 330px tall. Typing in its search filters the row. A tap picks a tile, closes the picker and completes the line. Only the name, the chip and the picker's search sit above the row, so the open line fits above the keyboard. Foil and quantity appear once a tile is chosen.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; just picked Sol Ring, choosing a printing</div>
+        <div style="width:390px;height:820px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px;"><h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:19px;flex:1;">Add cards</h3><span style="width:44px;height:44px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span></div>
+          <div style="padding:0 18px;"><div aria-disabled="true" style="height:48px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 14px;font-size:16px;color:var(--fg-faint);opacity:0.4;">&#8981; Search any card by name</div></div>
+          <div style="padding:14px 18px 6px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">On the list &middot; 3</div>
+          <div style="padding:0 18px;display:flex;flex-direction:column;gap:8px;">
+            <div style="border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:12px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;gap:12px;align-items:flex-start;">
+                <span style="width:30px;height:42px;flex:none;border-radius:4px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></span>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px;"><span style="font-size:14px;font-weight:600;">Sol Ring</span><span style="align-self:flex-start;height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-radius:7px;border:1px dashed var(--warning);color:var(--warning);font-size:12.5px;">Choose a printing <span>&#9652;</span></span></div>
+                <span style="width:44px;height:44px;margin:-8px -8px 0 0;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">&#10005;</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12.5px;color:var(--fg-muted);">Foil and how many come next, once it's chosen.</span>
+                
+              </div>
+              <div style="border-top:1px dashed var(--border-dashed);padding-top:12px;display:flex;flex-direction:column;gap:10px;">
+                <span style="font-size:13px;color:var(--fg-muted);">Which printing? 23 printings.</span>
+                <div style="height:44px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:16px;color:var(--fg-faint);">&#8981; Set, code or number</div>
+                <div role="radiogroup" style="display:flex;gap:10px;overflow:hidden;margin:0 -12px 0 -4px;padding:4px 0 4px 4px;">
+                  <sc-for list="{{ pTiles }}" as="t" hint-placeholder-count="4">
+                    <div role="radio" style="width:96px;flex:none;display:flex;flex-direction:column;gap:4px;">
+                      <div style="width:96px;height:134px;border-radius:8px;background:linear-gradient(160deg,#6D6E76,#2F3036);outline:{{ t.ring }};outline-offset:2px;"></div>
+                      <span style="font-size:11.5px;line-height:1.3;">{{ t.set }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ t.meta }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:12px;display:flex;align-items:center;gap:12px;"><span style="width:30px;height:42px;border-radius:4px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></span><span style="flex:1;display:flex;flex-direction:column;gap:3px;"><span style="font-size:14px;font-weight:600;">Sol Ring</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">C21 &middot; #263 &middot; &times;2</span></span></div>
+            <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);padding:12px;display:flex;align-items:center;gap:12px;"><span style="width:30px;height:42px;border-radius:4px;background:linear-gradient(160deg,#4B7A46,#2C3B2A);"></span><span style="flex:1;display:flex;flex-direction:column;gap:3px;"><span style="font-size:14px;font-weight:600;">Cultivate</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">M21 &middot; #177 &middot; &times;1</span></span></div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="padding:12px 18px 14px;border-top:1px solid var(--border-strong);background:var(--surface-rail);display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);flex:1;">Choose Sol Ring's printing first</span><span aria-disabled="true" style="height:46px;padding:0 22px;border-radius:10px;background:var(--accent);opacity:0.4;display:flex;align-items:center;font-size:15px;font-weight:600;color:var(--bg);">Save 3 copies</span></div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is the blocking step. The card search is disabled at .4, and Save is disabled with the reason in its bar, until a tile is chosen. The other lines collapse to one row (name + printing + &times;N) and can't be opened until then. Escape or &#10005; cancels the add. Tiles show <span style="font-family:'IBM Plex Mono',monospace;">you own &times;N</span> under any printing already held, to help pick the right one. Nothing is preselected, not even an owned printing. The whole 96 &times; 134 tile is the tap target, so there's no tiny radio dot. The row scrolls sideways with momentum, and the peek of the fourth tile is the only sign there's more. The count in the intro says how many.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; searching printings, keyboard up</div>
+        <div style="width:390px;height:820px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px;"><h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:19px;flex:1;">Add cards</h3><span style="width:44px;height:44px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span></div>
+          <div style="padding:0 18px 10px;">
+            <div style="border-radius:10px;background:var(--bg);border:1px solid var(--accent);padding:12px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;gap:12px;align-items:center;"><span style="width:30px;height:42px;flex:none;border-radius:4px;background:linear-gradient(160deg,#6D6E76,#2F3036);"></span><span style="flex:1;font-size:14px;font-weight:600;">Sol Ring</span><span style="height:32px;display:inline-flex;align-items:center;padding:0 10px;border-radius:7px;border:1px dashed var(--warning);color:var(--warning);font-size:12.5px;">Choose a printing &#9652;</span></div>
+              <div style="height:44px;border:1px solid var(--accent);box-shadow:0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:16px;">&#8981; sld<span style="width:1px;height:18px;background:var(--fg);margin-left:2px;"></span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">4 of 23</span></div>
+              <div role="radiogroup" style="display:flex;gap:10px;overflow:hidden;margin:0 -12px 0 -4px;padding:4px 0 4px 4px;">
+                <sc-for list="{{ pTilesSld }}" as="t" hint-placeholder-count="4">
+                  <div role="radio" style="width:96px;flex:none;display:flex;flex-direction:column;gap:4px;">
+                    <div style="width:96px;height:134px;border-radius:8px;background:linear-gradient(160deg,#6D6E76,#2F3036);outline:{{ t.ring }};outline-offset:2px;"></div>
+                    <span style="font-size:11.5px;line-height:1.3;">{{ t.set }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ t.meta }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="height:260px;background:#0E0F13;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">keyboard (stand-in)</div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">When the picker's search takes focus, the sheet scrolls the open line to the top and the main card search scrolls away under the header. The open line (name, chip, search, one tile row) is 300px, which fits above a 260px keyboard on a 390 &times; 844 screen. A search with no match shows the B3 block inside the line: <span style="font-family:'IBM Plex Mono',monospace;">No printing matches &ldquo;sdl&rdquo;</span>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B6-B9 -->
+  <section id="b6" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B6 &middot; B7 &middot; B8 &middot; B9 &middot; <span style="color:var(--accent);">closing with unsaved cards &middot; saving &middot; saved &middot; a failed save</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B6 &middot; 480 &middot; &#10005; or Escape with 5 lines</div>
+        <div style="width:480px;height:420px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--surface);position:relative;">
+          <div style="position:absolute;inset:0;background:rgba(5,5,8,0.55);"></div>
+          <div role="alertdialog" style="position:absolute;left:30px;right:30px;top:90px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.55);padding:22px;display:flex;flex-direction:column;gap:12px;">
+            <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:19px;">Discard 5 cards?</h3>
+            <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">They're not saved yet. Close now and the list is gone.</p>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px;">
+              <span style="padding:10px 16px;border-radius:8px;border:1px solid var(--border-strong);font-size:14px;">Discard</span>
+              <span style="padding:10px 18px;border-radius:8px;background:var(--accent);font-size:14px;font-weight:600;color:var(--bg);box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent);">Keep adding</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:480px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is an alert dialog inside the sheet, with focus on <span style="font-family:'IBM Plex Mono',monospace;">Keep adding</span>. Escape goes back to the list. It only asks when there's at least one line. An empty sheet just closes. A browser navigation with lines pending gets the native <span style="font-family:'IBM Plex Mono',monospace;">beforeunload</span> prompt. On the phone it's the same dialog as a bottom sheet with the two buttons side by side.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B7 &middot; saving &middot; B9 &middot; failed</div>
+        <div style="width:480px;display:flex;flex-direction:column;gap:14px;">
+          <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--surface);">
+            <div style="padding:14px 22px;display:flex;flex-direction:column;gap:8px;opacity:0.6;">
+              <div style="height:54px;border-radius:10px;background:var(--bg);border:1px solid var(--border);"></div>
+              <div style="height:54px;border-radius:10px;background:var(--bg);border:1px solid var(--border);"></div>
+            </div>
+            <div style="padding:14px 22px 18px;border-top:1px solid var(--border-strong);background:var(--surface-rail);display:flex;align-items:center;gap:12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);flex:1;">5 lines &middot; 8 copies</span>
+              <span aria-busy="true" style="padding:11px 20px;border-radius:8px;background:var(--accent);opacity:0.6;font-size:14px;font-weight:600;color:var(--bg);cursor:wait;">Saving&hellip;</span>
+            </div>
+          </div>
+          <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--surface);">
+            <div style="padding:14px 22px;">
+              <div role="alert" style="display:flex;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:3px solid var(--warning);padding:12px 14px;">
+                <span style="color:var(--warning);font-size:15px;">&#9888;</span>
+                <span style="font-size:13px;line-height:1.5;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">Nothing was saved.</b> Your list is still here. Try again in a moment.</span>
+              </div>
+              <div style="margin-top:8px;height:54px;border-radius:10px;background:var(--bg);border:1px solid var(--border);"></div>
+            </div>
+            <div style="padding:14px 22px 18px;border-top:1px solid var(--border-strong);background:var(--surface-rail);display:flex;align-items:center;gap:12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);flex:1;">5 lines &middot; 8 copies</span>
+              <span style="padding:11px 20px;border-radius:8px;background:var(--accent);font-size:14px;font-weight:600;color:var(--bg);">Try again</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:480px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">While saving, the list and the search are disabled at .6. The &#10005; still works, but it asks B6's question, because a write in flight can't be called back. A save can only raise quantities, so it never goes through &sect;E and has no <span style="font-family:'IBM Plex Mono',monospace;">Checking decks&hellip;</span> phase. On failure the banner sits above the list, and the Save button reads <span style="font-family:'IBM Plex Mono',monospace;">Try again</span>.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B8 &middot; 390 &middot; saved</div>
+        <div style="width:390px;height:560px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px;">
+            <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:19px;flex:1;">Add cards</h3>
+            <span style="width:44px;height:44px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+          </div>
+          <div role="status" style="padding:24px 18px;display:flex;flex-direction:column;gap:12px;">
+            <span style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab, var(--success) 15%, transparent);color:var(--success);font-size:20px;">&#10003;</span>
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;">8 copies added</span>
+            <span style="font-size:14px;line-height:1.55;color:var(--fg-body);">5 cards are in your collection now. HD - Kinnan isn't short of Arcane Signet any more.</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">4,492 &rarr; 4,500 cards</span>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="padding:12px 18px 14px;border-top:1px solid var(--border-strong);background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;">
+            <span style="height:46px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--bg);">Add more</span>
+            <div style="display:flex;gap:10px;">
+              <span style="flex:1;height:46px;border-radius:10px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:14px;">See it in History</span>
+              <span style="flex:1;height:46px;border-radius:10px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:14px;">Done</span>
+            </div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The saved state replaces the list in the same sheet. One entry was written, and <span style="font-family:'IBM Plex Mono',monospace;">See it in History</span> opens it there, expanded. The deck sentence comes from the arrivals receipt's own reading (<span style="font-family:'IBM Plex Mono',monospace;">No longer to buy</span>) and only shows when it has something to say. <span style="font-family:'IBM Plex Mono',monospace;">Add more</span> starts a fresh list, which saves as a second entry.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const grad = (a, b) => `linear-gradient(160deg, ${a}, ${b})`;
+    const g = grad("#4B7A46", "#2C3B2A"), u = grad("#3A6AA5", "#1F2D44"), c = grad("#6D6E76", "#2F3036"), w = grad("#C9BE98", "#5A5440"), b = grad("#98748F", "#3A2C38");
+    const off = { foilBg: "transparent", foilInk: "var(--fg-muted)" };
+    const on = { foilBg: "var(--accent)", foilInk: "var(--bg)" };
+    return {
+      plates: [g, u, c, w, b, g, c, u, b, w],
+      results: [
+        { hit: "Sol R", rest: "ing", meta: "Artifact · you own ×5", right: "↵ add", art: c, edge: "var(--accent)" },
+        { hit: "Sol R", rest: "ing Pin", meta: "Artifact · Mystery Booster", right: "", art: c, edge: "var(--border)" },
+        { hit: "Sol R", rest: "evival", meta: "Sorcery", right: "", art: w, edge: "var(--border)" },
+        { hit: "Sol R", rest: "ider", meta: "Creature — Spirit", right: "", art: w, edge: "var(--border)" },
+      ],
+      lines: [
+        { name: "Sol Ring", printing: "SLD · #1512", caret: "▴", qty: "1", owned: "you own ×5 in other printings", art: c, edge: "var(--accent)", picker: true, ...on },
+        { name: "Sol Ring", printing: "C21 · #263", caret: "▾", qty: "2", owned: "you own ×5 → ×7", art: c, edge: "var(--border)", picker: false, ...off },
+        { name: "Cultivate", printing: "M21 · #177", caret: "▾", qty: "1", owned: "you own ×2 → ×3", art: g, edge: "var(--border)", picker: false, ...off },
+        { name: "Rhystic Study", printing: "JMP · #169", caret: "▾", qty: "1", owned: "new to you", art: u, edge: "var(--border)", picker: false, ...off },
+        { name: "Swords to Plowshares", printing: "STA · #10", caret: "▾", qty: "3", owned: "new to you", art: w, edge: "var(--border)", picker: false, ...on },
+      ],
+      tiles: [
+        { set: "Secret Lair", code: "SLD", meta: "#1512 · foil", art: c, ring: "2px solid var(--accent)" },
+        { set: "Commander 2021", code: "C21", meta: "#263", art: c, ring: "none" },
+        { set: "Commander Masters", code: "CMM", meta: "#410", art: c, ring: "none" },
+      ],
+      pTiles: [
+        { set: "Secret Lair", meta: "SLD · #1512", ring: "none" },
+        { set: "Commander 2021", meta: "C21 · #263 · you own ×3", ring: "none" },
+        { set: "Commander Masters", meta: "CMM · #410 · you own ×1", ring: "none" },
+        { set: "Commander Legends", meta: "CMR · #472", ring: "none" },
+      ],
+      pTilesSld: [
+        { set: "Secret Lair", meta: "SLD · #1512 · you own ×1", ring: "none" },
+        { set: "Secret Lair", meta: "SLD · #1011", ring: "none" },
+        { set: "Secret Lair", meta: "SLD · #1580", ring: "none" },
+        { set: "Secret Lair", meta: "SLD · #2190", ring: "none" },
+      ],
+      phoneLines: [
+        { name: "Cultivate", printing: "M21 · #177", qty: "2", owned: "you own ×2 → ×4", art: g, edge: "var(--accent)", glow: "0 0 0 2px color-mix(in oklab, var(--accent) 35%, transparent)", ...off },
+        { name: "Rhystic Study", printing: "JMP · #169", qty: "1", owned: "new to you", art: u, edge: "var(--border)", glow: "none", ...off },
+        { name: "Swords to Plowshares", printing: "STA · #10", qty: "2", owned: "new to you", art: w, edge: "var(--border)", glow: "none", ...on },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

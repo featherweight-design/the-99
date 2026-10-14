@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:{{ W }}px;height:760px;position:relative;overflow:hidden;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);">
+  <div style="position:absolute;inset:0;padding:96px 48px;display:grid;grid-template-columns:repeat(auto-fill,150px);gap:18px;align-content:start;">
+    <sc-for list="{{ bgTiles }}" as="t" hint-placeholder-count="18">
+      <div style="height:209px;border-radius:8px;background:var(--surface);border:1px solid var(--border);"></div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;inset:0;background:rgba(6,5,4,0.66);"></div>
+
+  <sc-if value="{{ showPrev }}" hint-placeholder-val="{{ true }}">
+    <div aria-label="Previous card: {{ prev.name }}" style="position:absolute;left:{{ prevL }}px;top:254px;width:168px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;">
+      <div style="width:168px;height:235px;border-radius:9px;background:{{ prev.grad }};opacity:{{ prevOp }};box-shadow:0 18px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3);position:relative;overflow:hidden;">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.05) 0 6px,transparent 6px 12px);"></div>
+        <div style="position:absolute;left:9px;bottom:9px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,0.75);">art · {{ prev.name }}</div>
+      </div>
+      <div style="max-width:168px;display:flex;gap:6px;font-size:12.5px;color:{{ prevInk }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span aria-hidden="true">‹</span><span style="overflow:hidden;text-overflow:ellipsis;">{{ prev.name }}</span></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ showNext }}" hint-placeholder-val="{{ true }}">
+    <div aria-label="Next card: {{ next.name }}" style="position:absolute;left:{{ nextL }}px;top:254px;width:168px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;">
+      <div style="width:168px;height:235px;border-radius:9px;background:{{ next.grad }};opacity:{{ nextOp }};box-shadow:0 18px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3);position:relative;overflow:hidden;outline:{{ nextRing }};outline-offset:3px;">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.05) 0 6px,transparent 6px 12px);"></div>
+        <div style="position:absolute;left:9px;bottom:9px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,0.75);">art · {{ next.name }}</div>
+      </div>
+      <div style="max-width:168px;display:flex;gap:6px;font-size:12.5px;color:{{ nextInk }};white-space:nowrap;overflow:hidden;"><span style="overflow:hidden;text-overflow:ellipsis;">{{ next.name }}</span><span aria-hidden="true">›</span></div>
+    </div>
+  </sc-if>
+
+  <div style="position:absolute;left:{{ mLeft }}px;top:70px;width:820px;height:620px;border-radius:16px;overflow:hidden;display:flex;background:var(--surface-rail);border:1px solid var(--border-strong);box-shadow:0 30px 80px rgba(0,0,0,0.55);">
+    <div style="width:320px;flex:none;padding:28px;background:var(--bg);display:flex;align-items:center;justify-content:center;">
+      <div style="position:relative;width:264px;height:369px;border-radius:12px;background:{{ cur.grad }};box-shadow:0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3);transform:translateX({{ artX }}px);opacity:{{ artOp }};">
+        <div style="position:absolute;inset:0;border-radius:12px;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.05) 0 6px,transparent 6px 12px);"></div>
+        <div style="position:absolute;left:12px;bottom:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,0.8);">art · {{ cur.name }}</div>
+        <div style="position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;">{{ cur.price }}</span>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:0;position:relative;display:flex;flex-direction:column;">
+      <div style="position:absolute;top:22px;right:24px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface-raised);border:1px solid var(--border-strong);color:var(--fg-muted);font-size:15px;">✕</div>
+      <div style="flex:1;overflow:hidden;padding:30px 32px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;padding-right:46px;">
+          <div style="min-width:0;">
+            <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:29px;line-height:1.1;margin:0;color:var(--fg);">{{ cur.name }}</h3>
+            <p style="font-size:14px;margin:6px 0 0;color:var(--fg-muted);">{{ cur.type }}</p>
+          </div>
+          <div style="display:flex;gap:3px;flex:none;padding-top:6px;">
+            <sc-for list="{{ cur.pips }}" as="p" hint-placeholder-count="3">
+              <span style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;background:{{ p.bg }};color:#1A1611;">{{ p.s }}</span>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border-radius:10px;margin-top:22px;padding:18px 20px;font-size:15px;line-height:1.65;background:var(--bg);border:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;">{{ cur.oracle }}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:26px;margin-top:24px;">
+          <sc-for list="{{ meta }}" as="m" hint-placeholder-count="4">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ m.k }}</div>
+              <div style="font-size:14px;margin-top:4px;color:var(--fg);">{{ m.v }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;flex:none;margin:0 32px 30px;padding-top:20px;border-top:1px solid var(--border);">
+        <span style="font-size:13.5px;color:var(--fg-body);">View on Mana Pool <span style="color:var(--fg-faint);">↗</span></span>
+        <sc-if value="{{ paging }}" hint-placeholder-val="{{ true }}">
+          <span style="margin-left:auto;display:flex;align-items:center;gap:14px;flex:none;">
+            <span style="font-size:15px;color:var(--fg-faint);opacity:{{ prevCtl }};">‹ Prev</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ counter }}</span>
+            <span style="font-size:15px;color:var(--accent);opacity:{{ nextCtl }};">Next ›</span>
+          </span>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1302,&quot;height&quot;:762},&quot;f&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const f = this.props.f || {};
+    const blank = { name: "", type: "", grad: "var(--surface-raised)", pips: [], oracle: "", price: "" };
+    const cur = f.cur || blank;
+    const W = f.W || 1300;
+    const mLeft = Math.round((W - 820) / 2);
+    const roomy = mLeft >= 216;
+    const hover = f.hoverNext;
+    return {
+      W, mLeft, cur, prev: f.prev || blank, next: f.next || blank,
+      showPrev: roomy && !!f.prev, showNext: roomy && !!f.next,
+      prevL: mLeft - 24 - 168, nextL: mLeft + 820 + 24,
+      prevOp: 0.55, nextOp: hover ? 0.92 : 0.55,
+      prevInk: "var(--fg-muted)", nextInk: hover ? "var(--fg)" : "var(--fg-muted)",
+      nextRing: f.focusNext ? "2px solid var(--accent)" : "none",
+      paging: f.total > 1, counter: `${f.pos} of ${f.total}`,
+      prevCtl: f.prev ? 1 : 0.4, nextCtl: f.next ? 1 : 0.4,
+      artX: f.artX || 0, artOp: f.artOp ?? 1,
+      meta: [{ k: "Set", v: cur.set }, { k: "Rarity", v: cur.rarity }, { k: "Identity", v: cur.identity }, { k: "You own", v: cur.own }],
+      bgTiles: Array.from({ length: 24 }),
+    };
+  }
+}
+</script>
+</body>
+</html>

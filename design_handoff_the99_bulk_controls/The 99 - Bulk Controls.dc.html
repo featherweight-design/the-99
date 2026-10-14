@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">The bulk controls &middot; informed building 2 of n &middot; top-off-list.tsx</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;text-wrap:pretty;">Two fills, two concessions, both readable before either is pressed.</h1>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;">The shipped bulk control narrows the pool correctly and then takes the top N by synergy inside it &mdash; so it optimises <i>what can I sleeve</i> rather than <i>what does this deck need</i>, and it spent Hugh&rsquo;s last slots on cards the deck was already over on. <b style="color:#EDE6D8;font-weight:600;">&sect;3 is locked: two bulk actions, differing only in the pool, each labelled with the concession it makes.</b> This round calls the four things &sect;5 leaves open.</p>
+    <p style="max-width:1060px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;text-wrap:pretty;">Read <a href="README.md">README.md</a> for the calls and what was rejected, <a href="STATES-bulk-controls.md">STATES-bulk-controls.md</a> for the pair&rsquo;s eleven states, <a href="bulk-controls - copy strings.ts">bulk-controls - copy strings.ts</a> for production copy, <a href="READINESS.md">READINESS.md</a> for the verdict. Structural sibling: <a href="../design_handoff_the99_top_off/README.md">design_handoff_the99_top_off</a>, whose list this sits inside and whose vocabulary is binding here.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;background:#181410;padding:18px 22px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:10px;">R2 &mdash; four changes on review, all of them copy or row detail</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px 26px;">
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">1 &middot; select, not tick</div><div style="font-size:13px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">One verb across the whole surface.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Select 12 from my collection</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all selections</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 of 12 slots selected</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Deselect one to swap another in</span>. This reaches past the pair into shipped strings the top-off round wrote &mdash; nine of them, listed in the copy file &mdash; and they all move together or the surface speaks two languages.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">2 &middot; short of recommendations</div><div style="font-size:13px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">&ldquo;The mix&rdquo; is gone.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">2 creatures short of recommendations</span> &mdash; the word the player already has for what this app tells them, and it needs no gloss. Nil reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">matches every recommendation</span>; unmeasurable reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">no recommendation for this commander</span>.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">3 &middot; real pips</div><div style="font-size:13px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The cost column draws <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CostPips</span>, shipped, unmodified.</b> 12px pips at a 3px gap in the 72px track desktop, 13px uncapped on the phone meta line &mdash; the component&rsquo;s own figures. The canvas previously stood letters in for them, which is exactly the drift the shared track exists to stop.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">4 &middot; the card mark, on the candidate row</div><div style="font-size:13px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Game Changer, mass land denial, extra turns and tutors ride the row, as bare glyphs in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fact</span>.</b> Round 1&rsquo;s mark and Round 2&rsquo;s two additions, drawn at their shipped row size and nothing re-specified. <b style="color:#EDE6D8;font-weight:600;">This is the one place a player can still decline the card</b> &mdash; a bracket fact learned after the commit is a fact learned too late. Costs eng one payload join; see Surface 4.</div></div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;background:#181410;padding:18px 22px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:10px;">The four calls the brief asks for</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;5.4 &middot; is it two buttons</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Two ghost controls, stacked, in a fixed column, with the concession on the same line as its own button.</b> Not a segmented control (which makes the pool a mode the player sets, and this surface has already refused the ownership filter), not a primary + secondary (which ranks one concession above the other), not a disclosure (which hides one figure until after the choice is half made).</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;5.1 &middot; the two labels</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Both name the pool, both state the same count, neither names its own concession.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Select 12 from my collection</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Select the 12 this deck needs</span>. They select rather than commit, because on this surface nothing is added until <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Add 12 cards</span>.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;5.2 &middot; zero and absent</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">A concession that is nil is still stated, in the concession&rsquo;s own slot:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">matches every recommendation</span>. A price read that degrades drops the figure and keeps the count &mdash; the shipped rule from <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">price.ts</span>, never a dash and never <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">$0.00</span>. A recommendation that cannot be measured says so rather than inventing a gap.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">&sect;5.3 &middot; the phone</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Nothing new is pinned. The bottom slot keeps one occupant &mdash; the commit bar &mdash; and the pair stacks in the selection head, in the flow, above the rows it is about.</b> Two 44px rows, each with its concession beneath its own label. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Clear all selections</span> demotes to a text-weight control on the head&rsquo;s own line.</div></div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-radius:12px;background:#1A160F;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Not redrawn, per &sect;4</div>
+    <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">The candidate row&rsquo;s shell and its buy tag &middot; the absent-price case the row already draws &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">buyCount</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">buyMoney</span> for the selected set &middot; the fill&rsquo;s own buying behaviour &middot; the per-pass undo in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">provenance-line.tsx</span>, which is how a player reverses a bulk fill and is <b style="color:#EDE6D8;font-weight:600;">not duplicated here in any form</b> &middot; the pinned commit bar&rsquo;s geometry &middot; the column header, the cap line, the decline and its restore. <b style="color:#C6B79A;font-weight:600;">One control is deleted and two take its place. The row gains two atoms that are already specified elsewhere &mdash; the shipped cost track and the shipped card mark &mdash; and no new atom is invented.</b></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <!-- ============ SURFACE 1 · THE PAIR, DESKTOP ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface 1 &middot; <span style="color:#C9A24B;">the pair in the selection head &mdash; 1300&times;900</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:1300px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &mdash; <span style="color:#C9A24B;">Tovolar at 87/99. 12 slots open, 41 candidates, 23 the player can sleeve. The collection fill leaves recommendations 2 creatures short; the best fill buys 4.</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;padding:22px 24px;">
+
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Tovolar, Dire Overlord</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">87 / 99</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">Building</span>
+          </div>
+
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:14px 16px;">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">The last 12</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">12 slots open &middot; 41 candidates ranked by synergy for this commander</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-left:auto;">Close the list</span>
+            </div>
+
+            <div style="border-bottom:1px solid #2A241D;padding-bottom:12px;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">0 of 12 slots selected</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">&middot; 41 candidates, 41 untouched</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;border-left:1px solid #3A3229;padding-left:12px;">Clear all selections</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-left:auto;">ranked &middot; synergy, then inclusion, then name</span>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                  <span style="flex:none;width:244px;display:inline-flex;align-items:center;justify-content:center;height:30px;border:1px solid #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">Select 12 from my collection</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">2 creatures short of recommendations</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                  <span style="flex:none;width:244px;display:inline-flex;align-items:center;justify-content:center;height:30px;border:1px solid #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">Select the 12 this deck needs</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">4 to buy &middot; <span style="color:#C6533F;">$18.40</span></span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 9px 7px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#8E8269;">
+              <span style="width:18px;flex:none;"></span><span style="width:7px;flex:none;"></span>
+              <span style="flex:auto;min-width:0;">Card</span>
+              <span style="width:90px;flex:none;">Type</span>
+              <span style="width:72px;flex:none;text-align:right;">Cost</span>
+              <span style="width:84px;flex:none;"></span>
+              <span style="width:60px;flex:none;text-align:right;">Synergy</span>
+              <span style="width:36px;flex:none;text-align:right;">Decks</span>
+              <span style="width:60px;flex:none;"></span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <sc-for list="{{ rows }}" as="row" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:10px;min-height:34px;padding:0 9px;border-radius:7px;background:#181410;border:1px solid #2A241D;">
+                  <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">+</span>
+                  <span style="flex:none;width:7px;height:7px;border-radius:999px;background:{{ row.dotFill }};border:1px {{ row.dotStyle }} {{ row.dotInk }};"></span>
+                  <span style="flex:auto;min-width:0;display:flex;align-items:center;gap:6px;">
+                    <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;color:#EDE6D8;">{{ row.name }}</span>
+                    <sc-for list="{{ row.marks }}" as="m" hint-placeholder-count="0">
+                      <span title="{{ m.title }}" style="display:inline-flex;flex:none;color:#8FA6BE;filter:drop-shadow(0 0 2.5px rgba(143,166,190,0.45));">
+                        <svg width="14" height="14" viewBox="0 0 16 16" style="display:block;">
+                          <path d="{{ m.d1 }}" fill="{{ m.f1 }}" stroke="{{ m.s1 }}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></path>
+                          <path d="{{ m.d2 }}" fill="{{ m.f2 }}" stroke="{{ m.s2 }}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></path>
+                        </svg>
+                      </span>
+                    </sc-for>
+                  </span>
+                  <span style="flex:none;width:90px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ row.type }}</span>
+                  <span style="flex:none;width:72px;display:flex;justify-content:flex-end;gap:3px;">
+                    <sc-for list="{{ row.pips }}" as="p" hint-placeholder-count="3">
+                      <span style="width:12px;height:12px;border-radius:999px;background:{{ p.bg }};color:#100D0A;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:8px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);">{{ p.label }}</span>
+                    </sc-for>
+                  </span>
+                  <span style="flex:none;width:84px;display:flex;justify-content:flex-end;">{{ row.tag }}</span>
+                  <span style="flex:none;width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">{{ row.syn }}</span>
+                  <span style="flex:none;width:36px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ row.inc }}</span>
+                  <span style="flex:none;width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">Set aside</span>
+                </div>
+              </sc-for>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;padding:4px 9px;">&hellip; 35 more rows, unchanged</div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid #2A241D;">
+              <span style="display:inline-flex;align-items:center;border:1px solid #2A241D;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;color:#6A6152;">Add cards</span>
+              <span style="display:inline-flex;align-items:center;border:1px solid #3A3229;border-radius:8px;padding:10px 16px;font-size:13px;color:#EDE6D8;">Cancel</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">87 of 99 when added</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;margin-left:auto;">12 slots stay open: you can come back to them</span>
+            </div>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:12px;line-height:1.6;">The head keeps its shipped geometry, its counts line and its 30px ghost height. <span style="color:#8E8269;">One control is deleted; two are mounted in its place, each on its own line so its concession can sit beside it rather than under the pair.</span></div>
+
+        </div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Why a fixed 244px button column</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;">The locked part of &sect;3 is that <b style="color:#EDE6D8;font-weight:600;">both concessions are legible before either is pressed</b> &mdash; which is a claim about <i>comparison</i>, not about visibility. Two labels of different length push their notes to different x positions, and two figures that do not share a left edge are read one after the other instead of against each other.<br><br><b style="color:#EDE6D8;font-weight:600;">So the buttons take one fixed column and the concessions form a second.</b> 244px is the wider label at its largest figure (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Select the 47 this deck needs</span>, 29 mono characters at 11px) plus the ghost&rsquo;s padding either side; nothing in the pair wraps up to that figure, and the count cannot exceed the open slots.<br><br><b style="color:#EDE6D8;font-weight:600;">Both controls are ghosts at equal weight.</b> A primary would rank one concession over the other, and this pair exists precisely because the app cannot know which the player minds &mdash; Hugh&rsquo;s own reasoning is that both are acceptable once stated. The brass outline in this list is already spoken for by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Add N cards</span>, which is the only control here that changes the deck.<br><br><span style="color:#8E8269;">Rejected: a segmented control.</span> It makes the pool a mode the player sets and leaves set, which is the ownership filter this product has ruled against, one level down.<br><br><span style="color:#8E8269;">Rejected: one button with a disclosed alternative.</span> The second concession then arrives after the first choice is half made &mdash; the exact failure &sect;7 says a post-press check would let through.<br><br><span style="color:#8E8269;">Rejected: putting the concessions in a caption above the pair.</span> One sentence carrying two figures makes the reader assign each to its own control, and at 390 it wraps to three lines before either button is on screen.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE 2 · THE LABEL STATES ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface 2 &middot; <span style="color:#C9A24B;">the concession at zero, at scale, and with the money absent</span></div>
+
+    <div style="font-size:13.5px;color:#C6B79A;line-height:1.7;max-width:1060px;margin-bottom:18px;text-wrap:pretty;">Every figure in the pair is computed from a <b style="color:#EDE6D8;font-weight:600;">real fill run against this player&rsquo;s collection</b>, so each label has to read sensibly at nothing, at a lot, and with a source missing. The rule across all eleven cases: <b style="color:#EDE6D8;font-weight:600;">the concession slot is never empty and never invented.</b> A nil concession is a sentence; an unmeasurable one says it is unmeasurable; a missing price drops the figure and keeps the count.</div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:20px;">
+      <sc-for list="{{ states }}" as="s" hint-placeholder-count="6">
+        <div style="width:430px;background:#181410;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#C9A24B;">{{ s.id }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8E8269;">{{ s.name }}</span>
+          </div>
+          <div style="font-size:12.5px;color:#8E8269;line-height:1.55;margin-bottom:12px;text-wrap:pretty;">{{ s.when }}</div>
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:7px;">{{ s.draw }}</div>
+          <div style="font-size:12.5px;color:#C6B79A;line-height:1.6;margin-top:11px;text-wrap:pretty;">{{ s.why }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- ============ SURFACE 3 · 390 ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface 3 &middot; <span style="color:#C9A24B;">390&times;844 &mdash; two controls, and a bottom slot that already has an occupant</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &mdash; <span style="color:#C9A24B;">the pair stacks in the head; the pinned bar is unchanged</span></div>
+        <div style="width:390px;height:844px;background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;position:relative;display:flex;flex-direction:column;">
+          <div style="flex:auto;overflow:hidden;padding:14px 12px 0;">
+            <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:12px 12px 13px;">
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">The last 12</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-left:auto;">Close</span>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-bottom:12px;">41 candidates &middot; ranked by synergy</div>
+
+              <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">
+                <span style="display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">Select 12 from my collection</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;padding-left:2px;">2 creatures short of recommendations</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:11px;">
+                <span style="display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">Select the 12 this deck needs</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;padding-left:2px;">4 to buy &middot; <span style="color:#C6533F;">$18.40</span></span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #2A241D;padding-top:10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;border-bottom:1px dashed #3A3229;">Clear all selections</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">ranked by synergy</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+              <sc-for list="{{ phoneRows }}" as="row" hint-placeholder-count="3">
+                <div style="min-height:52px;border-radius:7px;background:#181410;border:1px solid #2A241D;padding:7px 10px 7px 8px;display:flex;align-items:center;gap:9px;">
+                  <span style="flex:none;width:26px;height:26px;border-radius:6px;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8E8269;">+</span>
+                  <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                    <span style="display:flex;align-items:center;gap:7px;">
+                      <span style="flex:auto;min-width:0;display:flex;align-items:center;gap:6px;">
+                        <span style="flex:none;width:7px;height:7px;border-radius:999px;background:{{ row.dotFill }};border:1px {{ row.dotStyle }} {{ row.dotInk }};"></span>
+                        <span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:#EDE6D8;">{{ row.name }}</span>
+                        <sc-for list="{{ row.marks }}" as="m" hint-placeholder-count="0">
+                          <span title="{{ m.title }}" style="display:inline-flex;flex:none;color:#8FA6BE;filter:drop-shadow(0 0 2.5px rgba(143,166,190,0.45));">
+                            <svg width="13" height="13" viewBox="0 0 16 16" style="display:block;">
+                              <path d="{{ m.d1 }}" fill="{{ m.f1 }}" stroke="{{ m.s1 }}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></path>
+                              <path d="{{ m.d2 }}" fill="{{ m.f2 }}" stroke="{{ m.s2 }}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></path>
+                            </svg>
+                          </span>
+                        </sc-for>
+                      </span>
+                      {{ row.tag }}
+                    </span>
+                    <span style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">
+                      <span style="display:flex;align-items:center;gap:3px;">
+                        <sc-for list="{{ row.phonePips }}" as="p" hint-placeholder-count="3">
+                          <span style="width:13px;height:13px;border-radius:999px;background:{{ p.bg }};color:#100D0A;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:8px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);">{{ p.label }}</span>
+                        </sc-for>
+                      </span>
+                      <span style="color:#C9A24B;">{{ row.syn }}</span>
+                      <span>{{ row.inc }}</span>
+                      <span style="margin-left:auto;color:#6A6152;">Set aside</span>
+                    </span>
+                  </span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="flex:none;background:#14110E;border-top:1px solid #3A3229;padding:11px 12px 13px;display:flex;flex-direction:column;gap:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">12 slots stay open: you can come back to them</span>
+            <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;">
+              <span style="color:#C6B79A;">0 of 12 selected</span>
+              <span style="margin-left:auto;color:#6A6152;">87 of 99 when added</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <span style="flex:auto;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid #2A241D;border-radius:8px;font-size:14px;font-weight:600;color:#6A6152;">Add cards</span>
+              <span style="flex:none;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1px solid #3A3229;border-radius:8px;font-size:14px;color:#EDE6D8;">Cancel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">The bottom slot is not where this goes</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The quick-add dock is already stood down and its slot already reassigned</b> &mdash; while the list is open the commit bar holds it, and the top-off handoff&rsquo;s rule is that one bottom slot gets one occupant. So the pair has no claim on it, and the question &sect;5.3 asks is answered by where the pair belongs rather than by what the dock is doing.<br><br><b style="color:#EDE6D8;font-weight:600;">A bulk selection is a decision about the list, so it sits at the top of the list.</b> Pinning it would put a control that changes twelve rows below the rows it changes, and would make the bar taller at the one width where the bar&rsquo;s height is the page&rsquo;s scroll budget. The commit bar keeps its measured geometry exactly: status line, counts line, 44px primary plus Cancel.<br><br><b style="color:#EDE6D8;font-weight:600;">Two 44px rows, not two halves of one row.</b> Side by side at 390 each label gets ~175px &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Select the 12 this deck needs</span> is 29 mono characters and wraps to three lines in that width, and the two concessions then have nowhere to sit but under the pair, where neither belongs to a button.<br><br><b style="color:#EDE6D8;font-weight:600;">The concession sits under its own button, indented to its edge</b>, not beside it: at 390 there is no second column to be had, and a figure to the right of a full-width control reads as part of the next thing down.<br><br><span style="color:#8E8269;">Clear all selections loses its box.</span> It is a reset rather than a choice, it concedes nothing, and boxing it would make three equal-looking controls out of a pair and a reset. Text weight, dashed rule, 44px hit area, on the head&rsquo;s own line opposite the ordering note.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #6E5B33;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">For <span style="font-family:'IBM Plex Mono',monospace;">probe:last-slots</span></div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;">The pair is addressable without reading its copy: <b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">data-bulk-fill="collection"</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">data-bulk-fill="best"</span></b> on the two buttons, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">data-bulk-concession</span> on each note &mdash; the same reason <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">data-top-off-type</span> exists a few rows down, where recognising a column by its text let a card called <i>Land</i> pass for a type.<br><br><b style="color:#EDE6D8;font-weight:600;">The check &sect;7 asks for is a pre-press read of both notes</b>: assert two concession nodes with non-empty text while zero rows are selected, then press one and assert the selected count. A probe that only read post-press state would pass the shipped defect.<br><br><b style="color:#EDE6D8;font-weight:600;">Each concession is also inside its button&rsquo;s accessible name</b>, so the pre-press read is true for a screen reader too. The visible note carries <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span> so the figure is not spoken twice.<br><br>The bar&rsquo;s pinned geometry is unchanged, so that assertion stands as written. What needs adding is the head at both widths &mdash; <b style="color:#EDE6D8;font-weight:600;">one row per control at 390, two columns at 1300</b> &mdash; and the row&rsquo;s marks, which are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span> glyphs and must be asserted through the row&rsquo;s accessible name, never by counting SVGs.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE 4 · THE ROW'S TWO NEW ATOMS ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface 4 &middot; <span style="color:#C9A24B;">the cost track and the card mark &mdash; both shipped, neither re-specified</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:560px;flex:none;background:#181410;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">The four marks, at row size</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ markKey }}" as="k" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:13px;background:#1A160F;border:1px solid #3A3229;border-radius:9px;padding:11px 13px;">
+              <span style="display:inline-flex;flex:none;color:#8FA6BE;filter:drop-shadow(0 0 3px rgba(143,166,190,0.45));">
+                <svg width="22" height="22" viewBox="0 0 16 16" style="display:block;">
+                  <path d="{{ k.d1 }}" fill="{{ k.f1 }}" stroke="{{ k.s1 }}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></path>
+                  <path d="{{ k.d2 }}" fill="{{ k.f2 }}" stroke="{{ k.s2 }}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></path>
+                </svg>
+              </span>
+              <span style="flex:none;width:122px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#EDE6D8;">{{ k.title }}</span>
+              <span style="flex:auto;min-width:0;font-size:12.5px;color:#8E8269;line-height:1.5;">{{ k.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:12.5px;color:#C6B79A;line-height:1.7;margin-top:15px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Nothing is re-specified.</b> Round 1 set the ink (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fact #8FA6BE</span>), the bare-no-container rule, the sizes (14px on a row, 12px floor) and the tooltip; Round 2 added the tutor mark and the solid/stroked split. This surface only says <b style="color:#EDE6D8;font-weight:600;">where they go on this row</b>: immediately after the name, before every boxed atom, because boxed is about your copies and bare is about the card.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Why the mark belongs on a candidate row</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">This list is the last moment a player can decline the card.</b> Everywhere else the mark annotates a card they already own or already sleeved; here it annotates one they are about to take, and a bracket fact learned after the commit is a fact learned too late &mdash; it costs an undo, a shopping-list edit, or a bracket the deck did not mean to be in.<br><br><b style="color:#EDE6D8;font-weight:600;">And the right-hand control buys.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Select the 12 this deck needs</span> can put a Game Changer on the shopping list for real money; the mark is what makes that a choice rather than a surprise.<br><br><b style="color:#EDE6D8;font-weight:600;">It costs the row nothing.</b> A 14px glyph rides in the name&rsquo;s own line, the name column is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-auto</span>, and Round 1&rsquo;s standing finding is that no row grows and nothing yields for it. Multiple marks on one card sit in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">factsFor</span>&rsquo;s fixed order.<br><br><span style="color:#8E8269;">Not drawn: a bulk control that avoids them.</span> &ldquo;Fill without Game Changers&rdquo; is a third concession and a third pool, and the brief locks the pair at two. The mark informs the hand-made edit the player makes after the press &mdash; which is what the whole review list is for.<br><br><span style="color:#C6533F;font-weight:600;">Costs eng one join.</span> The candidate pool is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SynergyCard</span>, which carries no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">facts</span>; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">attachBracketFacts</span> is written and is already quiet on failure, so a degraded read draws fewer marks and never an empty claim. Tutors are Round 2&rsquo;s detection and may not be on the card row yet &mdash; <b style="color:#EDE6D8;font-weight:600;">if it lands later, it lands as one more entry in the same list</b>.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">The cost track</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CostPips</span>, at the component&rsquo;s own figures</b> &mdash; 12px pips, 3px gap, five slots inside the 72px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">COST_TRACK</span> on desktop, with the sixth symbol onward folded into a generic <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+N</span> pip; 13px, uncapped and unshingled, on the phone meta line. The colours are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">WUBRG_COLOR</span>, which are themed tokens and not this canvas&rsquo;s literals.<br><br><b style="color:#EDE6D8;font-weight:600;">A costless row still holds the column open</b> on desktop, and mounts nothing at all on the phone &mdash; the component&rsquo;s own rule, and the reason the header and the rows stay on one vertical.<br><br>The pips are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span>; the cost is spoken once, uncapped, from the row&rsquo;s accessible name, which is where this list already speaks it.</div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2260,&quot;height&quot;:1400}}">
+const MARKS = {
+  gameChanger: {
+    title: "Game Changer",
+    note: "Scryfall's own flag, on the card row already.",
+    d1: "M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z", f1: "currentColor", s1: "none",
+    d2: "", f2: "none", s2: "none",
+  },
+  massLandDenial: {
+    title: "mass land denial",
+    note: "card_bracket_flags · measured, partial detection.",
+    d1: "M1.4 13.2 L6.0 4.4 L8.0 8.2", f1: "none", s1: "currentColor",
+    d2: "M9.2 8.2 L10.6 5.6 L14.6 13.2", f2: "none", s2: "currentColor",
+  },
+  extraTurns: {
+    title: "extra turns",
+    note: "card_bracket_flags · stroked, because it loops.",
+    d1: "M10.98 3.74 A 5.2 5.2 0 1 1 6.65 2.98", f1: "none", s1: "currentColor",
+    d2: "M9.0 2.4 L7.1 4.6 L6.2 1.3 Z", f2: "currentColor", s2: "none",
+  },
+  tutor: {
+    title: "tutor",
+    note: "Round 2's drawn up — a rule with something pulled off it.",
+    d1: "M1.8 12.2 H14.2 V14.4 H1.8 Z", f1: "currentColor", s1: "none",
+    d2: "M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z", f2: "currentColor", s2: "none",
+  },
+};
+
+const PIP_COLOR = { W: "#F4E9C4", U: "#3A6AA5", B: "#98748F", R: "#C05A3E", G: "#4B7A46" };
+
+class Component extends DCLogic {
+  /** Scryfall cost string → the pips CostPips would draw. Colour pips carry no
+   *  label; a generic pip carries its own symbol. */
+  pips(cost) {
+    return [...String(cost).matchAll(/\{([^}]+)\}/g)].map((m) => {
+      const sym = m[1];
+      const colours = sym.split("/").filter((p) => /^[WUBRG]$/.test(p));
+      const numeral = sym.split("/").find((p) => /^\d+$/.test(p));
+      return colours.length >= 2
+        ? { bg: `linear-gradient(135deg, ${PIP_COLOR[colours[0]]} 50%, ${PIP_COLOR[colours[1]]} 50%)`, label: numeral ?? "" }
+        : colours.length === 1
+          ? { bg: PIP_COLOR[colours[0]], label: numeral ?? "" }
+          : { bg: "#8E8269", label: sym };
+    });
+  }
+
+  tag(kind, figure) {
+    const R = React.createElement;
+    if (kind === "buy")
+      return R("span", {
+        style: {
+          fontFamily: "'IBM Plex Mono',monospace", fontSize: "9.5px", color: "#C6533F",
+          background: "rgba(198,83,63,0.13)", borderRadius: "4px", padding: "1px 5px",
+          whiteSpace: "nowrap",
+        },
+      }, figure ? "buy · " + figure : "buy");
+    if (kind === "none")
+      return R("span", {
+        style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: "9.5px", color: "#8E8269" },
+      }, "◆ none free");
+    return null;
+  }
+
+  row(name, type, cost, syn, inc, own, marks, figure) {
+    const pips = this.pips(cost);
+    return {
+      name, type, syn, inc,
+      pips,
+      phonePips: pips,
+      marks: (marks || []).map((k) => MARKS[k]),
+      dotFill: own === "unowned" ? "transparent" : own === "committed" ? "#8E8269" : "#6E8F5E",
+      dotStyle: own === "unowned" ? "dashed" : "solid",
+      dotInk: own === "unowned" ? "#6A6152" : "transparent",
+      tag: this.tag(own === "unowned" ? "buy" : own === "committed" ? "none" : null, figure),
+    };
+  }
+
+  pair(a, aNote, b, bNote, opts) {
+    const R = React.createElement;
+    const o = opts || {};
+    const ghost = (label, dim) =>
+      R("span", {
+        style: {
+          flex: "none", width: "196px", display: "inline-flex", alignItems: "center",
+          justifyContent: "center", height: "30px", borderRadius: "8px",
+          border: "1px solid " + (dim ? "#2A241D" : "#3A3229"),
+          fontFamily: "'IBM Plex Mono',monospace", fontSize: "10.5px",
+          color: dim ? "#6A6152" : "#C6B79A", textAlign: "center",
+        },
+      }, label);
+    const note = (text, ink) =>
+      R("span", {
+        style: {
+          fontFamily: "'IBM Plex Mono',monospace", fontSize: "10.5px",
+          color: ink || "#C6B79A", lineHeight: 1.5,
+        },
+      }, text);
+    const line = (label, text, dim, ink) =>
+      R("div", { style: { display: "flex", alignItems: "center", gap: "12px" } },
+        ghost(label, dim), note(text, ink));
+    const out = [line(a, aNote, o.dimA, o.inkA)];
+    if (b !== null) out.push(line(b, bNote, o.dimB, o.inkB));
+    if (o.tail)
+      out.push(R("span", {
+        style: {
+          fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "#6A6152",
+          lineHeight: 1.5, paddingTop: "2px",
+        },
+      }, o.tail));
+    return out.map((el, i) => React.cloneElement(el, { key: i }));
+  }
+
+  money(count, figure) {
+    return React.createElement(React.Fragment, null, count + " to buy · ",
+      React.createElement("span", { style: { color: "#C6533F" } }, figure));
+  }
+
+  renderVals() {
+    const r = (...a) => this.row(...a);
+    const rows = [
+      r("Vorinclex, Voice of Hunger", "Creature", "{6}{G}{G}", "+241 pts", "9%", "unowned", ["gameChanger"], "$28.40"),
+      r("Green Sun’s Zenith", "Sorcery", "{X}{G}", "+198 pts", "27%", "owned", ["tutor"]),
+      r("Arlinn, the Pack’s Hope", "Planeswalker", "{2}{R}{G}", "+214 pts", "38%", "owned", []),
+      r("Final Fortune", "Sorcery", "{R}{R}", "+112 pts", "6%", "unowned", ["extraTurns"], "$2.10"),
+      r("Ruination", "Sorcery", "{3}{R}", "+96 pts", "4%", "committed", ["massLandDenial"]),
+      r("Wolfwillow Haven", "Enchantment", "{1}{G}", "+147 pts", "44%", "owned", []),
+    ];
+    const phoneRows = [
+      r("Vorinclex, Voice of Hunger", "Creature", "{6}{G}{G}", "+241", "9%", "unowned", ["gameChanger"], "$28.40"),
+      r("Green Sun’s Zenith", "Sorcery", "{X}{G}", "+198", "27%", "owned", ["tutor"]),
+      r("Final Fortune", "Sorcery", "{R}{R}", "+112", "6%", "unowned", ["extraTurns"], "$2.10"),
+    ];
+
+    const states = [
+      {
+        id: "b1", name: "the ordinary pair",
+        when: "12 open · 23 sleevable · the collection fill misses two creature slots · the best fill buys four.",
+        draw: this.pair(
+          "Select 12 from my collection", "2 creatures short of recommendations",
+          "Select the 12 this deck needs", this.money("4", "$18.40"),
+        ),
+        why: "Same count on both faces, because both fills take every open slot. The only difference between them is what each gives up, which is the only thing the notes say.",
+      },
+      {
+        id: "b2", name: "the collection concedes nothing",
+        when: "The sleevable pool can close every gap the recommendations report.",
+        draw: this.pair(
+          "Select 12 from my collection", "matches every recommendation",
+          "Select the 12 this deck needs", this.money("4", "$21.90"),
+        ),
+        why: "The slot is filled with the nil concession rather than emptied. A blank beside one control and a figure beside the other reads as a missing figure, and the player is still owed the sentence: the cheap option costs nothing here, which is exactly what they came to find out.",
+      },
+      {
+        id: "b3", name: "the two fills are the same set",
+        when: "The best fill buys nothing — the collection already holds every card it would reach for.",
+        draw: this.pair(
+          "Select 12 from my collection", "matches every recommendation · nothing to buy",
+          null, null,
+        ),
+        why: "There is no second concession, so there is no choice and no second control. Absent, not disabled: this surface’s own standing rule. The clause states why the buy option is gone so its absence is not read as a bug.",
+      },
+      {
+        id: "b4", name: "the price read degraded",
+        when: "Four cards to buy; the feed has no figure for any of them.",
+        draw: this.pair(
+          "Select 12 from my collection", "2 creatures short of recommendations",
+          "Select the 12 this deck needs", "4 to buy",
+        ),
+        why: "The figure leaves and the count stands — price.ts’s shipped rule, the same one the buy tag follows on the rows below. No dash, no $0.00, no ‘price unavailable’: silence is the state, and how many there are to buy is known either way.",
+      },
+      {
+        id: "b5", name: "some copies priced",
+        when: "Four to buy, one of them never stocked.",
+        draw: this.pair(
+          "Select 12 from my collection", "2 creatures short of recommendations",
+          "Select the 12 this deck needs", this.money("4", "$12.80"),
+        ),
+        why: "A figure stands as soon as one copy is priced — price-strip.tsx’s threshold, unchanged. The total is of what is priced; the count is of what will be bought. The commit bar then restates both against the selected set, so a player who presses sees the same pair of figures a second time.",
+      },
+      {
+        id: "b6", name: "nothing to measure against",
+        when: "The commander is thin or has no composition at all — SkeletonFit.basis is ‘none’.",
+        draw: this.pair(
+          "Select 12 from my collection", "no recommendation for this commander",
+          "Select the 12 this deck needs", this.money("4", "$18.40"),
+        ),
+        why: "The fill still runs and still ranks; what is missing is the standard it would be short of. Design will not print a gap it cannot prove, and ‘0 short’ would be the strongest possible claim made from no data.",
+      },
+      {
+        id: "b7", name: "short on more than two types",
+        when: "A thin collection: creatures, instants and removal all miss.",
+        draw: this.pair(
+          "Select 12 from my collection", "short on 3 types · creatures worst at 4",
+          "Select the 12 this deck needs", this.money("9", "$41.20"),
+        ),
+        why: "One type prints itself, two print as a pair (‘2 creatures and 1 instant short of recommendations’), three or more collapse to a count plus the worst. A line that named five types would be a table with no headings, and the worst gap is the one that decides whether the concession is acceptable.",
+      },
+      {
+        id: "b8", name: "a large number",
+        when: "A 52-card deck the player cut down: 47 open slots.",
+        draw: this.pair(
+          "Select 47 from my collection", "9 creatures and 4 lands short of recommendations",
+          "Select the 47 this deck needs", this.money("19", "$214.80"),
+        ),
+        why: "Both figures grow and neither label wraps: the button column is sized against exactly this face. Nothing is capped or abbreviated — a three-figure sum is the one a player most needs to read before pressing.",
+      },
+      {
+        id: "b9", name: "nothing to sleeve",
+        when: "The player owns none of the candidates, or every copy is sleeved in another deck.",
+        draw: this.pair(
+          "Select the 12 this deck needs", this.money("12", "$63.10"),
+          null, null,
+          { tail: "The strip’s door note already says why: ‘You own none of these’, or ‘Every copy you own is in another deck’." },
+        ),
+        why: "The collection control is absent rather than disabled at 0, and the remaining control keeps its own label — it is still the fill that takes what the deck needs, and renaming it ‘Select 12’ would hide that every one of them is a purchase.",
+      },
+      {
+        id: "b10", name: "after a press",
+        when: "The collection fill was pressed; twelve rows are selected.",
+        draw: this.pair(
+          "Select 12 from my collection", "2 creatures short of recommendations",
+          "Select the 12 this deck needs", this.money("4", "$18.40"),
+        ),
+        why: "Neither control takes a pressed state. The player can deselect by hand the moment after, and a lit button would go on claiming a selection that no longer matches it. Pressing the other swaps the selection wholesale, as the shipped bulk control already does. What is true is stated where it is always stated: the head’s selected count and the commit bar.",
+      },
+      {
+        id: "b11", name: "at the cap, mid-selection",
+        when: "The player has already selected all twelve slots by hand.",
+        draw: this.pair(
+          "Select 12 from my collection", "replaces your 12 selections",
+          "Select the 12 this deck needs", "replaces your 12 selections",
+          { inkA: "#8E8269", inkB: "#8E8269" },
+        ),
+        why: "A bulk control replaces the selection rather than adding to it, and at the cap that is the whole of what pressing it does — so for as long as a hand-made selection is in the way, the concession yields to the warning. The figures return the moment the selection is cleared or reduced.",
+      },
+    ];
+
+    return {
+      rows, phoneRows, states,
+      markKey: [MARKS.gameChanger, MARKS.massLandDenial, MARKS.extraTurns, MARKS.tutor],
+    };
+  }
+}
+</script>
+</body>
+</html>

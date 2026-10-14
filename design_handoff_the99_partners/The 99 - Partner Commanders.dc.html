@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* The token contract from src/app/globals.css, reproduced so this document
+     resolves the same names the app does. Every colour below is a var().
+     Four non-brand literals remain, all inherited rather than invented:
+     rgba(0,0,0,0.35) on the picker thumbs, rgba(0,0,0,0.4) from the status bar,
+     and art-wash.tsx's own INK/COVER_INK shadows plus the `black` term inside
+     COVER_PLATE. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F;
+    --surface-raised:#211D18; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B; --surface-sunken:#101219; --surface-inset:#13151C;
+    --elevated:#20222A; --elevated-hover:#181A21; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814; --surface-sunken:#101512; --surface-inset:#141B16;
+    --elevated:#212A23; --elevated-hover:#18201A; --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-disabled:#3E473A;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-shadow:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13; --surface-sunken:#100E12; --surface-inset:#131115;
+    --elevated:#1E1C20; --elevated-hover:#171519; --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-disabled:#403E45;
+    --accent:#52827A; --accent-hover:#629189; --accent-shadow:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B; --surface-sunken:#131018; --surface-inset:#17141D;
+    --elevated:#26232C; --elevated-hover:#1D1A23; --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-disabled:#443F4D;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-shadow:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D; --surface-inset:#1A1B22;
+    --elevated:#2D2E35; --elevated-hover:#212229; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-shadow:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  body { margin:0; background:var(--bg); font-family:'IBM Plex Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:var(--accent); }
+  a:hover { color:var(--accent-hover); }
+</style>
+</helmet>
+
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#14110E"/>
+  <rect x="24" y="52" width="70" height="96" rx="6" fill="#CF8745"/>
+  <rect x="106" y="76" width="70" height="10" rx="5" fill="#3A3229"/>
+  <rect x="106" y="96" width="52" height="10" rx="5" fill="#3A3229"/>
+  <rect x="106" y="122" width="40" height="8" rx="4" fill="#6B482A"/>
+</svg>
+</template>
+
+<div data-theme="{{ theme }}" style="padding:44px 40px 90px;max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:56px;background:var(--bg);">
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">The 99 &middot; Partner commanders &middot; #364 &middot; R2</div>
+    <h1 style="font-family:var(--display),serif;font-weight:800;font-size:38px;color:var(--fg);margin:0;line-height:1.12;">Two commanders, and no surface draws two portraits</h1>
+    <p style="max-width:900px;font-size:15px;color:var(--fg-body);line-height:1.65;margin:0;text-wrap:pretty;">Four surfaces from spec &sect;6, and nothing else. The &sect;4 ceiling is assumed throughout: <b style="color:var(--fg);font-weight:600;">a pair deck is 98</b>, and every count drawn reads against 98.</p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:10px;padding:16px 20px;max-width:900px;display:flex;flex-direction:column;gap:10px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--warning);">R2 &middot; what #473 changed under R1</div>
+      <div style="font-size:13.5px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;">R1's decisions 16 and 17 shingled a thumb that <b style="color:var(--fg);font-weight:600;">no longer exists</b>. <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12.5px;">builder-spine.tsx</code> is now <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12.5px;">spine-desktop.tsx</code> (<code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12.5px;">left-portrait</code>, <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12.5px;">band={168}</code>, type at a 254px inset) and <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12.5px;">spine-mobile.tsx</code> (<code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12.5px;">cover</code>, 2.2:1). <b style="color:var(--fg);font-weight:600;">16 is withdrawn and replaced by 22</b>; 17 narrows to the picker, the one surface that still has thumbs. 18's caption work survives and is re-anchored to the new insets. 20 and 21 are untouched. <b style="color:var(--fg);font-weight:600;">23 is new</b>, from the resume count's second form.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:10px;padding:16px 20px;max-width:900px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--success);margin-bottom:8px;">The ordering constraint &mdash; still nothing to flag, and now trivially so</div>
+      <div style="font-size:13.5px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;">R1 carried order three ways: reading order, z-order and size. <b style="color:var(--fg);font-weight:600;">Two of those were properties of the shingle, and the shingle is gone</b> &mdash; so R2 carries order <b style="color:var(--fg);font-weight:600;">one way, in words</b>, and a sentence cannot be symmetric. <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12.5px;">{primary} + {partner}</code> states the order at every width, in the accessible name, and in the one place the pair is ever drawn as art &mdash; which is nowhere.</div>
+    </div>
+  </div>
+
+  <!-- ============ 1 · 22 · THE HEADER STATES THE PAIR IN WORDS ============ -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">1 &middot; 22 &middot; The header carries no portrait-level pair signal &mdash; the argued case</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;align-items:start;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">The band is the deck's art, not its roster</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">&sect;6 asked for two portraits in the spine. <b style="color:var(--fg);font-weight:600;">The ruling is one</b>, and the reason is the same one that closed 21: <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">ArtWash</code>'s portrait width <i>is</i> <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">band &times; 1.37</code>, and at <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">band={168}</code> that is <b style="color:var(--fg);font-weight:600;">230px, with the mask end at 58%, the four scrim stops at 0 / 134 / 230 / 240px and the type inset at 254</b> &mdash; all in px, all keyed to that one number. If a diptych was a third strategy on a 72px band, it is a third strategy on a 168px one. <b style="color:var(--fg);font-weight:600;">The argument did not change scale; it got stronger</b>, because the desktop band also carries a vertical scrim keyed to where type sits over the art.</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">And the header now says what the thumb used to: <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">spine-desktop.tsx</code>'s own first line is <i>the commander's art is the band now</i>. A band is a single field of one image. <b style="color:var(--fg);font-weight:600;">The pair is stated in the caption, in full, and in the <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/ 98</code></b> &mdash; the same two carriers the desktop rail uses, on a surface where the caption has 644px instead of 200.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">What the partner gets instead: its printing</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">Declining the portrait leaves one real gap, and it is functional rather than decorative. <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">FullCardTrigger</code> opens <i>the</i> commander's printing from the band; a pair has two printings and one band. <b style="color:var(--fg);font-weight:600;">So the partner's name in the caption is its trigger</b> &mdash; the band stays the primary's, and the second card opens from the word that names it.</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">That keeps the affordance where the information already is, costs no geometry, and is the app's own vocabulary: the removed thumb was a card trigger too. It is drawn below as an underline on the partner's name only &mdash; <b style="color:var(--fg);font-weight:600;">not the primary's</b>, whose trigger is the 230px of art beside it.</div>
+      </div>
+    </div>
+
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--danger);margin-top:4px;">Rejected &middot; the two non-diptych header treatments, drawn at the band's real geometry (left 560px)</div>
+    <sc-if value="{{ showRejected }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        <sc-for list="{{ rejectedHeaders }}" as="h" hint-placeholder-count="2">
+          <div style="width:560px;display:flex;flex-direction:column;gap:9px;">
+            <div style="position:relative;width:560px;height:168px;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:var(--bg);">
+              <div style="position:absolute;inset:0;background-image:{{ h.ambient }};background-size:cover;background-position:center top;opacity:0.2;"></div>
+              <div style="position:absolute;top:0;bottom:0;left:0;width:230px;background-image:{{ h.sharp }};background-size:auto 100%;background-position:left center;background-repeat:no-repeat;opacity:0.8;-webkit-mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);"></div>
+              <div style="position:absolute;inset:0;background:linear-gradient(90deg, color-mix(in oklab, var(--bg) 30%, transparent) 0px, color-mix(in oklab, var(--bg) 26%, transparent) 134px, color-mix(in oklab, var(--bg) 78%, transparent) 230px, var(--bg) 240px);"></div>
+              <div style="position:absolute;inset:0;background:linear-gradient(180deg, color-mix(in oklab, var(--bg) 30%, transparent) 0%, color-mix(in oklab, var(--bg) 10%, transparent) 46%, color-mix(in oklab, var(--bg) 42%, transparent) 100%);"></div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 20px 0 254px;">
+                <div style="display:flex;flex-direction:column;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <sc-if value="{{ h.showThumb }}" hint-placeholder-val="{{ true }}">
+                      <div style="width:44px;height:61px;flex:none;border-radius:5px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Bruse%20Tarl%2C%20Boorish%20Herder&amp;format=image&amp;version=normal&quot;) center top/cover, var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+                    </sc-if>
+                    <div style="font-family:var(--display),serif;font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">Sky and Herd</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:3px;">
+                    <span style="width:10px;height:10px;border-radius:999px;background:var(--w);display:block;"></span>
+                    <span style="width:10px;height:10px;border-radius:999px;background:var(--u);display:block;"></span>
+                    <span style="width:10px;height:10px;border-radius:999px;background:var(--r);display:block;"></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Ishai + Bruse Tarl</span>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:4px;margin-top:5px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:var(--fg);">86</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 98</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--danger);">{{ h.tag }}</div>
+            <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">{{ h.why }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ============ 2 · THE SPINE, REDRAWN ============ -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">2 &middot; The deck-detail header, ruled &mdash; <code style="color:var(--accent);text-transform:none;letter-spacing:0;">spine-desktop.tsx:79-84</code> &middot; <code style="color:var(--accent);text-transform:none;letter-spacing:0;">spine-mobile.tsx:63-68</code></div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Desktop &middot; drawn at 1180px &middot; left-portrait band 168 &middot; portrait 230 &middot; flat stop 240 &middot; type inset 254</div>
+      <div style="position:relative;width:1180px;flex:none;min-height:168px;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:var(--bg);">
+        <div style="position:absolute;inset:0;background-image:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=art_crop&quot;);background-size:cover;background-position:center top;opacity:0.2;"></div>
+        <div style="position:absolute;top:0;bottom:0;left:0;width:230px;background-image:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=art_crop&quot;);background-size:auto 100%;background-position:left center;background-repeat:no-repeat;opacity:0.8;-webkit-mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);"></div>
+        <div style="position:absolute;inset:0;background:linear-gradient(90deg, color-mix(in oklab, var(--bg) 30%, transparent) 0px, color-mix(in oklab, var(--bg) 26%, transparent) 134px, color-mix(in oklab, var(--bg) 78%, transparent) 230px, var(--bg) 240px);"></div>
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg, color-mix(in oklab, var(--bg) 30%, transparent) 0%, color-mix(in oklab, var(--bg) 10%, transparent) 46%, color-mix(in oklab, var(--bg) 42%, transparent) 100%);"></div>
+        <div style="position:relative;display:flex;align-items:center;min-height:168px;padding:0 24px 0 254px;gap:18px;">
+          <div style="display:flex;min-width:0;flex:1;flex-direction:column;">
+            <div style="font-family:var(--display),serif;font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">Sky and Herd</div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:3px;min-width:0;">
+              <span style="display:flex;gap:3px;flex:none;">
+                <span style="width:10px;height:10px;border-radius:999px;background:var(--w);display:block;"></span>
+                <span style="width:10px;height:10px;border-radius:999px;background:var(--u);display:block;"></span>
+                <span style="width:10px;height:10px;border-radius:999px;background:var(--r);display:block;"></span>
+              </span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);display:flex;gap:5px;min-width:0;overflow:hidden;">
+                <span style="flex:0 1 auto;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Ishai, Ojutai Dragonspeaker</span>
+                <span style="flex:none;">+</span>
+                <span style="flex:0 1 auto;flex-shrink:1000;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid var(--border-strong);">Bruse Tarl, Boorish Herder</span>
+                <span style="flex:none;">&middot; Jeskai</span>
+              </span>
+              <span style="flex:none;display:flex;align-items:center;padding:3px 8px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));border:1px dashed var(--border-strong);">Building</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:4px;margin-top:5px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:var(--fg);">86</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 98</span>
+            </div>
+            <div style="width:170px;height:6px;border-radius:999px;background:var(--elevated);margin-top:6px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);">
+              <div style="width:87.8%;height:100%;border-radius:999px;background:var(--fg-body);"></div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);margin-top:6px;">79 owned &middot; 7 to buy</div>
+          </div>
+          <div style="flex:none;display:flex;align-items:center;gap:9px;">
+            <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;font-size:12.5px;color:var(--fg);border:1px solid var(--border-strong);">Update from a list</span>
+            <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--bg);background:var(--fg);">Export</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;">
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:520px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Three things changed inside one existing row, and no row was added.</b> The caption row already holds pips, <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">{name} &middot; {colorLabel}</code> and the pill at <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">gap:10</code>; the name becomes the pair, the pips become the union, the denominator reads 98. <b style="color:var(--fg);font-weight:600;">No &ldquo;2 commanders&rdquo; badge</b>, and no second portrait.</div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;max-width:520px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The identity label stays on the desktop line &mdash; R1 said it moves, and that was measured against the old row.</b> The pair plus <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">&middot; Jeskai</code> is ~429px, and with pips, gaps and pill the row wants <b style="color:var(--fg);font-weight:600;">~547 of the 644px</b> the type column has at 1180. It fits, so it stays.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Mobile 390px &middot; cover 2.2:1 &middot; caption left 18 right 18 bottom 12</div>
+        <div style="width:390px;flex:none;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);">
+          <div style="position:relative;width:390px;height:177px;overflow:hidden;background:color-mix(in srgb, var(--bg) 86%, black);">
+            <div style="position:absolute;inset:0;background-image:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=art_crop&quot;);background-size:cover;background-position:center top;opacity:0.58;"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg, color-mix(in oklab, var(--bg) 66%, transparent) 0%, color-mix(in oklab, var(--bg) 22%, transparent) 26%, color-mix(in oklab, var(--bg) 62%, transparent) 50%, color-mix(in oklab, var(--bg) 90%, transparent) 100%);"></div>
+            <div style="position:absolute;left:18px;right:18px;bottom:12px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+              <div style="display:flex;align-items:flex-start;justify-content:center;gap:8px;max-width:100%;">
+                <div style="font-family:var(--display),serif;font-weight:700;font-size:20px;line-height:1.25;text-align:center;color:var(--fg);text-shadow:0 1px 4px rgba(0,0,0,0.85);">Sky and Herd</div>
+                <div style="width:44px;height:44px;flex:none;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--fg);display:flex;align-items:center;justify-content:center;font-size:15px;">&#9998;</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:100%;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,0.85);display:flex;gap:4px;min-width:0;overflow:hidden;">
+                  <span style="flex:0 1 auto;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Ishai, Ojutai Dragonspeaker</span>
+                  <span style="flex:none;">+</span>
+                  <span style="flex:0 1 auto;flex-shrink:1000;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid var(--border-strong);">Bruse Tarl, Boorish Herder</span>
+                </span>
+                <span style="display:flex;gap:3px;flex:none;">
+                  <span style="width:10px;height:10px;border-radius:999px;background:var(--w);display:block;"></span>
+                  <span style="width:10px;height:10px;border-radius:999px;background:var(--u);display:block;"></span>
+                  <span style="width:10px;height:10px;border-radius:999px;background:var(--r);display:block;"></span>
+                </span>
+                <span style="flex:none;display:flex;align-items:center;padding:3px 7px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));border:1px dashed var(--border-strong);">Building</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;border-top:1px solid var(--border);padding:14px 16px 12px;">
+            <div style="display:flex;align-items:baseline;gap:4px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--fg);">86</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">/ 98</span>
+            </div>
+            <div style="width:100%;height:6px;border-radius:999px;background:var(--elevated);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);">
+              <div style="width:87.8%;height:100%;border-radius:999px;background:var(--fg-body);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:16px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">18 &middot; Re-anchored: the label leaves on mobile only, and the row wraps rather than truncates</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">The mobile caption is no longer beside a thumb &mdash; it is centred on the wash inside <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">left:18 right:18</code>, so it has <b style="color:var(--fg);font-weight:600;">354px</b>, and <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">metaRow</code> is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">flex-wrap</code>. Two names at 10px mono are <b style="color:var(--fg);font-weight:600;">~336px: they fit on their own line, and the pips and pill wrap below them.</b> Add <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">&middot; Jeskai</code> and it is ~390 &gt; 354, so <b style="color:var(--fg);font-weight:600;">the label still leaves the mobile line</b> &mdash; 18's conclusion survives, on new arithmetic, and the pips it leaves behind are in the same row rather than a row below.</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">The wrap costs <b style="color:var(--fg);font-weight:600;">~22px inside a 177px band</b> whose caption block currently ends ~90px from the top, so nothing is pushed off the art and the 2.2:1 ratio is untouched. Single-commander captions are unchanged at both widths.</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">The ordered shrink still applies &mdash; between 768 and ~1085px</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">At 1180 the desktop caption has room to spare, but at 768 the type column is only <b style="color:var(--fg);font-weight:600;">232px</b> against the pair's ~370. <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">flex-wrap</code> spills the pips and pill to their own lines first; past that the names must give. So: the group is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">overflow-hidden</code>, both halves are <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">min-w-0</code> with an ellipsis, and the partner carries a large <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">flex-shrink</code> so it gives first.</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Do not write it as a <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-none</code> primary</b>, which is the obvious reading of &ldquo;only the partner shrinks&rdquo; and is a bug: a non-shrinking span past its own width overflows the group and draws under whatever follows. This document shipped that version for one round and the primary's last glyphs sat 4px beneath the count.</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">The joiner is <code style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--accent);">+</code>, and it now shares a line with <code style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--accent);">&middot;</code></div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">R1 chose <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+</code> partly because <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&middot;</code> is this app's fact separator. On the desktop caption the two are now <b style="color:var(--fg);font-weight:600;">three words apart</b> &mdash; <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">Ishai + Bruse Tarl &middot; Jeskai</code> &mdash; which is the strongest possible test of that choice and it passes: <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+</code> joins two things of the same kind, <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&middot;</code> separates two kinds. Had they been the same glyph the line would read as three commanders.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3 · THE PICKER'S SECOND SLOT ============ -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">3 &middot; The second slot, drawn once for both modes &mdash; <code style="color:var(--accent);text-transform:none;letter-spacing:0;">create-picker.tsx</code> &middot; decisions 17, 20</div>
+    <p style="max-width:900px;font-size:14px;color:var(--fg-body);line-height:1.7;margin:0;text-wrap:pretty;">The slot lives in the <b style="color:var(--fg);font-weight:600;">Selected sidebar</b> on desktop and in the <b style="color:var(--fg);font-weight:600;">scrolling flow</b> on a phone, beside the name field &mdash; the dock is summary and button only, and its own comment says nothing else may live there or its height moves under a thumb. One slot, three states. <b style="color:var(--fg);font-weight:600;">This is the only surface in the handoff that still draws card thumbs</b>, so it is the only place decision 17's size step survives: primary 44&times;62, partner 38&times;54, the partner one step smaller and never a fixed ratio.</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+      <sc-for list="{{ slots }}" as="s" hint-placeholder-count="3">
+        <div style="width:344px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ s.tagInk }};">{{ s.tag }}</div>
+          <div style="width:300px;border-radius:12px;background:var(--surface-rail);border:1px solid var(--border);padding:20px;display:flex;flex-direction:column;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">Selected</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:7px;">{{ s.primaryLabel }}</div>
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <div style="width:44px;height:62px;flex:none;border-radius:7px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=normal&quot;) center top/cover, var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+              <div style="min-width:0;">
+                <div style="font-family:var(--display),serif;font-weight:600;font-size:15px;line-height:1.2;color:var(--fg);">Ishai, Ojutai Dragonspeaker</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:3px;">{{ s.primaryMeta }}</div>
+              </div>
+            </div>
+            <sc-if value="{{ s.hasSlot }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:7px;">Partner</div>
+                <div style="display:flex;align-items:center;gap:11px;min-height:44px;">
+                  <div style="width:38px;height:54px;flex:none;border-radius:6px;background:{{ s.plateArt }};border:{{ s.plateBorder }};box-shadow:{{ s.plateRing }};"></div>
+                  <div style="min-width:0;flex:1;">
+                    <div style="font-family:var(--display),serif;font-weight:600;font-size:13.5px;line-height:1.25;color:{{ s.slotInk }};">{{ s.slotTitle }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:4px;line-height:1.4;">{{ s.slotCaption }}</div>
+                  </div>
+                </div>
+                <sc-if value="{{ s.hasActions }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;gap:14px;margin-top:9px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);border-bottom:1px solid var(--border-strong);">Change</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);border-bottom:1px solid var(--border);">Remove</span>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <div style="margin-top:16px;">
+              <div style="width:100%;padding:11px 13px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);font-size:14px;color:{{ s.nameInk }};">{{ s.nameValue }}</div>
+            </div>
+            <div style="margin-top:16px;display:flex;align-items:center;justify-content:center;min-height:44px;padding:13px 0;border-radius:8px;background:var(--fg);color:var(--bg);font-size:15px;font-weight:600;">{{ s.submit }}</div>
+          </div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">{{ s.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;align-items:start;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">20 &middot; Absent, never disabled</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">&sect;6 lists the first state as &ldquo;disabled&rdquo;. <b style="color:var(--fg);font-weight:600;">Ruling: it is absent</b>, and the brief is right to have re-scoped it. Nearly every commander in the game has no partner ability, so a disabled second slot would be <b style="color:var(--fg);font-weight:600;">permanent dead furniture on the app's most-travelled create path</b>, advertising a mechanic the chosen card does not have and inviting the one question the surface cannot answer. The slot appears the moment <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">partnerAbility(oracleText)</code> returns non-null for the primary, and never before &mdash; which also means it is absent before the first pick, with no separate state to draw.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">Dashed means not settled</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">The empty plate and the import proposal share one border style, and it is the one the app already uses for an unsettled claim: <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">--border-dashed</code> on soft claims, and <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">Building</code>'s dashed pill. <b style="color:var(--fg);font-weight:600;">A dash is a line style, not an alpha fade</b>, so it survives the art-wash readability retirement and reads in greyscale. <b style="color:var(--fg);font-weight:600;">The proposal is not accent-marked</b>: refresh decision 3 reserves accent for <i>in use</i> and <i>to buy</i>, and a proposal is neither.</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">A pre-selected pair the player did not choose must be <b style="color:var(--fg);font-weight:600;">reversible in one tap and legible as a guess</b>, which is what the dash and the word <i>Proposed</i> buy together. Spec &sect;3: a proposal, not a decision.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">Picking the partner &mdash; the list re-heads</div>
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--surface-sunken);border-bottom:1px solid var(--border);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);flex:1;min-width:0;">Partners for Ishai &middot; 3</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);border-bottom:1px solid var(--border);">Cancel</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;padding:12px 15px;background:var(--surface-rail);">
+            <div style="width:40px;height:56px;flex:none;border-radius:6px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Bruse%20Tarl%2C%20Boorish%20Herder&amp;format=image&amp;version=normal&quot;) center top/cover, var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:var(--display),serif;font-weight:600;font-size:16px;color:var(--fg);line-height:1.3;">Bruse Tarl, Boorish Herder</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">
+                <span style="width:11px;height:11px;border-radius:999px;background:var(--r);display:block;flex:none;"></span>
+                <span style="width:11px;height:11px;border-radius:999px;background:var(--w);display:block;flex:none;"></span>
+                <span>Boros &middot; 214 cards</span>
+              </div>
+            </div>
+            <div style="width:22px;height:22px;flex:none;border-radius:999px;border:2px solid var(--border-dashed);"></div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">The shipped row is unchanged &mdash; same geometry, same radio, same meta line. Only the strip above it is new, and it does two jobs: it says <b style="color:var(--fg);font-weight:600;">which commander you are pairing</b> (the primary scrolls out of view on a phone) and it prints the <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">canPair</code> count, so a filter that returns three of four hundred is visibly a filter and not a broken list.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4 · RAIL + RESUME PORTRAIT ============ -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">4 &middot; The wash and the portrait &mdash; primary-only, both &mdash; decision 21</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Rail &middot; phone row &middot; <code style="color:var(--accent);text-transform:none;letter-spacing:0;">deck-rail.tsx:123</code></div>
+        <div style="width:358px;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--surface-inset);">
+          <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:12px 13px;border-left:3px solid var(--fg-body);border-bottom:1px solid var(--border);">
+            <span style="width:26px;height:36px;flex:none;border-radius:4px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=normal&quot;) center/cover, var(--elevated);"></span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <span style="font-family:var(--display),serif;font-weight:600;font-size:14.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sky and Herd</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Building</span>
+            </span>
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">86 / 98</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:12px 13px;border-left:3px solid var(--accent);">
+            <span style="width:26px;height:36px;flex:none;border-radius:4px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Korvold%2C%20Fae-Cursed%20King&amp;format=image&amp;version=normal&quot;) center/cover, var(--elevated);"></span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <span style="font-family:var(--display),serif;font-weight:600;font-size:14.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Hoard and Holler</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);">To buy &middot; 6 copies</span>
+            </span>
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">93 / 99</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);">RULED &middot; primary art &middot; the denominator is the pair signal</div>
+      </div>
+
+      <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:16px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">The rail's pair signal is <code style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--accent);">/ 98</code>, and it costs nothing</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">&sect;6 asks for a ruling because the rail is where a pair deck is least distinguishable. It is &mdash; the art spine is <b style="color:var(--fg);font-weight:600;">26px wide</b>, and half of that is 12px of card frame with no face in it. So the image stays primary-only, and the pair is stated by the <b style="color:var(--fg);font-weight:600;">denominator the &sect;4 ceiling already changes</b>: <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">98</code> appears nowhere else in the app, needs no new node, and sits on the line above the two rows drawn here for comparison.</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Desktop rail rows carry no pair signal, and that is accepted.</b> That row prints the deck name and the status word &mdash; no art, no count, no commander &mdash; so any pair mark there would be the only commander fact on a row that has deliberately never had one. The rail is a directory; the deck page is one tap away.</div>
+        </div>
+        <sc-if value="{{ showRejected }}" hint-placeholder-val="{{ true }}">
+          <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--danger);">Rejected &middot; the diptych, drawn at all three real sizes</div>
+            <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;">
+              <div style="display:flex;flex-direction:column;gap:7px;align-items:center;">
+                <span style="display:flex;width:26px;height:36px;border-radius:4px;overflow:hidden;">
+                  <span style="width:13px;height:36px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=normal&quot;) center/cover, var(--elevated);display:block;"></span>
+                  <span style="width:13px;height:36px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Bruse%20Tarl%2C%20Boorish%20Herder&amp;format=image&amp;version=normal&quot;) center/cover, var(--elevated);display:block;"></span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--danger);">rail &middot; 2 &times; 13px</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px;align-items:center;">
+                <span style="display:flex;width:99px;height:72px;border-radius:6px;overflow:hidden;">
+                  <span style="width:49px;height:72px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=art_crop&quot;) center top/cover, var(--elevated);display:block;"></span>
+                  <span style="width:50px;height:72px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Bruse%20Tarl%2C%20Boorish%20Herder&amp;format=image&amp;version=art_crop&quot;) center top/cover, var(--elevated);display:block;"></span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--danger);">resume &middot; 2 &times; 49px</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px;align-items:center;">
+                <span style="display:flex;width:230px;height:110px;border-radius:6px;overflow:hidden;">
+                  <span style="width:115px;height:110px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=art_crop&quot;) center top/cover, var(--elevated);display:block;"></span>
+                  <span style="width:115px;height:110px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Bruse%20Tarl%2C%20Boorish%20Herder&amp;format=image&amp;version=art_crop&quot;) center top/cover, var(--elevated);display:block;"></span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--danger);">header &middot; 2 &times; 115px</span>
+              </div>
+            </div>
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The argument is structural rather than aesthetic, and it is the same one at every size.</b> <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">ArtWash</code>'s portrait width <i>is</i> <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">band &times; 1.37</code> &mdash; 99px at band 72, 230px at band 168 &mdash; and the mask end, the four horizontal scrim stops and the type inset are all keyed to that number in px. Halving it does not change a parameter; it invalidates every stop, and the art-wash handoff's own regression note is that a fade not keyed to the portrait shows as a hard seam. <b style="color:var(--fg);font-weight:600;">A diptych is a third strategy, not an option</b>, and that document closed at four surfaces, two strategies, one <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;ArtWash&gt;</code>. The crop is also 0.68:1 halved, against art_crop's 1.37:1 &mdash; half the composition gone, which is the exact failure that moved the band to 2.2:1 in the first place.</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5 · RESUME NAME LINE ============ -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">5 &middot; The name line where two names do not fit &mdash; <code style="color:var(--accent);text-transform:none;letter-spacing:0;">resume-decks.tsx:115-145</code> &mdash; decisions 19, 23</div>
+    <p style="max-width:900px;font-size:14px;color:var(--fg-body);line-height:1.7;margin:0;text-wrap:pretty;">Two rows sit side by side in Home's column, so each is ~330px with a 116px portrait inset &mdash; about <b style="color:var(--fg);font-weight:600;">200px</b> for a status pill, a commander name and a count. After the 62px pill, two 14px gaps and the pinned 44px count, the name has <b style="color:var(--fg);font-weight:600;">~64px &mdash; ten characters</b>. Three candidates, drawn at that width and truncating for real; <b style="color:var(--fg);font-weight:600;">what you see is what those ten characters buy.</b></p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:10px;padding:14px 18px;max-width:900px;">
+      <div style="font-size:13px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The two rejected rows render identically, and that is the finding rather than a drawing accident.</b> Both spend their ten characters on <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">Ishai, Oju&hellip;</code> &mdash; one of them was trying to show a partner. A treatment whose pair state is character-for-character its single state is not a truncation rule; it is the absence of one.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <sc-for list="{{ resume }}" as="r" hint-placeholder-count="3">
+        <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
+          <div style="position:relative;width:334px;height:72px;flex:none;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--surface-inset);">
+            <div style="position:absolute;inset:0;background:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=art_crop&quot;) center top/cover;opacity:0.14;"></div>
+            <div style="position:absolute;left:0;top:0;bottom:0;width:99px;background:url(&quot;https://api.scryfall.com/cards/named?exact=Ishai%2C%20Ojutai%20Dragonspeaker&amp;format=image&amp;version=art_crop&quot;) left center/auto 100%;opacity:0.85;-webkit-mask-image:linear-gradient(90deg,#000 0 62%,transparent 100%);mask-image:linear-gradient(90deg,#000 0 62%,transparent 100%);"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(90deg, color-mix(in oklab, var(--surface-inset) 22%, transparent) 0px, color-mix(in oklab, var(--surface-inset) 18%, transparent) 58px, color-mix(in oklab, var(--surface-inset) 80%, transparent) 99px, var(--surface-inset) 138px);"></div>
+            <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;gap:4px;padding-left:116px;padding-right:18px;">
+              <div style="font-family:var(--display),serif;font-weight:600;font-size:14.5px;line-height:1.2;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sky and Herd</div>
+              <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+                <span style="flex:none;display:flex;align-items:center;height:19px;padding:0 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));border:1px dashed var(--border-strong);">Building</span>
+                <span style="min-width:0;overflow:hidden;display:flex;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">
+                  <span style="flex:0 1 auto;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.head }}</span>
+                  <span style="flex:0 1 auto;flex-shrink:1000;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.tail }}</span>
+                </span>
+                <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">86 / 98</span>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:7px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ r.ink }};">{{ r.verdict }}</div>
+            <div style="font-family:var(--display),serif;font-weight:700;font-size:16px;color:var(--fg);">{{ r.title }}</div>
+            <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;max-width:640px;text-wrap:pretty;">{{ r.why }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:14px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--warning);">23 &middot; new &mdash; the count has two forms, and the long one does not fit any name at all</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:12px;flex:1;min-width:300px;">
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">The span R1 pinned has a second form: <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">86 / 98 &middot; 3 to buy</code> when the roll-up has an entry for the deck. Measured, that is <b style="color:var(--fg);font-weight:600;">~113px against the short form's 44</b>, and the arithmetic is brutal: <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">62 pill + 28 gaps + 113 = 203 &gt; 200</code>. <b style="color:var(--fg);font-weight:600;">The long form leaves negative room for a name &mdash; not a short name, not a single name, no name.</b></div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">So the rule is about what may be cut, not about what shrinks first: a figure is never shown partially truncated.</b> A clipped number reads as a different number &mdash; <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">86 / 9&hellip;</code> is a lie in a way that <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">Bruse Ta&hellip;</code> is not. The count splits into <b style="color:var(--fg);font-weight:600;">a pinned figure and a droppable clause</b>.</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Pair decks never render the clause</b> &mdash; deterministic, no measurement, one boolean. That is not a new state: the component's own comment says a deck with no roll-up entry <i>draws the count alone</i>, so count-alone already ships. <b style="color:var(--fg);font-weight:600;">Single decks keep the clause</b>, and it becomes the only shrinking child there, so what gives is the clause's words and never the figure. <b style="color:var(--fg);font-weight:600;">This also fixes a latent bug:</b> today the count is the shrinking child, so a single deck with a long name already renders <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">86 / 98 &middot; 3 t&hellip;</code>.</div>
+          <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">The clause is the right thing to lose because it is the <b style="color:var(--fg);font-weight:600;">only item on the line that is printed elsewhere</b>: the deck tile and the rail both carry to-buy, and Shopping owns it outright. The pair is printed nowhere else on Home.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ countForms }}" as="c" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:{{ c.ink }};">{{ c.tag }}</div>
+              <div style="width:334px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--surface-inset);display:flex;align-items:center;padding:0 18px 0 116px;">
+                <div style="display:flex;align-items:center;gap:14px;min-width:0;width:100%;">
+                  <span style="flex:none;display:flex;align-items:center;height:19px;padding:0 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);background:color-mix(in srgb, var(--fg-body) 14%, var(--bg));border:1px dashed var(--border-strong);">Building</span>
+                  <span style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ c.name }}</span>
+                  <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ c.count }}</span>
+                  <sc-if value="{{ c.hasClause }}" hint-placeholder-val="{{ true }}">
+                    <span style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">&middot; 3 to buy</span>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;align-items:start;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">19 &middot; Full names where the deck is opened, short names where the line is shared</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">The short form is the substring before the first comma &mdash; the identifying half of a legend's name, and the half a player says out loud. <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">shortCommanderName</code> is exported and pure at <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">decks-builder.ts:17</code>, so applying it to both halves needs nothing new. A name with no comma is already short and returns whole.</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Shortening is pair-only.</b> A single commander keeps its full <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">deck.commanderName</code> exactly as shipped &mdash; the title is what disambiguates one name, and the pair is what disambiguates two &mdash; so no existing row changes.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:var(--display),serif;font-weight:700;font-size:17px;color:var(--fg);">The partner is the only shrinking half</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">Two spans, not one string, and <b style="color:var(--fg);font-weight:600;">the mechanism is an ordered shrink</b>: the group is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">overflow-hidden</code>, both halves are <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">min-w-0</code> with an ellipsis, and <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">+ Bruse Tarl</code> takes a large <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">flex-shrink</code> so it gives first &mdash; <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">Ishai</code> yields only once the partner is gone. Because the joiner leads the shrinking span, <b style="color:var(--fg);font-weight:600;">the <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+</code> can never be the character that is lost</b>.</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.65;text-wrap:pretty;">The accessible name carries what the pixels drop: the row's <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">sr-only</code> text names <b style="color:var(--fg);font-weight:600;">both commanders in full, primary first</b>, and states the to-buy clause the pair row no longer prints. Truncation is a layout compromise; it is never an information one.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 6 · NOT TOUCHED ============ -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">6 &middot; What this handoff does not touch</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
+      <sc-for list="{{ untouched }}" as="u" hint-placeholder-count="4">
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">{{ u.what }}</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.6;text-wrap:pretty;">{{ u.why }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:13px;color:var(--fg-body);line-height:1.7;max-width:900px;text-wrap:pretty;">Read <a href="README.md">README.md</a> for decisions 16&ndash;23 and the open items, <a href="READINESS.md">READINESS.md</a> for the self-assessment, and <a href="partners &middot; copy strings.ts">partners &middot; copy strings.ts</a> for the new strings and those reused by reference.</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1360},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;amonkhet&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;eldraine&quot;,&quot;kaldheim&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;showRejected&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Reading&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const dashPlate = "1px dashed var(--border-dashed)";
+    const art = (n, v) =>
+      `url("https://api.scryfall.com/cards/named?exact=${n}&format=image&version=${v}")`;
+    const cardArt = (n) => `${art(n, "normal")} center top/cover, var(--elevated)`;
+    const ISHAI = "Ishai%2C%20Ojutai%20Dragonspeaker";
+    const BRUSE = "Bruse%20Tarl%2C%20Boorish%20Herder";
+
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      showRejected: this.props.showRejected ?? true,
+
+      rejectedHeaders: [
+        {
+          tag: "A · a partner thumb on flat ground",
+          showThumb: true,
+          ambient: art(ISHAI, "art_crop"),
+          sharp: art(ISHAI, "art_crop"),
+          why: "The one placement that works geometrically — past the 240px flat stop, on ground with no scrim to re-key — and it is still wrong. #473's whole move was to delete the discrete card object from this header; its first line reads “the commander's art is the band now.” Reintroducing a 44×61 card for the second commander says the band is the primary's portrait AND that portraits are how commanders are shown, which are contradictory claims sitting 60px apart. It also puts a hard-edged rectangle on the one surface that spent a handoff removing them.",
+        },
+        {
+          tag: "B · the partner as the ambient layer",
+          showThumb: false,
+          ambient: art(BRUSE, "art_crop"),
+          sharp: art(ISHAI, "art_crop"),
+          why: "Tempting, because it needs no new geometry: the ambient full-bleed layer already exists at opacity .2 behind the type, and swapping its crop changes no stop, no mask and no alpha the contrast test derives from. It fails on what it delivers. At .2 nobody can identify the card, so it buys atmosphere and not information — while quietly changing what the ambient layer MEANS for every left-portrait band in the app, from “the same crop, softened” to “possibly a different card.” A contract change that pays for a signal no one can read.",
+        },
+      ],
+
+      slots: [
+        {
+          tag: "A · absent — no partner ability",
+          tagInk: "var(--fg-faint)",
+          primaryLabel: "Commander",
+          primaryMeta: "Jeskai · 214 cards",
+          hasSlot: false,
+          hasActions: false,
+          plateArt: "none",
+          plateBorder: "none",
+          plateRing: "none",
+          slotInk: "var(--fg)",
+          slotTitle: "",
+          slotCaption: "",
+          nameInk: "var(--fg)",
+          nameValue: "Sky and Herd",
+          submit: "Create deck →",
+          note: "Pixel-identical to what ships. The commander's oracle text carries no partner ability, so there is no slot and no label — the Commander eyebrow appears only once a pair is possible, which keeps the single-commander sidebar unchanged too.",
+        },
+        {
+          tag: "B · empty and available",
+          tagInk: "var(--fg-body)",
+          primaryLabel: "Commander",
+          primaryMeta: "Azorius · 214 cards",
+          hasSlot: true,
+          hasActions: false,
+          plateArt: "transparent",
+          plateBorder: dashPlate,
+          plateRing: "none",
+          slotInk: "var(--fg)",
+          slotTitle: "Add a partner",
+          slotCaption: "Partner · 3 of your commanders can pair",
+          nameInk: "var(--fg)",
+          nameValue: "Sky and Herd",
+          submit: "Create deck →",
+          note: "The caption prints the ability verbatim from partnerAbility() — Partner, Partner—Father & son, or Partner with Pir — then the canPair count. That answers “why can this deck have two?” with the card's own words instead of ours. Optional throughout: Create is never blocked on the second slot.",
+        },
+        {
+          tag: "C · import proposal, pre-selected",
+          tagInk: "var(--accent)",
+          primaryLabel: "Commander · from your list",
+          primaryMeta: "Jeskai · line 1",
+          hasSlot: true,
+          hasActions: true,
+          plateArt: cardArt(BRUSE),
+          plateBorder: dashPlate,
+          plateRing: "inset 0 0 0 1px rgba(0,0,0,0.35)",
+          slotInk: "var(--fg)",
+          slotTitle: "Bruse Tarl, Boorish Herder",
+          slotCaption: "Proposed · from your list, line 2",
+          nameInk: "var(--fg)",
+          nameValue: "Sky and Herd",
+          submit: "Import deck →",
+          note: "Both halves came from the paste, so both say so. The dashed plate and the word Proposed mark it as the app's guess; Change re-opens the filtered list and Remove drops back to state B. An illegally paired declaration renders here identically — spec §3 accepts it with a note, and the note is the importer's, not this slot's.",
+        },
+      ],
+
+      resume: [
+        {
+          verdict: "RULED",
+          ink: "var(--success)",
+          head: "Ishai",
+          tail: "+ Bruse Tarl",
+          title: "Short names, joined — the pair survives the truncation",
+          why: "Drawn at the real width, and this IS the worst case: after the 62px pill, two 14px gaps and the pinned 44px count, the name slot is ~64px — about ten characters at 10.5px mono. Because the joiner leads the shrinking half, those ten characters are “Ishai + Br…”, which still says pair. Nothing is invented and the order is the reading order.",
+        },
+        {
+          verdict: "REJECTED",
+          ink: "var(--danger)",
+          head: "Ishai, Ojutai",
+          tail: "Dragonspeaker + Bru…",
+          title: "Full names, truncated",
+          why: "The pair fact is the first thing the ellipsis eats, and what remains is indistinguishable from one long single name — so the row loses exactly the thing #364 exists to show. Ten characters of “Ishai, Ojutai Dragonspeaker + Bruse Tarl” is “Ishai, Oju…”: the same pixels as the ruled row, spent on a title instead of on a second commander.",
+        },
+        {
+          verdict: "REJECTED",
+          ink: "var(--danger)",
+          head: "Ishai, Ojutai",
+          tail: "Dragonspeaker",
+          title: "Primary only, no indication",
+          why: "§6 offers this and it is defensible — but look at the two rows above: at 200px it renders CHARACTER-FOR-CHARACTER the same as the truncated-full candidate. It pays that option's whole cost while additionally asserting, silently, that this deck has one commander. If the pair must be dropped somewhere, the rail's desktop row is where it is honest; a row with 200px and a portrait can afford ten characters that mean something.",
+        },
+      ],
+
+      countForms: [
+        {
+          tag: "Single deck · clause fits",
+          ink: "var(--fg-faint)",
+          name: "Korvold",
+          count: "93 / 99",
+          hasClause: true,
+        },
+        {
+          tag: "Ruled · pair deck · clause dropped",
+          ink: "var(--success)",
+          name: "Ishai + Br…",
+          count: "86 / 98",
+          hasClause: false,
+        },
+        {
+          tag: "Rejected · pair deck · clause kept",
+          ink: "var(--danger)",
+          name: "Ishai + Br…",
+          count: "86 / 98",
+          hasClause: true,
+        },
+      ],
+
+      untouched: [
+        { what: "Pips + identity label", why: "Eng carries: both become the union per §2's colour rule, and the pips are already a set. Drawn as Jeskai to show where the label sits, not to respec it." },
+        { what: "shortCommanderName's other callers", why: "The guided banner and two empty-state strings stay singular on the primary, per §6. Decision 19 reuses the helper on the resume row; it does not touch those three sentences." },
+        { what: "Deck tiles on /decks", why: "They render no commander today, so there is nothing to widen and nothing to draw." },
+        { what: "Import state 12", why: "import-no-commander.tsx is the no-candidates dead end and is unchanged — a pair still needs at least one candidate." },
+        { what: "The status pill and bar", why: "statusPillStyle and statusBarStyle render verbatim. Only their input moves: the bar's denominator is the derived body size, so a pair at 98 is Complete and full." },
+        { what: "Everything #473 settled", why: "Band heights, scrim stops, mask ends, the 254px inset, the flat-ground and cover ink rules, FullCardTrigger's placements. R2 adds one pair caption inside them and moves nothing." },
+        { what: "The rename field and its four states", why: "§B14–B16 and §F own the header's editing states. A pair changes the caption below the title, never the title's field, its 352×29 box or its hint row." },
+        { what: "/commanders and /discover", why: "Out of scope by §1. No pair ranking, no pairs-you-could-build surface, and no change to the two-lane layout." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
