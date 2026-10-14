@@ -27,15 +27,19 @@ import { validateFolderName } from "../../lib/decks/folder-name";
 // also carries `user_id` in its own where clause, so a folder that is not this
 // player's fails to match rather than being touched.
 //
-// REVALIDATION IS `/decks`, AND ONLY `/decks`. A folder is not a claim — no card
-// changes hands, no deck's contents move, and no availability marker anywhere
-// reads `decks.folder_id` — so `deckSurfaces`' wider set would invalidate routes
-// that cannot tell the difference. Home is in that set: it renders decks through
-// `ResumeDecks`, which draws no folder, and evicting it would make the next
-// visit pay for its collection, ranking and availability reads to render output
-// that did not change.
+// REVALIDATION IS `/decks` AND THE DECK PAGE, AND ONLY THOSE. A folder is not a
+// claim — no card changes hands, no deck's contents move, and no availability
+// marker anywhere reads `decks.folder_id` — so `deckSurfaces`' wider set would
+// invalidate routes that cannot tell the difference. Home is in that set: it
+// renders decks through `ResumeDecks`, which draws no folder, and evicting it
+// would make the next visit pay for its collection, ranking and availability
+// reads to render output that did not change. The deck page draws the shelves in
+// its header menu's Move (the deck's own shelf and every shelf it can go to), so
+// a move, create, rename or delete retires it too; `[id]` with "page", or
+// `revalidatePath` does nothing for a dynamic route.
 const folderSurfaces = () => {
   revalidatePath("/decks");
+  revalidatePath("/decks/[id]", "page");
 };
 
 /**
