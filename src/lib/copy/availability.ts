@@ -234,6 +234,10 @@ export const availabilityCopy = {
     // Both reads down: ONE banner, two sentences, one Retry. Never two banners.
     bodyWithSynergy:
       "Synergy data and deck contents are both unavailable. Ranking continues on your cards and the roles they fill, and Free cards only is unavailable until they come back.",
+    // The same state when only SOME commanders lost their synergy data: the rest
+    // are scored whole, so the sentence must not say the whole ranking fell back.
+    bodyWithSomeSynergy:
+      "Synergy data is unavailable for some commanders, and deck contents are unavailable. Those commanders are ranked on your cards and the roles they fill, and Free cards only is unavailable until deck contents come back.",
     // /collection has no ranking to mislead, so it fails QUIET — markers absent,
     // Availability trigger disabled with this reason. No banner there.
     collectionFilterDisabledAria:

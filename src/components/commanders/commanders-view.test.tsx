@@ -81,6 +81,11 @@ function results(n: number, colorIdentity: string[] = ["R"]): CommanderRowItem[]
   }));
 }
 
+const allDegraded = (n: number): CommanderRowItem[] =>
+  results(n).map((r) => ({ ...r, synergyState: "degraded" as const }));
+const someDegraded = (n: number): CommanderRowItem[] =>
+  results(n).map((r, i) => (i === 0 ? { ...r, synergyState: "degraded" as const } : r));
+
 type Over = {
   avail?: AvailMode;
   /** The reader's saved mode, which the page sends beside the URL. */
@@ -774,17 +779,37 @@ describe("CommandersView ranking toggle", () => {
   // Two failures are one "try again" to the player, and `retryRecs` re-runs the
   // whole page — so stacking two banners would put two identical buttons on it.
   it("folds two failures into one banner", () => {
-    view(results(3), { availOk: false, degraded: true });
+    view(allDegraded(3), { availOk: false, degraded: true });
     expect(
       screen.getAllByText(availabilityCopy.degraded.bodyWithSynergy),
     ).toHaveLength(2);
     expect(screen.queryByText("Synergy data unavailable")).toBeNull();
   });
 
+  // The flag is raised by ANY degraded row, so a list with one whole row and one
+  // degraded row must not claim the whole ranking fell back.
+  it("says some, in the folded banner too, when only some rows are degraded", () => {
+    view(someDegraded(3), { availOk: false, degraded: true });
+    expect(
+      screen.getAllByText(availabilityCopy.degraded.bodyWithSomeSynergy),
+    ).toHaveLength(2);
+    expect(screen.queryByText(availabilityCopy.degraded.bodyWithSynergy)).toBeNull();
+  });
+
   it("leaves the synergy banner alone when only EDHREC is down", () => {
-    view(results(3), { degraded: true });
+    view(allDegraded(3), { degraded: true });
     expect(screen.getAllByText("Synergy data unavailable")).toHaveLength(2);
     expect(screen.queryByText(availabilityCopy.degraded.heading)).toBeNull();
+    expect(screen.queryByText(/some scores|some fit scores/)).toBeNull();
+  });
+
+  it("says some scores when EDHREC is down for only some of the rows", () => {
+    view(someDegraded(3), { degraded: true });
+    expect(
+      screen.getByText(
+        "EDHREC is unreachable, so some scores count only your cards and the roles they fill.",
+      ),
+    ).toBeInTheDocument();
   });
 });
 

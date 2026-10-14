@@ -29,6 +29,51 @@ describe("DegradedBanner", () => {
     expect(screen.getAllByRole("button", { name: "Retry now" })).toHaveLength(1);
   });
 
+  // The banner is raised when ANY row is degraded, so when only some are the
+  // sentence says "some" rather than claiming the whole ranking fell back.
+  it("says some scores when only some commanders lost their synergy data", () => {
+    render(<DegradedBanner partial />);
+    expect(
+      screen.getByText(
+        "EDHREC is unreachable, so some scores count only your cards and the roles they fill.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "EDHREC is unreachable, so some fit scores count only your cards and the roles they fill. Synergy details come back when it does.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "EDHREC is unreachable, so scores count only your cards and the roles they fill.",
+      ),
+    ).toBeNull();
+  });
+
+  it("keeps the all-degraded wording when every commander lost it", () => {
+    render(<DegradedBanner partial={false} />);
+    expect(
+      screen.getByText(
+        "EDHREC is unreachable, so scores count only your cards and the roles they fill.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/some scores|some fit scores/)).toBeNull();
+  });
+
+  it("scopes the folded banner the same way", () => {
+    const { unmount } = render(<DegradedBanner variant="both" partial />);
+    expect(
+      screen.getAllByText(availabilityCopy.degraded.bodyWithSomeSynergy),
+    ).toHaveLength(2);
+    expect(screen.queryByText(availabilityCopy.degraded.bodyWithSynergy)).toBeNull();
+    unmount();
+    render(<DegradedBanner variant="both" />);
+    expect(
+      screen.getAllByText(availabilityCopy.degraded.bodyWithSynergy),
+    ).toHaveLength(2);
+    expect(screen.queryByText(availabilityCopy.degraded.bodyWithSomeSynergy)).toBeNull();
+  });
+
   it("says what is unavailable when the deck read failed", () => {
     render(<DegradedBanner variant="availability" />);
     expect(screen.getAllByText(availabilityCopy.degraded.heading)).toHaveLength(2);

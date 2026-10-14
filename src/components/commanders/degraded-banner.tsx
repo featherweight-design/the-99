@@ -26,8 +26,12 @@ export type DegradedVariant = "synergy" | "availability" | "both";
  */
 export function DegradedBanner({
   variant = "synergy",
+  partial = false,
 }: {
   variant?: DegradedVariant;
+  /** True when only some of the listed commanders lost their synergy data. The
+      banner is raised when any row is degraded, so the sentence names how many. */
+  partial?: boolean;
 }) {
   const { degraded } = availabilityCopy;
   // Every per-variant choice below keys off `variant` and never off whether
@@ -38,15 +42,20 @@ export function DegradedBanner({
   // the one the player can see a control change for: `What's free` goes struck
   // and unselectable, while EDHREC being unreachable changes no affordance.
   const heading = synergy ? "Synergy data unavailable" : degraded.heading;
+  const bothBody = partial ? degraded.bodyWithSomeSynergy : degraded.bodyWithSynergy;
   const mobileBody = synergy
-    ? "EDHREC is unreachable, so scores count only your cards and the roles they fill."
+    ? partial
+      ? "EDHREC is unreachable, so some scores count only your cards and the roles they fill."
+      : "EDHREC is unreachable, so scores count only your cards and the roles they fill."
     : variant === "both"
-      ? degraded.bodyWithSynergy
+      ? bothBody
       : degraded.body;
   const desktopBody = synergy
-    ? "EDHREC is unreachable, so fit scores count only your cards and the roles they fill. Synergy details come back when it does."
+    ? partial
+      ? "EDHREC is unreachable, so some fit scores count only your cards and the roles they fill. Synergy details come back when it does."
+      : "EDHREC is unreachable, so fit scores count only your cards and the roles they fill. Synergy details come back when it does."
     : variant === "both"
-      ? degraded.bodyWithSynergy
+      ? bothBody
       : degraded.body;
   // Both retry labels are SHIPPED strings on the synergy variant, and mobile's
   // `Retry` differs from the copy block's `Retry now`. Both stay literal there
