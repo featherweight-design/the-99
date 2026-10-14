@@ -128,7 +128,7 @@ export const cardAssignmentsCopy = {
     issuesLink: "Look at the file again",
 
     sectionCleared: (n: number) => `No longer to buy · ${n}`,
-    sectionClearedNote: "These arrived, so the decks that counted them as cards to buy stop.",
+    sectionClearedNote: "These arrived, so the decks that counted them as cards to buy stop counting them.",
 
     /**
      * ONE SECTION FOR BOTH "STILL OWED" CLASSES. The diff classifies three ways — gone,
