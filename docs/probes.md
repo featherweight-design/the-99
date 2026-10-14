@@ -2396,7 +2396,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
 - `pnpm probe:pwa-install` proves the install slot in the phone header against a local server (`PROBE_BASE`). At
   390, a synthetic `beforeinstallprompt` must put the slot in the header, and a press must show the held prompt and
-  take the slot away; with an iPhone Safari user agent the slot must show with no event, open the how-to sheet, close
+  take the slot away; an offer dispatched before hydration (the app's scripts held back) must be kept by the head
+  script and shown by the slot once it mounts; with an iPhone Safari user agent the slot must show with no event, open the how-to sheet, close
   it on Got it, and stay away after its ✕ across a reload. At 1300 no slot is drawn. Read-only (it writes only the
   browser's own localStorage).
 - `pnpm probe:pwa-offline` proves the service worker's offline fallback and the offline pill, at 390 and 1300,

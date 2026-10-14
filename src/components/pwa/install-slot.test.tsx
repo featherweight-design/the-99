@@ -46,6 +46,22 @@ describe("InstallSlot", () => {
     expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
   });
 
+  it("takes an offer that arrived before it mounted", async () => {
+    as(ANDROID);
+    const prompt = vi.fn(async () => {});
+    window.__the99InstallPrompt = Object.assign(new Event("beforeinstallprompt"), {
+      platforms: ["web"],
+      prompt,
+      userChoice: Promise.resolve({ outcome: "accepted" as const }),
+    });
+    render(<InstallSlot />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: copy.slotAria }));
+    });
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(window.__the99InstallPrompt).toBeUndefined();
+  });
+
   it("on iPhone Safari, with no offer to hold, opens the how-to sheet and Got it closes it", () => {
     as(IPHONE);
     render(<InstallSlot />);

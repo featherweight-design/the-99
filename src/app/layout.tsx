@@ -5,6 +5,7 @@ import { resolveTheme } from "../lib/theme/server";
 import { preload } from "react-dom";
 import { MANA_SPRITE_PATH } from "../lib/cards/mana-sprite";
 import { ServiceWorker } from "../components/shell/service-worker";
+import { INSTALL_PROMPT_CAPTURE } from "../lib/pwa/install-detect";
 import { FONT_VARIABLES } from "./fonts";
 import "./globals.css";
 
@@ -34,6 +35,11 @@ export default async function RootLayout({
         data-theme={theme}
         className={`${FONT_VARIABLES} h-full antialiased`}
       >
+        <head>
+          {/* Keeps an install offer that arrives before hydration (`install-detect.ts`). A plain
+              inline script, not next/script: `beforeInteractive` waits for Next's own bootstrap. */}
+          <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_CAPTURE }} />
+        </head>
         {/* Signed-out routes render without the shell, so the stretch chain has
             to start here or a full-height child has nothing to grow into. */}
         <body className="flex min-h-full flex-col bg-[color:var(--bg)] text-[color:var(--fg)]">

@@ -2,6 +2,8 @@
 // Read-only: it signs in and loads pages, and writes nothing but this browser's own localStorage.
 // - Android-style: a synthetic `beforeinstallprompt` puts the slot in the header; a press calls the
 //   held prompt; the slot then goes.
+// - The same offer arriving before hydration is kept by the root layout's head script and taken by
+//   the slot once it mounts.
 // - iPhone Safari (its user agent): the slot shows with no event, a press opens the how-to sheet,
 //   Got it closes it, and the ✕ keeps it away on the next load.
 // - At 1300 the slot is never drawn: desktop browsers have their own install button.
@@ -59,6 +61,34 @@ const slot = (page) => page.locator("header [data-install-slot]");
   await page.waitForTimeout(300);
   check((await page.evaluate(() => window.__prompted)) === 1, "390 Android: a press shows the held prompt");
   check((await slot(page).count()) === 0, "390 Android: the slot goes once the offer is used");
+  await ctx.close();
+}
+{
+  // An offer that arrives before hydration: the app's scripts are held back 3s, and the offer is
+  // dispatched at DOMContentLoaded, when only the head script can be listening.
+  const ctx = await browser.newContext({ storageState: state, viewport: { width: 390, height: 844 } });
+  await ctx.route("**/_next/static/chunks/**", async (route) => {
+    await new Promise((r) => setTimeout(r, 3_000));
+    await route.continue();
+  });
+  await ctx.addInitScript(() => {
+    document.addEventListener("DOMContentLoaded", () => {
+      window.__prompted = 0;
+      const e = new Event("beforeinstallprompt", { cancelable: true });
+      e.prompt = async () => { window.__prompted += 1; };
+      e.userChoice = Promise.resolve({ outcome: "dismissed" });
+      window.dispatchEvent(e);
+      window.__keptBeforeHydration = window.__the99InstallPrompt === e && e.defaultPrevented;
+    });
+  });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/decks`, { waitUntil: "load", timeout: 60_000 });
+  check(await page.evaluate(() => window.__keptBeforeHydration === true), "390 Android: an offer before hydration is kept by the head script");
+  await slot(page).waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+  check(await slot(page).isVisible(), "390 Android: and the slot takes it once it mounts");
+  await page.getByRole("button", { name: "Install The 99" }).click();
+  await page.waitForTimeout(300);
+  check((await page.evaluate(() => window.__prompted)) === 1, "390 Android: a press shows that early offer");
   await ctx.close();
 }
 {

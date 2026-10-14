@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
 import { dismissOnce, dismissalState } from "../../lib/pwa/install-dismissal";
-import { isIosSafari, isStandalone, type BeforeInstallPromptEvent } from "../../lib/pwa/install-detect";
+import { isIphoneSafari, isStandalone, takeEarlyPrompt, type BeforeInstallPromptEvent } from "../../lib/pwa/install-detect";
 import { IosInstallSheet } from "./ios-install-sheet";
 
 /**
@@ -24,10 +24,13 @@ export function InstallSlot() {
     if (isStandalone()) return;
     // Read after mount on purpose: none of these exist on the server.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIos(isIosSafari());
+    setIos(isIphoneSafari());
+    setHeld(takeEarlyPrompt());
     setDismissed(dismissalState() !== "active");
     const onPrompt = (event: BeforeInstallPromptEvent) => {
       event.preventDefault();
+      // The head script keeps the event too; this one is held here, so it is taken from there.
+      takeEarlyPrompt();
       setHeld(event);
     };
     const onInstalled = () => setHeld(null);

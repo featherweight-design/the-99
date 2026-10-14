@@ -10,15 +10,35 @@ declare global {
   interface WindowEventMap {
     beforeinstallprompt: BeforeInstallPromptEvent;
   }
+  interface Window {
+    __the99InstallPrompt?: BeforeInstallPromptEvent;
+  }
 }
 
-/** Safari on an iPhone or iPad: the one browser that installs only through its Share menu. */
-export function isIosSafari(ua: string = navigator.userAgent, touchPoints: number = navigator.maxTouchPoints): boolean {
-  // iPadOS reports a Mac's user agent, and unlike a Mac it has more than one touch point.
-  const ipadOs = ua.includes("Macintosh") && touchPoints > 1;
-  const ios = /iPad|iPhone|iPod/.test(ua) || ipadOs;
-  const safari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-  return ios && safari;
+/**
+ * Inlined in the root layout's head, so it runs while the document parses. Chrome fires
+ * `beforeinstallprompt` once per document load and can fire it before the app hydrates, when no
+ * React listener exists yet; this keeps the event for the slot to take after mount.
+ */
+export const INSTALL_PROMPT_CAPTURE =
+  'addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__the99InstallPrompt=e});' +
+  'addEventListener("appinstalled",function(){window.__the99InstallPrompt=undefined});';
+
+/** The event the head script kept, if one arrived before the slot mounted. Taken once. */
+export function takeEarlyPrompt(): BeforeInstallPromptEvent | null {
+  const early = window.__the99InstallPrompt ?? null;
+  window.__the99InstallPrompt = undefined;
+  return early;
+}
+
+/**
+ * Safari on an iPhone. The how-to sheet's directions are the iPhone's (Share sits in the bottom
+ * toolbar; on an iPad it sits at the top), so an iPad is not counted. Chrome, Firefox and Edge on
+ * iOS can also add to the home screen from their own Share menus, but their steps differ, so they
+ * get no slot either rather than steps that are wrong for them.
+ */
+export function isIphoneSafari(ua: string = navigator.userAgent): boolean {
+  return /iPhone|iPod/.test(ua) && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
 }
 
 /** Already running as the installed app. */
