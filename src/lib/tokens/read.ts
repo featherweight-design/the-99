@@ -140,8 +140,7 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
     // The deck's pick while held, else the player's most-held printing with art, else the catalog's (TP2).
     const byId = new Map(all.map((p) => [p.scryfallId, p]));
     const held = (i.heldPrintings?.get(t.oracleId) ?? []).filter((h) => byId.has(h.tokenPrintingId));
-    const choice = chooseTokenPrinting(i.picks?.get(t.oracleId) ?? null, held, catalog?.scryfallId ?? null,
-      (id) => byId.get(id)?.imageUri != null);
+    const choice = chooseTokenPrinting(i.picks?.get(t.oracleId) ?? null, held, catalog?.scryfallId ?? null, (id) => byId.get(id));
     const chosen = choice ? byId.get(choice.tokenPrintingId) : undefined;
     rows.push({
       oracleId: t.oracleId,

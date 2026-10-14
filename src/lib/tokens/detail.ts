@@ -3,7 +3,7 @@ import { db } from "../../db";
 import { tokenPrintings, tokens } from "../../db/schema";
 import type { BrowseCard } from "../collection/browse";
 import { deckTokensEnabled } from "../decks/tokens-flag";
-import { loadHeldTokenPrintings, orderHeld, type HeldTokenPrinting } from "./deck-printings";
+import { heldGroups, loadHeldTokenPrintings, type HeldTokenPrinting } from "./deck-printings";
 import { manapoolAddDeckUrl } from "../manapool/links";
 import { loadTokenPrices, type TokenPriceFact } from "./price";
 import { tokenManapoolLine } from "./price-line";
@@ -108,25 +108,8 @@ export function assembleTokenDetail(
   held: readonly HeldTokenPrinting[] = [],
 ): BrowseCard {
   const byId = new Map(printings.map((p) => [p.scryfallId, p]));
-  // One row per set and number, the key the picker's tiles carry: sibling variants sharing one would otherwise
-  // draw two tiles under one key. The most-held of them WITH ART stands for the pair, else the most-held
-  // (`heldPrintingByNumber` writes that same printing), with the pair's copies summed.
-  const heldRows: { p: TokenDetailPrinting; quantity: number }[] = [];
-  const byPair = new Map<string, { p: TokenDetailPrinting; quantity: number }>();
-  for (const h of orderHeld(held)) {
-    const p = byId.get(h.tokenPrintingId);
-    if (!p) continue;
-    const pair = `${p.setCode.toLowerCase()}|${p.collectorNumber}`;
-    const at = byPair.get(pair);
-    if (at) {
-      at.quantity += h.quantity;
-      if (at.p.imageUri === null && p.imageUri !== null) at.p = p;
-      continue;
-    }
-    const row = { p, quantity: h.quantity };
-    byPair.set(pair, row);
-    heldRows.push(row);
-  }
+  // The picker's tiles, one per set and number, from the same list the deck's row reads (`heldGroups`).
+  const heldRows = heldGroups(held, (id) => byId.get(id)).map((h) => ({ p: byId.get(h.tokenPrintingId)!, quantity: h.quantity }));
   const catalog = (price && printings.find((p) => p.scryfallId === price.printing.scryfallId))
     ?? [...printings].sort((a, b) =>
       a.setCode.localeCompare(b.setCode) || a.collectorNumber.localeCompare(b.collectorNumber, "en", { numeric: true })

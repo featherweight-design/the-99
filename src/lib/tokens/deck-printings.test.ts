@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: {} }));
 
-import { chooseTokenPrinting, orderHeld } from "./deck-printings";
+import { chooseTokenPrinting, heldGroups, orderHeld } from "./deck-printings";
 import { assembleTokenDetail } from "./detail";
 
-const art = () => true;
+// Each id is its own set and number unless a test says otherwise; `withArt` says which carry an image.
+const facts = (withArt: (id: string) => boolean) => (id: string) => ({ setCode: id, collectorNumber: "1", imageUri: withArt(id) ? `img-${id}` : null });
+const art = facts(() => true);
 
 describe("chooseTokenPrinting", () => {
   it("takes the deck's pick while it is held", () => {
@@ -19,7 +21,7 @@ describe("chooseTokenPrinting", () => {
   });
 
   it("passes over a held printing with no art when another has some", () => {
-    expect(chooseTokenPrinting(null, [{ tokenPrintingId: "a", quantity: 5 }, { tokenPrintingId: "b", quantity: 1 }], "c", (id) => id === "b"))
+    expect(chooseTokenPrinting(null, [{ tokenPrintingId: "a", quantity: 5 }, { tokenPrintingId: "b", quantity: 1 }], "c", facts((id) => id === "b")))
       .toEqual({ tokenPrintingId: "b", source: "held" });
   });
 
@@ -54,12 +56,12 @@ describe("assembleTokenDetail with held printings", () => {
 
 describe("when no held printing has art", () => {
   it("the row takes the catalog's picture, and a held one only when the catalog has none", () => {
-    expect(chooseTokenPrinting(null, [{ tokenPrintingId: "a", quantity: 5 }], "c", (id) => id === "c"))
+    expect(chooseTokenPrinting(null, [{ tokenPrintingId: "a", quantity: 5 }], "c", facts((id) => id === "c")))
       .toEqual({ tokenPrintingId: "c", source: "catalog" });
-    expect(chooseTokenPrinting(null, [{ tokenPrintingId: "a", quantity: 5 }], null, () => false))
+    expect(chooseTokenPrinting(null, [{ tokenPrintingId: "a", quantity: 5 }], null, facts(() => false)))
       .toEqual({ tokenPrintingId: "a", source: "held" });
     // An explicit pick still wins, art or none.
-    expect(chooseTokenPrinting("a", [{ tokenPrintingId: "a", quantity: 5 }], "c", (id) => id === "c"))
+    expect(chooseTokenPrinting("a", [{ tokenPrintingId: "a", quantity: 5 }], "c", facts((id) => id === "c")))
       .toEqual({ tokenPrintingId: "a", source: "deck" });
   });
 
@@ -96,5 +98,29 @@ describe("held sibling variants where only one has art", () => {
     ], null, null, [{ tokenPrintingId: "a", quantity: 4 }, { tokenPrintingId: "a2", quantity: 1 }]);
     expect(card.printings.map((x) => [x.scryfallId, x.quantity])).toEqual([["a2", 5]]);
     expect(card.imageUri).toBe("img-a2");
+  });
+});
+
+describe("heldGroups: the one list the deck's row and the sheet read", () => {
+  // a and a2 are siblings (one set and number); a has no art.
+  const siblings = (id: string) => ({
+    a: { setCode: "aaa", collectorNumber: "1", imageUri: null },
+    a2: { setCode: "AAA", collectorNumber: "1", imageUri: "img-a2" },
+    b: { setCode: "bbb", collectorNumber: "2", imageUri: "img-b" },
+  } as Record<string, { setCode: string; collectorNumber: string; imageUri: string | null }>)[id];
+
+  it("sums a pair, stands it for its member with art, and orders the groups by their sums", () => {
+    expect(heldGroups([{ tokenPrintingId: "a", quantity: 4 }, { tokenPrintingId: "a2", quantity: 1 }, { tokenPrintingId: "b", quantity: 3 }], siblings))
+      .toEqual([{ tokenPrintingId: "a2", quantity: 5 }, { tokenPrintingId: "b", quantity: 3 }]);
+  });
+
+  it("makes the row and the sheet show the same printing for an unpicked token", () => {
+    const held = [{ tokenPrintingId: "a", quantity: 4 }, { tokenPrintingId: "a2", quantity: 1 }, { tokenPrintingId: "b", quantity: 3 }];
+    const row = chooseTokenPrinting(null, held, null, siblings);
+    const token = { oracleId: "t", name: "Soldier", typeLine: "Token Creature — Soldier", colors: ["W"], oracleText: null, layout: "token" };
+    const card = assembleTokenDetail(token, ["a", "a2", "b"].map((id) => ({ scryfallId: id, ...siblings(id)!, backImageUri: null })), null, null, held);
+    expect(row?.tokenPrintingId).toBe("a2");
+    expect(card.imageUri).toBe("img-a2");
+    expect(card.printings.find((p) => p.imageUri !== null)?.scryfallId).toBe("a2");
   });
 });

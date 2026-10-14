@@ -18,33 +18,60 @@ import { deckTokenPrintings, tokenPrintingHoldings, tokenPrintings } from "../..
 /** One printing the player holds, summed across sources (an upload and a precon both put copies on the shelf). */
 export type HeldTokenPrinting = { tokenPrintingId: string; quantity: number };
 
-/**
- * The held printings in the order the details sheet lists them and the row's rule reads them: most copies
- * first, ties by id so the answer never depends on a read's row order. `primaryPrinting` takes the first
- * printing with art from this same order, so the row and its sheet agree.
- */
+/** What the rule needs of a printing: the pair the picker keys a tile by, and whether it has art. */
+export type PrintingFacts = { setCode: string; collectorNumber: string; imageUri: string | null };
+
+/** Most copies first, ties by id, so no answer depends on a read's row order. */
 export function orderHeld(held: readonly HeldTokenPrinting[]): HeldTokenPrinting[] {
   return [...held].sort((a, b) => b.quantity - a.quantity || (a.tokenPrintingId < b.tokenPrintingId ? -1 : a.tokenPrintingId > b.tokenPrintingId ? 1 : 0));
 }
 
 /**
- * The printing a token row shows: the pick while held, else the first held printing with art, else `fallback`
- * (the catalog's default), else the first held. `hasArt` says whether a printing id carries an image.
+ * The held printings as the picker's tiles: ONE per set and number (sibling variants share a pair, and the
+ * picker keys a tile by it), the pair's copies summed, in the order `orderHeld` gives the summed groups. A
+ * group is represented by its member with art, most copies first, else its most-held member:
+ * `heldPrintingByNumber` saves that same member. The deck's row (`chooseTokenPrinting`) and the details sheet
+ * (`assembleTokenDetail`) both read THIS list, so an unpicked token opens on the art its row shows. Printings
+ * `facts` does not know are dropped.
+ */
+export function heldGroups(
+  held: readonly HeldTokenPrinting[],
+  facts: (tokenPrintingId: string) => PrintingFacts | undefined,
+): HeldTokenPrinting[] {
+  const groups = new Map<string, { rep: HeldTokenPrinting; repArt: boolean; quantity: number }>();
+  for (const h of orderHeld(held)) {
+    const f = facts(h.tokenPrintingId);
+    if (!f) continue;
+    const pair = `${f.setCode.toLowerCase()}|${f.collectorNumber}`;
+    const art = f.imageUri !== null;
+    const g = groups.get(pair);
+    if (!g) groups.set(pair, { rep: h, repArt: art, quantity: h.quantity });
+    else {
+      g.quantity += h.quantity;
+      if (!g.repArt && art) { g.rep = h; g.repArt = true; }
+    }
+  }
+  return orderHeld([...groups.values()].map((g) => ({ tokenPrintingId: g.rep.tokenPrintingId, quantity: g.quantity })));
+}
+
+/**
+ * The printing a token row shows: the pick while held, else the first held group with art (`heldGroups`), else
+ * `fallback` (the catalog's default), else the first held group.
  */
 export function chooseTokenPrinting(
   pick: string | null,
   held: readonly HeldTokenPrinting[],
   fallback: string | null,
-  hasArt: (tokenPrintingId: string) => boolean,
+  facts: (tokenPrintingId: string) => PrintingFacts | undefined,
 ): { tokenPrintingId: string; source: "deck" | "held" | "catalog" } | null {
-  const ordered = orderHeld(held);
-  if (pick !== null && ordered.some((h) => h.tokenPrintingId === pick)) return { tokenPrintingId: pick, source: "deck" };
-  const first = ordered.find((h) => hasArt(h.tokenPrintingId));
+  if (pick !== null && held.some((h) => h.tokenPrintingId === pick)) return { tokenPrintingId: pick, source: "deck" };
+  const groups = heldGroups(held, facts);
+  const first = groups.find((g) => facts(g.tokenPrintingId)?.imageUri != null);
   if (first) return { tokenPrintingId: first.tokenPrintingId, source: "held" };
   // No held printing has art: the catalog's picture rather than a blank one. A held printing is shown with no
   // art only when the catalog has nothing either.
   if (fallback !== null) return { tokenPrintingId: fallback, source: "catalog" };
-  return ordered[0] ? { tokenPrintingId: ordered[0].tokenPrintingId, source: "held" } : null;
+  return groups[0] ? { tokenPrintingId: groups[0].tokenPrintingId, source: "held" } : null;
 }
 
 type Reader = Pick<typeof db, "select">;
