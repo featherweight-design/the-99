@@ -309,7 +309,7 @@ export const swapToolsCopy = {
       running: (n: number, card: string) => (n === 1 ? `Reading one deck for ${card}` : `Reading ${n} decks for ${card}`),
       /** Followed by ` · {elapsed}`. */
       runningSub: "each deck’s plan and list, against the card’s text",
-      runningKeep: "The list below stays as it is. You can leave this view; the read keeps going and waits here.",
+      runningKeep: "The list below stays as it is. You can leave this view; the run keeps going and waits here.",
       announceStarted: "Reading your decks.",
       /** Under the door in card details while a read for this card runs. */
       doorReading: "reading your decks…",
@@ -342,7 +342,7 @@ export const swapToolsCopy = {
       cutNoteAdded: "still in · cut it or anything else",
       swapRefused: "We couldn’t make that swap. The deck is unchanged.",
       undoRefused: "We couldn’t undo that. The deck is unchanged.",
-      announceReady: (n: number) => (n === 1 ? "The read found one deck." : `The read found ${n} decks.`),
+      announceReady: (n: number) => (n === 1 ? "The run found one deck." : `The run found ${n} decks.`),
       announceSwapped: (card: string, cut: string) => `Swapped. ${card} is in the draft and ${cut} is out.`,
       announceUndone: (card: string, cut: string) => `Swap undone. ${cut} is back and ${card} is out.`,
       announceAdded: (card: string, deck: string) => `Added. ${card} is in the ${deck} draft.`,
@@ -353,36 +353,36 @@ export const swapToolsCopy = {
       thinSub: "The other decks it named didn’t check out",
       noFitHead: "None of these decks is a real fit",
       noFitBody: (n: number, card: string) =>
-        `The read went through the ${n} decks that can take ${card} and found none whose plan it really helps. The credit came back.`,
+        `The run went through the ${n} decks that can take ${card} and found none whose plan it really helps. The credit came back.`,
       noFitBodyOne: (deck: string, card: string) =>
-        `The read went through ${deck}, the one deck that can take ${card}, and found it isn’t a real fit. The credit came back.`,
-      noFitBodyStored: (n: number, card: string) => `The read went through the ${n} decks that can take ${card} and found none whose plan it really helps.`,
+        `The run went through ${deck}, the one deck that can take ${card}, and found it isn’t a real fit. The credit came back.`,
+      noFitBodyStored: (n: number, card: string) => `The run went through the ${n} decks that can take ${card} and found none whose plan it really helps.`,
       noFitFootNow: "read just now · kept until your decks change",
       noFitFootStored: (when: string) => `read ${when} · kept until your decks change`,
       announceNoFit: "No real fit. The credit came back.",
       failedTag: "Didn’t finish",
-      failedHead: "The read didn’t come back",
+      failedHead: "The run didn’t come back",
       failedBody: "The credit came back, and the list below is as it was. It isn’t something you did.",
       retry: "Try again",
-      announceFailed: "The read didn’t come back. The credit came back.",
+      announceFailed: "The run didn’t come back. The credit came back.",
       // Refused before any credit: the prompt would pass the input ceiling, and the same decks would
       // refuse again, so no Try again is drawn (Proposed cuts' `tooBig` is the sibling).
-      tooBigHead: "Too many decks for one read",
-      tooBigBody: "This card fits more of your decks than a read can take at once. No credit is used.",
-      announceTooBig: "Too many decks for one read. No credit is used.",
+      tooBigHead: "Too many decks for one run",
+      tooBigBody: "This card fits more of your decks than a run can take at once. No credit is used.",
+      announceTooBig: "Too many decks for one run. No credit is used.",
       // ── Stored, out of date (lock 6; handoff P10, P3g, P6c) ─────────────
       resultSubStale: (when: string) => `read ${when} · out of date`,
       staleOne: (deck: string, when: string) => `${deck} has changed since this read on ${when}, so the read may not hold any more.`,
       staleMany: (n: number, when: string) => `${n} of your decks have changed since this read on ${when}, so the read may not hold any more.`,
       staleSet: (when: string) => `Your decks that can take this card aren’t the same ones as at this read on ${when}, so the read may not hold any more.`,
-      staleOverview: (deck: string, when: string) => `${deck} has a new overview since this read on ${when}. Read again to use it.`,
+      staleOverview: (deck: string, when: string) => `${deck} has a new overview since this read on ${when}. Run again to use it.`,
       noFitChanged: (deck: string, when: string) => `${deck} has changed since this read on ${when}, so it’s worth asking again.`,
       changedTag: "changed since",
       changedTagOverview: "new overview",
       cutNoteChanged: "this deck has changed, so the cut may not hold",
-      readAgain: "Read again",
-      /** Beside Read again, in place of creditsCopy.again (which names suggestions). */
-      again: (standing: string) => `Replaces this read and uses a credit. ${standing}.`,
+      readAgain: "Run again",
+      /** Beside Run again, in place of creditsCopy.again (which names suggestions). */
+      again: (standing: string) => `Replaces this run and uses a credit. ${standing}.`,
       // ── Where a row's plan came from (addendum, P3f) ──────────────────
       srcNoteOlder: "Read from an overview written the older way.",
       srcLinkOlder: "Update it on the deck page →",

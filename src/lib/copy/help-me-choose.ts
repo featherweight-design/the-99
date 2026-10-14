@@ -147,8 +147,8 @@ export const helpMeChooseCopy = {
     stoppedTag: "stopped",
     stoppedLead: "Nothing was read, and no credit was used. These are the results for your answers alone.",
     failTag: "didn’t finish",
-    failedLead: "The read didn’t finish, so your credit came back. These are the results for your answers alone.",
-    failed: "The read didn’t finish, so your credit came back.", // announced
+    failedLead: "The run didn’t finish, so your credit came back. These are the results for your answers alone.",
+    failed: "The run didn’t finish, so your credit came back.", // announced
     retry: "Try again",
     emptyTitle: "Nothing fits what you wrote",
     emptyLead: (pool: string) =>
@@ -159,8 +159,8 @@ export const helpMeChooseCopy = {
     // Claims no cause: the line under it gives one (no credit left, paused, the owner's share).
     unreadLead: "These results use your answers alone. Your words are kept for another try.",
     // copy-reviewed: Recovery; names the cause, which the standing line under it cannot.
-    busyLead: "Another read of yours was still running, so this one didn’t start. These results use your answers alone.",
-    doneAnnounce: "The read is done, and its picks now lead your results.", // eng: announced
+    busyLead: "Another run of yours was still running, so this one didn’t start. These results use your answers alone.",
+    doneAnnounce: "The run is done, and its picks now lead your results.", // eng: announced
   },
   results: {
     back: "‹ Your answers", // canvas
