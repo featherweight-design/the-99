@@ -181,6 +181,8 @@ describe("RevertConfirm", () => {
     expect(onReverted).not.toHaveBeenCalled();
     // The warning fills the dialog's fixed column, so its own buttons stay pinned: no scroll box holds them.
     expect(screen.getByRole("button", { name: "Revert anyway" }).closest(".overflow-y-auto")).toBeNull();
+    // And at its foot however short the list: the action row takes the free space above it.
+    expect(screen.getByRole("button", { name: "Revert anyway" }).parentElement!.className).toMatch(/\bmt-auto\b/);
     expect(screen.getByRole("heading", { name: "Reverting leaves 2 decks short" }).parentElement?.parentElement?.className).toMatch(/\*:flex-1/);
   });
 

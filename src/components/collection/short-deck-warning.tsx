@@ -183,8 +183,10 @@ export function ShortDeckWarning({
             {error}
           </p>
         ) : null}
+        {/* `mt-auto`: in a host that gives the warning a fixed column (the revert confirmation), the
+            buttons sit at its foot however short the list. Elsewhere it is 0, and the 4px is padding. */}
         {variant === "dialog" ? (
-        <div className="mt-[4px] flex flex-none flex-col-reverse gap-[10px] md:flex-row md:justify-end">
+        <div className="mt-auto flex flex-none flex-col-reverse gap-[10px] pt-[4px] md:flex-row md:justify-end">
           <button
             ref={cancelRef}
             type="button"
