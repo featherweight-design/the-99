@@ -39,8 +39,11 @@ async function main() {
        from cards where oracle_id = any($1::uuid[])`, [oracleIds]);
   const { rows: printingRows } = await pool.query<{ scryfall_id: string }>(
     `select scryfall_id from printings where scryfall_id = any($1::uuid[])`, [scryfallIds]);
+  const tokenIds = [...new Set(feed.decks.flatMap((d) => d.tokens.map((t) => t.scryfallId)).filter((x): x is string => !!x))];
+  const { rows: tokenRows } = await pool.query<{ scryfall_id: string }>(
+    `select scryfall_id from token_printings where scryfall_id = any($1::uuid[])`, [tokenIds]);
   const byId = new Map(cardRows.map((c) => [c.oracle_id, c]));
-  const plan = planPrecons(feed, new Set(byId.keys()), new Set(printingRows.map((r) => r.scryfall_id)));
+  const plan = planPrecons(feed, new Set(byId.keys()), new Set(printingRows.map((r) => r.scryfall_id)), new Set(tokenRows.map((r) => r.scryfall_id)));
 
   const r = plan.report;
   console.log(`listed ${r.listed} · kept ${r.kept} · twins ${r.twins} · distinct lists ${r.kept - r.twins}`);

@@ -53,7 +53,7 @@ export function planPrecons(
   feed: PreconFeed,
   knownOracles: ReadonlySet<string>,
   knownPrintings: ReadonlySet<string>,
-  knownTokens: ReadonlySet<string> = new Set(),
+  knownTokens: ReadonlySet<string>,
 ): PreconPlan {
   const rows: PreconRow[] = [];
   const cardRows: PreconCardRow[] = [];

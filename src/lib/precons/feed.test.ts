@@ -67,6 +67,10 @@ describe("deriveDeck", () => {
     expect(() => deriveDeck(entry("A"), { data: { mainBoard: [] } })).toThrow(/commander or mainBoard/);
   });
 
+  it("throws on a token with no count, rather than inventing one", () => {
+    expect(() => deriveDeck(entry("A"), { data: { commander: [], mainBoard: [], tokens: [{ identifiers: { scryfallId: "t" } }] } })).toThrow(/token entry/);
+  });
+
   it("throws on a card with no count", () => {
     expect(() => deriveDeck(entry("A"), { data: { commander: [{ identifiers: {} }], mainBoard: [] } })).toThrow(/count/);
   });

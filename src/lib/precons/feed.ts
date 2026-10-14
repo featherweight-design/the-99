@@ -114,8 +114,10 @@ export function deriveDeck(entry: IndexEntry, file: unknown): PreconFeedDeck {
   };
   const token = (raw: unknown): FeedToken => {
     const t = raw as { count?: unknown; identifiers?: { scryfallId?: unknown } };
-    const count = typeof t?.count === "number" && Number.isInteger(t.count) && t.count > 0 ? t.count : 1;
-    return { scryfallId: str(t?.identifiers?.scryfallId) ? t.identifiers.scryfallId : null, count };
+    if (typeof t?.count !== "number" || !Number.isInteger(t.count) || t.count < 1) {
+      throw new Error(`${entry.fileName}: a token entry has no positive integer count`);
+    }
+    return { scryfallId: str(t?.identifiers?.scryfallId) ? t.identifiers.scryfallId : null, count: t.count };
   };
   return {
     fileName: entry.fileName,
