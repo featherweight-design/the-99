@@ -262,7 +262,7 @@ export const recommendationsCopy = {
     // Shown only when the deck was actually filled (deck.filled === true); an
     // unfilled deck that happens to own everything it lists gets emptyUncovered
     // instead — congratulating a fill that never ran would be wrong.
-    emptyCoveredHeading: 'Nothing to buy. Your shelf covered it.',
+    emptyCoveredHeading: 'Nothing to buy. Your collection covered it.',
     emptyCoveredBody: (open: string) =>
       `Every role hit its baseline from cards you already own. The ${open} slots we left open are the fun part.`,
     // The unfilled deck's zero-shopping state: no compliment, just a neutral

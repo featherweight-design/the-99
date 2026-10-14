@@ -48,9 +48,9 @@ describe("ShelfSheet", () => {
       />,
     );
 
-  it("is a modal dialog named Shelves", () => {
+  it("is a modal dialog named Folders", () => {
     sheet();
-    const dialog = screen.getByRole("dialog", { name: "Shelves" });
+    const dialog = screen.getByRole("dialog", { name: "Folders" });
     expect(dialog).toHaveAttribute("aria-modal", "true");
   });
 

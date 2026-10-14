@@ -991,7 +991,7 @@ export function Decklist({
     );
 
     // Empty shopping list — branch on whether the deck was ever filled.
-    // The compliment ("Nothing to buy. Your shelf covered it.") belongs only to
+    // The compliment ("Nothing to buy. Your collection covered it.") belongs only to
     // a deck the fill actually ran on. A deck the player built by hand that
     // happens to own everything it lists must not be congratulated on a fill
     // that never ran.
