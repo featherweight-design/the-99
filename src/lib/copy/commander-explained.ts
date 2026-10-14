@@ -228,7 +228,7 @@ export const explainedCopy = {
       label: "Synergy",
       weight: (w: number) => `${w} pts`,
       body:
-        "How much of EDHREC's most-played list for this commander you already own. The largest weight, because it is the only part that is about the commander rather than about your shelf.",
+        "How much of EDHREC's most-played list for this commander you already own. The largest weight, because it is the only part that is about the commander rather than about your collection.",
       bodyMobile:
         "How much of EDHREC's most-played list for this commander you own. The only part about the commander, not your collection.",
     },
