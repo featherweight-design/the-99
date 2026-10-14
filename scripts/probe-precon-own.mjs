@@ -2,7 +2,7 @@
 // real browser at 390x844 and 1300x900 (precon ownership UI, PR B; Hugh specified it, no design round).
 //
 // Per width: the Start dialog draws the box UNTICKED, says "this precon’s copies" for Printings (ticked or not) and nothing
-// about a draft; starting adds first and lands on the deck with ONE arrival band: "Started from the Probe Own precon",
+// about a draft; starting (one action: the box, the deck and its reservations) lands on the deck with ONE arrival band: "Started from the Probe Own precon",
 // "All 31 cards added to your collection." with a History link, the ✓ at the band's top-left, no second receipt banner, no
 // Undo, no "draft" sentence, and `?added=` already stripped while `from=precon` stays; a reload shows the minimal band; a
 // forged `?added=` draws nothing and is stripped all the same; History titles the entry "Added from Probe Own". Layout: no

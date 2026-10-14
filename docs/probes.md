@@ -24,7 +24,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `PRECONS_ENABLED=true` on the server, started fresh for the run (the precon catalog is memoized per server for ten minutes). Putting `Link it` back on its own row fails it at both widths.
 - `pnpm probe:precon-own` walks "I own this precon" at 390 and 1300 (precon ownership UI; Hugh specified it, then reshaped it after
   testing): the Start dialog's box is unticked by default, the Printings fact reads "this precon’s copies" ticked or not, and the
-  dialog says nothing about a draft; starting adds first and lands on the deck with ONE arrival band ("Started from the Probe Own
+  dialog says nothing about a draft; starting (one action: the box, the deck and its reservations) lands on the deck with ONE arrival band ("Started from the Probe Own
   precon", "All 31 cards added to your collection." with a History link, the ✓ at the band's top-left level with the head, the band text
   stopping before its dismiss, no second receipt banner, no Undo, no draft sentence) and `?added=` already stripped while
   `from=precon` stays; a reload shows the minimal band; a forged `?added=` draws nothing and is stripped all the same; History titles the
