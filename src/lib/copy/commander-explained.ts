@@ -230,7 +230,7 @@ export const explainedCopy = {
       body:
         "How much of EDHREC's most-played list for this commander you already own. The largest weight, because it is the only part that is about the commander rather than about your shelf.",
       bodyMobile:
-        "How much of EDHREC's most-played list for this commander you own. The only part about the commander, not your shelf.",
+        "How much of EDHREC's most-played list for this commander you own. The only part about the commander, not your collection.",
     },
 
     /** The key's actual job, in one line. Rendered from the same points the legend prints, so

@@ -566,8 +566,8 @@ describe("DecksView", () => {
     // The trigger that opened it is the compact form's alone, so leaving the
     // sheet open would remount a modal on the way back that nobody asked for.
     const { rerender } = render(view(shelvedDecks(), twoFolders));
-    fireEvent.click(screen.getByRole("button", { name: /^Shelf: / }));
-    expect(screen.getByRole("dialog", { name: "Shelves" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Folder: / }));
+    expect(screen.getByRole("dialog", { name: "Folders" })).toBeInTheDocument();
 
     Object.defineProperty(window, "matchMedia", {
       writable: true,
@@ -579,7 +579,7 @@ describe("DecksView", () => {
       }),
     });
     rerender(view(shelvedDecks(), twoFolders));
-    expect(screen.queryByRole("dialog", { name: "Shelves" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Folders" })).toBeNull();
   });
 
   it("announces a wide shelf change by name, since two shelves can read alike", async () => {
@@ -596,9 +596,9 @@ describe("DecksView", () => {
     // The sheet unmounts on selection, so its own region cannot carry this —
     // and the chassis's is silent behind an aria-modal.
     const { container } = render(view(shelvedDecks(), twoFolders));
-    fireEvent.click(screen.getByRole("button", { name: /^Shelf: / }));
+    fireEvent.click(screen.getByRole("button", { name: /^Folder: / }));
     fireEvent.click(screen.getByRole("button", { name: "Cube night, 2 decks" }));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Shelves" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Folders" })).toBeNull());
     const regions = [...container.querySelectorAll("[aria-live='polite']")]
       .map((r) => r.textContent);
     expect(regions).toContain("Cube night, 2 decks");

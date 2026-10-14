@@ -351,12 +351,12 @@ function unfiledOnLine(page) {
 /** Every row of the phone's shelf sheet, by its accessible name, then closed again. */
 async function sheetRows(page) {
   await onPage(page, "[data-shelf-trigger] button[aria-haspopup=dialog]").first().click();
-  const sheet = page.getByRole("dialog", { name: "Shelves" });
+  const sheet = page.getByRole("dialog", { name: "Folders" });
   await sheet.waitFor({ timeout: 10_000 });
   const rows = await sheet.locator("button[aria-label]").evaluateAll((bs) =>
     bs.map((b) => b.getAttribute("aria-label")),
   );
-  await page.getByRole("button", { name: "Close shelves" }).click();
+  await page.getByRole("button", { name: "Close folders" }).click();
   await sheet.waitFor({ state: "detached", timeout: 10_000 });
   return rows;
 }
@@ -375,7 +375,7 @@ async function runPhone(browser) {
     await page.waitForSelector("main [data-shelf-trigger]", { timeout: 30_000 });
 
     await onPage(page, "[data-shelf-trigger] button[aria-haspopup=dialog]").first().click();
-    await page.getByRole("dialog", { name: "Shelves" }).getByRole("button", { name: /New folder/ }).click();
+    await page.getByRole("dialog", { name: "Folders" }).getByRole("button", { name: /New folder/ }).click();
     await page.getByLabel("Folder name").fill(PHONE_FOLDER);
     await page.getByRole("button", { name: "Create" }).click();
     // Polled rather than slept, and held to the desktop run's rule: exactly one
@@ -410,7 +410,7 @@ async function runPhone(browser) {
     await page.waitForTimeout(2500);
 
     await onPage(page, "[data-shelf-trigger] button[aria-haspopup=dialog]").first().click();
-    await page.getByRole("dialog", { name: "Shelves" })
+    await page.getByRole("dialog", { name: "Folders" })
       .getByRole("button", { name: new RegExp(`^${PHONE_FOLDER}, `) }).click();
     await page.waitForTimeout(1000);
     await onPage(page, "[data-shelf-trigger] button[aria-label^='Actions for']").first().click();
@@ -423,7 +423,7 @@ async function runPhone(browser) {
     const rows = await sheetRows(page);
     check("390: the deleted shelf leaves the sheet", rows.some((r) => r?.startsWith(`${PHONE_FOLDER},`)), false);
     check("390: Unfiled counts the deck the deleted folder held", rows.includes(unfiledRow), true);
-    check("390: the selection falls back to All decks", (await onPage(page, "[data-shelf-trigger] button[aria-haspopup=dialog]").first().getAttribute("aria-label"))?.startsWith("Shelf: All decks"), true);
+    check("390: the selection falls back to All decks", (await onPage(page, "[data-shelf-trigger] button[aria-haspopup=dialog]").first().getAttribute("aria-label"))?.startsWith("Folder: All decks"), true);
     check("390: the delete leaves ?folder= off the URL", new URL(page.url()).searchParams.has("folder"), false);
 
     // A fresh document at the same address, once the router has gone quiet: a

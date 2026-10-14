@@ -47,16 +47,16 @@ export const folderCopy = {
      */
     unfiled: 'Unfiled',
     /** Sheet title at the compact form. Plural: it lists them. */
-    sheetTitle: 'Shelves',
+    sheetTitle: 'Folders',
     /** Dismiss only. Selection already applied. */
     sheetDismiss: 'Done',
-    closeLabel: 'Close shelves',
+    closeLabel: 'Close folders',
     /** Segment and row accessible name — the count is in words, never implied. */
     aria: (name: string, decks: number) =>
       `${name}, ${decks === 1 ? '1 deck' : `${decks} decks`}`,
     /** The trigger at the compact form. The name leads; the count trails. */
     triggerAria: (name: string, decks: number) =>
-      `Shelf: ${name}, ${decks === 1 ? '1 deck' : `${decks} decks`}. Change shelf.`,
+      `Folder: ${name}, ${decks === 1 ? '1 deck' : `${decks} decks`}. Change folder.`,
     /** The selected shelf's own actions. Never on Unfiled, never unselected. */
     menuTrigger: (name: string) => `Actions for ${name}`,
   },

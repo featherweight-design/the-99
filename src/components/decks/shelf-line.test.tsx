@@ -104,7 +104,7 @@ describe("ShelfLine", () => {
 describe("ShelfTrigger", () => {
   it("names the shelf and its count, and says it opens a dialog", () => {
     render(<ShelfTrigger label="Cube night" count={3} open={false} onOpen={() => {}} />);
-    const trigger = screen.getByRole("button", { name: /Shelf: Cube night, 3 decks/ });
+    const trigger = screen.getByRole("button", { name: /Folder: Cube night, 3 decks/ });
     expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
@@ -113,7 +113,7 @@ describe("ShelfTrigger", () => {
     // One of the four carriers keeping the level out of the filter register
     // (decision 11): 15px semibold, where a filter trigger is 12.5px medium.
     render(<ShelfTrigger label="Cube night" count={3} open={false} onOpen={() => {}} />);
-    expect(screen.getByRole("button", { name: /Shelf: Cube night/ }).className)
+    expect(screen.getByRole("button", { name: /Folder: Cube night/ }).className)
       .toContain("text-[15px]");
   });
 
