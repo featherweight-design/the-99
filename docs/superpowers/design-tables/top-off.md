@@ -1059,8 +1059,8 @@ chose from · `{placed}` the pass's original row count · `{kept}` rows graduate
 | `list.headMobile(ticked, n)` | `{ticked} of {n} ticked` |
 | `bulk.collection(n)` | `Select {n} from my collection` |
 | `bulk.best(n)` | `Select the {n} this deck needs` |
-| `bulk.collectionAria(n, concession)` | `Select {n} cards from your collection — {concession}` |
-| `bulk.bestAria(n, concession)` | `Select the {n} cards this deck needs — {concession}` |
+| `bulk.collectionAria(n, concession)` | `Select {n} cards from your collection: {concession}` |
+| `bulk.bestAria(n, concession)` | `Select the {n} cards this deck needs: {concession}` |
 | `bulk.gapNone` | `matches every recommendation` |
 | `bulk.gapOne(n, type)` | `{n} {type} short of recommendations` |
 | `bulk.gapTwo(n, type, m, other)` | `{n} {type} and {m} {other} short of recommendations` |

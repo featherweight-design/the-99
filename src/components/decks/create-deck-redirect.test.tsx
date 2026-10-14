@@ -1,6 +1,6 @@
 // #337: `createDeck` ends in `redirect()`, which signals by throwing. Both
 // create surfaces await it inside a try/catch, so before `unstable_rethrow` the
-// success path set "Failed to create deck. Try again." on its way out and the
+// success path set "We couldn’t create that deck. Try again." on its way out and the
 // player saw the failure flash for as long as the navigation took.
 //
 // The thrown value is built by calling the real `redirect()` rather than by
@@ -22,7 +22,7 @@ vi.mock("next/navigation", async (importOriginal) => ({
 const { CreatePicker } = await import("./create-picker");
 const { CreatePreFilled } = await import("./create-pre-filled");
 
-const FAILED = /Failed to create deck/;
+const FAILED = /create that deck/;
 
 const commanders = [
   {

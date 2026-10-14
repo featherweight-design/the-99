@@ -239,7 +239,7 @@ export const deckVersioningCopy = {
     // the same silence — no route releases it, so there is nothing to offer.
     commanderGuardTag: "commander",
     commanderGuardA11y: (deck: string, card: string) =>
-      `${card} is ${deck}'s commander. It cannot be pulled.`,
+      `${card} is ${deck}'s commander. It can’t be pulled.`,
 
     // The source picker's own list (addendum R1) — the popover at ≥ md, the sheet below it.
     source: {
@@ -360,7 +360,7 @@ export const deckVersioningCopy = {
 
     noteLabel: "Why this version exists: optional",
     // Offered at commit time precisely because it is unrecoverable afterwards (§Surfaces 3).
-    noteWarning: "you cannot add this later: the version is not editable once committed",
+    noteWarning: "you can’t add this later: the version is not editable once committed",
 
     // The sheet carries the TOTAL, not the rows: the review page is directly above it
     // and already lists them. A confirmation that re-lists what you just read is a
@@ -448,7 +448,7 @@ export const deckVersioningCopy = {
       ].filter(Boolean).join(" and ");
       const single = adds > 0 && removes > 0 ? null : adds || removes;
       return `${back}${lost.charAt(0).toUpperCase()}${lost.slice(1)} ` +
-        `${single === 1 ? "is" : "are"} not stored anywhere, so this cannot be undone.`;
+        `${single === 1 ? "is" : "are"} not stored anywhere, so this can’t be undone.`;
     },
     confirm: (n: number) => `Discard ${plural(n, "change")}`,
     cancel: "Keep editing",

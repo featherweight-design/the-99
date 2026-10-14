@@ -164,7 +164,7 @@ inside the sheet, which overrides both the Component notes' "two lists" and stat
 | font-size | — | `10px` |
 | color | — | `#6A6152` (`--fg-locked`) |
 | margin-top | — | `7px` |
-| text | — | `you cannot add this later: the version is not editable once committed` |
+| text | — | `you can’t add this later: the version is not editable once committed` |
 
 ### Blocks row (money + released)
 
@@ -599,7 +599,7 @@ the feature.** The product owns no confirm dialog, modal, focus trap or toast.
 | max-width | — (not set) | `520px` |
 | margin-bottom | `13px` | `14px` |
 | bolded version phrase | `v2, committed 14 Mar` — `#EDE6D8` (`--fg`), `font-weight: 600` | `v2 as committed on 14 Mar` — `#EDE6D8`, `font-weight: 600` |
-| text as drawn | `Back to v2, committed 14 Mar — 99 cards. Nothing about the draft is stored, so this cannot be undone.` | `The deck goes back to v2 as committed on 14 Mar — 99 cards. The nineteen you added and the seventeen you cut are not stored anywhere, so this cannot be undone.` (Discrepancy 21) |
+| text as drawn | `Back to v2, committed 14 Mar — 99 cards. Nothing about the draft is stored, so this can’t be undone.` | `The deck goes back to v2 as committed on 14 Mar — 99 cards. The nineteen you added and the seventeen you cut are not stored anywhere, so this can’t be undone.` (Discrepancy 21) |
 | facts it must name | version, its date, its card count | version, its date, its card count, the add count, the remove count |
 
 ### Confirm — button row

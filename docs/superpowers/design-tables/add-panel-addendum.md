@@ -290,7 +290,7 @@ Punctuation is significant: `·` U+00B7 middot, `→` U+2192, `✕` U+2715, `’
 | **S34** | `builderEmpty` role hint *(locked)* | `Try filling your ramp, draw, removal, and wipe slots first.` | Untouched | CV:134, CV:172, CV:214 |
 | **S35** | Rationale line 1 *(quoted from `RECOMMENDED_MIX.ramp.rationale`)* | `Ramp 10 — you want your commander out a turn early, every game.` | **Quoted, not rewritten** (RM:312-314). Note it contains an em dash — see §8-8 | CV:466 |
 | **S36** | Rationale line 2 | `Draw 10 — a four-player table runs you out of cards before it runs you out of life.` | as S35 | CV:467 |
-| **S37** | Rationale line 3 | `Removal 10 · Wipes 3 — three opponents means three threats you did not plan for.` | Two roles on one line | CV:468 |
+| **S37** | Rationale line 3 | `Removal 10 · Wipes 3 — three opponents means three threats you didn’t plan for.` | Two roles on one line | CV:468 |
 | **S38** | Rationale line 4 | `Land ~37 — advisory: a cheap curve wants fewer, a heavy one wants more.` | as S35 | CV:469 |
 | **S39** | Shelf label (existing, reused) | `Top picks for Kykar` → `Top picks for {commander}` | The unowned shelf takes the **existing `shelf.labels.edhrec`** — no new key | CV:567, RM:143-144 |
 | **S40** | Unowned shelf count clause (existing shelf grammar) | `· 5 to consider` → `· N to consider` | Rendered in `--fg-faint` after S21 | CV:569, RM:230 |

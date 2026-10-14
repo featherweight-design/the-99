@@ -59,7 +59,7 @@ export const cardAssignmentsCopy = {
      */
     lede: (was: number, arrived: number, left: number) =>
       `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Here's what your decks still need after ` +
-      "the update — and, where one copy has to cover two decks, which one gets it.",
+      "the update, and where one copy has to cover two decks, which one gets it.",
     /**
      * Arrivals, no contention, but some deck is still short. NOT `ledeNoContention`, which says
      * every arrival had a copy to spare — that is false here: a single committed deck asking for
@@ -121,10 +121,10 @@ export const cardAssignmentsCopy = {
     issues: (unmatched: number, parseErrors: number) =>
       `${unmatched} ${unmatched === 1 ? "name" : "names"} didn't match and ${parseErrors} ` +
       `${parseErrors === 1 ? "line wouldn't" : "lines wouldn't"} parse. Any deck still billing ` +
-      "one of those is marked below — you saw them before you confirmed.",
+      "one of those is marked below. You saw them before you confirmed.",
     issuesUnmatchedOnly: (n: number) =>
       `${n} ${n === 1 ? "name" : "names"} didn't match. Any deck still billing ` +
-      `${n === 1 ? "that card" : "one of those"} is marked below — you saw them before you confirmed.`,
+      `${n === 1 ? "that card" : "one of those"} is marked below. You saw them before you confirmed.`,
     issuesLink: "Look at the file again",
 
     sectionCleared: (n: number) => `No longer to buy · ${n}`,
@@ -231,7 +231,7 @@ export const cardAssignmentsCopy = {
     /** Borrowed verbatim from the review page's own commander guard. */
     commanderTag: "commander",
     commanderNote: (deck: string) =>
-      "A commander's copy can't be moved, so there is nothing to choose — the row is here " +
+      "A commander's copy can't be moved, so there is nothing to choose. The row is here " +
       `because the shortage is real and ${deck} is paying for it.`,
     commanderNoteFolded: (deck: string) =>
       `${deck}'s first copy is its commander and can't be moved. The second one can.`,
@@ -297,18 +297,18 @@ export const cardAssignmentsCopy = {
 
     /** Accessible names. Never rendered. */
     a11yGroup: (card: string, copies: number) =>
-      `Which decks get ${card} — ${copies === 1 ? "1 new copy" : `${copies} new copies`}`,
+      `Which decks get ${card}: ${copies === 1 ? "1 new copy" : `${copies} new copies`}`,
     /**
      * The same group, named on a surface with no import behind it. A screen reader takes the
      * group's name in place of the supply line it sits under, so leaving the arrival wording
      * here would tell that reader the one thing the visible branch exists to stop saying.
      */
     a11yGroupOwned: (card: string, copies: number) =>
-      `Which decks get ${card} — ${copies === 1 ? "1 copy" : `${copies} copies`}`,
+      `Which decks get ${card}: ${copies === 1 ? "1 copy" : `${copies} copies`}`,
     a11yOption: (deck: string, outcome: string) => `${deck}, ${outcome}`,
     a11ySelected: (deck: string) =>
       `${deck}, your choice. Choose again to go back to first committed.`,
     a11yCommander: (deck: string, card: string) =>
-      `${deck} keeps ${card} as its commander. It cannot be moved.`,
+      `${deck} keeps ${card} as its commander. It can’t be moved.`,
   },
 } as const;

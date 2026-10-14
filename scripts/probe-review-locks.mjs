@@ -199,7 +199,7 @@ async function run() {
       report(`${label}px · the add row names the holding deck`, !!add?.holder, JSON.stringify(add));
       report(`${label}px · the locked guard tag is drawn`, !!add?.tag, JSON.stringify(add));
       report(`${label}px · no Pull it is offered`, add?.found && add.pull === false, JSON.stringify(add));
-      report(`${label}px · the row's description says why`, !!add?.described?.includes(`${claimed.name} is locked in ${holderName}, so it cannot be pulled.`), add?.described ?? "no row");
+      report(`${label}px · the row's description says why`, !!add?.described?.includes(`${claimed.name} is locked in ${holderName}, so it can’t be pulled.`), add?.described ?? "no row");
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/review-locked-guard-${label}.png` });
 
       // The phone shows one column at a time; the cuts are the second segment.

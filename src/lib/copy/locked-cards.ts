@@ -38,7 +38,7 @@ export const lockedCardsCopy = {
     /** The tag beside the holding deck's name, which the row already prints. */
     tag: "locked",
     /** Never rendered: the row's accessible description, as `commanderGuardA11y` is. */
-    a11y: (deck: string, card: string) => `${card} is locked in ${deck}, so it cannot be pulled.`,
+    a11y: (deck: string, card: string) => `${card} is locked in ${deck}, so it can’t be pulled.`,
   },
   tuning: {
     /** The no-longer-applies row's third reason, beside `cutGone` and `addAlreadyIn`. */
