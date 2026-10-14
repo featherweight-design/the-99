@@ -15,13 +15,16 @@ vi.mock("../../cards/card-detail-provider", () => ({
     <button type="button" aria-label={name} data-siblings={(siblings ?? []).join(",")}>{children}</button>
   ),
 }));
-const startProps = vi.hoisted(() => ({ illegal: [] as string[], row: null as null | { built: unknown }, dock: undefined as string | undefined }));
+const startProps = vi.hoisted(() => ({ illegal: [] as string[], row: null as null | { built: unknown }, dock: undefined as string | undefined, addedOn: undefined as string | null | undefined, addFileName: undefined as string | undefined }));
 vi.mock("./start-precon", () => ({
-  StartPrecon: (p: { illegal: string[]; row: { built: unknown }; dockSummary?: string }) => {
-    startProps.illegal = p.illegal; startProps.row = p.row; startProps.dock = p.dockSummary; return null;
+  StartPrecon: (p: { illegal: string[]; row: { built: unknown }; dockSummary?: string; addedOn?: string | null; addFileName?: string }) => {
+    startProps.illegal = p.illegal; startProps.row = p.row; startProps.dock = p.dockSummary;
+    startProps.addedOn = p.addedOn; startProps.addFileName = p.addFileName; return null;
   },
 }));
 const linkActions = vi.hoisted(() => ({ linkPrecon: vi.fn(), unlinkPrecon: vi.fn() }));
+const mirrored = vi.hoisted(() => ({ urls: [] as string[] }));
+vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: (u: string) => { mirrored.urls.push(u); } }));
 vi.mock("../../../app/decks/precon-link-actions", () => linkActions);
 vi.mock("../decklist-group", () => ({
   DecklistGroup: (p: { label: string; note?: string; readOnly?: boolean; view?: string; cards: { name: string; layout?: string | null }[]; footer?: React.ReactNode; footerCount?: number; cardTail?: React.ReactNode }) => (
@@ -34,7 +37,7 @@ vi.mock("../decklist-group", () => ({
 import { OpenPreconView } from "./open-precon-view";
 
 const card = (name: string, over: Partial<OpenPreconCard> = {}): OpenPreconCard => ({
-  oracleId: name, name, typeLine: "Creature — Eldrazi", manaCost: null, layout: "normal", imageUri: null, quantity: 1,
+  oracleId: name, name, typeLine: "Creature — Eldrazi", manaCost: null, layout: "normal", imageUri: null, quantity: 1, foil: 0,
   isCommander: false, basic: false, owned: true, legal: true, printing: { scryfallId: `p-${name}`, setCode: "cmm", collectorNumber: "1", label: "CMM 1", imageUri: null, backImageUri: null }, ...over,
 });
 
@@ -45,7 +48,7 @@ function precon(over: Partial<Extract<OpenPrecon, { kind: "precon" }>["row"]> = 
   card("Wastes", { typeLine: "Basic Land", basic: true, quantity: 15 }),
 ]): Extract<OpenPrecon, { kind: "precon" }> {
   return {
-    kind: "precon", setName: "Commander Masters", hasCollection: true, cards, decks: [], addedOn: null,
+    kind: "precon", setName: "Commander Masters", hasCollection: true, cards, decks: [], addedOn: null, collector: null,
     row: {
       fileName: "EldraziUnbound_CMM", name: "Eldrazi Unbound", setCode: "CMM", releaseDate: "2023-08-04",
       twinName: null, commanders: [], identity: [], owned: 1, of: 2, unmapped: 0, built: [], ...over,
@@ -277,5 +280,55 @@ describe("OpenPreconView", () => {
       // The basic joins card details' run after Lands' cards, so its Prev/Next work like any tile's.
       expect(within(tail).getByRole("button", { name: "Wastes" }).dataset.siblings).toBe("Zhulodok,Ruins,Wastes");
     });
+  });
+});
+
+describe("OpenPreconView edition switch", () => {
+  const ce = (name: string, over: Partial<OpenPreconCard> = {}) => card(name, {
+    foil: 1, printing: { scryfallId: `ce-${name}`, setCode: "cmc", collectorNumber: "9", label: "CMC 9", imageUri: null, backImageUri: null }, ...over,
+  });
+  const withCollector = () => ({
+    ...precon(),
+    addedOn: "2026-10-01T00:00:00.000Z",
+    collector: { fileName: "EldraziUnboundCE_CMM", addedOn: null, cards: [
+      ce("Zhulodok", { isCommander: true, typeLine: "Legendary Creature — Eldrazi" }),
+      ce("Sol Ring", { typeLine: "Artifact", owned: false }),
+      ce("Ruins", { typeLine: "Land" }),
+      ce("Wastes", { typeLine: "Basic Land", basic: true, quantity: 15, foil: 15 }),
+    ] },
+  });
+  const viewed = (oracleId: string) => (providerProps.views as Record<string, { setCode: string }>)[oracleId]?.setCode;
+
+  beforeEach(() => { mirrored.urls = []; window.history.replaceState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new"); });
+
+  it("is not drawn for a precon with no Collector's Edition", () => {
+    render(<OpenPreconView precon={precon()} fromNew={false} />);
+    expect(screen.queryByRole("radiogroup", { name: "Edition" })).toBeNull();
+  });
+
+  it("starts on the edition the URL named, and draws that edition's printings", () => {
+    render(<OpenPreconView precon={withCollector()} fromNew={false} edition="collector" />);
+    expect(screen.getByRole("radio", { name: "Collector's Edition" })).toHaveAttribute("aria-checked", "true");
+    expect(viewed("Sol Ring")).toBe("cmc");
+    expect(screen.getByText("Every card in the Collector's Edition is foil.")).toBeInTheDocument();
+  });
+
+  it("hands Start the chosen edition's own box and its own added date", () => {
+    render(<OpenPreconView precon={withCollector()} fromNew={false} />);
+    expect(startProps).toMatchObject({ addFileName: "EldraziUnbound_CMM", addedOn: "2026-10-01T00:00:00.000Z" });
+    fireEvent.click(screen.getByRole("radio", { name: "Collector's Edition" }));
+    expect(startProps).toMatchObject({ addFileName: "EldraziUnboundCE_CMM", addedOn: null });
+  });
+
+  it("swaps the printings on a press, keeps the counts, and writes only its own parameter", () => {
+    render(<OpenPreconView precon={withCollector()} fromNew={false} />);
+    expect(viewed("Sol Ring")).toBe("cmm");
+    fireEvent.click(screen.getByRole("radio", { name: "Collector's Edition" }));
+    expect(viewed("Sol Ring")).toBe("cmc");
+    expect(screen.getByText("1 of 2")).toBeInTheDocument();
+    expect(mirrored.urls.at(-1)).toBe("/decks/precons/EldraziUnbound_CMM?from=new&edition=collector");
+    fireEvent.click(screen.getByRole("radio", { name: "Regular" }));
+    expect(viewed("Sol Ring")).toBe("cmm");
+    expect(mirrored.urls.at(-1)).toBe("/decks/precons/EldraziUnbound_CMM?from=new");
   });
 });

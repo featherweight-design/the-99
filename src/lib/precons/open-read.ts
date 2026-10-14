@@ -21,6 +21,8 @@ export type OpenPreconCard = {
   layout: string | null;
   imageUri: string | null;
   quantity: number;
+  /** How many of `quantity` the box holds in foil (every copy of a Collector's Edition). */
+  foil: number;
   isCommander: boolean;
   basic: boolean;
   owned: boolean;
@@ -54,6 +56,11 @@ export type OpenPrecon =
     decks: PreconDeckChoice[];
     /** When the reader last added this precon to their collection (an unreverted entry), as ISO, or null. */
     addedOn: string | null;
+    /**
+     * The Collector's Edition twin, when the set printed one: the same list in its OWN printings and
+     * finish (every copy foil), and its own added date, for the page's edition toggle. Null otherwise.
+     */
+    collector: { fileName: string; cards: OpenPreconCard[]; addedOn: string | null } | null;
   };
 
 export async function loadOpenPrecon(userId: string, fileName: string): Promise<OpenPrecon | null> {
@@ -80,7 +87,6 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
   const readerDecks = await readReaderDecks(userId, db);
   const setRow = await db.select({ name: sets.name }).from(sets).where(eq(sets.code, head.setCode.toLowerCase()));
   const owned = new Set(ownedRows.map((r) => r.oracleId));
-  const basic = (typeLine: string) => /^Basic\b/.test(typeLine);
 
   const [row] = summarisePrecons(
     [
@@ -88,7 +94,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
         fileName: head.fileName, name: head.name, setCode: head.setCode, releaseDate: head.releaseDate, twinOf: null,
         unmappedCount: head.unmappedCount,
         cards: lines.map((l) => ({
-          oracleId: l.oracleId, name: l.name, isCommander: l.isCommander, basic: basic(l.typeLine),
+          oracleId: l.oracleId, name: l.name, isCommander: l.isCommander, basic: basicType(l.typeLine),
           colorIdentity: l.colorIdentity, imageUri: l.imageUri,
         })),
       },
@@ -99,10 +105,16 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
   );
 
   const precon = {
-    cards: new Set(lines.filter((l) => !basic(l.typeLine)).map((l) => l.oracleId)),
+    cards: new Set(lines.filter((l) => !basicType(l.typeLine)).map((l) => l.oracleId)),
     commanders: row.commanders.map((c) => c.oracleId),
   };
   const decks = await deckChoices(db, readerDecks, fileName, precon);
+  // A twin's list is the plain edition's by definition (same oracle ids, same counts), so ownership
+  // and legality carry over; only the printings, and with them the art and finish, are its own.
+  const [ce] = twin;
+  const collector = ce
+    ? { fileName: ce.fileName, cards: toCards(await openPreconLines(db, ce.fileName), owned), addedOn: await preconAddedOn(userId, ce.fileName, db) }
+    : null;
 
   return {
     kind: "precon",
@@ -111,23 +123,32 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
     hasCollection: any.length > 0,
     decks,
     addedOn: await preconAddedOn(userId, fileName, db),
-    cards: lines.map((l) => ({
-      oracleId: l.oracleId,
-      name: l.name,
-      typeLine: l.typeLine,
-      manaCost: l.manaCost,
-      layout: l.layout,
-      imageUri: l.imageUri,
-      quantity: l.quantity,
-      isCommander: l.isCommander,
-      basic: basic(l.typeLine),
-      owned: owned.has(l.oracleId),
-      legal: l.legal,
-      printing: l.scryfallId && l.setCode && l.collectorNumber
-        ? { scryfallId: l.scryfallId, setCode: l.setCode, collectorNumber: l.collectorNumber, label: `${l.setCode.toUpperCase()} ${l.collectorNumber}`, imageUri: l.printingImage, backImageUri: l.printingBack }
-        : null,
-    })),
+    collector,
+    cards: toCards(lines, owned),
   };
+}
+
+const basicType = (typeLine: string) => /^Basic\b/.test(typeLine);
+
+/** The page's cards from one precon's lines, each marked owned when the reader holds any printing. */
+function toCards(lines: Awaited<ReturnType<typeof openPreconLines>>, owned: ReadonlySet<string>): OpenPreconCard[] {
+  return lines.map((l) => ({
+    oracleId: l.oracleId,
+    name: l.name,
+    typeLine: l.typeLine,
+    manaCost: l.manaCost,
+    layout: l.layout,
+    imageUri: l.imageUri,
+    quantity: l.quantity,
+    foil: l.foilQuantity,
+    isCommander: l.isCommander,
+    basic: basicType(l.typeLine),
+    owned: owned.has(l.oracleId),
+    legal: l.legal,
+    printing: l.scryfallId && l.setCode && l.collectorNumber
+      ? { scryfallId: l.scryfallId, setCode: l.setCode, collectorNumber: l.collectorNumber, label: `${l.setCode.toUpperCase()} ${l.collectorNumber}`, imageUri: l.printingImage, backImageUri: l.printingBack }
+      : null,
+  }));
 }
 
 /** The picker's rows: each deck's overlap, its commanders' names and the precon it is linked to. */
@@ -179,6 +200,7 @@ export function openPreconLines(db: Reader, fileName: string) {
     .select({
       oracleId: preconCards.oracleId,
       quantity: preconCards.quantity,
+      foilQuantity: preconCards.foilQuantity,
       isCommander: preconCards.isCommander,
       name: cards.name,
       typeLine: cards.typeLine,

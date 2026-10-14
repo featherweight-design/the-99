@@ -77,6 +77,13 @@ export const preconsCopy = {
       `${name}, with ${commanders.join(" and ")}. You own ${n(owned)} of ${n(of)} of its cards.`,
   },
   open: {
+    // The edition switch, shown only for a precon whose set also printed a Collector's Edition.
+    edition: {
+      aria: "Edition",
+      regular: "Regular",
+      collector: "Collector's Edition",
+      collectorNote: "Every card in the Collector's Edition is foil.",
+    },
     back: "‹ Commander precons",
     backNew: "‹ New deck",
     eyebrow: "Precon decklist · read-only",
