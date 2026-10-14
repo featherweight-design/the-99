@@ -166,7 +166,8 @@ describe("Start dialog: I own this precon", () => {
     fireEvent.click(own());
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
     await waitFor(() => expect(screen.getByText("100 copies added")).toBeInTheDocument());
-    expect(screen.getByRole("dialog")).toHaveFocus();
+    // The focus effect runs after the receipt commits, so wait for it rather than read it in the same tick.
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveFocus());
   });
 
   it("keeps the add's id across a reload when the add threw, and drops it once the outcome is known", async () => {
