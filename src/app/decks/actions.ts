@@ -41,6 +41,7 @@ import { validateDeckName } from "../../lib/decks/deck-name";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { touchDeck } from "../../lib/decks/touch";
 import { removeOneCopy } from "../../lib/decks/remove-card";
+import { setBasicQuantityFor, type BasicQuantityOutcome } from "../../lib/decks/set-basic-quantity";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import {
@@ -477,6 +478,22 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
   await requireDeck(deckId, userId);
   await removeOneCopy(deckId, oracleId);
   revalidateClaims(deckId, userId);
+}
+
+/**
+ * The basics stepper's one write: a basic land's count in the deck's draft, set to `n` (absolute,
+ * so the client's settled burst of presses is one call). Every refusal is returned, not thrown, and
+ * is decided before any write, so the row may say the deck is unchanged; a throw may have committed.
+ */
+export async function setBasicQuantity(
+  deckId: string,
+  oracleId: string,
+  n: number,
+): Promise<BasicQuantityOutcome> {
+  const userId = await requireUserId();
+  const outcome = await setBasicQuantityFor(userId, deckId, oracleId, n);
+  if (outcome.ok && outcome.changed) revalidateClaims(deckId, userId);
+  return outcome;
 }
 
 export async function deleteDeck(deckId: string): Promise<void> {

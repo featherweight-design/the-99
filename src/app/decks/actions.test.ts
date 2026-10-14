@@ -2796,3 +2796,107 @@ describe("createDeck — Help me choose's answers (F1, F2)", () => {
     await expect(runAsked({ ...answers, bracket: 6 })).rejects.toThrow("bracket must be 1 to 5");
   });
 });
+
+// The basics stepper's one write. Every refusal is decided before anything is written, so the
+// tests read the write log as well as the outcome: a refusal that had already updated a row would
+// say "unchanged" over a change.
+describe("setBasicQuantity — a basic land's count, set absolutely", () => {
+  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  const ISLAND = "11111111-1111-1111-1111-111111111111";
+  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
+  function ownDeck() {
+    stub.state.decks.push({ id: DECK, userId: "user_1", commanderOracleId: CMDR });
+  }
+  function basic(typeLine = "Basic Land — Island") {
+    stub.state.cards.push({ oracleId: ISLAND, typeLine });
+  }
+  beforeEach(() => {
+    stub.state.deleteCalls.length = 0;
+    stub.state.revalidated.length = 0;
+  });
+  const cardWrites = () => stub.state.updateCalls.filter((u) => u.table === "deck_cards");
+  const cardDeletes = () => stub.state.deleteCalls.filter((d) => d.table === "deck_cards");
+
+  it("writes the figure, clears auto and stamps the deck", async () => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 6 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 9)).toEqual({ ok: true, quantity: 9, changed: true });
+    expect(cardWrites()).toEqual([{ table: "deck_cards", values: { quantity: 9, auto: false } }]);
+    expect(stamped()).toBe(true);
+    expect(stub.state.revalidated.length).toBeGreaterThan(0);
+  });
+
+  // A fill-added row at the figure asked: the count is unchanged but the player chose it, so the
+  // row is claimed (auto cleared) and that is a write.
+  it("claims a fill-added row even when its figure already matches", async () => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 6, auto: true } as { oracleId: string; quantity: number });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 6)).toEqual({ ok: true, quantity: 6, changed: true });
+    expect(cardWrites()).toHaveLength(1);
+  });
+
+  it("writes nothing and stamps nothing when the figure has not moved", async () => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 6 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 6)).toEqual({ ok: true, quantity: 6, changed: false });
+    expect(cardWrites()).toHaveLength(0);
+    expect(stamped()).toBe(false);
+    expect(stub.state.revalidated).toHaveLength(0);
+  });
+
+  it("deletes the row at 0", async () => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 3 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 0)).toEqual({ ok: true, quantity: 0, changed: true });
+    expect(cardDeletes()).toHaveLength(1);
+    expect(cardWrites()).toHaveLength(0);
+    expect(stamped()).toBe(true);
+  });
+
+  it.each([-1, 1.5, 1000, Number.NaN])("refuses %s, writing nothing", async (n) => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 6 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, n)).toEqual({ ok: false, reason: "out-of-range" });
+    expect(cardWrites()).toHaveLength(0);
+    expect(stamped()).toBe(false);
+  });
+
+  it("refuses a card that is not a basic land", async () => {
+    ownDeck();
+    basic("Land — Island Swamp");
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 1 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 4)).toEqual({ ok: false, reason: "not-basic" });
+    expect(cardWrites()).toHaveLength(0);
+  });
+
+  it("refuses a basic the deck no longer holds, writing nothing", async () => {
+    ownDeck();
+    basic();
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 4)).toEqual({ ok: false, reason: "not-in-deck" });
+    expect(cardWrites()).toHaveLength(0);
+    expect(cardDeletes()).toHaveLength(0);
+    expect(stamped()).toBe(false);
+  });
+
+  it("throws on another player's deck", async () => {
+    stub.state.decks.push({ id: DECK, userId: "user_2", commanderOracleId: CMDR });
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 6 });
+    const { setBasicQuantity } = await import("./actions");
+    await expect(setBasicQuantity(DECK, ISLAND, 9)).rejects.toThrow("deck not found");
+    expect(cardWrites()).toHaveLength(0);
+  });
+});
