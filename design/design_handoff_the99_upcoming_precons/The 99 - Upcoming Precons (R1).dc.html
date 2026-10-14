@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upcoming precons · the calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.call{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 14px;padding:16px 0;border-top:1px solid #1A1F2B}
+.n{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5C86C9;padding-top:2px}
+.q{font-size:12px;color:#7C8A8C;font-family:'IBM Plex Mono',monospace}
+.a{font-size:16px;font-weight:600;color:#C6D2D3;margin:2px 0 4px}
+.w{font-size:13.5px;line-height:1.6;color:#B3C0C2;margin:0;text-wrap:pretty}
+.mono{font-family:'IBM Plex Mono',monospace}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1720px;box-sizing:border-box;padding:48px 56px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;align-items:center;gap:14px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#121217;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:.08em">R1</span>
+    <span class="lbl">Upcoming precons · New in the app · 2026-10-14 · for audit</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:1000px">
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;line-height:1.15">Sets on the way, and one line on Home when something arrives</h1>
+    <p class="w" style="font-size:15px">Source of truth: <span class="mono" style="font-size:12.5px">docs/superpowers/design-briefs/2026-10-14-upcoming-precons.md</span> (branch <span class="mono" style="font-size:12.5px">brief/upcoming-precons</span>). Fixtures from staging: Star Trek Commander (TRC, Nov 13, 2026, 15 commanders, Christine Chapel spoiled twice) and Darkhold Destiny Commander (MDC, Apr 9, 2027, Gargantos). Ships on its own switch, behind <span class="mono" style="font-size:12.5px">PRECONS_ENABLED</span>. Kaldheim, as the precons rounds.</p>
+  </div>
+
+  <div style="display:flex;gap:48px;align-items:flex-start">
+    <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="7">
+        <div class="call">
+          <span class="n">{{ c.n }}</span>
+          <div style="display:flex;flex-direction:column">
+            <span class="q">{{ c.q }}</span>
+            <span class="a">{{ c.a }}</span>
+            <p class="w">{{ c.w }}</p>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex:none;width:390px;display:flex;flex-direction:column;gap:22px;padding-top:16px">
+      <span class="lbl">The two surfaces at 390</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span class="mono" style="font-size:10.5px;color:#7C8A8C">Precons · the group, above 2026</span>
+        <div style="background:#121217;border:1px solid #2E3340;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <h2 style="margin:0;display:flex;align-items:baseline;gap:8px;border-bottom:1px solid #1A1F2B;padding-bottom:7px;font-family:'Metamorphous',serif;font-weight:400;font-size:17px;color:#C6D2D3">Announced <span class="mono" style="font-size:11px;color:#7C8A8C">2 sets</span></h2>
+          <div style="border:1px dashed #424755;border-radius:10px;padding:11px 12px 12px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span style="font-family:'Metamorphous',serif;font-size:15px;color:#C6D2D3">Darkhold Destiny Commander</span>
+              <span class="mono" style="font-size:10.5px;color:#7C8A8C">MDC · Apr 9, 2027 · in 6 months</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <div style="width:76px;display:flex;flex-direction:column;gap:5px">
+                <div style="width:76px;height:106px;border-radius:4px;background:#2D2E35;display:flex;align-items:center;justify-content:center"><span class="mono" style="font-size:8.5px;color:#5F6D6E">MDC art</span></div>
+                <span style="font-size:10.5px;line-height:1.3;color:#B3C0C2">Gargantos, the Endbringer</span>
+                <span style="display:flex;gap:3px"><span style="width:7px;height:7px;border-radius:50%;background:#98748F"></span><span style="width:7px;height:7px;border-radius:50%;background:#4B7A46"></span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span class="mono" style="font-size:10.5px;color:#7C8A8C">Home · one arrival, unseen</span>
+        <div style="background:#18191F;border:1px solid #2E3340;border-radius:10px;padding:10px 4px 10px 14px;display:flex;align-items:flex-start;gap:10px">
+          <span style="flex:none;width:22px;height:22px;margin-top:2px;border-radius:6px;background:rgba(92,134,201,.16);border:1px solid rgba(92,134,201,.45);display:flex;align-items:center;justify-content:center"><span style="width:7px;height:7px;transform:rotate(45deg);background:#5C86C9"></span></span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding-top:2px">
+            <span style="font-size:14px;line-height:1.45;color:#B3C0C2"><span style="color:#C6D2D3">Star Trek Commander</span> is announced, with 15 commanders revealed.</span>
+            <a href="#" style="font-size:13.5px;line-height:1.45;color:#C6D2D3;text-decoration:underline;text-decoration-color:rgba(92,134,201,.55);text-underline-offset:3px">See it in Precons</a>
+          </div>
+          <button type="button" aria-label="Dismiss" style="flex:none;width:44px;height:44px;margin-top:-8px;background:transparent;border:0;color:#7C8A8C;font-size:14px">✕</button>
+        </div>
+      </div>
+      <p class="w" style="font-size:12px;color:#95A4A6">Art boxes are labelled plates: staging's art isn't reachable from here, and only two of the fifteen Star Trek names are in the brief. Every other name on the canvas is a bracketed placeholder for the probe's fixture.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const calls = [
+      { n: "01", q: "Tile versus group (§Open 1)", a: "A group above the years, one dashed block per set.",
+        w: "“Announced” takes the year head’s anatomy (display 17, a mono count, the rule) and sits above the newest year, so it reads as part of the list’s order: soonest first, then 2026. Each set is a block with a dashed 1px border and no fill, the app’s existing mark for “not yours to count yet” (the basics tile, the not-owned dot). It has no art box, no caption, no figure and no link, so it can’t be read as a precon. A 205px tile would show three of Star Trek’s fifteen, and a tile that opens adds a page for Darkhold’s one card." },
+      { n: "02", q: "What a revealed commander shows (§Open 2)", a: "Its small card art, its name in text, its color dots. All of them.",
+        w: "84px cards at 900, 76px at 390, 63:88, Scryfall small art. The name is printed under it in two lines at most, so it’s named in text, not only by art. At 900 the block wraps, nine to a row, so all fifteen show in two rows. At 390 it’s one row that scrolls sideways; the half card at the edge shows there’s more, and the header already says “15 revealed”. A double-spoiled card is one card, drawn from its lowest collector number (Chapel, TRC 78). A set with none revealed shows one plate, “none revealed yet”. A commander links nowhere this round (gap G2)." },
+      { n: "03", q: "How the date reads (§Open 3)", a: "The date, then how far: Nov 13, 2026 · in 30 days.",
+        w: "Always the absolute date first, as `preconDate` prints it. The relative part is “in N days” from 2 to 60 days, “in N months” past that, rounded to the nearest month (Darkhold, 177 days: in 6 months), and “tomorrow” at 1. Both use the UTC day, as the list does. On release day the set doesn’t leave: it reads “out Nov 13, 2026 · decklists not listed yet” until its lists arrive. That needs the read to keep a released set that has no precons yet (gap G3)." },
+      { n: "04", q: "Where the banner sits, and beside the About sheet (§Open 4)", a: "In the page, between Home’s header and Ready to build.",
+        w: "It’s a band in the page’s flow, not a card over it. At desktop it spans both columns. Because it isn’t fixed, it never meets the About sheet, which is a foot card at 390 and sits beside the rail at desktop. When both are due on one load, both show and neither yields. The sheet keeps its polite announcement, and the banner isn’t announced. A first-run account sees the checklist and no banner, and its arrivals wait until Home is the dashboard." },
+      { n: "05", q: "What the banner says, and what “arrives” means (§Open 5)", a: "One sentence for one arrival. A short list for several, capped as the About sheet caps.",
+        w: "Both kinds count: a set newly announced, and a set’s decklists newly listed. Decklists roll up by set: one line per set, never one per precon. One arrival names it and links to where it is: “Star Trek Commander is announced, with 15 commanders revealed. See it in Precons.” Several: “3 new in Commander precons”, one line each, then one link. Up to four lines show; past that, three and “and N more” (`sheetTitles`). An arrival is only bannered in the 30 days after its `arrivedAt`, so a reader back after a long break isn’t shown stale news." },
+      { n: "06", q: "When it becomes seen (§Open 6)", a: "On ✕, or on opening Precons. Being shown records nothing.",
+        w: "✕ marks every code in the banner seen. Opening Precons by any route also marks every set the page draws, as reaching /about answers the About sheet. Just being shown on Home writes nothing, like the sheet’s Later, so a glance on the way to a deck doesn’t use it up. Scrolling into view isn’t used. There’s no undo, because the set is still on Precons. The trace is a mono “new” beside the set’s name, on the first Precons visit after it arrives." },
+      { n: "07", q: "When decklists land (§Open 7)", a: "The block leaves, and its precons join the year with “new” for 14 days.",
+        w: "While the set is still on the way and some lists are in, the block stays and adds “2 decklists listed ↓”, which jumps to them. Once the set is out and has a listed precon, the block leaves the group and its precons are tiles in the year, each with “new ·” before “you own” for 14 days from arrival. A reader who never saw the announcement gets one line, “Star Trek Commander: 4 decklists listed”, and dismissing it marks the set seen too. That’s one banner, not two." },
+    ];
+    return { calls };
+  }
+}
+</script>
+</body>
+</html>

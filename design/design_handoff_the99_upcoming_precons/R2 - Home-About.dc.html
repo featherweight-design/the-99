@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upcoming precons R2 · About in the banner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Metamorphous',serif;font-weight:400}
+.cap{margin:0;font-size:13px;line-height:1.55;color:#95A4A6;text-wrap:pretty}
+.mark{flex:none;width:22px;height:22px;border-radius:6px;background:rgba(92,134,201,.16);border:1px solid rgba(92,134,201,.45);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.mark i{display:block;width:7px;height:7px;transform:rotate(45deg);background:#5C86C9}
+.blink{color:#C6D2D3;text-decoration:underline;text-decoration-color:rgba(92,134,201,.55);text-underline-offset:3px;white-space:nowrap}
+.x{flex:none;background:transparent;border:0;padding:0;color:#7C8A8C;font-size:13px;cursor:pointer}
+.stub{border:1px solid #1A1F2B;background:#18191F;border-radius:12px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box}
+.ph{background:#1E1F26;border-radius:6px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:2600px;box-sizing:border-box;padding:44px 40px 60px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:44px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+    <div style="display:flex;align-items:center;gap:12px"><span class="mono" style="font-size:13px;font-weight:600;color:#121217;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:.08em">R2</span><span class="lbl">Home · About’s sheet as a banner line · proposal · 1280 and 390</span></div>
+    <h2 class="disp" style="margin:0;font-size:26px">One notice on Home, whatever arrived</h2>
+    <p class="cap">Hugh’s R1 note 3. About’s one-time foot card becomes one more line in the same band. It’s one place, one look and one dismiss, and the “who yields” question goes away because there’s only one thing on screen. The trade: the sheet appears over whatever page a document load opens, and the banner lives on Home (and the first-run checklist). An About line waits there until the reader comes back to Home.</p>
+  </div>
+
+  <sc-for list="{{ states }}" as="st" hint-placeholder-count="3">
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:4px;max-width:1200px;border-top:1px solid #2E3340;padding-top:16px">
+        <div style="display:flex;align-items:baseline;gap:12px"><span class="mono" style="font-size:13px;color:#5C86C9">{{ st.id }}</span><span style="font-size:17px;font-weight:600">{{ st.title }}</span></div>
+        <p class="cap">{{ st.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <sc-for list="{{ st.widths }}" as="w" hint-placeholder-count="2">
+          <div style="{{ w.frame }}">
+            <div style="{{ w.header }}">
+              <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0">
+                <span class="mono" style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">{{ st.kicker }}</span>
+                <h1 style="{{ w.h1 }}">{{ st.h1 }}</h1>
+              </div>
+            </div>
+
+            <sc-if value="{{ st.single }}" hint-placeholder-val="{{ true }}">
+              <div role="region" aria-label="New in the app" style="{{ w.banner }}">
+                <span class="mark" style="{{ w.markPos }}"><i></i></span>
+                <div style="{{ w.textCol }}">
+                  <span style="font-size:14px;line-height:1.45;color:#B3C0C2"><span style="color:#C6D2D3">{{ st.single.lead }}</span>{{ st.single.rest }}</span>
+                  <a href="#" class="blink" style="{{ w.linkStyle }}">{{ st.single.link }}</a>
+                </div>
+                <button type="button" class="x" aria-label="Dismiss" style="{{ w.xStyle }}">✕</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ st.lines }}" hint-placeholder-val="{{ false }}">
+              <div role="region" aria-label="New in the app" style="{{ w.bannerMany }}">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="mark"><i></i></span>
+                  <h2 style="margin:0;flex:1;min-width:0;font-size:14.5px;font-weight:600;color:#C6D2D3">New in the app</h2>
+                  <button type="button" class="x" aria-label="Dismiss" style="{{ w.xStyle }}">✕</button>
+                </div>
+                <ul style="{{ w.lineList }}">
+                  <sc-for list="{{ st.lines }}" as="l" hint-placeholder-count="2">
+                    <li style="{{ w.line }}"><span style="color:#B3C0C2"><span style="color:#C6D2D3">{{ l.lead }}</span>{{ l.rest }}</span> <a href="#" class="blink">{{ l.link }}</a></li>
+                  </sc-for>
+                </ul>
+              </div>
+            </sc-if>
+
+            <div style="{{ w.bodyRow }}">
+              <div class="stub" style="{{ w.stubPad }}"><span style="font-size:15px;font-weight:600">{{ st.stubTitle }}</span><span class="ph" style="height:110px"></span></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const widthsFor = () => [false, true].map((phone) => ({
+      frame: { width: phone ? "390px" : "1280px", minHeight: phone ? "560px" : "420px", flex: "none", background: "#121217", border: "1px solid #2E3340", borderRadius: "12px", overflow: "hidden", boxSizing: "border-box" },
+      header: phone ? { display: "flex", padding: "14px 16px 0" } : { display: "flex", padding: "22px 26px 0" },
+      h1: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 700, fontSize: phone ? "23px" : "28px", lineHeight: 1.1, color: "#C6D2D3" },
+      banner: phone
+        ? { margin: "14px 16px 0", display: "flex", alignItems: "flex-start", gap: "10px", background: "#18191F", border: "1px solid #2E3340", borderRadius: "10px", padding: "10px 4px 10px 14px" }
+        : { margin: "18px 26px 0", display: "flex", alignItems: "center", gap: "12px", background: "#18191F", border: "1px solid #2E3340", borderRadius: "10px", padding: "7px 8px 7px 14px", minHeight: "46px", boxSizing: "border-box" },
+      markPos: phone ? { marginTop: "2px" } : {},
+      textCol: phone ? { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "4px", paddingTop: "2px" } : { flex: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: "14px", flexWrap: "wrap" },
+      linkStyle: phone ? { fontSize: "14px", lineHeight: 1.45, minHeight: "24px", alignSelf: "flex-start" } : { fontSize: "13.5px" },
+      xStyle: phone ? { width: "44px", height: "44px", fontSize: "14px" } : { width: "32px", height: "32px" },
+      bannerMany: phone
+        ? { margin: "14px 16px 0", display: "flex", flexDirection: "column", background: "#18191F", border: "1px solid #2E3340", borderRadius: "10px", padding: "2px 4px 6px 14px" }
+        : { margin: "18px 26px 0", display: "flex", flexDirection: "column", background: "#18191F", border: "1px solid #2E3340", borderRadius: "10px", padding: "6px 8px 6px 14px" },
+      lineList: { margin: phone ? "0 10px 0 32px" : "2px 0 0 32px", padding: 0, listStyle: "none" },
+      line: { borderTop: "1px solid #1A1F2B", padding: phone ? "9px 0" : "8px 0", fontSize: phone ? "14px" : "13.5px", lineHeight: 1.5 },
+      bodyRow: { padding: phone ? "14px 16px 16px" : "20px 26px 26px" },
+      stubPad: { padding: phone ? "14px 16px" : "16px 18px" },
+    }));
+    const mk = (o) => ({ kicker: "4,812 cards · read today", h1: "Welcome back", stubTitle: "Ready to build", single: null, lines: null, ...o, widths: widthsFor() });
+    const states = [
+      mk({ id: "A1", title: "An About bump, nothing else", single: { lead: "2 new in About:", rest: " Commander sets on the way, and Organizing decks into folders.", link: "Show me" },
+        note: "The sheet’s heading and titles in one sentence. The cap is the sheet’s own (sheetTitles): all titles up to four, else three and “and N more”. Show me goes to /about, and the visit records it, as today. ✕ marks it seen too. Today’s Later closes the sheet and writes nothing, but a banner that came back on every load after ✕ would read as broken. A document load on any page other than Home shows nothing; the line waits for Home." }),
+      mk({ id: "A2", title: "About and an arrival on one load", lines: [
+          { lead: "2 new in About:", rest: " Commander sets on the way, and Organizing decks into folders.", link: "Show me" },
+          { lead: "Star Trek Commander", rest: " is announced, with 15 commanders revealed.", link: "See it in Precons" },
+        ], note: "One band, two lines, About first because it explains the app and the rest is news. Each line has its own link, and one ✕ marks both seen. This replaces R1’s H5, where both showed: there’s nothing left to stack." }),
+      mk({ id: "A3", title: "First-run account", kicker: "Getting started", h1: "Set up The 99", stubTitle: "Checklist, as shipped", single: { lead: "What The 99 does:", rest: " every mark and figure in the app, and where to find it, on one page.", link: "Show me" },
+        note: "The sheet’s first-run card, as one line. It sits on the checklist page, because that is Home for a new account. Precons arrivals still don’t show here, as in R1 H7." }),
+    ];
+    return { states };
+  }
+}
+</script>
+</body>
+</html>
