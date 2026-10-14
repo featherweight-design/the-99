@@ -88,8 +88,8 @@ export function indexKey(entries: readonly IndexEntry[]): string {
 
 /**
  * One deck file reduced to the kept fields. `commander[]` and `mainBoard[]` are the deck, each card
- * with its `isFoil`; `tokens[]` is kept beside it, so adding the precon to a collection can mark its
- * tokens owned. The side board, planes, schemes and `displayCommander` are not part of it. A card
+ * with its `isFoil`; `tokens[]` is kept beside it, for adding the precon to a collection with its
+ * tokens marked owned (the add action is the next change). The side board, planes, schemes and `displayCommander` are not part of it. A card
  * with no identifier keeps a null, so the ingest counts it as unmapped rather than this throwing it
  * away. A file with no `tokens` array reads as a deck with none.
  */

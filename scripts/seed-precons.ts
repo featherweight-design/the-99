@@ -1,4 +1,4 @@
-// `pnpm db:seed:precons`: replaces `precons` and `precon_cards` from MTGJSON's Commander decks
+// `pnpm db:seed:precons`: replaces `precons`, `precon_cards` and `precon_tokens` from MTGJSON's Commander decks
 // (plan `2026-10-11-commander-precons.md`, PR 1). Reads the `Catalog refresh` artifact when
 // CATALOG_FETCH_DIR is set, the network otherwise. Exits non-zero, publishing nothing, when a floor
 // refuses the feed (`planPrecons`); exits 0 with a warning, writing nothing, when this database has

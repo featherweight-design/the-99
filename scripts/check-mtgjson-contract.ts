@@ -4,8 +4,10 @@
  * catalog refresh whose precon ingest would otherwise be the first to meet a shape change.
  *
  * Fetches `DeckList.json` and the NEWEST Commander deck and asserts what the ingest relies on: the
- * index's entries and `type`, and that the deck's cards carry `scryfallId` and `scryfallOracleId`
- * and total 100. It runs the real `commanderDeckEntries` and `deriveDeck`, so a feed we can fetch
+ * index's entries and `type`, that the deck's cards carry `scryfallId`, `scryfallOracleId` and a
+ * boolean `isFoil` and total 100, and that `tokens` is an array whose entries carry `scryfallId`
+ * (an empty one is legitimate: many decks list no tokens). A renamed `isFoil` would otherwise read
+ * every copy as non-foil, and a moved `tokens` as a deck with none, with nothing failing. It runs the real `commanderDeckEntries` and `deriveDeck`, so a feed we can fetch
  * but not derive fails here too.
  */
 import {
@@ -22,7 +24,13 @@ async function main(): Promise<void> {
   if (newest) {
     const res = await fetch(mtgjsonDeckUrl(newest.fileName), { headers: MTGJSON_HEADERS, signal: AbortSignal.timeout(60_000) });
     if (!res.ok) throw new Error(`${newest.fileName}: ${res.status} ${res.statusText}`);
-    const deck = deriveDeck(newest, await res.json());
+    const raw = await res.json() as { data?: { commander?: unknown[]; mainBoard?: unknown[]; tokens?: unknown } };
+    const deck = deriveDeck(newest, raw);
+    const rawCards = [...(raw.data?.commander ?? []), ...(raw.data?.mainBoard ?? [])] as { isFoil?: unknown }[];
+    const noFoil = rawCards.filter((c) => typeof c?.isFoil !== "boolean").length;
+    if (noFoil > 0) problems.push(`${newest.fileName}: ${noFoil} card entries lack a boolean isFoil`);
+    if (!Array.isArray(raw.data?.tokens)) problems.push(`${newest.fileName}: tokens is not an array`);
+    else if (deck.tokens.some((t) => t.scryfallId === null)) problems.push(`${newest.fileName}: a token entry lacks identifiers.scryfallId`);
     const total = deck.cards.reduce((n, c) => n + c.count, 0);
     if (total !== PRECON_SIZE) problems.push(`${newest.fileName}: ${total} cards, not ${PRECON_SIZE}`);
     if (!deck.cards.some((c) => c.commander)) problems.push(`${newest.fileName}: no commander entry`);

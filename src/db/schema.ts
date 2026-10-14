@@ -3075,7 +3075,8 @@ export const precons = pgTable("precons", {
  * its count, so a deck started from it holds the feed's 100 and never an assumed 99. `scryfall_id`
  * is the precon's own printing, shown read-only; null when the catalog lacks that printing but has
  * the card. `foil_quantity` is how many of those copies the box holds in foil (MTGJSON's `isFoil`),
- * the rest non-foil, so adding the precon to a collection writes each copy at its own finish.
+ * the rest non-foil: kept for adding the precon to a collection at each copy's own finish (the add
+ * action is the next change; nothing reads it yet).
  */
 export const preconCards = pgTable("precon_cards", {
   fileName: text("file_name").notNull().references(() => precons.fileName, { onDelete: "cascade" }),
