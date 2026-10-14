@@ -10,9 +10,12 @@ const h = vi.hoisted(() => ({
   stored: [] as boolean[],
   upcomingFails: false,
   marked: [] as string[][],
+  cookies: {} as Record<string, string>,
 }));
 
-vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ get: (name: string) => (name in h.cookies ? { value: h.cookies[name] } : undefined) }),
+}));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.afters.push(fn); } }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => h.env }));
@@ -58,7 +61,7 @@ const runAfters = async () => { for (const fn of h.afters.splice(0)) await fn();
 describe("/decks/precons, upcoming precons", () => {
   beforeEach(() => {
     h.env = { PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true" };
-    h.afters = []; h.keys = []; h.stored = []; h.marked = []; h.upcomingFails = false;
+    h.afters = []; h.keys = []; h.stored = []; h.marked = []; h.upcomingFails = false; h.cookies = {};
   });
 
   it("caches the payload on the UTC day and hands the view the group and the new tiles", async () => {
@@ -70,6 +73,13 @@ describe("/decks/precons, upcoming precons", () => {
     expect(announced.newCodes).toEqual(["mdc"]);
     expect(announced.opensByItself).toBe(true);
     expect(el.props.newFileNames).toEqual(["TRC_A"]);
+  });
+
+  it("hands the view the Announced head's stored press from its cookie, and only a press it knows", async () => {
+    h.cookies = { precons_announced: "open" };
+    expect((await visit()).props.storedAnnounced).toBe("open");
+    h.cookies = { precons_announced: "sideways" };
+    expect((await visit()).props.storedAnnounced).toBeNull();
   });
 
   it("writes every arrival seen on a visit, whatever the filters and the order", async () => {

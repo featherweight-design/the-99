@@ -170,6 +170,7 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
     window.history.replaceState(null, "", "/decks/precons");
     window.localStorage.clear();
     document.cookie = "precons_view=; Max-Age=0; Path=/";
+    document.cookie = "precons_announced=; Max-Age=0; Path=/";
   });
   const trc: AnnouncedProps["sets"][number] = {
     code: "trc", name: "Star Trek Commander", releasesOn: "2026-11-13", released: false, cardCount: 41,
@@ -219,6 +220,22 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
     fireEvent.change(search, { target: { value: "zzzz" } });
     expect(group()).toBeNull();
     expect(screen.getByRole("button", { name: "Clear the search" })).toBeInTheDocument();
+  });
+
+  it("opens the group while a search matches a set in it, closed as stored otherwise", () => {
+    draw();
+    const head = () => screen.getByRole("button", { name: /^Announced/ });
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+    const search = screen.getAllByRole("searchbox")[0] ?? screen.getAllByRole("textbox")[0];
+    fireEvent.change(search, { target: { value: "chapel" } });
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    fireEvent.change(search, { target: { value: "" } });
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("hands the cookie's press to the group, so the server draws it open", () => {
+    draw(undefined, { storedAnnounced: "open" });
+    expect(screen.getByRole("button", { name: /^Announced/ })).toHaveAttribute("aria-expanded", "true");
   });
 
   it("draws nothing when there is no announced data (switch off or read failed, T1, T9)", () => {

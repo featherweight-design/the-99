@@ -33,6 +33,14 @@ export function parsePreconsViewCookie(raw: string | undefined | null): "tiles" 
   return raw === "tiles" || raw === "rows" ? raw : null;
 }
 
+/** The reader's last press on the Announced group's head on `/decks/precons` (upcoming precons), mirrored from
+ *  localStorage (`the99:precons:announced`), so the server draws the group open or closed as the reader left it. */
+export const PRECONS_ANNOUNCED_COOKIE = "precons_announced";
+
+export function parsePreconsAnnouncedCookie(raw: string | undefined | null): "open" | "closed" | null {
+  return raw === "open" || raw === "closed" ? raw : null;
+}
+
 /** A year: the preference outlives a session, and a stale one costs only a flip. */
 const MAX_AGE_S = 60 * 60 * 24 * 365;
 

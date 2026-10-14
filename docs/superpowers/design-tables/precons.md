@@ -143,8 +143,8 @@ precon tile `new`) are that handoff's own table, `design-tables/upcoming-precons
 | count | mono 11 `--fg-faint`: closed `upcoming.countNext(n, next)` = `2 sets · next Nov 13` (the next set still to come; `upcoming.count(n)` when every set is out); open `upcoming.count(n)` = `2 sets` | same |
 | `new` | the `new` tag after the count while any shown set is news | same |
 | chevron | `▸` closed, `▾` open, mono 12 `--fg-muted`, at the right | same |
-| default | closed. Opens by itself when a set is news (unseen, arrived within 30 days) or the address is `#announced`; otherwise this browser's last press (`the99:precons:announced`, `open` or `closed`) | same |
-| motion | row-track collapse, 160ms ease-out; none under reduced motion. Closed, the region is `inert` and hidden | same |
+| default | closed. Opens by itself when a set is news (unseen, arrived within 30 days), the address is `#announced`, or a search or color is on and a set matches it (derived, never stored); otherwise this browser's last press (`the99:precons:announced`, `open` or `closed`, mirrored to the `precons_announced` cookie so the server draws it). A press during the visit wins over all of them | same |
+| motion | row-track collapse, 160ms ease-out, armed only once the page has settled (a state drawn on arrival never animates); none under reduced motion. Closed, the region is `inert` and hidden. Its clip reaches 4px past the rows so their focus rings draw whole | same |
 | focus | 2px `--accent` outline, 2px offset, 4px radius | same |
 | gap to first year | 22 | 22 |
 
@@ -157,6 +157,6 @@ precon tile `new`) are that handoff's own table, `design-tables/upcoming-precons
 | thumb | the first revealed card, `CommanderThumb` `list` (34 × 48), as `PreconRow`'s; the empty plate (`--surface-sunken`, 1px `--border`) with none | same |
 | line 1 | name display 14.5 `--fg`, the `new` tag beside it; right: `upcoming.until(c)` = `in 30 days` (or `upcoming.outShort` = `out`) mono 11 `--fg-body`, then the chevron `--fg-faint` | name 16, when 12 |
 | line 2 | mono 11 `--fg-muted`, one line: `upcoming.more(first, n)` = `Christine Chapel, Combat Medic and 14 more`; every name with one or two; `upcoming.noneRow` = `No commanders revealed yet` | same |
-| line 3 | mono 10.5 `--fg-faint`: the set's dots (9px; its commanders' identities), then `TRC · Nov 13, 2026` | dots 11px |
-| opened | the set's strip under a 1px dashed `--border-strong` rule, pad 12 0 12 12, one row scrolling sideways, bleeding to the right edge | pad 12 15 14, wraps |
+| line 3 | mono 10.5 `--fg-faint`: the set's dots (9px; its commanders' identities, one `--fg-faint` dot when they are colorless, none with nothing revealed), then `TRC · Nov 13, 2026` | dots 11px |
+| opened | the set's strip under a 1px dashed `--border-strong` rule that starts 12px in and bleeds right; pad 12 12 12 0, one row scrolling sideways to the border | the rule inset 15px each side; pad 12 0 14, wraps |
 | default | closed every visit | same |

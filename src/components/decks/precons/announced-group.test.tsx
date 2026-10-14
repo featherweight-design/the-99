@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { RevealedCommander } from "../../../lib/precons/revealed";
 import type { UpcomingSet } from "../../../lib/precons/upcoming";
@@ -30,6 +31,7 @@ describe("AnnouncedGroup", () => {
   beforeEach(() => {
     window.localStorage.clear();
     window.history.replaceState(null, "", "/decks/precons");
+    document.cookie = "precons_announced=; Max-Age=0; Path=/";
   });
 
   it("is closed by default, a heading button with the count and the next release (C1)", () => {
@@ -127,7 +129,61 @@ describe("AnnouncedGroup", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it("draws the press the cookie carries on the server, so the group never opens after hydration", () => {
+    const html = (serverPress: "open" | "closed" | null) => renderToString(
+      <AnnouncedGroup matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} serverPress={serverPress} />,
+    );
+    expect(html("open")).toMatch(/aria-expanded="true"/);
+    expect(html("closed")).toMatch(/aria-expanded="false"/);
+    expect(html(null)).toMatch(/aria-expanded="false"/);
+    // And no transition is armed until the page has settled.
+    expect(html("open")).toMatch(/data-settled="false"/);
+    expect(html("open")).not.toMatch(/transition-\[grid-template-rows/);
+  });
+
+  it("mirrors a press into the cookie the server reads", () => {
+    document.cookie = "precons_announced=; Max-Age=0; Path=/";
+    draw();
+    fireEvent.click(head());
+    expect(document.cookie).toContain("precons_announced=open");
+    fireEvent.click(head());
+    expect(document.cookie).toContain("precons_announced=closed");
+  });
+
+  it("opens while a filter is on and a set matches it, over a stored close; a press still wins", () => {
+    window.localStorage.setItem(ANNOUNCED_KEY, "closed");
+    const { rerender } = draw({ filtering: true });
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(head());
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+    // Derived, never stored: the press wrote `closed`, the filter wrote nothing.
+    expect(window.localStorage.getItem(ANNOUNCED_KEY)).toBe("closed");
+    rerender(<AnnouncedGroup matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} filtering={false} />);
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("leaves the filter's open unstored: with the filter off it falls back to the stored press", () => {
+    window.localStorage.setItem(ANNOUNCED_KEY, "closed");
+    const { rerender } = draw({ filtering: true });
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    rerender(<AnnouncedGroup matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} filtering={false} />);
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+    expect(window.localStorage.getItem(ANNOUNCED_KEY)).toBe("closed");
+  });
+
   describe("rows (Q1–Q3)", () => {
+    it("draws one faint dot for a colorless set, as tiles do, and none for a set with nothing revealed", () => {
+      const colorless = match(set("zzc", "Colorless Commander", "2026-12-01"), [commander(5, "Karn", [])]);
+      const none = match(set("mdc", "Darkhold Destiny Commander", "2027-04-09"), []);
+      draw({ view: "rows", opensByItself: true, matches: [colorless, none] });
+      const [cRow, nRow] = screen.getAllByTestId("announced-row");
+      const dots = within(cRow).getByTestId("row-dots").children;
+      expect(dots).toHaveLength(1);
+      expect((dots[0] as HTMLElement).style.background).toBe("var(--fg-faint)");
+      expect(within(cRow).getByText("Colorless")).toHaveClass("sr-only");
+      expect(within(nRow).queryByTestId("row-dots")).toBeNull();
+    });
+
     it("takes the same closed head, then one precon-shaped row per set", () => {
       draw({ view: "rows" });
       expect(head()).toHaveAttribute("aria-expanded", "false");

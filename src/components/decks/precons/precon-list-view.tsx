@@ -58,6 +58,8 @@ export type PreconListViewProps = {
   storedView?: PreconView | null;
   /** The Announced group's data (upcoming precons), or null: the switch is off or the read failed (T1, T9). */
   announced?: AnnouncedProps | null;
+  /** The Announced head's last press, as the page read it from `PRECONS_ANNOUNCED_COOKIE`. */
+  storedAnnounced?: "open" | "closed" | null;
   /** The precons that read `new ·` on their tile, decided by the server against its own clock (L2, L3). */
   newFileNames?: readonly string[];
 };
@@ -67,6 +69,7 @@ const isView = (v: string): v is PreconView => isPreconView(v);
 
 export function PreconListView({
   rows, hasCollection, fromNew, initial, query, storedView: cookieView = null, announced = null, newFileNames = [],
+  storedAnnounced = null,
 }: PreconListViewProps) {
   // `md`, not the chassis's 1000: the table draws the wide form at 900, and this chassis holds
   // three controls where `/decks`' holds six.
@@ -285,6 +288,8 @@ export function PreconListView({
               opensByItself={announced.opensByItself}
               view={view}
               listed={listed}
+              filtering={filtering}
+              serverPress={storedAnnounced}
             />
           </div>
         )}

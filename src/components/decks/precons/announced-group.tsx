@@ -7,13 +7,15 @@
 //
 // The head is a disclosure, CLOSED by default (rule 9: the group never pushes the decklists down unasked). It
 // opens by itself when it holds a set this reader has not been shown, or when the address names `#announced`
-// (the banner's link); otherwise this browser's last press holds (`the99:precons:announced`).
+// (the banner's link), or while a filter is on and a set matches it (the reader asked); otherwise this browser's
+// last press holds (`the99:precons:announced`, mirrored into a cookie so the server draws it).
 
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { preconDay, preconsCopy } from "../../../lib/copy/precons";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { PreconView } from "../../../lib/precons/list";
 import { useStoredView } from "../../ui/use-stored-view";
+import { PRECONS_ANNOUNCED_COOKIE } from "../../ui/view-cookie";
 import { AnnouncedSet, FOCUS_RING, NEW_TAG, setIdentity, type ListedJump } from "./announced-parts";
 import { AnnouncedRow } from "./announced-row";
 
@@ -42,18 +44,33 @@ export type AnnouncedGroupProps = {
   view: PreconView;
   /** Each set's listed decklists among the list's shown rows, and the year they lead (L2). */
   listed: Readonly<Record<string, ListedJump>>;
+  /** A search or a color is on: with sets matching it, the group is open unless the reader pressed it shut. */
+  filtering?: boolean;
+  /** The press the page read from `PRECONS_ANNOUNCED_COOKIE`: the server's (and the hydration pass's) stored state. */
+  serverPress?: Press | null;
 };
 
-export function AnnouncedGroup({ matches, today, newCodes, opensByItself, view, listed }: AnnouncedGroupProps) {
-  const [stored, store] = useStoredView(ANNOUNCED_KEY, isPress);
+export function AnnouncedGroup({
+  matches, today, newCodes, opensByItself, view, listed, filtering = false, serverPress = null,
+}: AnnouncedGroupProps) {
+  const [stored, store] = useStoredView(ANNOUNCED_KEY, isPress, { cookie: PRECONS_ANNOUNCED_COOKIE, serverValue: serverPress });
+  // No transition until the page has settled: a state only the browser can know (`#announced`, a press stored
+  // before the cookie existed) is drawn at once, never animated open after hydration.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    let second = 0;
+    const first = requestAnimationFrame(() => { second = requestAnimationFrame(() => setSettled(true)); });
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
+  }, []);
   const onLink = useSyncExternalStore(subscribeHash, () => window.location.hash === ANNOUNCED_HASH, () => false);
   // Latched for the visit: a search mirrors the URL without its fragment and the decklist jump replaces it,
   // and neither should fold a group the reader came here to see.
   const [arrivedByLink, setArrivedByLink] = useState(false);
   if (onLink && !arrivedByLink) setArrivedByLink(true);
-  // This visit's own press wins over everything; before one, news or the link opens it, else the stored press.
+  // This visit's own press wins over everything; before one, news, the link or a filter it matches opens it
+  // (derived, never stored), else the stored press.
   const [pressed, setPressed] = useState<boolean | null>(null);
-  const open = pressed ?? (opensByItself || arrivedByLink ? true : stored === "open");
+  const open = pressed ?? (opensByItself || arrivedByLink || (filtering && matches.length > 0) ? true : stored === "open");
   const toggle = useCallback(() => {
     const next = !open;
     setPressed(next);
@@ -87,9 +104,12 @@ export function AnnouncedGroup({ matches, today, newCodes, opensByItself, view, 
         id="announced-sets"
         inert={!open}
         data-open={open ? "true" : "false"}
-        className={`grid transition-[grid-template-rows,visibility] duration-[160ms] ease-out motion-reduce:transition-none ${open ? "visible grid-rows-[1fr]" : "invisible grid-rows-[0fr]"}`}
+        data-settled={settled ? "true" : "false"}
+        className={`grid ${settled ? "transition-[grid-template-rows,visibility] duration-[160ms] ease-out motion-reduce:transition-none" : ""} ${open ? "visible grid-rows-[1fr]" : "invisible grid-rows-[0fr]"}`}
       >
-        <div className="min-h-0 overflow-hidden">
+        {/* The clip the collapse needs, widened 4px past the rows on each side and below (padding, taken back by a
+            matching negative margin), so a row's 2px ring at its 2px offset draws whole. */}
+        <div className={`-mx-[4px] min-h-0 overflow-hidden px-[4px] ${open ? "-mb-[4px] pb-[4px]" : ""}`}>
           {view === "tiles" ? (
             <ul className="m-0 flex list-none flex-col gap-[10px] p-0 pt-[10px]">
               {matches.map((m) => (

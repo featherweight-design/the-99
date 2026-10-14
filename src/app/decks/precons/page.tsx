@@ -21,7 +21,9 @@ import { markUpcomingSeen, utcDay } from "../../../lib/precons/upcoming";
 import { recordSoftFailure } from "../../../lib/cache/soft-failure";
 import { PreconListView } from "../../../components/decks/precons/precon-list-view";
 import { PreconsDown } from "../../../components/decks/precons/precons-down";
-import { parsePreconsViewCookie, PRECONS_VIEW_COOKIE } from "../../../components/ui/view-cookie";
+import {
+  parsePreconsAnnouncedCookie, parsePreconsViewCookie, PRECONS_ANNOUNCED_COOKIE, PRECONS_VIEW_COOKIE,
+} from "../../../components/ui/view-cookie";
 
 export const metadata: Metadata = { title: preconsCopy.list.title };
 
@@ -83,7 +85,10 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
   }
   // The view the browser stored, so the server draws tiles or rows as the reader will see them. A
   // hint only: anything but `tiles` or `rows` reads as absent.
-  const storedView = parsePreconsViewCookie((await cookies()).get(PRECONS_VIEW_COOKIE)?.value);
+  const jar = await cookies();
+  const storedView = parsePreconsViewCookie(jar.get(PRECONS_VIEW_COOKIE)?.value);
+  // The Announced head's last press, so the server draws the group as the reader left it (no open-after-hydration).
+  const storedAnnounced = upcoming ? parsePreconsAnnouncedCookie(jar.get(PRECONS_ANNOUNCED_COOKIE)?.value) : null;
 
   return (
     <PreconListView
@@ -94,6 +99,7 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
       query={params.toString()}
       storedView={storedView}
       announced={upcoming ? announcedProps(upcoming, now) : null}
+      storedAnnounced={storedAnnounced}
       newFileNames={upcoming ? newPreconFiles(upcoming.arrivals, now) : []}
     />
   );

@@ -57,12 +57,13 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
         </span>
         <span className="truncate font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)]">{namesLine(match)}</span>
         <span className="flex items-center gap-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          {identity.length > 0 && (
+          {/* Colorless commanders draw one faint dot, as a colorless card does in tiles; none revealed draws none. */}
+          {canOpen && (
             <>
-              <span className="sr-only">{colorNames(identity).join(", ")}</span>
-              <span aria-hidden className="flex gap-[3px]">
-                {identity.map((x) => (
-                  <span key={x} className="h-[9px] w-[9px] rounded-full md:h-[11px] md:w-[11px]" style={{ background: WUBRG_COLOR[x] }} />
+              <span className="sr-only">{identity.length > 0 ? colorNames(identity).join(", ") : preconsCopy.row.colorless}</span>
+              <span aria-hidden className="flex gap-[3px]" data-testid="row-dots">
+                {(identity.length > 0 ? identity : ["C"]).map((x) => (
+                  <span key={x} className="h-[9px] w-[9px] rounded-full md:h-[11px] md:w-[11px]" style={{ background: x === "C" ? "var(--fg-faint)" : WUBRG_COLOR[x] }} />
                 ))}
               </span>
             </>
@@ -92,7 +93,9 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
         )}
       </h3>
       {canOpen && (
-        <div id={regionId} hidden={!open} className="border-x-0 border-b-0 border-t-[1px] border-dashed border-t-[color:var(--border-strong)] p-[12px] md:mx-0 md:p-[12px_15px_14px_15px]">
+        // The rule sits inside the row's padding: from 12px and bleeding right at 390 (the strip scrolls to the
+        // border), inset 15px each side at 900 (R2 Q3 `rowStrip`).
+        <div id={regionId} hidden={!open} className="ml-[12px] border-x-0 border-b-0 border-t-[1px] border-dashed border-t-[color:var(--border-strong)] p-[12px_12px_12px_0] md:mx-[15px] md:p-[12px_0_14px_0]">
           <RevealedStrip commanders={commanders} />
         </div>
       )}
