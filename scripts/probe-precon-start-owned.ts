@@ -11,11 +11,13 @@
 //   e  the four are reserved to the new deck, a copy each
 //   f  a retry under the same action id lands on the same deck and writes nothing more
 //   g  an action id another add already used is refused
-//   h  reverting the add releases the reservations, and the older decks are still short
+//   h  reverting the add releases the start's reservations (a later pick on the new deck stays), and the older decks
+//      are still short
 //
 // Mutations, each run against it and each failing it:
 //   - the reservation insert dropped from `startPreconOwned`: fails b, c, d and e.
 //   - `releasePreconReservations` dropped from the revert (`write.ts`): fails h.
+//   - its `created_at` bound dropped, so it releases every reservation the deck holds: fails h.
 //
 // It writes under a per-run `user_id` and purges that account in a `finally`, after the branch guard:
 // `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by id.
@@ -118,6 +120,12 @@ async function run() {
   const reused = await startPreconOwned(USER, FILE, "Again", otherId, ENV, true);
   check("g · an id another add already used is refused", reused.ok, false);
 
+  // A copy the player gives the new deck LATER, through the chooser, is that pick's, not the start's: the revert keeps it.
+  const [later] = await rows<{ id: string }>(sql`
+    select dc.oracle_id::text id from deck_cards dc where dc.deck_id = ${deckId}::uuid
+      and dc.oracle_id not in (select oracle_id from card_assignments where deck_id = ${deckId}::uuid) limit 1`);
+  await rows(sql`insert into card_assignments (user_id, oracle_id, deck_id) values (${USER}, ${later.id}::uuid, ${deckId}::uuid)`);
+
   // The revert takes copies a deck holds, so it warns first, and the reader confirms, as History's Undo does.
   const revertId = randomUUID();
   const warned = await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV });
@@ -125,8 +133,8 @@ async function run() {
     ? await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV, confirmShort: warned.decks })
     : warned;
   check("h · reverting the add applies, once its short warning is confirmed", revert.status, "applied");
-  const [left] = await rows<{ n: number }>(sql`select count(*)::int n from card_assignments where user_id = ${USER} and deck_id = ${deckId}::uuid`);
-  check("h · and releases the new deck's reservations", left.n, 0);
+  const left = await rows<{ id: string }>(sql`select oracle_id::text id from card_assignments where user_id = ${USER} and deck_id = ${deckId}::uuid`);
+  check("h · and releases the start's reservations, keeping a later pick", left.map((r) => r.id), [later.id]);
   check("h · the older decks are still short of all four", [await owes(thorin), await owes(gishath)], [FOUR, FOUR]);
 }
 

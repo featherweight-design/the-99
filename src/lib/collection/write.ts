@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cardAssignments, cards, collectionHistory, collectionItems, commanderScores, csvUploads, decks,
@@ -956,21 +956,30 @@ export async function applyCollectionChange(
 }
 
 /**
- * Drops the reservations the deck started with add `entryId` holds (`startPreconOwned`), each card's
- * claim lock first, sorted, as every reservation write takes it. Reverting that revert brings the copies
- * back but not the reservations: they then go where the claim model's order sends them.
+ * Drops the reservations the start made for add `entryId` (`startPreconOwned`), each card's claim lock
+ * first, sorted, as every reservation write takes it. Only the START's own: written in the deck's own
+ * transaction, so stamped no later than the deck, while a copy the player gives that deck later through
+ * the chooser is stamped after it and stays. Reverting that revert brings the copies back but not the
+ * reservations: they then go where the claim model's order sends them.
  */
 async function releasePreconReservations(tx: Tx, userId: string, entryId: string): Promise<void> {
+  const own = and(
+    eq(cardAssignments.userId, userId), eq(decks.userId, userId), eq(decks.preconAddEntryId, entryId),
+    lte(cardAssignments.createdAt, decks.createdAt),
+  );
   const held = await tx.select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId })
     .from(cardAssignments)
     .innerJoin(decks, eq(decks.id, cardAssignments.deckId))
-    .where(and(eq(cardAssignments.userId, userId), eq(decks.userId, userId), eq(decks.preconAddEntryId, entryId)));
+    .where(own);
   if (held.length === 0) return;
   for (const id of [...new Set(held.map((h) => h.oracleId))].sort()) await lockCardClaims(tx, userId, id);
-  await tx.delete(cardAssignments).where(and(
-    eq(cardAssignments.userId, userId),
-    inArray(cardAssignments.deckId, [...new Set(held.map((h) => h.deckId))]),
-  ));
+  const byDeck = new Map<string, string[]>();
+  for (const h of held) byDeck.set(h.deckId, [...(byDeck.get(h.deckId) ?? []), h.oracleId]);
+  for (const [deckId, ids] of byDeck) {
+    await tx.delete(cardAssignments).where(and(
+      eq(cardAssignments.userId, userId), eq(cardAssignments.deckId, deckId), inArray(cardAssignments.oracleId, ids),
+    ));
+  }
 }
 
 /**
