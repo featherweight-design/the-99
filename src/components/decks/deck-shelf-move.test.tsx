@@ -55,6 +55,8 @@ describe("the deck page's Move", () => {
     fireEvent.click(trigger());
     const panel = trigger().parentElement!.querySelector("[id]")!;
     expect(Array.from(panel.querySelectorAll("button")).map((b) => b.textContent)).toEqual(["Move · Unfiled", "Delete"]);
+    // Move is the first row here, so it draws no separator above itself.
+    expect(screen.getByRole("button", { name: /^Move Atraxa/ }).className).toMatch(/first:border-t-0/);
     fireEvent.click(screen.getByRole("button", { name: /^Move Atraxa/ }));
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Cube night" })));
     expect(moveDeckAction).toHaveBeenCalledWith("d1", "f1");

@@ -669,7 +669,7 @@ export function SpineMobile({
               {deckHeaderCopy.export}
             </button>
           )}
-          {/* The Decks tile's own ⋯, beside Export: Rename and Delete from inside the deck. A delete
+          {/* The Decks tile's own ⋯, beside Export: Move and Delete from inside the deck. A delete
               lands on /decks, which `deleteDeck`'s redirect does. */}
           <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" move={move} />
           {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}

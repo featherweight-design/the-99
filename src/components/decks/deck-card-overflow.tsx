@@ -311,9 +311,10 @@ export function DeckCardOverflow({
                 {refreshCopy.decks.menu.rename}
               </button>
               ) : null}
-              {/* Between Rename and Delete, whether or not the Update row above
-                  rendered — it is gated on `built > 0`, so the shipped menu is
-                  two rows on a brew (errata E9). */}
+              {/* Between Rename and Delete on a tile, whether or not the Update row
+                  above rendered — it is gated on `built > 0`, so the shipped menu is
+                  two rows on a brew (errata E9). In the header there is no Rename, so
+                  it is the first row and takes `first:border-t-0` like the others. */}
               {move ? (
               <button
                 type="button"
@@ -322,7 +323,7 @@ export function DeckCardOverflow({
                 // ITEM without its `transition-colors`: this round draws no
                 // motion, and an easing hover is motion. The shipped rows keep
                 // theirs — changing those is a different round's decision.
-                className={`${ITEM.replace(" transition-colors", "")} cursor-pointer bg-transparent text-[color:var(--fg)]`}
+                className={`${ITEM.replace(" transition-colors", "")} first:border-t-0 cursor-pointer bg-transparent text-[color:var(--fg)]`}
               >
                 <span className="truncate" title={shelfLabel}>
                   {folderCopy.move.row(shelfLabel)}
