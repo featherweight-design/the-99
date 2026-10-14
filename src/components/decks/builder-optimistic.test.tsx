@@ -173,6 +173,27 @@ describe("optimistic deck list", () => {
 
   // A decremented stack keeps its row, so the row explains itself and the shell
   // must stay quiet — otherwise one failure is announced in two places.
+  // A stack that is NOT a basic (an import can stack a card) keeps its ✕, and a failed one-copy removal from
+  // it is reported once, by the row: the shell takes only a last copy's failure.
+  it("says a stack's ✕ failure once", async () => {
+    removeCardFromDeck.mockRejectedValue(new Error("boom"));
+    const rats = { ...makeDeck().cards[0], oracleId: "o-rats", name: "Relentless Rats", typeLine: "Creature — Rat", quantity: 9 };
+    render(
+      <BuilderShell mix={TEST_MIX}
+        deck={{ ...makeDeck(), cards: [rats] }}
+        suggestions={[suggestion]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+       newestAsOf={null}/>,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Remove one copy of Relentless Rats, 9 in deck" }));
+    });
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+  });
+
   // A stack of basics has the stepper now, not a ✕ (basics stepper, R2), so its failure is the stepper's
   // save throwing: the row survives it, and the one line under it is the only thing that says so.
   it("says it once when the row survives to say it", async () => {

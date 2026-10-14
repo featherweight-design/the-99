@@ -173,11 +173,21 @@ export function DeckCardTile({
         ? basic.base
         : null;
   const fromMarker = committedCount !== null && basic.count !== committedCount ? committedCount : null;
+  // Spoken while no pending move exists yet to describe it (as the row does).
+  const fromDescriptionId = useId();
+  const fromSpoken =
+    fromMarker !== null && !pendingMove
+      ? basic.count > fromMarker
+        ? deckVersioningCopy.pending.addMarkRecountedA11y(fromMarker, basic.count)
+        : deckVersioningCopy.pending.cutMarkRecountedA11y(fromMarker, basic.count)
+      : null;
   // Both ids in reading order, as the row does: that the card is locked, then what the draft did.
   // Said in the mode too, where the drawn mark gives way to the toggle but the card is no less
   // locked.
   const describedBy =
-    [locked ? lockDescriptionId : null, pendingMove ? draftDescriptionId : null].filter(Boolean).join(" ") ||
+    [locked ? lockDescriptionId : null, pendingMove ? draftDescriptionId : null, fromSpoken ? fromDescriptionId : null]
+      .filter(Boolean)
+      .join(" ") ||
     undefined;
   /** Spoken after the name, in the vocabulary's own order — see the `ariaLabel` below. */
   const factClause = card.facts?.length
@@ -595,6 +605,7 @@ export function DeckCardTile({
       {stepperOn && (
         <span className="sr-only" role="status" aria-live="polite">{settledLine}</span>
       )}
+      {fromSpoken && <span id={fromDescriptionId} className="sr-only">{fromSpoken}</span>}
       {/* A refused lock reverts and says why here, under its tile, as the row does. */}
       {lockError && <MutationError message={lockError} />}
     </li>

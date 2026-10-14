@@ -204,6 +204,16 @@ export function DecklistRow({
         ? basic.base
         : null;
   const fromMarker = committedCount !== null && basic.count !== committedCount ? committedCount : null;
+  // Spoken where the draft's own description is not yet: a burst on a row the draft had not touched has no
+  // pending move until its save lands, so the `from N` it draws needs words of its own (the shipped recount
+  // strings, up or down). Once the move exists, the row's pending description says it.
+  const fromDescriptionId = useId();
+  const fromSpoken =
+    fromMarker !== null && !pendingMove
+      ? basic.count > fromMarker
+        ? deckVersioningCopy.pending.addMarkRecountedA11y(fromMarker, basic.count)
+        : deckVersioningCopy.pending.cutMarkRecountedA11y(fromMarker, basic.count)
+      : null;
 
   // The standing bracket facts, inline after the count. `flex-none` in a name block that is
   // already `flex-auto min-w-0` with ellipsis, so the name shrinks and the marks never do —
@@ -391,6 +401,7 @@ export function DecklistRow({
       locked ? lockDescriptionId : null,
       marked ? markDescriptionId : null,
       isPendingChange ? pendingDescriptionId : null,
+      fromSpoken ? fromDescriptionId : null,
     ]
       .filter(Boolean)
       .join(" ") || undefined;
@@ -912,6 +923,7 @@ export function DecklistRow({
       {stepperOn && (
         <span className="sr-only" role="status" aria-live="polite">{settledLine}</span>
       )}
+      {fromSpoken && <span id={fromDescriptionId} className="sr-only">{fromSpoken}</span>}
       {error && !shellReportsFailure && <MutationError message={error} />}
       {/* A refused lock reverts and says why here, under its row (STATES, pending / refused). */}
       {lockError && <MutationError message={lockError} />}

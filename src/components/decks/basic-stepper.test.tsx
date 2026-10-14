@@ -18,6 +18,8 @@ const { DeckCardTile } = await import("./deck-card-tile");
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 const { LockCardsProvider } = await import("./lock-cards");
 const { SETTLE_MS } = await import("./use-basic-count");
+const { PendingChangeProvider } = await import("./pending-change");
+const { deckVersioningCopy } = await import("../../lib/copy/deck-versioning");
 
 const copy = addPanelCopy.basicStepper;
 const island = {
@@ -131,6 +133,23 @@ describe("the basics stepper on a decklist row", () => {
     expect(setBasicQuantity).toHaveBeenCalledTimes(1);
     expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 0);
     expect(screen.queryByText(copy.refused)).not.toBeInTheDocument();
+  });
+
+  // A committed deck whose draft had not touched the Island: the burst draws `from 6` before any pending move
+  // exists, so the row has to say it itself, through the name's description.
+  it("speaks `from N` on a row the draft had not touched", async () => {
+    wrap(
+      <PendingChangeProvider value={{ moves: new Map() } as never}>
+        <DecklistRow deckId="d1" card={island} newestAsOf={null} />
+      </PendingChangeProvider>,
+    );
+    await press(copy.moreAria("Island", 7));
+    expect(screen.getByText(copy.from(6))).toBeInTheDocument();
+    const trigger = screen.getAllByRole("button").find((b) => b.getAttribute("aria-describedby")?.length)!;
+    const ids = trigger.getAttribute("aria-describedby")!.split(" ");
+    const spoken = ids.map((id) => document.getElementById(id)?.textContent ?? "");
+    expect(spoken).toContain(deckVersioningCopy.pending.addMarkRecountedA11y(6, 7));
+    await settle();
   });
 
   describe("the typed count", () => {
