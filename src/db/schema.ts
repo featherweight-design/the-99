@@ -267,12 +267,15 @@ export const tokenOwnership = pgTable("token_ownership", {
   userId: text("user_id").notNull(),
   tokenOracleId: uuid("token_oracle_id").notNull().references(() => tokens.oracleId),
   quantity: integer("quantity").notNull(),
-  source: text("source", { enum: ["upload", "manual"] }).notNull(),
+  // `precon`: marked by adding a precon to the collection, and taken back by reverting that entry.
+  source: text("source", { enum: ["upload", "manual", "precon"] }).notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  /** The `collection_history` entry that marked a `precon` row; null on every other source. */
+  entryId: uuid("entry_id").references((): AnyPgColumn => collectionHistory.id, { onDelete: "set null" }),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.tokenOracleId] }),
   check("token_ownership_quantity_positive", sql`${t.quantity} > 0`),
-  check("token_ownership_source_check", sql`${t.source} in ('upload', 'manual')`),
+  check("token_ownership_source_check", sql`${t.source} in ('upload', 'manual', 'precon')`),
 ]);
 
 /**

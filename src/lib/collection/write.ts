@@ -15,7 +15,7 @@ import { pruneOrphanAssignments } from "../decks/prune-assignments";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
-import { recordUploadTokens, type TokenHolding } from "../tokens/ownership";
+import { clearPreconTokens, markPreconTokens, recordUploadTokens, type TokenHolding } from "../tokens/ownership";
 
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
@@ -68,8 +68,12 @@ export type CollectionChange =
    * confirmed in the same transaction, and a stamp already set returns `alreadyConfirmed`.
    */
   | { kind: "replace"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[] }
-  /** Quantities added: an upload in Add mode (`uploadId`, stamped as above), or the Add cards sheet. */
-  | { kind: "add"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[] }
+  /**
+   * Quantities added: an upload in Add mode (`uploadId`, stamped as above), the Add cards sheet, or a
+   * precon added to the collection, whose `preconTokens` are marked owned by this entry
+   * (`markPreconTokens`) and taken back when it is reverted.
+   */
+  | { kind: "add"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[]; preconTokens?: TokenHolding[] }
   /**
    * Per-row new counts: card details, a row removed. `seen` is every holding of the card the
    * editor showed: a holding of that card the player has now and the editor never saw (another tab
@@ -278,6 +282,8 @@ export type ChangeResult =
       receipt?: ReceiptSnapshots;
       /** With `opts.placements`: each raised card a deck claims, by oracle id. */
       raised?: Record<string, RaisedCard>;
+      /** With `preconTokens`: the token oracle ids this entry marked owned (one already held is not). */
+      tokensMarked?: string[];
       /**
        * With `opts.assign`: whether this write created the reservation, or found it already made,
        * and the other deck's reservation a move displaced.
@@ -704,6 +710,8 @@ export async function applyCollectionChange(
           .set({ revertsId: change.entryId })
           .where(eq(collectionHistory.id, opts.id));
         target = row;
+        // A precon's tokens go with its cards.
+        await clearPreconTokens(tx, userId, change.entryId);
         if (change.ignoreDeckId !== undefined && row.source === `shopping:${change.ignoreDeckId}`) {
           ignoredDecks.add(change.ignoreDeckId);
         }
@@ -877,6 +885,9 @@ export async function applyCollectionChange(
       if (change.kind === "replace" || change.kind === "add") {
         await recordUploadTokens(tx, userId, uploadId, change.kind, change.tokens);
       }
+      const tokensMarked = change.kind === "add" && change.preconTokens
+        ? await markPreconTokens(tx, userId, opts.id, change.preconTokens)
+        : undefined;
 
       const moves = countMoves(rows);
       let short: ShortDeck[] = [];
@@ -919,6 +930,7 @@ export async function applyCollectionChange(
         ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
         ...(raised ? { raised } : {}),
         ...(opts.assign ? { assigned } : {}),
+        ...(tokensMarked ? { tokensMarked } : {}),
       };
     });
   } catch (error) {

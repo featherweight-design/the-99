@@ -45,7 +45,7 @@ function precon(over: Partial<Extract<OpenPrecon, { kind: "precon" }>["row"]> = 
   card("Wastes", { typeLine: "Basic Land", basic: true, quantity: 15 }),
 ]): Extract<OpenPrecon, { kind: "precon" }> {
   return {
-    kind: "precon", setName: "Commander Masters", hasCollection: true, cards, decks: [],
+    kind: "precon", setName: "Commander Masters", hasCollection: true, cards, decks: [], addedOn: null,
     row: {
       fileName: "EldraziUnbound_CMM", name: "Eldrazi Unbound", setCode: "CMM", releaseDate: "2023-08-04",
       twinName: null, commanders: [], identity: [], owned: 1, of: 2, unmapped: 0, built: [], ...over,

@@ -114,6 +114,8 @@ export async function writeUploadTokens(
           ? sql`case when ${tokenOwnership.source} = 'upload' then ${tokenOwnership.quantity} + excluded.quantity else excluded.quantity end`
           : sql`excluded.quantity`,
         source: sql`'upload'`,
+        // A precon row the upload reads becomes the upload's, so reverting the precon no longer takes it.
+        entryId: sql`null`,
         updatedAt: sql`now()`,
       },
     });
@@ -122,6 +124,34 @@ export async function writeUploadTokens(
     target: tokenReads.userId,
     set: { uploadId, readAt: sql`now()` },
   });
+}
+
+/**
+ * A precon's tokens, marked owned by the `add` entry `entryId` that added the precon (its own `precon`
+ * source), so reverting that entry takes back exactly these. A token the player already holds, by any
+ * source, is left as it stands. Joins first, as every write that makes a token held does
+ * (`writeUploadTokens`), then the rows. Never writes the read marker: a precon says nothing about the
+ * tokens it does not hold. Returns the token oracle ids it marked.
+ */
+export async function markPreconTokens(tx: Runner, userId: string, entryId: string, tokens: TokenHolding[]): Promise<string[]> {
+  if (tokens.length === 0 || !(await tokenOwnershipTablesExist(tx))) return [];
+  const ids = tokens.map((t) => t.tokenOracleId);
+  await tx.delete(deckTokenJoins).where(and(eq(deckTokenJoins.userId, userId), inArray(deckTokenJoins.tokenOracleId, ids)));
+  const marked = await tx.insert(tokenOwnership)
+    .values(tokens.map((t) => ({ userId, tokenOracleId: t.tokenOracleId, quantity: t.quantity, source: "precon" as const, entryId })))
+    .onConflictDoNothing()
+    .returning({ id: tokenOwnership.tokenOracleId });
+  return marked.map((m) => m.id);
+}
+
+/** Reverting entry `entryId` takes back the precon tokens it marked, and nothing else. */
+export async function clearPreconTokens(tx: Runner, userId: string, entryId: string): Promise<void> {
+  if (!(await tokenOwnershipTablesExist(tx))) return;
+  await tx.delete(tokenOwnership).where(and(
+    eq(tokenOwnership.userId, userId),
+    eq(tokenOwnership.source, "precon"),
+    eq(tokenOwnership.entryId, entryId),
+  ));
 }
 
 /** The player's own `I have one`. Never writes the read marker; never touches an upload row. */

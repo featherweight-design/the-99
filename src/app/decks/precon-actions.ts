@@ -18,6 +18,12 @@ import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { writeImportedDeck } from "../../lib/decks/write-imported-deck";
 import { PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "../../lib/decks/arrival";
 import { preconsEnabled } from "../../lib/precons/flag";
+import { addPreconForUser, type PreconAddResult } from "../../lib/precons/add";
+import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
+import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
+import { warmCommanderScores } from "../../lib/recs/warm";
+import { isUuid } from "../../lib/uuid";
+import { after } from "next/server";
 import { isCommanderCandidate } from "../../lib/recs/score";
 
 export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
@@ -72,4 +78,31 @@ export async function createDeckFromPrecon(fileName: string, rawName: string): P
   }));
   revalidateClaims(deckId, userId);
   redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}`);
+}
+
+export type { PreconAddResult };
+
+/**
+ * "I own this precon": adds every card at the box's printing, foil copies as foil, and marks its
+ * tokens owned, as one History entry (`precon:<file>`) that Revert takes back whole. `actionId` is a
+ * fresh uuid per press; a retry with it answers from the committed entry. The start dialog calls this
+ * BEFORE `createDeckFromPrecon`, so the draft picks the copies just added (Hugh, 2026-10-13).
+ */
+export async function addPreconToCollection(fileName: string, actionId: string): Promise<PreconAddResult> {
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!preconsEnabled(env)) throw new Error("precons are off");
+  if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
+  if (!isUuid(actionId)) throw new Error("bad action id");
+  // A twin adds its OWN box, never its plain edition's: the cards are the same, the printings and
+  // finishes are not (a Collector's Edition is foil), and the ingest keeps every twin's own rows.
+  const result = await addPreconForUser(userId, fileName, actionId, env, addedCopyEnabled(env));
+  if (result.ok) {
+    // After the response, as every collection write does (`edit-actions.ts`, `settled`).
+    after(async () => {
+      invalidateCollectionReaders(userId);
+      await warmCommanderScores(userId, env);
+    });
+  }
+  return result;
 }

@@ -1984,6 +1984,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   reports, and staging and production are refused by id. Mutation-checked five ways (the window's lot filter, the
   per-player lock, the plan-before-pack order, a refunded run read as spend, `hasCredit` reduced to the free
   allowance); each fails it.
+- `pnpm probe:precon-add` proves adding a precon to a collection against a real database, through the real
+  `addPreconForUser`, `applyCollectionChange` (revert) and `preconAddedOn`, on Multiverse Reforged:
+  - one add writes the box's 100 copies at its own printings, Jace and Nissa as foil, as one `precon:<file>` History
+    entry, and marks the precon's tokens owned under that entry;
+  - a token already held by hand stays a hand mark and is not counted as marked;
+  - a retry with the same action id writes nothing more;
+  - a second add adds a second box and marks no token;
+  - reverting the second keeps the first's tokens, and reverting the first clears them, keeps the hand mark and empties
+    the collection;
+  - `preconAddedOn` reads the add, and null once it is reverted.
+
+  It WRITES under a per-run account it purges, so it fails closed: `PROBE_DB_BRANCH` must name the branch
+  `DATABASE_URL` reports, and staging and production are refused by id. It needs a branch migrated to 0117 and
+  holding precons ingested after 0116. Mutation-checked: with the revert's `clearPreconTokens` removed, it fails.
 - `pnpm probe:payments-webhook` proves the Stripe webhook's grant transaction (payments K1a) against a real database,
   through the real `fulfilCheckoutSession`, `readAllowance` and `purgeAccount`, with Stripe a stand-in whose
   `checkout.sessions.retrieve` serves a crafted Session and counts its calls: a paid Session for its own account
