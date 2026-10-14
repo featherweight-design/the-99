@@ -9,7 +9,7 @@ import { unstable_rethrow } from "next/navigation";
 import { startTransition, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { addPreconToCollection, createDeckFromPrecon } from "../../../app/decks/precon-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
-import { preconDate, preconsCopy } from "../../../lib/copy/precons";
+import { preconAddedDate, preconsCopy } from "../../../lib/copy/precons";
 import { DECK_NAME_MAX, hasControlChars } from "../../../lib/decks/deck-name";
 import type { PreconRow } from "../../../lib/precons/list";
 import type { PreconAddReceipt } from "../../../lib/precons/add-receipt-read";
@@ -37,6 +37,22 @@ export type StartPreconProps = {
   /** Collection editing is on: the dialog offers "I own this precon" (the action refuses without it). */
   canOwn?: boolean;
 };
+
+/**
+ * The add's action id, kept for this tab across a reload: an add that THREW may have committed with its response lost,
+ * and the id is what lets the retry find the committed entry instead of adding the box twice. Cleared once the outcome
+ * is known. Storage can be absent or blocked, so every touch is guarded and the id falls back to memory alone.
+ */
+const attemptKey = (fileName: string) => `the99:precon-add-attempt:${fileName}`;
+function readAttempt(fileName: string): string | null {
+  try { return window.sessionStorage.getItem(attemptKey(fileName)); } catch { return null; }
+}
+function writeAttempt(fileName: string, id: string | null) {
+  try {
+    if (id === null) window.sessionStorage.removeItem(attemptKey(fileName));
+    else window.sessionStorage.setItem(attemptKey(fileName), id);
+  } catch { /* storage is a convenience here, never a requirement */ }
+}
 
 export function StartPrecon(props: StartPreconProps) {
   const [open, setOpen] = useState(false);
@@ -69,7 +85,7 @@ export function StartPrecon(props: StartPreconProps) {
           addedOn={addedAt ?? props.addedOn ?? null}
           addRef={add}
           onAdded={() => setAddedAt(new Date().toISOString())}
-          onAddReverted={() => { add.current = { id: null, at: null }; setAddedAt(null); }}
+          onAddReverted={() => { add.current = { id: null, at: null }; writeAttempt(row.fileName, null); setAddedAt(null); }}
           onDismiss={() => setOpen(false)}
         />
       )}
@@ -102,6 +118,9 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
   const dismiss = () => { if (!pending) onDismiss(); };
   useDialogA11y(dialog, dismiss, { initialFocusRef: input });
   useEffect(() => { input.current?.select(); }, []);
+  // The submit button that had focus leaves with the form when the dialog becomes the receipt: the dialog takes it,
+  // or focus would fall to the page behind an aria-modal dialog.
+  useEffect(() => { if (receipt) dialog.current?.focus(); }, [receipt]);
 
   const trimmed = name.trim();
   // The server action's own rule (`validateDeckName`), so a name it would refuse is never sent.
@@ -123,7 +142,8 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
       try {
         if (own && canOwn) {
           // The add goes first, so the draft picks the copies it just added (Hugh, 2026-10-13).
-          addRef.current.id ??= crypto.randomUUID();
+          addRef.current.id ??= readAttempt(row.fileName) ?? crypto.randomUUID();
+          writeAttempt(row.fileName, addRef.current.id);
           let res: Awaited<ReturnType<typeof addPreconToCollection>>;
           try {
             res = await addPreconToCollection(row.fileName, addRef.current.id);
@@ -136,6 +156,8 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
             setFailed("addUnsure");
             return;
           }
+          // An outcome is known (committed, or refused): the stored attempt has done its job.
+          writeAttempt(row.fileName, null);
           if (!res.ok) {
             inFlight.current = false;
             setPending(false);
@@ -249,7 +271,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
               />
               <span>{copy.owned.label}</span>
             </label>
-            {addedOn && <p className="m-0 pl-[28px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.owned.addedOn(preconDate(addedOn))}</p>}
+            {addedOn && <p className="m-0 pl-[28px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.owned.addedOn(preconAddedDate(addedOn))}</p>}
           </div>}
 
           {already && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.already(already.deckName)}</p>}

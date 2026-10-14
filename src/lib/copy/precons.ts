@@ -13,6 +13,10 @@ export const preconMonth = (isoDate: string) =>
 export const preconDate = (isoDate: string) =>
   new Date(`${isoDate}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
+/** A moment (an ISO timestamp) as the reader's own day, `Oct 13, 2026`: when they added a precon to their collection. */
+export const preconAddedDate = (isoTimestamp: string) =>
+  new Date(isoTimestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
 /** What the arrival strip says went in: the whole list, or what the catalog holds of it. */
 function cardsIn(cards: number, unmapped: number): string {
   return unmapped === 0

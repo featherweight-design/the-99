@@ -26,7 +26,7 @@ const open = (addedOn: string | null = null) => {
 };
 const own = () => screen.getByRole("checkbox", { name: /I own this precon/ });
 
-beforeEach(() => { create.mockReset(); add.mockReset(); });
+beforeEach(() => { create.mockReset(); add.mockReset(); window.sessionStorage.clear(); });
 
 describe("Start dialog: I own this precon", () => {
   it("draws the box unticked, and starts the deck without touching the collection", async () => {
@@ -40,8 +40,9 @@ describe("Start dialog: I own this precon", () => {
   });
 
   it("names a previous add and stays unticked", () => {
-    open("2026-10-13T09:00:00.000Z");
-    expect(screen.getByText(/You added this precon on /)).toBeInTheDocument();
+    open("2026-10-13T12:00:00.000Z");
+    // A real date, not "Invalid Date": the note is given a timestamp, not a bare day.
+    expect(screen.getByText(/^You added this precon on Oct 1[23], 2026$/)).toBeInTheDocument();
     expect(own()).not.toBeChecked();
   });
 
@@ -156,5 +157,37 @@ describe("Start dialog: I own this precon", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
     await waitFor(() => expect(add).toHaveBeenCalledTimes(2));
     expect(add.mock.calls[1][1]).not.toBe(firstId);
+  });
+
+  it("takes focus into the dialog when it becomes the receipt", async () => {
+    add.mockResolvedValueOnce(added);
+    create.mockRejectedValueOnce(new Error("boom"));
+    open();
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(screen.getByText("100 copies added")).toBeInTheDocument());
+    expect(screen.getByRole("dialog")).toHaveFocus();
+  });
+
+  it("keeps the add's id across a reload when the add threw, and drops it once the outcome is known", async () => {
+    add.mockRejectedValueOnce(new Error("network")).mockResolvedValueOnce(added);
+    create.mockResolvedValue(undefined);
+    const first = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    const sent = add.mock.calls[0][1];
+    expect(window.sessionStorage.getItem("the99:precon-add-attempt:Multiverse_FRC")).toBe(sent);
+    // A reload: the page is gone, a new one mounts, and the retry carries the same id.
+    first.unmount();
+    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(2));
+    expect(add.mock.calls[1][1]).toBe(sent);
+    await waitFor(() => expect(create).toHaveBeenCalled());
+    expect(window.sessionStorage.getItem("the99:precon-add-attempt:Multiverse_FRC")).toBeNull();
   });
 });
