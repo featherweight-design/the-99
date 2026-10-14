@@ -200,7 +200,7 @@ describe("CommanderRow · the gap slot is never empty", () => {
   // mechanic tags — including one whose every tag is a creature type — draws the
   // shipped note and NEVER `allPlayed`, which would assert something about a
   // commander with nothing on file.
-  it("draws the No tag data note rather than allPlayed when there are no mechanics", () => {
+  it("draws the No theme data note rather than allPlayed when there are no mechanics", () => {
     const { container } = row({ gapSlot: { kind: "noMechanics" } });
 
     expect(screen.getByText(discoveryCopy.untagged.heading)).toBeInTheDocument();

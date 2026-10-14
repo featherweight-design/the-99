@@ -144,7 +144,7 @@ const FIT_CHIP_STYLE = {
  *
  * The union is decided on the server by `gapSlotFor`, so this switch is
  * exhaustive over states rather than re-deriving them from `labels.length`.
- * That is the ruling: a commander with no mechanic tags draws the `No tag data`
+ * That is the ruling: a commander with no mechanic tags draws the `No theme data`
  * note and never `allPlayed`, which would assert something about a commander
  * with nothing on file.
  */

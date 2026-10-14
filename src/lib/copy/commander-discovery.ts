@@ -78,11 +78,11 @@ export const discoveryCopy = {
     label: "Sort",
     fit: "Best fit",
     new: "Something new",
-    fitKey: "most of its support list already owned",
-    newKey: "farthest from the archetypes you have built",
+    fitKey: "most of the cards popular with it already owned",
+    newKey: "farthest from the themes you have built",
     triggerAria: (current: string) => `Sort: ${current}. Choose how these are ranked`,
-    fitAria: "Rank by how much of each commander's support list you already own",
-    newAria: "Rank by distance from the archetypes the decks you have built play",
+    fitAria: "Rank by how much of each commander's popular cards you already own",
+    newAria: "Rank by distance from the themes the decks you have built play",
 
     // Ruling 8. Short form on the menu row; the long form is `empty.noDecks`.
     newDisabled: "needs a deck to compare against. Build one and this turns on",
@@ -160,9 +160,9 @@ export const discoveryCopy = {
   // The novelty sort's exclusions are still explained, by `planeCopy.exclusion.*`
   // on the lane that has them, which is where a claim about a sort belongs.
   untagged: {
-    heading: "No tag data",
+    heading: "No theme data",
     body:
-      "EDHREC lists cards for this commander but no archetypes, so there is nothing to measure against your decks.",
+      "EDHREC lists cards for this commander but no themes, so there is nothing to measure against your decks.",
   },
 
   // ── The three empty states (§6.8, §7.6) ───────────────────────────────
@@ -173,7 +173,7 @@ export const discoveryCopy = {
     // No card count: the page header directly above this banner already ends
     // "read against N cards", and the figure is the same one.
     noDecksBody:
-      "We rank “new” by how far a commander sits from the archetypes the decks you have built already play, and you have not built one yet. Best fit works from day one: it only needs your collection.",
+      "We rank “new” by how far a commander sits from the themes the decks you have built already play, and you have not built one yet. Best fit works from day one: it only needs your collection.",
     /** The one clause the banner marks. A substring of `noDecksBody` rather than
         a fragment the component splices in, so the sentence has one author. */
     noDecksEmphasis: "Best fit works from day one",
@@ -183,7 +183,7 @@ export const discoveryCopy = {
     // "the collection is just early" is the second expressive moment.
     floorHeading: "Nothing clears the bar for “new” yet",
     floorBody: (floorPct: number, candidates: number, cards: number, bestPct: number) =>
-      `Something new only shows commanders you could actually build: at least ${floorPct}% of their support list already in your collection. None of the ${n(
+      `Something new only shows commanders you could actually build: at least ${floorPct}% of the cards decks with them play already in your collection. None of the ${n(
         candidates,
       )} clears that against ${n(
         cards,
@@ -191,7 +191,7 @@ export const discoveryCopy = {
     /** Likewise a substring of `floorBody` — the floor clause only, so the mark
         lands on the rule being explained and not on the misses it caused. */
     floorEmphasis: (floorPct: number) =>
-      `at least ${floorPct}% of their support list already in your collection`,
+      `at least ${floorPct}% of the cards decks with them play already in your collection`,
     floorCta: "Rank by best fit instead",
     floorCtaNote: (candidates: number) => `${n(candidates)} commanders, no floor`,
 

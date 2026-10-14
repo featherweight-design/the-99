@@ -172,7 +172,7 @@ export const planeCopy = {
       )} excludes it: its identity is ${identity(own)}.`,
     heldScope: "It matches, but you have already built a deck around it.",
     heldFloor: (pct: number, floorPct: number) =>
-      `It matches, but Something new only shows commanders you could build, and you own ${pct}% of its support list against the ${floorPct}% floor.`,
+      `It matches, but Something new only shows commanders you could build, and you own ${pct}% of the cards decks with it play, against the ${floorPct}% floor.`,
 
     scope: (name: string) => `${name} matches, but you have already built a deck around it.`,
     scopeAlso: (name: string) =>
@@ -204,9 +204,9 @@ export const planeCopy = {
     joinCta: "Switch to Contains",
 
     floor: (name: string, pct: number, floorPct: number) =>
-      `${name} matches, but Something new only shows commanders you could build, and you own ${pct}% of its support list against the ${floorPct}% floor.`,
+      `${name} matches, but Something new only shows commanders you could build, and you own ${pct}% of the cards decks with it play, against the ${floorPct}% floor.`,
     floorAlso: (name: string, pct: number, floorPct: number) =>
-      `${name} also matches, but Something new only shows commanders you could build, and you own ${pct}% of its support list against the ${floorPct}% floor.`,
+      `${name} also matches, but Something new only shows commanders you could build, and you own ${pct}% of the cards decks with it play, against the ${floorPct}% floor.`,
     floorCta: "Rank by best fit instead",
 
     // The floor tier's OTHER population, in the vocabulary the exclusion line already
@@ -229,7 +229,7 @@ export const planeCopy = {
       scope: "the decks you have already built",
       colors: (colors: string[]) => `the ${identity(colors)} color filter`,
       join: (colors: string[]) => `Exactly ${identity(colors)}`,
-      floor: (floorPct: number) => `the ${floorPct}% support floor`,
+      floor: (floorPct: number) => `the ${floorPct}% bar`,
       unmeasured: "Something new",
     },
   },
@@ -250,7 +250,7 @@ export const planeCopy = {
     join: (excluded: number, colors: string[]) =>
       `${n(excluded)} excluded by the exact ${identity(colors)} identity`,
     floor: (excluded: number, floorPct: number) =>
-      `${n(excluded)} fall below the ${floorPct}% support floor for this pool`,
+      `${n(excluded)} fall below the ${floorPct}% bar for this pool`,
 
     // Under `New` TWO populations leave the list: rows measured and found below the floor, and
     // rows with nothing to measure at all. The handoff's word for the second group is "tags",
@@ -262,7 +262,7 @@ export const planeCopy = {
     // belong to the SAME tier — the sort's own doing — so they share ONE clause with two figures
     // rather than taking two of the two available. Tier order is unaffected and the cap holds.
     floorWithUnmeasured: (below: number, unmeasured: number, floorPct: number) =>
-      `${n(below)} fall below the ${floorPct}% support floor for this pool and ${n(
+      `${n(below)} fall below the ${floorPct}% bar for this pool and ${n(
         unmeasured,
       )} have no data to measure`,
     /** When every excluded row is unmeasurable — no floor casualties at all. */
@@ -274,7 +274,7 @@ export const planeCopy = {
     floorAlone: (excluded: number, floorPct: number, bestPct: number) =>
       `${n(
         excluded,
-      )} commanders fall below the ${floorPct}% support floor for this pool. The closest is at ${bestPct}%.`,
+      )} commanders fall below the ${floorPct}% bar for this pool. The closest is at ${bestPct}%.`,
 
     /** The floor-only form when unmeasurable rows are also present. The nearest-miss sentence
         survives because the clause count, not the sentence count, is what is capped. */
@@ -284,7 +284,7 @@ export const planeCopy = {
       floorPct: number,
       bestPct: number,
     ) =>
-      `${n(below)} commanders fall below the ${floorPct}% support floor for this pool and ${n(
+      `${n(below)} commanders fall below the ${floorPct}% bar for this pool and ${n(
         unmeasured,
       )} have no data to measure. The closest is at ${bestPct}%.`,
 
@@ -314,7 +314,7 @@ export const planeCopy = {
       freeCards: number,
       clearingAgainstCollection: number,
     ) =>
-      `Something new only shows commanders you could actually build: at least ${floorPct}% of their support list already in your collection. Read against the ${n(
+      `Something new only shows commanders you could actually build: at least ${floorPct}% of the cards decks with them play already in your collection. Read against the ${n(
         freeCards,
       )} free cards in this pool, ${n(below)} of the ${n(candidates)} fall below that bar and ${n(
         unmeasured,
@@ -324,7 +324,7 @@ export const planeCopy = {
     /** Substring of `body`, so the mark lands on the rule and not on the misses it caused —
         the same rule `empty.floorEmphasis` follows. */
     emphasis: (floorPct: number) =>
-      `at least ${floorPct}% of their support list already in your collection`,
+      `at least ${floorPct}% of the cards decks with them play already in your collection`,
     cta: "Score against everything I own",
     // NO ctaNote. The count that survives in the OTHER pool is one this pool's payload cannot
     // know, and a second query for it is ruled out. The CTA stands alone rather than carrying a
@@ -339,8 +339,8 @@ export const planeCopy = {
         and spacing match `tagList` exactly, so a closed row is byte-identical to shipped. */
     more: (extra: number) => `and ${n(extra)} more`,
     fewer: "show fewer",
-    moreAria: (total: number, name: string) => `Show all ${n(total)} archetypes for ${name}`,
-    fewerAria: (name: string) => `Show three archetypes for ${name}`,
+    moreAria: (total: number, name: string) => `Show all ${n(total)} themes for ${name}`,
+    fewerAria: (name: string) => `Show three themes for ${name}`,
   },
 
   // The row's two floor notes are sites 1 and 2 of the seven, and they are NOT here: they are

@@ -181,8 +181,8 @@ describe("FilterRack", () => {
     fireEvent.click(screen.getByRole("button", { name: "Order · Best fit" }));
     // The two rankings lead, and are glossed like the rest: they are the only
     // options that change which commanders the list holds.
-    expect(screen.getByText("most of its support list already owned")).toBeInTheDocument();
-    expect(screen.getByText("farthest from the archetypes you have built")).toBeInTheDocument();
+    expect(screen.getByText("most of the cards popular with it already owned")).toBeInTheDocument();
+    expect(screen.getByText("farthest from the themes you have built")).toBeInTheDocument();
     expect(screen.getByText("most decks tracked first")).toBeInTheDocument();
     expect(screen.getByText("newest printing first")).toBeInTheDocument();
     unmount();
