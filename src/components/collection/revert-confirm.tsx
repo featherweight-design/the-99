@@ -214,8 +214,9 @@ export function RevertConfirm({
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-[14px]">
+            {/* The title sits above the scroll box, so it stays put while the body moves. */}
+            <h2 id={headingId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)] md:text-[24px]">{c.title(title)}</h2>
             <div className={`${SCROLL} flex flex-col gap-[14px]`}>
-            <h2 id={headingId} className="m-0 font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)] md:text-[24px]">{c.title(title)}</h2>
             {view.k === "reading" ? (
               <>
                 {view.notice ? (
@@ -241,7 +242,7 @@ export function RevertConfirm({
                   <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{c.nothingLeft}</p>
                 ) : (
                   <div>
-                    <div className="grid grid-cols-[1fr_44px_44px] gap-x-[10px] border-b border-b-[color:var(--border)] pb-[4px] font-mono text-[10.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
+                    <div data-testid="revert-columns" className="sticky -top-[4px] z-10 grid grid-cols-[1fr_44px_44px] gap-x-[10px] bg-[color:var(--surface-rail)] border-b border-b-[color:var(--border)] pb-[4px] font-mono text-[10.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
                       <span aria-hidden />
                       <span className="text-right">{c.then}</span>
                       <span className="text-right">{c.now}</span>
