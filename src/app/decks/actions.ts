@@ -1396,7 +1396,7 @@ export async function commitDeckVersion(
   note: string | null,
 ): Promise<CommitResult> {
   const userId = await requireUserId();
-  if (!isUuid(deckId)) return { ok: false, message: "We couldn't find that deck." };
+  if (!isUuid(deckId)) return { ok: false, message: "We couldn’t find that deck." };
   // The reader's resolved switches: the printing each card showed is recorded only with their printings
   // switch on, and the commit's bracket snapshot and the analysis pin both build the profile under them,
   // so each finds the entry the reader's own analysis filed.
@@ -1412,7 +1412,7 @@ export async function commitDeckVersion(
   try {
     await requireDeck(deckId, userId);
   } catch {
-    return { ok: false, message: "We couldn't find that deck." };
+    return { ok: false, message: "We couldn’t find that deck." };
   }
 
 
@@ -1421,7 +1421,7 @@ export async function commitDeckVersion(
     const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
     // Deleted between the ownership check above and this lock. Left to fall
     // through, it reaches commitVersion, which throws rather than refusing.
-    if (!deck) return { ok: false, message: "We couldn't find that deck." };
+    if (!deck) return { ok: false, message: "We couldn’t find that deck." };
 
     const previous = await newestVersion(deckId, tx);
     const before = previous ? await versionCards(previous.id, tx) : [];
@@ -1610,7 +1610,7 @@ export async function discardDeckDraft(
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(expectedVersionId)) {
-    return { ok: false, message: "We couldn't find that deck." };
+    return { ok: false, message: "We couldn’t find that deck." };
   }
   await requireDeck(deckId, userId);
   // The decks this draft's pulls freed a copy for. The discard deletes those releases, so their buy
@@ -1717,7 +1717,7 @@ export async function pullCardFromDeck(
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!isUuid(sourceDeckId) || !isUuid(oracleId) || !isUuid(askingDeckId)) {
-    return { ok: false, message: "We couldn't find that card." };
+    return { ok: false, message: "We couldn’t find that card." };
   }
   // Both decks, because both are revalidated and both must be the player's.
   await requireDeck(sourceDeckId, userId);
@@ -1727,7 +1727,7 @@ export async function pullCardFromDeck(
   // id the source loses a copy to satisfy a want the same list already holds, and
   // commits that loss — a destructive self-removal dressed as a transfer.
   if (sourceDeckId === askingDeckId) {
-    return { ok: false, message: "A deck can't pull a card from itself." };
+    return { ok: false, message: "A deck can’t pull a card from itself." };
   }
 
   // Which decks the claim on this card is made of, read BEFORE the transaction
@@ -1791,7 +1791,7 @@ export async function pullCardFromDeck(
 
     // Deleted between the ownership check and this lock. Left to fall through,
     // it reaches commitVersion, which throws rather than refusing.
-    if (!deck) return { ok: false, message: "We couldn't find that deck." };
+    if (!deck) return { ok: false, message: "We couldn’t find that deck." };
 
     // Neither commander is a `deck_cards` row, but both are claims, so a deck
     // can be named as a card's holder on the strength of its commander alone.
@@ -1802,7 +1802,7 @@ export async function pullCardFromDeck(
     // instead that their deck isn't waiting on the card would go looking for a
     // problem with their own draft.
     if (deck.commanderOracleId === oracleId || deck.partnerOracleId === oracleId) {
-      return { ok: false, message: "That card is that deck's commander." };
+      return { ok: false, message: "That card is that deck’s commander." };
     }
 
     // L2: a card the source deck has LOCKED is never pulled out of it. Under that deck's row lock,
@@ -1828,7 +1828,7 @@ export async function pullCardFromDeck(
     }).from(deckCards).where(eq(deckCards.deckId, askingDeckId)).for("update");
     const add = draftDiff(askingDraft, askingBefore).adds
       .find((a) => a.oracleId === oracleId);
-    if (!add) return { ok: false, message: "That deck isn't waiting on that card." };
+    if (!add) return { ok: false, message: "That deck isn’t waiting on that card." };
 
     // And the claim, read under the same locks. An add the reader was offered a
     // pull for is one whose copies are all spoken for; if a copy has come free
@@ -1899,17 +1899,17 @@ export async function pullCardFromDeck(
     // the senior one's strength and decrement a deck whose copy was never this
     // deck's to take. The named source has to be a releasable holder itself.
     if (!sources.some((d) => d.id === sourceDeckId)) {
-      return { ok: false, message: "That deck's copy wouldn't cover the shortfall." };
+      return { ok: false, message: "That deck’s copy wouldn’t cover the shortfall." };
     }
 
     const version = await newestVersion(sourceDeckId, tx);
-    if (!version) return { ok: false, message: "That deck isn't sleeved yet." };
+    if (!version) return { ok: false, message: "That deck isn’t sleeved yet." };
     // The VERSION's commander too, not only the live columns checked above: with a commander change
     // pending, the card can sit in the draft's list while the version still leads with it. A
     // release subtracts from the version's LIST claim only, so that pull would empty the draft and
     // leave the asking deck exactly as short as it was.
     if (version.commanderOracleId === oracleId || version.partnerOracleId === oracleId) {
-      return { ok: false, message: "That card is that deck's commander." };
+      return { ok: false, message: "That card is that deck’s commander." };
     }
 
     const before = await versionCards(version.id, tx);
@@ -1924,7 +1924,7 @@ export async function pullCardFromDeck(
     const inDraft = draft.some((c) => c.oracleId === oracleId);
     // Nothing to release: the version does not list it and the draft does not hold it.
     if (!inDraft && !before.some((c) => c.oracleId === oracleId)) {
-      return { ok: false, message: "That deck doesn't hold that card." };
+      return { ok: false, message: "That deck doesn’t hold that card." };
     }
 
     // A pull takes ONE copy, matching removeCardFromDeck: a deck holding four

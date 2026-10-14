@@ -59,9 +59,9 @@ export const upgradePathCopy = {
       // land half. And not "can find both halves" either: `comboLandsEarly` counts a commander
       // half as covered with no search at all, so "assemble" is the verb true of both.
       `This deck can assemble this one, which is what puts it past ${name(bracket)}.`,
-    forbidden: (bracket: Bracket) => `${name(bracket)} doesn't allow two-card combos at all.`,
+    forbidden: (bracket: Bracket) => `${name(bracket)} doesn’t allow two-card combos at all.`,
     /** At Upgraded, a combo producing infinite turns — whether or not the tutors can find it. */
-    loop: (bracket: Bracket) => `${name(bracket)} doesn't allow a loop of extra turns.`,
+    loop: (bracket: Bracket) => `${name(bracket)} doesn’t allow a loop of extra turns.`,
     either: "Either half breaks it.",
   },
 
@@ -87,11 +87,11 @@ export const upgradePathCopy = {
      */
     countShortfall: (bracket: Bracket, commanders: number, left: number) =>
       `The rest ${commanders === 1 ? "is your commander" : "are your commanders"}, and a commander `
-      + `can't be cut. Removing everything else still leaves ${numberWord(left)}, so `
-      + `${name(bracket)} isn't reachable by removing cards. It would take a different `
+      + `can’t be cut. Removing everything else still leaves ${numberWord(left)}, so `
+      + `${name(bracket)} isn’t reachable by removing cards. It would take a different `
       + `commander.`,
     comboShortfall: (bracket: Bracket) =>
       `Both halves of this combo are in your command zone, so no removal breaks it. `
-      + `${name(bracket)} isn't reachable by removing cards. It would take a different commander.`,
+      + `${name(bracket)} isn’t reachable by removing cards. It would take a different commander.`,
   },
 } as const;

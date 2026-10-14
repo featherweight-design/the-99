@@ -54,8 +54,8 @@ function unplayedParts(labels: string[]): GapPart[] {
 function topStylesParts(labels: string[], capped: boolean): GapPart[] {
   const [a, b, c] = labels;
   const lead = capped
-    ? "This commander's top three play styles are "
-    : "This commander's play styles are ";
+    ? "This commander’s top three play styles are "
+    : "This commander’s play styles are ";
   if (labels.length >= 3) {
     return [lead, { label: a! }, ", ", { label: b! }, " and ", { label: c! }, "."];
   }
@@ -64,7 +64,7 @@ function topStylesParts(labels: string[], capped: boolean): GapPart[] {
   // singular lead is spelled out rather than assembled, because a sentence
   // stitched from a plural template reads like one.
   return [
-    capped ? "This commander's top play style is " : "This commander's play style is ",
+    capped ? "This commander’s top play style is " : "This commander’s play style is ",
     { label: a! },
     ".",
   ];

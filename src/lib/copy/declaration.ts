@@ -27,7 +27,7 @@ export const declarationCopy = {
     /** Round 0's line, verbatim. Round 3 keeps Round 0's WORDS and Round 2's PLACE. */
     lead: "Pick one so pods know what to expect.",
     /** The group's accessible name. The chips' own labels are the bracket names alone. */
-    groupAria: "Declare this deck's bracket",
+    groupAria: "Declare this deck’s bracket",
   },
 
   declared: {

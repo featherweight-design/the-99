@@ -455,7 +455,7 @@ export function CommanderDetail({
               }}
             >
               Cards from your collection that fit within{" "}
-              {commanderDisplayName(c)}&apos;s color identity and could slot into the 99.
+              {commanderDisplayName(c)}’s color identity and could slot into the 99.
             </p>
           </div>
         </div>
@@ -705,7 +705,7 @@ export function CommanderDetail({
               }}
             >
               Cards from your collection that fit within{" "}
-              {commanderDisplayName(c)}&apos;s color identity and could slot into the 99.
+              {commanderDisplayName(c)}’s color identity and could slot into the 99.
             </p>
           </div>
 

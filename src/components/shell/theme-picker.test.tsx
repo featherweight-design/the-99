@@ -130,7 +130,7 @@ describe("ThemePicker", () => {
     expect(chip).not.toHaveTextContent("Wilds of Eldraine");
   });
 
-  it("keeps the mobile sheet's chips at the 44px minimum touch target", () => {
+  it("keeps the mobile sheet’s chips at the 44px minimum touch target", () => {
     render(<ThemePicker current="amonkhet" panel="sheet" />);
     for (const chip of screen.getAllByRole("radio")) {
       expect(chip.className).toContain("min-h-[44px]");
@@ -156,7 +156,7 @@ describe("ThemePicker retirement notice", () => {
   it("names the retired theme and where the user landed", () => {
     renderRetired();
     expect(screen.getByText(/Moonlit has been retired\./)).toBeInTheDocument();
-    expect(screen.getByText(/You're on Oil Haze/)).toBeInTheDocument();
+    expect(screen.getByText(/You’re on Oil Haze/)).toBeInTheDocument();
   });
 
   // The theme cookie is rarely the only one. jsdom always joins with "; ", so

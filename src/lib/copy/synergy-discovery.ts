@@ -150,15 +150,15 @@ export const synergyCopy = {
     // stay exactly as they are. This is the branch taken when selection is
     // non-empty, which is why there are two keys and not two edits.
     promise: (filled: string, picked: string, total: string) =>
-      `We'll fill ${filled}, plus your ${picked}: ${total} of the 99.`,
+      `We’ll fill ${filled}, plus your ${picked}: ${total} of the 99.`,
     promiseMobile: (filled: string, picked: string, total: string) =>
-      `We'll fill ${filled}, plus your ${picked}: ${total} of the 99`,
+      `We’ll fill ${filled}, plus your ${picked}: ${total} of the 99`,
     // Appended to either promise when some of the selection is unowned. Ruling
     // 5 requires buying to be explicit; this is where it is said.
-    promiseUnowned: (n: string) => `${n} you don't own yet.`,
+    promiseUnowned: (n: string) => `${n} you don’t own yet.`,
     // The clamp, and the only refusal on this surface.
     promiseFull: (picked: string) =>
-      `Your ${picked} fill the 99 on their own. We'll leave the rest to you.`,
+      `Your ${picked} fill the 99 on their own. We’ll leave the rest to you.`,
     clear: (n: string) => `Clear selection · ${n}`,
     clearAria: (n: string) => `Clear all ${n} selected cards`,
     // One message per settle, debounced. Twelve fast taps is one announcement.

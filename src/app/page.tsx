@@ -63,7 +63,7 @@ export default async function HomePage() {
         <p
           className="mt-[22px] md:mt-[26px] max-w-[280px] md:max-w-none italic leading-[1.5] text-[17px] md:text-[21px] text-fg-body font-sans"
         >
-          99 problems, but your commander ain&apos;t one.
+          99 problems, but your commander ain’t one.
         </p>
 
         {/* Sign in button per §Sign in button

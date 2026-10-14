@@ -8,7 +8,7 @@ export function SingletonFooterNote() {
       className="hidden md:block font-mono text-[10px] text-center leading-[1.5]"
       style={{ color: "var(--fg-locked)", padding: "6px 0" }}
     >
-      Commander is singleton: a card already in the deck can&apos;t be re-added except basic lands.
+      Commander is singleton: a card already in the deck can’t be re-added except basic lands.
     </p>
   );
 }

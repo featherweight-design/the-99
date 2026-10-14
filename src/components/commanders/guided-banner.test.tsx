@@ -11,7 +11,7 @@ describe("GuidedBanner", () => {
     render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} />);
     expect(
       screen.getAllByText(
-        "1,418 cards read. 24 can lead. I ranked them. You're welcome. Pick a commander to build your first 99.",
+        "1,418 cards read. 24 can lead. I ranked them. You’re welcome. Pick a commander to build your first 99.",
       ),
     ).toHaveLength(2);
   });

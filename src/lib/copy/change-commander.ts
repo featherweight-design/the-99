@@ -28,8 +28,8 @@ export const changeCommanderCopy = {
     // Not in the handoff's file: every sheet's close control names the sheet it closes.
     close: { single: "Close change commander", pair: "Close change pair" },
     lede: {
-      single: "Commanders who can lead these 99 without changing a card. The figure is how many of this deck's cards their decks run.",
-      pair: "Pairs who can lead these 98 without changing a card. The figure is how many of this deck's cards their decks run.",
+      single: "Commanders who can lead these 99 without changing a card. The figure is how many of this deck’s cards their decks run.",
+      pair: "Pairs who can lead these 98 without changing a card. The figure is how many of this deck’s cards their decks run.",
     },
     counted: (n: number) =>
       `${n} of your cards are counted. Basic lands and the staples every deck runs, like Sol Ring, are left out.`,
@@ -43,7 +43,7 @@ export const changeCommanderCopy = {
     showFewer: "Show fewer",
     // The one figure. "its" for a single, "their" for a pair.
     figure: (n: number, of: number, pair: boolean) => `${n} of ${of} are in ${pair ? "their" : "its"} decks`,
-    figureAria: (n: number, of: number, name: string) => `${n} of ${of} cards in this deck are in ${name}'s decks. Show them.`,
+    figureAria: (n: number, of: number, name: string) => `${n} of ${of} cards in this deck are in ${name}’s decks. Show them.`,
     // Hugh, 2026-09-25: the cost is drawn as CostPips; this is the comparison beside it. A pair sums its halves.
     manaValueRel: (mv: number, current: number, currentName: string) => {
       const d = mv - current;
@@ -53,18 +53,18 @@ export const changeCommanderCopy = {
     inDeck: "in this deck · trades places",
     choose: "Choose",
     chooseAria: (name: string) => `Choose ${name}`,
-    expandCaption: (n: number, short: string) => `The ${n} ${short}'s decks run`,
-    loading: "Reading which commanders' decks run your cards…",
+    expandCaption: (n: number, short: string) => `The ${n} ${short}’s decks run`,
+    loading: "Reading which commanders’ decks run your cards…",
     // The Analysis tab's error composition (2c): heading + body + bone Try again.
     failed: { heading: "We couldn’t read the candidates.", body: "Nothing about your deck changed.", cta: "Try again" },
     none: {
       head: (identity: string) => `No other commander leads a ${identity} deck yet.`,
-      body: "Only commanders in exactly this deck's colors are offered, so the 99 never change. A wider or narrower identity would mean cutting cards, which is a new deck.",
+      body: "Only commanders in exactly this deck’s colors are offered, so the 99 never change. A wider or narrower identity would mean cutting cards, which is a new deck.",
     },
     nonePair: {
       // The handoff's file wrote "four" with a note to take the count from the identity's size.
       head: (count: string) => `No other pair shares these ${count} colors.`,
-      body: "Only pairs whose two identities add up to exactly this deck's are offered, so the 98 never change. When a new legal pairing appears in these colors, it shows up here.",
+      body: "Only pairs whose two identities add up to exactly this deck’s are offered, so the 98 never change. When a new legal pairing appears in these colors, it shows up here.",
     },
   },
 
@@ -88,22 +88,22 @@ export const changeCommanderCopy = {
       `${a} and ${b} take the command zone. ${c} and ${d} leave the deck, and the ${body} stay exactly as they are.`,
     trade: (nu: string, old: string, body: number) =>
       `The two trade places. ${nu} leaves the ${body} for the command zone, and ${old} takes its slot. The deck stays at ${body}.`,
-    buy: (short: string) => `You don't own ${short} yet. It joins this draft's buy list:`,
+    buy: (short: string) => `You don’t own ${short} yet. It joins this draft’s buy list:`,
     lands: (oldShort: string) => `Lands in your pending changes, not yet a version. Discard puts ${oldShort} back.`,
     landsTrade: "Lands in your pending changes, not yet a version. Discard puts both back where they were.",
     // arrive: the half leaving the body; joins: the other new half; stays / released: the old halves.
     halfTrade: (arrive: string, joins: string, stays: string, released: string, body: number) =>
-      `${arrive} leaves the ${body} for the command zone, and ${joins} joins it there. ${stays} takes ${arrive}'s slot, and ${released} leaves the deck. The deck stays at ${body}.`,
+      `${arrive} leaves the ${body} for the command zone, and ${joins} joins it there. ${stays} takes ${arrive}’s slot, and ${released} leaves the deck. The deck stays at ${body}.`,
     // Hugh's tightening at /copy-review (2026-09-25).
     landsHalfTrade: "Lands in your pending changes, not yet a version. Discard undoes the whole swap.",
     brew: "This deck has no version yet, so there is nothing to discard back to. Changing commander again is the only way back.",
     cta: (short: string) => `Make ${short} commander`,
     ctaPair: (a: string, b: string) => `Make ${a} and ${b} commanders`,
     pending: "Changing…",
-    failed: (oldShort: string) => `We couldn't change the commander. ${oldShort} still leads this deck.`,
+    failed: (oldShort: string) => `We couldn’t change the commander. ${oldShort} still leads this deck.`,
     // The pair forms a pair reaches (audit F9: two names never share a singular verb). A pair's
     // trade is the half-trade, which has its own sentence (`halfTrade`), so `trade` has no pair form.
-    failedPair: (oldShort: string) => `We couldn't change the commanders. ${oldShort} still lead this deck.`,
+    failedPair: (oldShort: string) => `We couldn’t change the commanders. ${oldShort} still lead this deck.`,
     failedRetry: "Try again",
     announced: (nu: string) => `${nu} leads this deck now. The change is pending.`,
     announcedPair: (nu: string) => `${nu} lead this deck now. The change is pending.`,

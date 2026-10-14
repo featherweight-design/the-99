@@ -115,7 +115,7 @@ describe("cardNoteSentences", () => {
     it("n3: a declared bracket 2 names the declaration as the thing that refuses it", () => {
       const drawn = draw({ facts: facts({ massLandDenial: true }), declared: 2 });
       expect(drawn[0]).toBe(
-        "We read this as mass land denial. The Core you declared doesn't allow it.",
+        "We read this as mass land denial. The Core you declared doesn’t allow it.",
       );
       expect(drawn[1]).toBe(cardNote.massLandDenial.disclaimer);
     });
@@ -203,7 +203,7 @@ describe("cardNoteSentences", () => {
   describe("order and the cap", () => {
     const all = facts({ gameChanger: true, massLandDenial: true, extraTurn: true, tutor: true });
 
-    it("a row draws two facts, in the table's order", () => {
+    it("a row draws two facts, in the table’s order", () => {
       const drawn = draw({ facts: all, density: "row" });
       // Game changer, then mass land denial and its disclaimer. Extra turns and the tutor are
       // past the cap.
@@ -243,7 +243,7 @@ describe("cardNoteSentences", () => {
   describe("a count nobody has", () => {
     const unknown = { ...EMPTY_NOTE_COUNTS, extraTurns: null };
 
-    it("draws no extra-turn sentence when the deck's count is unknown", () => {
+    it("draws no extra-turn sentence when the deck’s count is unknown", () => {
       expect(draw({ facts: facts({ extraTurn: true }), counts: unknown })).toEqual([]);
     });
 

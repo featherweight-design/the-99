@@ -111,13 +111,13 @@ describe("deckVersioningCopy", () => {
   // lede's figures at zero, and a consequence nobody faces is not an explanation.
   it("names only the halves a commit actually has", () => {
     expect(copy.commit.lede(2, 0, 3)).toBe(
-      "v2 becomes the deck's list immediately. The 3 you cut are back in the pool the moment you commit.",
+      "v2 becomes the deck’s list immediately. The 3 you cut are back in the pool the moment you commit.",
     );
     expect(copy.commit.lede(2, 2, 0)).toBe(
-      "v2 becomes the deck's list immediately. The 2 cards short of spare copies keep their buy tags " +
+      "v2 becomes the deck’s list immediately. The 2 cards short of spare copies keep their buy tags " +
         "until you actually buy them.",
     );
-    expect(copy.commit.lede(1, 0, 0)).toBe("v1 becomes the deck's list immediately.");
+    expect(copy.commit.lede(1, 0, 0)).toBe("v1 becomes the deck’s list immediately.");
   });
 
   it("caps the inline density at six", () => {
@@ -163,7 +163,7 @@ describe("deckVersioningCopy", () => {
     // Two features on two surfaces, ratified at R2. A later tidy-up that
     // unified them would be reverting a decision rather than removing a
     // duplicate.
-    it("keeps its own word, not #185's", () => {
+    it("keeps its own word, not #185’s", () => {
       expect(copy.restore.cta).not.toBe(addPanelCopy.undo.action);
     });
 
@@ -182,8 +182,8 @@ describe("deckVersioningCopy", () => {
   });
 });
 
-describe("the breakdown's fourth term", () => {
-  it("is absent at zero, so today's line is unchanged", () => {
+describe("the breakdown’s fourth term", () => {
+  it("is absent at zero, so today’s line is unchanged", () => {
     expect(copy.review.groupInBreakdown(3, 2, 1)).toBe("3 free · 2 sleeved · 1 to buy");
     expect(copy.review.groupInBreakdown(3, 2, 1, 0)).toBe("3 free · 2 sleeved · 1 to buy");
   });

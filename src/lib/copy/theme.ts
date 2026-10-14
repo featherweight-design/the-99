@@ -16,7 +16,7 @@ export const themeCopy = {
     headline: (was: string) => `${was} has been retired.`,
     // No pointer to the two new themes: the notice sits directly above the grid
     // that draws all six chips, so naming two of them narrates the next element.
-    body: (nowCalled: string) => `You're on ${nowCalled}, the closest theme to it.`,
+    body: (nowCalled: string) => `You’re on ${nowCalled}, the closest theme to it.`,
     dismiss: "Dismiss",
   },
 } as const;

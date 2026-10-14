@@ -81,7 +81,7 @@ export const discoveryCopy = {
     fitKey: "most of the cards popular with it already owned",
     newKey: "farthest from the themes you have built",
     triggerAria: (current: string) => `Sort: ${current}. Choose how these are ranked`,
-    fitAria: "Rank by how much of each commander's popular cards you already own",
+    fitAria: "Rank by how much of each commander’s popular cards you already own",
     newAria: "Rank by distance from the themes the decks you have built play",
 
     // Ruling 8. Short form on the menu row; the long form is `empty.noDecks`.
@@ -204,7 +204,7 @@ export const discoveryCopy = {
     // is looking at.
     filteredHeading: "No commander in those colors",
     filteredBody: (colors: string, candidates: number) =>
-      `${colors} together leave nothing in the ${n(candidates)} you don't own.`,
+      `${colors} together leave nothing in the ${n(candidates)} you don’t own.`,
     // "cover", not "are": the count behind this clause comes from the list's own
     // `selected ⊆ colorIdentity` test, so an Esper deck is counted under an
     // Orzhov filter. The drawn line claimed those decks ARE Orzhov, which is
@@ -222,14 +222,14 @@ export const discoveryCopy = {
     // matches printings the reader does not own, so this lane can be emptied by it outright.
     filteredSetsHeading: "No commander printed there",
     filteredSetsBody: (sets: string, candidates: number) =>
-      `${sets} leaves nothing in the ${n(candidates)} you don't own.`,
+      `${sets} leaves nothing in the ${n(candidates)} you don’t own.`,
     filteredSetsCta: "Clear the printed-in filter",
     // Both lit: the COMBINATION left nothing, so neither is named as the cause on its own.
     filteredTogetherHeading: "No commander fits both",
     // `colors` arrives lower-case (`colorWords`), and `sets` as the chip names it (`Printed in
     // CMM`), so the sentence opens on the count and lowers the chip's first letter.
     filteredTogetherBody: (colors: string, sets: string, candidates: number) =>
-      `None of the ${n(candidates)} you don't own is ${colors} and ${sets.charAt(0).toLowerCase()}${sets.slice(1)}.`,
+      `None of the ${n(candidates)} you don’t own is ${colors} and ${sets.charAt(0).toLowerCase()}${sets.slice(1)}.`,
     filteredBothCta: "Clear both filters",
     // Names the lane, the way `discoverCopy.otherLane` names it. The old wording
     // was the deleted scope control's option label, and it opened on "or", which

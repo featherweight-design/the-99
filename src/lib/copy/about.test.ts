@@ -220,7 +220,7 @@ describe("every entry is drawn, not just described", () => {
   // landing on `main` mid-review. A number a reader is asked to trust should
   // fail when it stops being true, so these read the document and compare it
   // to the source rather than restating either.
-  it("keeps the close-out's stated totals true", async () => {
+  it("keeps the close-out’s stated totals true", async () => {
     const { FIGURES } = await import("../../components/about/figures");
     const doc = await readFile(
       join(process.cwd(), "docs/superpowers/close-out-about-page.md"),
@@ -336,7 +336,7 @@ const WORDS: Record<number, string> = {
 describe("the credits entry", () => {
   // The caption holds a slot for the reader's own limit (admin PR 9c), never a fixed number.
   const caption = aboutEntries.find((e) => e.id === "credits")?.caption ?? "";
-  it("holds the reader's limit as a slot, not a number", () => {
+  it("holds the reader’s limit as a slot, not a number", () => {
     expect(caption).toContain(`You get ${ALLOWANCE_SLOT}, and each one comes back`);
     expect(caption).not.toMatch(/You get (five|ten|three|\d+),/);
   });

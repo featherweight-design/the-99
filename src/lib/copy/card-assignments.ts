@@ -58,7 +58,7 @@ export const cardAssignmentsCopy = {
      * a player needs: nobody suspected their decks had been rewritten until we said so.
      */
     lede: (was: number, arrived: number, left: number) =>
-      `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Here's what your decks still need after ` +
+      `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Here’s what your decks still need after ` +
       "the update, and where one copy has to cover two decks, which one gets it.",
     /**
      * Arrivals, no contention, but some deck is still short. NOT `ledeNoContention`, which says
@@ -68,7 +68,7 @@ export const cardAssignmentsCopy = {
      * spare.
      */
     ledeOwing: (was: number, arrived: number, left: number) =>
-      `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Here's what your decks still need after ` +
+      `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Here’s what your decks still need after ` +
       "the update.",
     ledeNoContention: (was: number, arrived: number, left: number) =>
       `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Every arrival a committed deck was ` +
@@ -119,11 +119,11 @@ export const cardAssignmentsCopy = {
      * there it is asserted about one row the diff proved is still owed.
      */
     issues: (unmatched: number, parseErrors: number) =>
-      `${unmatched} ${unmatched === 1 ? "name" : "names"} didn't match and ${parseErrors} ` +
-      `${parseErrors === 1 ? "line wouldn't" : "lines wouldn't"} parse. Any deck still counting ` +
+      `${unmatched} ${unmatched === 1 ? "name" : "names"} didn’t match and ${parseErrors} ` +
+      `${parseErrors === 1 ? "line wouldn’t" : "lines wouldn’t"} parse. Any deck still counting ` +
       "one of those as a card to buy is marked below. You saw them before you confirmed.",
     issuesUnmatchedOnly: (n: number) =>
-      `${n} ${n === 1 ? "name" : "names"} didn't match. Any deck still counting ` +
+      `${n} ${n === 1 ? "name" : "names"} didn’t match. Any deck still counting ` +
       `${n === 1 ? "that card" : "one of those"} as a card to buy is marked below. You saw them before you confirmed.`,
     issuesLink: "Look at the file again",
 
@@ -139,8 +139,8 @@ export const cardAssignmentsCopy = {
      */
     sectionStill: (n: number) => `Still to buy · ${n}`,
     sectionStillNote:
-      "Some of these only partly arrived; the rest aren't in the new list at all. Either way " +
-      "these decks still have to buy them. Prices live on each deck's Shopping list, where you " +
+      "Some of these only partly arrived; the rest aren’t in the new list at all. Either way " +
+      "these decks still have to buy them. Prices live on each deck’s Shopping list, where you " +
       "can actually act on them.",
     reasonPartly: (arrived: number, wanted: number) => `${arrived} of ${wanted} arrived`,
     reasonGone: "not in the new list",
@@ -151,7 +151,7 @@ export const cardAssignmentsCopy = {
      * you do not own: buy it. A card whose CSV line failed: FIX THE FILE — you already own it.
      * Collapsing them sends a player shopping for a card they have.
      */
-    reasonUnmatched: "name didn't match",
+    reasonUnmatched: "name didn’t match",
 
     /** No prices and no totals anywhere on this page. See the section note above. */
     sectionShort: (n: number) => `Still short · ${n}`,
@@ -231,10 +231,10 @@ export const cardAssignmentsCopy = {
     /** Borrowed verbatim from the review page's own commander guard. */
     commanderTag: "commander",
     commanderNote: (deck: string) =>
-      "A commander's copy can't be moved, so there is nothing to choose. The row is here " +
+      "A commander’s copy can’t be moved, so there is nothing to choose. The row is here " +
       `because the shortage is real and ${deck} is paying for it.`,
     commanderNoteFolded: (deck: string) =>
-      `${deck}'s first copy is its commander and can't be moved. The second one can.`,
+      `${deck}’s first copy is its commander and can’t be moved. The second one can.`,
 
     /**
      * Per-option context. The date is `deck_version_cards.since` — PER CARD, not the version's
@@ -258,15 +258,15 @@ export const cardAssignmentsCopy = {
      * pick did not take.
      */
     refusedNotWanted: (deck: string, card: string, holder: string) =>
-      `${deck}'s newest version doesn't list ${card} any more. Nothing moved: ${holder} still ` +
-      "has the copy. This card isn't contested now, so it will be gone from here next time " +
+      `${deck}’s newest version doesn’t list ${card} any more. Nothing moved: ${holder} still ` +
+      "has the copy. This card isn’t contested now, so it will be gone from here next time " +
       "you load it.",
     /**
      * Names a way forward, and it is NOT a retry: reservations resolve on
      * `(created_at, deck_id)`, so pressing again cannot win.
      */
     refusedNoSupply: (holder: string, have: number, deck: string) =>
-      `There's no copy left to give. ${holder} was already given the one that arrived, and your ` +
+      `There’s no copy left to give. ${holder} was already given the one that arrived, and your ` +
       `collection has ${have === 1 ? "one" : String(have)}. Nothing moved, and the decks above ` +
       `are what you actually have. Take it off ${holder} first if you want ${deck} to have it.`,
     /**
@@ -275,13 +275,13 @@ export const cardAssignmentsCopy = {
      * arrived there, and the copy in question is one the player already owned.
      */
     refusedNoSupplyOwned: (holder: string, have: number, deck: string) =>
-      `There's no copy left to give. ${holder} already has ` +
+      `There’s no copy left to give. ${holder} already has ` +
       `${have === 1 ? "the only one" : "one"}, and your collection has ` +
       `${have === 1 ? "one" : String(have)}. Nothing moved, and the decks above are what you ` +
       `actually have. Take it off ${holder} first if you want ${deck} to have it.`,
     /** Reachable: the payload records one import, so a deck can promote the card between renders. */
     refusedIsCommander: (card: string, deck: string) =>
-      `${card} is ${deck}'s commander now. A commander's copy can't be given away. Nothing ` +
+      `${card} is ${deck}’s commander now. A commander’s copy can’t be given away. Nothing ` +
       "moved, and there is nothing left to choose on this card.",
     /**
      * DELIBERATELY ABSENT: a sentence for "the deck is not this player's". They cannot reach it

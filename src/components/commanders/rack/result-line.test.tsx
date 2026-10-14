@@ -11,7 +11,7 @@ import { resultLineWithAside, resultSentence } from "./result-line";
 // differently.
 describe("resultSentence", () => {
   it("states the lane at rest rather than printing a ratio", () => {
-    expect(resultSentence(148, 148, "owned")).toBe("148 commanders you own and haven't built");
+    expect(resultSentence(148, 148, "owned")).toBe("148 commanders you own and haven’t built");
   });
 
   it("never prints a denominator equal to its numerator", () => {

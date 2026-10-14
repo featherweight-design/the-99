@@ -4,13 +4,13 @@
 export const pwaCopy = {
   offline: {
     pill: "Offline",
-    pillAria: "You're offline. Pages load again when you're back.",
+    pillAria: "You’re offline. Pages load again when you’re back.",
     /** The tab's title while the worker shows this page. */
     documentTitle: "Offline · The 99",
     page: {
       title: "Your decks need a connection.",
       eyebrow: "No signal",
-      sub: "Nothing's saved on this device, so it'll all be here when you're back.",
+      sub: "Nothing’s saved on this device, so it’ll all be here when you’re back.",
       retry: "Try again",
     },
   },

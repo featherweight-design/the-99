@@ -239,7 +239,7 @@ export const deckVersioningCopy = {
     // the same silence — no route releases it, so there is nothing to offer.
     commanderGuardTag: "commander",
     commanderGuardA11y: (deck: string, card: string) =>
-      `${card} is ${deck}'s commander. It can’t be pulled.`,
+      `${card} is ${deck}’s commander. It can’t be pulled.`,
 
     // The source picker's own list (addendum R1) — the popover at ≥ md, the sheet below it.
     source: {
@@ -262,7 +262,7 @@ export const deckVersioningCopy = {
       consequenceNew: (deck: string, card: string) =>
         `${deck} goes into a draft with ${card} going out. Discard that draft and the card goes back.`,
       consequenceJoins: (deck: string, card: string) =>
-        `${card} goes out in ${deck}'s draft, beside its other changes. Discard that draft and the ` +
+        `${card} goes out in ${deck}’s draft, beside its other changes. Discard that draft and the ` +
         "card goes back.",
       confirm: (deck: string) => `Pull from ${deck}`,
       cancel: "Cancel",
@@ -285,7 +285,7 @@ export const deckVersioningCopy = {
     // answered. Printed as themselves they read as "nothing to buy", which is the
     // one thing the page must not say on a read it could not make. Same call the
     // pending banner makes when `claimsKnown` is false.
-    groupInUnknown: "we couldn't read what your other decks hold",
+    groupInUnknown: "we couldn’t read what your other decks hold",
     footerUnknown: (cards: number, released: number) =>
       `${plural(cards, "card")} · ${released} back in the pool`,
 
@@ -325,14 +325,14 @@ export const deckVersioningCopy = {
 
     // Not `DECK_REMOVE_FALLBACK_MESSAGE`, which says the card is still in the
     // deck: here the card is OUT, and the restore is what did not happen.
-    failed: "We couldn't put that card back. It's still going out.",
+    failed: "We couldn’t put that card back. It’s still going out.",
   },
 
   /* ---- §Surfaces 3 · commit ---- */
   commit: {
     heading: (version: number) => `Commit this list as v${version}`,
     lede: (version: number, unfree: number, removed: number) => {
-      const head = `v${version} becomes the deck's list immediately.`;
+      const head = `v${version} becomes the deck’s list immediately.`;
       // A first commit, an all-free draft and a basics-only draft each leave one of
       // these figures at zero, and "The 0 cards short of spare copies" explains a
       // consequence nobody is facing. Only the halves that moved are named, and a
@@ -512,7 +512,7 @@ export const deckVersioningCopy = {
     // A read that was refused or failed. Never `noChange`: saying no cards moved
     // when the answer never arrived is a claim about the version, and the app does
     // not know it. Closing the row and opening it again is the retry.
-    diffUnavailable: "we couldn't read what this version changed. Open the row again to retry",
+    diffUnavailable: "we couldn’t read what this version changed. Open the row again to retry",
 
     initialHeading: "Initial",
     initialBody: "the first list, with nothing before it to compare against.",
@@ -539,7 +539,7 @@ export const deckVersioningCopy = {
     under: (rec: number) => `still under rec ${rec}`,
     body: "Body",
     bodyOver: (n: number) => `${n} over, not blocked`,
-    shapeHeading: "How the deck's shape moves",
+    shapeHeading: "How the deck’s shape moves",
     delta: (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0"),
   },
 

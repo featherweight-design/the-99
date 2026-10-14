@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { commandersCopy, discoverCopy, filterCopy } from "./lanes";
 
 describe("filterCopy", () => {
-  it("pluralises the sheet's dismiss label and groups the thousands", () => {
+  it("pluralises the sheet’s dismiss label and groups the thousands", () => {
     expect(filterCopy.sheet.dismiss(1)).toBe("Show 1 commander");
     expect(filterCopy.sheet.dismiss(3301)).toBe("Show 3,301 commanders");
   });
@@ -18,8 +18,8 @@ describe("filterCopy", () => {
 
 describe("commandersCopy", () => {
   it("states the owned lane at rest rather than printing a ratio", () => {
-    expect(commandersCopy.result.rest(148)).toBe("148 commanders you own and haven't built");
-    expect(commandersCopy.result.rest(1)).toBe("1 commander you own and haven't built");
+    expect(commandersCopy.result.rest(148)).toBe("148 commanders you own and haven’t built");
+    expect(commandersCopy.result.rest(1)).toBe("1 commander you own and haven’t built");
   });
 
   it("prints a ratio only once something is filtered", () => {
@@ -34,7 +34,7 @@ describe("discoverCopy", () => {
   });
 
   it("names the lane boundary in the zero state", () => {
-    expect(discoverCopy.empty.body("jodah", 3301)).toContain("it's on your commanders instead");
+    expect(discoverCopy.empty.body("jodah", 3301)).toContain("it’s on your commanders instead");
   });
 });
 

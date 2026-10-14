@@ -71,13 +71,13 @@ describe("FilterSheet", () => {
   // went missing the moment the reader opened Filters — and in the compact form
   // that is the ONLY place four of the lane's controls exist, so the phone lost the
   // explanation entirely while the desktop kept it.
-  it("carries the rack's asides, not just its sentence", () => {
+  it("carries the rack’s asides, not just its sentence", () => {
     const line = resultLineWithAside(12, 12, "owned", null, 3);
     render(
       <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={12} resultLine={line} />,
     );
     expect(
-      screen.getByText(/3 more are sleeved into decks you've built/),
+      screen.getByText(/3 more are sleeved into decks you’ve built/),
     ).toBeInTheDocument();
   });
 

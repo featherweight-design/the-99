@@ -12,5 +12,5 @@ export const collectionPriceCopy = {
     mixed: (figure: string) => `${figure} at Mana Pool, your most valuable copy`,
   },
   // F1: the whole price read failed, so every card is silent and the order is A to Z.
-  readFailed: "Prices didn't load, so this is A–Z.",
+  readFailed: "Prices didn’t load, so this is A–Z.",
 } as const;

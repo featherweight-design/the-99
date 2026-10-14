@@ -167,7 +167,7 @@ export const recommendationsCopy = {
     // ledger's own header uses, never "the ledger", which appears nowhere on
     // screen.
     keepAllConfirm: (count: string) =>
-      `Keep all ${count}? You'll lose the record of where they came from.`,
+      `Keep all ${count}? You’ll lose the record of where they came from.`,
     // Phone shortens rather than wrapping to three lines in a toolbar. "The
     // record" alone, because the full phrase has just been established by the
     // ledger sitting a few rows up the same page.

@@ -52,7 +52,7 @@ export default async function DiscoverPage({
         </EmptyStateTitle>
 
         <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
-          Upload your cards and we&apos;ll rank every commander you can build.
+          Upload your cards and we’ll rank every commander you can build.
         </EmptyStateBody>
 
         <PrimaryButton

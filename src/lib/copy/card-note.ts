@@ -84,7 +84,7 @@ export const cardNote = {
      * is still the honest reading.
      */
     declared: (declared: Bracket) =>
-      `We read this as mass land denial. The ${declaredName(declared)} you declared doesn't allow it.`,
+      `We read this as mass land denial. The ${declaredName(declared)} you declared doesn’t allow it.`,
     /**
      * Appended on the add surfaces where the row has room for it.
      *
@@ -95,7 +95,7 @@ export const cardNote = {
      * its key say a reading is present, the modal spells all three detections out in full, and
      * both name the detection as ours.
      */
-    disclaimer: "If that's wrong for how you play it, the reading is ours, not the rules'.",
+    disclaimer: "If that’s wrong for how you play it, the reading is ours, not the rules’.",
   },
 
   /**
@@ -107,7 +107,7 @@ export const cardNote = {
     forbidden: (declared: Bracket, n: string) =>
       `We read this as an extra-turn card, your ${n}. ${declaredName(declared)} allows none.`,
     chaining: (declared: Bracket, n: string) =>
-      `We read this as an extra-turn card, your ${n}. ${declaredName(declared)}'s rule is about chaining them, which a list can't show, so we count them and stop there.`,
+      `We read this as an extra-turn card, your ${n}. ${declaredName(declared)}’s rule is about chaining them, which a list can’t show, so we count them and stop there.`,
   },
 
   /** Tutors. NO TUTOR GATE (§5, locked). A fact and never a limit. */

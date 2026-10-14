@@ -114,7 +114,7 @@ describe("ChangeCommanderSheet", () => {
   it("names the figure and opens the cards it counts", async () => {
     readChangeCandidates.mockResolvedValue(data());
     mount();
-    const figure = await screen.findByRole("button", { name: /41 of 62 cards in this deck are in Prosper's decks/ });
+    const figure = await screen.findByRole("button", { name: /41 of 62 cards in this deck are in Prosper’s decks/ });
     expect(figure.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(figure);
     expect(screen.getByText("Llanowar Elves")).toBeTruthy();
@@ -167,7 +167,7 @@ describe("ChangeCommanderSheet", () => {
     mount();
     fireEvent.click(await screen.findByRole("button", { name: "Choose Prosper" }));
     fireEvent.click(screen.getByRole("button", { name: "Make Prosper commander" }));
-    expect(await screen.findByText("We couldn't change the commander. Korvold still leads this deck.")).toBeTruthy();
+    expect(await screen.findByText("We couldn’t change the commander. Korvold still leads this deck.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
   });
 
@@ -212,7 +212,7 @@ describe("ChangeCommanderSheet for a pair", () => {
     expect(group).toBeTruthy();
     expect(screen.getByRole("radio", { name: "Tymna the Weaver" }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getByText(
-      "Reyhan leaves the 98 for the command zone, and Ishai joins it there. Tymna the Weaver takes Reyhan's slot, and Thrasios leaves the deck. The deck stays at 98.",
+      "Reyhan leaves the 98 for the command zone, and Ishai joins it there. Tymna the Weaver takes Reyhan’s slot, and Thrasios leaves the deck. The deck stays at 98.",
     )).toBeTruthy();
     expect(screen.getByText("Lands in your pending changes, not yet a version. Discard undoes the whole swap.")).toBeTruthy();
   });
@@ -224,7 +224,7 @@ describe("ChangeCommanderSheet for a pair", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Choose Ishai and Reyhan" }));
     fireEvent.click(screen.getByRole("radio", { name: "Thrasios" }));
     expect(screen.getByRole("radio", { name: "Thrasios" }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByText(/Thrasios takes Reyhan's slot, and Tymna the Weaver leaves the deck\./)).toBeTruthy();
+    expect(screen.getByText(/Thrasios takes Reyhan’s slot, and Tymna the Weaver leaves the deck\./)).toBeTruthy();
     expect(screen.getAllByTestId("half-trade-fates")[0].textContent).toBe("leaves the deckinto the 98");
     fireEvent.keyDown(screen.getByRole("radio", { name: "Thrasios" }), { key: "ArrowLeft" });
     expect(screen.getByRole("radio", { name: "Tymna the Weaver" }).getAttribute("aria-checked")).toBe("true");
@@ -280,7 +280,7 @@ describe("ChangeCommanderSheet for a pair", () => {
     mount(true);
     fireEvent.click(await screen.findByRole("button", { name: "Choose Kraum and Tana" }));
     fireEvent.click(screen.getByRole("button", { name: "Make Kraum and Tana commanders" }));
-    expect(await screen.findByText("We couldn't change the commanders. Tymna the Weaver and Thrasios still lead this deck."))
+    expect(await screen.findByText("We couldn’t change the commanders. Tymna the Weaver and Thrasios still lead this deck."))
       .toBeTruthy();
   });
 
@@ -377,7 +377,7 @@ describe("ChangeCommanderSheet hover preview", () => {
   it("previews a candidate's own art and a matched card's, above the sheet", async () => {
     readChangeCandidates.mockResolvedValue(data({ yours: [cand(half("Prosper", { imageUri: "https://img.test/prosper.jpg" }), 41)] }));
     mount();
-    const figure = await screen.findByRole("button", { name: /41 of 62 cards in this deck are in Prosper's decks/ });
+    const figure = await screen.findByRole("button", { name: /41 of 62 cards in this deck are in Prosper’s decks/ });
     hover(screen.getAllByRole("button", { name: /Prosper/ }).find((b) => b.tagName === "BUTTON" && b.textContent === "Prosper")!);
     expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/prosper.jpg");
     fireEvent.mouseLeave(screen.getAllByRole("button", { name: /Prosper/ })[0]);

@@ -231,7 +231,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection',
     width: 'plate',
     caption:
-      "Your Collection has the standard search, filter and sort options you'd expect to find anywhere else: search by name, filter by color, type or set, sort by name, quantity and more. But The 99 does you one better: Availability. We'll go over it in more detail later, but this is what tells you what you own, what's in use and what you need to buy.",
+      "Your Collection has the standard search, filter and sort options you’d expect to find anywhere else: search by name, filter by color, type or set, sort by name, quantity and more. But The 99 does you one better: Availability. We’ll go over it in more detail later, but this is what tells you what you own, what’s in use and what you need to buy.",
     keys: [
       'Cards, Sets and Proxies sit in the strip at the top.',
       'Sets lists every set you own cards from, newest first.',
@@ -267,9 +267,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection/replace',
     width: 'inset',
     caption:
-      "Your collection probably already lives somewhere else. Mine's in ManaBox. Export it, drop the file in, and The 99 picks up every copy, set and foil.\n\nHeads up: an import replaces your whole Collection, it doesn't add to it.\nAlready have a Collection here? The 99 asks whether the file replaces it or adds to it.",
+      "Your collection probably already lives somewhere else. Mine’s in ManaBox. Export it, drop the file in, and The 99 picks up every copy, set and foil.\n\nHeads up: an import replaces your whole Collection, it doesn’t add to it.\nAlready have a Collection here? The 99 asks whether the file replaces it or adds to it.",
     captionLineSwitches: {
-      "Heads up: an import replaces your whole Collection, it doesn't add to it.": '!COLLECTION_EDIT_ENABLED',
+      "Heads up: an import replaces your whole Collection, it doesn’t add to it.": '!COLLECTION_EDIT_ENABLED',
       'Already have a Collection here? The 99 asks whether the file replaces it or adds to it.': 'COLLECTION_EDIT_ENABLED',
     },
     keys: [
@@ -308,7 +308,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the import summary',
     width: 'plate',
     caption:
-      "Cracked a few packs and re-imported? The summary shows what that did for your decks: what you no longer need to buy, what you still do, and where you're still short.\n\nYour decklists don't change, just whether you own what's in them.",
+      "Cracked a few packs and re-imported? The summary shows what that did for your decks: what you no longer need to buy, what you still do, and where you’re still short.\n\nYour decklists don’t change, just whether you own what’s in them.",
     keys: [
       'Shows your card count before and after.',
       'Rows sort into No longer to buy, Still to buy and Still short.',

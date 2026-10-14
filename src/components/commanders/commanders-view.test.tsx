@@ -153,7 +153,7 @@ const cards = () =>
 
 // The rack's result line — the lane's only live count of what the filters left.
 const resultLine = () =>
-  screen.getByText(/commanders (you own and haven't built|match)/);
+  screen.getByText(/commanders (you own and haven’t built|match)/);
 
 // The rack mounts ONE treatment, chosen in JS at `CHASSIS_WIDE_MIN_PX` — below it the colour
 // pips and `Build from` live in a closed sheet and are not in the document
@@ -247,7 +247,7 @@ describe("CommandersView result line", () => {
   it("states the lane at rest rather than printing a ratio", () => {
     view(results(214));
     expect(resultLine()).toHaveTextContent(
-      "214 commanders you own and haven't built",
+      "214 commanders you own and haven’t built",
     );
     expect(screen.queryByText(/214 of 214/)).toBeNull();
   });
@@ -262,7 +262,7 @@ describe("CommandersView result line", () => {
     expect(resultLine()).toHaveTextContent("40 of 44 commanders match");
   });
 
-  it("never restates the reveal control's own window figures", () => {
+  it("never restates the reveal control’s own window figures", () => {
     view(results(214));
     expect(screen.queryByText(/more below/)).toBeNull();
     // The window's remainder is the reveal control's alone, and it is still there.
@@ -376,7 +376,7 @@ describe("CommandersView zero states", () => {
     );
   });
 
-  it("clears the search from the state's own primary", () => {
+  it("clears the search from the state’s own primary", () => {
     view(results(40));
     searchFor("jodah");
     fireEvent.click(zeroState().getByRole("button", { name: "Clear search" }));
@@ -488,7 +488,7 @@ describe("CommandersView ranking toggle", () => {
       for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
     });
 
-    it("remembers the reader's flip, and writes a= only where it differs from the saved mode", () => {
+    it("remembers the reader’s flip, and writes a= only where it differs from the saved mode", () => {
       view(results(3), { savedAvail: "free", freeItems: results(3) });
       fireEvent.click(segments(ALL)[0]);
       expect(rememberCommandersAvail).toHaveBeenCalledWith("all");
@@ -500,7 +500,7 @@ describe("CommandersView ranking toggle", () => {
 
     // Round 1 of #1068: a same-route navigation to a bare /commanders after a flip must read the
     // NEW choice, before any fresh payload arrives with it.
-    it("reads a bare URL against the choice just made, not the payload's", () => {
+    it("reads a bare URL against the choice just made, not the payload’s", () => {
       const list = results(3);
       const { again } = view(list, { freeItems: list });
       fireEvent.click(segments(FREE)[0]);
@@ -597,7 +597,7 @@ describe("CommandersView ranking toggle", () => {
 
   // `?a=free` is a request, not a promise — the same rule the flip itself
   // follows. With no second ranking to switch to there is nothing to honour.
-  it("refuses the URL's request when no free ranking was produced", () => {
+  it("refuses the URL’s request when no free ranking was produced", () => {
     // `avail: "free"` is what puts `a=free` ON the URL — the helper writes the
     // lane key rather than passing a prop, because that is where the view reads
     // it. Seeding the URL by hand and then passing `all` deleted the very
@@ -667,7 +667,7 @@ describe("CommandersView ranking toggle", () => {
   // it changes state first and the URL a moment later, and a reconciliation
   // comparing against the params rather than against what was written would
   // revert it inside that gap.
-  it("does not undo the reader's own flip before the URL catches up", () => {
+  it("does not undo the reader’s own flip before the URL catches up", () => {
     const all = results(3);
     view(all, { freeItems: [all[2], all[0], all[1]] });
     fireEvent.click(segments(FREE)[0]);
@@ -884,7 +884,7 @@ describe("CommandersView URL writes", () => {
 });
 
 describe("CommandersView — the rows' art and their place in the list", () => {
-  it("draws the first screen's art at once and holds the rows below it", () => {
+  it("draws the first screen’s art at once and holds the rows below it", () => {
     // An observer that never reports, so a held row stays held while the test reads it.
     vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
     try {

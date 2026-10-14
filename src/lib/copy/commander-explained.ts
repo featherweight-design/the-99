@@ -212,7 +212,7 @@ export const explainedCopy = {
          the ceiling visible, and it is interpolated rather than typed so the prose cannot
          outlive the constant it describes. */
       body: (fullAt: number) =>
-        `How much of your collection is even legal here: cards inside this commander's color identity that could go in the 99. Full marks at ${n(fullAt)}, so a deep collection sits at the top of this one for most commanders. Breadth, not quality.`,
+        `How much of your collection is even legal here: cards inside this commander’s color identity that could go in the 99. Full marks at ${n(fullAt)}, so a deep collection sits at the top of this one for most commanders. Breadth, not quality.`,
       bodyMobile: (fullAt: number) =>
         `Cards in your collection legal in this identity. Full marks at ${n(fullAt)}. Breadth, not quality.`,
     },
@@ -228,9 +228,9 @@ export const explainedCopy = {
       label: "Synergy",
       weight: (w: number) => `${w} pts`,
       body:
-        "How much of EDHREC's most-played list for this commander you already own. The largest weight, because it is the only part that is about the commander rather than about your collection.",
+        "How much of EDHREC’s most-played list for this commander you already own. The largest weight, because it is the only part that is about the commander rather than about your collection.",
       bodyMobile:
-        "How much of EDHREC's most-played list for this commander you own. The only part about the commander, not your collection.",
+        "How much of EDHREC’s most-played list for this commander you own. The only part about the commander, not your collection.",
     },
 
     /** The key's actual job, in one line. Rendered from the same points the legend prints, so
@@ -370,16 +370,16 @@ export const heroNoteEdits = {
     heading: "No synergy data",
     /** WAS: "\u2014 EDHREC doesn't track this commander, so fit comes from pool and roles alone." */
     body: (max: number) =>
-      `\u2014 EDHREC doesn't track this commander, so fit comes from your cards and roles alone. ${n(max)} is the whole score available here, and every commander in this state is measured the same way.`,
+      `\u2014 EDHREC doesn’t track this commander, so fit comes from your cards and roles alone. ${n(max)} is the whole score available here, and every commander in this state is measured the same way.`,
     bodyMobile: (max: number) =>
-      `\u2014 EDHREC doesn't track this commander, so fit is your cards and roles alone. ${n(max)} is the whole score here.`,
+      `\u2014 EDHREC doesn’t track this commander, so fit is your cards and roles alone. ${n(max)} is the whole score here.`,
   },
   degraded: {
     heading: "Synergy data unavailable",
     /** WAS: "\u2014 we couldn't reach EDHREC, so receipts are hidden for now." */
     body: (max: number) =>
-      `\u2014 we couldn't reach EDHREC, so receipts are hidden for now. This score is out of ${n(max)} until it returns, and it is not comparable to a commander scored out of 100.`,
+      `\u2014 we couldn’t reach EDHREC, so receipts are hidden for now. This score is out of ${n(max)} until it returns, and it is not comparable to a commander scored out of 100.`,
     bodyMobile: (max: number) =>
-      `\u2014 we couldn't reach EDHREC. This score is out of ${n(max)} until it returns.`,
+      `\u2014 we couldn’t reach EDHREC. This score is out of ${n(max)} until it returns.`,
   },
 } as const;
