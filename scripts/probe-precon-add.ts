@@ -112,6 +112,7 @@ async function run() {
 
   const retry = await addPreconForUser(USER, FILE, first, ENV, true);
   check("b · a retry answers the same entry", retry.ok && retry.entryId, first);
+  check("b · and names the tokens the entry marked", retry.ok && retry.tokens.marked, 8);
   check("b · and writes nothing more", await copies(), { total: 100, foil: 2 });
 
   check("c · the add is read as added", (await preconAddedOn(USER, FILE)) !== null, true);

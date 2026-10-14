@@ -7,9 +7,9 @@
  * `preconAddLines` is pure, so the split into finishes and the token sums are unit tested; the read
  * and the write are `readPreconForAdd` and `addPreconForUser`.
  */
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
-import { preconCards, precons, preconTokens, printings, tokenPrintings, tokens } from "../../db/schema";
+import { preconCards, precons, preconTokens, printings, tokenOwnership, tokenPrintings, tokens } from "../../db/schema";
 import { applyCollectionChange, type ChangeResult } from "../collection/write";
 import { placedOf, type AddedPlacement } from "../collection/add-placements";
 import type { PendingItem } from "../collection/pending";
@@ -106,8 +106,8 @@ export type PreconAddResult =
 
 /**
  * Adds the precon for one player as one entry. `actionId` is the idempotency id: a retry finds the
- * committed entry and answers from it, with no placements (the first request's read is gone) and the
- * tokens it marked read back from the ledger rows' own source.
+ * committed entry and answers from it: no placements (the first request's read is gone), and the
+ * tokens it marked read back from `token_ownership`, where each carries the entry's id.
  */
 export async function addPreconForUser(
   userId: string,
@@ -137,7 +137,12 @@ export async function addPreconForUser(
     };
   }
   if (result.status === "alreadyApplied") {
-    return { ok: true, entryId: result.entry.id, ...base, placed: [], tokens: { marked: 0, names: [] } };
+    const held = await db.select({ id: tokenOwnership.tokenOracleId }).from(tokenOwnership)
+      .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.entryId, result.entry.id)));
+    return {
+      ok: true, entryId: result.entry.id, ...base, placed: [],
+      tokens: { marked: held.length, names: held.map((h) => lines.tokenNames[h.id] ?? "").filter(Boolean) },
+    };
   }
   return { ok: false, reason: "failed" };
 }

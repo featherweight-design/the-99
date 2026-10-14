@@ -81,6 +81,12 @@ describe("a row's states", () => {
     expect(document.querySelector('[data-token-dot="owned"]')).toBeTruthy();
   });
 
+  it("held by an added precon: drawn as the collection's, like an upload, with no hand mark to press", () => {
+    draw(ok([token({ state: "owned", source: "precon" })]));
+    expect(screen.getByText("in your collection")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Mark the Food token|Unmark the Food token|Add the Food token/ })).toBeNull();
+  });
+
   it("marked by hand: held control, no fact, no Shopping control", () => {
     draw(ok([token({ state: "owned", source: "manual" })]));
     expect(screen.getByRole("button", { name: "Unmark the Food token" }).textContent).toBe("✓ I have one");

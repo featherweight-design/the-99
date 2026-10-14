@@ -32,13 +32,19 @@ export function collidingTokenIds(tokens: (TokenFace & { oracleId: string })[]):
 }
 
 /**
+ * What holds a token: an upload row, the player's own mark, or a precon added to the collection
+ * (`markPreconTokens`), which Revert of that add takes back.
+ */
+export type TokenSource = "upload" | "manual" | "precon";
+
+/**
  * The state of one token for one reader: held (and by what) first, then whether the account has been
  * read at all. A hand mark is `owned` whether or not any upload has run; "not owned" needs a read.
  */
 export function tokenState(
-  held: "upload" | "manual" | null,
+  held: TokenSource | null,
   read: boolean,
-): { state: TokenOwnership; source: "upload" | "manual" | null } {
+): { state: TokenOwnership; source: TokenSource | null } {
   if (held) return { state: "owned", source: held };
   return { state: read ? "not" : "unknown", source: null };
 }
