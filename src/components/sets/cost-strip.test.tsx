@@ -50,7 +50,7 @@ describe("CostStrip", () => {
   it("labels the one selector with the same count the sentence uses", () => {
     render(<CostStrip cost={cost()} href="https://manapool.com/add-deck?x=1" />);
     expect(screen.getByRole("link", { name: /214 missing cards/ })).toBeInTheDocument();
-    expect(screen.getByText("Send 214 to ManaPool")).toBeInTheDocument();
+    expect(screen.getByText("Send 214 to Mana Pool")).toBeInTheDocument();
   });
 
   it("holds no per-cell control of its own — the filters are the selector", () => {
@@ -135,7 +135,7 @@ describe("CostStrip — the phone's collapsed row", () => {
     fireEvent.click(opener() as HTMLElement);
     expect(opener()).toBeUndefined();
     expect(closer()).toBeDefined();
-    expect(screen.getByRole("link", { name: /ManaPool Mass Entry/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Mana Pool Mass Entry/ })).toBeInTheDocument();
   });
 
   it("collapses again from the expanded form", () => {
@@ -184,7 +184,7 @@ describe("CostStrip — the phone's collapsed row", () => {
   // number is unpredictable.
   it.each([
     ["unpriced", { absentCount: 3 }, /never been stocked/],
-    ["noFigure", { inconclusiveCount: 2 }, /no price from ManaPool/],
+    ["noFigure", { inconclusiveCount: 2 }, /no price from Mana Pool/],
     ["soldOut", { soldOutCount: 4 }, /sold out/i],
   ])("shows the %s caveat once expanded", (_name, over, pattern) => {
     render(<CostStrip cost={cost({ absentCount: 0, ...over })} href="https://manapool.com/x" />);
@@ -256,14 +256,14 @@ describe("CostStrip — the accessible name with no send link", () => {
     render(<CostStrip cost={cost({ absentCount: 0 })} href={null} />);
     const label = opener()?.getAttribute("aria-label") ?? "";
     expect(label).toMatch(/Show the full cost/);
-    expect(label).not.toMatch(/ManaPool/);
+    expect(label).not.toMatch(/Mana Pool/);
   });
 
   // A LINK, not a button: the expanded action is an `<a>`, and naming a control type the
   // reader will not find is worse than naming none.
   it("names it a link when there is, because that is what it is", () => {
     render(<CostStrip cost={cost({ absentCount: 0 })} href="https://manapool.com/x" />);
-    expect(opener()?.getAttribute("aria-label")).toMatch(/ManaPool link/);
+    expect(opener()?.getAttribute("aria-label")).toMatch(/Mana Pool link/);
     expect(opener()?.getAttribute("aria-label")).not.toMatch(/button/);
   });
 

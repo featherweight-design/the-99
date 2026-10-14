@@ -249,7 +249,7 @@ export const proxyCopy = {
     commander: "commander",
     commanderAria: "This deck's commander",
     noStock: "no stock",
-    noStockAria: "Never stocked at ManaPool",
+    noStockAria: "Never stocked at Mana Pool",
   },
 
   // Three branches. (a) and (b) differ because they name different preconditions, and an

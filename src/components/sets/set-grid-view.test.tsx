@@ -395,7 +395,7 @@ describe("SetGridView — the cost strip's scope", () => {
         staleAsOf={null}
       />,
     );
-    expect(screen.getByText("Send 1 to ManaPool")).toBeInTheDocument();
+    expect(screen.getByText("Send 1 to Mana Pool")).toBeInTheDocument();
     expect(screen.getByText("over 1 of the 1 missing")).toBeInTheDocument();
   });
 
@@ -419,7 +419,7 @@ describe("SetGridView — the cost strip's scope", () => {
       />,
     );
     expect(screen.getByText("Cost to finish the extras")).toBeInTheDocument();
-    expect(screen.getByText("Send 2 to ManaPool")).toBeInTheDocument();
+    expect(screen.getByText("Send 2 to Mana Pool")).toBeInTheDocument();
   });
 });
 
@@ -498,7 +498,7 @@ describe("SetGridView — phone and desktop are one document", () => {
     search = "c=U";
     view([p("1", { colorIdentity: ["W"] })], []);
     expect(screen.getByText("Cost to complete")).toBeInTheDocument();
-    expect(screen.queryByText(/Send \d+ to ManaPool/)).toBeNull();
+    expect(screen.queryByText(/Send \d+ to Mana Pool/)).toBeNull();
   });
 
   // H13: multi-select, as `/collection`'s Type is.
@@ -1328,7 +1328,7 @@ describe("SetGridView — the name search", () => {
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
     // One missing cell matches, so the button offers one and not two — and the link it
     // builds carries that one card, not the whole set.
-    expect(screen.getByText("Send 1 to ManaPool")).toBeInTheDocument();
+    expect(screen.getByText("Send 1 to Mana Pool")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /1 missing card,/ })).toBeInTheDocument();
   });
 

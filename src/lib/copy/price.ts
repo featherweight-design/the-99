@@ -43,13 +43,13 @@ export const priceCopy = {
     // Line 2, joined by the component with ' · '. `provenance` and
     // `provenanceUnpriced` are alternatives for the FIRST clause only —
     // `lastChecked` and `behind` follow either one unchanged.
-    provenance: "prices from ManaPool",
+    provenance: "prices from Mana Pool",
     // Replaces `provenance` when no row on the list has a price. States the
     // absence rather than a check we cannot evidence, and keeps the same ink:
     // the feed has never stocked these, which is our gap and not the player's
     // error. The buy link below is why this line now has something to say —
     // we could not price these, the store can.
-    provenanceUnpriced: "no prices from ManaPool for these",
+    provenanceUnpriced: "no prices from Mana Pool for these",
     lastChecked: (when: string) => `last checked ${when}`,
     behind: "these are behind",
   },
@@ -71,7 +71,7 @@ export const priceCopy = {
   // qualifier out would be the longer half of the pair.
   cheapest: {
     from: (figure: string) => `from ${figure}`,
-    aria: (figure: string) => `cheapest non-foil printing of this card is ${figure} at ManaPool`,
+    aria: (figure: string) => `cheapest non-foil printing of this card is ${figure} at Mana Pool`,
   },
 
   // ── Accessible names ──────────────────────────────────────────────────
@@ -79,11 +79,11 @@ export const priceCopy = {
   // the word `buy` already sits in that row's reading order.
   aria: {
     priced: (figure: string, when: string) =>
-      `${figure} at ManaPool, last checked ${when}`,
+      `${figure} at Mana Pool, last checked ${when}`,
     // Same sentence with the behind clause appended, rather than a second
     // sentence — one utterance per price, however old the table is.
     pricedBehind: (figure: string, when: string) =>
-      `${figure} at ManaPool, last checked ${when}, these prices are behind`,
+      `${figure} at Mana Pool, last checked ${when}, these prices are behind`,
   },
 
   // ── The export dialog's correction ────────────────────────────────────

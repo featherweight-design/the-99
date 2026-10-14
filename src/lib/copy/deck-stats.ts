@@ -115,14 +115,14 @@ export const deckStatsCopy = {
     toBuyNoneSub: "every copy is in your collection",
     // A group with copies and no price at all: the count stands in for the figure, never $0.00.
     copiesFig: (n: number) => `${n} ${n === 1 ? "copy" : "copies"}`,
-    noPriceOne: "no price from ManaPool for this one",
-    noPriceMany: "no price from ManaPool for these",
+    noPriceOne: "no price from Mana Pool for this one",
+    noPriceMany: "no price from Mana Pool for these",
     noPrice: "no price",
     legend: { owned: "Owned", basic: "Basic land, not priced", toBuy: "To buy" },
     priciest: "PRICIEST CARDS",
     tagOwned: "owned",
     tagToBuy: "to buy",
-    caption: "One square per card, owned first. Prices from ManaPool. Basics are never priced or counted to buy.",
+    caption: "One square per card, owned first. Prices from Mana Pool. Basics are never priced or counted to buy.",
     shopLink: (n: number) => (n === 1 ? "See it in Shopping" : `See the ${n} in Shopping`),
   },
   average: {

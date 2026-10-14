@@ -133,7 +133,7 @@ describe("StandInsSheet", () => {
     expect(swords.textContent).toMatch(/1 in a draft/);
     expect(within(sheet).getByText("Chaos Warp").closest("li")!.textContent).not.toMatch(/in a draft/);
     expect(within(sheet).getByText([swapToolsCopy.sheet.leadSpellsJob("Anguished Unmaking", "removal"), swapToolsCopy.sheet.leadSpellsOrderUnlisted("Anguished Unmaking")].join(" "))).toBeInTheDocument();
-    expect(within(sheet).getByText(/Cheapest printing of each, from ManaPool/)).toBeInTheDocument();
+    expect(within(sheet).getByText(/Cheapest printing of each, from Mana Pool/)).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();
   });
 

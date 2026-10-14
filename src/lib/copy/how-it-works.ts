@@ -173,7 +173,7 @@ export const howItWorksRowsCopy = {
       title: "Prices",
       methods: ["list"],
       verdict: "exact",
-      from: "ManaPool’s singles feed.",
+      from: "Mana Pool’s singles feed.",
       how:
         "We price one printing per card: one in stock first, then non-foil over foil, then the " +
         "cheapest. No figure means we have no usable price for it. Foil-only means every " +

@@ -144,8 +144,8 @@ export const discoveryCopy = {
     // row. The brand capitalisation appears where it is spoken — see `aria` below.
     source: "manapool",
     notStocked: "not stocked",
-    aria: (formatted: string) => `${formatted}, in stock at ManaPool`,
-    notStockedAria: "ManaPool has none in stock",
+    aria: (formatted: string) => `${formatted}, in stock at Mana Pool`,
+    notStockedAria: "Mana Pool has none in stock",
   },
 
   // ── Untagged commanders (ruling 5) ────────────────────────────────────
