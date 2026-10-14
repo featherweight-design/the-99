@@ -356,6 +356,13 @@ describe("OpenPreconView edition switch", () => {
     expect(viewed("Sol Ring")).toBe("cmm");
   });
 
+  it("reads a repeated edition as the server does: Regular, whichever value comes first", () => {
+    render(<OpenPreconView precon={withCollector()} fromNew={false} />);
+    act(() => { window.history.pushState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new&edition=collector&edition=regular"); });
+    expect(viewed("Sol Ring")).toBe("cmm");
+    expect(screen.getByRole("radio", { name: "Regular" })).toHaveAttribute("aria-checked", "true");
+  });
+
   it("swaps the printings on a press, keeps the counts, and writes only its own parameter", () => {
     render(<OpenPreconView precon={withCollector()} fromNew={false} />);
     expect(viewed("Sol Ring")).toBe("cmm");

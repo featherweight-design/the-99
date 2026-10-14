@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
@@ -136,4 +139,18 @@ describe("the one box — all three occupants, forced", () => {
       expect(el.style.border).toBe("");
     }
   });
+});
+
+// `cqw` resolves against the nearest container, so a tile that drops TILE_FIELD rounds by the
+// viewport instead and no browser check on another surface notices. Each surface that draws the
+// scaled radius must also draw the field it measures.
+describe("the scaled tile radius", () => {
+  it.each(["deck-card-tile", "deck-card-undo-tile", "read-only-card-tile", "token-tile"])(
+    "%s draws TILE_FIELD on its tile root beside the scaled classes",
+    (name) => {
+      const src = readFileSync(join(process.cwd(), "src/components/decks", `${name}.tsx`), "utf8");
+      expect(src).toMatch(/<li className=\{`[^`]*\$\{TILE_FIELD\}/);
+      expect(src).toContain("TILE_SHELL_SCALED");
+    },
+  );
 });

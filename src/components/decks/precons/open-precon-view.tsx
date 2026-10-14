@@ -107,7 +107,9 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
   // The URL names the edition, and a navigation to another edition of this precon keeps this view
   // mounted with its first props, so the live address is read on every render and a change of
   // edition re-seeds the choice during render, before the stale edition can paint.
-  const liveEdition = parseEdition(new URLSearchParams(useLiveQuery(initialEdition === "collector" ? "edition=collector" : "")).get("edition") ?? undefined);
+  const liveEditions = new URLSearchParams(useLiveQuery(initialEdition === "collector" ? "edition=collector" : "")).getAll("edition");
+  // All values, as the server hands them over: a repeated `edition` is Regular on both sides.
+  const liveEdition = parseEdition(liveEditions.length > 1 ? liveEditions : liveEditions[0]);
   const [seenEdition, setSeenEdition] = useState(liveEdition);
   if (liveEdition !== seenEdition) {
     setSeenEdition(liveEdition);
