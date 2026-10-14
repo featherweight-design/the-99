@@ -2,6 +2,8 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { tokenPrintings, tokens } from "../../db/schema";
 import type { BrowseCard } from "../collection/browse";
+import { deckTokensEnabled } from "../decks/tokens-flag";
+import { heldGroups, loadHeldTokenPrintings, type HeldTokenPrinting } from "./deck-printings";
 import { manapoolAddDeckUrl } from "../manapool/links";
 import { loadTokenPrices, type TokenPriceFact } from "./price";
 import { tokenManapoolLine } from "./price-line";
@@ -19,7 +21,7 @@ import { tokenManapoolLine } from "./price-line";
  * Reached from `loadCardDetail`, which asks it only for an id the card catalog does not hold, so the
  * press, the prefetch and every re-read take one path.
  */
-export async function loadTokenDetail(oracleId: string): Promise<BrowseCard | null> {
+export async function loadTokenDetail(oracleId: string, userId: string, env: NodeJS.ProcessEnv): Promise<BrowseCard | null> {
   // No schema probe first: every open and every prefetch would pay it as extra round trips ahead
   // of the read. A database the token migration has not reached throws on the read itself, which
   // the catches below turn into no token (and, for the price table alone, no price).
@@ -34,7 +36,7 @@ export async function loadTokenDetail(oracleId: string): Promise<BrowseCard | nu
     if (!token) return null;
     // Each read fails on its own, as the card's side reads do: a failed printing read costs the art
     // and the set line, a failed price read costs the price and the link, and neither costs the token.
-    const [printings, priced] = await Promise.all([
+    const [printings, priced, held] = await Promise.all([
       db
         .select({
           scryfallId: tokenPrintings.scryfallId, setCode: tokenPrintings.setCode,
@@ -52,8 +54,18 @@ export async function loadTokenDetail(oracleId: string): Promise<BrowseCard | nu
           console.error("[tokens] token detail price failed", err instanceof Error ? err.message : err);
           return { prices: new Map<string, TokenPriceFact>(), newestAsOf: null };
         }),
+      // The printings the player holds, which a deck's picker chooses between (token printings TP2), behind the
+      // deck tokens switch. A failed read costs the list, never the token: the sheet shows the catalog's one.
+      deckTokensEnabled(env)
+        ? loadHeldTokenPrintings(userId, [oracleId])
+          .then((m) => m.get(oracleId) ?? [])
+          .catch((err: unknown) => {
+            console.error("[tokens] token detail holdings failed", err instanceof Error ? err.message : err);
+            return [] as HeldTokenPrinting[];
+          })
+        : Promise.resolve([] as HeldTokenPrinting[]),
     ]);
-    return assembleTokenDetail(token, printings, priced.prices.get(oracleId) ?? null, priced.newestAsOf);
+    return assembleTokenDetail(token, printings, priced.prices.get(oracleId) ?? null, priced.newestAsOf, held);
   } catch (err) {
     console.error("[tokens] loadTokenDetail failed", err instanceof Error ? err.message : err);
     return null;
@@ -78,21 +90,34 @@ export type TokenDetailPrinting = {
 };
 
 /**
- * The pure half. The printing shown is the one a deck's token row pictures (`assembleDeckTokens`):
- * the priced one when Mana Pool lists any, else the first by set and number. Only that printing is
- * listed, so the modal draws no printing picker: a token's other printings are not a choice the app
- * keeps for it.
+ * The pure half. The printing shown is the one a deck's token row pictures with no pick of its own
+ * (`assembleDeckTokens`, `chooseTokenPrinting`): the player's most-held printing with art, else the catalog's
+ * (the priced one when Mana Pool lists any, else the first by set and number), else a held one with no art.
+ *
+ * When the player holds printings of the token (`held`, token printings TP2), those are listed, most copies
+ * first, each with its count: the choice a deck's picker offers, and only from a deck (the modal draws no
+ * picker for a token without the deck's `save`), followed by the shown printing at no copies when it is not one
+ * of them. Otherwise only the shown printing is listed, at no copies, and the modal draws no picker: a
+ * printing the player does not hold is not a choice the app keeps.
  */
 export function assembleTokenDetail(
   token: TokenDetailRow,
   printings: TokenDetailPrinting[],
   price: TokenPriceFact | null,
   newestAsOf: Date | null,
+  held: readonly HeldTokenPrinting[] = [],
 ): BrowseCard {
-  const chosen = (price && printings.find((p) => p.scryfallId === price.printing.scryfallId))
+  const byId = new Map(printings.map((p) => [p.scryfallId, p]));
+  // The picker's tiles, one per set and number, from the same list the deck's row reads (`heldGroups`).
+  const heldRows = heldGroups(held, (id) => byId.get(id)).map((h) => ({ p: byId.get(h.tokenPrintingId)!, quantity: h.quantity }));
+  const catalog = (price && printings.find((p) => p.scryfallId === price.printing.scryfallId))
     ?? [...printings].sort((a, b) =>
       a.setCode.localeCompare(b.setCode) || a.collectorNumber.localeCompare(b.collectorNumber, "en", { numeric: true })
-      || a.scryfallId.localeCompare(b.scryfallId))[0]
+      || a.scryfallId.localeCompare(b.scryfallId))[0];
+  // `chooseTokenPrinting`'s order: a held printing with art, else the catalog's, else a held one with none.
+  const chosen = heldRows.find((h) => h.p.imageUri !== null)?.p
+    ?? catalog
+    ?? heldRows[0]?.p
     // The printings read failed and the price read did not: the price names its own printing, so the
     // price, the set line and the link survive with no art.
     ?? (price
@@ -133,18 +158,26 @@ export function assembleTokenDetail(
       : null,
     // What Mana Pool sells for this price: its own product, placed by the line a token row's link sends.
     tokenBuyUrl: shownPrice ? manapoolAddDeckUrl([tokenManapoolLine(token.name, 1, shownPrice)]) : null,
-    printings: chosen
-      ? [{
-        setCode: set, scryfallId: chosen.scryfallId, setName: null, collectorNumber: chosen.collectorNumber,
-        releasedAt: null, quantity: 0, finishes: {}, imageUri: chosen.imageUri, backImageUri: chosen.backImageUri,
-        flavorName: null,
-        // The back is this printing's own (a double-faced or reversible token), so the modal's turn
-        // and its zoom can show it; the token layouts are not two-faced by layout alone.
-        hasOwnBack: Boolean(chosen.backImageUri),
-      }]
-      : [],
-    setCodes: set ? [set] : [],
+    // The held rows, and after them the shown printing at no copies when it is not one of them (no held
+    // printing has art): the modal's resolver then finds the same art, and its picker still lists only the
+    // held rows (it offers the printings with copies).
+    printings: [
+      ...heldRows.map((h) => tokenPrinting(h.p, h.quantity)),
+      ...(chosen && !heldRows.some((h) => h.p.scryfallId === chosen.scryfallId) ? [tokenPrinting(chosen, 0)] : []),
+    ],
+    setCodes: heldRows.length > 0 ? [...new Set(heldRows.map((h) => h.p.setCode.toUpperCase()))] : set ? [set] : [],
     primarySetCode: set,
     preferredPrinting: null,
+  };
+}
+
+function tokenPrinting(p: TokenDetailPrinting, quantity: number): BrowseCard["printings"][number] {
+  return {
+    setCode: p.setCode.toUpperCase(), scryfallId: p.scryfallId, setName: null, collectorNumber: p.collectorNumber,
+    releasedAt: null, quantity, finishes: {}, imageUri: p.imageUri, backImageUri: p.backImageUri,
+    flavorName: null,
+    // The back is this printing's own (a double-faced or reversible token), so the modal's turn
+    // and its zoom can show it; the token layouts are not two-faced by layout alone.
+    hasOwnBack: Boolean(p.backImageUri),
   };
 }

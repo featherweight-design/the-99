@@ -307,9 +307,9 @@ export const tokenPrintingHoldings = pgTable("token_printing_holdings", {
 
 /**
  * The printing a deck shows for one of its tokens (token printings plan, TP1). One per token per deck,
- * by the printing's own id. Nothing writes it yet: its writers are to be the deck's printing picker (TP2),
- * which offers only printings the player holds (`token_printing_holdings`), and a precon start, which will
- * record the box's own printing. A row names a token, not a maker: a token only the commander makes is a
+ * by the printing's own id. Its ONE writer is `writeDeckTokenPrintingIn` (`src/lib/tokens/deck-printings.ts`),
+ * for the deck's printing picker (TP2), which offers only printings the player holds
+ * (`token_printing_holdings`), and for a precon start, which will record the box's own printing. A row names a token, not a maker: a token only the commander makes is a
  * deck's token too, so nothing here requires a `card_tokens` join. Read the way `deck_printings` is: a pick
  * the player no longer holds is ignored rather than deleted, so a Replace upload never wipes a deck's choices.
  *

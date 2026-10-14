@@ -1,4 +1,5 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { chooseTokenPrinting, loadDeckTokenPicks, loadHeldTokenPrintings, type HeldTokenPrinting } from "./deck-printings";
 import { db } from "../../db";
 import { cardTokens, cards, deckCards, decks, tokenPrintings, tokens } from "../../db/schema";
 import { loadTokenPrices, type TokenPriceFact } from "./price";
@@ -38,6 +39,11 @@ export type DeckToken = {
   /** On THIS deck's Shopping list. An owned token is never drawn as joined, whatever the row says. */
   joined: boolean;
   picture: TokenPictured | null;
+  /**
+   * The deck's own pick, while the player still holds that printing (token printings TP2): the printing the
+   * details sheet's picker opens on. Null when the deck has none, or the pick is no longer held.
+   */
+  printingPick: { setCode: string; collectorNumber: string } | null;
   price: TokenPriceFact | null;
 };
 
@@ -78,6 +84,10 @@ export type DeckTokenInputs = {
   printings: TokenPrintingFacts[];
   prices: Map<string, TokenPriceFact>;
   newestPriceAsOf: Date | null;
+  /** The printings the player holds of each token, summed across sources (TP2). Absent reads as none. */
+  heldPrintings?: ReadonlyMap<string, HeldTokenPrinting[]>;
+  /** This deck's picks, by token, already restricted to printings OF that token (`loadDeckTokenPicks`). */
+  picks?: ReadonlyMap<string, string>;
   /**
    * The art the DECK draws for its own cards (the printing the player owns or picked), by oracle id, WITH the
    * name of that printing: a Secret Lair art under the oracle name is the mismatch every decklist row refuses.
@@ -123,10 +133,15 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
     if (!makers && !(state !== "owned" && i.joined.has(t.oracleId))) continue;
     const price = i.prices.get(t.oracleId) ?? null;
     const all = printingsOf.get(t.oracleId) ?? [];
-    const chosen = (price && all.find((p) => p.scryfallId === price.printing.scryfallId))
+    const catalog = (price && all.find((p) => p.scryfallId === price.printing.scryfallId))
       ?? [...all].sort((a, b) =>
         a.setCode.localeCompare(b.setCode) || a.collectorNumber.localeCompare(b.collectorNumber, "en", { numeric: true })
         || a.scryfallId.localeCompare(b.scryfallId))[0];
+    // The deck's pick while held, else the player's most-held printing with art, else the catalog's (TP2).
+    const byId = new Map(all.map((p) => [p.scryfallId, p]));
+    const held = (i.heldPrintings?.get(t.oracleId) ?? []).filter((h) => byId.has(h.tokenPrintingId));
+    const choice = chooseTokenPrinting(i.picks?.get(t.oracleId) ?? null, held, catalog?.scryfallId ?? null, (id) => byId.get(id));
+    const chosen = choice ? byId.get(choice.tokenPrintingId) : undefined;
     rows.push({
       oracleId: t.oracleId,
       name: t.name,
@@ -144,6 +159,9 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
           scryfallId: chosen.scryfallId, setCode: chosen.setCode, collectorNumber: chosen.collectorNumber,
           imageUri: chosen.imageUri, imageUriSmall: chosen.imageUriSmall, artCropUri: chosen.artCropUri, printings: all.length,
         }
+        : null,
+      printingPick: choice?.source === "deck" && chosen
+        ? { setCode: chosen.setCode.toUpperCase(), collectorNumber: chosen.collectorNumber }
         : null,
       price,
     });
@@ -243,7 +261,7 @@ export async function loadDeckTokens(
     const state = await loadUserTokenState(deckId, userId, linkIds, ownershipReady);
     const tokenIds = [...new Set([...linkIds, ...state.joined])];
     if (tokenIds.length === 0) return { status: "absent" };
-    const [tokenRows, printingRows, priced] = await Promise.all([
+    const [tokenRows, printingRows, priced, heldPrintings, picks] = await Promise.all([
       db.select({
         oracleId: tokens.oracleId, name: tokens.name, typeLine: tokens.typeLine, colors: tokens.colors,
         power: tokens.power, toughness: tokens.toughness, oracleText: tokens.oracleText,
@@ -254,6 +272,9 @@ export async function loadDeckTokens(
         imageUri: tokenPrintings.imageUri, imageUriSmall: tokenPrintings.imageUriSmall, artCropUri: tokenPrintings.artCropUri,
       }).from(tokenPrintings).where(inArray(tokenPrintings.tokenOracleId, tokenIds)),
       (await tokenPriceTablesExist()) ? loadTokenPrices(tokenIds) : Promise.resolve({ prices: new Map(), newestAsOf: null }),
+      // 0118's tables are checked with the ownership ones (`tokenOwnershipTablesExist`).
+      ownershipReady ? loadHeldTokenPrintings(userId, tokenIds) : Promise.resolve(new Map<string, HeldTokenPrinting[]>()),
+      ownershipReady ? loadDeckTokenPicks(deckId, userId) : Promise.resolve(new Map<string, string>()),
     ]);
 
     return assembleDeckTokens({
@@ -265,6 +286,8 @@ export async function loadDeckTokens(
       printings: printingRows,
       prices: priced.prices,
       newestPriceAsOf: priced.newestAsOf,
+      heldPrintings,
+      picks,
       art,
     });
   } catch (err) {

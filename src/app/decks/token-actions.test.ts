@@ -10,9 +10,24 @@ vi.mock("../../lib/switches/request", async () => {
 const stub = vi.hoisted(() => ({
   on: true,
   join: vi.fn(), leave: vi.fn(), mark: vi.fn(), unmark: vi.fn(), revalidate: vi.fn(), requireDeck: vi.fn(),
+  refresh: vi.fn(), makes: vi.fn(), write: vi.fn(), execute: vi.fn(),
+  // The printing the token's own lookup returns: none, or one id.
+  found: [] as { id: string }[],
 }));
 
-vi.mock("next/cache", () => ({ revalidatePath: stub.revalidate }));
+vi.mock("next/cache", () => ({ revalidatePath: stub.revalidate, refresh: stub.refresh }));
+vi.mock("../../db", () => ({
+  db: {
+    transaction: async (fn: (tx: unknown) => unknown) => fn({
+      execute: stub.execute,
+    }),
+  },
+}));
+vi.mock("../../lib/tokens/deck-printings", () => ({
+  writeDeckTokenPrintingIn: stub.write,
+  deckMakesTokenIn: async () => stub.makes(),
+  heldPrintingByNumber: async () => stub.found[0]?.id ?? null,
+}));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/decks/tokens-flag", () => ({ deckTokensEnabled: () => stub.on }));
 vi.mock("../../lib/decks/read", () => ({ requireDeck: stub.requireDeck }));
@@ -20,7 +35,7 @@ vi.mock("../../lib/tokens/joins", () => ({
   joinToken: stub.join, leaveToken: stub.leave, markOwnedOnDeck: stub.mark, unmarkOwned: stub.unmark,
 }));
 
-import { setTokenHeld, setTokenJoined } from "./token-actions";
+import { setDeckTokenPrinting, setTokenHeld, setTokenJoined } from "./token-actions";
 
 const DECK = "00000000-0000-4000-8000-0000000000d1";
 const TOKEN = "00000000-0000-4000-8000-0000000000a1";
@@ -30,6 +45,62 @@ beforeEach(() => {
   for (const f of Object.values(stub)) if (typeof f === "function" && "mockReset" in f) (f as ReturnType<typeof vi.fn>).mockReset();
   stub.join.mockResolvedValue("done");
   stub.mark.mockResolvedValue("done");
+  // The deck makes the token unless a test says otherwise.
+  stub.makes.mockReturnValue(true);
+  stub.write.mockResolvedValue("ok");
+  stub.found = [{ id: "p-1" }];
+});
+
+describe("setDeckTokenPrinting (token printings TP2)", () => {
+  const P = { setCode: "TCLB", collectorNumber: "4" };
+
+  it("does nothing while the switch is off", async () => {
+    stub.on = false;
+    expect(await setDeckTokenPrinting(DECK, TOKEN, P)).toEqual({ ok: false, reason: "off" });
+    expect(stub.requireDeck).not.toHaveBeenCalled();
+    expect(stub.write).not.toHaveBeenCalled();
+  });
+
+  it("refuses a malformed id or printing before reading the deck", async () => {
+    for (const args of [
+      ["nope", TOKEN, P], [DECK, 5, P], [DECK, TOKEN, null], [DECK, TOKEN, { setCode: "TCLB" }],
+      [DECK, TOKEN, { setCode: "no spaces!", collectorNumber: "4" }], [DECK, TOKEN, { setCode: "tclb", collectorNumber: "a b" }],
+    ] as const) {
+      expect(await setDeckTokenPrinting(...(args as unknown as [string, string, unknown]))).toEqual({ ok: false, reason: "refused" });
+    }
+    expect(stub.requireDeck).not.toHaveBeenCalled();
+    expect(stub.write).not.toHaveBeenCalled();
+  });
+
+  it("refuses a token the deck does not make, read under the deck's lock", async () => {
+    stub.makes.mockReturnValue(false);
+    expect(await setDeckTokenPrinting(DECK, TOKEN, P)).toEqual({ ok: false, reason: "notThisDeck" });
+    expect(stub.requireDeck).toHaveBeenCalledWith(DECK, "user_1");
+    expect(stub.write).not.toHaveBeenCalled();
+  });
+
+  it("refuses a set and number that is none of this token's printings", async () => {
+    stub.found = [];
+    expect(await setDeckTokenPrinting(DECK, TOKEN, P)).toEqual({ ok: false, reason: "notHeld" });
+    expect(stub.write).not.toHaveBeenCalled();
+    expect(stub.refresh).not.toHaveBeenCalled();
+  });
+
+  it("writes the found printing through the writer, lowercased, and refreshes", async () => {
+    expect(await setDeckTokenPrinting(DECK.toUpperCase(), TOKEN.toUpperCase(), P)).toEqual({ ok: true });
+    // The deck's lock, taken inside the write's transaction.
+    expect(stub.execute).toHaveBeenCalledTimes(1);
+    expect(stub.write).toHaveBeenCalledWith(expect.anything(), { deckId: DECK, userId: "user_1", tokenOracleId: TOKEN, tokenPrintingId: "p-1" });
+    expect(stub.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers the writer's refusal as not held, and refreshes nothing", async () => {
+    for (const w of ["notHeld", "notOfToken"]) {
+      stub.write.mockResolvedValue(w);
+      expect(await setDeckTokenPrinting(DECK, TOKEN, P)).toEqual({ ok: false, reason: "notHeld" });
+    }
+    expect(stub.refresh).not.toHaveBeenCalled();
+  });
 });
 
 describe("token actions", () => {

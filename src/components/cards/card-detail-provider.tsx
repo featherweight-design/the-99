@@ -37,6 +37,8 @@ import type { FitsViewMemory } from "./fits-view";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckPrintingScope } from "./card-modal";
 import { setDeckPrinting } from "../../app/decks/printing-actions";
+import { setDeckTokenPrinting } from "../../app/decks/token-actions";
+import { useDeckTokens } from "../decks/deck-tokens-context";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 
 // The card details modal and the two fits views are loaded on demand rather than with the page. Every
@@ -1529,12 +1531,25 @@ export function CardDetailProvider({
 
   // The action refreshes the page itself (`refresh()`), so every row, the art and the prices
   // move to the new pick together.
+  const deckTokens = useDeckTokens();
   const saveDeckPrinting = useCallback(
     async (oracleId: string, p: PreferredPrinting) =>
       deckId !== null && (await setDeckPrinting(deckId, oracleId, p)).ok,
     [deckId],
   );
+  // One of the deck's TOKENS (token printings TP2): the same picker, offering the printings the player holds
+  // of it (`loadTokenDetail`), with the deck's own pick. Only on the deck page itself, with the switch on, which
+  // is when the deck's tokens are in context.
+  const saveDeckTokenPrinting = useCallback(
+    async (oracleId: string, p: PreferredPrinting) =>
+      deckId !== null && (await setDeckTokenPrinting(deckId, oracleId, p)).ok,
+    [deckId],
+  );
   const deckPrintingFor = (oracleId: string): DeckPrintingScope | undefined => {
+    const token = deckId !== null && deckTokens?.deckId === deckId && deckTokens.read.status === "ok"
+      ? deckTokens.read.tokens.find((t) => t.oracleId === oracleId && t.makers.length > 0)
+      : undefined;
+    if (token) return { pick: token.printingPick, save: (p) => saveDeckTokenPrinting(oracleId, p) };
     if (deckPrintingPicks === null) return undefined;
     const pick = deckPickFor(deckPrintingPicks, deckId, deckOracleIds, oracleId);
     // The deck page: a card the deck holds picks for it.

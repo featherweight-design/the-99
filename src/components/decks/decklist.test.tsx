@@ -1754,7 +1754,7 @@ describe("the Tokens group is mounted at the foot of Your deck", () => {
     tokens: [{
       oracleId: "t-food", name: "Food", typeLine: "Token Artifact — Food", colors: [], power: null, toughness: null,
       oracleText: null, makers: [{ oracleId: "sol-ring", name: "Sol Ring", imageUri: null }], state: "not", source: null,
-      joined: false, picture: null, price: null,
+      joined: false, picture: null, printingPick: null, price: null,
     }],
   };
 

@@ -1,10 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { deckTokensEnabled } from "../../lib/decks/tokens-flag";
 import { requireDeck } from "../../lib/decks/read";
+import { db } from "../../db";
+import { sql } from "drizzle-orm";
+import { deckMakesTokenIn, heldPrintingByNumber, writeDeckTokenPrintingIn } from "../../lib/tokens/deck-printings";
 import { joinToken, leaveToken, markOwnedOnDeck, unmarkOwned } from "../../lib/tokens/joins";
 import { isUuid } from "../../lib/uuid";
 
@@ -64,5 +67,57 @@ export async function setTokenHeld(deckId: string, tokenOracleId: string, held: 
     if ((await unmarkOwned(g.userId, g.deckId, g.tokenId)) === "notThisDeck") return { ok: false, reason: "notThisDeck" };
   }
   revalidateTokenSurfaces(g.deckId, true);
+  return { ok: true };
+}
+
+export type SetDeckTokenPrintingResult =
+  | { ok: true }
+  /**
+   * `off`: the switch is off. `refused`: the wire input is malformed. `notThisDeck`: no card of the deck makes
+   * the token. `notHeld`: the player holds no copy of that printing of it; the picker offers only held ones.
+   */
+  | { ok: false; reason: "off" | "refused" | "notThisDeck" | "notHeld" };
+
+const COLLECTOR_NUMBER = /^[^\s\p{C}]{0,24}$/u;
+const SET_CODE = /^[a-z0-9]{2,8}$/;
+
+/**
+ * The printing a deck shows for one of its tokens (token printings TP2), from the card details sheet's picker,
+ * which names a printing by set and number as it does for a card. The printing is looked up AMONG THAT TOKEN'S
+ * OWN, so a set and number belonging to another token names nothing; `writeDeckTokenPrintingIn` checks it again
+ * with the holding. The page refreshes itself, as a card's pick does, so the row and its art move together.
+ */
+export async function setDeckTokenPrinting(
+  rawDeckId: unknown,
+  rawTokenId: unknown,
+  printing: unknown,
+): Promise<SetDeckTokenPrintingResult> {
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!deckTokensEnabled(env)) return { ok: false, reason: "off" };
+  if (typeof rawDeckId !== "string" || typeof rawTokenId !== "string" || !isUuid(rawDeckId) || !isUuid(rawTokenId)) {
+    return { ok: false, reason: "refused" };
+  }
+  if (typeof printing !== "object" || printing === null) return { ok: false, reason: "refused" };
+  const { setCode, collectorNumber } = printing as Record<string, unknown>;
+  if (typeof setCode !== "string" || typeof collectorNumber !== "string") return { ok: false, reason: "refused" };
+  const set = setCode.toLowerCase();
+  if (!SET_CODE.test(set) || !COLLECTOR_NUMBER.test(collectorNumber)) return { ok: false, reason: "refused" };
+  const deckId = rawDeckId.toLowerCase();
+  const tokenId = rawTokenId.toLowerCase();
+  await requireDeck(deckId, userId);
+
+  const outcome = await db.transaction(async (tx) => {
+    // The deck's row first, as a card's pick takes it, and the membership read under it: a deck edit that
+    // removes the token's last maker cannot land between the check and the write.
+    await tx.execute(sql`select 1 from decks where id = ${deckId} for update`);
+    if (!(await deckMakesTokenIn(tx, deckId, userId, tokenId))) return "notThisDeck" as const;
+    const p = await heldPrintingByNumber(tx, userId, tokenId, set, collectorNumber);
+    if (!p) return "notHeld" as const;
+    const w = await writeDeckTokenPrintingIn(tx, { deckId, userId, tokenOracleId: tokenId, tokenPrintingId: p });
+    return w === "ok" ? "ok" as const : "notHeld" as const;
+  });
+  if (outcome !== "ok") return { ok: false, reason: outcome };
+  refresh();
   return { ok: true };
 }

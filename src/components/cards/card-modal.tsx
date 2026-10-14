@@ -1350,10 +1350,13 @@ export function CardModal({
     () => card.printings.filter((p) => p.quantity > 0),
     [card.printings],
   );
-  const hasPicker = ownedPrintings.length > 1 && (deckPrinting === undefined || deckPrinting.save !== undefined);
   // A token's details (`loadTokenDetail`) draw only what a token has: no rarity, identity or owned
   // count, and a buy link only to the Mana Pool product its price is for (none when it lists none).
   const isToken = card.kind === "token";
+  // A token has no Collection-wide printing preference to write, so its picker is the DECK's alone (token
+  // printings TP2): drawn only where a deck can save the pick.
+  const hasPicker = ownedPrintings.length > 1
+    && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
   const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
   const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
 

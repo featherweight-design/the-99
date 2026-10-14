@@ -390,7 +390,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // batch 2026-10-12). Asked here so the press, the prefetch and every re-read take one path.
   // Imported here, as the database is above, so a module that imports this one for its types or
   // helpers does not pull the client in.
-  if (owned.length === 0 && !card) return (await import("../tokens/detail")).loadTokenDetail(oracleId);
+  if (owned.length === 0 && !card) return (await import("../tokens/detail")).loadTokenDetail(oracleId, userId, env);
 
   // Stage 2. Each read fails on its own: every one is already caught (`pricesFor`,
   // `proxyingDecks`, `fitsGate`, the availability read) or settled here (the flags and the

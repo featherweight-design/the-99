@@ -2447,6 +2447,7 @@ export const TOKEN_SOLDIER: DeckToken = {
   source: null,
   joined: true,
   picture: null,
+  printingPick: null,
   price: null,
 };
 

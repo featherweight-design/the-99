@@ -8,7 +8,7 @@ import { TokenCardLine } from "./token-card-line";
 const food: DeckToken = {
   oracleId: "t1", name: "Food", typeLine: "Token Artifact — Food", colors: [], power: null, toughness: null,
   oracleText: null, makers: [{ oracleId: "m1", name: "Maker", imageUri: null }], state: "not", source: null,
-  joined: false, picture: null, price: null,
+  joined: false, picture: null, printingPick: null, price: null,
 };
 const read: DeckTokensRead = { status: "ok", read: true, tokens: [food], makerCount: 1, newestPriceAsOf: null };
 const draw = (onShowTokens: (() => void) | null) => render(

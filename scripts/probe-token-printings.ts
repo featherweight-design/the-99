@@ -1,7 +1,7 @@
 // WHICH PRINTINGS OF A TOKEN A PLAYER HOLDS (token printings TP1), proved against a real Postgres by
 // calling the real `writeUploadTokens`, `syncPreconTokens` and `purgeAccount`. The sums are unit tested
 // in `ownership.test.ts`; only a database can say the rows land, follow Replace, Add and a precon's
-// revert, and that a deck keeps one pick per token.
+// revert, that a deck keeps one pick per token, and that a pick names only a held printing of its own token.
 //
 // Its own fixtures: two tokens and three printings under per-run ids (local-dev holds no token catalog),
 // one account, one deck. Everything is deleted in a `finally`.
@@ -14,12 +14,20 @@
 //   e  reverting that add takes its printing rows away
 //   f  a deck keeps one pick per token (whether the printing is OF that token is the writer's and the
 //      reader's check, TP2: no key enforces it, so the token ingest can re-file a printing)
+//   h  the deck pick's writer refuses another token's printing (held) and an unheld one, and takes a held
+//      printing of the token, which the deck's row then pictures (TP2)
+//   i  a row naming another token's printing, written past the writer, is read as no pick
+//   j  a pick the player stops holding is ignored and kept, and shows again once the printing is back
+//   k  the action's reads: the deck makes a token only through its own cards, and a set and number shared
+//      with an unheld sibling variant names the held printing
 //   g  the purge removes the account's printing rows and its deck's picks
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
 // restored by copying back), and each fails it:
 //   - the Replace's delete of `upload` printing rows dropped (`writeUploadTokens`): fails c, d and e.
 //   - `syncPreconPrintings` not called from `syncPreconTokens`: fails d.
+//   - the writer's printing-of-token check dropped (`writeDeckTokenPrintingIn`): fails h.
+//   - the reader's join on the token dropped (`loadDeckTokenPicks`): fails i.
 //
 // It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
 // staging and production are refused by id. Point it at a scratch branch migrated to 0118.
@@ -36,6 +44,8 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { syncPreconTokens, writeUploadTokens, type TokenHolding } from "../src/lib/tokens/ownership";
 import { purgeAccount } from "../src/lib/account/purge";
+import { deckMakesTokenIn, heldPrintingByNumber, loadDeckTokenPicks, writeDeckTokenPrintingIn } from "../src/lib/tokens/deck-printings";
+import { loadDeckTokens } from "../src/lib/tokens/read";
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
@@ -60,12 +70,16 @@ const B = randomUUID();
 const A1 = randomUUID();
 const A2 = randomUUID();
 const B1 = randomUUID();
+const A3 = randomUUID();
+// A sibling variant of A1: the same set and number, a different printing.
+const A4 = randomUUID();
+let cardId: string | null = null;
 let deckId: string | null = null;
 
 const held = async () => rows<{ p: string; source: string; quantity: number }>(sql`
   select token_printing_id::text as p, source, quantity from token_printing_holdings
   where user_id = ${USER} order by source, token_printing_id`);
-const name = (id: string) => ({ [A1]: "A1", [A2]: "A2", [B1]: "B1" })[id] ?? id;
+const name = (id: string) => ({ [A1]: "A1", [A2]: "A2", [A3]: "A3", [A4]: "A4", [B1]: "B1" })[id] ?? id;
 const shown = async () => (await held()).map((h) => `${h.source}:${name(h.p)}=${h.quantity}`).sort();
 const upload = (mode: "replace" | "add", holdings: TokenHolding[]) =>
   db.transaction(async (tx) => { await writeUploadTokens(tx, USER, randomUUID(), mode, holdings); });
@@ -79,9 +93,10 @@ async function run() {
   for (const [id, n] of [[A, "Probe Soldier"], [B, "Probe Treasure"]] as const) {
     await fixture.execute(sql`insert into tokens (oracle_id, name, type_line, colors, layout) values (${id}::uuid, ${n}, 'Token Creature', '{}', 'token')`);
   }
-  for (const [id, token, cn] of [[A1, A, "1"], [A2, A, "2"], [B1, B, "3"]] as const) {
-    await fixture.execute(sql`insert into token_printings (scryfall_id, token_oracle_id, set_code, collector_number, finishes)
-      values (${id}::uuid, ${token}::uuid, 'tprb', ${cn}, '{nonfoil}')`);
+  for (const [id, token, cn] of [[A1, A, "1"], [A2, A, "2"], [B1, B, "3"], [A3, A, "4"], [A4, A, "1"]] as const) {
+    // Each with art, so the deck's row chooses among the held printings rather than falling to the catalog's.
+    await fixture.execute(sql`insert into token_printings (scryfall_id, token_oracle_id, set_code, collector_number, finishes, image_uri)
+      values (${id}::uuid, ${token}::uuid, 'tprb', ${cn}, '{nonfoil}', ${`https://probe.invalid/${cn}.jpg`})`);
   }
 
   // a · Replace.
@@ -121,8 +136,53 @@ async function run() {
   const [card] = await rows<{ oracle_id: string }>(sql`select oracle_id::text from cards limit 1`);
   const [deck] = await rows<{ id: string }>(sql`insert into decks (user_id, name, commander_oracle_id) values (${USER}, 'Probe deck', ${card.oracle_id}::uuid) returning id::text as id`);
   deckId = deck.id;
+  cardId = card.oracle_id;
   await fixture.execute(sql`insert into deck_token_printings (deck_id, token_oracle_id, token_printing_id, user_id) values (${deckId}::uuid, ${A}::uuid, ${A2}::uuid, ${USER})`);
   check("f · a deck keeps one pick per token", (await rows(sql`select 1 from deck_token_printings where deck_id = ${deckId}::uuid`)).length, 1);
+
+  // h · The writer (TP2): a printing of another token is refused, so is one the player holds no copy of.
+  await fixture.execute(sql`insert into card_tokens (card_oracle_id, token_oracle_id) values (${cardId}::uuid, ${A}::uuid) on conflict do nothing`);
+  // B1 is HELD here, so only the token check can refuse it.
+  await upload("replace", [
+    { tokenOracleId: A, quantity: 4, printings: [{ tokenPrintingId: A1, quantity: 1 }, { tokenPrintingId: A2, quantity: 3 }] },
+    { tokenOracleId: B, quantity: 1, printings: [{ tokenPrintingId: B1, quantity: 1 }] },
+  ]);
+  const write = (p: string) => db.transaction((tx) => writeDeckTokenPrintingIn(tx, { deckId: deckId!, userId: USER, tokenOracleId: A, tokenPrintingId: p }));
+  check("h · the writer refuses another token's printing", await write(B1), "notOfToken");
+  check("h · and a printing the player holds no copy of", await write(A3), "notHeld");
+  check("h · and takes a held printing of the token", await write(A1), "ok");
+  const pictured = async () => {
+    const r = await loadDeckTokens(deckId!, USER);
+    const t = r.status === "ok" ? r.tokens.find((x) => x.oracleId === A) : undefined;
+    return t ? `${t.picture ? name(t.picture.scryfallId) : "none"}${t.printingPick ? " (picked)" : ""}` : r.status;
+  };
+  check("h · the deck's row pictures the pick", await pictured(), "A1 (picked)");
+
+  // i · A row naming another token's printing, written past the writer, is read as no pick.
+  await fixture.execute(sql`update deck_token_printings set token_printing_id = ${B1}::uuid where deck_id = ${deckId}::uuid and token_oracle_id = ${A}::uuid`);
+  check("i · the reader ignores a mismatched pick", [...(await loadDeckTokenPicks(deckId!, USER)).keys()], []);
+  check("i · and the row pictures the most-held printing", await pictured(), "A2");
+
+  // j · A pick the player stops holding is ignored, not deleted.
+  check("j · a held pick again", await write(A1), "ok");
+  await upload("replace", [{ tokenOracleId: A, quantity: 2, printings: [{ tokenPrintingId: A2, quantity: 2 }] }]);
+  check("j · a Replace without the picked printing falls back to the most-held", await pictured(), "A2");
+  check("j · and leaves the deck's pick standing", (await rows(sql`select 1 from deck_token_printings where deck_id = ${deckId}::uuid and token_printing_id = ${A1}::uuid`)).length, 1);
+  await upload("replace", [{ tokenOracleId: A, quantity: 3, printings: [{ tokenPrintingId: A1, quantity: 1 }, { tokenPrintingId: A2, quantity: 2 }] }]);
+  check("j · which shows again once the printing is back", await pictured(), "A1 (picked)");
+
+  // k · The action's two reads: whether the deck makes the token, and which held printing a set and number names.
+  check("k · the deck makes the token its card makes", await deckMakesTokenIn(db, deckId!, USER, A), true);
+  check("k · and not one no card of it makes", await deckMakesTokenIn(db, deckId!, USER, B), false);
+  check("k · nor for another player", await deckMakesTokenIn(db, deckId!, `${USER}-other`, A), false);
+  const named = await heldPrintingByNumber(db, USER, A, "TPRB", "1");
+  check("k · a set and number shared by a sibling names the held printing", named ? name(named) : null, "A1");
+  check("k · and none of another token's", await heldPrintingByNumber(db, USER, B, "tprb", "1"), null);
+  // Both siblings held, only the less-held one with art: it is the one the sheet's tile stands for.
+  await fixture.execute(sql`update token_printings set image_uri = null where scryfall_id = ${A1}::uuid`);
+  await upload("replace", [{ tokenOracleId: A, quantity: 4, printings: [{ tokenPrintingId: A1, quantity: 3 }, { tokenPrintingId: A4, quantity: 1 }] }]);
+  const art = await heldPrintingByNumber(db, USER, A, "tprb", "1");
+  check("k · of two held siblings, the one with art", art ? name(art) : null, "A4");
 
   // g · The purge.
   await purgeAccount(USER);
@@ -141,7 +201,8 @@ async function cleanup() {
     ["ownership", () => fixture.execute(sql`delete from token_ownership where user_id = ${USER}`)],
     ["reads", () => fixture.execute(sql`delete from token_reads where user_id = ${USER}`)],
     ["history", () => fixture.execute(sql`delete from collection_history where user_id = ${USER}`)],
-    ["token printings", () => fixture.execute(sql`delete from token_printings where scryfall_id in (${A1}::uuid, ${A2}::uuid, ${B1}::uuid)`)],
+    ["card tokens", () => fixture.execute(sql`delete from card_tokens where token_oracle_id in (${A}::uuid, ${B}::uuid)`)],
+    ["token printings", () => fixture.execute(sql`delete from token_printings where scryfall_id in (${A1}::uuid, ${A2}::uuid, ${A3}::uuid, ${A4}::uuid, ${B1}::uuid)`)],
     ["tokens", () => fixture.execute(sql`delete from tokens where oracle_id in (${A}::uuid, ${B}::uuid)`)],
   ];
   for (const [name, step] of steps) {
