@@ -6,7 +6,7 @@ import { tokensCopy } from "../../lib/copy/tokens";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useStoredView } from "../ui/use-stored-view";
 import { useDeckTokens } from "./deck-tokens-context";
-import { SHOW_DECK_TOKENS } from "./deck-tokens-landing";
+import { landingRequestedRecently, SHOW_DECK_TOKENS } from "./deck-tokens-landing";
 import { DECK_VIEW_KEY, isDeckView } from "./group-toggle";
 import { HoverPreviewProvider } from "./hover-preview";
 import { DecklistGroupHeader } from "./decklist-group-header";
@@ -36,8 +36,10 @@ export function TokensGroup() {
   // The deck's own view, from the same stored choice the list reads.
   const [storedView] = useStoredView(DECK_VIEW_KEY, isDeckView);
   const cards = storedView === "card";
-  // `Tokens ›` from card details opens a folded group for this visit, without writing the reader's preference.
-  const [landed, setLanded] = useState(false);
+  // `Tokens ›` from card details opens a folded group for this visit, without writing the reader's preference. A
+  // group that mounts in answer to it (the request came from Shopping or another panel, where it was absent) asks
+  // whether one is still fresh.
+  const [landed, setLanded] = useState(() => landingRequestedRecently());
   useEffect(() => {
     const land = () => setLanded(true);
     window.addEventListener(SHOW_DECK_TOKENS, land);

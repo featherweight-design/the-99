@@ -14,6 +14,7 @@ vi.mock("../cards/card-detail-provider", () => ({
 }));
 
 import { DeckTokensProvider } from "./deck-tokens-context";
+import { landOnDeckTokens } from "./deck-tokens-landing";
 import { TokensGroup } from "./tokens-group";
 import { TokensShoppingGroup } from "./tokens-shopping-group";
 import { boxedOnDesktop, boxedOnPhone, makerColumns } from "./token-makers";
@@ -506,6 +507,27 @@ describe("the fold", () => {
     expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
     fireEvent.click(toggle());
     expect(toggle().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("opens for a `Tokens ›` request made before the group existed (from Shopping, where it is not drawn)", () => {
+    localStorage.setItem("the99:deck-tokens-fold", "closed");
+    landOnDeckTokens();
+    draw(ok([token()]));
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(localStorage.getItem("the99:deck-tokens-fold")).toBe("closed");
+  });
+
+  it("does not open for a request that is no longer fresh", () => {
+    vi.useFakeTimers();
+    try {
+      localStorage.setItem("the99:deck-tokens-fold", "closed");
+      landOnDeckTokens();
+      vi.advanceTimersByTime(3500);
+      draw(ok([token()]));
+      expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
