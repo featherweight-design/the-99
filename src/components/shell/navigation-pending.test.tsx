@@ -385,3 +385,136 @@ describe("NavigationPendingProvider: the deck visit", () => {
     expect(visitBaseline(A, "suggested", later)).toEqual(later);
   });
 });
+
+describe("the stuck-loader report (NAV_STALL_LOG_ENABLED)", () => {
+  const beacon = vi.fn(() => true);
+  beforeEach(() => {
+    beacon.mockClear();
+    Object.defineProperty(navigator, "sendBeacon", { value: beacon, configurable: true });
+  });
+  function StallApp({ stall }: { stall: { deployment: string | null } | null }) {
+    return (
+      <NavigationPendingProvider stall={stall}>
+        <ShellMain className="">
+          {LINKS.map((href) => (
+            <Link key={href} href={href}>
+              <Reporter href={href} />
+            </Link>
+          ))}
+        </ShellMain>
+      </NavigationPendingProvider>
+    );
+  }
+  async function hang(stall: { deployment: string | null } | null, ms: number) {
+    cleanup();
+    ({ rerender } = render(<StallApp stall={stall} />));
+    state.pending.set("/commanders", true);
+    act(() => rerender(<StallApp stall={stall} />));
+    // Two steps, so React draws the 400ms overlay before the report reads the page, as a browser would.
+    act(() => vi.advanceTimersByTime(Math.min(ms, 1_000)));
+    act(() => vi.advanceTimersByTime(ms - Math.min(ms, 1_000)));
+  }
+
+  it("reports a navigation still pending at 8s, once, with the overlay up", async () => {
+    await hang({ deployment: "dpl_a" }, 8_000);
+    expect(beacon).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(await (beacon.mock.calls[0] as unknown as [string, Blob])[1].text());
+    expect(body).toMatchObject({ kind: "pending", from: "/", to: "/commanders", loader: "overlay", moved: false });
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(beacon).toHaveBeenCalledTimes(1);
+  });
+  it("reports nothing for a navigation that lands before 8s", async () => {
+    await hang({ deployment: "dpl_a" }, 7_999);
+    state.pending.set("/commanders", false);
+    act(() => rerender(<StallApp stall={{ deployment: "dpl_a" }} />));
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(beacon).not.toHaveBeenCalled();
+  });
+  it("reports nothing while the switch is off", async () => {
+    await hang(null, 60_000);
+    expect(beacon).not.toHaveBeenCalled();
+  });
+
+  it("reports a page that committed into an in-page loading screen and stayed there", async () => {
+    cleanup();
+    window.history.replaceState(null, "", "/decks/0b49cb44-8ae2-4c19-b558-633344a2f4ed");
+    const { LoadingScreen } = await import("./loading-screen");
+    const { shellCopy } = await import("../../lib/copy/shell");
+    render(
+      <NavigationPendingProvider stall={{ deployment: null }}>
+        <ShellMain className="">
+          <LoadingScreen copy={shellCopy.loading.decks} />
+        </ShellMain>
+      </NavigationPendingProvider>,
+    );
+    act(() => vi.advanceTimersByTime(8_000));
+    expect(beacon).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(await (beacon.mock.calls[0] as unknown as [string, Blob])[1].text());
+    expect(body).toMatchObject({ kind: "fallback", loader: "fallback", to: "/decks/[x]", moved: true });
+  });
+  it("counts a loading screen no press led to as its own navigation: a second stall on the same page reports", async () => {
+    cleanup();
+    window.history.replaceState(null, "", "/decks/0b49cb44-8ae2-4c19-b558-633344a2f4ed");
+    const { LoadingScreen } = await import("./loading-screen");
+    const { shellCopy } = await import("../../lib/copy/shell");
+    const draw = () =>
+      render(
+        <NavigationPendingProvider stall={{ deployment: null }}>
+          <ShellMain className="">
+            <LoadingScreen copy={shellCopy.loading.decks} />
+          </ShellMain>
+        </NavigationPendingProvider>,
+      );
+    draw();
+    act(() => vi.advanceTimersByTime(8_000));
+    expect(beacon).toHaveBeenCalledTimes(1);
+    // A route that commits its loading boundary at once, or a change of query, reports no press.
+    cleanup();
+    draw();
+    act(() => vi.advanceTimersByTime(8_000));
+    expect(beacon).toHaveBeenCalledTimes(2);
+  });
+  it("reports a press that hangs pending and then in its own fallback ONCE", async () => {
+    const { LoadingScreen } = await import("./loading-screen");
+    const { shellCopy } = await import("../../lib/copy/shell");
+    function Pressed({ landed }: { landed: boolean }) {
+      return (
+        <NavigationPendingProvider stall={{ deployment: null }}>
+          <ShellMain className="">
+            <Link href="/commanders">
+              <Reporter href="/commanders" />
+            </Link>
+            {landed ? <LoadingScreen copy={shellCopy.loading.decks} /> : null}
+          </ShellMain>
+        </NavigationPendingProvider>
+      );
+    }
+    cleanup();
+    window.history.replaceState(null, "", "/");
+    const view = render(<Pressed landed={false} />);
+    state.pending.set("/commanders", true);
+    act(() => view.rerender(<Pressed landed={false} />));
+    act(() => vi.advanceTimersByTime(1_000));
+    act(() => vi.advanceTimersByTime(7_000));
+    expect(beacon).toHaveBeenCalledTimes(1);
+    // The press commits into the destination's loading screen, which then hangs too.
+    window.history.replaceState(null, "", "/commanders");
+    state.path = "/commanders";
+    state.pending.set("/commanders", false);
+    act(() => view.rerender(<Pressed landed />));
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(beacon).toHaveBeenCalledTimes(1);
+  });
+  it("leaves the pending overlay's own screen to the provider: it never reports as a fallback", async () => {
+    cleanup();
+    const { LoadingScreen } = await import("./loading-screen");
+    const { shellCopy } = await import("../../lib/copy/shell");
+    render(
+      <NavigationPendingProvider stall={{ deployment: null }}>
+        <LoadingScreen copy={shellCopy.loading.decks} watch={false} />
+      </NavigationPendingProvider>,
+    );
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(beacon).not.toHaveBeenCalled();
+  });
+});

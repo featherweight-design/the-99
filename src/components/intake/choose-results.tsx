@@ -19,6 +19,7 @@ import { ChooseRow, reasonDrawable, type Trial } from "./choose-row";
 import { useReadPhase, useReportPool } from "./read-panel";
 import { NarrowNote } from "./narrow-note";
 import { HoverPreviewProvider } from "../decks/hover-preview";
+import { StallWatch } from "../shell/nav-stall";
 
 const BEST_FITS = 3;
 
@@ -232,7 +233,7 @@ const SKELETON_NAME = ["58%", "53%", "48%", "43%", "38%"];
 export function HeldResults({ total, by }: { total: number; by?: string }) {
   const reportPool = useReportPool();
   useEffect(() => { reportPool(total); }, [reportPool, total]);
-  return <ResultsSkeleton by={by} />;
+  return <ResultsSkeleton by={by} watch={false} />;
 }
 
 /**
@@ -241,9 +242,14 @@ export function HeldResults({ total, by }: { total: number; by?: string }) {
  * `by` names what orders the results; the route's loading screen has no labels to name it with
  * (they come from the database), so it passes none and the line arrives with the page.
  */
-export function ResultsSkeleton({ by }: { by?: string }) {
+// It carries `data-loading-screen` and `StallWatch` as every in-page `LoadingScreen` does: it is the
+// page's own Suspense fallback and the route loader's body, so the stuck-loader diagnostic watches it.
+// `HeldResults` passes `watch={false}`: there it stands in while a model read runs, which may take
+// longer than the 8 seconds a stuck page is reported at, by design.
+export function ResultsSkeleton({ by, watch = true }: { by?: string; watch?: boolean }) {
   return (
-    <div aria-busy="true" data-testid="results-searching" className="flex flex-col gap-[14px] md:gap-[18px]">
+    <div aria-busy="true" data-testid="results-searching" data-loading-screen={watch ? "" : undefined} className="flex flex-col gap-[14px] md:gap-[18px]">
+      {watch ? <StallWatch /> : null}
       <div className="flex flex-col gap-[5px] max-w-[640px]">
         <h2 className="m-0 font-display font-semibold text-[16px] md:text-[18px] [text-wrap:pretty] text-[color:var(--fg)]">{copy.results.loadingHead}</h2>
         {by !== undefined && (

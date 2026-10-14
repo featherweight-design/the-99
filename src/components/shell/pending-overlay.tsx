@@ -67,7 +67,7 @@ export function PendingOverlay({
       }`}
       style={{ left: box?.left ?? 0, top: box?.top ?? 0 }}
     >
-      <LoadingScreen copy={shellCopy.loading[screen]} />
+      <LoadingScreen copy={shellCopy.loading[screen]} watch={false} />
     </div>
   );
 }

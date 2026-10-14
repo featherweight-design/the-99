@@ -10,6 +10,8 @@ import { AboutSheet } from "./about-sheet";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
 import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
+import { navStallLogEnabled } from "../../lib/nav-stall/flag";
+import { requestSwitchEnv } from "../../lib/switches/request";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -50,6 +52,11 @@ export default async function Shell({
   const sheet = requestHeaders.get(SHEET_ON_HEADER) === "1" ? readSheetState(requestHeaders) : null;
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
   const door = isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {};
+  // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
+  // that outlived a deploy from one that did not; it is already in every page's HTML.
+  const stall = navStallLogEnabled(await requestSwitchEnv(userId))
+    ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
+    : null;
 
   return (
     // While locked the phone's tab bar carries the lock's bracket over its tabs and grows to
@@ -59,7 +66,7 @@ export default async function Shell({
     // loading overlay, which renders beside the shell rather than inside it. Unlocked it is the
     // global 74px from globals.css.
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
-    <NavigationPendingProvider>
+    <NavigationPendingProvider stall={stall}>
       <div className="flex min-h-screen flex-1">
         <NavRail locked={locked} theme={theme} {...door} />
         <div className="flex min-w-0 flex-1 flex-col">

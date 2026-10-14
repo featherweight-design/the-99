@@ -22,6 +22,7 @@ import { PendingOverlay } from "./pending-overlay";
 import { ShellLoading } from "./shell-loading";
 import { setRoutePath } from "../../lib/url/mirror";
 import { noteDeckRoute } from "../../lib/decks/visit";
+import { newNavigation, pressSettled, pressStarted, StallContext, watchFetches, watchStall, type StallConfig } from "./nav-stall";
 
 /**
  * Navigation pending, and its escalation to the full screen (the navigation-pending handoff and its
@@ -40,7 +41,7 @@ export const OVERLAY_AFTER_MS = 400;
 
 const MainRef = createContext<React.RefObject<HTMLElement | null> | null>(null);
 
-export function NavigationPendingProvider({ children }: { children: ReactNode }) {
+export function NavigationPendingProvider({ children, stall = null }: { children: ReactNode; stall?: StallConfig }) {
   const pathname = usePathname();
   const mainRef = useRef<HTMLElement | null>(null);
   // A boundary a route tree installed via `usePendingContentScope` (collection tabs overlay
@@ -183,6 +184,38 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   }, []);
 
   // The words follow the last press while the screen is up, and hold once the run has ended.
+  // The stuck-loader diagnostic: a navigation still pending `STALL_AFTER_MS` after it started sends
+  // one report, and every new one lets the next hang report again.
+  const leftFrom = useRef(pathname);
+  // The effects below key on whether the switch is on, never on the config object: a layout
+  // re-render (a refresh, a revalidating action) hands a new one, and that is not a navigation.
+  const stallOn = stall !== null;
+  const stallRef = useRef(stall);
+  useEffect(() => {
+    stallRef.current = stall;
+  }, [stall]);
+  useEffect(() => {
+    if (!stallOn) return;
+    watchFetches();
+    // A browser Back or Forward is a navigation no press reports, so it starts one here: a page it
+    // lands in a loading screen is then timed, matched and reported as its own.
+    window.addEventListener("popstate", newNavigation);
+    return () => window.removeEventListener("popstate", newNavigation);
+  }, [stallOn]);
+  useEffect(() => {
+    if (target === null) return;
+    pressStarted(target);
+    const config = stallRef.current;
+    const stop = config ? watchStall({ kind: "pending", from: leftFrom.current, to: target, config }) : null;
+    return () => {
+      stop?.();
+      pressSettled();
+    };
+  }, [target, stallOn]);
+  useEffect(() => {
+    leftFrom.current = pathname;
+  }, [pathname]);
+
   const lastRoute = target ? pendingRouteFor(target) : null;
   const screen = shown && lastRoute?.kind === "overlay" ? lastRoute.key : shown;
 
@@ -226,6 +259,7 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
 
   return (
     <Report.Provider value={context}>
+      <StallContext.Provider value={stall}>
       <CodePushes register={registerPush} />
       <MainRef.Provider value={mainRef}>
         {children}
@@ -238,6 +272,7 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
           />
         ) : null}
       </MainRef.Provider>
+      </StallContext.Provider>
     </Report.Provider>
   );
 }
