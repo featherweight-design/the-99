@@ -192,7 +192,7 @@
     },
     {
       "id": "appendix-availability",
-      "label": "/about#how-availability \u2014 Availability and claims open",
+      "label": "/about#how-availability \u2014 Which deck uses each copy open",
       "view": "src/components/about/how-rows.tsx",
       "steps": [
         {

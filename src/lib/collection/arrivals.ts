@@ -381,8 +381,8 @@ export function summaryIsEmpty(s: ArrivalsSummary): boolean {
  * reported nowhere at all.
  *
  * AN UNMATCHED ROW SURVIVES REGARDLESS. That row is about the FILE — a line whose name did not
- * parse — and the issues line at the top of the page promises that any deck still billing one of
- * those is marked below. The chooser draws no file-error marker, so excluding it would leave that
+ * parse — and the issues line at the top of the page promises that any deck still counting one of
+ * those as a card to buy is marked below. The chooser draws no file-error marker, so excluding it would leave that
  * promise pointing at nothing.
  */
 export function withoutUndecided(

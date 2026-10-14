@@ -95,7 +95,7 @@ export const proxyCopy = {
     // Two clauses, and the second is the one that matters. "This deck's slot is filled"
     // alone invites the inference the whole feature exists to prevent.
     marked: (deck: string) =>
-      `${deck}'s slot is filled. Nothing is claimed from your collection.`,
+      `${deck}'s slot is filled. No copy in your collection is used.`,
     // Ruling 2, said once, in both states. The reader's real question is "do I have to
     // commit this?" and it is cheaper to answer than to leave hanging.
     note: "Takes effect at once. A proxy is not part of a version.",
@@ -108,7 +108,7 @@ export const proxyCopy = {
     // Names what is true now rather than what failed.
     refused: (card: string) => `${card} isn't in this deck any more, so there's nothing to proxy.`,
     announceMarked: (card: string, deck: string) =>
-      `${card} is now a proxy in ${deck}. Nothing is claimed from your collection.`,
+      `${card} is now a proxy in ${deck}. No copy in your collection is used.`,
     // States the consequence, because it is the one that can surprise: the deck starts
     // claiming again and may find its copy senior-claimed elsewhere.
     announceUnmarked: (card: string, deck: string) =>
@@ -209,7 +209,7 @@ export const proxyCopy = {
       `${cards === 1 ? "1 card" : `${cards} cards`} across ${decks === 1 ? "1 deck" : `${decks} decks`}.`,
     subtitleWithCollection: (cards: number, decks: number) =>
       `${cards === 1 ? "1 card" : `${cards} cards`} across ${decks === 1 ? "1 deck" : `${decks} decks`}.`
-      + " Marking a proxy fills a deck's slot and claims nothing, so nothing here has moved in or out of your collection.",
+      + " Marking a proxy fills a deck's slot and uses no copy, so nothing here has moved in or out of your collection.",
     tail: (remaining: number) =>
       remaining === 1 ? "… 1 more card" : `… ${remaining} more cards`,
   },

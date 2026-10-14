@@ -120,15 +120,15 @@ export const cardAssignmentsCopy = {
      */
     issues: (unmatched: number, parseErrors: number) =>
       `${unmatched} ${unmatched === 1 ? "name" : "names"} didn't match and ${parseErrors} ` +
-      `${parseErrors === 1 ? "line wouldn't" : "lines wouldn't"} parse. Any deck still billing ` +
-      "one of those is marked below. You saw them before you confirmed.",
+      `${parseErrors === 1 ? "line wouldn't" : "lines wouldn't"} parse. Any deck still counting ` +
+      "one of those as a card to buy is marked below. You saw them before you confirmed.",
     issuesUnmatchedOnly: (n: number) =>
-      `${n} ${n === 1 ? "name" : "names"} didn't match. Any deck still billing ` +
-      `${n === 1 ? "that card" : "one of those"} is marked below. You saw them before you confirmed.`,
+      `${n} ${n === 1 ? "name" : "names"} didn't match. Any deck still counting ` +
+      `${n === 1 ? "that card" : "one of those"} as a card to buy is marked below. You saw them before you confirmed.`,
     issuesLink: "Look at the file again",
 
     sectionCleared: (n: number) => `No longer to buy · ${n}`,
-    sectionClearedNote: "These arrived, so the decks that were billing them stop.",
+    sectionClearedNote: "These arrived, so the decks that counted them as cards to buy stop counting them.",
 
     /**
      * ONE SECTION FOR BOTH "STILL OWED" CLASSES. The diff classifies three ways — gone,

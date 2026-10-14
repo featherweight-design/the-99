@@ -45,7 +45,7 @@ describe("the proxy control", () => {
     // "Covered" alone is true and incomplete, and the incomplete half is the one
     // a reader turns into a purchase they never made.
     const marked = screen.getByText(proxyCopy.control.marked("HD Gods"));
-    expect(marked.textContent).toContain("Nothing is claimed from your collection");
+    expect(marked.textContent).toContain("No copy in your collection is used");
   });
 
   it("unmarks on a second press", async () => {

@@ -3,6 +3,15 @@ import { addPanelCopy } from "./decks-builder";
 import { INLINE_CHANGE_MAX, deckVersioningCopy as copy } from "./deck-versioning";
 
 describe("deckVersioningCopy", () => {
+  // The first-commit lede says what committing does to copies, in the app's words: it uses
+  // copies, and the deck that has held one longest keeps it. "Claiming" is the model's verb.
+  it("states what a first commit does to copies, without the claim verb", () => {
+    const lede = copy.review.firstLede;
+    expect(lede).toContain("starts using copies from your collection");
+    expect(lede).toContain("the deck that has held it longest keeps it");
+    expect(lede.toLowerCase()).not.toContain("claim");
+  });
+
   it("names the version the commit will create, not the one it replaces", () => {
     expect(copy.pending.commitCta(3)).toBe("Commit as v3");
   });
