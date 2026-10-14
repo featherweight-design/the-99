@@ -1,6 +1,6 @@
-# Readiness · Upcoming precons R2
+# Readiness · Upcoming precons R2 (approved)
 
-**Amber. R2, for audit (Hugh).** R2 applies the three R1 notes; G8 (About on the banner) needs Hugh's call. Not for build until approved.
+**Green. R2 approved (Hugh, 2026-10-14). Build from it.** G8 is taken as recommended: About moves onto the banner in a separate follow-up handoff, not in this release.
 
 | Check | State |
 |---|---|

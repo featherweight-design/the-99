@@ -2,7 +2,7 @@
 
 `design/design_handoff_the99_upcoming_precons/` · 2026-10-14 · mirrors `design_handoff_the99_precons/`
 
-**Status: R2, for audit (Hugh).** R2 applies Hugh's three R1 notes (2026-10-14): `The 99 - Upcoming Precons (R2).dc.html`
+**Status: R2, approved (Hugh, 2026-10-14). Build from the R2 files, with R1 where R2 doesn't change it.** R2 applies Hugh's three R1 notes (2026-10-14): `The 99 - Upcoming Precons (R2).dc.html`
 (the notes and answers), `R2 - Precons.dc.html` (C1–C3, Q1–Q3), `R2 - Home-About.dc.html` (A1–A3, a proposal). R1's files
 are kept beside them, unchanged. R2 wins where they differ.
 
@@ -31,7 +31,7 @@ are kept beside them, unchanged. R2 wins where they differ.
    The sheet, its reserved height and the tab-bar note that waits behind it all go. The cost is reach: the banner is
    on Home only, while the sheet appeared on any page a document load opened. **Recommended: ship it as its own
    follow-up handoff and PR**, behind `ABOUT_SHEET_ENABLED`, with no new About entry, once the banner component has
-   landed with this release. Until then R1 H5 holds. **Hugh to confirm (G8).**
+   landed with this release. Until then R1 H5 holds. G8 taken as recommended: a follow-up, not this release.
 
 *R1 status:* R1, for audit. Source of truth: `docs/superpowers/design-briefs/2026-10-14-upcoming-precons.md`
 (branch `brief/upcoming-precons`). Canvas: `The 99 - Upcoming Precons (R1).dc.html` (the calls), frames
@@ -135,8 +135,8 @@ per-entry artboard: `The 99 - About · Upcoming Precons Entry.dc.html`, slots in
   which needs a precon-level key.
 - **G6 · 30-day banner window.** A design choice so a reader back after a long break isn't shown stale news. It is
   a constant, not a lock.
-- **G8 · About on the banner.** R2 proposes it and recommends a separate follow-up (R2 change 3). Hugh to confirm,
-  and whether Home-only reach is acceptable.
+- **G8 · About on the banner.** Approved with R2 as a separate follow-up handoff (R2 change 3). Not in this release;
+  R1 H5 (both show) holds until it ships.
 - **G7 · Switch name.** `UPCOMING_PRECONS_ENABLED` is a placeholder. One switch covers both surfaces, since the
   banner's link has nowhere to go without the group.
 

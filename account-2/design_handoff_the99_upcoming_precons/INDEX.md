@@ -18,9 +18,9 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-14-upcoming-precons.md`
 | `R1 - Precons-Landing.dc.html` | Release day, lists arriving, lists landed (L1–L3). |
 | `R1 - Home-Banner.dc.html` | The banner, H1–H8, at 1280 and 390, beside the About sheet and focused. |
 | `The 99 - About · Upcoming Precons Entry.dc.html` | The new About entry on the §G artboard. |
-| `README.md` | Locks held, calls, gaps G1–G7. |
+| `README.md` | Locks held, calls, gaps G1–G8. |
 | `STATES-upcoming-precons.md` | The matrix and its rules. |
-| `READINESS.md` | Amber: R2, for Hugh's audit. |
+| `READINESS.md` | Green: R2 approved by Hugh, 2026-10-14. |
 | `upcoming-precons · copy strings.ts`, `about · upcoming precons.ts` | Proposed strings, placeholders for `/copy-review`. |
 | `design-tables/upcoming-precons.md` | The design-table section. |
 | `brand/` | The locked brand sheet. |
