@@ -13,7 +13,7 @@ import { collectionHistory, preconCards, precons, preconTokens, printings, token
 import { applyCollectionChange, type ChangeResult } from "../collection/write";
 import { placedOf, type AddedPlacement } from "../collection/add-placements";
 import type { PendingItem } from "../collection/pending";
-import type { TokenHolding } from "../tokens/ownership";
+import { tokenOwnershipTablesExist, type TokenHolding } from "../tokens/ownership";
 import { preconSource } from "./added";
 import type { Reader } from "./list-read";
 
@@ -151,7 +151,7 @@ export async function addPreconForUser(
     const [entry] = await db.select({ source: collectionHistory.source }).from(collectionHistory)
       .where(and(eq(collectionHistory.id, result.entry.id), eq(collectionHistory.userId, userId)));
     if (entry?.source !== preconSource(fileName)) return { ok: false, reason: "failed" };
-    const held = await db.select({ id: tokenOwnership.tokenOracleId }).from(tokenOwnership)
+    const held = !(await tokenOwnershipTablesExist()) ? [] : await db.select({ id: tokenOwnership.tokenOracleId }).from(tokenOwnership)
       .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.entryId, result.entry.id)));
     return {
       ok: true, entryId: result.entry.id, ...base, placed: [],

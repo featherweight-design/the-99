@@ -1997,7 +1997,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
   It WRITES under a per-run account it purges, so it fails closed: `PROBE_DB_BRANCH` must name the branch
   `DATABASE_URL` reports, and staging and production are refused by id. It needs a branch migrated to 0117 and
-  holding precons ingested after 0116. Mutation-checked: with the revert's `clearPreconTokens` removed, it fails.
+  holding precons ingested after 0116. Mutation-checked: with the revert's `syncPreconTokens` removed it fails f, g and h, and with `standingIds` ignoring revert chains it fails g.
 - `pnpm probe:payments-webhook` proves the Stripe webhook's grant transaction (payments K1a) against a real database,
   through the real `fulfilCheckoutSession`, `readAllowance` and `purgeAccount`, with Stripe a stand-in whose
   `checkout.sessions.retrieve` serves a crafted Session and counts its calls: a paid Session for its own account

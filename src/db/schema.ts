@@ -447,6 +447,9 @@ export const collectionHistory = pgTable("collection_history", {
   source: text("source"),
   // Null while the entry is being written inside its own transaction, and once pruned.
   rows: jsonb("rows").$type<HistoryRow[]>(),
+  // A precon add's tokens as it read them, kept past pruning: token ownership is derived from the
+  // adds that still stand, and must not move when a later ingest changes the precon's token list.
+  preconTokens: jsonb("precon_tokens").$type<{ tokenOracleId: string; quantity: number }[]>(),
   prunedAt: timestamp("pruned_at"),
   raised: integer("raised").notNull(),
   lowered: integer("lowered").notNull(),

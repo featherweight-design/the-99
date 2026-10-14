@@ -3,7 +3,7 @@
  * carries `precon:<file>` as its source (`add.ts`). Its own module, so a page that only asks the
  * question does not import the write path.
  */
-import { and, eq, isNotNull, like } from "drizzle-orm";
+import { and, eq, isNotNull, like, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { collectionHistory } from "../../db/schema";
 
@@ -41,14 +41,23 @@ export function standingIds(links: readonly LedgerLink[]): Set<string> {
 
 export type StandingPreconAdd = { id: string; fileName: string; createdAt: Date };
 
-/** The player's precon adds whose cards still stand, oldest first, for one precon or every one. */
+type Holding = { tokenOracleId: string; quantity: number };
+
+/**
+ * The player's precon adds whose cards still stand, oldest first, for one precon or every one. With
+ * `withTokens`, each carries the tokens it read (`precon_tokens`, 0117: ask only where that has run).
+ */
 export async function standingPreconAdds(
   userId: string,
-  runner: Pick<typeof db, "select"> = db,
-  fileName?: string,
-): Promise<StandingPreconAdd[]> {
+  runner: Pick<typeof db, "select">,
+  opts: { fileName?: string; withTokens?: boolean } = {},
+): Promise<(StandingPreconAdd & { tokens: Holding[] })[]> {
+  const { fileName, withTokens } = opts;
   const adds = await runner
-    .select({ id: collectionHistory.id, source: collectionHistory.source, createdAt: collectionHistory.createdAt, revertedBy: collectionHistory.revertedBy })
+    .select({
+      id: collectionHistory.id, source: collectionHistory.source, createdAt: collectionHistory.createdAt, revertedBy: collectionHistory.revertedBy,
+      tokens: withTokens ? collectionHistory.preconTokens : sql<null>`null`,
+    })
     .from(collectionHistory)
     .where(and(
       eq(collectionHistory.userId, userId),
@@ -64,12 +73,12 @@ export async function standingPreconAdds(
   const standing = standingIds([...adds, ...reverts]);
   return adds
     .filter((a) => standing.has(a.id) && a.source !== null)
-    .map((a) => ({ id: a.id, fileName: a.source!.slice(PREFIX.length), createdAt: a.createdAt }))
+    .map((a) => ({ id: a.id, fileName: a.source!.slice(PREFIX.length), createdAt: a.createdAt, tokens: a.tokens ?? [] }))
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : 1));
 }
 
 /** The newest add of this precon whose cards still stand, as an ISO date, or null. */
 export async function preconAddedOn(userId: string, fileName: string, runner: Pick<typeof db, "select"> = db): Promise<string | null> {
-  const adds = await standingPreconAdds(userId, runner, fileName);
+  const adds = await standingPreconAdds(userId, runner, { fileName });
   return adds.length > 0 ? adds[adds.length - 1].createdAt.toISOString() : null;
 }

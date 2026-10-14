@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { deckTokenJoins, preconTokens, tokenOwnership, tokenPrintings, tokenReads } from "../../db/schema";
+import { deckTokenJoins, tokenOwnership, tokenReads } from "../../db/schema";
 import { standingPreconAdds } from "../precons/added";
 
 /**
@@ -133,7 +133,8 @@ export async function writeUploadTokens(
 /**
  * Re-derives the player's `precon` token rows from the precon adds whose cards still stand
  * (`standingPreconAdds`: an add reverted, or a revert itself reverted, follows its cards), so any
- * order of adds and reverts leaves the tokens agreeing with the collection. Each token a standing add
+ * order of adds and reverts leaves the tokens agreeing with the collection. Each add's tokens are the
+ * ones it read and kept on its entry, never the catalog's current list, which an ingest replaces. Each token a standing add
  * names is owned, attributed to the OLDEST such add and counted over all of them; a precon row no
  * standing add names goes. A token the player holds by any other source is left as it stands and is
  * never taken over. Joins first, as every write that makes a token held does (`writeUploadTokens`).
@@ -144,18 +145,10 @@ export async function writeUploadTokens(
  */
 export async function syncPreconTokens(tx: Runner, userId: string, entryId?: string): Promise<string[]> {
   if (!(await tokenOwnershipTablesExist(tx))) return [];
-  const adds = await standingPreconAdds(userId, tx);
-  const files = [...new Set(adds.map((a) => a.fileName))];
-  const named = files.length === 0 ? [] : await tx
-    .select({ fileName: preconTokens.fileName, tokenOracleId: tokenPrintings.tokenOracleId, quantity: preconTokens.quantity })
-    .from(preconTokens)
-    .innerJoin(tokenPrintings, eq(tokenPrintings.scryfallId, preconTokens.tokenPrintingId))
-    .where(inArray(preconTokens.fileName, files));
-  const byFile = new Map<string, { tokenOracleId: string; quantity: number }[]>();
-  for (const n of named) byFile.set(n.fileName, [...(byFile.get(n.fileName) ?? []), n]);
+  const adds = await standingPreconAdds(userId, tx, { withTokens: true });
   const want = new Map<string, { entryId: string; quantity: number }>();
   for (const add of adds) {
-    for (const t of byFile.get(add.fileName) ?? []) {
+    for (const t of add.tokens) {
       const at = want.get(t.tokenOracleId);
       if (at) at.quantity += t.quantity;
       else want.set(t.tokenOracleId, { entryId: add.id, quantity: t.quantity });

@@ -1,5 +1,5 @@
 {
-  "id": "cc33d54a-3e7c-4c0f-85f6-da45ecb1bb61",
+  "id": "1ed397f4-4eef-4325-95ce-f6d5b5bffa84",
   "prevId": "1bf45bfe-873f-4dcb-b9e5-8682c00b6f3b",
   "version": "7",
   "dialect": "postgresql",
@@ -1178,6 +1178,12 @@
         },
         "rows": {
           "name": "rows",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "precon_tokens": {
+          "name": "precon_tokens",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false

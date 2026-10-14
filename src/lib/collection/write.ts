@@ -15,7 +15,7 @@ import { pruneOrphanAssignments } from "../decks/prune-assignments";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
-import { recordUploadTokens, syncPreconTokens, type TokenHolding } from "../tokens/ownership";
+import { recordUploadTokens, syncPreconTokens, tokenOwnershipTablesExist, type TokenHolding } from "../tokens/ownership";
 
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
@@ -595,6 +595,11 @@ export async function applyCollectionChange(
   try {
     return await db.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
+      // A precon add keeps the tokens it read on its entry, where revert chains derive ownership from;
+      // a database without 0117 has neither that column nor the ownership it feeds.
+      const preconTokens = change.kind === "add" && change.preconTokens && await tokenOwnershipTablesExist(tx)
+        ? change.preconTokens
+        : undefined;
 
       // ---- 2. The entry, first. Its id is the action's, so a committed twin conflicts here.
       const [claimed] = await tx.insert(collectionHistory)
@@ -605,6 +610,7 @@ export async function applyCollectionChange(
           source: uploadId ? `csv_uploads:${uploadId}` : opts.source ?? null,
           raised: 0,
           lowered: 0,
+          ...(preconTokens ? { preconTokens } : {}),
           // The clock at the insert, AFTER the per-user lock, so entries' times order as their
           // writes did. `now()`, the column default, is frozen before the lock wait, and an entry
           // queued behind a switch-off upload would read as older than it (`editsSinceUpload`).
@@ -885,7 +891,7 @@ export async function applyCollectionChange(
       if (change.kind === "replace" || change.kind === "add") {
         await recordUploadTokens(tx, userId, uploadId, change.kind, change.tokens);
       }
-      const tokensMarked = change.kind === "add" && change.preconTokens
+      const tokensMarked = preconTokens
         ? await syncPreconTokens(tx, userId, opts.id)
         : undefined;
 

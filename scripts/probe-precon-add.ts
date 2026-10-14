@@ -6,7 +6,8 @@
 //
 // Cases:
 //   a  one add writes the box's 100 copies at their printings, Jace and Nissa as foil, as ONE History
-//      entry whose source is `precon:MultiverseReforged_FRC`, and marks its tokens owned under that entry
+//      entry whose source is `precon:MultiverseReforged_FRC`, keeping the tokens it read on that entry,
+//      and marks them owned under it
 //   b  a retry with the same action id writes nothing more and answers the same entry
 //   c  `preconAddedOn` reads the add; it reads null again once the entry is reverted
 //   d  a token the player already held by hand is left a hand mark, and is not counted as marked
@@ -115,6 +116,9 @@ async function run() {
     select source, kind from collection_history where user_id = ${USER} order by seq`);
   check("a · one History entry, an add, sourced to the precon", entries, [{ source: preconSource(FILE), kind: "add" }]);
   check("a · eight tokens marked (the ninth was held by hand)", a.tokens.marked, 8);
+  const [kept] = await rows<{ n: number }>(sql`
+    select jsonb_array_length(precon_tokens)::int as n from collection_history where id = ${first}::uuid`);
+  check("a · the entry keeps all nine tokens it read, for its reverts to derive from", kept.n, 9);
   const tokensA = await owned();
   check("a · every marked token is the entry's", tokensA.filter((t) => t.source === "precon").every((t) => t.entry === first), true);
   check("d · the hand-marked Soldier stays a hand mark", tokensA.find((t) => t.token === "Soldier")?.source, "manual");
