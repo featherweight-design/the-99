@@ -18,6 +18,7 @@ import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { SearchField } from "../ui/text-field";
 import { escapeDismisses } from "../../lib/ui/search-dismiss";
 import { ArtLayer } from "../ui/art-layer";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const copy = printingPickerCopy.printing;
 const deckCopy = deckPrintingsCopy.picker;
@@ -528,6 +529,8 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           a11y tree. It stays mounted through the empty-search branch — an empty radiogroup is
           valid, a dangling aria-controls is not. Search and chips sit outside it deliberately:
           they are not radios. */}
+      {/* One reading order for every tile, across the groups (`ArrivalOrder`). */}
+      <ArrivalOrder>
       <div id={id} role="radiogroup" aria-label={choose ? chooseCopy.regionLabel : copy.regionLabel} className={visible.length === 0 || (selectMode && !overflow) ? "" : selectMode ? "mt-[12px]" : "mt-[16px]"}>
         {groups.map((g) => (
             <div key={g.key} className={g.key === "" ? "" : "mt-[16px] first:mt-0"}>
@@ -580,6 +583,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
             </div>
         ))}
       </div>
+      </ArrivalOrder>
       {/* A refused deck save, below the tiles it reverted: a warning glyph and body text, never
           red and with no retry button (deck printings STATES, "Save failed"). */}
       {props.role !== "choose" && props.notice ? (

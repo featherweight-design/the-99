@@ -53,6 +53,7 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { Chevron, CHEVRON_CLASS } from "../ui/chevron";
 import { RECEIPT_LINK_CLASS, STACK_DROP_MS } from "./card-modal-shared";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const pickerCopy = printingPickerCopy.printing;
 
@@ -2010,8 +2011,10 @@ export function CardModal({
     : null;
 
   return (
-    // Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
-    // dim tracks the theme; blurred collection behind is decorative and out-of-scope
+    // One reading order for the neighbors' art, plates and peeks alike (`ArrivalOrder`): a pair fades in together.
+    <ArrivalOrder>
+    {/* Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
+        dim tracks the theme; blurred collection behind is decorative and out-of-scope */}
     <div
       ref={backdropRef}
       className={
@@ -2944,6 +2947,7 @@ export function CardModal({
         <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.()} />
       ) : null}
     </div>
+    </ArrivalOrder>
   );
 }
 
