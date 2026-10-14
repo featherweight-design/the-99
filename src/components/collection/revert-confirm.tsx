@@ -19,9 +19,10 @@ import { ShortDeckWarning } from "./short-deck-warning";
 
 const c = collectionEditCopy.revert;
 const SHOWN = 8;
-/** The dialog's body: it takes the height the buttons leave and scrolls inside it. The 4px gutter
- *  keeps a focus ring on Show all from being clipped by the scroll box. */
-const SCROLL = "-mx-[4px] min-h-0 flex-1 overflow-y-auto px-[4px]";
+/** The dialog's body: it takes the height the buttons leave and scrolls inside it. The 4px gutter,
+ *  on every side, keeps a focus ring inside it (Show all, last in the body) from being clipped by
+ *  the scroll box. */
+const SCROLL = "-m-[4px] min-h-0 flex-1 overflow-y-auto p-[4px]";
 /** The Then and Now grid every row is drawn on, shared with the rows that stand in for them. */
 const ROW = "grid min-h-[40px] grid-cols-[1fr_44px_44px] items-center gap-x-[10px] border-b border-b-[color:var(--border)] py-[6px]";
 
@@ -178,7 +179,7 @@ export function RevertConfirm({
         aria-busy={pending || undefined}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="flex h-[88vh] w-full flex-col rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:h-[min(620px,88vh)] md:w-[560px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
+        className="flex h-[88dvh] w-full flex-col rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:h-[min(620px,88dvh)] md:w-[560px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
         style={{ background: "var(--surface-rail)" }}
       >
         <div aria-hidden className="mx-auto mb-[16px] h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
@@ -187,7 +188,10 @@ export function RevertConfirm({
             rows and Show all all land inside it, and only the body scrolls, so Cancel and Revert
             never move below the fold. */}
         {view.k === "warning" ? (
-          <div className={SCROLL}>
+          // The warning is laid out for a column of fixed height already: its deck list is the part
+          // that shrinks and scrolls, and its own Cancel and Revert sit last, `flex-none`. Its root
+          // is told to fill this column, so those buttons stay pinned here too.
+          <div className="flex min-h-0 flex-1 flex-col *:min-h-0 *:flex-1">
           <ShortDeckWarning
             titleId={headingId}
             source="revert"

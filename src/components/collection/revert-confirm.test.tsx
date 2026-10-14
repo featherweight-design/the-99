@@ -93,7 +93,7 @@ describe("RevertConfirm", () => {
     const dialog = screen.getByRole("dialog");
     const heights = () => dialog.className.split(/\s+/).filter((k) => /^(md:)?h-\[/.test(k));
     const height = heights();
-    expect(height).toEqual(["h-[88vh]", "md:h-[min(620px,88vh)]"]);
+    expect(height).toEqual(["h-[88dvh]", "md:h-[min(620px,88dvh)]"]);
     expect(dialog.className).not.toMatch(/overflow-y-auto|max-h-/);
     expect(screen.getByTestId("revert-rows-loading")).toHaveClass("anim-skeleton");
     const cancel = screen.getByRole("button", { name: "Cancel" });
@@ -179,6 +179,9 @@ describe("RevertConfirm", () => {
     expect(screen.getByRole("heading", { name: "Reverting leaves 2 decks short" })).toBeTruthy();
     expect(screen.getAllByText("new")).toHaveLength(1);
     expect(onReverted).not.toHaveBeenCalled();
+    // The warning fills the dialog's fixed column, so its own buttons stay pinned: no scroll box holds them.
+    expect(screen.getByRole("button", { name: "Revert anyway" }).closest(".overflow-y-auto")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Reverting leaves 2 decks short" }).parentElement?.parentElement?.className).toMatch(/\*:flex-1/);
   });
 
   it("leads with what it restores, not 0 copies, when the revert moves no copies", async () => {
