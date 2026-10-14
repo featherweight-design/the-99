@@ -2,7 +2,8 @@
 // design/design_handoff_the99_richness/The 99 - App Shell v2.dc.html.
 // Voice: Kitchen Table. Do not paraphrase; the wink is load-bearing. Punctuation
 // diverges from the handoff as of 2026-09-13 — rule 4 applies here and the handoff
-// has not been reissued.
+// has not been reissued. The collection status reads "matching your cards…" where the
+// handoff says "matching to Oracle…" (copy sweep, 2026-10-14): Oracle is a data term.
 
 export type LoadingCopy = { heading: string; status: string };
 
@@ -11,7 +12,7 @@ export const shellCopy = {
   // collection routes; it used to be the single shared heading and so greeted
   // you on /commanders and /decks too.
   //
-  // The collection mock renders "1,418 cards · matching your cards…", but these
+  // The collection mock renders "1,418 cards · matching to Oracle…", but these
   // are Suspense fallbacks rendered before any data resolves — there is no count
   // to interpolate. Only the countless form is exported; do not add the
   // templated one until a surface actually has the number.
