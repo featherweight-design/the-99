@@ -113,7 +113,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
   // and legality carry over; only the printings, and with them the art and finish, are its own.
   const [ce] = twin;
   const collector = ce
-    ? { fileName: ce.fileName, cards: toCards(await openPreconLines(db, ce.fileName), owned), addedOn: await preconAddedOn(userId, ce.fileName, db) }
+    ? assembleCollector(ce.fileName, await openPreconLines(db, ce.fileName), owned, await preconAddedOn(userId, ce.fileName, db))
     : null;
 
   return {
@@ -130,8 +130,16 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
 
 const basicType = (typeLine: string) => /^Basic\b/.test(typeLine);
 
+type PreconLine = Awaited<ReturnType<typeof openPreconLines>>[number];
+
+/** The Collector's Edition twin as the page draws it: its own lines and added date, with the reader's
+ *  ownership of the plain edition carried over (the two lists hold the same cards). Pure, for a test. */
+export function assembleCollector(fileName: string, lines: readonly PreconLine[], owned: ReadonlySet<string>, addedOn: string | null) {
+  return { fileName, cards: toCards(lines, owned), addedOn };
+}
+
 /** The page's cards from one precon's lines, each marked owned when the reader holds any printing. */
-function toCards(lines: Awaited<ReturnType<typeof openPreconLines>>, owned: ReadonlySet<string>): OpenPreconCard[] {
+function toCards(lines: readonly PreconLine[], owned: ReadonlySet<string>): OpenPreconCard[] {
   return lines.map((l) => ({
     oracleId: l.oracleId,
     name: l.name,
