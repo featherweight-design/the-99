@@ -58,7 +58,7 @@ describe("StartPrecon", () => {
     open();
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "My Intellect" } });
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t confirm that deck was started."));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t confirm that deck was started. Check your decks before you try again."));
     expect(action).toHaveBeenCalledWith("MysticIntellect_C19", "My Intellect");
     expect(screen.getByRole("textbox")).toHaveValue("My Intellect");
   });

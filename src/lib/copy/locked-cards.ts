@@ -31,7 +31,7 @@ export const lockedCardsCopy = {
      * Any refusal of a lock toggle: a bad id, a card no longer in the deck, the switch off. The
      * house apostrophe (audit F11(b)), not the handoff's straight one.
      */
-    refused: "We couldn\u2019t confirm that saved. Reload to see which cards are locked.",
+    refused: "That may not have saved. Reload to see which cards are locked.",
   },
   /** The review screen's Pull it guard (L2), in the commander guard's shape. */
   pull: {

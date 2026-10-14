@@ -161,7 +161,7 @@ export const deckImportCopy = {
      * Design rules on it — same standing as `entry.subMobileNoLink`.
      */
     unexpected: {
-      heading: "We couldn’t make that deck",
+      heading: "That didn’t go through",
       /**
        * `detail` is the thrown message when the server refused for a reason the
        * player can act on — the size cap most of all, which is theirs to fix and
@@ -177,7 +177,7 @@ export const deckImportCopy = {
       body: (detail: string | null) =>
         detail
           ? `${detail}. Your list is still here. Trim it and try again.`
-          : "Something went wrong on our end and the deck wasn't made. Your list is still here. Try it again.",
+          : "Something went wrong on our end, and we can’t confirm the deck was made. Your list is still here. Check your decks before you try again.",
       // Not "Try again": the button dismisses the banner and hands the list back
       // for editing, and on the size cap an immediate retry cannot succeed. The
       // CTA names what it does. Ratification owed.
@@ -617,8 +617,8 @@ export const deckImportCopy = {
       live: "Updating the deck.",
     },
     refused: {
-      heading: "We couldn’t update that deck",
-      body: "The deck is unchanged, and your list is still here.",
+      heading: "We couldn’t confirm that update",
+      body: "Reload to see where the deck stands. Your list is still here.",
       action: "Try again",
     },
 

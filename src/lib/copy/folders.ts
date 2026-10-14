@@ -93,9 +93,9 @@ export const folderCopy = {
      */
     refused: 'That name won’t work.',
     /**
-     * A write that threw rather than refused — a timeout, an outage. It is a
-     * different sentence because it asks for a different thing: the name was
-     * fine, and trying again is the answer.
+     * A write that threw rather than refused — a timeout, an outage. The name was
+     * fine, but the write may have committed with its response lost, so the sentence
+     * claims nothing and sends the reader to look.
      */
      failed: 'We couldn’t confirm that saved. Reload to see your folders.',
   },
@@ -131,7 +131,7 @@ export const folderCopy = {
     /**
      * A delete that THREW rather than answering. `false` means already gone and
      * is treated as done; this is an outage, and the sentence has to name the
-     * act that did not happen rather than borrow create's.
+     * act it cannot confirm rather than borrow create's.
      */
     failed: 'We couldn’t confirm that folder was deleted. Reload to see your folders.',
     /** The shared delete pane's KEEP, the same label the deck's and the game's panes carry (2026-09-27). */
@@ -162,7 +162,7 @@ export const folderCopy = {
     /**
      * A write that THREW rather than refused. `false` is a conflict the reader
      * cannot act on — the deck or the folder is gone — and this is a failure
-     * they can: the move did not happen and trying again is the answer.
+     * they can: the move may or may not have landed, so the reader is sent to look.
      */
     failed: 'We couldn’t confirm that move. Reload to see where the deck is.',
     /**
