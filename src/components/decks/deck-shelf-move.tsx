@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, useTransition, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createFolderAction, moveDeckAction } from "../../app/decks/folder-actions";
 import { folderCopy } from "../../lib/copy/folders";
@@ -52,9 +52,14 @@ export function useDeckShelfMove(deckId: string, shelf: DeckShelf): {
   // The newest move's number. A second move can start before the first settles, so only the newest
   // may take its prediction back: an older refusal landing late must not undo a later move.
   const latest = useRef(0);
+  // The last shelf the server CONFIRMED: its payload's, or a move that answered true. A refusal goes
+  // back here, never to the shelf drawn before the press, which can itself be a move still in flight.
+  const confirmed = useRef({ id: shelf.folderId, name: shelf.folderName });
+  useEffect(() => {
+    confirmed.current = { id: shelf.folderId, name: shelf.folderName };
+  }, [shelf]);
   const onMove = useCallback(
     (to: { id: string | null; name: string | null }, failed: string = folderCopy.move.failed) => {
-      const was = current;
       const seq = (latest.current += 1);
       setCurrent(to);
       setAnnounced(to.name ? folderCopy.move.announceFiled(to.name) : folderCopy.move.announceUnfiled);
@@ -62,15 +67,16 @@ export function useDeckShelfMove(deckId: string, shelf: DeckShelf): {
         const answer = await moveDeckAction(deckId, to.id).catch(() => "threw" as const);
         // A rejection may have committed with its response lost, and no payload is coming for it.
         if (answer === "threw") router.refresh();
+        if (answer === true) confirmed.current = to;
         if (answer === true || seq !== latest.current) return;
         // Outside the action, as the list does: a state update inside it is held by the transition.
         setTimeout(() => {
-          setCurrent(was);
+          setCurrent(confirmed.current);
           setAnnounced(answer === "threw" ? failed : folderCopy.move.refused);
         }, 0);
       });
     },
-    [current, deckId, router],
+    [deckId, router],
   );
 
   const move: DeckMove = {
