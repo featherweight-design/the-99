@@ -56,10 +56,11 @@ export function preconAddLines(cards: readonly PreconCardForAdd[], tokenRows: re
 export async function readPreconForAdd(fileName: string): Promise<{ cards: PreconCardForAdd[]; tokens: PreconTokenForAdd[] } | null> {
   // One snapshot: the ingest replaces precons, their cards and their tokens in one transaction, so three
   // separate reads could see a head from one generation and an empty list from the next.
-  return db.transaction((tx) => readPreconIn(tx, fileName), { isolationLevel: "repeatable read" });
+  return db.transaction((tx) => readPreconForAddIn(tx, fileName), { isolationLevel: "repeatable read" });
 }
 
-async function readPreconIn(db: Reader, fileName: string): Promise<{ cards: PreconCardForAdd[]; tokens: PreconTokenForAdd[] } | null> {
+/** The box's cards and tokens, read through `db`: a caller composing it with another read passes its own snapshot. */
+export async function readPreconForAddIn(db: Reader, fileName: string): Promise<{ cards: PreconCardForAdd[]; tokens: PreconTokenForAdd[] } | null> {
   const [precon] = await db.select({ fileName: precons.fileName }).from(precons).where(eq(precons.fileName, fileName));
   if (!precon) return null;
   const rows = await db

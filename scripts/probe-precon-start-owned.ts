@@ -9,7 +9,8 @@
 //   c  the older decks stay short of the four cards: they never take the box's copies
 //   d  History's "Went to" for each of the four names the new deck alone
 //   e  the four are reserved to the new deck, a copy each
-//   f  a retry under the same action id lands on the same deck and writes nothing more
+//   f  a retry under the same action id lands on the same deck and writes nothing more; the same id sent for another
+//      precon is refused
 //   g  an action id another add already used is refused
 //   h  reverting the add releases the start's reservations (a later pick on the new deck stays), and the older decks
 //      are still short
@@ -17,6 +18,7 @@
 // Mutations, each run against it and each failing it:
 //   - the reservation insert dropped from `startPreconOwned`: fails b, c, d and e.
 //   - `releasePreconReservations` dropped from the revert (`write.ts`): fails h.
+//   - the source check dropped from `madeBy`: fails f.
 //   - its `created_at` bound dropped, so it releases every reservation the deck holds: fails h.
 //
 // It writes under a per-run `user_id` and purges that account in a `finally`, after the branch guard:
@@ -111,6 +113,9 @@ async function run() {
     select (select count(*)::int from decks where user_id = ${USER}) decks,
            (select coalesce(sum(quantity), 0)::int from collection_items where user_id = ${USER}) copies`);
   check("f · and writes nothing more", after, { decks: 3, copies: 100 });
+  // The same id sent for ANOTHER precon is not a retry of this start: it never lands on this deck.
+  const cross = await startPreconOwned(USER, "AbzanArmor_TDC", "Abzan", actionId, ENV, true);
+  check("f · the same id for another precon is refused, not landed on this deck", cross.ok, false);
 
   const otherId = randomUUID();
   // A card none of the decks lists, so this add moves nobody's shortfall.

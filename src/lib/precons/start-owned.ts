@@ -16,13 +16,13 @@
  */
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { cardAssignments, cards, decks } from "../../db/schema";
+import { cardAssignments, cards, collectionHistory, decks } from "../../db/schema";
 import { applyCollectionChange } from "../collection/write";
 import { lockCardClaims } from "../decks/assign";
 import { isBasicLand } from "../decks/grouping";
 import { preconSource } from "./added";
-import { committedAnswer, preconAddLines, readPreconForAdd } from "./add";
-import { preparePreconDeck, writePreconDeckIn, type PreparedPreconDeck } from "./start";
+import { committedAnswer, preconAddLines, readPreconForAddIn } from "./add";
+import { preparePreconDeckIn, writePreconDeckIn, type PreparedPreconDeck } from "./start";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -57,14 +57,21 @@ export async function startPreconOwned(
 ): Promise<PreconStartResult> {
   // A retry: the deck this action made, found through its link. Read before the catalog, so an ingest
   // that replaced the precon since changes nothing.
-  const made = await madeBy(userId, actionId);
+  const made = await madeBy(userId, fileName, actionId);
+  if (made === "other") return { ok: false, reason: "failed" };
   if (made) return { ok: true, deckId: made, entryId: actionId };
   // An id some other write already used (an add with no deck, a card's add) is not this start's.
   if (await committedAnswer(userId, fileName, actionId)) return { ok: false, reason: "failed" };
 
-  const box = await readPreconForAdd(fileName);
-  if (!box) return { ok: false, reason: "notFound" };
-  const deck = await preparePreconDeck(fileName);
+  // The box and the deck from ONE snapshot: the ingest replaces a precon's rows in one transaction, so two
+  // reads could add one generation's box and start the next generation's deck, reserving against a list
+  // the deck does not hold.
+  const read = await db.transaction(async (tx) => {
+    const box = await readPreconForAddIn(tx, fileName);
+    return box ? { box, deck: await preparePreconDeckIn(tx, fileName) } : null;
+  }, { isolationLevel: "repeatable read" });
+  if (!read) return { ok: false, reason: "notFound" };
+  const { box, deck } = read;
   const lines = preconAddLines(box.cards, box.tokens);
   const brought = new Map<string, number>();
   for (const item of lines.items) brought.set(item.oracleId, (brought.get(item.oracleId) ?? 0) + item.quantity);
@@ -94,16 +101,22 @@ export async function startPreconOwned(
   if (result.status === "applied" && deckId) return { ok: true, deckId, entryId: actionId };
   // A twin request committed between the check above and this write.
   if (result.status === "alreadyApplied") {
-    const raced = await madeBy(userId, actionId);
-    if (raced) return { ok: true, deckId: raced, entryId: actionId };
+    const raced = await madeBy(userId, fileName, actionId);
+    if (raced && raced !== "other") return { ok: true, deckId: raced, entryId: actionId };
   }
   return { ok: false, reason: "failed" };
 }
 
-async function madeBy(userId: string, actionId: string): Promise<string | null> {
-  const [row] = await db.select({ id: decks.id }).from(decks)
-    .where(and(eq(decks.userId, userId), eq(decks.preconAddEntryId, actionId)));
-  return row?.id ?? null;
+/**
+ * The deck this action already made, or "other" when the id made a deck from a DIFFERENT precon: a retry
+ * lands on its own deck, never on another precon's.
+ */
+async function madeBy(userId: string, fileName: string, actionId: string): Promise<string | "other" | null> {
+  const [row] = await db.select({ id: decks.id, source: collectionHistory.source }).from(decks)
+    .innerJoin(collectionHistory, eq(collectionHistory.id, decks.preconAddEntryId))
+    .where(and(eq(decks.userId, userId), eq(decks.preconAddEntryId, actionId), eq(collectionHistory.userId, userId)));
+  if (!row) return null;
+  return row.source === preconSource(fileName) ? row.id : "other";
 }
 
 async function basicIds(tx: Tx, ids: string[]): Promise<Set<string>> {

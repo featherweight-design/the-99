@@ -963,21 +963,20 @@ export async function applyCollectionChange(
  * reservations: they then go where the claim model's order sends them.
  */
 async function releasePreconReservations(tx: Tx, userId: string, entryId: string): Promise<void> {
-  const own = and(
-    eq(cardAssignments.userId, userId), eq(decks.userId, userId), eq(decks.preconAddEntryId, entryId),
-    lte(cardAssignments.createdAt, decks.createdAt),
-  );
-  const held = await tx.select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId })
-    .from(cardAssignments)
-    .innerJoin(decks, eq(decks.id, cardAssignments.deckId))
-    .where(own);
-  if (held.length === 0) return;
-  for (const id of [...new Set(held.map((h) => h.oracleId))].sort()) await lockCardClaims(tx, userId, id);
-  const byDeck = new Map<string, string[]>();
-  for (const h of held) byDeck.set(h.deckId, [...(byDeck.get(h.deckId) ?? []), h.oracleId]);
-  for (const [deckId, ids] of byDeck) {
+  const started = await tx.select({ id: decks.id }).from(decks)
+    .where(and(eq(decks.userId, userId), eq(decks.preconAddEntryId, entryId)));
+  for (const deck of started) {
+    // The cards to lock, read before the locks only to name them: the delete below re-applies the
+    // timestamp bound under them, so a reservation the chooser replaced in between is never taken.
+    const ids = [...new Set((await tx.select({ oracleId: cardAssignments.oracleId }).from(cardAssignments)
+      .where(and(eq(cardAssignments.userId, userId), eq(cardAssignments.deckId, deck.id)))).map((r) => r.oracleId))].sort();
+    if (ids.length === 0) continue;
+    for (const id of ids) await lockCardClaims(tx, userId, id);
     await tx.delete(cardAssignments).where(and(
-      eq(cardAssignments.userId, userId), eq(cardAssignments.deckId, deckId), inArray(cardAssignments.oracleId, ids),
+      eq(cardAssignments.userId, userId), eq(cardAssignments.deckId, deck.id), inArray(cardAssignments.oracleId, ids),
+      // In SQL, never through a JS Date: a Date keeps milliseconds, and a reservation stamped in the deck's own
+      // transaction carries the same microseconds as the deck, which a truncated bound would read as later.
+      lte(cardAssignments.createdAt, sql`(select d.created_at from decks d where d.id = ${deck.id})`),
     ));
   }
 }
