@@ -7,6 +7,7 @@
 // confirmation, and this one line is the only thing that says where it came from.
 
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { arrivalDismissKey, type ArrivalPrintings } from "../../lib/decks/arrival";
 import { useLocalFlag } from "./use-local-flag";
@@ -67,7 +68,10 @@ export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
             {text.lines.link ? (
               <>
                 {" "}
-                <Link href={text.lines.link.href} prefetch={false} className="-my-[11px] inline-block py-[11px] text-[color:var(--accent)] underline underline-offset-2">{text.lines.link.label}</Link>
+                <Link href={text.lines.link.href} prefetch={false} className="-my-[11px] inline-block py-[11px] text-[color:var(--accent)] underline underline-offset-2">
+                  {text.lines.link.label}
+                  <PendingReporter href={text.lines.link.href} />
+                </Link>
               </>
             ) : null}
           </p>

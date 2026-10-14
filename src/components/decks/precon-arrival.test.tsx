@@ -5,6 +5,7 @@ import { PreconArrivalBand } from "./arrival-strip";
 const arrival = { name: "Eldrazi Unbound", setCode: "CMM", cards: 100, unmapped: 0, owned: 74, of: 85 };
 
 vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
+vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 
 describe("PreconArrivalBand (precons S2, S2b)", () => {
   it("names the precon, what you own, and what went to Shopping, with no draft claim", () => {
