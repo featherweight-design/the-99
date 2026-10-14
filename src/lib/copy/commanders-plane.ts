@@ -201,7 +201,7 @@ export const planeCopy = {
       `${name} also matches, but Exactly ${identity(
         filtered,
       )} excludes it: its identity is ${identity(own)}.`,
-    joinCta: "Switch to Contains",
+    joinCta: "Switch to Any of these",
 
     floor: (name: string, pct: number, floorPct: number) =>
       `${name} matches, but Something new only shows commanders you could build, and you own ${pct}% of its support list against the ${floorPct}% floor.`,

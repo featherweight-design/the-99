@@ -45,7 +45,7 @@ describe("the Theme field's join", () => {
     expect(group().getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(within(group()).getByRole("radio", { name: "All" }));
     expect(within(group()).getByRole("radio", { name: "Any" }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByText("EDHREC’s theme tags. Pick more than one if you like.")).toBeTruthy();
+    expect(screen.getByText("EDHREC’s themes. Pick more than one if you like.")).toBeTruthy();
   });
 
   it("from two themes, says its rule and sends it with the submit", () => {

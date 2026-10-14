@@ -18,12 +18,12 @@ describe("DegradedBanner", () => {
     // most easily breaks, since the temptation is to source them from the block.
     expect(
       screen.getByText(
-        "EDHREC is unreachable. Scores shown are based on pool and role coverage only.",
+        "EDHREC is unreachable, so scores count only your cards and the roles they fill.",
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "EDHREC is unreachable. Fit scores reflect pool and role coverage only: synergy receipts are hidden until the connection is restored.",
+        "EDHREC is unreachable, so fit scores count only your cards and the roles they fill. Synergy details come back when it does.",
       ),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);

@@ -66,7 +66,7 @@ export const helpMeChooseCopy = {
     colorsExactly: (names: string) => `Exactly ${names}, nothing more.`,
     colorsJoin: (names: readonly string[]) => names.join(" and "), // HANDOFF §2
     theme: "Theme", // canvas
-    themeCaption: "EDHREC’s theme tags. Pick more than one if you like.",
+    themeCaption: "EDHREC’s themes. Pick more than one if you like.",
     themePlaceholder: "Add a theme…",
     themeAnother: "Add another…", // canvas
     themeCount: (n: number) => plural(n, "commander", "commanders"), // canvas

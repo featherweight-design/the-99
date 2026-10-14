@@ -80,6 +80,6 @@ export const deckNoticesCopy = {
     note: "Reads the bracket only. The overview waits until every card is legal in this deck.",
     seeWhich: "See which",
     withheld: "No overview while this deck holds cards that aren’t legal in it.",
-    warning: "This deck holds cards that aren’t legal in it right now. This overview was written before; a new one waits until every card is legal.",
+    warning: "This deck holds cards that aren’t legal in it right now. This overview was written earlier. A new one waits until every card is legal.",
   },
 } as const;
