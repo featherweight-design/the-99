@@ -221,7 +221,7 @@ export const deckTuningCopy = {
     swap: (cut: string, add: string) => `Swap ${cut} for ${add}`,
     applyRefused: "We couldn\u2019t make that swap. The deck is unchanged.",
     undoRefused: "We couldn\u2019t undo that swap. The deck is unchanged.",
-    verdictRefused: "That did not save. Try again.",
+    verdictRefused: "We couldn’t save that. The suggestion is unchanged.",
   },
 
 

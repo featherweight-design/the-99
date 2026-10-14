@@ -278,7 +278,7 @@ export const gameLogCopy = {
     confirmYes: 'Delete game',
     confirmNo: 'Keep it',
     deleting: 'Deleting\u2026',
-    deleteRefused: 'We couldn\u2019t delete that game. Nothing has changed.',
+    deleteRefused: 'We couldn\u2019t delete that. The game is unchanged.',
   },
 
   // ── Live region · one message per settle, never one per tick ──────────

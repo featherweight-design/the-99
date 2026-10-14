@@ -22,7 +22,7 @@ export const deckDescriptionCopy = {
     maxLength: 240,
     warnAt: 220,
     tooLong: "Keep it to 240 characters.",
-    refused: "That did not save. Try again.",
+    refused: "We couldn’t save that. The deck is unchanged.",
     save: "Save",
     cancel: "Cancel",
     pencilAria: (name: string) => `Edit name and description of ${name}`,
@@ -66,7 +66,7 @@ export const deckDescriptionCopy = {
     ownAny: "Any card",
     ownOnly: helpMeChooseCopy.intake.poolOwn, // 'Only cards I own'
     // Not in the handoff's copy file — this box's own save had no refusal string there.
-    refused: "That did not save. Try again.",
+    refused: "We couldn’t save that. Your limits are unchanged.",
     removeSet: helpMeChooseCopy.intake.removeSet, // 'Remove {name}', shared with the intake chip
   },
 

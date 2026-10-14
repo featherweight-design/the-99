@@ -171,7 +171,7 @@ describe("adding", () => {
     stub.searchNoteCards.mockResolvedValue(null);
     mount(view([note("a", "x")]));
     type(screen.getByRole("combobox", { name: "Add a note" }), "[[zz");
-    expect(await screen.findByText("Couldn’t search just now.")).toBeTruthy();
+    expect(await screen.findByText("We couldn’t search just now.")).toBeTruthy();
   });
 });
 

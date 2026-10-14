@@ -368,7 +368,7 @@ inside the sheet, which overrides both the Component notes' "two lists" and stat
 |----------|--------|---------|
 | component | the shipped `MutationError` | the shipped `MutationError` |
 | position | under the button | under the button |
-| text | `We couldn't commit that version. Your changes are still here.` (`commit.refused`) | same |
+| text | `We couldn’t commit that. The draft is unchanged.` (`commit.refused`) | same |
 | the note | **preserved** (rule 5) | **preserved** |
 | own styling | — (the shipped component owns it; no values given here) | — |
 | toast | **—** | **—** |
@@ -654,7 +654,7 @@ the feature.** The product owns no confirm dialog, modal, focus trap or toast.
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | component | the shipped `MutationError`, in the banner | the shipped `MutationError`, in the banner |
-| text | `We couldn't discard those changes. Nothing has changed.` (`discard.refused`) | same |
+| text | `We couldn’t discard those. The draft is unchanged.` (`discard.refused`) | same |
 | the confirm | stays open; the draft is untouched | stays open |
 | undo offer | **—** | **—** |
 

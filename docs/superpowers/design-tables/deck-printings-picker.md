@@ -65,7 +65,7 @@ new deck-scope strings; `printingPickerCopy.*` slots are the shipped collection 
 | Corner badge | absolute, top 8, right 8, radius 5, centred, 11px. Pick: 21×21, `--accent` bg, no border, `--bg` ink, `✓`. Shown now: 19×19, `color-mix(in oklab, var(--bg) 72%, transparent)` bg, `1px dashed var(--fg-faint)`, `--fg-body` ink, `◇`. Other tiles: none | same |
 | Name line | margin-top 7; 12.5px; line-height 1.3; `--fg`; weight 600 on the pick, 400 otherwise. Set code after it: margin-left 5, IBM Plex Mono 10.5px, weight 400, `--fg-faint` | same |
 | Meta line | margin-top 2; IBM Plex Mono 10.5px; `--fg-faint`; `#{collectorNumber} · ×{qty}[ foil]` (owned quantity) | same |
-| State label | margin-top 3; flex, align center, gap 5; IBM Plex Mono 9.5px; `letter-spacing:0.14em`; uppercase. Pick: shipped tile slot `Your pick` (meaning: this deck's pick), `--accent`, preceded by 7×7 accent diamond. Shown now: shipped tile slot `Shown now`, `--fg-muted`, no diamond. Rendered only on those two tiles | same |
+| State label | margin-top 3; flex, align center, gap 5; IBM Plex Mono 9.5px; `letter-spacing:0.14em`; uppercase. Pick: `deckPrintingsCopy.picker.pinned` (`For this deck`), `--accent`, preceded by 7×7 accent diamond. Shown now: shipped tile slot `Shown now`, `--fg-muted`, no diamond. Rendered only on those two tiles | same |
 | Shown now target | The deck's fallback: the Collection's pick, else the default (audit errata: pass the resolved fallback, not the printing on screen). Drawn only while nothing is picked | same |
 | Dormant tile | — (never in deck scope) | — |
 
@@ -79,7 +79,7 @@ new deck-scope strings; `printingPickerCopy.*` slots are the shipped collection 
 | Glyph | `!` before the text, `aria-hidden`, IBM Plex Mono, weight 600, `--warning` | — |
 | Colour rule | No red / `--danger` (STATES "Must not: Red") | — |
 | Retry button | — | — |
-| Tiles | Revert to their pre-press state (no `Your pick` tile, Shown now back on the fallback) | — |
+| Tiles | Revert to their pre-press state (no `For this deck` tile, Shown now back on the fallback) | — |
 | Region | Stays open | — |
 
 ## 6. Live announcement
@@ -130,12 +130,12 @@ Visually the deck-scope picker is the shipped component with **no new geometry, 
 styles** (README: "unchanged, except that the write goes to the deck"; "no new tokens"). The
 differences are text slots, which controls are present, and where the write goes:
 
-1. Pinned line label slot: `deckPrintingsCopy.picker.pinned` replaces `printingPickerCopy.printing.triggerPicked` on the Set field line only (the tiles' `badgePicked` keeps `Your pick`).
+1. Pinned line label slot: `deckPrintingsCopy.picker.pinned` replaces `printingPickerCopy.printing.triggerPicked` on the Set field line only (the tiles carry it too, in place of `badgePicked`).
 2. Intro slot: `regionIntro(n)` and `regionIntroPicked` swap to the deck variants; same `<p>`, 13.5px, `--fg-muted`.
 3. Reset: hidden.
 4. Dormant tile: hidden; a lapsed pick is cleared instead.
 5. `Shown now`: names the deck's fallback (Collection's pick, else default), not the printing on screen.
-6. `Your pick` tile: means this deck's pick.
+6. `For this deck` tile: this deck's pick.
 7. Failed notice: deck slot `failed` (`!` in `--warning`, text `--fg-body`, below the grid).
 8. Announcement: deck slot `announcePicked(printing)`.
 9. Write target: `(deck_id, oracle_id)`, never the art preference.

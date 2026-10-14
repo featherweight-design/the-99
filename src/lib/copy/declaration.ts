@@ -99,5 +99,5 @@ export const declarationCopy = {
 
   /** What the ask says when the write is refused. The house form: true whether the refused
    *  write was a first answer or a change, where the previous answer is put back. */
-  refused: "That did not save. Try again.",
+  refused: "We couldn’t save that. Your answer is unchanged.",
 } as const;
