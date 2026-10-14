@@ -713,7 +713,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv }: { theme: ThemeKey }
         <Crowned99 variant="mobile-header" />
       </div>
 
-      <div className="flex items-center gap-[8px]">
+      <div className="flex items-center">
         {/* Offline, left of the avatar (Concert Crawl's PWA cluster, right-side slots). */}
         <OfflinePill place="header" />
         {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}

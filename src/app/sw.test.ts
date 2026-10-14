@@ -273,6 +273,36 @@ describe("the service worker", () => {
     }
   });
 
+  it("asks for a page that keeps failing at most hourly too: the throttle counts attempts", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-10-14T12:00:00Z"));
+      start();
+      serve();
+      await install();
+      network.mockImplementation(async (input: Request | string) => {
+        const path = new URL(typeof input === "string" ? input : input.url, ORIGIN).pathname;
+        if (path === "/offline") return answered("boom", "/offline", { status: 500 });
+        return answered(`page ${path}`, path);
+      });
+      const offlineFetches = () => network.mock.calls.filter(([input]) => input === "/offline").length;
+      vi.setSystemTime(new Date("2026-10-14T13:30:00Z"));
+      await load("/decks");
+      // Install's fetch, and this hour's failed one.
+      expect(offlineFetches()).toBe(2);
+      start();
+      vi.setSystemTime(new Date("2026-10-14T14:00:00Z"));
+      await load("/decks");
+      await load("/collection");
+      expect(offlineFetches()).toBe(2);
+      vi.setSystemTime(new Date("2026-10-14T14:31:00Z"));
+      await load("/decks");
+      expect(offlineFetches()).toBe(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reads a path in the page's inline RSC payload without the escape before its closing quote", async () => {
     serve();
     await install();
@@ -335,7 +365,9 @@ describe("the service worker", () => {
     const res = await load("/decks/abc");
     expect(await res!.text()).toBe("page /decks/abc");
     // The only page any cache holds is the signed-out /offline the worker fetched itself.
-    expect(everythingKept().filter((u) => !u.includes("/_next/static/"))).toEqual([`${ORIGIN}/offline`]);
+    // (Beside it, an empty marker of when it was last fetched, which is no one's page.)
+    const pages = everythingKept().filter((u) => !u.includes("/_next/static/") && !u.endsWith("/offline?attempt"));
+    expect(pages).toEqual([`${ORIGIN}/offline`]);
   });
 
   it("passes a server's own error through: only an unreachable network gets the fallback", async () => {

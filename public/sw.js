@@ -103,11 +103,22 @@ function offlineRequest() {
 }
 
 /** Fetches the kept `/offline` again when it is older than `OFFLINE_REFRESH_MS`, or missing. */
+// When a refresh was last TRIED, kept in the offline cache beside the page: the throttle counts
+// attempts, not successes, so a page or asset that keeps failing is asked for at most hourly too.
+function attemptRequest() {
+  return new Request(new URL(`${OFFLINE_PATH}?attempt`, self.location.origin));
+}
+
 async function refreshOfflinePageIfOld() {
-  const kept = await (await caches.open(OFFLINE)).match(offlineRequest());
-  const keptAt = Number(kept?.headers.get(KEPT_AT)) || 0;
-  if (Date.now() - keptAt <= OFFLINE_REFRESH_MS) return;
-  refreshing ??= keepOfflinePage().finally(() => {
+  const offline = await caches.open(OFFLINE);
+  const stamp = async (request) => Number((await offline.match(request))?.headers.get(KEPT_AT)) || 0;
+  // A kept copy counts as an attempt too: the one install keeps starts the hour.
+  const triedAt = Math.max(await stamp(attemptRequest()), await stamp(offlineRequest()));
+  if (Date.now() - triedAt <= OFFLINE_REFRESH_MS) return;
+  refreshing ??= (async () => {
+    await offline.put(attemptRequest(), new Response(null, { headers: { [KEPT_AT]: String(Date.now()) } }));
+    await keepOfflinePage();
+  })().finally(() => {
     refreshing = null;
   });
   await refreshing;
@@ -153,7 +164,7 @@ async function keepOfflinePage() {
   // installing beside the active one) may have published after it, and its files must survive.
   const current = await offline.match(offlineRequest());
   const names = (header) => (current?.headers.get(header) ?? "").split(" ").filter(Boolean);
-  const wanted = new Set([offlineRequest().url, ...names(KEPT_ASSETS), ...names(KEPT_PREVIOUS)]);
+  const wanted = new Set([offlineRequest().url, attemptRequest().url, ...names(KEPT_ASSETS), ...names(KEPT_PREVIOUS)]);
   for (const key of await offline.keys()) if (!wanted.has(key.url)) await offline.delete(key);
   return true;
 }

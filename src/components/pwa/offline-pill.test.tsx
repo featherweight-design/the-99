@@ -15,22 +15,27 @@ afterEach(() => {
 });
 
 describe("OfflinePill", () => {
-  it("draws nothing online, and appears and leaves with the browser's own events", () => {
+  it("keeps one live region mounted, empty online, and fills it when the browser goes offline", () => {
     setOnline(true);
     render(<OfflinePill place="header" />);
-    expect(screen.queryByRole("status")).toBeNull();
+    const region = screen.getByRole("status");
+    expect(region).toHaveAttribute("aria-live", "polite");
+    expect(region.textContent).toBe("");
     act(() => setOnline(false));
-    const pill = screen.getByRole("status");
-    expect(pill).toHaveAttribute("aria-live", "polite");
-    expect(pill).toHaveAttribute("aria-label", pwaCopy.offline.pillAria);
-    expect(pill.textContent).toBe(pwaCopy.offline.pill);
+    // The SAME element: an announcement is a change to a region already there.
+    expect(screen.getByRole("status")).toBe(region);
+    expect(region.textContent).toContain(pwaCopy.offline.pillAria);
+    expect(region.querySelector("[data-offline-pill]")?.textContent).toContain(pwaCopy.offline.pill);
     act(() => setOnline(true));
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(region.textContent).toBe("");
   });
 
-  it("keeps the dot out of the accessibility tree: color is never the only signal", () => {
+  it("speaks the sentence, and keeps the dot and the short label out of the accessibility tree", () => {
     setOnline(false);
     render(<OfflinePill place="rail" />);
-    expect(screen.getByRole("status").querySelector("span")).toHaveAttribute("aria-hidden", "true");
+    const pill = screen.getByRole("status").querySelector("[data-offline-pill]")!;
+    const hidden = [...pill.querySelectorAll('[aria-hidden="true"]')];
+    expect(hidden).toHaveLength(2);
+    expect(hidden[1]!.textContent).toBe(pwaCopy.offline.pill);
   });
 });
