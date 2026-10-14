@@ -5,7 +5,7 @@ import { ArtLayer } from "./art-layer";
 
 /**
  * A commander's card face at thumb size. Five renders each invented one of
- * these — the deck rail's phone spine, the create picker's candidate row and its
+ * these — a phone spine since retired, the create picker's candidate row and its
  * selected summary, the pre-filled flow's phone thumb and the partner slot — at
  * five geometries and three ring alphas, which is the drift this round exists to
  * end.

@@ -5,11 +5,14 @@
 // element in `main` whose computed background paints Scryfall card art:
 //   - each must carry `data-arrival` (it is an `ArtLayer` / `ArrivingArt`), never a host painting art itself;
 //   - once the page has settled, none may still be `pending` (art that never shows).
-// Pages: the deck page, `/decks`, `/commanders`, and the first commander page that list links to, at 1300 and 390.
+// Pages: the deck page, `/decks`, `/commanders`, the first commander page that list links to, the create picker
+// (`/decks/new`), create pre-filled from that commander, and `/decks/precons`, at 1300 and 390. Help me choose's
+// best fit needs a model read to draw, so it is covered by its component test (`choose-row.test.tsx`) alone.
 // The card details sheet's main faces and the hover preview are left unfaded on purpose and are not opened here.
 //
 // Read-only on the app's data (it loads pages as any reader's visit does), and deployed-only:
-//   MEASURE_DEPLOYED=1 PROBE_BASE=https://staging.the-99.dev [MEASURE_DECK_ID=<uuid>] pnpm probe:art-layer
+//   MEASURE_DEPLOYED=1 PROBE_BASE=https://staging.the-99.dev [MEASURE_DECK_ID=<uuid>] \
+//     [PROBE_COMMANDER_ORACLE_ID=<uuid>] pnpm probe:art-layer
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { assertDeployedBase, lookupUserId, mintSignInToken } from "./lib/measure-deployed.mjs";
@@ -21,6 +24,8 @@ const { THE_99_CLERK_SECRET_KEY_STAGING: SECRET, THE_99_E2E_AUDIT_USER_EMAIL: AU
   requireEnv(["THE_99_CLERK_SECRET_KEY_STAGING", "THE_99_E2E_AUDIT_USER_EMAIL"]);
 /** The deck to load: `MEASURE_DECK_ID`, else the first deck `/decks` links to. */
 const DECK_ID = process.env.MEASURE_DECK_ID ?? null;
+/** The commander create opens pre-filled with (an oracle id; nothing on a page carries one). Unset skips that page. */
+const COMMANDER = process.env.PROBE_COMMANDER_ORACLE_ID ?? null;
 
 let failures = 0;
 function report(label, ok, detail) {
@@ -44,6 +49,8 @@ const READ = () => [...document.querySelectorAll("main *")]
   .filter((e) => getComputedStyle(e).backgroundImage.includes("cards.scryfall.io"))
   .map((e) => ({ mark: e.dataset.arrival ?? null, tag: e.tagName.toLowerCase(), cls: String(e.className).slice(0, 80) }));
 
+let detail = null;
+let deck = null;
 const browser = await chromium.launch();
 try {
   for (const [width, height] of [[1300, 900], [390, 844]]) {
@@ -51,13 +58,24 @@ try {
     const page = await context.newPage();
     try {
       await signIn(page);
-      await page.goto(`${BASE}/commanders`, { waitUntil: "load" });
-      const detail = await page.evaluate(() => document.querySelector('main a[href^="/commanders/"]')?.getAttribute("href") ?? null);
-      await page.goto(`${BASE}/decks`, { waitUntil: "load" });
-      const deck = DECK_ID ? `/decks/${DECK_ID}` : await page.evaluate(() =>
-        [...document.querySelectorAll('main a[href^="/decks/"]')].map((a) => a.getAttribute("href"))
-          .find((h) => /^\/decks\/[0-9a-f-]{36}$/.test(h ?? "")) ?? null);
-      for (const path of [deck, "/decks", "/commanders", detail]) {
+      // Found once, at the first width, and reused: the phone's lists link differently.
+      if (width === 1300) {
+        await page.goto(`${BASE}/commanders`, { waitUntil: "load" });
+        await page.waitForSelector('main a[href^="/commanders/"]', { timeout: 30_000 }).catch(() => {});
+        detail = await page.evaluate(() => document.querySelector('main a[href^="/commanders/"]')?.getAttribute("href") ?? null);
+        await page.goto(`${BASE}/decks`, { waitUntil: "load" });
+        // The list streams in after the load event; wait for its first deck before reading.
+        if (!DECK_ID) await page.waitForSelector('main a[href^="/decks/"]', { timeout: 30_000 }).catch(() => {});
+        deck = DECK_ID ? `/decks/${DECK_ID}` : await page.evaluate(() =>
+          [...document.querySelectorAll('main a[href^="/decks/"]')].map((a) => a.getAttribute("href"))
+            .find((h) => /^\/decks\/[0-9a-f-]{36}$/.test(h ?? "")) ?? null);
+      }
+      // `/decks/new` (the create picker) and `/decks/precons` draw `CommanderThumb`, and create pre-filled
+      // (`?commander=<oracle id>`) draws the converted card face.
+      const create = COMMANDER ? `/decks/new?commander=${COMMANDER}` : null;
+      if (!create && width === 1300) console.log("  skip  create pre-filled — set PROBE_COMMANDER_ORACLE_ID to load it");
+      for (const path of [deck, "/decks", "/commanders", detail, "/decks/new", create, "/decks/precons"]) {
+        if (path === create && !create) continue;
         if (!path) { report(`${width} page`, false, "no deck or commander link to follow"); continue; }
         await page.goto(`${BASE}${path}`, { waitUntil: "load" });
         // Scroll the page through, so art below the first screen is asked for, then let it settle.
@@ -69,7 +87,7 @@ try {
         const art = await page.evaluate(READ);
         const unfaded = art.filter((a) => a.mark === null);
         const stuck = art.filter((a) => a.mark === "pending");
-        const label = `${width} ${path.startsWith("/commanders/") ? "/commanders/[slug]" : path.replace(/\/decks\/[0-9a-f-]{36}$/, "/decks/[id]")}`;
+        const label = `${width} ${path.startsWith("/commanders/") ? "/commanders/[slug]" : path.replace(/\/decks\/[0-9a-f-]{36}$/, "/decks/[id]").replace(/commander=.*$/, "commander=[slug]")}`;
         report(`${label}: every piece of background art fades`, unfaded.length === 0,
           `${art.length} painted, ${unfaded.length} unfaded${unfaded.length ? `: ${JSON.stringify(unfaded.slice(0, 3))}` : ""}`);
         report(`${label}: none left pending`, stuck.length === 0, `${stuck.length} pending after settling`);

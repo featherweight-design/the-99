@@ -17,7 +17,8 @@ const ALLOWED: Record<string, { count: number; reason: string }> = {
 };
 
 const ROOT = join(process.cwd(), "src/components");
-const URL_BUILDERS = /cssUrl\(|url\(\$\{/g;
+// `cssUrl(`, and a template url in any quoting: `url(${`, `url("${`, `url('${`.
+const URL_BUILDERS = /cssUrl\(|url\(["']?\$\{/g;
 
 function files(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
