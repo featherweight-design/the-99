@@ -6,16 +6,15 @@ import { availabilityCopy } from "../../lib/copy/availability";
 // Every assertion counts two matches: the banner ships a mobile and a desktop
 // branch, both always in the DOM, with visibility left to Tailwind.
 describe("DegradedBanner", () => {
-  // The synergy variant is the shipped banner, and its four strings are NOT
-  // sourced from the availability copy block: the two widths carry different
-  // body copy, and the mobile button reads `Retry` where the copy block says
-  // `Retry now`. Reading them from the block would change shipped mobile text
-  // as a side effect of this ticket.
-  it("keeps the shipped synergy copy unchanged", () => {
+  // The synergy variant's four strings are NOT sourced from the availability
+  // copy block: the two widths carry different body copy, and the mobile button
+  // reads `Retry` where the copy block says `Retry now`. This pins the literal,
+  // width-specific wording each width draws.
+  it("pins the synergy variant's literal, width-specific copy", () => {
     render(<DegradedBanner />);
     expect(screen.getAllByText("Synergy data unavailable")).toHaveLength(2);
-    // Both bodies pinned, not just the heading: they are the strings this ticket
-    // most easily breaks, since the temptation is to source them from the block.
+    // Both bodies pinned, not just the heading: sourcing them from the block
+    // would make the two widths read the same.
     expect(
       screen.getByText(
         "EDHREC is unreachable, so scores count only your cards and the roles they fill.",
