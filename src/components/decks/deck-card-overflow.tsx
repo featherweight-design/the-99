@@ -30,9 +30,9 @@ interface DeckCardOverflowProps {
    * Where the menu is drawn. On a `tile` it sits on the art's top-right corner over the tile's
    * link and carries every row. In the deck page's `header` it is flowed beside Export, at the
    * header's own button size, and drops Update and Rename, since the header draws its own Update
-   * button and rename pencil beside it. The header passes no `move` (the shelf list and its create
-   * dialog are the Decks list's) and no `onAmong` (Stats is a list view), so it carries Delete
-   * alone, kept as a menu so Move can join it.
+   * button and rename pencil beside it. It carries Move (the deck page reads the shelves and
+   * `useDeckShelfMove` holds the move and the create dialog) and Delete, and no Stats: the header
+   * passes no `onAmong`, Stats being a list view.
    */
   placement: "tile" | "header";
   /** The Move row and its mode, with the list view that owns them. Absent, the row is too. */
