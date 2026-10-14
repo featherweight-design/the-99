@@ -39,7 +39,8 @@ describe("a result row", () => {
         </ul>
       </CardDetailProvider>,
     );
-    const art = container.querySelector<HTMLElement>("[aria-hidden][style]");
+    // The art is the best fit's own layer, fading in over its ground (`ArtLayer`).
+    const art = [...container.querySelectorAll<HTMLElement>("div[aria-hidden] *")].find((e) => e.style.backgroundImage);
     expect(art?.style.backgroundImage).toContain("https://img/card.jpg");
   });
 
@@ -199,7 +200,7 @@ describe("a best fit's art and rank (F11)", () => {
         </ul>
       </CardDetailProvider>,
     );
-    const art = container.querySelector<HTMLElement>("[aria-hidden][style]")!;
+    const art = container.querySelector<HTMLElement>("div[aria-hidden]")!;
     expect(art.className).toContain("md:aspect-[626/457]");
     expect(art.className).not.toContain("md:h-[132px]");
     // Desktop: the shipped badge over the art. Phone: a 20px ring first in the name line.

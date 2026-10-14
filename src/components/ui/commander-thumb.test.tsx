@@ -43,8 +43,11 @@ describe("CommanderThumb", () => {
   // wide is mostly type box.
   it("crops to the top of the card and grounds the art while it loads", () => {
     const el = thumb(<CommanderThumb imageUri="/a.jpg" colorIdentity={["G"]} />);
-    expect(el.style.background).toContain("center top");
+    // The ground shows while the art travels; the art is its own layer, fading in over it (`ArtLayer`).
     expect(el.style.background).toContain("var(--elevated)");
+    const layer = el.firstElementChild as HTMLElement;
+    expect(layer.style.backgroundImage).toContain("/a.jpg");
+    expect(layer.style.backgroundPosition).toBe("center top");
   });
 
   // B6's two halves are two different facts. `[]` is COLORLESS — a real identity
