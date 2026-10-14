@@ -42,8 +42,8 @@ describe("CostsView, the current month (C1)", () => {
     expect(screen.queryByRole("link", { name: "Next month" })).toBeNull();
 
     expect(screen.getByText("Model calls").parentElement).toHaveTextContent("$1.135");
-    expect(screen.getByText("Player presses").parentElement).toHaveTextContent("9% of the $10 plan");
-    expect(screen.getByText("Per active account").parentElement).toHaveTextContent("1 account pressed");
+    expect(screen.getByText("Player runs").parentElement).toHaveTextContent("9% of the $10 plan");
+    expect(screen.getByText("Per active account").parentElement).toHaveTextContent("1 account with runs");
 
     expect(screen.getByText("$0.884 of $10")).toBeInTheDocument();
     expect(screen.getAllByText("$20 hard stop").length).toBeGreaterThan(0);
@@ -194,18 +194,18 @@ describe("CostsView, a ceiling that starts later", () => {
 describe("CostsView banners", () => {
   it("warns on the pace (C2)", () => {
     draw(rows([p(2, 4)]));
-    expect(screen.getByRole("status")).toHaveTextContent("On this pace, player presses pass the $10 plan around 28 October.");
+    expect(screen.getByRole("status")).toHaveTextContent("On this pace, player runs pass the $10 plan around 28 October.");
   });
 
   it("warns at 80% and inks the player tile (C5)", () => {
     draw(rows([p(2, 8.1)]));
-    expect(screen.getByRole("status")).toHaveTextContent("Player presses have reached 80% of the plan.");
+    expect(screen.getByRole("status")).toHaveTextContent("Player runs have reached 80% of the plan.");
     expect(screen.getByText("81% of the $10 plan").className).toContain("var(--warning)");
   });
 
-  it("says when presses are paused (C6)", () => {
+  it("says when runs are paused (C6)", () => {
     draw(rows([p(2, 19.9)], { paused: true }));
-    expect(screen.getByRole("status")).toHaveTextContent("Presses are paused until November 1.");
+    expect(screen.getByRole("status")).toHaveTextContent("Runs are paused until November 1.");
     expect(screen.getByRole("status").getAttribute("style")).toContain("var(--danger)");
   });
 });
@@ -217,7 +217,7 @@ describe("CostsView, other months", () => {
     expect(within(calls).getByText("$0")).toBeInTheDocument();
     expect(within(calls).getByText("0 runs")).toBeInTheDocument();
     expect(screen.getByText("No model calls in October 2026.")).toBeInTheDocument();
-    expect(screen.getByText("Per active account").parentElement).toHaveTextContent("no account pressed");
+    expect(screen.getByText("Per active account").parentElement).toHaveTextContent("no accounts with runs");
   });
 
   it("draws a past month to its end, with › live and no pace (C4)", () => {
@@ -390,11 +390,11 @@ describe("the pinned head and month bar", () => {
 
   it("says the month-end projection to a screen reader in the current month, and only the total in a past one", () => {
     const now = draw(rows([p(2, 1)]));
-    expect(screen.getByText("Player presses in October 2026: $1.000, on pace for $2.82 by month end.")).toBeInTheDocument();
+    expect(screen.getByText("Player runs in October 2026: $1.000, on pace for $2.82 by month end.")).toBeInTheDocument();
     now.unmount();
     const SEP = { year: 2026, month: 8 };
     draw(rows([p(2, 1)]), SEP);
-    expect(screen.getByText("Player presses in September 2026: $1.000.")).toBeInTheDocument();
+    expect(screen.getByText("Player runs in September 2026: $1.000.")).toBeInTheDocument();
   });
 
   it("re-measures the head on a window resize where ResizeObserver does not exist", () => {

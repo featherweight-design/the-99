@@ -19,7 +19,7 @@ describe("ModelConfirm", () => {
     const facts = [...document.querySelectorAll("dd")].map((d) => d.textContent);
     expect(facts).toEqual([
       "Mara, Theo",
-      "Overview: each press reserves up to $0.240. Priced presses so far average $0.012. Suggested changes: each press reserves up to $0.500. No press has been priced yet, so there is no mean to go on. Each press uses one of the account’s 5 or 10 credits in a rolling 24 hours.",
+      "Overview: each run reserves up to $0.240. Priced runs so far average $0.012. Suggested changes: each run reserves up to $0.500. No run has been priced yet, so there is no mean to go on. Each run uses one of the account’s 5 or 10 credits in a rolling 24 hours.",
       "No What’s new entry changes.",
       "Within 30 seconds, on every server.",
     ]);

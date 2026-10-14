@@ -48,7 +48,7 @@ describe("CostsDetail, a month with runs", () => {
   it("draws every block in the canvas's order", () => {
     draw({ calls, labelRuns: [labelRun] });
     expect(headings()).toEqual([
-      "Against the caps", "Player presses, month to date", "By model", "Player against system", "By feature and model",
+      "Against the caps", "Player runs, month to date", "By model", "Player against system", "By feature and model",
       "Refunds", "Reserved against spent", "Per account", "Card label runs", "Eval ledgers",
     ]);
   });
@@ -69,18 +69,18 @@ describe("CostsDetail, a month with runs", () => {
     const { container } = draw({ calls, labelRuns: [labelRun] });
     expect([...container.querySelectorAll("[data-series]")].map((el) => el.getAttribute("data-series"))).toEqual(["player", "labels", "rewrites"]);
     expect(container.querySelector('[data-series="labels"]')).toHaveTextContent("$59.48");
-    expect(screen.getByText(/^One run was refunded: the player got the credit back, and the dollars stay billed\. Suggested changes 1 run, \$0\.050\.$/)).toBeInTheDocument();
+    expect(screen.getByText(/^One run was refunded: the player got the credit back, and the cost still counts\. Suggested changes 1 run, \$0\.050\.$/)).toBeInTheDocument();
   });
 
   it("holds each feature's mean against its reservation", () => {
     const { container } = draw({ calls });
     expect(container.querySelector('[data-feature="tuning"]')).toHaveTextContent(/\$0\.045 of \$0\.\d{3}/);
-    expect(container.querySelector('[data-feature="proposed_cuts"]')).toHaveTextContent("no press yet");
+    expect(container.querySelector('[data-feature="proposed_cuts"]')).toHaveTextContent("no run yet");
   });
 
-  it("says a press with no cost yet is a press, not none", () => {
+  it("says a run with no cost yet is a run, not none", () => {
     const { container } = draw({ calls: [...calls, call({ feature: "proposed_cuts", status: "reserved", micro: null })] });
-    expect(container.querySelector('[data-feature="proposed_cuts"]')).toHaveTextContent("1 press, none priced yet");
+    expect(container.querySelector('[data-feature="proposed_cuts"]')).toHaveTextContent("1 run, none priced yet");
   });
 
   it("marks label figures so far while chunks are still collecting", () => {
@@ -137,8 +137,8 @@ describe("CostsDetail, a month with runs", () => {
   it("counts credits in the singular and the plural", () => {
     const { container } = draw({ calls: [call({ userId: "user_one" }), call({ userId: "user_two" }), call({ userId: "user_two" })] });
     const metas = [...container.querySelectorAll(".md\\:hidden span.font-mono")].map((el) => el.textContent);
-    expect(metas).toContain("1 press · 1 credit used");
-    expect(metas).toContain("2 presses · 2 credits used");
+    expect(metas).toContain("1 run · 1 credit used");
+    expect(metas).toContain("2 runs · 2 credits used");
   });
 
   it("draws a top border on every phone card, the first included", () => {
@@ -234,7 +234,7 @@ describe("CostsDetail, the eval ledgers", () => {
 describe("CostsDetail, an eval ledger that could not be read", () => {
   it("says which, and reads the eval figure as partial rather than complete", () => {
     const { container } = draw({ calls: [call({})], ledgersUnreadable: ["ledger-cuts.jsonl"] });
-    expect(screen.getByRole("alert")).toHaveTextContent("Could not read ledger-cuts.jsonl, so the eval figures leave it out.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t read ledger-cuts.jsonl, so the eval figures leave that out.");
     expect(container.querySelector("[data-evals-apart]")).toHaveTextContent("Evals (all environments, from the repo)$0 so far");
     expect(container.querySelector('[data-model="evals"]')).toBeNull();
     // System is this environment's alone, so an unreadable ledger leaves it whole.
@@ -245,7 +245,7 @@ describe("CostsDetail, an eval ledger that could not be read", () => {
 describe("CostsDetail, a month with no runs (C3)", () => {
   it("hides every table but the eval ledgers", () => {
     draw({});
-    expect(headings()).toEqual(["Against the caps", "Player presses, month to date", "Eval ledgers"]);
+    expect(headings()).toEqual(["Against the caps", "Player runs, month to date", "Eval ledgers"]);
     expect(screen.getByRole("table", { name: "Eval ledgers" })).toBeInTheDocument();
     expect(within(screen.getByRole("table", { name: "Eval ledgers" })).getByText("Original campaign")).toBeInTheDocument();
   });

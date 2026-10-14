@@ -1,6 +1,6 @@
 // The Accounts pages (admin STATES A1 to A7): the list's rows, search and its no-match line, Clerk
 // down; the head's account mode; and an account's page: its head block, tiles, the three switch
-// groups, spend by feature or `No presses in ‹Month›.`, and Change group with its confirm.
+// groups, spend by feature or `No runs in ‹Month›.`, and Change group with its confirm.
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AccountPage } from "../../lib/admin/account-page";
@@ -33,7 +33,7 @@ const PAGE: AccountPage = {
   tiles: [
     { key: "credits", label: "Credits now", figure: "0 of 5 left", sub: "reset at 9:05 PM UTC" },
     { key: "spent", label: "Spent in October", figure: "$1.420", sub: null },
-    { key: "presses", label: "Presses", figure: "34", sub: null },
+    { key: "presses", label: "Runs", figure: "34", sub: null },
     { key: "hub", label: "Tuning hub", figure: "Drawn", sub: "2 of its tools on" },
   ],
   group: { id: F, name: "friends" },
@@ -160,7 +160,7 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(notice.compareDocumentPosition(screen.getByTestId("account-tiles")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("draws spend by feature, or No presses in the month (A6)", () => {
+  it("draws spend by feature, or No runs in the month (A6)", () => {
     const { unmount } = render(<AccountPageView page={PAGE} />);
     expect(screen.getByTestId("account-features")).toHaveTextContent("Overview");
     const total = screen.getByTestId("account-features").querySelector('[data-feature="total"]')!;
@@ -169,7 +169,7 @@ describe("AccountPageView (A4 to A7)", () => {
     unmount();
     render(<AccountPageView page={{ ...PAGE, features: [] }} />);
     expect(screen.queryByTestId("account-features")).toBeNull();
-    expect(screen.getByText("No presses in October.")).toBeInTheDocument();
+    expect(screen.getByText("No runs in October.")).toBeInTheDocument();
   });
 
   it("changes the group through the move action, and refreshes after it saves", async () => {
