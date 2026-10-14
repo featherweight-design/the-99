@@ -188,9 +188,9 @@ export function DecklistRow({
   const stepperOn = basicRow && !lockModeOn;
   const [settledLine, setSettledLine] = useState("");
   const basic = useBasicCount({
+    deckId,
     oracleId: card.oracleId,
     quantity: card.quantity,
-    save: (n) => setBasicQuantity(deckId, card.oracleId, n),
     onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(printedFaceName(card), n)),
   });
   // `from N`: the committed figure, when the count on screen is not it. The stepper prints the new count, so the

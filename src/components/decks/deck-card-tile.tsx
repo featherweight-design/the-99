@@ -159,9 +159,9 @@ export function DeckCardTile({
   const stepperOn = isBasicLand(card.typeLine) && card.commander !== true && !lockMode;
   const [settledLine, setSettledLine] = useState("");
   const basic = useBasicCount({
+    deckId,
     oracleId: card.oracleId,
     quantity: card.quantity,
-    save: (n) => setBasicQuantity(deckId, card.oracleId, n),
     onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(printedFaceName(card), n)),
   });
   // `from N` takes the draft figure's place: the committed count, while the count on screen is not it.

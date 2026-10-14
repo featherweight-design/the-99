@@ -28,6 +28,7 @@ import type { Bracket } from "../../lib/bracket/types";
 import { cardFactName } from "../../lib/copy/card-mark";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
+import { useFlushBasicCounts } from "./basic-counts";
 import { type CardSearchInput, useCardSearch } from "./use-card-search";
 import { type DeckComboMap, useDeckComboMap } from "./use-deck-combo-map";
 import { useDeckMutation } from "./use-deck-mutation";
@@ -407,6 +408,9 @@ function QuickAddRow({
 }: QuickAddRowProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
+  // An add is ONE MORE copy; the basics stepper's pending save is an absolute count. Settle that first, or
+  // the stepper's figure lands after the add and erases it.
+  const flushBasicCounts = useFlushBasicCounts();
   const ownership = result.owned
     ? addPanelCopy.quickAdd.rowOwned(result.ownedQty)
     : addPanelCopy.quickAdd.rowNotOwned;
@@ -437,6 +441,7 @@ function QuickAddRow({
     const added = beginAdd();
     run(
       async () => {
+        if (isBasicLand(result.typeLine)) await flushBasicCounts();
         const outcome = await addCardToDeck(deckId, result.oracleId);
         if (!outcome || outcome.ok) added();
         return outcome;
@@ -466,7 +471,7 @@ function QuickAddRow({
           imageUri: result.imageUri,
         }),
     );
-  }, [applied, run, deckId, result, addOptimisticCard, beginAdd]);
+  }, [applied, run, deckId, result, addOptimisticCard, beginAdd, flushBasicCounts]);
 
   // The bar's Enter handler adds through whichever row is active. Layout rather
   // than passive: a passive effect runs after paint, leaving a window in which

@@ -22,15 +22,17 @@ import { SwapToolsProvider } from "../../lib/swaps/context";
 
 const TEST_MIX = recommendedMix(null, false);
 
-const { setCardLocked, clearAutoCards, addCardToDeck } = vi.hoisted(() => ({
+const { setCardLocked, clearAutoCards, addCardToDeck, setBasicQuantity } = vi.hoisted(() => ({
   setCardLocked: vi.fn(),
   clearAutoCards: vi.fn(),
   addCardToDeck: vi.fn(),
+  setBasicQuantity: vi.fn(),
 }));
 vi.mock("../../app/decks/actions", () => ({
   setCardLocked,
   clearAutoCards,
   addCardToDeck,
+  setBasicQuantity,
   restoreAutoCards: vi.fn(),
   keepAllAutoCards: vi.fn(),
   keepAutoCard: vi.fn(),
@@ -897,3 +899,29 @@ describe("a lock write that settles on another deck", () => {
     expect(announce).not.toHaveBeenCalled();
   });
 });
+
+// Clear auto and the basics stepper (round 2 of #1752): a fill-added basic the player has just re-counted is
+// claimed by the stepper's save, which clears `auto`. The sweep must wait for that save, or it deletes the land.
+describe("Clear auto waits for the basics stepper's settling save", () => {
+  it("saves the stepped basic before the sweep runs", async () => {
+    const order: string[] = [];
+    setBasicQuantity.mockImplementation(async (_d: string, _o: string, n: number) => {
+      order.push(`save ${n}`);
+      return { ok: true, quantity: n, changed: true };
+    });
+    clearAutoCards.mockImplementation(async () => {
+      order.push("sweep");
+      return [];
+    });
+    const island = mk("island", "Island", { typeLine: "Basic Land — Island", cardTypeGroup: "Lands", role: "land", quantity: 6, auto: true } as Partial<DeckDetailCard>);
+    const signet = mk("arcane-signet", "Arcane Signet", { auto: true });
+    renderShell([island, signet], false);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.basicStepper.moreAria("Island", 7) }));
+    });
+    const clear = screen.getAllByRole("button").find((b) => /Clear all/.test(b.getAttribute("aria-label") ?? ""))!;
+    await act(async () => clear.click());
+    expect(order).toEqual(["save 7", "sweep"]);
+  });
+});
+
