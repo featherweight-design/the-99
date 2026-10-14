@@ -33,6 +33,7 @@ import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { HelpMeChooseDoor } from "../intake/help-me-choose-door";
 import { PreconDoor } from "./precons/precon-door";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const copy = deckImportCopy.commander;
 
@@ -571,7 +572,7 @@ export function CreatePicker(props: CreatePickerProps) {
             </p>
           ) : (
             <ul className="flex flex-col gap-[10px] md:gap-[11px]">
-              {visible.map((c) => {
+              <ArrivalOrder>{visible.map((c) => {
                 const isSelected = pairing
                   ? partnerId === c.oracleId
                   : selectedId === c.oracleId;
@@ -647,7 +648,7 @@ export function CreatePicker(props: CreatePickerProps) {
                     </button>
                   </li>
                 );
-              })}
+              })}</ArrivalOrder>
             </ul>
           )}
 

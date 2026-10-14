@@ -74,8 +74,12 @@ try {
       // (`?commander=<oracle id>`) draws the converted card face.
       const create = COMMANDER ? `/decks/new?commander=${COMMANDER}` : null;
       if (!create && width === 1300) console.log("  skip  create pre-filled — set PROBE_COMMANDER_ORACLE_ID to load it");
-      for (const path of [deck, "/decks", "/commanders", detail, "/decks/new", create, "/decks/precons"]) {
-        if (path === create && !create) continue;
+      // Pages expected to paint background art; `/decks/precons` draws its art as <img>s and may read none.
+      const routes = [
+        [deck, true], ["/decks", true], ["/commanders", true], [detail, true], ["/decks/new", true],
+        ...(create ? [[create, true]] : []), ["/decks/precons", false],
+      ];
+      for (const [path, paints] of routes) {
         if (!path) { report(`${width} page`, false, "no deck or commander link to follow"); continue; }
         await page.goto(`${BASE}${path}`, { waitUntil: "load" });
         // Scroll the page through, so art below the first screen is asked for, then let it settle.
@@ -88,6 +92,8 @@ try {
         const unfaded = art.filter((a) => a.mark === null);
         const stuck = art.filter((a) => a.mark === "pending");
         const label = `${width} ${path.startsWith("/commanders/") ? "/commanders/[slug]" : path.replace(/\/decks\/[0-9a-f-]{36}$/, "/decks/[id]").replace(/commander=.*$/, "commander=[slug]")}`;
+        // An error page or a loading screen paints no art and would pass the two checks below vacuously.
+        if (paints) report(`${label}: draws background art at all`, art.length > 0, `${art.length} painted`);
         report(`${label}: every piece of background art fades`, unfaded.length === 0,
           `${art.length} painted, ${unfaded.length} unfaded${unfaded.length ? `: ${JSON.stringify(unfaded.slice(0, 3))}` : ""}`);
         report(`${label}: none left pending`, stuck.length === 0, `${stuck.length} pending after settling`);

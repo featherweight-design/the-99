@@ -35,6 +35,7 @@ import { MutationError } from "./mutation-error";
 import { ModalChrome } from "./receipt-modal";
 import { landOnReceipt } from "./swap-receipt";
 import { ArtLayer } from "../ui/art-layer";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const copy = swapToolsCopy.sheet;
 
@@ -736,7 +737,7 @@ export function StandInsSheet({
           </p>
         ) : null}
 
-        {model?.groups.map((group) => (
+        <ArrivalOrder>{model?.groups.map((group) => (
           <StandInGroup
             key={group.heading}
             group={group}
@@ -759,7 +760,7 @@ export function StandInsSheet({
               )
             )}
           </StandInGroup>
-        ))}
+        ))}</ArrivalOrder>
 
         {model?.foot && provenance ? (
           <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>{copy.foot(provenance.when)}</p>

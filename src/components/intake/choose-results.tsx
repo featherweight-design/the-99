@@ -20,6 +20,7 @@ import { useReadPhase, useReportPool } from "./read-panel";
 import { NarrowNote } from "./narrow-note";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { StallWatch } from "../shell/nav-stall";
+import { ArrivalOrder } from "../ui/arrival-queue";
 
 const BEST_FITS = 3;
 
@@ -173,6 +174,8 @@ export function ChooseResults({
 
       {narrow && <NarrowNote count={rows.length} options={options} changeHref={changeHref} />}
 
+      {/* One reading order across the best fits and the rest (`ArrivalOrder`). */}
+      <ArrivalOrder>
       {best.length > 0 && (
         <section aria-labelledby="best-fits" className="flex flex-col gap-[10px]">
           <h3 id="best-fits" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--accent)]">
@@ -190,6 +193,7 @@ export function ChooseResults({
       <ol data-dim={dim || undefined} className={`m-0 p-0 list-none flex flex-col gap-[10px] ${dim ? "opacity-[0.45]" : ""}`}>
         {rest.map((r, i) => (i === restAt ? [<RestDivider key="rest-divider" owned={owned} />, row(r)] : row(r)))}
       </ol>
+      </ArrivalOrder>
 
       {hasMore && (
         <div className="flex flex-wrap items-center justify-center gap-[14px]">
