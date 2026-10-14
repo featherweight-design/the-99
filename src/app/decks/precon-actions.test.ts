@@ -7,7 +7,11 @@ vi.mock("../../lib/switches/request", async () => {
   return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
 });
 
-const state = vi.hoisted(() => ({ selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[] }));
+const state = vi.hoisted(() => ({
+  selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
+  enabled: true, addedCopy: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
+  invalidated: [] as string[], warmed: [] as string[],
+}));
 
 vi.mock("../../db", () => {
   const chain = () => {
@@ -22,7 +26,14 @@ vi.mock("../../db", () => {
   return { db: { select: () => chain(), transaction: (fn: (tx: unknown) => unknown) => fn({}) } };
 });
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => true }));
+vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => state.enabled }));
+vi.mock("../../lib/precons/add", () => ({
+  addPreconForUser: async (...args: unknown[]) => { state.addCalls.push(args); return state.addResult; },
+}));
+vi.mock("../../lib/collection/added-copy-flag", () => ({ addedCopyEnabled: () => state.addedCopy }));
+vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: (id: string) => state.invalidated.push(id) }));
+vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async (id: string) => { state.warmed.push(id); } }));
+vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { state.after.push(fn); } }));
 vi.mock("../../lib/decks/revalidate-claims", () => ({ revalidateClaims: (id: string) => state.revalidated.push(id) }));
 vi.mock("../../lib/decks/write-imported-deck", () => ({
   writeImportedDeck: async (_tx: unknown, d: unknown) => { state.written.push(d); return "deck-1"; },
@@ -32,13 +43,16 @@ vi.mock("next/navigation", () => ({ redirect: (u: string) => { throw new Error(`
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { preconCards } from "../../db/schema";
-import { createDeckFromPrecon } from "./precon-actions";
+import { addPreconToCollection, createDeckFromPrecon } from "./precon-actions";
 
 const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}) => ({
   oracleId, name, typeLine: "Legendary Creature — Eldrazi", oracleText: "", manaCost: "{5}", layout: "normal", commanderLegal: true, ...over,
 });
 
-beforeEach(() => { state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; });
+beforeEach(() => {
+  state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = [];
+  state.enabled = true; state.addedCopy = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
+});
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
 
 describe("createDeckFromPrecon", () => {
@@ -88,5 +102,50 @@ describe("createDeckFromPrecon", () => {
     state.selects = [[]];
     await expect(createDeckFromPrecon("Nope", "Name")).rejects.toThrow("precon not found");
     expect(state.written).toEqual([]);
+  });
+});
+
+describe("addPreconToCollection", () => {
+  const ACTION = "00000000-0000-4000-8000-000000000001";
+  const ADDED = { ok: true, entryId: ACTION, cards: 99, copies: 100, foil: 2, placed: [], tokens: { marked: 8, names: [] } };
+  const flush = async () => { for (const fn of state.after) await fn(); };
+
+  it("refuses while precons are off, adding nothing", async () => {
+    state.enabled = false;
+    await expect(addPreconToCollection("MultiverseReforged_FRC", ACTION)).rejects.toThrow("precons are off");
+    expect(state.addCalls).toEqual([]);
+  });
+
+  it("refuses a malformed action id, and answers notFound for a malformed file name, adding nothing", async () => {
+    await expect(addPreconToCollection("MultiverseReforged_FRC", "not-a-uuid")).rejects.toThrow("bad action id");
+    expect(await addPreconToCollection("", ACTION)).toEqual({ ok: false, reason: "notFound" });
+    expect(await addPreconToCollection("x".repeat(201), ACTION)).toEqual({ ok: false, reason: "notFound" });
+    expect(state.addCalls).toEqual([]);
+  });
+
+  it("adds for the signed-in player under the action id, forwarding whether placements are drawn", async () => {
+    state.addResult = ADDED;
+    await addPreconToCollection("MultiverseReforged_FRC", ACTION);
+    state.addedCopy = false;
+    await addPreconToCollection("MultiverseReforged_FRC", ACTION);
+    expect(state.addCalls.map(([user, file, id, , placements]) => [user, file, id, placements])).toEqual([
+      ["user_1", "MultiverseReforged_FRC", ACTION, true],
+      ["user_1", "MultiverseReforged_FRC", ACTION, false],
+    ]);
+  });
+
+  it("invalidates the collection's readers and warms the scores after a success, a retry's included", async () => {
+    state.addResult = ADDED;
+    expect(await addPreconToCollection("MultiverseReforged_FRC", ACTION)).toEqual(ADDED);
+    expect(state.invalidated).toEqual([]);
+    await flush();
+    expect(state.invalidated).toEqual(["user_1"]);
+    expect(state.warmed).toEqual(["user_1"]);
+  });
+
+  it("touches no reader when the add fails", async () => {
+    state.addResult = { ok: false, reason: "failed" };
+    expect(await addPreconToCollection("MultiverseReforged_FRC", ACTION)).toEqual({ ok: false, reason: "failed" });
+    expect(state.after).toEqual([]);
   });
 });
