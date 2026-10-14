@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Basic lands stepper · keyboard and screen reader</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.t{width:100%;border-collapse:collapse;font-size:12.5px}
+.t th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:#7C8A8C;padding:0 12px 8px 0;border-bottom:1px solid #2E3340}
+.t td{vertical-align:top;padding:9px 12px 9px 0;border-bottom:1px solid #1A1F2B;color:#B3C0C2;line-height:1.5}
+.m{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6D2D3}
+.sec{display:flex;flex-direction:column;gap:10px}
+</style>
+</helmet>
+<div style="width:900px;min-height:1120px;box-sizing:border-box;padding:36px 40px 48px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:30px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="lbl">Keyboard and screen reader · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:24px">Same in list view and Card view</h2>
+  </div>
+
+  <div class="sec">
+    <span class="lbl">Tab order on a basic row or tile</span>
+    <table class="t">
+      <tr><th style="width:200px">Stop</th><th>Behaves</th></tr>
+      <tr><td class="m">Card name</td><td>Opens card details, as shipped.</td></tr>
+      <tr><td class="m">− (or ✕ at 1)</td><td>A real button. Space or Enter takes one copy off. At 1 it is the shipped ✕ and removes the row; focus then goes to the receipt's <span class="m">Undo</span>, as #185 does.</td></tr>
+      <tr><td class="m">Count field</td><td>Numeric input. Enter and blur commit; Escape restores the saved figure. Arrow Up and Down step by one, the same as + and −. Accepts 0 to 99; 0 removes the row, anything else outside restores.</td></tr>
+      <tr><td class="m">+</td><td>A real button. Space or Enter adds one copy. Never disabled.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec">
+    <span class="lbl">Labels (placeholders for /copy-review)</span>
+    <table class="t">
+      <tr><th style="width:200px">Element</th><th>Accessible name</th></tr>
+      <tr><td class="m">−</td><td class="m">Take one {name} out, {n − 1} left</td></tr>
+      <tr><td class="m">✕ at 1</td><td class="m">Remove {name} <span style="color:#7C8A8C">(shipped removeAria)</span></td></tr>
+      <tr><td class="m">Count field</td><td class="m">{name}s in deck <span style="color:#7C8A8C">(value is the count)</span></td></tr>
+      <tr><td class="m">+</td><td class="m">Add one {name}, {n + 1} in deck</td></tr>
+      <tr><td class="m">Changed row</td><td>The name's description keeps the shipped recounted string, <span class="m">addMarkRecountedA11y(from, to)</span> or <span class="m">cutMarkRecountedA11y(from, to)</span>. <span class="m">from 6</span> is <span class="m">aria-hidden</span>.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec">
+    <span class="lbl">Announcements</span>
+    <table class="t">
+      <tr><th style="width:200px">When</th><th>Polite live region, once per settle</th></tr>
+      <tr><td>Presses settle</td><td class="m">Island, 8 in the deck.</td></tr>
+      <tr><td>Field commits</td><td class="m">Island, 20 in the deck.</td></tr>
+      <tr><td>Each press</td><td>Nothing. The button's own name already says the result, so a fast run of presses is not read out one by one.</td></tr>
+      <tr><td>Refused</td><td>The shipped <span class="m">role="alert"</span> line: <span class="m">We couldn’t change that. The deck is unchanged.</span></td></tr>
+      <tr><td>Removed at 1</td><td>#185's shipped announcement.</td></tr>
+      <tr><td>Goes over 99</td><td>The shipped over announcement, unchanged.</td></tr>
+    </table>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":1120}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

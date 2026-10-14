@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Basic lands stepper · list view · 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.cap{margin:0;font-size:12px;line-height:1.55;color:#95A4A6}
+.grp{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C;padding:0 2px 2px}
+.row{display:flex;align-items:center;gap:9px;background:#181920;border-radius:7px;box-sizing:border-box;min-height:44px;padding:0 4px 0 8px}
+.dot{flex:none;width:7px;height:7px;border-radius:50%;background:#6FA368}
+.nm{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#C6D2D3;font-size:12.5px}
+.from{flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C}
+.x{flex:none;width:44px;height:44px;background:transparent;border:0;padding:0;color:#424755;font-size:13px}
+.stp{flex:none;display:inline-flex;align-items:center;box-sizing:border-box;height:44px}
+.stp button{width:44px;height:44px;background:transparent;border:0;padding:0;color:#7C8A8C;font-family:'IBM Plex Mono',monospace;font-size:15px;border-radius:6px}
+.stp input{width:24px;height:44px;background:transparent;border:0;padding:0;text-align:center;color:#B3C0C2;font-family:'IBM Plex Mono',monospace;font-size:16px;font-variant-numeric:tabular-nums}
+.stp[style*="5C86C9"] input{box-shadow:inset 0 -2px 0 #5C86C9;color:#C6D2D3}
+.ring{outline:2px solid #5C86C9;outline-offset:-6px}
+input.ring{outline:0;box-shadow:inset 0 -2px 0 #5C86C9}
+.err{margin:6px 0 0;font-size:11px;line-height:1.45;color:#E0913C}
+.st{display:flex;flex-direction:column;gap:8px}
+.list{display:flex;flex-direction:column;gap:4px}
+</style>
+</helmet>
+<div style="width:390px;min-height:1720px;box-sizing:border-box;padding:28px 16px 40px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:30px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="lbl">List view · 390 · R2</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:22px">The Island row, every state</h2>
+  </div>
+
+  <div class="st">
+    <span class="lbl">1 · Idle, 6 Islands</span>
+    <div class="list">
+      <div class="grp">Lands · 36</div>
+      <div class="row"><span class="dot"></span><span class="nm">Command Tower</span><button class="x" aria-label="Remove Command Tower">✕</button></div>
+      <div class="row"><span class="dot"></span><span class="nm">Island</span><span class="stp"><button aria-label="Take one Island out, 5 left">−</button><input aria-label="Islands in deck" value="6" inputmode="numeric"><button aria-label="Add one Island, 7 in deck">+</button></span></div>
+      <div class="row"><span class="dot"></span><span class="nm">Mountain</span><span class="stp"><button aria-label="Take one Mountain out, 8 left">−</button><input aria-label="Mountains in deck" value="9" inputmode="numeric"><button aria-label="Add one Mountain, 10 in deck">+</button></span></div>
+    </div>
+    <p class="cap">The stepper replaces the ✕ and the ×N on basic rows only. Command Tower keeps its ✕.</p>
+  </div>
+
+  <div class="st">
+    <span class="lbl">2 · Pending save, + pressed twice</span>
+    <div class="list">
+      <div class="row" style="box-shadow:inset 2px 0 0 0 #5C86C9"><span class="dot"></span><span class="nm" style="flex:0 1 auto">Island</span><span class="from" style="flex:1 1 auto">from 6</span><span class="stp" aria-busy="true"><button aria-label="Take one Island out, 7 left">−</button><input aria-label="Islands in deck" value="8" inputmode="numeric"><button aria-label="Add one Island, 9 in deck">+</button></span></div>
+    </div>
+    <p class="cap">The count moves on each press. One write goes when the presses settle, carrying 8. Nothing is disabled and nothing spins: a third press while the write is out is just a new final count. The accent edge and <span style="font-family:'IBM Plex Mono',monospace">from 6</span> are the draft's change marker (call 5).</p>
+  </div>
+
+  <div class="st">
+    <span class="lbl">3 · Refused save</span>
+    <div class="list">
+      <div>
+        <div class="row"><span class="dot"></span><span class="nm">Island</span><span class="stp"><button aria-label="Take one Island out, 5 left">−</button><input aria-label="Islands in deck" value="6" inputmode="numeric"><button aria-label="Add one Island, 7 in deck">+</button></span></div>
+        <p class="err" role="alert">We couldn’t change that. The deck is unchanged.</p>
+      </div>
+    </div>
+    <p class="cap">The count returns to the last saved figure (6) and the marker goes with it. The shipped MutationError line sits under the row and clears on the next press.</p>
+  </div>
+
+  <div class="st">
+    <span class="lbl">4 · At 1</span>
+    <div class="list">
+      <div class="row"><span class="dot"></span><span class="nm">Island</span><span class="stp"><button aria-label="Remove Island" style="font-size:13px;color:#95A4A6">✕</button><input aria-label="Islands in deck" value="1" inputmode="numeric"><button aria-label="Add one Island, 2 in deck">+</button></span></div>
+    </div>
+    <p class="cap">The − becomes the shipped ✕ with its shipped label, <span style="font-family:'IBM Plex Mono',monospace">Remove Island</span>. Rare in practice: no basic row on staging sits at 1.</p>
+  </div>
+
+  <div class="st">
+    <span class="lbl">5 · Removed, the moment after ✕ at 1</span>
+    <div class="list">
+      <div class="row" style="background:#16171D;border:1px dashed #2E3340"><span style="flex:none;width:7px;height:7px"></span><span class="nm" style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#5F6D6E">Island removed</span><button aria-label="Undo removing Island" style="flex:none;height:44px;padding:0 12px;background:transparent;border:0;color:#5C86C9;font-size:13px;font-weight:600">Undo</button></div>
+    </div>
+    <p class="cap">#185's receipt, unchanged. Undo puts the copy back. There is no row at 0.</p>
+  </div>
+
+  <div class="st">
+    <span class="lbl">6 · Typing a count</span>
+    <div class="list">
+      <div class="row" style="box-shadow:inset 2px 0 0 0 #5C86C9"><span class="dot"></span><span class="nm" style="flex:0 1 auto">Island</span><span class="from" style="flex:1 1 auto">from 35</span><span class="stp" style="border-color:#5C86C9"><button aria-label="Take one Island out, 19 left">−</button><input aria-label="Islands in deck" value="20" inputmode="numeric" class="ring"><button aria-label="Add one Island, 21 in deck">+</button></span></div>
+    </div>
+    <p class="cap">The 35-Island deck, cut to 20. The field commits on Enter and on blur, Escape restores 35. A typed 0 is the ✕: the row leaves into the receipt. The field takes 0 to 99; anything else restores the old value.</p>
+  </div>
+
+  <div class="st">
+    <span class="lbl">7 · Focus</span>
+    <div class="list">
+      <div class="row"><span class="dot"></span><span class="nm">Island</span><span class="stp"><button aria-label="Take one Island out, 5 left" class="ring">−</button><input aria-label="Islands in deck" value="6" inputmode="numeric"><button aria-label="Add one Island, 7 in deck">+</button></span></div>
+      <div class="row"><span class="dot"></span><span class="nm">Island</span><span class="stp"><button aria-label="Take one Island out, 5 left">−</button><input aria-label="Islands in deck" value="6" inputmode="numeric"><button aria-label="Add one Island, 7 in deck" class="ring">+</button></span></div>
+    </div>
+    <p class="cap">Each button rings itself, as the shipped stepper's do. The field's focus underlines the count (state 6).</p>
+  </div>
+
+  <div class="st">
+    <span class="lbl">8 · At the size limit</span>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid #1A1F2B;border-radius:10px;background:#1E1F26">
+      <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:13px"><span>99</span><span style="color:#7C8A8C">/ 99</span></div>
+      <div class="row"><span class="dot"></span><span class="nm">Island</span><span class="stp"><button aria-label="Take one Island out, 5 left">−</button><input aria-label="Islands in deck" value="6" inputmode="numeric"><button aria-label="Add one Island, 7 in deck" class="ring">+</button></span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid #1A1F2B;border-radius:10px;background:#1E1F26">
+      <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:13px"><span>100</span><span style="color:#7C8A8C">/ 99</span><span style="color:#E0913C">+1</span></div>
+      <div style="font-size:12px;color:#B3C0C2">One over the ninety-nine. Cut one and it is legal.</div>
+      <div class="row" style="box-shadow:inset 2px 0 0 0 #5C86C9"><span class="dot"></span><span class="nm" style="flex:0 1 auto">Island</span><span class="from" style="flex:1 1 auto">from 6</span><span class="stp"><button aria-label="Take one Island out, 6 left">−</button><input aria-label="Islands in deck" value="7" inputmode="numeric"><button aria-label="Add one Island, 8 in deck">+</button></span></div>
+    </div>
+    <p class="cap">At 99, + still works (no cap, by lock). One press over and the shipped over figure and trim line take it from there. The header figures are the shipped ones, drawn schematically.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1720}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
