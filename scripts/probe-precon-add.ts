@@ -47,6 +47,8 @@ const USER = `probe-precon-add-${Date.now()}`;
 // A script has no signed-in reader: it decides switches from the environment, saying so.
 const ENV = process.env;
 let failures = 0;
+// Set once the branch guard passes: cleanup writes, so it runs only against the branch the guard proved.
+let guarded = false;
 
 function check(label: string, actual: unknown, expected: unknown): boolean {
   const ok = JSON.stringify(actual) === JSON.stringify(expected);
@@ -80,6 +82,7 @@ async function run() {
     throw new Error(`refusing to run against ${branch}: this probe writes a collection. Name the scratch branch DATABASE_URL reports as PROBE_DB_BRANCH.`);
   }
   console.log(`branch ${branch}`);
+  guarded = true;
 
   // d's setup: the Soldier token already held by hand.
   const [soldier] = await rows<{ id: string }>(sql`
@@ -112,7 +115,14 @@ async function run() {
 
   const retry = await addPreconForUser(USER, FILE, first, ENV, true);
   check("b · a retry answers the same entry", retry.ok && retry.entryId, first);
-  check("b · and names the tokens the entry marked", retry.ok && retry.tokens.marked, 8);
+  check("b · and names the tokens the entry marked", retry.ok && [...retry.tokens.names].sort(), [...a.tokens.names].sort());
+  check("b · eight of them", retry.ok && retry.tokens.marked, 8);
+  const otherId = randomUUID();
+  await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: (await rows<{ id: string }>(sql`
+    select oracle_id::text as id from precon_cards where file_name = ${FILE} limit 1`))[0].id, setCode: "", condition: null, quantity: 1 }] }, { id: otherId, env: ENV });
+  const reused = await addPreconForUser(USER, FILE, otherId, ENV, false);
+  check("b · an id another add already used is refused, not taken as this precon's", reused.ok, false);
+  await revert(otherId);
   check("b · and writes nothing more", await copies(), { total: 100, foil: 2 });
 
   check("c · the add is read as added", (await preconAddedOn(USER, FILE)) !== null, true);
@@ -136,7 +146,7 @@ async function run() {
 run()
   .catch((err) => { failures += 1; console.error(err); })
   .finally(async () => {
-    await purgeAccount(USER).catch((err) => { failures += 1; console.error("purge failed", err); });
+    if (guarded) await purgeAccount(USER).catch((err) => { failures += 1; console.error("purge failed", err); });
     await pool.end();
     console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} failure(s).`);
     process.exit(failures === 0 ? 0 : 1);

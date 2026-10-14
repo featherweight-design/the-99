@@ -9,7 +9,7 @@
  */
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
-import { preconCards, precons, preconTokens, printings, tokenOwnership, tokenPrintings, tokens } from "../../db/schema";
+import { collectionHistory, preconCards, precons, preconTokens, printings, tokenOwnership, tokenPrintings, tokens } from "../../db/schema";
 import { applyCollectionChange, type ChangeResult } from "../collection/write";
 import { placedOf, type AddedPlacement } from "../collection/add-placements";
 import type { PendingItem } from "../collection/pending";
@@ -137,6 +137,11 @@ export async function addPreconForUser(
     };
   }
   if (result.status === "alreadyApplied") {
+    // The ledger knows a retry by player and kind alone, so an id reused from another add (a card's,
+    // or another precon's) lands here too: only an entry this precon wrote is this action's success.
+    const [entry] = await db.select({ source: collectionHistory.source }).from(collectionHistory)
+      .where(and(eq(collectionHistory.id, result.entry.id), eq(collectionHistory.userId, userId)));
+    if (entry?.source !== preconSource(fileName)) return { ok: false, reason: "failed" };
     const held = await db.select({ id: tokenOwnership.tokenOracleId }).from(tokenOwnership)
       .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.entryId, result.entry.id)));
     return {
