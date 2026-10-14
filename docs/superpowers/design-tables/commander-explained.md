@@ -623,7 +623,7 @@ Section-level, one value for four panels, local state, not URL-mirrored.
 
 | State | Triggering condition | Component rendered | Key props required |
 |---|---|---|---|
-| Most played (default) | initial mount | selected; order is the incoming order (inclusion desc, nulls last, then name — `score.ts:144`); sub-line "Highest EDHREC inclusion first. The order that ships." | — |
+| Most played (default) | initial mount | selected; order is the incoming order (inclusion desc, nulls last, then name — `score.ts:144`); sub-line "Highest EDHREC inclusion first." | — |
 | Most played, no figures | `showFigures === false` on the commander | same selection, sub-line swaps to "No EDHREC figures on this commander. The list is in collection order."; **not disabled** | `showFigures` |
 | Availability, selectable | always — the option has shipped since #131 | option present; order ranks **four** buckets, free → soft → hard → over, stable within each; sub-line "Free to use first, then wanted by a draft, then in use, then over-committed." | `availability` per card |
 | Availability, a card with no claim row | `availability` is null | ranks as `free`. Null is NO ROW — an unowned card, a basic, or a read that could not reach — and on a panel built from the owned pool that is nothing to report | — |
