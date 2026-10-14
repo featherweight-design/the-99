@@ -166,7 +166,7 @@ the deck's makers from `deck_cards` UNION the commanders (as `list_claims` does,
 owned state from the pure rule, the pictured printing and price from `tokenPrice`, joins, and oracle text only for
 a colliding pair. Components: `TokensGroup` at the foot of Your deck under All (`DecklistGroupHeader` with its note),
 the T0 band, `TokenRow` in every state (X1 to X4, X1m), the makers fold with hover preview and click-through and the
-scroll box past 9 / 5 names, and the join / `I have one` controls wired to actions. **Card view stays rows (T7);
+scroll box past 9 / 5 names, and the join / `I have one` controls wired to actions. **Card view stays rows (T7: superseded 2026-10-14, see the design table: the tokens are tiles in Card view and the group folds);
 Stats and `/decks` and Home are unchanged.** `check:collection-routes` and the `COLLECTION_ROUTES` list gain the
 deck routes if they were not already covered; `check:list-cache` must stay green (Home and `/decks` never read the
 new tables).
@@ -245,7 +245,7 @@ there, and one upload on that account so the first screen is not "not known".
 | Route | State |
 |---|---|
 | `/decks/[id]` Your deck, All | Aang read, Aang unknown (before an upload), Omnath (14), Wizards (`Copy` only), a deck with a failed read |
-| `/decks/[id]` Your deck, Card view | the group stays rows (T7) |
+| `/decks/[id]` Your deck, Card view | tiles (T7 superseded 2026-10-14), and the group folded |
 | `/decks/[id]` Shopping | Aang S1 (complete deck, tokens only), Omnath S2 (67 cards + tokens, link above the fold) |
 | Card details, opened from a deck | D1 line, a card that makes nothing (D4), a Food-maker joined (In Shopping) |
 | Card details, opened from `/collection` | no line (D2) |

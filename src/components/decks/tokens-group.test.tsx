@@ -589,4 +589,15 @@ describe("the view", () => {
     expect(list.className).toContain("md:max-h-[158px]");
     expect(list.parentElement!.className).not.toContain("md:ml-[54px]");
   });
+
+  it("draws the rules text that tells colliding tokens apart, as a row does", () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([
+      token({ oracleId: "g1", name: "Goblin", oracleText: "Haste" }),
+      token({ oracleId: "g2", name: "Goblin", oracleText: "When this dies, draw a card." }),
+      token({ oracleId: "f", name: "Food" }),
+    ]));
+    expect(screen.getByText("Haste")).toBeTruthy();
+    expect(screen.getByText("When this dies, draw a card.")).toBeTruthy();
+  });
 });

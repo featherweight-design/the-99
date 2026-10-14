@@ -92,6 +92,10 @@ export function TokenTile({
         />
       </div>
 
+      {/* What tells this token from another of its name, colors and P/T in the deck (only attached then), as a row draws it. */}
+      {token.oracleText ? (
+        <p className="m-0 px-[2px] pt-[6px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{token.oracleText}</p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-x-[10px] px-[2px] pt-[4px]">
         <TokenControls deckId={deckId} token={token} press={press} pending={pending} />
       </div>
