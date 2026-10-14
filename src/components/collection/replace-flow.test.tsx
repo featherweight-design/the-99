@@ -362,14 +362,14 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("a failed write keeps the review, says nothing changed, and Try again confirms again", async () => {
+  it("a failed write keeps the review, says the collection is unchanged, and Try again confirms again", async () => {
     serve(data());
     confirmUpload.mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce(undefined);
     const confirm = await reachReview();
     await act(async () => fireEvent.click(confirm));
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toMatch(/That didn’t go through/);
-    expect(alert.textContent).toMatch(/Nothing changed/);
+    expect(alert.textContent).toMatch(/We couldn’t import that/);
+    expect(alert.textContent).toMatch(/Your collection is unchanged/);
     expect(screen.getByRole("button", { name: "Replace collection" })).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
     expect(confirmUpload).toHaveBeenCalledTimes(2);

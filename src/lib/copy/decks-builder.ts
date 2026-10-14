@@ -151,7 +151,7 @@ export const addPanelCopy = {
     // screen reader has none of it. No em dash either — this surface's copy
     // bans one, and Design's draft used one to join the clauses.
     addUnownedAria: (name: string) =>
-      `Add ${name} to the deck, and to your Shopping list, because you don’t own it`,
+      `Add ${name} to the deck, and to your shopping list, because you don’t own it`,
     inDeck: "✓ In deck",
     inDeckAria: (name: string) => `${name} is already in this deck`,
     // The art and the name are both CardDetailTrigger; the modal owns its own
@@ -389,7 +389,7 @@ export const addPanelCopy = {
     selectedLabel: "Selected",
     submit: "Create deck →",
     submitPending: "Creating…",
-    failed: "We couldn’t create that deck. Try again.",
+    failed: "We couldn’t create that. Your decks are unchanged.",
   },
 } as const;
 
@@ -545,5 +545,5 @@ export const renameCopy = {
   cancel: "Cancel",
   errorLength: `A deck name is 1–${DECK_NAME_MAX} characters.`,
   errorControl: "That name can’t contain control characters.",
-  errorFailed: "That didn’t save. Try again.",
+  errorFailed: "We couldn’t save that. The deck name is unchanged.",
 } as const;

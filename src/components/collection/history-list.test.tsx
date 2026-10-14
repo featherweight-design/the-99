@@ -147,7 +147,7 @@ describe("HistoryList", () => {
     expect(link.getAttribute("href")).toBe("#entry-rv");
     // The composed line says "Reverted" once: the status, a separator, then the link.
     expect(link.parentElement?.textContent).toBe("Reverted · by the revert at 15:30");
-    expect(screen.getByText("Undid “Sol Ring”")).toBeTruthy();
+    expect(screen.getByText("Reverted “Sol Ring”")).toBeTruthy();
   });
 
   it("tags a Shopping purchase From Shopping and links its deck by the name it has now (§D1)", () => {
@@ -243,7 +243,7 @@ describe("HistoryList", () => {
       entry({ id: "e1", kind: "edit", source: "shopping:d1", revertedBy: "rv", revertedByVisible: true, shoppingDeck: { id: "d1", name: "Goblins" } }),
     ]);
     expect(screen.getByRole("link", { name: "by the revert at 15:30" }).getAttribute("href")).toBe("#entry-rv");
-    expect(screen.getByText("Undid “Sol Ring”")).toBeTruthy();
+    expect(screen.getByText("Reverted “Sol Ring”")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Goblins" })).toBeTruthy();
     // Reverted, so no Revert control of its own; the revert entry keeps one.
     expect(screen.queryByRole("button", { name: "Revert Sol Ring" })).toBeNull();
@@ -262,7 +262,7 @@ describe("HistoryList", () => {
 
   it("names a revert whose original has aged out, and draws no link to it", () => {
     draw([entry({ id: "rv", kind: "revert", revertsId: "old", revertsVisible: false, firstName: null })]);
-    expect(screen.getByText("Undid a change from before 1 Oct")).toBeTruthy();
+    expect(screen.getByText("Reverted a change from before 1 Oct")).toBeTruthy();
     expect(screen.getByText("That change has aged out of history.")).toBeTruthy();
   });
 

@@ -89,7 +89,7 @@ export function CreatePreFilled({
         // See create-picker.tsx: the action's closing `redirect()` throws, and
         // without this the success path paints a failure on its way out.
         unstable_rethrow(err);
-        setError("We couldn’t create that deck. Try again.");
+        setError("We couldn’t create that. Your decks are unchanged.");
       }
     });
   }

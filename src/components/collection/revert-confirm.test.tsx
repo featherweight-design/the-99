@@ -122,7 +122,7 @@ describe("RevertConfirm", () => {
   it("offers only Close when there is nothing left to undo", async () => {
     preview.mockResolvedValue({ ...matches, differs: true, rows: [] });
     open();
-    expect(await screen.findByText(/Nothing left to undo/)).toBeTruthy();
+    expect(await screen.findByText(/Nothing left to revert/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Revert/ })).toBeNull();
     expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
   });
@@ -244,7 +244,7 @@ describe("RevertConfirm", () => {
   it("says an already-undone change is gone, with nothing to confirm", async () => {
     preview.mockResolvedValue({ alreadyReverted: true });
     open();
-    expect((await screen.findByRole("alert")).textContent).toMatch(/already been undone/);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/already been reverted/);
     expect(screen.queryByRole("button", { name: "Revert" })).toBeNull();
   });
 });
