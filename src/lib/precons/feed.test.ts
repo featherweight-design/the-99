@@ -35,9 +35,9 @@ describe("indexKey", () => {
 
 describe("deriveDeck", () => {
   const card = (count: number, oracle: string | undefined, printing: string | undefined) =>
-    ({ count, name: "Name is never read", identifiers: { scryfallOracleId: oracle, scryfallId: printing } });
+    ({ count, isFoil: false, name: "Name is never read", identifiers: { scryfallOracleId: oracle, scryfallId: printing } });
 
-  it("keeps the commander and main board, by id, and drops the rest", () => {
+  it("keeps the commander, the main board and the tokens, by id, and drops the rest", () => {
     const d = deriveDeck(entry("A"), {
       data: {
         commander: [card(1, "o1", "p1")],
@@ -48,14 +48,31 @@ describe("deriveDeck", () => {
       },
     });
     expect(d.cards).toEqual([
-      { oracleId: "o1", scryfallId: "p1", count: 1, commander: true },
-      { oracleId: "o2", scryfallId: "p2", count: 98, commander: false },
-      { oracleId: null, scryfallId: "p3", count: 1, commander: false },
+      { oracleId: "o1", scryfallId: "p1", count: 1, commander: true, foil: false },
+      { oracleId: "o2", scryfallId: "p2", count: 98, commander: false, foil: false },
+      { oracleId: null, scryfallId: "p3", count: 1, commander: false, foil: false },
     ]);
+    expect(d.tokens).toEqual([{ scryfallId: "p8", count: 1 }]);
+  });
+
+  it("keeps MTGJSON's isFoil per card, and reads a file with no tokens as none", () => {
+    const d = deriveDeck(entry("A"), {
+      data: { commander: [{ ...card(1, "o1", "p1"), isFoil: true }], mainBoard: [{ ...card(99, "o2", "p2"), isFoil: false }] },
+    });
+    expect(d.cards.map((c) => c.foil)).toEqual([true, false]);
+    expect(d.tokens).toEqual([]);
   });
 
   it("throws on a deck file without its two boards", () => {
     expect(() => deriveDeck(entry("A"), { data: { mainBoard: [] } })).toThrow(/commander or mainBoard/);
+  });
+
+  it("throws on a card with no boolean isFoil, rather than reading it as non-foil", () => {
+    expect(() => deriveDeck(entry("A"), { data: { commander: [{ count: 1, identifiers: {} }], mainBoard: [] } })).toThrow(/isFoil/);
+  });
+
+  it("throws on a token with no count, rather than inventing one", () => {
+    expect(() => deriveDeck(entry("A"), { data: { commander: [], mainBoard: [], tokens: [{ identifiers: { scryfallId: "t" } }] } })).toThrow(/token entry/);
   });
 
   it("throws on a card with no count", () => {
@@ -66,7 +83,7 @@ describe("deriveDeck", () => {
 describe("canReuse", () => {
   const now = new Date("2026-10-11T09:00:00Z");
   const feed = (over: Partial<PreconFeed> = {}): PreconFeed =>
-    ({ indexKey: "k", fetchedAt: "2026-10-10T09:00:00Z", decks: [{ fileName: "A", name: "A", code: "X", releaseDate: "2026-01-01", cards: [] }], ...over });
+    ({ indexKey: "k", fetchedAt: "2026-10-10T09:00:00Z", decks: [{ fileName: "A", name: "A", code: "X", releaseDate: "2026-01-01", cards: [], tokens: [] }], ...over });
 
   it("reuses a fresh file for the same decks", () => expect(canReuse(feed(), "k", now)).toBe(true));
   it("refetches when the decks moved", () => expect(canReuse(feed(), "other", now)).toBe(false));
@@ -82,14 +99,18 @@ describe("canReuse", () => {
 
 describe("parseFeed", () => {
   it("accepts a derived file and rejects anything else", () => {
-    const ok = { indexKey: "k", fetchedAt: "t", decks: [{ fileName: "A", name: "A", code: "X", releaseDate: "d", cards: [] }] };
+    const ok = { indexKey: "k", fetchedAt: "t", decks: [{ fileName: "A", name: "A", code: "X", releaseDate: "d", cards: [], tokens: [] }] };
     expect(parseFeed(ok)).toBe(ok);
     expect(parseFeed({ ...ok, decks: [{ fileName: "A" }] })).toBeNull();
     const withCards = (cards: unknown[]) => ({ ...ok, decks: [{ ...ok.decks[0], cards }] });
-    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 2, commander: false }]))).not.toBeNull();
-    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 0, commander: false }]))).toBeNull();
-    expect(parseFeed(withCards([{ oracleId: 7, scryfallId: null, count: 1, commander: false }]))).toBeNull();
-    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 1 }]))).toBeNull();
+    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 2, commander: false, foil: false }]))).not.toBeNull();
+    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 0, commander: false, foil: false }]))).toBeNull();
+    expect(parseFeed(withCards([{ oracleId: 7, scryfallId: null, count: 1, commander: false, foil: false }]))).toBeNull();
+    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 1, foil: false }]))).toBeNull();
+    // A file cached before foil and tokens were kept reads as no cache, so the next fetch brings them.
+    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 1, commander: false }]))).toBeNull();
+    expect(parseFeed({ ...ok, decks: [{ fileName: "A", name: "A", code: "X", releaseDate: "d", cards: [] }] })).toBeNull();
+    expect(parseFeed({ ...ok, decks: [{ ...ok.decks[0], tokens: [{ scryfallId: "t", count: 0 }] }] })).toBeNull();
     expect(parseFeed(null)).toBeNull();
   });
 });

@@ -41,9 +41,15 @@ export const PRECON_REUSE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type IndexEntry = { code: string; fileName: string; name: string; releaseDate: string; type: string };
 
-export type FeedCard = { oracleId: string | null; scryfallId: string | null; count: number; commander: boolean };
+/** `foil`: MTGJSON's `isFoil`, the copies the box holds in foil. */
+export type FeedCard = { oracleId: string | null; scryfallId: string | null; count: number; commander: boolean; foil: boolean };
 
-export type PreconFeedDeck = { fileName: string; name: string; code: string; releaseDate: string; cards: FeedCard[] };
+/** One entry of the deck's `tokens[]`, by its Scryfall printing id. */
+export type FeedToken = { scryfallId: string | null; count: number };
+
+export type PreconFeedDeck = {
+  fileName: string; name: string; code: string; releaseDate: string; cards: FeedCard[]; tokens: FeedToken[];
+};
 
 export type PreconFeed = {
   /** `indexKey` of the index entries the decks were fetched for. */
@@ -81,27 +87,40 @@ export function indexKey(entries: readonly IndexEntry[]): string {
 }
 
 /**
- * One deck file reduced to the kept fields. `commander[]` and `mainBoard[]` are the deck; the side
- * board, tokens, planes, schemes and `displayCommander` are not part of it. A card with no
- * identifier keeps a null, so the ingest counts it as unmapped rather than this throwing it away.
+ * One deck file reduced to the kept fields. `commander[]` and `mainBoard[]` are the deck, each card
+ * with its `isFoil`; `tokens[]` is kept beside it, for adding the precon to a collection with its
+ * tokens marked owned (the add action is the next change). The side board, planes, schemes and `displayCommander` are not part of it. A card
+ * with no identifier keeps a null, so the ingest counts it as unmapped rather than this throwing it
+ * away. A file with no `tokens` array reads as a deck with none.
  */
 export function deriveDeck(entry: IndexEntry, file: unknown): PreconFeedDeck {
-  const data = (file as { data?: { commander?: unknown; mainBoard?: unknown } })?.data;
+  const data = (file as { data?: { commander?: unknown; mainBoard?: unknown; tokens?: unknown } })?.data;
   if (!Array.isArray(data?.commander) || !Array.isArray(data?.mainBoard)) {
     throw new Error(`${entry.fileName}: commander or mainBoard is not an array`);
   }
   const card = (raw: unknown, commander: boolean): FeedCard => {
-    const c = raw as { count?: unknown; identifiers?: { scryfallId?: unknown; scryfallOracleId?: unknown } };
+    const c = raw as { count?: unknown; isFoil?: unknown; identifiers?: { scryfallId?: unknown; scryfallOracleId?: unknown } };
     if (typeof c?.count !== "number" || !Number.isInteger(c.count) || c.count < 1) {
       throw new Error(`${entry.fileName}: a card entry has no positive integer count`);
     }
+    // Every card entry carries it (64 of 64 decks sampled, 2011 to 2026, on 2026-10-14): a missing one
+    // is a shape change, and reading it as non-foil would publish the wrong finish without failing.
+    if (typeof c.isFoil !== "boolean") throw new Error(`${entry.fileName}: a card entry has no boolean isFoil`);
     const ids = c.identifiers ?? {};
     return {
       oracleId: str(ids.scryfallOracleId) ? ids.scryfallOracleId : null,
       scryfallId: str(ids.scryfallId) ? ids.scryfallId : null,
       count: c.count,
       commander,
+      foil: c.isFoil,
     };
+  };
+  const token = (raw: unknown): FeedToken => {
+    const t = raw as { count?: unknown; identifiers?: { scryfallId?: unknown } };
+    if (typeof t?.count !== "number" || !Number.isInteger(t.count) || t.count < 1) {
+      throw new Error(`${entry.fileName}: a token entry has no positive integer count`);
+    }
+    return { scryfallId: str(t?.identifiers?.scryfallId) ? t.identifiers.scryfallId : null, count: t.count };
   };
   return {
     fileName: entry.fileName,
@@ -109,6 +128,7 @@ export function deriveDeck(entry: IndexEntry, file: unknown): PreconFeedDeck {
     code: entry.code,
     releaseDate: entry.releaseDate,
     cards: [...data.commander.map((c) => card(c, true)), ...data.mainBoard.map((c) => card(c, false))],
+    tokens: Array.isArray(data.tokens) ? data.tokens.map(token) : [],
   };
 }
 
@@ -125,12 +145,19 @@ export function parseFeed(raw: unknown): PreconFeed | null {
   if (!str(f?.indexKey) || !str(f?.fetchedAt) || !Array.isArray(f?.decks)) return null;
   const id = (v: unknown) => v === null || str(v);
   for (const d of f.decks) {
-    if (!str(d?.fileName) || !str(d?.name) || !str(d?.code) || !str(d?.releaseDate) || !Array.isArray(d?.cards)) return null;
+    // `tokens` and each card's `foil` arrived after the first files were cached: a file without
+    // them reads as no cache, so the next fetch brings them rather than an ingest dropping them.
+    if (!str(d?.fileName) || !str(d?.name) || !str(d?.code) || !str(d?.releaseDate) || !Array.isArray(d?.cards)
+      || !Array.isArray(d?.tokens)) return null;
+    for (const t of d.tokens as unknown[]) {
+      const x = t as Partial<FeedToken>;
+      if (!id(x?.scryfallId) || typeof x?.count !== "number" || !Number.isInteger(x.count) || x.count < 1) return null;
+    }
     // Every card too: a cached file is reused straight into the artifact, so a malformed one must
     // read as no cache (and a refetch), never reach the ingest.
     for (const c of d.cards as unknown[]) {
       const x = c as Partial<FeedCard>;
-      if (!id(x?.oracleId) || !id(x?.scryfallId) || typeof x?.commander !== "boolean"
+      if (!id(x?.oracleId) || !id(x?.scryfallId) || typeof x?.commander !== "boolean" || typeof x?.foil !== "boolean"
         || typeof x?.count !== "number" || !Number.isInteger(x.count) || x.count < 1) return null;
     }
   }

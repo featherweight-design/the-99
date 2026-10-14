@@ -3074,7 +3074,9 @@ export const precons = pgTable("precons", {
  * A precon's cards, exactly as the feed lists them: one row per (card, printing, commander) with
  * its count, so a deck started from it holds the feed's 100 and never an assumed 99. `scryfall_id`
  * is the precon's own printing, shown read-only; null when the catalog lacks that printing but has
- * the card.
+ * the card. `foil_quantity` is how many of those copies the box holds in foil (MTGJSON's `isFoil`),
+ * the rest non-foil: kept for adding the precon to a collection at each copy's own finish (the add
+ * action is the next change; nothing reads it yet).
  */
 export const preconCards = pgTable("precon_cards", {
   fileName: text("file_name").notNull().references(() => precons.fileName, { onDelete: "cascade" }),
@@ -3083,10 +3085,26 @@ export const preconCards = pgTable("precon_cards", {
   scryfallId: uuid("scryfall_id").references(() => printings.scryfallId, { onDelete: "set null" }),
   quantity: integer("quantity").notNull(),
   isCommander: boolean("is_commander").notNull(),
+  foilQuantity: integer("foil_quantity").notNull().default(0),
 }, (t) => [
   primaryKey({ columns: [t.fileName, t.position] }),
   check("precon_cards_quantity_check", sql`${t.quantity} > 0`),
+  check("precon_cards_foil_check", sql`${t.foilQuantity} >= 0 and ${t.foilQuantity} <= ${t.quantity}`),
   index("precon_cards_oracle_idx").on(t.oracleId),
+]);
+
+/**
+ * The tokens a precon's box holds, from MTGJSON's `tokens[]`, at the box's own token printing.
+ * A token the token catalog lacks (MTGJSON lists markers such as The Monarch there too) is dropped
+ * and counted in the ingest report. Replaced with `precon_cards`, in the same transaction.
+ */
+export const preconTokens = pgTable("precon_tokens", {
+  fileName: text("file_name").notNull().references(() => precons.fileName, { onDelete: "cascade" }),
+  tokenPrintingId: uuid("token_printing_id").notNull().references(() => tokenPrintings.scryfallId),
+  quantity: integer("quantity").notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.fileName, t.tokenPrintingId] }),
+  check("precon_tokens_quantity_check", sql`${t.quantity} > 0`),
 ]);
 
 /**

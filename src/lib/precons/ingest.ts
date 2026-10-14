@@ -1,5 +1,5 @@
 /**
- * `db:seed:precons`: replaces `precons` and `precon_cards` from the feed (plan
+ * `db:seed:precons`: replaces `precons`, `precon_cards` and `precon_tokens` from the feed (plan
  * `2026-10-11-commander-precons.md`, PR 1; brief locks 2, 3 and 5).
  *
  * `planPrecons` is pure, so every rule the publish obeys is unit tested without a database: what
@@ -9,7 +9,7 @@
  */
 import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, preconCards, precons, printings } from "../../db/schema";
+import { cards, preconCards, precons, preconTokens, printings, tokenPrintings } from "../../db/schema";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import { MIN_PRECONS, PRECON_SIZE, type PreconFeed } from "./feed";
 
@@ -18,10 +18,12 @@ export const MAX_UNMAPPED_SHARE = 0.01;
 
 export type PreconRow = typeof precons.$inferInsert;
 export type PreconCardRow = typeof preconCards.$inferInsert;
+export type PreconTokenRow = typeof preconTokens.$inferInsert;
 
 export type PreconPlan = {
   precons: PreconRow[];
   cards: PreconCardRow[];
+  tokens: PreconTokenRow[];
   report: {
     listed: number;
     kept: number;
@@ -30,6 +32,8 @@ export type PreconPlan = {
     copies: number;
     unmappedCopies: number;
     printingsMissing: number;
+    /** Token copies of kept decks the token catalog lacks (markers such as The Monarch among them). */
+    tokensMissing: number;
     /** Decks dropped whole, with why. */
     dropped: string[];
   };
@@ -45,9 +49,16 @@ const COLLECTOR = /collector'?s edition/i;
  * decks of one set whose mapped lists are identical, commanders included (16 on 2026-10-11, every
  * one a Collector's Edition); the plain edition stands for them.
  */
-export function planPrecons(feed: PreconFeed, knownOracles: ReadonlySet<string>, knownPrintings: ReadonlySet<string>): PreconPlan {
+export function planPrecons(
+  feed: PreconFeed,
+  knownOracles: ReadonlySet<string>,
+  knownPrintings: ReadonlySet<string>,
+  knownTokens: ReadonlySet<string>,
+): PreconPlan {
   const rows: PreconRow[] = [];
   const cardRows: PreconCardRow[] = [];
+  const tokenRows: PreconTokenRow[] = [];
+  let tokensMissing = 0;
   const dropped: string[] = [];
   const listKey = new Map<string, string>();
   let copies = 0;
@@ -65,22 +76,30 @@ export function planPrecons(feed: PreconFeed, knownOracles: ReadonlySet<string>,
     if (size !== PRECON_SIZE) { dropped.push(`${deck.fileName}: ${size} cards, not ${PRECON_SIZE}`); continue; }
     if (!deck.cards.some((c) => c.commander)) { dropped.push(`${deck.fileName}: no commander`); continue; }
 
-    // One row per (card, printing, commander); the feed can list one printing twice (a foil beside a non-foil).
-    const merged = new Map<string, { oracleId: string; scryfallId: string | null; quantity: number; isCommander: boolean }>();
+    // One row per (card, printing, commander); the feed can list one printing twice (a foil beside a
+    // non-foil), so the foil copies are counted on the row rather than splitting it.
+    const merged = new Map<string, { oracleId: string; scryfallId: string | null; quantity: number; foilQuantity: number; isCommander: boolean }>();
     for (const c of deck.cards) {
       if (c.oracleId === null || !knownOracles.has(c.oracleId)) continue;
       const scryfallId = c.scryfallId !== null && knownPrintings.has(c.scryfallId) ? c.scryfallId : null;
       if (scryfallId === null) printingsMissing += c.count;
       const k = `${c.oracleId}|${scryfallId ?? ""}|${c.commander}`;
       const at = merged.get(k);
-      if (at) at.quantity += c.count;
-      else merged.set(k, { oracleId: c.oracleId, scryfallId, quantity: c.count, isCommander: c.commander });
+      const foil = c.foil ? c.count : 0;
+      if (at) { at.quantity += c.count; at.foilQuantity += foil; }
+      else merged.set(k, { oracleId: c.oracleId, scryfallId, quantity: c.count, foilQuantity: foil, isCommander: c.commander });
     }
     if (![...merged.values()].some((c) => c.isCommander)) { dropped.push(`${deck.fileName}: its commander is not in the catalog`); continue; }
 
     rows.push({ fileName: deck.fileName, name: deck.name, setCode: deck.code, releaseDate: deck.releaseDate, twinOf: null, unmappedCount: unmapped });
     let position = 0;
     for (const c of merged.values()) cardRows.push({ fileName: deck.fileName, position: position++, ...c });
+    const tokens = new Map<string, number>();
+    for (const t of deck.tokens) {
+      if (t.scryfallId === null || !knownTokens.has(t.scryfallId)) { tokensMissing += t.count; continue; }
+      tokens.set(t.scryfallId, (tokens.get(t.scryfallId) ?? 0) + t.count);
+    }
+    for (const [tokenPrintingId, quantity] of tokens) tokenRows.push({ fileName: deck.fileName, tokenPrintingId, quantity });
 
     // The list as a multiset of cards, printing aside, within one set: twins are the same 100 cards
     // sold twice in one release (a Collector's Edition). A Commander Anthology reprinting a 2015
@@ -119,18 +138,21 @@ export function planPrecons(feed: PreconFeed, knownOracles: ReadonlySet<string>,
   return {
     precons: rows,
     cards: cardRows,
-    report: { listed: feed.decks.length, kept: rows.length, twins, copies, unmappedCopies, printingsMissing, dropped },
+    tokens: tokenRows,
+    report: { listed: feed.decks.length, kept: rows.length, twins, copies, unmappedCopies, printingsMissing, tokensMissing, dropped },
     refusals,
   };
 }
 
 /**
- * Whether this database has the precon tables yet. The catalog refresh runs the seed scripts
+ * Whether this database has the precon tables yet, `precon_tokens` included (it arrived with
+ * `precon_cards.foil_quantity`, in one migration). The catalog refresh runs the seed scripts
  * directly and never migrates, so the first run after the merge can reach a database whose deploy
  * has not applied the migration: that run skips cleanly rather than going red.
  */
 export async function preconTablesExist(): Promise<boolean> {
-  const res = await db.execute(sql`select to_regclass('public.precons') is not null and to_regclass('public.precon_cards') is not null as ok`);
+  const res = await db.execute(sql`select to_regclass('public.precons') is not null and to_regclass('public.precon_cards') is not null
+    and to_regclass('public.precon_tokens') is not null as ok`);
   return Boolean((res.rows[0] as { ok?: unknown } | undefined)?.ok);
 }
 
@@ -152,15 +174,20 @@ export async function ingestPrecons(feed: PreconFeed): Promise<IngestResult> {
     (await db.select({ id: cards.oracleId }).from(cards).where(inArray(cards.oracleId, chunk))).map((r) => r.id));
   const knownPrintings = await knownIds(scryfallIds, async (chunk) =>
     (await db.select({ id: printings.scryfallId }).from(printings).where(inArray(printings.scryfallId, chunk))).map((r) => r.id));
+  const tokenIds = [...new Set(feed.decks.flatMap((d) => d.tokens.map((t) => t.scryfallId)).filter((x): x is string => x !== null))];
+  const knownTokens = await knownIds(tokenIds, async (chunk) =>
+    (await db.select({ id: tokenPrintings.scryfallId }).from(tokenPrintings).where(inArray(tokenPrintings.scryfallId, chunk))).map((r) => r.id));
 
-  const plan = planPrecons(feed, knownOracles, knownPrintings);
+  const plan = planPrecons(feed, knownOracles, knownPrintings, knownTokens);
   if (plan.refusals.length > 0) return { published: false, plan };
 
   await db.transaction(async (tx) => {
+    await tx.delete(preconTokens);
     await tx.delete(preconCards);
     await tx.delete(precons);
     for (let i = 0; i < plan.precons.length; i += BATCH) await tx.insert(precons).values(plan.precons.slice(i, i + BATCH));
     for (let i = 0; i < plan.cards.length; i += BATCH) await tx.insert(preconCards).values(plan.cards.slice(i, i + BATCH));
+    for (let i = 0; i < plan.tokens.length; i += BATCH) await tx.insert(preconTokens).values(plan.tokens.slice(i, i + BATCH));
   });
   await stampCatalogRefresh();
   return { published: true, plan };
