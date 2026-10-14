@@ -177,7 +177,7 @@ Used in every deck row, chip, lane, select and Never-played name. 26 × 26 box, 
 | median | 1px dashed `--fg-body` at median ÷ max, top / bottom −2, through every row | same |
 | figure | `$0.00` mono 11.5, right | same |
 | legend | 14 × 8 r 2 `--accent` = chosen deck · 1 × 12 dashed `--fg-body` = `the median deck, $X` | same |
-| caption | `Mana Pool prices, 2h ago` mono 10.5 `--fg-faint` | same |
+| caption | `ManaPool prices, 2h ago` mono 10.5 `--fg-faint` | same |
 
 ## JobsCard: "Jobs, deck by deck" (ships)
 
