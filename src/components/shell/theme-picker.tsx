@@ -25,6 +25,7 @@ import {
   THEMES,
   isRetiredThemeKey,
   isThemeKey,
+  themeCookieValue,
   type ThemeKey,
 } from "../../lib/theme/themes";
 
@@ -105,11 +106,7 @@ function applyTheme(key: ThemeKey) {
  */
 function retirementNotice() {
   if (typeof document === "undefined") return null;
-  const persisted = document.cookie
-    .split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith(`${THEME_COOKIE}=`))
-    ?.slice(THEME_COOKIE.length + 1);
+  const persisted = themeCookieValue(document.cookie);
   if (!isRetiredThemeKey(persisted)) return null;
   const { was, survivor } = RETIRED_THEMES[persisted];
   return { was, survivor, nowCalled: THEMES.find((t) => t.key === survivor)!.name };

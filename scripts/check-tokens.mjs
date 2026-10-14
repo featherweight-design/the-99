@@ -22,7 +22,9 @@ const files = await Promise.all(
 // The stylesheet is both a declaration source for everyone and a file whose
 // own reads are checked — `globals.css` can misspell a token as readily as a
 // component can.
-const layout = files.find((f) => f.path.endsWith("src/app/layout.tsx"));
+// The `next/font` variables are declared in `fonts.ts`, which both documents (the root layout and
+// global-error) carry.
+const layout = files.find((f) => f.path.endsWith("src/app/fonts.ts"));
 const globalSources = [
   files.find((f) => f.path === GLOBAL_CSS)?.source ?? (await readFile(GLOBAL_CSS, "utf8")),
   layout?.source ?? "",
