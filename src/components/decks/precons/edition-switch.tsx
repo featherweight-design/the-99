@@ -7,16 +7,11 @@
 import { preconsCopy } from "../../../lib/copy/precons";
 import { onSegmentKeys } from "../lineup/segment-keys";
 import { SEGMENT, SEGMENT_OFF, SEGMENT_ON } from "../lineup/stats-view-switch";
+import type { PreconEdition } from "../../../lib/precons/edition";
 
-export type PreconEdition = "regular" | "collector";
 const EDITIONS = ["regular", "collector"] as const;
 const copy = preconsCopy.open.edition;
 const editionId = (e: PreconEdition) => `precon-edition-${e}`;
-
-/** `?edition=collector` names the Collector's Edition; anything else, absence included, is Regular. */
-export function parseEdition(value: string | string[] | undefined): PreconEdition {
-  return value === "collector" ? "collector" : "regular";
-}
 
 export function EditionSwitch({ edition, onEdition }: { edition: PreconEdition; onEdition: (e: PreconEdition) => void }) {
   const pick = (e: PreconEdition) => { if (e !== edition) onEdition(e); };

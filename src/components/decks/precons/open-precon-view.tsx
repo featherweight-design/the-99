@@ -25,7 +25,8 @@ import { useStoredView } from "../../ui/use-stored-view";
 import { ViewToggle } from "../../ui/view-toggle";
 import { useState } from "react";
 import { mirrorUrl } from "../../../lib/url/mirror";
-import { EditionSwitch, type PreconEdition } from "./edition-switch";
+import { EditionSwitch } from "./edition-switch";
+import type { PreconEdition } from "../../../lib/precons/edition";
 
 /** The open precon's view, kept apart from the deck page's (`the99:deck-view`): one is a reading
  *  choice, the other a building one. List is the default and what the server draws, so no cookie. */

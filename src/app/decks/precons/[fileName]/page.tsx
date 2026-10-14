@@ -12,7 +12,7 @@ import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { loadOpenPrecon } from "../../../../lib/precons/open-read";
 import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
 import { OpenPreconView } from "../../../../components/decks/precons/open-precon-view";
-import { parseEdition } from "../../../../components/decks/precons/edition-switch";
+import { parseEdition } from "../../../../lib/precons/edition";
 
 export const metadata: Metadata = { title: preconsCopy.list.title };
 
