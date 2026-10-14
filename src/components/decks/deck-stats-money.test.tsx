@@ -68,7 +68,7 @@ describe("DeckStatsView money card", () => {
     );
     expect(card()).toHaveTextContent("8 of 9 copies priced");
     expect(card()).toHaveTextContent("1 copy");
-    expect(card()).toHaveTextContent("no price from ManaPool for this one");
+    expect(card()).toHaveTextContent("no price from Mana Pool for this one");
     expect(card()).toHaveTextContent("no price");
     expect(card()).not.toHaveTextContent("$0.00");
   });

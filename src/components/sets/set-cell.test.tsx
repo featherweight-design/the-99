@@ -164,7 +164,7 @@ describe("SetCell — the accessible name carries the state the tag shows", () =
   // every one of these was visible and announced to nobody.
   it("says a card has never been stocked", () => {
     render(<SetCell cell={cell({})} price={null} newestAsOf={NEWEST} />);
-    expect(screen.getByRole("button", { name: /Never stocked at ManaPool/ }))
+    expect(screen.getByRole("button", { name: /Never stocked at Mana Pool/ }))
       .toBeInTheDocument();
   });
 
@@ -176,7 +176,7 @@ describe("SetCell — the accessible name carries the state the tag shows", () =
         newestAsOf={NEWEST}
       />,
     );
-    expect(screen.getByRole("button", { name: /No price from ManaPool/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /No price from Mana Pool/ })).toBeInTheDocument();
   });
 
   it("says a card is sold out rather than never stocked", () => {
@@ -187,7 +187,7 @@ describe("SetCell — the accessible name carries the state the tag shows", () =
         newestAsOf={NEWEST}
       />,
     );
-    expect(screen.getByRole("button", { name: /Sold out at ManaPool/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sold out at Mana Pool/ })).toBeInTheDocument();
   });
 
   it("says a price is foil only", () => {

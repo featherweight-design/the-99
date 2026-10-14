@@ -318,7 +318,7 @@ export const setPageCopy = {
       `${figure}. Show the full cost`
       // "link", not "button": the expanded action is an `<a>` to ManaPool, and naming a
       // control type the reader will not find is worse than naming none.
-      + (hasSend ? ", with the ManaPool link" : "")
+      + (hasSend ? ", with the Mana Pool link" : "")
       + (caveats === 0 ? "" : caveats === 1 ? " and 1 note" : ` and ${caveats} notes`),
     collapseAria: "Hide the full cost",
     // R3: at 100% the same strip re-scopes to the extras rather than being
@@ -339,8 +339,8 @@ export const setPageCopy = {
     // "sold out" is true of these.
     noFigure: (n: number) =>
       n === 1
-        ? "1 has no price from ManaPool and isn’t in this figure"
-        : `${n} have no price from ManaPool and aren’t in this figure`,
+        ? "1 has no price from Mana Pool and isn’t in this figure"
+        : `${n} have no price from Mana Pool and aren’t in this figure`,
     soldOut: (n: number) =>
       n === 1
         ? "1 is sold out and is not in this figure"
@@ -348,10 +348,10 @@ export const setPageCopy = {
     // Page-level staleness. Prints only when the feed itself trails.
     stale: (asOf: string) => `prices as of ${asOf}`,
     // The page's one selector. Its count always equals the sentence's.
-    send: (n: number) => (n === 1 ? "Send 1 to ManaPool" : `Send ${n} to ManaPool`),
+    send: (n: number) => (n === 1 ? "Send 1 to Mana Pool" : `Send ${n} to Mana Pool`),
     // The list travels in a URL, so a full set does not fit. The button says what it is
     // actually sending rather than implying it sends everything missing.
-    sendCapped: (n: number) => `Send the first ${n} to ManaPool`,
+    sendCapped: (n: number) => `Send the first ${n} to Mana Pool`,
     // Why only the first N (H15, Hugh's walk 2026-10-02): the cap was stated on the button
     // and never explained. Drawn under it only when the cap bites. Through /copy-review: the
     // missing count is already the figure's own line above, so it is not said twice.
@@ -359,11 +359,11 @@ export const setPageCopy = {
     // No price: the figure above costs every missing card, and this link carries only the
     // first N of them.
     sendCappedAria: (n: number) =>
-      `Open ManaPool Mass Entry with the first ${n} missing cards. Opens in a new tab`,
+      `Open Mana Pool Mass Entry with the first ${n} missing cards. Opens in a new tab`,
     // Mass Entry, not a cart: #330 ships no cart or checkout, and the link goes to
     // /add-deck. Telling a screen-reader user "cart" names an action that does not exist.
     sendAria: (n: number, total: string) =>
-      `Open ManaPool Mass Entry with ${n} missing ${n === 1 ? "card" : "cards"}, ${total}.`
+      `Open Mana Pool Mass Entry with ${n} missing ${n === 1 ? "card" : "cards"}, ${total}.`
       + " Opens in a new tab",
     emptyTotal: "$0.00 over 0 of 0",
     // Stands in for the figure when nothing missing can be costed. A zero would read as a
@@ -400,9 +400,9 @@ export const setPageCopy = {
 
   // A printing the feed has never carried, as distinct from one that has sold out.
   cellPrice: {
-    neverStocked: "Never stocked at ManaPool",
-    soldOut: "Sold out at ManaPool",
-    noFigure: "No price from ManaPool",
+    neverStocked: "Never stocked at Mana Pool",
+    soldOut: "Sold out at Mana Pool",
+    noFigure: "No price from Mana Pool",
   },
 
   cell: {
@@ -414,7 +414,7 @@ export const setPageCopy = {
     foil: "◆ FOIL",
     foilAria: "You hold this in foil",
     noStock: "no stock",
-    noStockAria: "Never stocked at ManaPool",
+    noStockAria: "Never stocked at Mana Pool",
     // The qualifier is the finish word the buy tag chose — foil or etched — because
     // priceState collapses both into one state and only the column says which.
     qualifiedPrice: (finish: string, p: string) => `◆ ${finish} ${p}`,

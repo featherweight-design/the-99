@@ -55,8 +55,8 @@ describe("setPageCopy.cost", () => {
   });
 
   it("labels the one selector with its own count", () => {
-    expect(setPageCopy.cost.send(1)).toBe("Send 1 to ManaPool");
-    expect(setPageCopy.cost.send(193)).toBe("Send 193 to ManaPool");
+    expect(setPageCopy.cost.send(1)).toBe("Send 1 to Mana Pool");
+    expect(setPageCopy.cost.send(193)).toBe("Send 193 to Mana Pool");
   });
 
   it("re-scopes to the extras rather than naming a different verb", () => {

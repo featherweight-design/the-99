@@ -196,7 +196,7 @@ export const swapToolsCopy = {
     undoRefused: "We couldn’t undo that swap. The deck is unchanged.",
     /** A take that threw rather than refused (F11): MutationError under the row. Owed to /copy-review. */
     takeFailed: "We couldn’t make that swap. The deck is unchanged.",
-    foot: (when: string) => `Cheapest printing of each, from ManaPool · last checked ${when}`,
+    foot: (when: string) => `Cheapest printing of each, from Mana Pool · last checked ${when}`,
     loadingHeading: "Checking the binder",
     loadingSpells: (roles: string) => `finding cheaper ${roles}…`,
     failed: {

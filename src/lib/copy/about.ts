@@ -377,7 +377,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'For the collectors, and the completionists who swear they aren’t. Open any set to see which cards you’re missing and what it would cost to finish it.\n\nA set counts as complete once you own its Checklist, the set’s own numbered run. Showcase, borderless and promo extras are extra credit.',
     keys: [
       'Missing cards are dashed and dimmed, with a price.',
-      'Cost to finish counts only what ManaPool has in stock.',
+      'Cost to finish counts only what Mana Pool has in stock.',
       'Promo sets with no numbered run count every printing.',
       'Toggle Missing or Owned. Sort by number or price.',
     ],
@@ -391,11 +391,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'inset',
     caption:
-      'When a deck needs a card you don’t own, it tells you what it’ll cost. Prices come from ManaPool and refresh daily, so you can see the damage before you check out.',
+      'When a deck needs a card you don’t own, it tells you what it’ll cost. Prices come from Mana Pool and refresh daily, so you can see the damage before you check out.',
     keys: [
-      'A price: what ManaPool is asking today.',
+      'A price: what Mana Pool is asking today.',
       'A foil-only price, like $2.10 foil: they only have it in foil.',
-      'sold out: ManaPool has carried that printing but has none right now.',
+      'sold out: Mana Pool has carried that printing but has none right now.',
       'A bare buy: the feed has no price for that printing at all.',
     ],
     marksPending: true,
@@ -967,7 +967,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // names to `Dockside ...` and `R. —`.
     width: 'plate',
     caption:
-      'Every card a deck wants that you can’t supply lands on its “Shopping” filter, priced from ManaPool.\n\nA card you own can still show up here. If your Atraxa deck already has your only Sol Ring, your Meren deck needs another.',
+      'Every card a deck wants that you can’t supply lands on its “Shopping” filter, priced from Mana Pool.\n\nA card you own can still show up here. If your Atraxa deck already has your only Sol Ring, your Meren deck needs another.',
     keys: [
       'Each deck’s tile shows how many cards it needs and what they cost.',
       '“To buy, all decks” on Home adds it up across every deck.',

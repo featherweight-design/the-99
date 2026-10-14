@@ -309,7 +309,7 @@ describe("the price under the art", () => {
 
     const tag = screen.getByTestId("modal-price-desktop");
     expect(tag.querySelector(".sr-only")?.textContent)
-      .toMatch(/\$2\.41 at ManaPool, last checked /);
+      .toMatch(/\$2\.41 at Mana Pool, last checked /);
     expect(tag.querySelector("[aria-hidden='true']")?.textContent).toBe("$2.41");
   });
 
@@ -317,7 +317,7 @@ describe("the price under the art", () => {
     mount(card({ prices: indexPriceRows([priceRow({ price_cents: null, price_cents_foil: 610 })]) }));
 
     expect(screen.getByTestId("modal-price-desktop").querySelector(".sr-only")?.textContent)
-      .toMatch(/◆ foil \$6\.10 at ManaPool, last checked /);
+      .toMatch(/◆ foil \$6\.10 at Mana Pool, last checked /);
   });
 
   it("draws the word in the ink that clears 4.5:1, and the edge in the one that clears 3", () => {

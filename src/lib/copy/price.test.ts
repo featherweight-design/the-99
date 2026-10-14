@@ -27,7 +27,7 @@ describe("priceCopy", () => {
       priceCopy.strip.lastChecked("Monday"),
       priceCopy.strip.behind,
     ].join(" · ");
-    expect(line).toBe("prices from ManaPool · last checked Monday · these are behind");
+    expect(line).toBe("prices from Mana Pool · last checked Monday · these are behind");
     expect(line).not.toMatch(/error|failed|warning|stale|out of date|problem/i);
   });
 
@@ -36,10 +36,10 @@ describe("priceCopy", () => {
   // table hears one price, not two statements about it.
   it("speaks a price once, in both provenance forms", () => {
     expect(priceCopy.aria.priced("$45.00", "Monday")).toBe(
-      "$45.00 at ManaPool, last checked Monday",
+      "$45.00 at Mana Pool, last checked Monday",
     );
     expect(priceCopy.aria.pricedBehind("$45.00", "12 August")).toBe(
-      "$45.00 at ManaPool, last checked 12 August, these prices are behind",
+      "$45.00 at Mana Pool, last checked 12 August, these prices are behind",
     );
     expect(
       priceCopy.aria.pricedBehind("$45.00", "12 August").startsWith(

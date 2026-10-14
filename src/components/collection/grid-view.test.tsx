@@ -290,9 +290,9 @@ describe("GridView price clause", () => {
       <GridView cards={[priced]} totalCards={1} onShowMore={() => {}} onOpen={() => {}} showPrice />,
     );
     const name = screen.getByRole("button", { name: /Smothering Tithe/ }).textContent ?? "";
-    expect(name.endsWith("$20.00 at ManaPool")).toBe(true);
-    expect(name.indexOf("RVR")).toBeLessThan(name.indexOf("$20.00 at ManaPool"));
+    expect(name.endsWith("$20.00 at Mana Pool")).toBe(true);
+    expect(name.indexOf("RVR")).toBeLessThan(name.indexOf("$20.00 at Mana Pool"));
     rerender(<GridView cards={[priced]} totalCards={1} onShowMore={() => {}} onOpen={() => {}} />);
-    expect(screen.getByRole("button", { name: /Smothering Tithe/ }).textContent).not.toContain("ManaPool");
+    expect(screen.getByRole("button", { name: /Smothering Tithe/ }).textContent).not.toContain("Mana Pool");
   });
 });
