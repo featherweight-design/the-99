@@ -1,5 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { newNavigation, watchFetches, watchStall } from "./nav-stall";
+import { act, cleanup, render } from "@testing-library/react";
+import {
+  newNavigation,
+  pressSettled,
+  pressStarted,
+  StallContext,
+  StallWatch,
+  watchFetches,
+  watchStall,
+} from "./nav-stall";
 import { STALL_AFTER_MS } from "../../lib/nav-stall/report";
 
 const config = { deployment: "dpl_abc" };
@@ -136,4 +145,61 @@ describe("the navigation's own RSC request", () => {
     answer(response);
     expect(await pending).toBe(response);
   });
+});
+
+describe("which loading screen belongs to the press", () => {
+  const watch = () =>
+    render(
+      <StallContext.Provider value={{ deployment: null }}>
+        <StallWatch />
+      </StallContext.Provider>,
+    );
+
+  it("folds the press's own fallback into its pending report, at the address it landed on", async () => {
+    window.history.replaceState(null, "", "/decks/new/choose?v=results");
+    pressStarted("/decks/new/choose");
+    watchStall({ kind: "pending", from: "/", to: "/decks/new/choose", config });
+    vi.advanceTimersByTime(STALL_AFTER_MS);
+    expect(beacon).toHaveBeenCalledTimes(1);
+    pressSettled();
+    watch();
+    await act(async () => {});
+    vi.advanceTimersByTime(STALL_AFTER_MS);
+    expect(beacon).toHaveBeenCalledTimes(1);
+    cleanup();
+  });
+
+  it("reports a change of query on the same page as its own navigation, even straight after a press", async () => {
+    window.history.replaceState(null, "", "/decks/new/choose");
+    pressStarted("/decks/new/choose");
+    watchStall({ kind: "pending", from: "/", to: "/decks/new/choose", config });
+    vi.advanceTimersByTime(STALL_AFTER_MS);
+    pressSettled();
+    // A second later the reader changes the answers: same path, another query.
+    vi.advanceTimersByTime(1_000);
+    window.history.replaceState(null, "", "/decks/new/choose?v=results");
+    watch();
+    await act(async () => {});
+    vi.advanceTimersByTime(STALL_AFTER_MS);
+    expect(beacon).toHaveBeenCalledTimes(2);
+    cleanup();
+  });
+
+  it("lets a press be claimed once: a second loading screen straight after it is a navigation of its own", async () => {
+    window.history.replaceState(null, "", "/decks");
+    pressStarted("/decks");
+    pressSettled();
+    watch();
+    await act(async () => {});
+    cleanup();
+    // Within the press's window, but the press is spent: this one is timed from its own start.
+    vi.advanceTimersByTime(1_000);
+    watch();
+    await act(async () => {});
+    vi.advanceTimersByTime(STALL_AFTER_MS);
+    expect(beacon).toHaveBeenCalledTimes(1);
+    expect(await bodyOf(0)).toMatchObject({ kind: "fallback", elapsedMs: STALL_AFTER_MS });
+    cleanup();
+  });
+;
 });
