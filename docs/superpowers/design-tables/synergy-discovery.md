@@ -354,7 +354,7 @@ Breakpoint: `sm:` = 640px.
 | justify-content | center |
 | Glyph | `+` (ASCII plus) |
 | aria-pressed | `false` |
-| aria-label | `synergyCopy.select.addAria(name)` — "Add {name} to the build" |
+| aria-label | `synergyCopy.select.addAria(name)` — "Add {name} to the deck" |
 
 ### Slot 6 — Select toggle (selected state, desktop)
 
@@ -366,7 +366,7 @@ Breakpoint: `sm:` = 640px.
 | font-size | 13px (canvas: glyph is ✓ at 13px) |
 | Glyph | `✓` (U+2713 check mark) |
 | aria-pressed | `true` |
-| aria-label | `synergyCopy.select.removeAria(name)` — "Remove {name} from the build" |
+| aria-label | `synergyCopy.select.removeAria(name)` — "Remove {name} from the deck" |
 
 ### Row — selected state treatment
 
