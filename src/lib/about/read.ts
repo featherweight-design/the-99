@@ -50,6 +50,9 @@ export function markAboutVisitedQuery(userId: string, version: number, ids: read
         aboutVersionSeen: sql`greatest(${userPrefs.aboutVersionSeen}, ${version})`,
         aboutSeenIds: sql`array(select distinct unnest(${userPrefs.aboutSeenIds} || ${incoming}) order by 1)`,
       },
+      // Only when the visit moves something: `user_prefs` carries the stamp trigger (0123), which fires on any
+      // UPDATE, so a repeat visit would otherwise retire the reader's cached Home and /decks for nothing.
+      setWhere: sql`${userPrefs.aboutVersionSeen} < ${version} or not (${incoming} <@ ${userPrefs.aboutSeenIds})`,
     });
 }
 
@@ -71,6 +74,8 @@ export function markAboutSeenQuery(userId: string, version: number) {
       set: {
         aboutVersionSeen: sql`greatest(${userPrefs.aboutVersionSeen}, ${version})`,
       },
+      // Only when it raises the floor: a no-op UPDATE would still move the reader's stamp (0123).
+      setWhere: sql`${userPrefs.aboutVersionSeen} < ${version}`,
     });
 }
 

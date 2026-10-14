@@ -20,6 +20,7 @@ import { labelSurfacesEnabled, standInLabelsEnabled } from "../labels/read";
 import type { ModelFeature } from "../model/allowance-rule";
 import { noticesEnabled } from "../notices/flag";
 import { preconsEnabled } from "../precons/flag";
+import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { socialFriendsEnabled, socialGamesEnabled } from "../social/flag";
@@ -68,6 +69,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   STAND_IN_LABELS_ENABLED: standInLabelsEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   TUNING_ENABLED: tuningEnabled,
+  UPCOMING_PRECONS_ENABLED: upcomingPreconsEnabled,
 };
 
 /**

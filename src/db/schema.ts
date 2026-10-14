@@ -2036,6 +2036,11 @@ export const deckDataChanges = pgTable("deck_data_changes", {
  * a version number cannot say which of them a reader has met: switch B on and read
  * it, switch A on later, and A must still read as new. `about_version_seen` stays the
  * floor for every entry with no switch, so no row needs a backfill.
+ *
+ * It carries the `user_data_touch` stamp trigger since 0123: Home and Precons cache the
+ * upcoming seen state (`upcoming_seen_codes`) in their payloads, so a dismiss or a Precons
+ * visit has to retire them. The trigger fires on any UPDATE, so a writer that may change
+ * nothing guards its own update (`markUpcomingSeen` writes only when it adds a key).
  */
 export const userPrefs = pgTable(
   "user_prefs",
@@ -2050,9 +2055,9 @@ export const userPrefs = pgTable(
      */
     commandersAvail: text("commanders_avail"),
     /**
-     * The upcoming Commander sets (`sets.code`) this reader has been shown, so a set reads as new
-     * only until they have seen it (`lib/precons/upcoming.ts`). Codes only ever accumulate: there
-     * are about fifty Commander sets in all, so it needs no pruning.
+     * The upcoming-precons arrivals this reader has been shown (`lib/precons/upcoming.ts`): a set
+     * code (`trc`) for a set announced, `lists:trc` for its decklists listed. Keys only ever
+     * accumulate: there are about fifty Commander sets in all, so it needs no pruning.
      */
     upcomingSeenCodes: text("upcoming_seen_codes").array().notNull().default(sql`'{}'::text[]`),
   },

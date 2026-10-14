@@ -92,8 +92,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm probe:list-stamp` proves the stamp against a real Postgres: every table the check
   computes carries a deferred trigger keyed on the column it owns; an insert, an update and a
   delete on each one move the stamp by exactly one, on the run's own fixture rows; a rollback
-  moves nothing, and an update of a whole collection moves it once; and the deadlock pair
-  above. `--timing` runs only its cost section: a collection replace and a commit at the
+  moves nothing, and an update of a whole collection moves it once; `user_prefs` (0123) carries the
+  trigger, and a `markUpcomingSeen` that adds a key moves the stamp by one while a repeat of keys
+  already held moves nothing; and the deadlock pair above. `--timing` runs only its cost section: a collection replace and a commit at the
   largest account's real sizes, median of 3, which is how the before figure is taken on a
   database the migration has not reached. Measured on a `pull:staging` copy, the median of three
   runs each with every trigger disabled and then enabled: a 3,250-row collection replace went
@@ -2105,11 +2106,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   cleared, and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. Mutation-checked:
   dropping the viewer predicate from the friendship join makes the stranger see the list.
-- `pnpm probe:upcoming-precons` proves the upcoming-precons backend against a real database: that only a non-digital
-  Commander set released after today is upcoming (not one released today, a past one, a digital one or an
-  expansion), soonest first, with its parent set's name; that the first-seen stamp writes a kind's first run as a
+- `pnpm probe:upcoming-precons` proves the upcoming-precons backend against a real database: that a non-digital
+  Commander set released after today is upcoming, and one released in the last 30 days while no precon lists it
+  (release day, `released: true`), but not one a precon lists (matched case-blind to MTGJSON's uppercase code), one
+  released 43 days ago, a digital one or an expansion, soonest first, with its parent set's name; that the first-seen stamp writes a kind's first run as a
   BASELINE (arrival unknown, never claimed) and later runs as arrivals, never moving a stamp already written; and
-  that the per-reader seen marker accumulates each code once and belongs to one reader. It writes inside ONE
+  that the per-reader seen marker accumulates each code once and belongs to one reader. It prints the shapes the
+  Announced group and the banner receive and checks them: a set's revealed commanders (one printed at 78 and 300
+  is one entry at 78; a set with none has no key), the precons listed since the baseline (no twin), the banner's
+  lines (an announced set later listed, unseen, is ONE lists line), the keys ✕ and a visit write, an empty banner
+  after ✕ for that reader alone, and that a repeat of keys already held updates no row. It writes inside ONE
   transaction it rolls back, so nothing survives, and still fails closed: `PROBE_DB_BRANCH` must name the branch
   `DATABASE_URL` reports, and staging and production are refused by id. Mutation-checked five ways (the date
   bound, the code tiebreak between two sets on one date, the baseline flag in the stamp, the baseline null in the read, the seen union's dedupe).

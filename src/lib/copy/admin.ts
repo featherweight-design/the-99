@@ -529,4 +529,5 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   STAND_IN_LABELS_ENABLED: { label: "Stand-in labels", description: "Stand-in labels where a card has none yet." },
   SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },
   TUNING_ENABLED: { label: "Suggested changes", description: "Suggested changes for a deck." },
+  UPCOMING_PRECONS_ENABLED: { label: "Upcoming precons", description: "Announced Commander sets on Precons, and a Home banner when one arrives." },
 };
