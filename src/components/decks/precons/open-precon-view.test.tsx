@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { OpenPrecon, OpenPreconCard } from "../../../lib/precons/open-read";
 
 const providerProps = vi.hoisted(() => ({ picks: null as unknown, views: null as unknown }));
@@ -344,6 +344,23 @@ describe("OpenPreconView edition switch", () => {
     expect(startProps).toMatchObject({ addFileName: "EldraziUnbound_CMM", addedOn: "2026-10-01T00:00:00.000Z" });
     fireEvent.click(screen.getByRole("radio", { name: "Collector's Edition" }));
     expect(startProps).toMatchObject({ addFileName: "EldraziUnboundCE_CMM", addedOn: null });
+  });
+
+  it("follows the address when it moves to the other edition while mounted", () => {
+    render(<OpenPreconView precon={withCollector()} fromNew={false} />);
+    expect(viewed("Sol Ring")).toBe("cmm");
+    act(() => { window.history.pushState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new&edition=collector"); });
+    expect(screen.getByRole("radio", { name: "Collector's Edition" })).toHaveAttribute("aria-checked", "true");
+    expect(viewed("Sol Ring")).toBe("cmc");
+    act(() => { window.history.pushState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new"); });
+    expect(viewed("Sol Ring")).toBe("cmm");
+  });
+
+  it("reads a repeated edition as the server does: Regular, whichever value comes first", () => {
+    render(<OpenPreconView precon={withCollector()} fromNew={false} />);
+    act(() => { window.history.pushState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new&edition=collector&edition=regular"); });
+    expect(viewed("Sol Ring")).toBe("cmm");
+    expect(screen.getByRole("radio", { name: "Regular" })).toHaveAttribute("aria-checked", "true");
   });
 
   it("swaps the printings on a press, keeps the counts, and writes only its own parameter", () => {

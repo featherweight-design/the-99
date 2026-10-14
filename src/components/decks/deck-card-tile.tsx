@@ -30,7 +30,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
+import { CardTileCaption, TILE_ART_CLIP_SCALED, TILE_ART_RATIO, TILE_FIELD, TILE_SHELL, TILE_SHELL_SCALED } from "../ui/card-tile-caption";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
@@ -182,7 +182,7 @@ export function DeckCardTile({
   if (spent) return <UndoTile deckId={deckId} card={card} />;
 
   return (
-    <li className="flex flex-col">
+    <li className={`flex flex-col ${TILE_FIELD}`}>
       <div
         /* THE WHOLE LEFT EDGE, art included. It was on the caption, on call B's
            reasoning that the shell's border already carries over-committed and
@@ -193,7 +193,7 @@ export function DeckCardTile({
            both reads fine — the chip carries the shortfall, the edge carries the
            draft. Over 46px of caption the accent was easy to miss; over a whole
            tile it is not, and the two views now say it the same way. */
-        className={`${TILE_SHELL} relative bg-[color:var(--surface)] ${
+        className={`${TILE_SHELL_SCALED} relative bg-[color:var(--surface)] ${
           availState === "over"
             ? "[border:1px_solid_var(--avail-over-border)]"
             : "[border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)] transition-colors"
@@ -249,7 +249,7 @@ export function DeckCardTile({
                they sit against the caption rather than against the tile's edge, so a
                card whose Scryfall JPEG carries a white corner matte drew a pale notch
                there. The 1px inner edge follows the radius with it. */
-            className={`relative block w-full overflow-hidden ${TILE_ART_CLIP}`}
+            className={`relative block w-full overflow-hidden ${TILE_ART_CLIP_SCALED}`}
             style={{
               aspectRatio: TILE_ART_RATIO,
               // A card with no art draws a plate rather than a colour-identity

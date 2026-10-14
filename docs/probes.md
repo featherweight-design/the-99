@@ -223,6 +223,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the view has changed, with Tiles letting go of the selected fill in that same frame (Hugh's walk, 2026-10-13: both read selected for a moment), with the shell's pending diamond fully opaque (after its 120ms beat) while the read runs, and once Stats lands the tab is
   selected with no mark and no busy flag. Measured on a production build 2026-10-13: 44-50ms at both widths, Stats
   itself arriving at 700-800ms; `next dev` reads 110-117ms. Needs `LINEUP_ENABLED=true`, writes nothing.
+- `pnpm probe:card-view-radius` proves a card tile's corner clears Scryfall's matte (~3.1% of the rendered width) at 390,
+  480, 600, 767 and 1300px, by reading the COMPUTED radius of the shell and of the art button on the precon page's
+  read-only tile (the deck tile draws the same constants, `TILE_SHELL_SCALED` and `TILE_ART_CLIP_SCALED`, and needs no
+  deck). The tile's root carries `TILE_FIELD`, a size container, and the corners round by `max(9px, 3.4cqw)`, so the
+  fixed 9px that let the matte through at 480-767px (a ~361px tile wants 11px) no longer does. Needs
+  `PRECONS_ENABLED` and seeded precons; writes nothing.
 - `pnpm probe:precon-arrival` proves the precon list's art (/decks/precons) arrives top down, row by row, at 1300x900
   and 390x844 in both views: every art `data-arrival` turning `in` is stamped with its page-relative top, and an
   inversion is a lower row released before an upper one (more than 4px above). Rows (34x48 thumbs) may not exceed 1%

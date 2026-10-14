@@ -5,7 +5,7 @@ import { tokensCopy } from "../../lib/copy/tokens";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckToken } from "../../lib/tokens/read";
 import { cardDetailCopy, useCardDetailIfAny, useCardIntentIfAny, type SiblingCard } from "../cards/card-detail-provider";
-import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
+import { CardTileCaption, TILE_ART_CLIP_SCALED, TILE_ART_RATIO, TILE_FIELD, TILE_SHELL_SCALED } from "../ui/card-tile-caption";
 import { Chevron } from "../ui/chevron";
 import { CostPips } from "../ui/cost-pips";
 import { HydratedImg } from "../ui/hydrated-art";
@@ -13,7 +13,7 @@ import { TokenMakers } from "./token-makers";
 import { printingLine, tokenFaceDescription, TokenControls, tokenPips, tokenPT, useTokenPress } from "./token-row";
 
 /**
- * A token of the deck in the Card view: the deck's tile anatomy (`TILE_SHELL`, the 63:88 art box with its bottom
+ * A token of the deck in the Card view: the deck's tile anatomy (`TILE_SHELL_SCALED`, the 63:88 art box with its bottom
  * corners clipped, `CardTileCaption`) with the token's own facts, and the same two presses a row carries beneath
  * it (`TokenControls`). The art opens card details, as every deck tile's does (a tile's caption is text, so the
  * name beside it is not a second trigger), the cards that make it unfold under the tile, and a press that fails says so in the tile's own words. Never a verdict word, never a warning
@@ -43,13 +43,13 @@ export function TokenTile({
       {addPanelCopy.tile.noArt}
     </span>
   );
-  const artClass = `relative block w-full overflow-hidden ${TILE_ART_CLIP}`;
+  const artClass = `relative block w-full overflow-hidden ${TILE_ART_CLIP_SCALED}`;
   const artStyle = { aspectRatio: TILE_ART_RATIO, background: "var(--surface-sunken)" };
 
   return (
-    <li className="flex min-w-0 flex-col" data-token-tile data-token-state={token.state}>
+    <li className={`flex min-w-0 flex-col ${TILE_FIELD}`} data-token-tile data-token-state={token.state}>
       <span id={`token-${token.oracleId}-face`} className="sr-only">{tokenFaceDescription(token)}</span>
-      <div className={`${TILE_SHELL} relative bg-[color:var(--surface)] [border:1px_solid_var(--border)] transition-colors md:hover:[border:1px_solid_var(--border-strong)]`}>
+      <div className={`${TILE_SHELL_SCALED} relative bg-[color:var(--surface)] [border:1px_solid_var(--border)] transition-colors md:hover:[border:1px_solid_var(--border-strong)]`}>
         {detail ? (
           <button
             ref={artRef}

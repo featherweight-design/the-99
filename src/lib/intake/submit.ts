@@ -60,7 +60,6 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
     notUsed: [...match.phrases, ...displaced, ...resolved.notUsed],
     // A submit is a new ask: whatever address it came from, it carries no earlier read or marks.
     readId: null,
-    deeper: [],
     results: true,
   })}`;
 }
@@ -84,7 +83,6 @@ export function resultsTarget(p: ChooseParams, readId: string | null, arrival: A
     words: capBody(p.words, READ_WORDS_MAX_CHARS, WORDS_CAP).trim(),
     card: null,
     notUsed: [],
-    deeper: [],
     readId,
     results: true,
   })}`;
@@ -111,7 +109,7 @@ export const BUSY_PARAM = "rb";
 
 /** The form with these answers in it: where an old `v=submit` address goes, so a GET never charges. */
 export function formTarget(p: ChooseParams): string {
-  return `${CHOOSE_PATH}${serializeChooseParams({ ...p, card: null, notUsed: [], deeper: [], readId: null, results: false })}`;
+  return `${CHOOSE_PATH}${serializeChooseParams({ ...p, card: null, notUsed: [], readId: null, results: false })}`;
 }
 
 /**

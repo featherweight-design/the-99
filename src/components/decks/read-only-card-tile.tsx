@@ -17,7 +17,7 @@ import { preconsCopy } from "../../lib/copy/precons";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailTrigger, cardDetailCopy, type Sibling } from "../cards/card-detail-provider";
-import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
+import { CardTileCaption, TILE_ART_CLIP_SCALED, TILE_ART_RATIO, TILE_FIELD, TILE_SHELL_SCALED } from "../ui/card-tile-caption";
 import { HydratedImg } from "../ui/hydrated-art";
 import { OwnershipDot } from "../ui/ownership-dot";
 
@@ -44,9 +44,9 @@ export function ReadOnlyCardTile({
   const fullName = printedNameOf(card);
 
   return (
-    <li className="flex flex-col" data-testid={basic ? "read-only-basic-tile" : "read-only-card-tile"}>
+    <li className={`flex flex-col ${TILE_FIELD}`} data-testid={basic ? "read-only-basic-tile" : "read-only-card-tile"}>
       <div
-        className={`${TILE_SHELL} relative ${
+        className={`${TILE_SHELL_SCALED} relative ${
           basic
             ? "[border:1px_dashed_var(--border-dashed)] bg-transparent"
             : "bg-[color:var(--surface)] [border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)] transition-colors"
@@ -59,7 +59,7 @@ export function ReadOnlyCardTile({
           // The trigger's label replaces everything nested in it, and the drawn `×N` is aria-hidden,
           // so a card the precon lists more than once says so here, as the deck tile does.
           ariaLabel={card.quantity > 1 ? `${cardDetailCopy.triggerAria(fullName)}, ${copy.open.copiesAria(card.quantity)}` : undefined}
-          className={`relative block w-full overflow-hidden ${TILE_ART_CLIP}`}
+          className={`relative block w-full overflow-hidden ${TILE_ART_CLIP_SCALED}`}
           style={{ aspectRatio: TILE_ART_RATIO, background: "var(--surface-sunken)" }}
         >
           {card.imageUri ? (

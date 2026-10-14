@@ -59,17 +59,9 @@ export type ChooseParams = {
    * listed. Capped at `NOT_USED_MAX` entries of `NOT_USED_CHARS` each.
    */
   notUsed: string[];
-  /**
-   * Which answers a deeper look added (`d`), written by the panel when it sends the player to the
-   * results it produced: `t:{slug}`, `a` (the card), `b`, `k`. Only marks, drawn only when `r`
-   * names the reader's own delivered read, so a hand-edited mark changes nothing it could mislead.
-   */
-  deeper: string[];
   results: boolean;
 };
 
-/** A deeper mark: a theme by its slug, or the card, budget or bracket. */
-const DEEPER_MARK = /^(t:[a-z0-9-]{1,80}|a|b|k)$/;
 
 export const NOT_USED_MAX = 12;
 export const NOT_USED_CHARS = 120;
@@ -78,7 +70,7 @@ export const NOT_USED_SEPARATOR = "\u001f";
 
 export const emptyParams = (): ChooseParams => ({
   words: "", colors: [], match: "contains", themes: [], themeJoin: "all", sets: [], pool: "any", card: null,
-  budgetDollars: null, bracket: null, readId: null, notUsed: [], deeper: [], results: false,
+  budgetDollars: null, bracket: null, readId: null, notUsed: [], results: false,
 });
 
 /** A theme slug, as the catalog stores it. Exported for `actions.ts`'s `checkedExisting`, which
@@ -121,7 +113,6 @@ export function parseChooseParams(sp: URLSearchParams): ChooseParams {
     bracket: wholeNumber(sp.get("k"), 1, 5) as Bracket | null,
     readId: readId !== null && isUuid(readId) ? readId.toLowerCase() : null,
     notUsed: notUsedList((sp.get("n") ?? "").split(NOT_USED_SEPARATOR)),
-    deeper: [...new Set((sp.get("d") ?? "").split(",").filter((m) => DEEPER_MARK.test(m)))],
     results: sp.get("v") === "results",
   };
 }
@@ -141,7 +132,6 @@ export function serializeChooseParams(p: ChooseParams): string {
   if (p.readId) sp.set("r", p.readId);
   const notUsed = notUsedList(p.notUsed);
   if (notUsed.length > 0) sp.set("n", notUsed.join(NOT_USED_SEPARATOR));
-  if (p.deeper.length > 0) sp.set("d", p.deeper.join(","));
   if (p.results) sp.set("v", "results");
   const qs = sp.toString();
   return qs ? `?${qs}` : "";

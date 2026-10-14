@@ -121,7 +121,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     set: (code: string) => setNames.get(code) ?? code.toUpperCase(),
   };
   // A change of answers is a new ask: it carries neither the read nor its marks.
-  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
+  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, results: false })}`;
   const panel = words ? (
     <ReadPanel
       key={served?.kind ?? "unread"}

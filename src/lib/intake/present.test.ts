@@ -76,12 +76,12 @@ describe("narrowOptions", () => {
     cardOverBracket: "gameChanger" as const,
   };
 
-  it("drops a deeper read and its marks from every option, since a new set of answers is a new ask", () => {
+  it("drops a deeper read from every option, since a new set of answers is a new ask", () => {
     const READ = "0000aaaa-0000-4000-8000-0000000000aa";
     // The look added the budget; dropping it must not hash back to the look's own ask.
-    const after = p({ ...ask, budgetDollars: 150, readId: READ, deeper: ["b"] });
+    const after = p({ ...ask, budgetDollars: 150, readId: READ });
     for (const o of narrowOptions({ ...narrow, without: [...narrow.without, { answers: [{ kind: "budget" as const }], count: 30 }] }, after, labels)) {
-      expect([o.params.readId, o.params.deeper]).toEqual([null, []]);
+      expect(o.params.readId).toBeNull();
     }
   });
 
@@ -103,18 +103,14 @@ describe("narrowOptions", () => {
 describe("answerChips", () => {
   it("lists every answer in the form's order", () => {
     expect(answerChips(p({ colors: ["g", "r"], match: "exactly", themes: ["dinos"], card: "c", budgetDollars: 150, bracket: 2 }), labels)).toEqual([
-      { kind: "exactly", value: "Red · Green", deeper: false },
-      { kind: "theme", value: "Dinosaurs", deeper: false },
-      { kind: "card", value: "Regisaur Alpha", deeper: false },
-      { kind: "budget", value: "$150", deeper: false },
-      { kind: "bracket", value: "2 · Core", deeper: false },
+      { kind: "exactly", value: "Red · Green" },
+      { kind: "theme", value: "Dinosaurs" },
+      { kind: "card", value: "Regisaur Alpha" },
+      { kind: "budget", value: "$150" },
+      { kind: "bracket", value: "2 · Core" },
     ]);
   });
 
-  it("marks the answers a deeper look added, and nothing else", () => {
-    const chips = answerChips(p({ themes: ["dinos"], card: "c", budgetDollars: 150, bracket: 2 }), labels, ["a", "k"]);
-    expect(chips.map((c) => [c.kind, c.deeper])).toEqual([["theme", false], ["card", true], ["budget", false], ["bracket", true]]);
-  });
 });
 
 describe("themes asked as any of", () => {
@@ -169,7 +165,6 @@ describe("themes asked as any of", () => {
       kind: "any of",
       value: "Orcs, Elves, Dwarves or Wizards",
       names: ["Orcs", "Elves", "Dwarves", "Wizards"],
-      deeper: false,
     }]);
     expect(answerChips(four, tribal).map((c) => c.kind)).toEqual(["theme", "theme", "theme", "theme"]);
   });
@@ -193,7 +188,6 @@ describe("the Sets answer", () => {
       kind: "printed in",
       value: "The Hobbit or The Hobbit Commander",
       codes: ["HOB", "HOC"],
-      deeper: false,
     });
   });
 
@@ -207,6 +201,6 @@ describe("the Sets answer", () => {
 describe("own-only", () => {
   it("draws the the-99 chip with its tail, and is never a narrow option", () => {
     const own = p({ themes: ["dinos"], pool: "own" });
-    expect(answerChips(own, labels)[1]).toEqual({ kind: "the 99", value: "from cards you own", tail: "commander owned or not", deeper: false });
+    expect(answerChips(own, labels)[1]).toEqual({ kind: "the 99", value: "from cards you own", tail: "commander owned or not" });
   });
 });
