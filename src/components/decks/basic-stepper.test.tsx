@@ -204,6 +204,15 @@ describe("the basics stepper on a decklist row", () => {
       expect(setBasicQuantity).not.toHaveBeenCalled();
     });
 
+    it("steps from a typed figure, not the saved one", async () => {
+      wrap(<DecklistRow deckId="d1" card={island} newestAsOf={null} />);
+      await act(async () => {
+        fireEvent.change(field(), { target: { value: "20" } });
+        fireEvent.keyDown(field(), { key: "ArrowUp" });
+      });
+      expect(field()).toHaveValue("21");
+    });
+
     it("steps by one on the arrow keys", async () => {
       wrap(<DecklistRow deckId="d1" card={island} newestAsOf={null} />);
       await act(async () => { fireEvent.keyDown(field(), { key: "ArrowUp" }); });

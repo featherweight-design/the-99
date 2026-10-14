@@ -97,8 +97,13 @@ function CountField({
           setDraft(null);
         } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
           e.preventDefault();
+          const delta = e.key === "ArrowUp" ? 1 : -1;
+          // From the figure typed so far when there is one, as a reader expects of a number field; the typed
+          // bounds still apply, since it goes through `onType`.
+          const typed = draft !== null && draft !== "" ? Number.parseInt(draft, 10) : null;
           setDraft(null);
-          onStep(e.key === "ArrowUp" ? 1 : -1);
+          if (typed !== null) onType(typed + delta);
+          else onStep(delta);
         }
       }}
       className={`${band ? "w-[32px]" : "w-[24px]"} h-[22px] md:h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
