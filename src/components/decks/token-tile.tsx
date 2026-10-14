@@ -15,8 +15,8 @@ import { printingLine, tokenFaceDescription, TokenControls, tokenPips, tokenPT, 
 /**
  * A token of the deck in the Card view: the deck's tile anatomy (`TILE_SHELL`, the 63:88 art box with its bottom
  * corners clipped, `CardTileCaption`) with the token's own facts, and the same two presses a row carries beneath
- * it (`TokenControls`). The art and the name open card details as a row's do, the cards that make it unfold
- * under the tile, and a press that fails says so in the tile's own words. Never a verdict word, never a warning
+ * it (`TokenControls`). The art opens card details, as every deck tile's does (a tile's caption is text, so the
+ * name beside it is not a second trigger), the cards that make it unfold under the tile, and a press that fails says so in the tile's own words. Never a verdict word, never a warning
  * color on ownership.
  */
 export function TokenTile({
