@@ -8,7 +8,7 @@ import { useState, useTransition, useId, type JSX } from "react";
 import { useDiscardedScroll } from "../ui/scroll-reset";
 import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
-import { explainedCopy } from "../../lib/copy/commander-explained";
+import { explainedCopy, ROLE_SUBJECTS } from "../../lib/copy/commander-explained";
 import { KeyPip } from "../ui/ownership-dot";
 import { drawsMarker } from "../../lib/decks/availability";
 import {
@@ -25,24 +25,6 @@ import { wholeTarget, type RoleCard, type RoleName } from "../../lib/recs/score"
 
 type RoleOrder = readonly RoleName[];
 const ROLE_ORDER: RoleOrder = ["ramp", "draw", "removal", "wipes"] as const;
-
-const ROLE_LABELS: Record<RoleName, string> = {
-  ramp: "Ramp",
-  draw: "Card Draw",
-  removal: "Removal",
-  wipes: "Board Wipes",
-};
-
-// Sentence form. A heading label is a column title and reads as one ("Card
-// Draw"), but dropped into "No {role} cards in your pool" it says the noun
-// twice. The handoff writes that string as "No ramp cards in your pool", so
-// prose takes this map and headings take ROLE_LABELS.
-const ROLE_NOUNS: Record<RoleName, string> = {
-  ramp: "ramp",
-  draw: "draw",
-  removal: "removal",
-  wipes: "board wipe",
-};
 
 // ── The dot key ────────────────────────────────────────────────────────────────
 
@@ -150,7 +132,7 @@ export function RoleGroupHeader({
   );
   const name = (
     <h3 id={`${listId}-name`} className="font-sans font-[600] m-0" style={{ fontSize: 15, color: "var(--fg)" }}>
-      {ROLE_LABELS[role]}
+      {ROLE_SUBJECTS[role]}
     </h3>
   );
   if (layout === "desktop") {
@@ -158,7 +140,7 @@ export function RoleGroupHeader({
       <div className="flex items-baseline gap-[12px]" style={{ marginBottom: 10 }}>
         {name}
         <span className="font-mono" style={{ fontSize: 12, color: "var(--success)" }}>
-          {count} owned
+          {recommendationsCopy.coverage.owned(count)}
         </span>
         <span data-role-gap={role} data-owned={count} className="font-mono" style={{ fontSize: 12, color: "var(--fg-faint)", marginLeft: "auto" }}>
           {gap}
@@ -171,7 +153,7 @@ export function RoleGroupHeader({
       <div className="flex items-baseline gap-[10px]">
         {name}
         <span className="font-mono" style={{ fontSize: 11.5, color: "var(--success)" }}>
-          {count} owned
+          {recommendationsCopy.coverage.owned(count)}
         </span>
       </div>
       <p data-role-gap={role} data-owned={count} className="font-mono m-0" style={{ fontSize: 10.5, color: "var(--fg-faint)", marginBottom: 9 }}>
@@ -246,7 +228,7 @@ function RolePanelDesktop({
       {/* Card chips */}
       {cards.length === 0 ? (
         <span id={listId} className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
-          No {ROLE_NOUNS[role]} cards in your pool
+          {recommendationsCopy.coverage.emptyPool(recommendationsCopy.coverage.roleNoun[role])}
         </span>
       ) : (
         <>
@@ -274,7 +256,7 @@ function RolePanelDesktop({
               <CoverageDisclosure
                 width="desktop"
                 total={cards.length}
-                role={ROLE_NOUNS[role]}
+                role={recommendationsCopy.coverage.roleNoun[role]}
                 expanded={expanded}
                 controls={listId}
                 onToggle={onToggle}
@@ -363,7 +345,7 @@ function RolePanelPhone({
       >
         {cards.length === 0 ? (
           <span id={listId} className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
-            No {ROLE_NOUNS[role]} cards in your pool
+            {recommendationsCopy.coverage.emptyPool(recommendationsCopy.coverage.roleNoun[role])}
           </span>
         ) : (
           <>
@@ -388,7 +370,7 @@ function RolePanelPhone({
               <CoverageDisclosure
                 width="phone"
                 total={cards.length}
-                role={ROLE_NOUNS[role]}
+                role={recommendationsCopy.coverage.roleNoun[role]}
                 expanded={expanded}
                 controls={listId}
                 onToggle={onToggle}
@@ -551,7 +533,7 @@ export function CoverageSection({
           width it takes a full-width row of its own under the sub-caption. */}
       <div className="flex items-center gap-[12px]">
         <h2 className="font-display font-[600] m-0" style={{ fontSize: 20, color: "var(--fg)" }}>
-          Role Coverage
+          {recommendationsCopy.coverage.title}
         </h2>
         {isDesktop && (
           <div className="ml-auto">

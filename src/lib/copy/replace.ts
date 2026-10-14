@@ -12,6 +12,10 @@ export const replaceCopy = {
   /** `/collection/replace`'s title. With nothing to replace, the page is how a collection starts. */
   pageTitle: (current: number) => (current === 0 ? "Add your collection" : "Replace collection"),
 
+  /** The way back to the Collection above the title: the phone's arrow is named in words, the desktop's reads as a crumb. */
+  backAria: "Back to Collection",
+  backCrumb: "‹ Collection",
+
   review: {
     /** The phone exit (D11), left of Continue; it does what the retired ‹ did. */
     cancel: "Cancel",

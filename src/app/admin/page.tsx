@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { CostsView } from "../../components/admin/costs-view";
 import { adminMetadata, requireAdmin } from "../../lib/admin/access";
+import { adminCopy } from "../../lib/copy/admin";
 import { loadCosts } from "../../lib/admin/costs";
 import { adminEnvironment } from "../../lib/admin/environment";
 import { monthOf, parseMonth } from "../../lib/admin/costs-rule";
 
-export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: "Costs" });
+export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.costs });
 
 /**
  * `/admin` is Costs (the plan: Costs comes first). `?month=YYYY-MM` steps back through UTC months;

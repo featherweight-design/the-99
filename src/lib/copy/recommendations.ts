@@ -26,6 +26,12 @@ const plural = (n: string, one: string, many: string) =>
 export const recommendationsCopy = {
   // ── Surface A · Role Coverage ─────────────────────────────────────────
   coverage: {
+    /** The section's head. */
+    title: 'Role Coverage',
+    /** A role in a sentence ("No ramp cards in your pool"); the headings use `ROLE_SUBJECTS`. */
+    roleNoun: { ramp: 'ramp', draw: 'draw', removal: 'removal', wipes: 'board wipe' } as const,
+    owned: (count: number) => `${count} owned`,
+    emptyPool: (noun: string) => `No ${noun} cards in your pool`,
     // A role group's head: what the reader owns against the role's target. MEASURED is what
     // this commander's decks run (its own figure, or its color bucket's), rounded to whole
     // cards the way the fit score rounds it; FLAT is the per-role baseline we fall back to

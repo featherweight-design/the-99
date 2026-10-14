@@ -6,7 +6,7 @@ import { pwaCopy } from "../../lib/copy/pwa";
 // The page the service worker shows when a page load finds no network (`public/sw.js`). Public in
 // `src/proxy.ts`, and the worker fetches it with no credentials, so the copy it keeps is the
 // signed-out render: no shell, no reader, nothing that is anyone's data.
-export const metadata: Metadata = { title: "Offline · The 99" };
+export const metadata: Metadata = { title: pwaCopy.offline.documentTitle };
 
 const copy = pwaCopy.offline.page;
 

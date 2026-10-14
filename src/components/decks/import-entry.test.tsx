@@ -229,7 +229,7 @@ describe("state 10 — nothing parsed", () => {
   it("keeps the list on the page when the server action throws", async () => {
     // A throw inside the transition otherwise reaches the error boundary and
     // takes the pasted list with it.
-    importDeck.mockRejectedValueOnce(new Error("Decklist too large (max 2 MB)"));
+    importDeck.mockRejectedValueOnce(new Error("That file is too large (max 2 MB)"));
     render(<ImportEntry />);
     fillPaste();
     submit();
@@ -237,7 +237,7 @@ describe("state 10 — nothing parsed", () => {
     expect(alert.textContent).toContain("That didn’t go through");
     // The cap is the player's to fix, so the banner names it rather than blaming
     // our end and inviting a retry that cannot succeed.
-    expect(alert.textContent).toContain("Decklist too large (max 2 MB)");
+    expect(alert.textContent).toContain("That file is too large (max 2 MB)");
     expect(screen.getByRole("button", { name: "Back to your list" })).toBeTruthy();
     expect((pasteBox() as HTMLTextAreaElement).value).toContain("Sol Ring");
     expect(push).not.toHaveBeenCalled();

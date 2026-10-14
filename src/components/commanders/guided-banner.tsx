@@ -39,7 +39,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
             className="font-mono uppercase"
             style={{ fontSize: 10, letterSpacing: "0.14em", color: "var(--accent)" }}
           >
-            Step 2 of 3
+            {commandersCopy.guidedBanner.step}
           </span>
 
           {/* Progress diamonds */}
@@ -67,7 +67,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
           className="font-display m-0"
           style={{ fontSize: 15, fontWeight: 600, color: "var(--fg)", marginTop: 7 }}
         >
-          Review your commanders
+          {commandersCopy.guidedBanner.reviewTitle}
         </h2>
 
         {/* Body. No mark of any kind: this is an inline directive banner, not
@@ -115,7 +115,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
               className="font-mono uppercase"
               style={{ fontSize: 10, letterSpacing: "0.16em", color: "var(--accent)" }}
             >
-              Guided setup · step 2 of 3
+              {commandersCopy.guidedBanner.setupCrumb}
             </span>
 
             {/* Progress diamonds */}
@@ -143,7 +143,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
             className="font-display m-0"
             style={{ fontSize: 23, fontWeight: 700, color: "var(--fg)", marginTop: 6 }}
           >
-            Meet your commanders
+            {commandersCopy.guidedBanner.meetTitle}
           </h2>
 
           {/* Body */}

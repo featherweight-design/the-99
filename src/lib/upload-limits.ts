@@ -1,3 +1,5 @@
+import { importReviewCopy } from "./copy/import-review";
+
 // Size caps for every user-supplied import, in one place so a check and the copy
 // describing it cannot drift apart.
 //
@@ -69,14 +71,14 @@ function assertNever(source: never): void {
 export function deckImportTooLargeMessage(source: DeckImportSource): string {
   switch (source) {
     case "paste":
-      return `Paste too large (max ${PASTE_MAX_LABEL})`;
+      return importReviewCopy.errors.pasteTooLarge(PASTE_MAX_LABEL);
     case "file":
-      return `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`;
+      return importReviewCopy.errors.fileTooLarge(DECK_IMPORT_FILE_MAX_LABEL);
     default:
       // Pairs with the cap above: an unrecognised source is capped as a paste,
       // so it must be told so too, or the message names a limit it never hit.
       assertNever(source);
-      return `Paste too large (max ${PASTE_MAX_LABEL})`;
+      return importReviewCopy.errors.pasteTooLarge(PASTE_MAX_LABEL);
   }
 }
 

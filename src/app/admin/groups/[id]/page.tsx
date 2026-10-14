@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GroupPageView } from "../../../../components/admin/group-page";
 import { adminMetadata, requireAdmin } from "../../../../lib/admin/access";
+import { adminCopy } from "../../../../lib/copy/admin";
 import { loadGroupPage } from "../../../../lib/admin/groups";
 import { isGroupId } from "../../../../lib/admin/groups-rule";
 
 type Props = { params: Promise<{ id: string }> };
 
-export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: "Groups" });
+export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.groups });
 
 /**
  * `/admin/groups/<id>`, one group's page (admin STATES G2, G4). The gate comes before the id is

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { ModelsView } from "../../../components/admin/models-view";
 import { adminMetadata, requireAdmin } from "../../../lib/admin/access";
+import { adminCopy } from "../../../lib/copy/admin";
 import { utcMonthName } from "../../../lib/admin/account-page-rule";
 import { loadCosts } from "../../../lib/admin/costs";
 import { monthOf } from "../../../lib/admin/costs-rule";
 import { readJobValues } from "../../../lib/admin/github-variables";
 import { MODEL_ROWS, rowSpend } from "../../../lib/admin/models";
 
-export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: "Models" });
+export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.models });
 
 /**
  * `/admin/models`, the fifth tab (admin STATES M1, M2; plan PR 10). Read only. The spend is the
