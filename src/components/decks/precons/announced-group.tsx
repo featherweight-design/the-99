@@ -34,7 +34,25 @@ const subscribeHash = (onChange: () => void) => {
   return () => window.removeEventListener("hashchange", onChange);
 };
 
+/**
+ * The group's state for one VISIT: whether the reader arrived by the banner's `#announced` link (latched, since a
+ * search's mirror drops the fragment and the decklist jump replaces it) and their own press, if any. Held by the
+ * list view, which stays mounted, because the group itself unmounts while a filter leaves no set or Most owned
+ * hides it, and coming back must not forget either.
+ */
+export type AnnouncedVisit = { arrivedByLink: boolean; pressed: boolean | null; press: (open: boolean) => void };
+
+export function useAnnouncedVisit(): AnnouncedVisit {
+  const onLink = useSyncExternalStore(subscribeHash, () => window.location.hash === ANNOUNCED_HASH, () => false);
+  const [arrivedByLink, setArrivedByLink] = useState(false);
+  if (onLink && !arrivedByLink) setArrivedByLink(true);
+  const [pressed, setPressed] = useState<boolean | null>(null);
+  return { arrivedByLink: arrivedByLink || onLink, pressed, press: setPressed };
+}
+
 export type AnnouncedGroupProps = {
+  /** This visit's link arrival and press, from `useAnnouncedVisit` in the list view. */
+  visit: AnnouncedVisit;
   /** The sets after the list's filters (`filterAnnounced`), soonest first; empty draws nothing. */
   matches: AnnouncedMatch[];
   /** `YYYY-MM-DD`, the UTC day the server counted from. */
@@ -51,7 +69,7 @@ export type AnnouncedGroupProps = {
 };
 
 export function AnnouncedGroup({
-  matches, today, newCodes, opensByItself, view, listed, filtering = false, serverPress = null,
+  visit, matches, today, newCodes, opensByItself, view, listed, filtering = false, serverPress = null,
 }: AnnouncedGroupProps) {
   const [stored, store] = useStoredView(ANNOUNCED_KEY, isPress, { cookie: PRECONS_ANNOUNCED_COOKIE, serverValue: serverPress });
   // No transition until the page has settled: a state only the browser can know (`#announced`, a press stored
@@ -62,20 +80,15 @@ export function AnnouncedGroup({
     const first = requestAnimationFrame(() => { second = requestAnimationFrame(() => setSettled(true)); });
     return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
   }, []);
-  const onLink = useSyncExternalStore(subscribeHash, () => window.location.hash === ANNOUNCED_HASH, () => false);
-  // Latched for the visit: a search mirrors the URL without its fragment and the decklist jump replaces it,
-  // and neither should fold a group the reader came here to see.
-  const [arrivedByLink, setArrivedByLink] = useState(false);
-  if (onLink && !arrivedByLink) setArrivedByLink(true);
+  const { arrivedByLink, pressed, press: setPressed } = visit;
   // This visit's own press wins over everything; before one, news, the link or a filter it matches opens it
   // (derived, never stored), else the stored press.
-  const [pressed, setPressed] = useState<boolean | null>(null);
   const open = pressed ?? (opensByItself || arrivedByLink || (filtering && matches.length > 0) ? true : stored === "open");
   const toggle = useCallback(() => {
     const next = !open;
     setPressed(next);
     store(next ? "open" : "closed");
-  }, [open, store]);
+  }, [open, store, setPressed]);
 
   if (matches.length === 0) return null;
   const hasNew = matches.some((m) => newCodes.includes(m.set.code));

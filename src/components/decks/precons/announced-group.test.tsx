@@ -4,7 +4,13 @@ import { renderToString } from "react-dom/server";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { RevealedCommander } from "../../../lib/precons/revealed";
 import type { UpcomingSet } from "../../../lib/precons/upcoming";
-import { ANNOUNCED_KEY, AnnouncedGroup, type AnnouncedGroupProps } from "./announced-group";
+import { ANNOUNCED_KEY, AnnouncedGroup, useAnnouncedVisit, type AnnouncedGroupProps } from "./announced-group";
+
+/** The group with its visit state held one level up, as the list view holds it. */
+function G(props: Omit<AnnouncedGroupProps, "visit">) {
+  const visit = useAnnouncedVisit();
+  return <AnnouncedGroup visit={visit} {...props} />;
+}
 
 const set = (code: string, name: string, releasesOn: string, over: Partial<UpcomingSet> = {}): UpcomingSet => ({
   code, name, releasesOn, released: false, cardCount: 40, parentName: null, arrivedAt: null, seen: false, ...over,
@@ -20,9 +26,9 @@ const trcCards = [commander(78, "Christine Chapel, Combat Medic"), ...Array.from
 const trc = match(set("trc", "Star Trek Commander", "2026-11-13"), trcCards);
 const mdc = match(set("mdc", "Darkhold Destiny Commander", "2027-04-09"), [commander(1, "Gargantos, the Endbringer", ["B", "G"])]);
 
-const draw = (over: Partial<AnnouncedGroupProps> = {}) =>
+const draw = (over: Partial<Omit<AnnouncedGroupProps, "visit">> = {}) =>
   render(
-    <AnnouncedGroup matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} {...over} />,
+    <G matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} {...over} />,
   );
 const head = () => screen.getByRole("button", { name: /^Announced/ });
 const region = (container: HTMLElement) => container.querySelector("#announced-sets") as HTMLElement;
@@ -131,7 +137,7 @@ describe("AnnouncedGroup", () => {
 
   it("draws the press the cookie carries on the server, so the group never opens after hydration", () => {
     const html = (serverPress: "open" | "closed" | null) => renderToString(
-      <AnnouncedGroup matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} serverPress={serverPress} />,
+      <G matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} serverPress={serverPress} />,
     );
     expect(html("open")).toMatch(/aria-expanded="true"/);
     expect(html("closed")).toMatch(/aria-expanded="false"/);
@@ -158,7 +164,7 @@ describe("AnnouncedGroup", () => {
     expect(head()).toHaveAttribute("aria-expanded", "false");
     // Derived, never stored: the press wrote `closed`, the filter wrote nothing.
     expect(window.localStorage.getItem(ANNOUNCED_KEY)).toBe("closed");
-    rerender(<AnnouncedGroup matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} filtering={false} />);
+    rerender(<G matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} filtering={false} />);
     expect(head()).toHaveAttribute("aria-expanded", "false");
   });
 
@@ -166,7 +172,7 @@ describe("AnnouncedGroup", () => {
     window.localStorage.setItem(ANNOUNCED_KEY, "closed");
     const { rerender } = draw({ filtering: true });
     expect(head()).toHaveAttribute("aria-expanded", "true");
-    rerender(<AnnouncedGroup matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} filtering={false} />);
+    rerender(<G matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} filtering={false} />);
     expect(head()).toHaveAttribute("aria-expanded", "false");
     expect(window.localStorage.getItem(ANNOUNCED_KEY)).toBe("closed");
   });

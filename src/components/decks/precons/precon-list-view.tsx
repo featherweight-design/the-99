@@ -30,7 +30,7 @@ import { PendingReporter } from "../../shell/pending-reporter";
 import { PreconRow } from "./precon-row";
 import { PreconTile } from "./precon-tile";
 import { EmptyCollectionBand } from "./empty-collection-band";
-import { AnnouncedGroup } from "./announced-group";
+import { AnnouncedGroup, useAnnouncedVisit } from "./announced-group";
 import type { ListedJump } from "./announced-parts";
 import { filterAnnounced } from "../../../lib/precons/arrivals";
 import type { AnnouncedProps } from "../../../lib/precons/announced";
@@ -99,10 +99,14 @@ export function PreconListView({
 
   function mirror(next: { q: string; colours: string[]; order: PreconOrder; view?: PreconView }) {
     const live = new URLSearchParams(window.location.search);
+    // An address that names Newest (the banner's link, over an order this browser saved) keeps naming it while the
+    // order stays Newest, or a later filter's mirror would reload as the saved order. Absence stays the default.
+    const namedNewest = live.get("sort") === "newest";
     for (const key of ["q", "colour", "sort", "view"]) live.delete(key);
     if (next.q.trim()) live.set("q", next.q.trim());
     if (next.colours.length) live.set("colour", next.colours.join(","));
     if (next.order !== "newest") live.set("sort", next.order);
+    else if (namedNewest) live.set("sort", "newest");
     // Tiles is the default, so only rows is written when the reader picks a view (R4 §2). A filter's
     // mirror keeps the view the address already names, an explicit `?view=tiles` included: dropping it
     // would leave a URL that reloads as this browser's stored rows while the page draws tiles.
@@ -161,6 +165,8 @@ export function PreconListView({
     return out;
   }, [shown]);
   const isNew = useMemo(() => new Set(newFileNames), [newFileNames]);
+  // Held here, not in the group: the group unmounts while a filter empties it or Most owned hides it.
+  const announcedVisit = useAnnouncedVisit();
   const dates = rows.map((r) => r.releaseDate).sort();
   const first = dates[0]?.slice(0, 4) ?? "";
   const last = dates[dates.length - 1]?.slice(0, 4) ?? "";
@@ -282,6 +288,7 @@ export function PreconListView({
         {announced && announcedShown.length > 0 && (
           <div className="p-[16px_16px_6px] md:p-[18px_22px_4px]">
             <AnnouncedGroup
+              visit={announcedVisit}
               matches={announcedShown}
               today={announced.today}
               newCodes={announced.newCodes}

@@ -217,7 +217,8 @@ async function walk(browser, vp, userIdHolder) {
     report("?sort=newest#announced beats the saved order: the group is drawn", (await onPage(page, "#announced").count()) === 1);
     report("and arrives open", await expanded(page));
     const box = await head(page).boundingBox();
-    report("and the head is in the viewport", box !== null && box.y >= 0 && box.y < vp.height, box ? `y=${Math.round(box.y)}` : "no box");
+    // The anchor scroll can leave the head a sub-pixel above the top (y=-0.4): that is in view.
+    report("and the head is in the viewport", box !== null && box.y > -2 && box.y < vp.height, box ? `y=${box.y.toFixed(1)}` : "no box");
 
     // 6. T7.
     await load(page, "/decks/precons?sort=owned");

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { PreconRow } from "../../../lib/precons/list";
 import type { AnnouncedProps } from "../../../lib/precons/announced";
+import { parsePreconParams } from "../../../lib/precons/list";
 
 // The real write, so the live query sees the address the view wrote, as it does in the app.
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: (href: string) => window.history.replaceState(null, "", href) }));
@@ -236,6 +237,74 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
   it("hands the cookie's press to the group, so the server draws it open", () => {
     draw(undefined, { storedAnnounced: "open" });
     expect(screen.getByRole("button", { name: /^Announced/ })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  const head = () => screen.getByRole("button", { name: /^Announced/ });
+  const searchBox = () => screen.getAllByRole("searchbox")[0] ?? screen.getAllByRole("textbox")[0];
+  const pickOrder = (label: RegExp) => {
+    fireEvent.click(screen.getByRole("button", { name: /^Sort · / }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: label }));
+  };
+
+  it("keeps a #announced arrival open through a no-match search and its clearing (the mirror drops the hash)", () => {
+    window.localStorage.setItem("the99:precons:announced", "closed");
+    window.history.replaceState(null, "", "/decks/precons#announced");
+    draw();
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    fireEvent.change(searchBox(), { target: { value: "zzzz" } });
+    expect(group()).toBeNull();
+    expect(window.location.hash).toBe("");
+    fireEvent.change(searchBox(), { target: { value: "" } });
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("keeps a news group the reader closed by hand closed through a no-match search", () => {
+    draw(undefined, { announced: { ...announced, opensByItself: true, newCodes: ["trc"] } });
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(head());
+    fireEvent.change(searchBox(), { target: { value: "zzzz" } });
+    expect(group()).toBeNull();
+    fireEvent.change(searchBox(), { target: { value: "" } });
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("keeps the visit's state through Most owned and back", () => {
+    window.history.replaceState(null, "", "/decks/precons#announced");
+    draw(undefined, { announced: { ...announced, opensByItself: true, newCodes: ["trc"] } });
+    fireEvent.click(head());
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+    pickOrder(/Most owned/);
+    expect(group()).toBeNull();
+    pickOrder(/Newest/);
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("keeps a #announced arrival open through Most owned and back", () => {
+    window.localStorage.setItem("the99:precons:announced", "closed");
+    window.history.replaceState(null, "", "/decks/precons#announced");
+    draw();
+    pickOrder(/Most owned/);
+    expect(group()).toBeNull();
+    pickOrder(/Newest/);
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("keeps an explicit sort=newest through a filter's mirror, so a reload still reads Newest over a saved Most owned", () => {
+    window.localStorage.setItem("the99:precons:order", "owned");
+    window.history.replaceState(null, "", "/decks/precons?sort=newest#announced");
+    draw({ q: "", colours: [], order: "newest", view: null }, { query: "sort=newest" });
+    fireEvent.change(searchBox(), { target: { value: "chapel" } });
+    expect(window.location.search).toBe("?q=chapel&sort=newest");
+    expect(parsePreconParams(new URLSearchParams(window.location.search)).order).toBe("newest");
+    // The view toggle's mirror keeps it too.
+    fireEvent.click(screen.getByRole("button", { name: "Rows view" }));
+    expect(new URLSearchParams(window.location.search).get("sort")).toBe("newest");
+  });
+
+  it("still writes Newest as absence when the address never named it", () => {
+    draw();
+    fireEvent.change(searchBox(), { target: { value: "chapel" } });
+    expect(window.location.search).toBe("?q=chapel");
   });
 
   it("draws nothing when there is no announced data (switch off or read failed, T1, T9)", () => {
