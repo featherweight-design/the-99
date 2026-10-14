@@ -6,6 +6,13 @@
 // "EDHREC doesn't track this commander" note on rec-card.tsx / detail.tsx.
 
 export const commandersCopy = {
+  /** The first-run guide's banner on the commanders page. */
+  guidedBanner: {
+    step: "Step 2 of 3",
+    setupCrumb: "Guided setup · step 2 of 3",
+    reviewTitle: "Review your commanders",
+    meetTitle: "Meet your commanders",
+  },
   filteredEmpty: {
     heading: (guild: string) => `No generals in ${guild}.`,
     // Number agreement runs the whole clause, not just the noun: at one

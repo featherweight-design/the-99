@@ -38,8 +38,8 @@
 const n = (v: number) => v.toLocaleString("en-US");
 
 // Subject form of a role, for the one sentence that uses a role name as a grammatical subject.
-// NOT a replacement for coverage-section.tsx's ROLE_NOUNS, which is singular and attributive
-// ("No board wipe cards in your pool") and stays as it ships. Three of the four entries are
+// NOT a replacement for `recommendationsCopy.coverage.roleNoun`, which is singular and attributive
+// ("No board wipe cards in your pool") and is kept apart on purpose. Three of the four entries are
 // identical to it; `wipes` is the one that cannot be shared, and one shared map made plural
 // would break the shipped string instead.
 type RoleKey = "ramp" | "draw" | "removal" | "wipes";
@@ -109,11 +109,11 @@ export const explainedCopy = {
         short of the commander's role target (its measured figure, else the baseline); a measured
         target of 0 is never short. The linked span is the figures clause.
 
-        THE ROLE NOUN COMES FROM ITS OWN MAP, NOT ROLE_NOUNS. coverage-section.tsx:26-31 ships
-        ROLE_NOUNS in the SINGULAR — `wipes: "board wipe"` — because its only consumer is
+        THE ROLE NOUN COMES FROM ITS OWN MAP, NOT `roleNoun`. recommendationsCopy.coverage
+        ships `roleNoun` in the SINGULAR — `wipes: "board wipe"` — because its only consumer is
         "No board wipe cards in your pool", where the noun is attributive. Dropped into this
         sentence it produces "board wipe are where you are thinnest". This sentence takes
-        ROLE_SUBJECTS below; ROLE_NOUNS is left alone. */
+        ROLE_SUBJECTS below; `roleNoun` is left alone. */
     gap: (role: RoleKey) => `${ROLE_SUBJECTS[role]} ${ROLE_COPULA[role]} where you are thinnest`,
     /** `target` goes through spellOut for the same reason `owned` does — both are prose, and
         the canvas draws "a ten-source baseline". R1's key emitted "10-source". */

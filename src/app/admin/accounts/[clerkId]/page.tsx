@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AccountPageView } from "../../../../components/admin/account-page";
 import { adminMetadata, requireAdmin } from "../../../../lib/admin/access";
+import { adminCopy } from "../../../../lib/copy/admin";
 import { loadAccountPage } from "../../../../lib/admin/account-page";
 
 type Props = { params: Promise<{ clerkId: string }> };
 
-export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: "Accounts" });
+export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.accounts });
 
 /**
  * `/admin/accounts/<clerkId>`, one account's page (admin STATES A4 to A7). The gate comes before the id
