@@ -10,7 +10,7 @@
  *      names the new deck.
  *
  * Anything that fails rolls all four back: the player has either the deck and the copies, or neither.
- * Undo of the add takes the reservations with the copies (`releasePreconReservations`); the deck is
+ * Undo of the add takes the reservations with the copies (`lockPreconReservations`, then `dropPreconReservations` once the revert has read its "before"); the deck is
  * linked to the add by `decks.precon_add_entry_id`, which is also how a retry finds the deck it made.
  * Not a "use server" module: it takes a user id.
  */

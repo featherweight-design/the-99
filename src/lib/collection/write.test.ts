@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { DeckClaim } from "../decks/availability";
 import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
@@ -231,6 +233,18 @@ describe("newlyShort", () => {
     expect(newlyShort(before, after, [A], names)).toEqual([]);
   });
 
+  it("names only the started deck when a precon start's revert reads its before with the reservation standing", () => {
+    // Production's shape (2026-10-14): one copy held by the senior deck, a junior deck short of it, and the box's copy
+    // reserved to the new deck. The revert takes the box's copy and releases the reservation.
+    const claims = [claim("senior", 1, 100), claim("junior", 1, 200), claim("started", 1, 300)];
+    const standing = { owned: 2, claims: claims.map((c) => (c.id === "started" ? { ...c, granted: 1 } : c)) };
+    const reverted = { owned: 1, claims };
+    expect(newlyShort(new Map([[A, standing]]), new Map([[A, reverted]]), [A], names).map((d) => d.deckId)).toEqual(["started"]);
+    // Read after the release instead, the box's copy goes by seniority to the junior deck and the revert "takes" it.
+    const released = { owned: 2, claims };
+    expect(newlyShort(new Map([[A, released]]), new Map([[A, reverted]]), [A], names).map((d) => d.deckId)).toEqual(["junior"]);
+  });
+
   it("reads a card no longer owned at all as every committed claim on it going short", () => {
     // The claim read is driven by the collection, so a card with no row left is absent after.
     const before = new Map([[A, { owned: 1, claims: [claim("old", 1, 100), claim("brew", 1, null)] }]]);
@@ -301,5 +315,37 @@ describe("restoreToUndo", () => {
     const made = [{ oracleId: A, placed: { deckId: "b", createdAt: "2026-10-12 09:00:00.1", displaced: was } }];
     expect(placementToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } }, made))
       .toEqual({ oracleId: A, deckId: "b", createdAt: "2026-10-12 09:00:00.1" });
+  });
+});
+
+// The two precon-start readouts are WIRING: the rules above hold either way, and what decides the answer is when
+// applyCollectionChange reads relative to the work that moves the reservations. These pin that order in the source,
+// so reverting either fix fails here as well as in probe:precon-start-owned (cases l and m).
+describe("the order a precon start's readouts are read in", () => {
+  const src = readFileSync(join(process.cwd(), "src/lib/collection/write.ts"), "utf8");
+  const at = (needle: string) => {
+    const i = src.indexOf(needle);
+    expect(i, needle).toBeGreaterThanOrEqual(0);
+    expect(src.indexOf(needle, i + 1), `${needle} appears once`).toBe(-1);
+    return i;
+  };
+
+  it("drops a revert's start reservations only after the deck check reads its before", () => {
+    const locked = at("startRelease = await lockPreconReservations(tx, userId, change.entryId);");
+    const before = at("const claimsBefore = lowered.length > 0");
+    const dropped = at("if (startRelease) await dropPreconReservations(tx, userId, startRelease);");
+    const after = at("const claimsAfter = await loadAvailability(");
+    expect(locked).toBeLessThan(before);
+    expect(before).toBeLessThan(dropped);
+    expect(dropped).toBeLessThan(after);
+  });
+
+  it("grants Went to's before with the reservations read before the inside work", () => {
+    const read = at("const insideBefore = opts.placements && opts.inside");
+    const inside = at("if (opts.inside && change.kind === \"add\") await opts.inside(tx);");
+    const placed = at("raisedCards(tx, userId, plan, opts.env, insideBefore)");
+    expect(read).toBeLessThan(inside);
+    expect(inside).toBeLessThan(placed);
+    expect(src).toContain("const reservations = prior ?? current;");
   });
 });

@@ -16,6 +16,11 @@
 //      whose box's tokens the player does not hold, pins none, while one whose box's tokens are held pins them
 //   h  reverting the add releases the start's reservations (a later pick on the new deck stays), and the older decks
 //      are still short
+//   l  production's shape (2026-10-14), under a second account: the player already holds one copy of each of the
+//      four, so the senior older deck holds it and the junior one is short. "Went to" still names the new deck alone
+//      (not the junior deck, which the box's copy never reached)
+//   m  and the revert's short warning names the new deck alone: the junior deck was short before the start and
+//      stays short, so the revert leaves it no shorter
 //
 // Mutations, each run against it and each failing it:
 //   - the reservation insert dropped from `startPreconOwned`: fails b, c, d and e.
@@ -23,6 +28,9 @@
 //   - the source check dropped from `madeBy`: fails f.
 //   - the token pins dropped from `writePreconDeckIn`: fails i.
 //   - its `created_at` bound dropped, so it releases every reservation the deck holds: fails h.
+//   - `raisedCards` given the reservations standing after the start's own work (no `insideBefore`): fails l.
+//   - the start's reservations dropped before the revert reads its "before" (`dropPreconReservations` moved up to
+//     where they are locked): fails m.
 //
 // It writes under a per-run `user_id` and purges that account in a `finally`, after the branch guard:
 // `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by id.
@@ -50,6 +58,7 @@ const { DATABASE_URL, PROBE_DB_BRANCH } = requireEnv(["DATABASE_URL", "PROBE_DB_
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-precon-start-owned-${Date.now()}`;
+const HELD_USER = `${USER}-held`;
 // A script has no signed-in reader: it decides switches from the environment, saying so.
 const ENV = process.env;
 let failures = 0;
@@ -169,12 +178,55 @@ async function run() {
   const left = await rows<{ id: string }>(sql`select oracle_id::text id from card_assignments where user_id = ${USER} and deck_id = ${deckId}::uuid`);
   check("h · and releases the start's reservations, keeping a later pick", left.map((r) => r.id), [later.id]);
   check("h · the older decks are still short of all four", [await owes(thorin), await owes(gishath)], [FOUR, FOUR]);
+
+  await heldOverlap(four);
+}
+
+/**
+ * Production's shape (2026-10-14): the player already holds one copy of each of the four, which the senior older deck
+ * holds, so the junior one is short. The box's copies are the new deck's, and neither readout may say otherwise.
+ */
+async function heldOverlap(four: Map<string, string>) {
+  const owesOf = async (deckId: string) => (await loadDeckBuyRows(HELD_USER, [deckId], undefined, ENV))
+    .filter((r) => r.deckId === deckId && four.has(r.oracleId)).map((r) => four.get(r.oracleId)).sort();
+  const senior = await startPreconDeck(HELD_USER, "AbzanArmor_TDC", "Older A", ENV);
+  const junior = await startPreconDeck(HELD_USER, "AvengersAssemble_MSC", "Older B", ENV);
+  await applyCollectionChange(HELD_USER, {
+    kind: "add", items: [...four.keys()].map((oracleId) => ({ oracleId, setCode: "", condition: null, quantity: 1 })),
+  }, { id: randomUUID(), env: ENV });
+  check("l · setup: the senior deck holds the four and the junior one is short of them",
+    [await owesOf(senior), await owesOf(junior)], [[], FOUR]);
+
+  const actionId = randomUUID();
+  const started = await startPreconOwned(HELD_USER, FILE, "Multiverse Reforged", actionId, ENV, true);
+  if (!started.ok) throw new Error(`held start refused: ${started.reason}`);
+  const deckId = started.deckId;
+  check("l · after the start, the senior deck still holds them and the junior one is still short",
+    [await owesOf(senior), await owesOf(junior)], [[], FOUR]);
+  const [entry] = await rows<{ rows: { oracleId: string; wentTo?: { decks: { deckId: string }[] } }[] }>(sql`
+    select rows from collection_history where id = ${actionId}::uuid`);
+  const went = entry.rows.filter((r) => four.has(r.oracleId) && r.wentTo)
+    .map((r) => [four.get(r.oracleId), r.wentTo!.decks.map((d) => d.deckId)] as const).sort();
+  check("l · History's Went to names the new deck alone, never the junior deck", went, FOUR.map((n) => [n, [deckId]]));
+
+  const revertId = randomUUID();
+  const warned = await applyCollectionChange(HELD_USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV });
+  const named = warned.status === "wouldShort" ? [...new Set(warned.decks.map((d) => d.deckId))] : [];
+  check("m · the revert's short warning names the new deck alone", named, [deckId]);
+  if (warned.status === "wouldShort") {
+    const revert = await applyCollectionChange(HELD_USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV, confirmShort: warned.decks });
+    check("m · the revert applies once confirmed", revert.status, "applied");
+  }
+  check("m · and the junior deck is exactly as short as before the start",
+    [await owesOf(senior), await owesOf(junior)], [[], FOUR]);
 }
 
 run()
   .catch((err) => { failures += 1; console.error(err); })
   .finally(async () => {
-    if (guarded) await purgeAccount(USER).catch((err) => { failures += 1; console.error("purge failed", err); });
+    if (guarded) {
+      for (const user of [USER, HELD_USER]) await purgeAccount(user).catch((err) => { failures += 1; console.error("purge failed", err); });
+    }
     await pool.end();
     console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} failure(s).`);
     process.exit(failures === 0 ? 0 : 1);
