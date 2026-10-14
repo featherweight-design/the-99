@@ -5,7 +5,9 @@ import { deckTokenPrintings, tokenPrintingHoldings, tokenPrintings } from "../..
 /**
  * Which printing a deck shows for each of its tokens (token printings plan, TP2). The same chain a card
  * follows (`src/lib/decks/printings.ts`): the deck's pick while the player still holds that printing, else
- * the printing they hold the most copies of, else the catalog's own art (`assembleDeckTokens`' default).
+ * the printing they hold the most copies of that has art (a held printing with no image is passed over while one
+ * with an image is held, as `primaryPrinting` passes it over for a card: the details sheet resolves with that, so the
+ * row and the sheet show the same printing), else the catalog's own art (`assembleDeckTokens`' default).
  *
  * A pick the player no longer holds is IGNORED, never deleted, so a Replace upload that drops a printing
  * leaves every deck's choice standing for the day it comes back. So is a pick whose printing is not OF its

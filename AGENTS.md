@@ -442,7 +442,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `token_oracle_id`, and such a key would roll back the whole catalog publish the day Scryfall re-filed a picked
   printing. `pnpm probe:token-printings` proves the writes on a scratch branch.
   **A deck's token printing** (TP2, behind `DECK_TOKENS_ENABLED`) follows a card's chain (`src/lib/tokens/deck-printings.ts`):
-  the deck's pick while the player holds that printing, else the printing they hold most copies of, else the catalog's
+  the deck's pick while the player holds that printing, else the printing they hold most copies of that has art (as `primaryPrinting` skips an artless one), else the catalog's
   art; a pick no longer held is ignored, never deleted. `writeDeckTokenPrintingIn` is the ONE writer (today the picker's
   `setDeckTokenPrinting`; a precon start is to call it too, after writing its holdings): it refuses a printing not of that token and one the player holds no
   copy of, and `loadDeckTokenPicks` joins on the token as well, so a row written past it reads as no pick. The picker

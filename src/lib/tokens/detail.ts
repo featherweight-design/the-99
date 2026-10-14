@@ -91,7 +91,7 @@ export type TokenDetailPrinting = {
 
 /**
  * The pure half. The printing shown is the one a deck's token row pictures with no pick of its own
- * (`assembleDeckTokens`): the player's most-held printing, else the priced one when Mana Pool lists any,
+ * (`assembleDeckTokens`): the player's most-held printing with art (`chooseTokenPrinting`), else the priced one when Mana Pool lists any,
  * else the first by set and number.
  *
  * When the player holds printings of the token (`held`, token printings TP2), those are listed, most copies
