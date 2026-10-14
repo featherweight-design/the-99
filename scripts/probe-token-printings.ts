@@ -90,8 +90,9 @@ async function run() {
     await fixture.execute(sql`insert into tokens (oracle_id, name, type_line, colors, layout) values (${id}::uuid, ${n}, 'Token Creature', '{}', 'token')`);
   }
   for (const [id, token, cn] of [[A1, A, "1"], [A2, A, "2"], [B1, B, "3"], [A3, A, "4"]] as const) {
-    await fixture.execute(sql`insert into token_printings (scryfall_id, token_oracle_id, set_code, collector_number, finishes)
-      values (${id}::uuid, ${token}::uuid, 'tprb', ${cn}, '{nonfoil}')`);
+    // Each with art, so the deck's row chooses among the held printings rather than falling to the catalog's.
+    await fixture.execute(sql`insert into token_printings (scryfall_id, token_oracle_id, set_code, collector_number, finishes, image_uri)
+      values (${id}::uuid, ${token}::uuid, 'tprb', ${cn}, '{nonfoil}', ${`https://probe.invalid/${cn}.jpg`})`);
   }
 
   // a · Replace.

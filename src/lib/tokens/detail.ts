@@ -91,12 +91,13 @@ export type TokenDetailPrinting = {
 
 /**
  * The pure half. The printing shown is the one a deck's token row pictures with no pick of its own
- * (`assembleDeckTokens`): the player's most-held printing with art (`chooseTokenPrinting`), else the priced one when Mana Pool lists any,
- * else the first by set and number.
+ * (`assembleDeckTokens`, `chooseTokenPrinting`): the player's most-held printing with art, else the catalog's
+ * (the priced one when Mana Pool lists any, else the first by set and number), else a held one with no art.
  *
  * When the player holds printings of the token (`held`, token printings TP2), those are listed, most copies
  * first, each with its count: the choice a deck's picker offers, and only from a deck (the modal draws no
- * picker for a token without the deck's `save`). Otherwise only the shown printing is listed, at no copies,
+ * picker for a token without the deck's `save`), followed by the shown printing at no copies when it is not one
+of them. Otherwise only the shown printing is listed, at no copies,
  * and the modal draws no picker: a printing the player does not hold is not a choice the app keeps.
  */
 export function assembleTokenDetail(
@@ -111,11 +112,14 @@ export function assembleTokenDetail(
     const p = byId.get(h.tokenPrintingId);
     return p ? [{ p, quantity: h.quantity }] : [];
   });
-  const chosen = (heldRows.find((h) => h.p.imageUri !== null) ?? heldRows[0])?.p
-    ?? (price && printings.find((p) => p.scryfallId === price.printing.scryfallId))
+  const catalog = (price && printings.find((p) => p.scryfallId === price.printing.scryfallId))
     ?? [...printings].sort((a, b) =>
       a.setCode.localeCompare(b.setCode) || a.collectorNumber.localeCompare(b.collectorNumber, "en", { numeric: true })
-      || a.scryfallId.localeCompare(b.scryfallId))[0]
+      || a.scryfallId.localeCompare(b.scryfallId))[0];
+  // `chooseTokenPrinting`'s order: a held printing with art, else the catalog's, else a held one with none.
+  const chosen = heldRows.find((h) => h.p.imageUri !== null)?.p
+    ?? catalog
+    ?? heldRows[0]?.p
     // The printings read failed and the price read did not: the price names its own printing, so the
     // price, the set line and the link survive with no art.
     ?? (price
@@ -156,9 +160,13 @@ export function assembleTokenDetail(
       : null,
     // What Mana Pool sells for this price: its own product, placed by the line a token row's link sends.
     tokenBuyUrl: shownPrice ? manapoolAddDeckUrl([tokenManapoolLine(token.name, 1, shownPrice)]) : null,
-    printings: heldRows.length > 0
-      ? heldRows.map((h) => tokenPrinting(h.p, h.quantity))
-      : chosen ? [tokenPrinting(chosen, 0)] : [],
+    // The held rows, and after them the shown printing at no copies when it is not one of them (no held
+    // printing has art): the modal's resolver then finds the same art, and its picker still lists only the
+    // held rows (it offers the printings with copies).
+    printings: [
+      ...heldRows.map((h) => tokenPrinting(h.p, h.quantity)),
+      ...(chosen && !heldRows.some((h) => h.p.scryfallId === chosen.scryfallId) ? [tokenPrinting(chosen, 0)] : []),
+    ],
     setCodes: heldRows.length > 0 ? [...new Set(heldRows.map((h) => h.p.setCode.toUpperCase()))] : set ? [set] : [],
     primarySetCode: set,
     preferredPrinting: null,

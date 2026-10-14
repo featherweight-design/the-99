@@ -51,3 +51,26 @@ describe("assembleTokenDetail with held printings", () => {
     expect(card.imageUri).toBe("img-c");
   });
 });
+
+describe("when no held printing has art", () => {
+  it("the row takes the catalog's picture, and a held one only when the catalog has none", () => {
+    expect(chooseTokenPrinting(null, [{ tokenPrintingId: "a", quantity: 5 }], "c", (id) => id === "c"))
+      .toEqual({ tokenPrintingId: "c", source: "catalog" });
+    expect(chooseTokenPrinting(null, [{ tokenPrintingId: "a", quantity: 5 }], null, () => false))
+      .toEqual({ tokenPrintingId: "a", source: "held" });
+    // An explicit pick still wins, art or none.
+    expect(chooseTokenPrinting("a", [{ tokenPrintingId: "a", quantity: 5 }], "c", (id) => id === "c"))
+      .toEqual({ tokenPrintingId: "a", source: "deck" });
+  });
+
+  it("the sheet shows the catalog's art, listed after the held rows at no copies", () => {
+    const token = { oracleId: "t", name: "Soldier", typeLine: "Token Creature — Soldier", colors: ["W"], oracleText: null, layout: "token" };
+    const card = assembleTokenDetail(token, [
+      // The catalog's own choice (first by set) is "c", which has art; the held "a" has none.
+      { scryfallId: "a", setCode: "zzz", collectorNumber: "1", imageUri: null, backImageUri: null },
+      { scryfallId: "c", setCode: "ccc", collectorNumber: "1", imageUri: "img-c", backImageUri: null },
+    ], null, null, [{ tokenPrintingId: "a", quantity: 2 }]);
+    expect(card.imageUri).toBe("img-c");
+    expect(card.printings.map((x) => [x.scryfallId, x.quantity])).toEqual([["a", 2], ["c", 0]]);
+  });
+});

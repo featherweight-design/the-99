@@ -28,8 +28,8 @@ export function orderHeld(held: readonly HeldTokenPrinting[]): HeldTokenPrinting
 }
 
 /**
- * The printing a token row shows: the pick while held, else the first held printing with art, else the first
- * held, else `fallback` (the catalog's default). `hasArt` says whether a printing id carries an image.
+ * The printing a token row shows: the pick while held, else the first held printing with art, else `fallback`
+ * (the catalog's default), else the first held. `hasArt` says whether a printing id carries an image.
  */
 export function chooseTokenPrinting(
   pick: string | null,
@@ -39,9 +39,12 @@ export function chooseTokenPrinting(
 ): { tokenPrintingId: string; source: "deck" | "held" | "catalog" } | null {
   const ordered = orderHeld(held);
   if (pick !== null && ordered.some((h) => h.tokenPrintingId === pick)) return { tokenPrintingId: pick, source: "deck" };
-  const first = ordered.find((h) => hasArt(h.tokenPrintingId)) ?? ordered[0];
+  const first = ordered.find((h) => hasArt(h.tokenPrintingId));
   if (first) return { tokenPrintingId: first.tokenPrintingId, source: "held" };
-  return fallback === null ? null : { tokenPrintingId: fallback, source: "catalog" };
+  // No held printing has art: the catalog's picture rather than a blank one. A held printing is shown with no
+  // art only when the catalog has nothing either.
+  if (fallback !== null) return { tokenPrintingId: fallback, source: "catalog" };
+  return ordered[0] ? { tokenPrintingId: ordered[0].tokenPrintingId, source: "held" } : null;
 }
 
 type Reader = Pick<typeof db, "select">;
