@@ -25,7 +25,9 @@ export function InstallSlot() {
     // Read after mount on purpose: none of these exist on the server.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIos(isIphoneSafari());
-    setHeld(takeEarlyPrompt());
+    // Only when there is one: Strict Mode replays this effect, and the replay finds it taken.
+    const early = takeEarlyPrompt();
+    if (early) setHeld(early);
     setDismissed(dismissalState() !== "active");
     const onPrompt = (event: BeforeInstallPromptEvent) => {
       event.preventDefault();

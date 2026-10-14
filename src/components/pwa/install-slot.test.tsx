@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -54,7 +55,12 @@ describe("InstallSlot", () => {
       prompt,
       userChoice: Promise.resolve({ outcome: "accepted" as const }),
     });
-    render(<InstallSlot />);
+    // Strict Mode replays the mount effect, and the replay must not drop the offer the first took.
+    render(
+      <StrictMode>
+        <InstallSlot />
+      </StrictMode>,
+    );
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: copy.slotAria }));
     });
@@ -64,11 +70,19 @@ describe("InstallSlot", () => {
 
   it("on iPhone Safari, with no offer to hold, opens the how-to sheet and Got it closes it", () => {
     as(IPHONE);
-    const { container } = render(<InstallSlot />);
+    render(
+      <main>
+        <header>
+          <InstallSlot />
+        </header>
+      </main>,
+    );
     fireEvent.click(screen.getByRole("button", { name: copy.slotAria }));
     const sheet = screen.getByRole("dialog", { name: copy.sheet.ariaLabel });
-    // Out of the phone header, which is hidden from md up: a sideways iPhone can cross it.
-    expect(container.contains(sheet)).toBe(false);
+    // Out of the phone header (hidden from md up, which a sideways iPhone can cross) and out of
+    // <main> (inert while a navigation is pending).
+    expect(sheet.closest("header")).toBeNull();
+    expect(sheet.closest("main")).toBeNull();
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
     fireEvent.click(screen.getByRole("button", { name: copy.sheet.done }));
     expect(screen.queryByRole("dialog", { name: copy.sheet.ariaLabel })).toBeNull();

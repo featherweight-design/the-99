@@ -101,6 +101,10 @@ const slot = (page) => page.locator("header [data-install-slot]");
   const sheet = page.getByRole("dialog", { name: "How to add The 99 to your home screen" });
   await sheet.waitFor({ state: "visible", timeout: 5_000 }).catch(() => {});
   check(await sheet.isVisible(), "390 iPhone: a press opens the how-to sheet");
+  // Past the 180ms slide-in, so the box measured is where the sheet comes to rest.
+  await page.waitForTimeout(400);
+  const done = await page.getByRole("button", { name: "Got it" }).boundingBox();
+  check(done !== null && done.y + done.height <= 844, "390 iPhone: the sheet sits in the viewport, Got it included");
   if (SHOT) await page.screenshot({ path: `${SHOT}/pwa-install-sheet-390.png` });
   await page.getByRole("button", { name: "Got it" }).click();
   await page.waitForTimeout(300);
