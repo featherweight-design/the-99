@@ -2,9 +2,10 @@
 // exercised through BuilderShell because the decision is the shell's: it folds
 // two change lists into one map per row, and neither list alone is the answer.
 // `DecklistRow`'s own test covers what a ruled row draws.
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import type { DeckDetail } from "../../lib/decks/read";
 import { recommendedMix } from "../../lib/decks/mix";
@@ -18,6 +19,7 @@ vi.mock("../../app/decks/actions", () => ({
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
   addCardToDeck: vi.fn(),
   removeCardFromDeck: vi.fn(),
+  setBasicQuantity: vi.fn(async (_d: string, _o: string, n: number) => ({ ok: true, quantity: n, changed: true })),
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
 }));
@@ -123,3 +125,31 @@ describe("BuilderShell — the rows a pending draft rules", () => {
     expect(screen.queryAllByText(copy.changeListCaption(1))).toHaveLength(0);
   });
 });
+
+// A committed deck with NOTHING pending: the shell still says there is a version to compare against (an empty
+// map, not null), so the basics stepper's first burst draws `from N` before any move exists.
+describe("BuilderShell — a clean committed deck and the basics stepper", () => {
+  it("draws `from 7` on the first press, before the save lands", async () => {
+    const swamp = { ...DECK.cards[1], typeLine: "Basic Land — Swamp", cardTypeGroup: "Lands" as const, role: "land" as const };
+    const clean = { ...DRAFT, adds: [], addChanges: [], removes: [] };
+    await act(async () => {
+      render(
+        <BuilderShell mix={TEST_MIX}
+          deck={{ ...DECK, cards: [swamp] } as DeckDetail}
+          suggestions={[]}
+          degraded={false}
+          firstRun={false}
+          commanderIdentity={["B", "R", "G"]}
+          arrivedFromImport={false}
+          draft={clean}
+         newestAsOf={null}/>,
+      );
+    });
+    expect(screen.queryByText(addPanelCopy.basicStepper.from(7))).not.toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.basicStepper.moreAria("Swamp", 8) }));
+    });
+    expect(screen.getByText(addPanelCopy.basicStepper.from(7))).toBeInTheDocument();
+  });
+});
+

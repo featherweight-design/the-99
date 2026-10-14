@@ -63,18 +63,27 @@ export function useBasicCount({
   const taken = useRef(false);
   const wake = useRef<(() => void) | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  // Settle at once: a row unmounted mid-burst (List ↔ Card swaps the row for the tile) must still save the
+  // count it showed, so its unmount FLUSHES the burst rather than dropping it. The save then runs on; its
+  // answer lands on whichever view mounted, through the revalidated page.
+  const flush = useRef<(() => void) | null>(null);
+  useEffect(() => () => flush.current?.(), []);
 
   /** Resolves `true` once the presses have been quiet for the settle, `false` on the next press. */
   function quiet(): Promise<boolean> {
     return new Promise((resolve) => {
-      wake.current = () => resolve(false);
-      timer.current = setTimeout(() => {
+      const settled = () => {
+        if (timer.current) clearTimeout(timer.current);
         wake.current = null;
+        flush.current = null;
         resolve(true);
-      }, SETTLE_MS);
+      };
+      wake.current = () => {
+        flush.current = null;
+        resolve(false);
+      };
+      flush.current = settled;
+      timer.current = setTimeout(settled, SETTLE_MS);
     });
   }
 

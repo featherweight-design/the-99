@@ -526,10 +526,10 @@ export function DecklistRow({
       type="button"
       onClick={handleRemove}
       disabled={isPending}
-      className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto
+      className={`flex-none flex items-center justify-center w-[44px] h-[44px] ${stepperOn ? "md:w-[22px] md:h-[20px]" : "md:w-auto md:h-auto"}
         rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
         active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
-        md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors"
+        md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors`}
       aria-label={
         (stepperOn ? basic.count : card.quantity) > 1
           ? addPanelCopy.row.removeCopyAria(displayName, card.quantity)
@@ -912,8 +912,9 @@ export function DecklistRow({
           countLabel={addPanelCopy.basicStepper.countAria(displayName)}
           onStep={basic.step}
           onType={basic.type}
-          // The ✕ shrinks to its glyph on desktop; the slot keeps the −’s 22px so nothing moves at 1.
-          atOne={<span className="flex flex-none justify-center md:w-[22px]">{removeButton}</span>}
+          // A bare button in the −’s own place, so React keeps the focused node from 2 to 1; it takes the −’s 22px
+          // on desktop (the ✕ elsewhere shrinks to its glyph) so nothing moves at 1.
+          atOne={removeButton}
         />
         ) : (
         removeButton

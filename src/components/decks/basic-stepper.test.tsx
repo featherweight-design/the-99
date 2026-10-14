@@ -152,6 +152,26 @@ describe("the basics stepper on a decklist row", () => {
     await settle();
   });
 
+  // List ↔ Card swaps the row for the tile mid-burst: the count the row showed is still saved.
+  it("saves a burst whose row unmounts before the settle", async () => {
+    const view = wrap(<DecklistRow deckId="d1" card={island} newestAsOf={null} />);
+    await press(copy.moreAria("Island", 7));
+    view.unmount();
+    await settle();
+    expect(setBasicQuantity).toHaveBeenCalledTimes(1);
+    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 7);
+  });
+
+  // Focus survives 2 → 1: the − and the ✕ are the same button node, so a keyboard user stays put.
+  it("keeps focus on the − slot when it becomes the ✕", async () => {
+    wrap(<DecklistRow deckId="d1" card={{ ...island, quantity: 2 }} newestAsOf={null} />);
+    const minus = screen.getByRole("button", { name: copy.fewerAria("Island", 1) });
+    minus.focus();
+    await act(async () => { fireEvent.click(minus); });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Island") }));
+    await settle();
+  });
+
   describe("the typed count", () => {
     const type = (text: string, key = "Enter") =>
       act(async () => {

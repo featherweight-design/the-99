@@ -795,14 +795,18 @@ export function BuilderShell({
   //
   // `addChanges` rather than `adds` because that is the list carrying the
   // before/after pair, and it is the same cards in the same order.
+  //
+  // An EMPTY map on a committed deck with nothing pending, not null: the basics stepper reads "this deck has
+  // a version to compare against" off the provider, to draw `from N` during its first burst before any move
+  // exists. Every reader asks `moves.get`, so an empty map draws no mark and no note.
   const pendingChange = useMemo(() => {
-    if (!draft) return null;
+    if (!draft?.version) return null;
     const moves = new Map<string, { from: number; to: number }>();
     for (const c of draft.addChanges) moves.set(c.oracleId, { from: c.from, to: c.to });
     for (const c of draft.removes) {
       if (c.to > 0) moves.set(c.oracleId, { from: c.from, to: c.to });
     }
-    return moves.size > 0 ? { moves } : null;
+    return { moves };
   }, [draft]);
 
   // The one deliberate exception. Keyed off the SERVER counts because the
