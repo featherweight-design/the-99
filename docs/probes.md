@@ -2187,6 +2187,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   reads a joined token does the same, that a joined token no card of the deck makes stays with no maker and leaves once
   taken off, and that a hand mark leaves every other token not known. Measured 2026-10-12 on a scratch branch of
   staging (PR 5): every check passed, and the account's own rows were put back exactly.
+- `pnpm probe:basic-quantity` proves the basics stepper's one write (`setBasicQuantityFor`, plan
+  `2026-10-14-basic-lands-stepper.md`, PR 1) against a real database. It WRITES, so it fails closed: `PROBE_DB_BRANCH`
+  must name the branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. It picks a deck
+  holding a basic beside another card from the branch itself, so it needs no account id. It checks that a set writes
+  the figure, clears `auto` and stamps the deck; that the same figure again writes and stamps nothing; that a
+  non-basic, a figure past the bound and another player's deck are refused with nothing written; that 0 deletes the
+  row and leaves the slot's lock DORMANT (Undo revives it, a commit clears it); and that a row already gone is
+  refused. The row, its proxy, its printing pick and lock, the deck's stamp and its analysis's `dirty` flag are put back in a `finally`.
+  It runs one writer at a time, so it does not prove the row locks. First run 2026-10-14 on a
+  scratch branch of staging: every check passed.
 
 - `pnpm probe:tokens` reproduces the tokens brief's Fixtures
   (`docs/superpowers/design-briefs/2026-10-11-tokens-for-my-deck.md`) against the real bytes. It builds
