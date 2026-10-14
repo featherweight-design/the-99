@@ -168,8 +168,8 @@ export type DeckTokenPrintingWrite = "ok" | "notOfToken" | "notHeld";
 
 /**
  * Records `tokenPrintingId` as the printing deck `deckId` shows for `tokenOracleId`: the ONE writer of
- * `deck_token_printings`. Its caller today is the picker (`setDeckTokenPrinting`); a precon start is to call
- * it too, after writing its holdings in the same transaction. It refuses a printing that is not of that token,
+ * `deck_token_printings`. Its callers are the picker (`setDeckTokenPrinting`) and a precon start
+ * (`writePreconDeckIn`), which runs after the add's `syncPreconTokens` wrote the holdings in the same transaction. It refuses a printing that is not of that token,
  * and one the player holds no copy of (the picker offers only held printings). Whether the token is the deck's, and the deck the player's,
  * is the caller's to have checked.
  */
