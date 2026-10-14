@@ -444,7 +444,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   **A deck's token printing** (TP2, behind `DECK_TOKENS_ENABLED`) follows a card's chain (`src/lib/tokens/deck-printings.ts`):
   the deck's pick while the player holds that printing, else the printing they hold most copies of that has art (as `primaryPrinting` skips an artless one), else the catalog's
   art; a pick no longer held is ignored, never deleted. `writeDeckTokenPrintingIn` is the ONE writer (the picker's
-  `setDeckTokenPrinting`, and a precon start's `writePreconDeckIn`, after the add's `syncPreconTokens` wrote the holdings): it refuses a printing not of that token and one the player holds no
+  `setDeckTokenPrinting`, and a precon start's `writePreconDeckIn`: with the box, after the add's `syncPreconTokens` wrote the holdings; a plain
+  start, only what an earlier add or an upload already holds): it refuses a printing not of that token and one the player holds no
   copy of, and `loadDeckTokenPicks` joins on the token as well, so a row written past it reads as no pick. The picker
   is the card's own, opened from the token row's details: `loadTokenDetail` lists the held printings (with the switch
   on), the provider gives a deck token the deck's scope from the deck tokens context, and the modal draws a token's
