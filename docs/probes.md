@@ -2070,8 +2070,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   - the edition switch's lists differ where the editions' printings do (Avengers Tower is MSH 260 in Regular and
     MSH 452 in the Collector's Edition), and where a Collector's Edition shares its plain printing (Final Fantasy's
     Cid, FIC 13) it reads that printing with every copy foil;
-  - a started deck is committed as v1, holding the 99, whose list is the live one (no draft left over), and v1
-    records the pinned printing of a card held in two printings (Chromatic Lantern at FRC 54, never the MBC 73 the
+  - a started deck is committed as v0, the precon's own, holding the 99, whose list is the live one (no draft left
+    over), and v0 records the pinned printing of a card held in two printings (Chromatic Lantern at FRC 54, never the MBC 73 the
     player prefers), which only a read inside the start's own transaction can see;
   - every card the box prints, commanders included, is pinned in `deck_printings` to the box's printing (Brainstorm
     and Arcane Signet at Multiverse Reforged's);
@@ -2084,7 +2084,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   database, through the real `startPreconOwned`, `loadDeckBuyRows` and `applyCollectionChange` (revert), on Hugh's own
   overlap: two older committed decks list Arcane Signet, Command Tower, Sol Ring and Swords to Plowshares and hold none,
   then Multiverse Reforged is started with the box:
-  - one transaction writes the box's 100 copies, the deck (committed as v1, linked to the add) and one History entry;
+  - one transaction writes the box's 100 copies, the deck (committed as v0, linked to the add) and one History entry;
   - the new deck owes nothing, and the older decks stay short of all four: the box's copies are reserved to the new
     deck, a copy each, so seniority never hands them to an older deck;
   - History's "Went to" for each of the four names the new deck alone;

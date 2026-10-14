@@ -20,9 +20,11 @@ import { readDeckOrigin } from "./origin-read";
 export const START_WINDOW_MS = 60_000;
 
 /**
- * Whether the deck's OLDEST version is the start's. A v0 always is: only a start commits one. A v1 is
- * when the deck was made with it (committed within `START_WINDOW_MS` of the deck) and it holds exactly
- * the precon's 99, so a brew committed quickly and linked later keeps its own v1 and its virtual v0.
+ * Whether the deck's OLDEST version is the start's list for the precon the deck is linked to NOW. Either
+ * way it must hold exactly that precon's 99: a deck started from one precon, unlinked and linked to
+ * another keeps its v0 as committed and draws the new precon's virtual v0 beneath it. A v0 needs nothing
+ * more, since only a start commits one; a v1 must also have been made with its deck (committed within
+ * `START_WINDOW_MS`), so a brew committed quickly and linked later keeps its own v1 and its virtual v0.
  */
 export function isStartVersion(
   oldest: { number: number; committedAt: Date },
@@ -30,9 +32,8 @@ export function isStartVersion(
   versionCards: readonly CardQty[],
   originCards: readonly CardQty[],
 ): boolean {
-  if (oldest.number === 0) return true;
-  if (oldest.number !== 1) return false;
-  if (oldest.committedAt.getTime() - deckCreatedAt.getTime() > START_WINDOW_MS) return false;
+  if (oldest.number > 1) return false;
+  if (oldest.number === 1 && oldest.committedAt.getTime() - deckCreatedAt.getTime() > START_WINDOW_MS) return false;
   const want = new Map(originCards.map((c) => [c.oracleId, c.quantity]));
   return versionCards.length === want.size && versionCards.every((c) => want.get(c.oracleId) === c.quantity);
 }
@@ -50,13 +51,13 @@ export function oldestVersionQuery(userId: string, deckId: string, q: Reader = d
 
 /**
  * v0 for one deck, as `readDeckOrigin` reads it, with `startVersionId` set when the deck's own history
- * holds it. The two reads run side by side; the version's cards are read only for a v1 that could be a
- * start's, since a v0 needs no comparison.
+ * holds it. The two reads run side by side; the version's cards are read only for a v0 or a v1, the two
+ * numbers a start's version can carry.
  */
 export async function readDeckOriginAndStart(userId: string, deckId: string): Promise<OriginRead | null> {
   const [origin, [oldest]] = await Promise.all([readDeckOrigin(userId, deckId), oldestVersionQuery(userId, deckId)]);
   if (!origin || !oldest) return origin;
-  const versionCards = oldest.number === 1
+  const versionCards = oldest.number <= 1
     ? await db.select({ oracleId: deckVersionCards.oracleId, quantity: deckVersionCards.quantity })
       .from(deckVersionCards).where(eq(deckVersionCards.versionId, oldest.id))
     : [];

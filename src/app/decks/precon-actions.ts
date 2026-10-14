@@ -1,7 +1,7 @@
 "use server";
 
 // "Start with this precon" (handoff `design_handoff_the99_precons`, S1; audit finding 6). The deck
-// itself is `startPreconDeck`: the precon's exact list, committed as v1, each card pinned to the
+// itself is `startPreconDeck`: the precon's exact list, committed as v0 (the precon's own), each card pinned to the
 // box's printing (Hugh, 2026-10-14). A card illegal in Commander is kept, as the import keeps one,
 // and the start dialog names it first (orchestrator ruling, 2026-10-11).
 

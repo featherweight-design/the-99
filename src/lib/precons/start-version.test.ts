@@ -6,8 +6,12 @@ const at = (ms: number) => new Date(made.getTime() + ms);
 const BOX = [{ oracleId: "sol", quantity: 1 }, { oracleId: "wastes", quantity: 30 }];
 
 describe("isStartVersion", () => {
-  it("takes any v0: only a start commits one", () => {
-    expect(isStartVersion({ number: 0, committedAt: at(10 * 24 * 3600_000) }, made, [], BOX)).toBe(true);
+  it("takes a v0 holding the linked precon's list, whenever it was committed: only a start commits one", () => {
+    expect(isStartVersion({ number: 0, committedAt: at(10 * 24 * 3600_000) }, made, BOX, BOX)).toBe(true);
+  });
+
+  it("refuses a v0 holding another list: a started deck relinked to a different precon", () => {
+    expect(isStartVersion({ number: 0, committedAt: at(0) }, made, [{ oracleId: "other", quantity: 1 }], BOX)).toBe(false);
   });
 
   it("takes a v1 committed with its deck that holds exactly the box's list (a start from before v0)", () => {
