@@ -59,6 +59,8 @@ export function useBasicCount({
 
   const target = useRef(quantity);
   const burst = useRef(false);
+  // Set by `takeOver`: the ✕ at 1 owns the row now, so the burst sends nothing more and says nothing.
+  const taken = useRef(false);
   const wake = useRef<(() => void) | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
@@ -98,7 +100,10 @@ export function useBasicCount({
       let saved = n;
       try {
         for (;;) {
-          if (!(await quiet())) continue;
+          if (!(await quiet())) {
+            if (taken.current) break;
+            continue;
+          }
           saved = target.current;
           let result: BasicQuantityOutcome;
           try {
@@ -107,6 +112,7 @@ export function useBasicCount({
             outcome = "thrown";
             break;
           }
+          if (taken.current) break;
           // Pressed again while the save was out: settle once more and send the newer figure.
           if (target.current !== saved) continue;
           outcome = result.ok ? "ok" : "refused";
@@ -115,6 +121,10 @@ export function useBasicCount({
       } finally {
         burst.current = false;
         setPressing(false);
+      }
+      if (taken.current) {
+        taken.current = false;
+        return;
       }
       if (outcome === "ok") {
         onSettled?.(saved);
@@ -135,6 +145,20 @@ export function useBasicCount({
     /** The deck's count before the burst on screen began. */
     base,
     error,
+    /**
+     * The ✕ at 1 pressed while a burst is open: the burst is cancelled (no save, no line), and the caller
+     * removes the row with an ABSOLUTE 0 rather than one copy off, because the burst's own save may land
+     * before or after it. Returns whether a burst was open.
+     */
+    takeOver: () => {
+      if (!burst.current) return false;
+      taken.current = true;
+      if (timer.current) clearTimeout(timer.current);
+      const w = wake.current;
+      wake.current = null;
+      w?.();
+      return true;
+    },
     /** One more or one fewer, from the figure on screen. */
     step: (delta: 1 | -1) => set((shown ?? quantity) + delta),
     /**

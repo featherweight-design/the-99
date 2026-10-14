@@ -415,7 +415,10 @@ export function DecklistRow({
     run(
       async () => {
         try {
-          await removeCardFromDeck(deckId, card.oracleId);
+          // A − still settling: the burst's save is cancelled and the row goes by an absolute 0, so the
+          // order the two land in cannot leave a copy behind.
+          if (stepperOn && basic.takeOver()) await setBasicQuantity(deckId, card.oracleId, 0);
+          else await removeCardFromDeck(deckId, card.oracleId);
         } catch (cause) {
           // Only when this was the last copy, because only then has the
           // prediction unmounted the row and left `run`'s message with nothing
@@ -517,7 +520,7 @@ export function DecklistRow({
         active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
         md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors"
       aria-label={
-        card.quantity > 1
+        (stepperOn ? basic.count : card.quantity) > 1
           ? addPanelCopy.row.removeCopyAria(displayName, card.quantity)
           : addPanelCopy.row.removeAria(displayName)
       }

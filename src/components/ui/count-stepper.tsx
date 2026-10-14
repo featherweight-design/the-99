@@ -13,7 +13,7 @@ import { useState } from "react";
  * Escape; Arrow Up and Down step by one, as the buttons do. 16px below `md` so iOS does not zoom on focus.
  *
  * Desktop rest ink is the ✕'s (`--border-dashed` on a row, `--fg-faint` on a band), lifting on the row or
- * tile's hover (the caller's `group`) and on the control's own focus. The phone has no hover, so its ink is
+ * tile's hover and on focus anywhere inside it (the caller's `group`), as STATES S7 asks. The phone has no hover, so its ink is
  * the lifted one already.
  */
 export function CountStepper({
@@ -41,8 +41,8 @@ export function CountStepper({
     ? "absolute inset-x-0 bottom-0 z-20 flex h-[44px] items-center justify-between md:h-[32px] bg-[color:color-mix(in_oklab,var(--bg)_70%,transparent)]"
     : "flex-none flex items-center";
   const button = band
-    ? "flex h-[44px] w-[44px] md:h-[32px] md:w-[32px] items-center justify-center font-mono text-[15px] md:text-[13px] leading-none text-[color:var(--fg-body)] md:text-[color:var(--fg-faint)] md:group-hover:text-[color:var(--fg)] md:focus-visible:text-[color:var(--fg)]"
-    : "flex h-[44px] w-[44px] md:h-[20px] md:w-[22px] items-center justify-center font-mono text-[15px] md:text-[13px] leading-none text-[color:var(--fg-faint)] md:text-[color:var(--border-dashed)] md:group-hover:text-[color:var(--fg-body)] md:focus-visible:text-[color:var(--fg-body)]";
+    ? "flex h-[44px] w-[44px] md:h-[32px] md:w-[32px] items-center justify-center font-mono text-[15px] md:text-[13px] leading-none text-[color:var(--fg-body)] md:text-[color:var(--fg-faint)] md:group-hover:text-[color:var(--fg)] md:group-focus-within:text-[color:var(--fg)]"
+    : "flex h-[44px] w-[44px] md:h-[20px] md:w-[22px] items-center justify-center font-mono text-[15px] md:text-[13px] leading-none text-[color:var(--fg-faint)] md:text-[color:var(--border-dashed)] md:group-hover:text-[color:var(--fg-body)] md:group-focus-within:text-[color:var(--fg-body)]";
   const ring =
     "cursor-pointer bg-transparent border-0 p-0 rounded-[6px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]";
   return (
@@ -101,7 +101,7 @@ function CountField({
           onStep(e.key === "ArrowUp" ? 1 : -1);
         }
       }}
-      className={`${band ? "w-[32px]" : "w-[24px]"} h-[22px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
+      className={`${band ? "w-[32px]" : "w-[24px]"} h-[22px] md:h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
     />
   );
 }

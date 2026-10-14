@@ -194,7 +194,9 @@ export function DeckCardTile({
     run(
       async () => {
         try {
-          await removeCardFromDeck(deckId, card.oracleId);
+          // A − still settling: cancel its save and go by an absolute 0 (as the row does).
+          if (stepperOn && basic.takeOver()) await setBasicQuantity(deckId, card.oracleId, 0);
+          else await removeCardFromDeck(deckId, card.oracleId);
         } catch (cause) {
           if (shellReportsFailure) reportRemoveFailure(card.oracleId, card.name, generation);
           throw cause;
@@ -326,7 +328,7 @@ export function DeckCardTile({
                   onClick={handleRemove}
                   disabled={isPending}
                   aria-label={addPanelCopy.row.removeAria(displayName)}
-                  className="flex h-[44px] w-[44px] md:h-[32px] md:w-[32px] items-center justify-center rounded-[6px] bg-transparent border-0 p-0 text-[13px] leading-none text-[color:var(--fg-body)] md:text-[color:var(--fg-faint)] md:group-hover:text-[color:var(--fg)] cursor-pointer disabled:opacity-50 disabled:cursor-default focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+                  className="flex h-[44px] w-[44px] md:h-[32px] md:w-[32px] items-center justify-center rounded-[6px] bg-transparent border-0 p-0 text-[13px] leading-none text-[color:var(--fg-body)] md:text-[color:var(--fg-faint)] md:group-hover:text-[color:var(--fg)] md:group-focus-within:text-[color:var(--fg)] cursor-pointer disabled:opacity-50 disabled:cursor-default focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]"
                 >
                   {addPanelCopy.row.remove}
                 </button>

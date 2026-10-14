@@ -120,6 +120,19 @@ describe("the basics stepper on a decklist row", () => {
     expect(setBasicQuantity).not.toHaveBeenCalled();
   });
 
+  // The ✕ pressed while a − is still settling: the − 's save must not land after the removal and
+  // leave a copy, nor come back as a stale refusal once the row is gone.
+  it("cancels a settling burst and removes by an absolute 0 when the ✕ is pressed inside it", async () => {
+    wrap(<DecklistRow deckId="d1" card={{ ...island, quantity: 2 }} newestAsOf={null} />);
+    await press(copy.fewerAria("Island", 1));
+    await press(addPanelCopy.row.removeAria("Island"));
+    await settle();
+    expect(removeCardFromDeck).not.toHaveBeenCalled();
+    expect(setBasicQuantity).toHaveBeenCalledTimes(1);
+    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 0);
+    expect(screen.queryByText(copy.refused)).not.toBeInTheDocument();
+  });
+
   describe("the typed count", () => {
     const type = (text: string, key = "Enter") =>
       act(async () => {
