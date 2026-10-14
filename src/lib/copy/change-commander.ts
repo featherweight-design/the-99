@@ -20,6 +20,8 @@
  */
 export const changeCommanderCopy = {
   door: { single: "Change commander", pair: "Change pair", aria: "Change commander", menu: "Edit deck" },
+  /** The commander tile's button inside the picker, named like every card-details press. */
+  detailsAria: "View card details",
 
   sheet: {
     title: { single: "Change commander", pair: "Change pair" },

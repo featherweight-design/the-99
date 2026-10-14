@@ -313,7 +313,7 @@ export const addPanelCopy = {
     // that also read this glyph would say the number twice.
     quantity: (n: number) => `×${n}`,
     // A read-only row (a precon's) has no ✕ to speak the count, so it says it here instead.
-    quantitySpoken: (n: number) => `${n} copies`,
+    quantitySpoken: (n: number) => (n === 1 ? "1 copy" : `${n} copies`),
     removeAria: (name: string) => `Remove ${name}`,
     // A stack of basics decrements rather than unmounting, so the phone label
     // says which of the two is about to happen.
@@ -385,6 +385,16 @@ export const addPanelCopy = {
     subDoors: "Pick a commander from your collection, start from a precon, or let us help.",
     subPrecon: "Pick a commander from your collection, or start from a precon.",
     searchPlaceholder: "Search commanders…",
+    /** The search field's label for assistive tech; the placeholder is not a name. */
+    searchAria: "Search commanders",
+    /** The phone's sub under the title; desktop has the `sub*` lines above. */
+    subPhone: "From your collection.",
+    /** A row's meta line: its colors, then how many cards the player owns in them. */
+    rowMeta: (colors: string, poolCount: number) => `${colors} · ${poolCount} cards`,
+    resultCount: (n: number) => `${n} result${n !== 1 ? "s" : ""}`,
+    noOwned: "No owned commanders found. Add cards to your collection first.",
+    noMatch: (query: string) => `No commanders match “${query}”.`,
+    noneSelected: "No commander selected.",
     namePlaceholder: "Deck name…",
     selectedLabel: "Selected",
     submit: "Create deck →",
@@ -517,6 +527,25 @@ export function builtFragment(built: number, bodySize: number): string {
 export const deckHeaderCopy = {
   export: "Export",
   cardDetails: "Card details",
+} as const;
+
+/** Whether the player holds a card, said to assistive tech wherever a row draws only a dot or a mark. */
+export const ownedStateCopy = { owned: "Owned", notOwned: "Not owned" } as const;
+
+/** The deck's role strip: what its header calls the mix the deck is measured against. */
+export const roleStripCopy = { mixLabel: "Recommended mix" } as const;
+
+/** The export dialog's own words; the tab and link-out strings are the siblings below. */
+export const exportDialogCopy = {
+  title: "Export deck",
+  sub: "Plain text · Moxfield · Archidekt ready",
+  closeAria: "Close export dialog",
+  /** The dialog's last line on a wide screen; the phone's button is just the extension. */
+  ready: "Moxfield · Archidekt ready",
+  downloadShort: ".txt",
+  download: "Download .txt",
+  /** The preview's first line, a comment in the file the player will get. */
+  previewHeader: (deckName: string, totalCards: number) => `// ${deckName} — ${totalCards} cards`,
 } as const;
 
 export const exportTabCopy = { decklist: "Decklist", shopping: "Shopping list" } as const;

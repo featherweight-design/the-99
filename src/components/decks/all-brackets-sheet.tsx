@@ -71,7 +71,7 @@ function Figure({ n }: { n: number | null }) {
 /** Desktop: rules are rows and the five brackets columns, the way the posts lay them out. */
 function WideTable() {
   return (
-    <div role="table" aria-label="Cards allowed by bracket" data-testid="brackets-sheet-table-wide"
+    <div role="table" aria-label={deckAnalysisCopy.bracketsSheet.tableAria} data-testid="brackets-sheet-table-wide"
       className="hidden flex-none flex-col overflow-hidden rounded-[10px] border border-[color:var(--border)] md:flex">
       <div role="row" className="grid grid-cols-[168px_repeat(5,minmax(0,1fr))]">
         <span role="columnheader" className="self-end pb-[11px] pl-[12px] pr-[10px] pt-[10px] font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
@@ -102,7 +102,7 @@ function WideTable() {
 /** Phone: TRANSPOSED. Five columns would be about 53px, narrower than "Exhibition". */
 function NarrowTable() {
   return (
-    <div role="table" aria-label="Cards allowed by bracket" data-testid="brackets-sheet-table-narrow"
+    <div role="table" aria-label={deckAnalysisCopy.bracketsSheet.tableAria} data-testid="brackets-sheet-table-narrow"
       className="flex flex-none flex-col overflow-hidden rounded-[10px] border border-[color:var(--border)] md:hidden">
       <div role="row" className="grid grid-cols-[116px_repeat(4,minmax(0,1fr))]">
         <span role="columnheader" className="self-end py-[10px] pl-[11px] pr-[6px] font-mono text-[8.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
