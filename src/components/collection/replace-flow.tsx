@@ -8,6 +8,7 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { confirmUpload, previewUploadChange, type UploadChangePreview, type UploadMode, type UploadPreview } from "../../app/collection/actions";
 import { UploadEntry } from "./upload-entry";
+import { importReviewCopy } from "../../lib/copy/import-review";
 import { ReviewScreen } from "./review-screen";
 import type { ReviewChange } from "./replace-review-detail";
 import { UploadChoice } from "./upload-choice";
@@ -215,7 +216,7 @@ export function ReplaceFlow({
         setChange({ ...review, failure: { body: collectionEditCopy.upload.failedBody } });
         return;
       }
-      setConfirmError(e instanceof Error ? e.message : "Confirm failed");
+      setConfirmError(e instanceof Error ? e.message : importReviewCopy.errors.confirmFailed);
       // A skipped confirm has no surface of its own to say it failed, so it opens the modal,
       // whose error slot is where a failed confirm has always been reported. A press from the
       // §E warning fails in the warning's own slot instead, with nothing opened over it.

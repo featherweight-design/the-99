@@ -16,12 +16,12 @@ export const issueInspectorCopy = {
     closeAriaLabel: "Close",
   },
   tabs: {
-    unmatched: "Unmatched",
-    parseErrors: "Parse errors",
+    unmatched: "Not in catalog",
+    parseErrors: "Unreadable lines",
     ariaLabel: "Issue type",
   },
   filter: {
-    placeholderUnmatched: (n: number) => `Filter ${n.toLocaleString()} unmatched names…`,
+    placeholderUnmatched: (n: number) => `Filter ${n.toLocaleString()} names not in the card catalog…`,
     placeholderErrors: (n: number) => `Filter ${n.toLocaleString()} errors by line or reason…`,
     clearAriaLabel: "Clear filter",
     count: (n: number, total: number) =>
@@ -43,7 +43,7 @@ export const issueInspectorCopy = {
   emptyFilter: {
     title: (query: string) => `No names match “${query}”`,
     body: (total: number) =>
-      `None of the ${total.toLocaleString()} unmatched names contain that text. Check the spelling.`,
+      `None of the ${total.toLocaleString()} names contain that text. Check the spelling.`,
     // The escape hatch these two used to spell out ("or clear the filter to see
     // the full list") is the button rendered directly beneath them.
     action: "Clear filter",
@@ -56,7 +56,7 @@ export const issueInspectorCopy = {
   // visibly disabled and printing its 0. It states the good news once and does
   // not narrate the control underneath it.
   zeroState: {
-    noParseErrors: "Every row parsed cleanly.",
+    noParseErrors: "Every line was readable.",
     noUnmatched: "Every card found a match.",
   },
   // Richness pass §Non-safety-critical error moment — the copy gets to be funny
@@ -65,7 +65,7 @@ export const issueInspectorCopy = {
   entry: {
     heading: "That CSV put up a fight.",
     body: (total: number) =>
-      `${total.toLocaleString("en-US")} row${total === 1 ? "" : "s"} didn't parse: quantity columns, mostly. Nothing fatal. Want to see the carnage?`,
+      `${total.toLocaleString("en-US")} row${total === 1 ? "" : "s"} couldn’t be read: quantity columns, mostly. Nothing fatal. Want to see the carnage?`,
     cta: (total: number) => `View ${total.toLocaleString("en-US")} issue${total === 1 ? "" : "s"}`,
   },
 };

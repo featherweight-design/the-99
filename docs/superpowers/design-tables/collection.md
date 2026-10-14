@@ -1929,8 +1929,8 @@ No chevron: Cancel in the confirm bar is the phone's exit (calm-replace §3.20).
 ### Copy (issue tallies)
 | Element | Copy |
 |---------|------|
-| Unmatched | `21 unmatched names` |
-| Parse errors | `8 parse errors` |
+| Unmatched | `21 names not in the card catalog` |
+| Parse errors | `8 unreadable lines` |
 | Skipped footnote | `29 rows will be skipped` |
 
 ### Issue Section Headers
@@ -1951,8 +1951,8 @@ No chevron: Cancel in the confirm bar is the phone's exit (calm-replace §3.20).
 ### Copy (issue section headers)
 | Type | Copy |
 |------|------|
-| Unmatched | `Unmatched — 21 skipped` (mobile) / `Unmatched names — 21` (desktop) |
-| Parse errors | `Parse errors — 8` (desktop) |
+| Unmatched | `Not in the catalog: 21 skipped` (mobile) / `Names not in the card catalog: 21` (desktop) |
+| Parse errors | `Unreadable lines: 8` (desktop) |
 
 ### Desktop Issues Layout
 | Property | Desktop |
@@ -2312,7 +2312,7 @@ Reached only by a failed first import (the collection read 0 cards when the prev
 | Import variant keep | `Go back` |
 | Import variant confirm (n = 2,904) | `Import 2,904 cards` |
 | Import variant pending | `Importing…` |
-| Error line | the failed confirm's message; `Confirm failed` when it carries none |
+| Error line | the failed confirm's message; `That didn’t go through. Try again.` when it carries none |
 
 ---
 

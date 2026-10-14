@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import type { UploadMode, UploadPreview } from "../../app/collection/actions";
 import { IssueInspector } from "./issue-inspector";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
+import { importReviewCopy } from "../../lib/copy/import-review";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { Crown } from "../ui/crown";
 import { replaceCopy } from "../../lib/copy/replace";
@@ -180,14 +181,14 @@ export function ReviewScreen({
               <span className="font-mono text-[16px]" style={{ color: "var(--warning)" }}>
                 {preview.unmatchedRows.length.toLocaleString()}
               </span>
-              <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>unmatched names</span>
+              <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>{importReviewCopy.stats.notInCatalog}</span>
             </div>
             <div className="flex items-center gap-[10px]">
               <span aria-hidden className="rounded-full flex-none" style={{ width: 9, height: 9, background: "var(--danger)" }} />
               <span className="font-mono text-[16px]" style={{ color: "var(--danger)" }}>
                 {preview.parseErrors.length.toLocaleString()}
               </span>
-              <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>{preview.parseErrors.length === 1 ? "parse error" : "parse errors"}</span>
+              <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>{importReviewCopy.stats.unreadable(preview.parseErrors.length)}</span>
             </div>
             {skippedByDesign > 0 && (
               <div className="flex items-center gap-[10px]">
@@ -209,8 +210,8 @@ export function ReviewScreen({
           {/* Mobile mini stats — §Issue Summary Mini Stats */}
           <div className="md:hidden flex flex-col gap-[8px] mt-[14px]">
             <div className="flex gap-[8px]">
-              <MiniStat number={preview.unmatchedRows.length} numberColor="var(--warning)" label="unmatched" />
-              <MiniStat number={preview.parseErrors.length} numberColor="var(--danger)" label={preview.parseErrors.length === 1 ? "parse error" : "parse errors"} />
+              <MiniStat number={preview.unmatchedRows.length} numberColor="var(--warning)" label={importReviewCopy.stats.notInCatalogShort} />
+              <MiniStat number={preview.parseErrors.length} numberColor="var(--danger)" label={importReviewCopy.stats.unreadable(preview.parseErrors.length)} />
               <MiniStat number={preview.rowCount} numberColor="var(--fg)" label={preview.rowCount === 1 ? "row read" : "rows read"} />
             </div>
             {/* Matches the mini-stat label's 11px/--fg-faint. Its own line because a fourth cell
@@ -252,8 +253,8 @@ export function ReviewScreen({
                 className="font-mono uppercase text-[10px] tracking-[0.14em] mb-[8px] md:mb-[10px]"
                 style={{ color: "var(--warning)" }}
               >
-                <span className="md:hidden">Unmatched: {preview.unmatchedRows.length} skipped</span>
-                <span className="hidden md:inline">Unmatched names: {preview.unmatchedRows.length}</span>
+                <span className="md:hidden">{importReviewCopy.sections.notInCatalogShort(preview.unmatchedRows.length)}</span>
+                <span className="hidden md:inline">{importReviewCopy.sections.notInCatalog(preview.unmatchedRows.length)}</span>
               </h2>
               <ul className="flex flex-col gap-[6px]">
                 {unmatchedShown.map((r, i) => (
@@ -296,7 +297,7 @@ export function ReviewScreen({
                 className="font-mono uppercase text-[10px] tracking-[0.14em] mb-[8px] md:mb-[10px]"
                 style={{ color: "var(--danger)" }}
               >
-                Parse errors: {preview.parseErrors.length}
+                {importReviewCopy.sections.unreadable(preview.parseErrors.length)}
               </h2>
               <ul className="flex flex-col gap-[6px]">
                 {errorsShown.map((e, i) => (

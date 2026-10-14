@@ -35,6 +35,7 @@ import {
   PASTE_MAX_BYTES,
   PASTE_MAX_LABEL,
 } from "../../lib/upload-limits";
+import { importReviewCopy } from "../../lib/copy/import-review";
 
 export type UploadPreview = {
   uploadId: string;
@@ -67,7 +68,7 @@ async function buildPreview(args: {
   const { userId, filename, rows, errors } = args;
 
   if (rows.length === 0) {
-    throw new Error(errors[0] ? `Parse failed: ${errors[0].reason}` : "No card rows to import");
+    throw new Error(errors[0] ? importReviewCopy.errors.unreadableWhy(errors[0].reason) : "No card rows to import");
   }
 
   const { catalog, indexes } = await loadMatchInputs(rows);
@@ -127,7 +128,7 @@ export async function previewUpload(formData: FormData): Promise<UploadPreview> 
   const userId = await requireUserId();
   const file = formData.get("file");
   if (!(file instanceof File)) throw new Error("No CSV file provided");
-  if (file.size > COLLECTION_FILE_MAX_BYTES) throw new Error(`File too large (max ${COLLECTION_FILE_MAX_LABEL})`);
+  if (file.size > COLLECTION_FILE_MAX_BYTES) throw new Error(importReviewCopy.errors.fileTooLarge(COLLECTION_FILE_MAX_LABEL));
   const { rows, errors } = parseCollectionCsv(await file.text());
   return buildPreview({ userId, filename: file.name, rows, errors });
 }
@@ -136,7 +137,7 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
   const userId = await requireUserId();
   // Byte-accurate cap — text.length counts UTF-16 code units, which lets
   // multi-byte input exceed the intended size guard.
-  if (Buffer.byteLength(text, "utf8") > PASTE_MAX_BYTES) throw new Error(`Paste too large (max ${PASTE_MAX_LABEL})`);
+  if (Buffer.byteLength(text, "utf8") > PASTE_MAX_BYTES) throw new Error(importReviewCopy.errors.pasteTooLarge(PASTE_MAX_LABEL));
   const { rows, errors } = parsePasteList(text);
   return buildPreview({ userId, filename: "paste.txt", rows, errors });
 }
