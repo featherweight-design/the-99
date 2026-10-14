@@ -12,6 +12,13 @@ describe("ownedPreconCards", () => {
   });
 });
 
+describe("the list's thumb art", () => {
+  it("reads the precon printing's small render beside the full one, for the 34px thumbs", () => {
+    const { sql } = preconCardFacts().toSQL();
+    expect(sql).toContain(`"printings"."image_uri_small"`);
+  });
+});
+
 describe("preconArt", () => {
   const ART = `coalesce("printings"."image_uri", "cards"."image_uri")`;
   const PRINTING = `left join "printings" on "printings"."scryfall_id" = "precon_cards"."scryfall_id"`;

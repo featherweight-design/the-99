@@ -16,6 +16,8 @@ export type PreconCardFact = {
   basic: boolean;
   colorIdentity: string[];
   imageUri: string | null;
+  /** The printing's small render, for the list's 34px thumbs; absent or null where the catalog lacks it, and the thumb draws `imageUri`. */
+  imageUriSmall?: string | null;
 };
 
 export type PreconSource = {
@@ -37,7 +39,7 @@ export type ReaderDeck = {
   builtFrom?: string | null;
 };
 
-export type PreconCommander = { oracleId: string; name: string; imageUri: string | null; colorIdentity: string[] };
+export type PreconCommander = { oracleId: string; name: string; imageUri: string | null; imageUriSmall?: string | null; colorIdentity: string[] };
 
 /** A reader's deck beside a precon: one the shared rule finds, or one linked to it (`linked`), which
  *  is listed whatever it shares (R3 K9). */
@@ -85,7 +87,7 @@ export function summarisePrecons(
     const commanders: PreconCommander[] = [];
     for (const c of s.cards) {
       if (!c.isCommander || commanders.some((x) => x.oracleId === c.oracleId)) continue;
-      commanders.push({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, colorIdentity: c.colorIdentity });
+      commanders.push({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, imageUriSmall: c.imageUriSmall, colorIdentity: c.colorIdentity });
     }
     const identity = WUBRG.filter((x) => commanders.some((c) => c.colorIdentity.includes(x)));
 

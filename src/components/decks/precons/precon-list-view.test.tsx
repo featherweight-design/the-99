@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { PreconRow } from "../../../lib/precons/list";
 
 // The real write, so the live query sees the address the view wrote, as it does in the app.
@@ -31,6 +31,21 @@ describe("PreconListView", () => {
     const heads = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(heads[0]).toMatch(/^2026/);
     expect(screen.getByRole("link", { name: "HD - Eldrazi" })).toHaveAttribute("href", "/decks/d1");
+  });
+
+  it("draws the list thumb from the small render, and from the full one where there is none", async () => {
+    const art = (name: string, over: Partial<PreconRow["commanders"][number]>) =>
+      row(name, "2024-01-01", { commanders: [{ oracleId: `${name}-c`, name: `${name} C`, imageUri: `https://img/${name}-n.jpg`, colorIdentity: ["G"], ...over }] });
+    const { container } = render(
+      <PreconListView
+        rows={[art("Small", { imageUriSmall: "https://img/Small-s.jpg" }), art("Plain", {})]}
+        hasCollection fromNew={false} initial={{ q: "", colours: [], order: null, view: "rows" }} query=""
+      />,
+    );
+    const seen = () => [...container.querySelectorAll('[data-commander-thumb="list"] img')].map((i) => i.getAttribute("src"));
+    await waitFor(() => expect(seen()).toContain("https://img/Plain-n.jpg"));
+    expect(seen()).toContain("https://img/Small-s.jpg");
+    expect(seen()).not.toContain("https://img/Small-n.jpg");
   });
 
   it("searches by commander, and offers to clear a search that matches nothing", () => {

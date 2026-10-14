@@ -42,6 +42,13 @@ describe("summarisePrecons", () => {
     expect(row.unmapped).toBe(2);
   });
 
+  it("carries the lead commander's small render beside its full one", () => {
+    const withArt = source("P");
+    withArt.cards[0] = { ...withArt.cards[0], imageUri: "https://img/n.jpg", imageUriSmall: "https://img/s.jpg" };
+    const [row] = summarisePrecons([withArt], new Set(), []);
+    expect(row.commanders[0]).toMatchObject({ imageUri: "https://img/n.jpg", imageUriSmall: "https://img/s.jpg" });
+  });
+
   it("names the reader's decks that share it, the larger share first", () => {
     const decks = [
       { id: "d1", name: "Swapped", commanders: ["x"], cards: new Set(["x", "sol-ring"]) },

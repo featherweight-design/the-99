@@ -39,6 +39,7 @@ export function preconCardFacts(q: Reader = db) {
       typeLine: cards.typeLine,
       colorIdentity: cards.colorIdentity,
       imageUri: preconArt,
+      imageUriSmall: printings.imageUriSmall,
     })
     .from(preconCards)
     .innerJoin(cards, eq(cards.oracleId, preconCards.oracleId))
@@ -59,6 +60,7 @@ export async function readPreconSources(q: Reader = db): Promise<PreconSource[]>
       basic: /^Basic\b/.test(f.typeLine),
       colorIdentity: f.colorIdentity,
       imageUri: f.imageUri,
+      imageUriSmall: f.imageUriSmall,
     });
     byDeck.set(f.fileName, list);
   }
