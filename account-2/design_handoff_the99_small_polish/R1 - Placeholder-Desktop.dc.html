@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Placeholder contrast · desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1300px;box-sizing:border-box;padding:40px 48px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:30px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Placeholder · desktop · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">A placeholder token, lifted only where it fails</h2>
+    <p style="margin:0;max-width:860px;font-size:13px;line-height:1.55;color:#95A4A6">Option 2 of the brief. <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--fg-placeholder</code> is declared in all six theme blocks. In four it holds the same hex as <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--fg-faint</code>, so nothing visible moves there. In Kamigawa and Phyrexia it is mixed toward <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--fg-muted</code> until it clears 4.5:1 on <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--surface</code>, the lightest ground a placeholder sits on today. <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--fg-faint</code> itself is untouched: 0 of its 878 uses move.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px">
+    <sc-for list="{{themes}}" as="t" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:{{t.bg}};border:1px solid {{t.border}};border-radius:10px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:{{t.muted}}">{{t.name}}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{t.verdictInk}}">{{t.verdict}}</span>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:{{t.muted}}">today · {{t.faint}} · {{t.oldRatio}}:1</span>
+        <div style="display:flex;align-items:center;gap:10px;height:38px;box-sizing:border-box;padding:0 12px;background:{{t.sunken}};border:1px solid {{t.strong}};border-radius:8px;font-size:13.5px;color:{{t.faint}}">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="{{t.faint}}" stroke-width="1.5" aria-hidden="true"><circle cx="6" cy="6" r="4.5"></circle><path d="M9.5 9.5L13 13" stroke-linecap="round"></path></svg>
+          Commander name
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:{{t.muted}}">new · {{t.ph}} · {{t.newRatio}}:1 on the field · {{t.surfRatio}}:1 on --surface</span>
+        <div style="display:flex;align-items:center;gap:10px;height:38px;box-sizing:border-box;padding:0 12px;background:{{t.sunken}};border:1px solid {{t.strong}};border-radius:8px;font-size:13.5px;color:{{t.ph}}">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="{{t.faint}}" stroke-width="1.5" aria-hidden="true"><circle cx="6" cy="6" r="4.5"></circle><path d="M9.5 9.5L13 13" stroke-linecap="round"></path></svg>
+          Commander name
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:{{t.muted}}">entered · --fg</span>
+        <div style="display:flex;align-items:center;gap:10px;height:38px;box-sizing:border-box;padding:0 12px;background:{{t.sunken}};border:1px solid {{t.strong}};border-radius:8px;font-size:13.5px;color:{{t.fg}}">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="{{t.faint}}" stroke-width="1.5" aria-hidden="true"><circle cx="6" cy="6" r="4.5"></circle><path d="M9.5 9.5L13 13" stroke-linecap="round"></path></svg>
+          Atraxa
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:28px">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">Measured, WCAG 2 relative luminance</span>
+      <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr 1fr 1fr 1fr;font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid #1A1F2B;border-radius:10px;overflow:hidden">
+        <span style="padding:8px 10px;background:#1E1F26;color:#7C8A8C">theme</span>
+        <span style="padding:8px 10px;background:#1E1F26;color:#7C8A8C">--fg-placeholder</span>
+        <span style="padding:8px 10px;background:#1E1F26;color:#7C8A8C">on field, was</span>
+        <span style="padding:8px 10px;background:#1E1F26;color:#7C8A8C">on field</span>
+        <span style="padding:8px 10px;background:#1E1F26;color:#7C8A8C">on --surface</span>
+        <span style="padding:8px 10px;background:#1E1F26;color:#7C8A8C">--fg vs it</span>
+        <span style="padding:8px 10px;background:#1E1F26;color:#7C8A8C">--fg-muted vs it</span>
+        <sc-for list="{{themes}}" as="t" hint-placeholder-count="6">
+          <span style="padding:7px 10px;border-top:1px solid #1A1F2B;color:#C6D2D3">{{t.name}}</span>
+          <span style="padding:7px 10px;border-top:1px solid #1A1F2B;color:#B3C0C2">{{t.phLabel}}</span>
+          <span style="padding:7px 10px;border-top:1px solid #1A1F2B;color:#95A4A6">{{t.oldRatio}}</span>
+          <span style="padding:7px 10px;border-top:1px solid #1A1F2B;color:#C6D2D3">{{t.newRatio}}</span>
+          <span style="padding:7px 10px;border-top:1px solid #1A1F2B;color:#C6D2D3">{{t.surfRatio}}</span>
+          <span style="padding:7px 10px;border-top:1px solid #1A1F2B;color:#95A4A6">{{t.vsFg}}</span>
+          <span style="padding:7px 10px;border-top:1px solid #1A1F2B;color:#95A4A6">{{t.vsMuted}}</span>
+        </sc-for>
+      </div>
+      <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">Every theme now clears 4.5:1 on the field (4.82 to 5.24) and on <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--surface</code> (4.55 to 4.82). The placeholder stays clearly quieter than entered text (2.3 to 3.1 apart) and a step under <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--fg-muted</code>, which labels use.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">What moves: 9 class sites in 7 files</span>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:#B3C0C2">
+        <span>ui/text-field.tsx:44 · FIELD_CHROME</span>
+        <span>ui/text-field.tsx:158 · SearchField input</span>
+        <span>decks/update-entry.tsx:304</span>
+        <span>decks/import-entry.tsx:317</span>
+        <span>decks/notes/note-field.tsx:83</span>
+        <span>decks/tuning-limits-box.tsx:132 · sits on --surface</span>
+        <span>intake/theme-picker.tsx:127</span>
+        <span>intake/intake-form.tsx:308</span>
+        <span>intake/intake-form.tsx:359</span>
+      </div>
+      <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">Each changes <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">placeholder:text-[color:var(--fg-faint)]</code> to <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--fg-placeholder</code>. Nothing else reads the new token, and no <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--fg-faint</code> use changes. The brief counted FIELD_CHROME plus nine; the tree has FIELD_CHROME plus eight.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pass = '#95A4A6';
+    const lift = '#E0913C';
+    return {
+      themes: [
+        { name: 'Amonkhet', bg: '#14110E', border: '#2B241B', sunken: '#18140F', strong: '#3A3229', fg: '#EDE6D8', muted: '#A59C89', faint: '#8B8270', ph: '#8B8270', phLabel: '= faint', oldRatio: '4.82', newRatio: '4.82', surfRatio: '4.55', vsFg: '3.06', vsMuted: '1.40', verdict: 'passes · unchanged', verdictInk: pass },
+        { name: 'Kamigawa', bg: '#0E0F14', border: '#181C26', sunken: '#101219', strong: '#262A35', fg: '#E6E8F0', muted: '#959AAD', faint: '#6F7486', ph: '#7D8294', phLabel: '#7D8294', oldRatio: '4.02', newRatio: '4.89', surfRatio: '4.64', vsFg: '3.13', vsMuted: '1.37', verdict: 'lifted from #6F7486', verdictInk: lift },
+        { name: 'Ixalan', bg: '#0E1310', border: '#1D2620', sunken: '#101512', strong: '#2C3830', fg: '#E0E7DE', muted: '#98A695', faint: '#808C7C', ph: '#808C7C', phLabel: '= faint', oldRatio: '5.24', newRatio: '5.24', surfRatio: '4.82', vsFg: '2.79', vsMuted: '1.38', verdict: 'passes · unchanged', verdictInk: pass },
+        { name: 'Phyrexia', bg: '#0D0B0E', border: '#19161C', sunken: '#100E12', strong: '#262329', fg: '#E4E2E6', muted: '#9A96A0', faint: '#78747E', ph: '#827E88', phLabel: '#827E88', oldRatio: '4.20', newRatio: '4.84', surfRatio: '4.65', vsFg: '3.09', vsMuted: '1.37', verdict: 'lifted from #78747E', verdictInk: lift },
+        { name: 'Eldraine', bg: '#120E17', border: '#241D30', sunken: '#131018', strong: '#342C41', fg: '#E4DEEE', muted: '#9C95A8', faint: '#898395', ph: '#898395', phLabel: '= faint', oldRatio: '5.15', newRatio: '5.15', surfRatio: '4.79', vsFg: '2.78', vsMuted: '1.27', verdict: 'passes · unchanged', verdictInk: pass },
+        { name: 'Kaldheim', bg: '#121217', border: '#1A1F2B', sunken: '#16171D', strong: '#2E3340', fg: '#C6D2D3', muted: '#95A4A6', faint: '#7C8A8C', ph: '#7C8A8C', phLabel: '= faint', oldRatio: '5.00', newRatio: '5.00', surfRatio: '4.59', vsFg: '2.31', vsMuted: '1.39', verdict: 'passes · unchanged', verdictInk: pass }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

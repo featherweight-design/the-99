@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Token tile · 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+</style>
+</helmet>
+<div style="width:390px;min-height:2600px;box-sizing:border-box;padding:28px 16px 40px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:26px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Token tile · Card view · 390 · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:22px">The actions move inside the frame</h2>
+    <p style="margin:0;font-size:12px;line-height:1.5;color:#95A4A6">A foot strip under the caption, behind a hairline, inside the tile's border. Two lines, always: the state line and the makers line. Tiles in a row stretch to one height and the foot sits on the bottom edge.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">Today, for the diff</span>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start">
+      <div style="display:flex;flex-direction:column">
+        <div style="display:flex;flex-direction:column;overflow:hidden;border-radius:9px;border:1px solid #1A1F2B;background:#1E1F26">
+          <span style="display:flex;align-items:center;justify-content:center;aspect-ratio:63/88;background:#5A3E3A;border-radius:0 0 9px 9px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C6D2D3">Goblin</span>
+          <span style="display:flex;flex-direction:column;gap:2px;padding:7px 9px"><span style="font-size:12.5px">Goblin</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A4A6">Creature · 1/1</span></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:0 10px;padding:4px 2px 0">
+          <span style="height:44px;display:flex;align-items:center;padding:0 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A4A6;text-decoration:underline dashed #424755;text-underline-offset:3px">I have one</span>
+          <span style="height:32px;display:flex;align-items:center;padding:0 10px;border:1px solid #2E3340;border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B3C0C2">Add to Shopping</span>
+        </div>
+        <span style="min-height:44px;display:flex;align-items:center;padding:0 2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C">from Krenko and 2 more ⌄</span>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <div style="display:flex;flex-direction:column;overflow:hidden;border-radius:9px;border:1px solid #1A1F2B;background:#1E1F26">
+          <span style="display:flex;align-items:center;justify-content:center;aspect-ratio:63/88;background:#4D4A3A;border-radius:0 0 9px 9px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C6D2D3">Treasure</span>
+          <span style="display:flex;flex-direction:column;gap:2px;padding:7px 9px"><span style="font-size:12.5px">Treasure</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A4A6">Artifact</span></span>
+        </div>
+        <span style="padding:6px 2px 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A4A6">in your collection</span>
+        <span style="min-height:44px;display:flex;align-items:center;padding:0 2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C">from Dockside ⌄</span>
+      </div>
+    </div>
+    <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">Controls float under the border, so in a grid they sit in the gap above the next row, and the bottoms go ragged.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">R1 · every state, as the grid draws them</span>
+    <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch">
+      <sc-for list="{{tiles}}" as="t" hint-placeholder-count="8">
+        <li style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#7C8A8C">{{t.label}}</span>
+          <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;border-radius:9px;border:1px solid #1A1F2B;background:#1E1F26">
+            <span style="display:flex;align-items:center;justify-content:center;aspect-ratio:63/88;background:{{t.art}};border-radius:0 0 9px 9px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C6D2D3">{{t.name}}</span>
+            <span style="display:flex;flex-direction:column;gap:3px;padding:7px 9px 6px">
+              <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;box-sizing:border-box;border-radius:50%;{{t.dot}}"></span><span style="width:12px;height:12px;border-radius:50%;background:{{t.pip}}"></span></span>
+              <span style="font-size:12.5px;color:#C6D2D3">{{t.name}}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A4A6">{{t.type}}</span>
+            </span>
+            <sc-if value="{{t.hasRules}}" hint-placeholder-val="{{false}}">
+              <span style="padding:0 9px 6px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5;color:#95A4A6">{{t.rules}}</span>
+            </sc-if>
+            <span style="flex:1"></span>
+            <div style="border-top:1px solid #1A1F2B;display:flex;flex-direction:column;padding:0 6px">
+              <div style="height:44px;display:flex;align-items:center">
+                <sc-if value="{{t.isJoin}}" hint-placeholder-val="{{true}}">
+                  <button type="button" aria-pressed="false" style="flex:1;height:32px;padding:0 8px;background:transparent;border:1px solid #2E3340;border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:#B3C0C2;opacity:{{t.op}}">Add to Shopping</button>
+                </sc-if>
+                <sc-if value="{{t.isJoined}}" hint-placeholder-val="{{false}}">
+                  <button type="button" aria-pressed="true" style="flex:1;height:32px;padding:0 8px;background:rgba(92,134,201,.14);border:1px solid #5C86C9;border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:#C6D2D3">✓ In Shopping</button>
+                </sc-if>
+                <sc-if value="{{t.isUpload}}" hint-placeholder-val="{{false}}">
+                  <span style="padding:0 3px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A4A6">in your collection</span>
+                </sc-if>
+                <sc-if value="{{t.isHand}}" hint-placeholder-val="{{false}}">
+                  <button type="button" aria-pressed="true" style="height:44px;padding:0 3px;background:transparent;border:0;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:#5C86C9">✓ I have one</button>
+                </sc-if>
+              </div>
+              <sc-if value="{{t.refused}}" hint-placeholder-val="{{false}}">
+                <span role="alert" style="padding:0 3px 6px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.45;color:#5F6D6E">We couldn’t save that. The token is unchanged.</span>
+              </sc-if>
+              <sc-if value="{{t.hasMaker}}" hint-placeholder-val="{{true}}">
+                <button type="button" aria-expanded="{{t.openAttr}}" style="height:44px;display:flex;align-items:center;gap:6px;padding:0 3px;background:transparent;border:0;border-top:1px solid #1A1F2B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C;text-align:left">
+                  <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.from}}</span>
+                  <span style="color:#95A4A6">{{t.chev}}</span>
+                </button>
+              </sc-if>
+              <sc-if value="{{t.orphan}}" hint-placeholder-val="{{false}}">
+                <span style="height:44px;display:flex;align-items:center;padding:0 3px;border-top:1px solid #1A1F2B;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C">from no card in this deck</span>
+              </sc-if>
+              <sc-if value="{{t.open}}" hint-placeholder-val="{{false}}">
+                <div style="display:flex;flex-direction:column;padding:0 0 8px">
+                  <sc-if value="{{t.foldHave}}" hint-placeholder-val="{{true}}">
+                    <button type="button" aria-pressed="false" style="align-self:flex-start;height:44px;padding:0 3px;background:transparent;border:0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A4A6;text-decoration:underline dashed #424755;text-underline-offset:3px">I have one</button>
+                  </sc-if>
+                  <span style="display:flex;align-items:center;gap:7px;height:32px;padding:0 3px"><span style="width:16px;height:22px;border-radius:2px;background:#5A3E3A"></span><span style="font-size:11.5px;color:#C6D2D3">Krenko, Mob Boss</span></span>
+                  <span style="display:flex;align-items:center;gap:7px;height:32px;padding:0 3px"><span style="width:16px;height:22px;border-radius:2px;background:#4A3A3A"></span><span style="font-size:11.5px;color:#C6D2D3">Goblin Instigator</span></span>
+                  <span style="display:flex;align-items:center;gap:7px;height:32px;padding:0 3px"><span style="width:16px;height:22px;border-radius:2px;background:#3E3A4A"></span><span style="font-size:11.5px;color:#C6D2D3">Beetleback Chief</span></span>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </li>
+      </sc-for>
+    </ul>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">Why I have one moves into the fold</span>
+    <p style="margin:0;font-size:12px;line-height:1.55;color:#B3C0C2">At 173px the two presses cannot share a line (about 200px of label and padding), so today they stack into three 44px targets under every tile. The state line keeps the press that changes Shopping. I have one goes first inside the makers fold, and that is also the only place it can act: a token with no maker refuses the hand mark, and a token with no maker has no fold. Once marked, ✓ I have one takes the state line, where it unmarks. Labels, presses and 44px targets are unchanged.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const owned = 'background:#6FA368';
+    const not = 'border:1px dashed #7C8A8C';
+    const unknown = 'background:transparent';
+    const base = { hasRules: false, rules: '', isJoin: false, isJoined: false, isUpload: false, isHand: false, refused: false, hasMaker: true, orphan: false, open: false, foldHave: false, op: 1, chev: '⌄', openAttr: 'false', from: 'from Krenko and 2 more' };
+    const t = (o) => Object.assign({}, base, o);
+    return {
+      tiles: [
+        t({ label: 'Unowned', name: 'Goblin', type: 'Creature · 1/1', art: '#5A3E3A', pip: '#D3202A', dot: not, isJoin: true }),
+        t({ label: 'Joined', name: 'Treasure', type: 'Artifact', art: '#4D4A3A', pip: '#8A8A8A', dot: not, isJoined: true, from: 'from Dockside Extortionist' }),
+        t({ label: 'Owned by upload', name: 'Clue', type: 'Artifact', art: '#3E4A4D', pip: '#8A8A8A', dot: owned, isUpload: true, from: 'from Tireless Tracker' }),
+        t({ label: 'Owned by hand mark', name: 'Food', type: 'Artifact', art: '#4D433A', pip: '#8A8A8A', dot: owned, isHand: true, from: 'from Gilded Goose' }),
+        t({ label: 'Pending press', name: 'Soldier', type: 'Creature · 1/1', art: '#4D4D44', pip: '#F8F6D8', dot: unknown, isJoin: true, op: 0.6, from: 'from Elspeth' }),
+        t({ label: 'Refused press', name: 'Spirit', type: 'Creature · 1/1', art: '#3F4552', pip: '#F8F6D8', dot: unknown, isJoin: true, refused: true, hasRules: true, rules: 'Flying', from: 'from Lingering Souls' }),
+        t({ label: 'Orphan, no maker', name: 'Zombie', type: 'Creature · 2/2', art: '#3A4A3E', pip: '#2B2A2A', dot: not, isJoin: true, hasMaker: false, orphan: true }),
+        t({ label: 'Fold open', name: 'Goblin', type: 'Creature · 1/1', art: '#5A3E3A', pip: '#D3202A', dot: not, isJoin: true, open: true, foldHave: true, chev: '⌃', openAttr: 'true' })
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
