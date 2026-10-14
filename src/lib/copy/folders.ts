@@ -91,7 +91,7 @@ export const folderCopy = {
      * sentence to show. Without it the dialog either lies (a duplicate message
      * for a name that is not one) or fails silently.
      */
-    refused: 'That name cannot be used.',
+    refused: 'That name won’t work.',
     /**
      * A write that threw rather than refused — a timeout, an outage. It is a
      * different sentence because it asks for a different thing: the name was

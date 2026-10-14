@@ -149,7 +149,7 @@ export const deckImportCopy = {
     badCsv: {
       heading: "We can't read that",
       bodyMobile: (detail: string) => `${detail}. Fix it and try again.`,
-      body: (detail: string) => `${detail}. Fix it and try again — nothing was changed.`,
+      body: (detail: string) => `${detail}. Fix it and try again. Nothing was changed.`,
       action: "Try again",
       retry: false,
     },

@@ -174,7 +174,7 @@ export const refreshCopy = {
        * either deletes and redirects or throws. So this names the one thing
        * that can have happened and asks for the one thing that can be done.
        */
-      failed: 'Could not delete that deck. Try again.',
+      failed: 'We couldn’t delete that deck. Try again.',
     },
 
     // Card label for screen readers: name, identity, status, count, and the

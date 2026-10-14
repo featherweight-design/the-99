@@ -11,7 +11,7 @@ export const shellCopy = {
   // collection routes; it used to be the single shared heading and so greeted
   // you on /commanders and /decks too.
   //
-  // The collection mock renders "1,418 cards · matching to Oracle…", but these
+  // The collection mock renders "1,418 cards · matching your cards…", but these
   // are Suspense fallbacks rendered before any data resolves — there is no count
   // to interpolate. Only the countless form is exported; do not add the
   // templated one until a surface actually has the number.
@@ -26,7 +26,7 @@ export const shellCopy = {
     },
     collection: {
       heading: "Reading your collection",
-      status: "matching to Oracle…",
+      status: "matching your cards…",
     },
     // The /about read is one primary-key lookup, so this boundary is almost
     // never seen — it exists because every segment that owns a page owns one,
