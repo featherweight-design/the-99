@@ -236,8 +236,8 @@ export const refreshCopy = {
     heading: 'Welcome to The 99',
     step1Title: 'Add your collection',
     step1Body:
-      'Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox. We read owned counts, sets and finishes.',
-    step1BodyShort: 'Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox.',
+      'Drop a CSV export from Moxfield, Archidekt, Deckbox or ManaBox. We read owned counts, sets and finishes.',
+    step1BodyShort: 'Drop a CSV export from Moxfield, Archidekt, Deckbox or ManaBox.',
     // While the embedded review is open, on the phone (first-run redesign D11, 5a). Drawn in mono
     // uppercase; the count is pinned to en-US like every figure here.
     step1Reviewing: (file: string, rows: number) =>

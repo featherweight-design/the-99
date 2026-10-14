@@ -155,7 +155,7 @@ export const aboutCopy = {
   // Hugh's own story (option A, 2026-10-06): why the app exists, what it does and who it's for.
   // Paragraphs split on a blank line, as an entry's caption does (`EntryCaption`).
   pageIntro:
-    "There are a lot of Magic: The Gathering apps out there and a lot of them do really great things: Manabox is the main place I store my collection, Moxfield was my first deck builder, and Deckcheck helped me really understand tuning." +
+    "There are a lot of Magic: The Gathering apps out there and a lot of them do really great things: ManaBox is the main place I store my collection, Moxfield was my first deck builder, and Deckcheck helped me really understand tuning." +
     '\n\n' +
     "But, no single app really scratched that itch for me. Somewhere I could really see and manage everything. At least not everything I needed. So, I built The 99. Specifically, around the idea that, maybe I would know what commander I want, but it was always arduous to round out the rest of the deck." +
     '\n\n' +

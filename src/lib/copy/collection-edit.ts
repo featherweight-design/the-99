@@ -27,7 +27,7 @@ export const collectionEditCopy = {
   },
   firstRun: {
     addByHand: "Add cards by hand",
-    bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox, or add cards by hand.",
+    bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or add cards by hand.",
   },
   // §A, the Replace review (the choice step and the Add review come with the next PR). Strings are
   // the handoff's; lines marked (new) have no key there and go to /copy-review.
