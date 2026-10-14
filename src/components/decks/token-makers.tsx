@@ -27,8 +27,13 @@ export function boxedOnPhone(count: number): boolean {
   return count * PHONE_ROW + BOX_PAD > PHONE_CAP;
 }
 
+/** The same decision for a list drawn in a fixed number of columns (a tile's is one). */
+function boxedOnDesktopIn(count: number, columns: 1 | 2 | 3): boolean {
+  return Math.ceil(count / columns) * DESKTOP_ROW + BOX_PAD > DESKTOP_CAP;
+}
+
 export function boxedOnDesktop(count: number): boolean {
-  return Math.ceil(count / makerColumns(count)) * DESKTOP_ROW + BOX_PAD > DESKTOP_CAP;
+  return boxedOnDesktopIn(count, makerColumns(count));
 }
 
 function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] }) {
@@ -60,18 +65,22 @@ function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] 
  * down the page: where the list can outgrow its cap, which is 6 names on a phone and 16 from md up
  * (`boxedOnPhone`, `boxedOnDesktop`).
  */
-export function TokenMakers({ makers, printingLine }: { makers: TokenMaker[]; printingLine: string | null }) {
+export function TokenMakers({ makers, printingLine, layout = "row" }: {
+  makers: TokenMaker[]; printingLine: string | null;
+  /** `tile` is a card tile's width (178px at the floor): no row indent, one column at every width. */
+  layout?: "row" | "tile";
+}) {
   const n = makers.length;
+  const cols = layout === "tile" ? 1 : makerColumns(n);
   const boxPhone = boxedOnPhone(n);
-  const boxDesktop = boxedOnDesktop(n);
-  const cols = makerColumns(n);
+  const boxDesktop = boxedOnDesktopIn(n, cols);
   const box = [
     boxPhone ? "max-md:max-h-[240px] max-md:overflow-y-auto max-md:overscroll-contain max-md:rounded-[8px] max-md:border max-md:border-[color:var(--border)] max-md:bg-[color:var(--surface-sunken)] max-md:px-[12px] max-md:py-[2px]" : "",
     boxDesktop ? "md:max-h-[158px] md:overflow-y-auto md:overscroll-contain md:rounded-[8px] md:border md:border-[color:var(--border)] md:bg-[color:var(--surface-sunken)] md:px-[12px] md:py-[2px]" : "",
   ].join(" ");
   const columns = cols === 1 ? "" : cols === 2 ? "md:grid-cols-2" : "md:grid-cols-3";
   return (
-    <div className="mt-[8px] flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[9px] md:ml-[54px]">
+    <div className={`mt-[8px] flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[9px] ${layout === "tile" ? "" : "md:ml-[54px]"}`}>
       <p className="m-0 flex items-baseline gap-[8px] font-mono text-[9.5px] uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
         <span>{tokensCopy.makers.label(n)}</span>
         {boxPhone || boxDesktop ? (

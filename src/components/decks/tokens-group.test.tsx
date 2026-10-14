@@ -577,4 +577,16 @@ describe("the view", () => {
     expect(art.hasAttribute("aria-expanded")).toBe(false);
     expect(screen.getAllByRole("button", { name: "Goblin token, made by 3 cards" })).toHaveLength(1);
   });
+
+  it("draws a tile's makers in one column with no row indent, boxed past the one-column cap", () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(7) })]));
+    fireEvent.click(screen.getByRole("button", { name: "Goblin token, made by 7 cards", expanded: false }));
+    const list = screen.getByText("Maker 01").closest("ul")!;
+    // Seven names in a 178px tile are one column (a row's would be two), and seven 30px rows overflow the
+    // 158px cap, so the box scrolls: the row's two-column count would have left it open.
+    expect(list.className).not.toMatch(/md:grid-cols-/);
+    expect(list.className).toContain("md:max-h-[158px]");
+    expect(list.parentElement!.className).not.toContain("md:ml-[54px]");
+  });
 });

@@ -109,15 +109,24 @@ async function seed(makers, art, deckA) {
   }
 }
 
+/** A cleanup that fails leaves fixtures behind on a shared database: report it, and keep deleting the rest. */
+async function tidy(label, run) {
+  try {
+    await run();
+  } catch (error) {
+    report(`cleanup: ${label}`, false, String(error?.message ?? error));
+  }
+}
+
 async function cleanup() {
   for (const id of made.tokens) {
-    await sql`delete from deck_token_joins where token_oracle_id = ${id}`.catch((e) => console.error("cleanup joins:", e));
-    await sql`delete from token_ownership where token_oracle_id = ${id}`.catch((e) => console.error("cleanup ownership:", e));
-    await sql`delete from card_tokens where token_oracle_id = ${id}`.catch((e) => console.error("cleanup links:", e));
-    await sql`delete from token_printings where token_oracle_id = ${id}`.catch((e) => console.error("cleanup printings:", e));
-    await sql`delete from tokens where oracle_id = ${id}`.catch((e) => console.error("cleanup tokens:", e));
+    await tidy(`joins of ${id}`, () => sql`delete from deck_token_joins where token_oracle_id = ${id}`);
+    await tidy(`ownership of ${id}`, () => sql`delete from token_ownership where token_oracle_id = ${id}`);
+    await tidy(`links of ${id}`, () => sql`delete from card_tokens where token_oracle_id = ${id}`);
+    await tidy(`printings of ${id}`, () => sql`delete from token_printings where token_oracle_id = ${id}`);
+    await tidy(`token ${id}`, () => sql`delete from tokens where oracle_id = ${id}`);
   }
-  if (made.reads) await sql`delete from token_reads where user_id = ${userId}`.catch((e) => console.error("cleanup read marker:", e));
+  if (made.reads) await tidy("read marker", () => sql`delete from token_reads where user_id = ${userId}`);
 }
 
 const HEADING = "#deck-tokens-heading button";

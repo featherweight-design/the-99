@@ -113,7 +113,7 @@ export function TokenTile({
       {refused ? (
         <p role="alert" className="m-0 px-[2px] font-mono text-[10.5px] text-[color:var(--fg-locked)]">{tokensCopy.row.refused}</p>
       ) : null}
-      {open && canOpen ? <TokenMakers makers={token.makers} printingLine={printingLine(token, newestAsOf)} /> : null}
+      {open && canOpen ? <TokenMakers makers={token.makers} printingLine={printingLine(token, newestAsOf)} layout="tile" /> : null}
     </li>
   );
 }
