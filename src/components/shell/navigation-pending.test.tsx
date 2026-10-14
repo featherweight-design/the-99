@@ -452,6 +452,35 @@ describe("the stuck-loader report (NAV_STALL_LOG_ENABLED)", () => {
     const body = JSON.parse(await (beacon.mock.calls[0] as unknown as [string, Blob])[1].text());
     expect(body).toMatchObject({ kind: "fallback", loader: "fallback", to: "/decks/[x]", moved: true });
   });
+  it("counts a browser Back as a navigation, so a fallback after it reports even where one already did", async () => {
+    cleanup();
+    window.history.replaceState(null, "", "/decks/0b49cb44-8ae2-4c19-b558-633344a2f4ed");
+    const { LoadingScreen } = await import("./loading-screen");
+    const { shellCopy } = await import("../../lib/copy/shell");
+    const draw = () =>
+      render(
+        <NavigationPendingProvider stall={{ deployment: null }}>
+          <ShellMain className="">
+            <LoadingScreen copy={shellCopy.loading.decks} />
+          </ShellMain>
+        </NavigationPendingProvider>,
+      );
+    draw();
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    act(() => vi.advanceTimersByTime(8_000));
+    expect(beacon).toHaveBeenCalledTimes(1);
+    // The same page's loading screen again, with no navigation between: already reported.
+    cleanup();
+    draw();
+    act(() => vi.advanceTimersByTime(8_000));
+    expect(beacon).toHaveBeenCalledTimes(1);
+    // After a Back it is a new navigation, and reports.
+    cleanup();
+    draw();
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    act(() => vi.advanceTimersByTime(8_000));
+    expect(beacon).toHaveBeenCalledTimes(2);
+  });
   it("leaves the pending overlay's own screen to the provider: it never reports as a fallback", async () => {
     cleanup();
     const { LoadingScreen } = await import("./loading-screen");

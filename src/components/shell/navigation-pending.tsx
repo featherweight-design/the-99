@@ -188,7 +188,12 @@ export function NavigationPendingProvider({ children, stall = null }: { children
   // one report, and every new one lets the next hang report again.
   const leftFrom = useRef(pathname);
   useEffect(() => {
-    if (stall) watchFetches();
+    if (!stall) return;
+    watchFetches();
+    // A browser Back or Forward is a navigation no press reports, so it starts one here: a page it
+    // lands in a loading screen is then timed, matched and reported as its own.
+    window.addEventListener("popstate", newNavigation);
+    return () => window.removeEventListener("popstate", newNavigation);
   }, [stall]);
   useEffect(() => {
     if (target === null) return;

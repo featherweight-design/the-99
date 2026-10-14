@@ -49,7 +49,15 @@ function loaderNow(): StallReport["loader"] {
 // The router's own RSC requests, as `watchFetches` saw them start and answer. Prefetches are left
 // out: one for the same path can finish while the navigation's request is still held, and Resource
 // Timing alone cannot tell the two apart, nor see a request still in flight.
-type Flight = { path: string; url: string; startedAt: number; headersAt: number | null; status: number };
+type Flight = {
+  path: string;
+  url: string;
+  startedAt: number;
+  headersAt: number | null;
+  status: number;
+  /** Resource Timing's entry for THIS request, once its body arrived whole. */
+  whole: { ms: number; bytes: number } | null;
+};
 const flights: Flight[] = [];
 let watching = false;
 
@@ -69,13 +77,29 @@ function headerOf(init: RequestInit | undefined, name: string): string | null {
 export function watchFetches(): void {
   if (watching || typeof window === "undefined") return;
   watching = true;
+  // An observer rather than `getEntriesByType`: the browser's resource buffer stops recording at its
+  // default 250 entries, which one cold `/collection` grid can fill, and an observer is not bound by it.
+  // An entry is matched to the request that STARTED it (Next's `_rsc` is a hash of the router state,
+  // so a second visit from the same place asks for the same URL), never to an older one.
+  try {
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries() as PerformanceResourceTiming[]) {
+        const flight = flights.findLast((f) => f.url === e.name && f.whole === null && e.startTime >= f.startedAt);
+        if (flight) flight.whole = { ms: e.duration, bytes: e.transferSize };
+      }
+    }).observe({ type: "resource" });
+  } catch {
+    // No observer, no `done`: a request whose body arrived reads as `headers`.
+  }
   const original = window.fetch;
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    // Taken before the request starts, so its Resource Timing entry never starts earlier.
+    const startedAt = performance.now();
     const pending = original.call(this, input, init);
     try {
       if (headerOf(init, "rsc") === "1" && !headerOf(init, "next-router-prefetch") && !headerOf(init, "next-router-segment-prefetch")) {
         const url = new URL(input instanceof Request ? input.url : String(input), location.origin);
-        const flight: Flight = { path: url.pathname, url: url.href, startedAt: performance.now(), headersAt: null, status: 0 };
+        const flight: Flight = { path: url.pathname, url: url.href, startedAt, headersAt: null, status: 0, whole: null };
         flights.push(flight);
         if (flights.length > 20) flights.shift();
         pending.then(
@@ -101,13 +125,9 @@ function bounded(n: number, max: number): number {
 function rscFor(to: string, since: number): Pick<StallReport, "rsc" | "rscStatus" | "rscMs" | "rscBytes"> {
   const flight = flights.filter((f) => f.path === to && f.startedAt >= since).at(-1);
   if (!flight) return { rsc: "none", rscStatus: 0, rscMs: 0, rscBytes: 0 };
-  // Resource Timing lists a request once its body has arrived whole, under its exact URL.
-  const whole = performance
-    .getEntriesByType("resource")
-    .find((e): e is PerformanceResourceTiming => e instanceof PerformanceResourceTiming && e.name === flight.url);
   const status = flight.status >= 0 && flight.status <= 599 ? flight.status : 0;
-  if (whole) {
-    return { rsc: "done", rscStatus: status, rscMs: bounded(whole.duration, 3_600_000), rscBytes: bounded(whole.transferSize, 100_000_000) };
+  if (flight.whole) {
+    return { rsc: "done", rscStatus: status, rscMs: bounded(flight.whole.ms, 3_600_000), rscBytes: bounded(flight.whole.bytes, 100_000_000) };
   }
   if (flight.headersAt !== null) {
     return { rsc: "headers", rscStatus: status, rscMs: bounded(flight.headersAt - flight.startedAt, 3_600_000), rscBytes: 0 };

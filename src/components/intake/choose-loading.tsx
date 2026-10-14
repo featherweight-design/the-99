@@ -11,6 +11,7 @@
 import { useSearchParams } from "next/navigation";
 
 import { LoadingScreen } from "../shell/loading-screen";
+import { StallWatch } from "../shell/nav-stall";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { shellCopy } from "../../lib/copy/shell";
 import { parseChooseParams, serializeChooseParams } from "../../lib/intake/params";
@@ -26,11 +27,14 @@ export function ChooseLoading() {
   // The page's own way back: a change of answers carries neither the read nor its marks.
   const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
   return (
-    <div data-testid="choose-loading" className="flex flex-col">
+    // `data-loading-screen` and `StallWatch`, as every in-page `LoadingScreen` carries them: the
+    // stuck-loader diagnostic counts this skeleton as the page's fallback.
+    <div data-testid="choose-loading" data-loading-screen="" className="flex flex-col">
       <ChooseHeader back={{ href: changeHref, label: copy.results.back }} title={copy.results.title} sub={copy.results.sub} subPhone={copy.results.subPhone} />
       <div className={RESULTS_COLUMN}>
         <ResultsSkeleton />
       </div>
+      <StallWatch />
     </div>
   );
 }

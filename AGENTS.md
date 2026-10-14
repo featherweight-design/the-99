@@ -833,14 +833,16 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   line. `src/lib/nav-stall/report.ts` checks every field: paths arrive as PATTERNS (every segment the app does not
   name is `[x]`, the query is dropped), everything else is a closed enum, a boolean or a bounded integer, and the line
   carries no reader id and no deployment id. Two watchers send it: the navigation provider, for a press still
-  pending (`kind=pending`), and `StallWatch` inside every in-page `LoadingScreen`, for a page that committed into its
-  fallback (`kind=fallback`). Find them with `vercel logs -p the-99 -q "nav-stall"`, and read a line by field:
+  pending (`kind=pending`), and `StallWatch` inside every in-page loading screen (`LoadingScreen`, and Help me
+  choose's results skeleton), for a page that committed into its fallback (`kind=fallback`). A browser Back or
+  Forward starts a navigation for the count too. Find them with `vercel logs -p the-99 -q "nav-stall"`, and read a line by field:
 
   - `moved=true` means the address bar already shows the target: the router committed and the PAGE is what never
     arrived. `moved=false`: the press itself never committed.
-  - `rsc=none`: no RSC response for the target finished arriving since the press, so the request never reached the
-    browser whole (network, server or proxy). `rsc=done` with `rscStatus`, `rscMs` and `rscBytes`: it arrived, and
-    the hang is in the browser.
+  - `rsc` is how far the router's OWN request for the target got (a prefetch never counts): `none`, no request
+    started (the router never asked); `waiting`, asked and no response yet (network, proxy or a server still
+    rendering); `headers`, the response began with `rscStatus` and its body never finished (a stalled stream);
+    `done`, the body arrived whole in `rscMs` with `rscBytes`, so the hang is in the browser.
   - `loader` is what was drawn: the pending `overlay`, the page's own `fallback`, `both`, or `none` (a report from a
     screen that left in the same instant).
   - `wasHidden=true` means the tab was backgrounded during the wait, and a frozen tab is not a hang: discount it.

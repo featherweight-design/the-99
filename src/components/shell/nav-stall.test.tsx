@@ -76,7 +76,15 @@ describe("the navigation's own RSC request", () => {
   let answer: (r: Response) => void = () => {};
   const stub = vi.fn(() => new Promise<Response>((resolve) => { answer = resolve; }));
   window.fetch = stub as unknown as typeof fetch;
+  // jsdom has no PerformanceObserver: a stand-in the tests feed entries through.
+  let observed: ((list: { getEntries: () => unknown[] }) => void) | null = null;
+  (globalThis as { PerformanceObserver?: unknown }).PerformanceObserver = class {
+    constructor(cb: (list: { getEntries: () => unknown[] }) => void) { observed = cb; }
+    observe() {}
+  };
   watchFetches();
+  const arrive = (name: string, startTime: number) =>
+    observed!({ getEntries: () => [{ name, startTime, duration: 420, transferSize: 5120 }] });
 
   const rscFetch = (path: string, extra: Record<string, string> = {}) =>
     void window.fetch(`${path}?_rsc=abc`, { headers: { rsc: "1", ...extra } });
@@ -106,6 +114,21 @@ describe("the navigation's own RSC request", () => {
     await Promise.resolve();
     watchStall({ kind: "pending", from: "/", to: "/decks", config });
     expect(await stage()).toMatchObject({ rsc: "headers", rscStatus: 200 });
+  });
+  it("says done once THIS request's body arrived, and never takes an older request's entry for the same URL", async () => {
+    const url = new URL("/decks?_rsc=abc", location.origin).href;
+    vi.advanceTimersByTime(1_000);
+    rscFetch("/decks");
+    // An entry for the same URL from before this request started is a previous visit's.
+    arrive(url, performance.now() - 500);
+    watchStall({ kind: "pending", from: "/", to: "/decks", config });
+    expect(await stage()).toMatchObject({ rsc: "waiting" });
+    newNavigation();
+    newNavigation();
+    rscFetch("/decks");
+    arrive(url, performance.now());
+    watchStall({ kind: "pending", from: "/", to: "/decks", config });
+    expect(await stage()).toMatchObject({ rsc: "done", rscMs: 420, rscBytes: 5120 });
   });
   it("hands the caller the same response, untouched", async () => {
     const pending = window.fetch("/decks?_rsc=abc", { headers: { rsc: "1" } });
