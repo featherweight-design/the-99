@@ -539,6 +539,8 @@ export function CommandersView({
   const wasWindowed = filtered.length > REVEAL_STEP;
 
   const [announcement, setAnnouncement] = useState("");
+  // The banner is raised when ANY row lost its synergy data; it says "some" unless every row did.
+  const partialSynergy = degraded && !results.every((r) => r.synergyState === "degraded");
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
   const prevShown = useRef(shown);
 
@@ -611,6 +613,7 @@ export function CommandersView({
             variant={
               degraded && !availOk ? "both" : availOk ? "synergy" : "availability"
             }
+            partial={partialSynergy}
           />
         </div>
       )}
