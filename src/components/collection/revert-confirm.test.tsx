@@ -85,6 +85,31 @@ describe("RevertConfirm", () => {
     expect(screen.getByRole("button", { name: "Revert" })).toBeEnabled();
   });
 
+  it("holds one height from open: the read breathes inside it, and Show all grows the body, never the dialog", async () => {
+    const many = Array.from({ length: 12 }, (_, i) => row(`Card ${i}`, 0, 1));
+    let land!: (v: unknown) => void;
+    preview.mockReturnValue(new Promise((r) => (land = r)));
+    open();
+    const dialog = screen.getByRole("dialog");
+    const heights = () => dialog.className.split(/\s+/).filter((k) => /^(md:)?h-\[/.test(k));
+    const height = heights();
+    expect(height).toEqual(["h-[88dvh]", "md:h-[min(620px,88dvh)]"]);
+    expect(dialog.className).not.toMatch(/overflow-y-auto|max-h-/);
+    expect(screen.getByTestId("revert-rows-loading")).toHaveClass("anim-skeleton");
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    const body = () => screen.getByRole("heading").closest(".overflow-y-auto");
+    expect(body()).not.toBeNull();
+    expect(body()!.contains(cancel)).toBe(false);
+
+    await act(async () => land({ ...matches, rows: many, entryRows: many }));
+    expect(screen.queryByTestId("revert-rows-loading")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Show all/ }));
+    expect(screen.getByText("Card 11")).toBeTruthy();
+    expect(heights()).toEqual(height);
+    expect(body()!.contains(screen.getByText("Card 11"))).toBe(true);
+    expect(body()!.contains(screen.getByRole("button", { name: "Revert" }))).toBe(false);
+  });
+
   it("when today differs it says so, hides no row and offers Revert what's left", async () => {
     preview.mockResolvedValue({ ...matches, differs: true, rows: [row("Sol Ring", 5, 1)] });
     open();
@@ -154,6 +179,11 @@ describe("RevertConfirm", () => {
     expect(screen.getByRole("heading", { name: "Reverting leaves 2 decks short" })).toBeTruthy();
     expect(screen.getAllByText("new")).toHaveLength(1);
     expect(onReverted).not.toHaveBeenCalled();
+    // The warning fills the dialog's fixed column, so its own buttons stay pinned: no scroll box holds them.
+    expect(screen.getByRole("button", { name: "Revert anyway" }).closest(".overflow-y-auto")).toBeNull();
+    // And at its foot however short the list: the action row takes the free space above it.
+    expect(screen.getByRole("button", { name: "Revert anyway" }).parentElement!.className).toMatch(/\bmt-auto\b/);
+    expect(screen.getByRole("heading", { name: "Reverting leaves 2 decks short" }).parentElement?.parentElement?.className).toMatch(/\*:flex-1/);
   });
 
   it("leads with what it restores, not 0 copies, when the revert moves no copies", async () => {

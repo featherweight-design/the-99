@@ -19,6 +19,27 @@ import { ShortDeckWarning } from "./short-deck-warning";
 
 const c = collectionEditCopy.revert;
 const SHOWN = 8;
+/** The dialog's body: it takes the height the buttons leave and scrolls inside it. The 4px gutter,
+ *  on every side, keeps a focus ring inside it (Show all, last in the body) from being clipped by
+ *  the scroll box. */
+const SCROLL = "-m-[4px] min-h-0 flex-1 overflow-y-auto p-[4px]";
+/** The Then and Now grid every row is drawn on, shared with the rows that stand in for them. */
+const ROW = "grid min-h-[40px] grid-cols-[1fr_44px_44px] items-center gap-x-[10px] border-b border-b-[color:var(--border)] py-[6px]";
+
+/** The rows standing in while the read is on the way: the row grid, breathing (`anim-skeleton`). */
+function RowsLoading() {
+  return (
+    <div aria-hidden data-testid="revert-rows-loading" className="anim-skeleton">
+      {[1, 0.8, 0.6, 0.4, 0.25].map((opacity) => (
+        <div key={opacity} className={ROW} style={{ opacity }}>
+          <span className="h-[11px] w-[55%] rounded-[3px] bg-[color:var(--elevated)]" />
+          <span className="h-[11px] w-[24px] justify-self-end rounded-[3px] bg-[color:var(--elevated)]" />
+          <span className="h-[11px] w-[24px] justify-self-end rounded-[3px] bg-[color:var(--elevated)]" />
+        </div>
+      ))}
+    </div>
+  );
+}
 const qty = (s: { quantity: number } | null | undefined) => s?.quantity ?? 0;
 
 type Line = { key: string; name: string; then: number; now: number; reason: string | null };
@@ -158,12 +179,19 @@ export function RevertConfirm({
         aria-busy={pending || undefined}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[88vh] w-full overflow-y-auto rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:w-[560px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
+        className="flex h-[88dvh] w-full flex-col rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:h-[min(620px,88dvh)] md:w-[560px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
         style={{ background: "var(--surface-rail)" }}
       >
-        <div aria-hidden className="mx-auto mb-[16px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)] md:hidden" />
+        <div aria-hidden className="mx-auto mb-[16px] h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
 
+        {/* The dialog holds one height from the moment it opens (Hugh, 2026-10-14): the read, the
+            rows and Show all all land inside it, and only the body scrolls, so Cancel and Revert
+            never move below the fold. */}
         {view.k === "warning" ? (
+          // The warning is laid out for a column of fixed height already: its deck list is the part
+          // that shrinks and scrolls, and its own Cancel and Revert sit last, `flex-none`. Its root
+          // is told to fill this column, so those buttons stay pinned here too.
+          <div className="flex min-h-0 flex-1 flex-col *:min-h-0 *:flex-1">
           <ShortDeckWarning
             titleId={headingId}
             source="revert"
@@ -175,8 +203,9 @@ export function RevertConfirm({
             onCancel={onClose}
             onConfirm={() => void revert(view.decks)}
           />
+          </div>
         ) : view.k === "refused" ? (
-          <div className="flex flex-col gap-[12px]">
+          <div className={`${SCROLL} flex flex-col gap-[12px]`}>
             <h2 id={headingId} className="m-0 font-display text-[20px] font-bold text-[color:var(--fg)]">{view.title}</h2>
             <p role="alert" className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{view.text}</p>
             <button ref={closeRef} type="button" onClick={onClose} className="h-[44px] cursor-pointer self-start rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[18px] text-[14px] text-[color:var(--fg)]">
@@ -184,7 +213,8 @@ export function RevertConfirm({
             </button>
           </div>
         ) : (
-          <div className="flex flex-col gap-[14px]">
+          <div className="flex min-h-0 flex-1 flex-col gap-[14px]">
+            <div className={`${SCROLL} flex flex-col gap-[14px]`}>
             <h2 id={headingId} className="m-0 font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)] md:text-[24px]">{c.title(title)}</h2>
             {view.k === "reading" ? (
               <>
@@ -192,6 +222,7 @@ export function RevertConfirm({
                   <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{collectionEditCopy.shortWarning.changed}</p>
                 ) : null}
                 <p role="status" className="m-0 text-[13.5px] text-[color:var(--fg-muted)]">{c.reading}</p>
+                <RowsLoading />
               </>
             ) : (
               <>
@@ -217,7 +248,7 @@ export function RevertConfirm({
                     </div>
                     <ul className="m-0 list-none p-0">
                       {shown.map((l) => (
-                        <li key={l.key} className="grid min-h-[40px] grid-cols-[1fr_44px_44px] items-center gap-x-[10px] border-b border-b-[color:var(--border)] py-[6px] last:border-b-0">
+                        <li key={l.key} className={`${ROW} last:border-b-0`}>
                           <span className="min-w-0">
                             <span className="block truncate text-[13.5px] text-[color:var(--fg)]">{l.name}</span>
                             {l.reason ? <span className="block text-[11.5px] text-[color:var(--fg-faint)]">{l.reason}</span> : null}
@@ -237,7 +268,8 @@ export function RevertConfirm({
                 {error ? <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">{error}</p> : null}
               </>
             )}
-            <div className="flex flex-col-reverse gap-[10px] md:flex-row md:justify-end">
+            </div>
+            <div className="flex flex-none flex-col-reverse gap-[10px] md:flex-row md:justify-end">
               <button ref={closeRef} type="button" onClick={onClose} disabled={pending} className="h-[44px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[18px] text-[14px] text-[color:var(--fg)] disabled:opacity-60">
                 {nothingLeft ? c.close : collectionEditCopy.shortWarning.cancel}
               </button>
