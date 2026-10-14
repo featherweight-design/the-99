@@ -51,7 +51,7 @@ describe("Start dialog: I own this precon", () => {
   it("says the printings come from the added copies once ticked", () => {
     open();
     fireEvent.click(own());
-    expect(screen.getByText("the box’s own, from the copies you add")).toBeInTheDocument();
+    expect(screen.getByText("picked from the copies you hold, this box’s included")).toBeInTheDocument();
   });
 
   it("adds first, then creates the deck carrying the add's entry", async () => {

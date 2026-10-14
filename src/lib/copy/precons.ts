@@ -136,8 +136,8 @@ export const preconsCopy = {
       ownValue: (owned: number, of: number) => `${n(owned)} of ${n(of)} · basic lands not counted`,
       printings: "Printings",
       printingsValue: "picked from the copies you hold",
-      /** The box ticked: the deck picks from the copies this start adds. */
-      printingsValueAdding: "the box’s own, from the copies you add",
+      /** The box ticked: the deck still picks from the copies the reader holds, which now include this box's. */
+      printingsValueAdding: "picked from the copies you hold, this box’s included",
     },
     /** "I own this precon" (copy-reviewed 2026-10-13): the opt-in to add the precon's cards and tokens first. */
     owned: {

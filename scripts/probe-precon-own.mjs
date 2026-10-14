@@ -142,7 +142,7 @@ try {
     const bb = await box.boundingBox();
     check(bb && bb.width >= 16 && bb.height >= 16, `${w.name}: the box is a real target`, `${bb?.width}x${bb?.height}`);
     await box.check();
-    check(await dialog.getByText("the box’s own, from the copies you add").isVisible(), `${w.name}: ticking swaps the Printings fact`, "swapped");
+    check(await dialog.getByText("picked from the copies you hold, this box’s included").isVisible(), `${w.name}: ticking swaps the Printings fact`, "swapped");
     const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     check(over <= 0, `${w.name}: the dialog causes no horizontal overflow`, `${over}px`);
     await dialog.getByRole("button", { name: "Start the deck" }).click();
