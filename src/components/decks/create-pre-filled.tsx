@@ -19,6 +19,7 @@ import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import type { CreateAnswers } from "../../lib/intake/answers";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
 import { PendingReporter } from "../shell/pending-reporter";
+import { ArtLayer } from "../ui/art-layer";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -180,18 +181,22 @@ export function CreatePreFilled({
 
           {/* Desktop: full card §Commander full card: 220px wide, 63/88 aspect, br 12px */}
           <div
-            className="hidden md:block"
+            className="relative hidden overflow-hidden md:block"
             style={{
               width: 220,
               aspectRatio: "63/88",
               borderRadius: 12,
-              background: imageUri ? `url(${imageUri}) center/cover` : gradient,
+              // The ground; the art fades in over it (`ArtLayer`), carrying the ring an inset shadow here would
+              // paint under.
+              background: imageUri ? "var(--elevated)" : gradient,
               // The two card faces converge: `0 20px 50px` is the commander
               // page's, and the 24px offset here was drift rather than a second
               // decision. The ring takes the app's one thumb alpha with it.
               boxShadow: `0 20px 50px rgba(0,0,0,0.5), ${CARD_ART_RING}`,
             }}
-          />
+          >
+            {imageUri ? <ArtLayer src={imageUri} style={{ boxShadow: CARD_ART_RING }} /> : null}
+          </div>
           {/* No pip inset on the art: the locked "Color identity" row to the
               right of it shows the same pips at the same moment, with a label
               and the identity's name (#123). */}
