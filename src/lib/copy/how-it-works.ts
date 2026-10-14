@@ -162,7 +162,7 @@ export const howItWorksRowsCopy = {
         "and the cards you’ve marked as proxies.",
       how:
         "A committed deck uses the cards in its newest version. A deck you’ve never committed " +
-        "uses them loosely, from its list. Commanders use their copies too. When decks want the same " +
+        "only lists the cards it wants, without holding a copy. Commanders use their copies too. When decks want the same " +
         "copy, the one that’s held that card longest keeps it, unless you hand it to another. A " +
         "card you mark as a proxy uses no copy.",
       refresh: "Live.",
