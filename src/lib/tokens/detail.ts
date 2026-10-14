@@ -97,8 +97,8 @@ export type TokenDetailPrinting = {
  * When the player holds printings of the token (`held`, token printings TP2), those are listed, most copies
  * first, each with its count: the choice a deck's picker offers, and only from a deck (the modal draws no
  * picker for a token without the deck's `save`), followed by the shown printing at no copies when it is not one
-of them. Otherwise only the shown printing is listed, at no copies,
- * and the modal draws no picker: a printing the player does not hold is not a choice the app keeps.
+ * of them. Otherwise only the shown printing is listed, at no copies, and the modal draws no picker: a
+ * printing the player does not hold is not a choice the app keeps.
  */
 export function assembleTokenDetail(
   token: TokenDetailRow,
