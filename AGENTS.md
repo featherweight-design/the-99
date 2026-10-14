@@ -805,6 +805,22 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `pnpm probe:purge` searches every text column the DATABASE's catalog lists for the account's id by value and
   proves none holds it afterwards, on a scratch branch.
 
+  **A tombstone, and a sweep that closes the window after the purge** (orchestrator's ruling as Hugh's proxy,
+  2026-10-14). The webhook first records the deletion (`recordDeletion`), in its OWN commit before the purge, so a
+  purge that fails is still swept: `account_tombstones` holds `id_hash`, the SHA-256 of the Clerk id (random and
+  never reissued, so it needs no key), the raw `clerk_id`, and `deleted_at`; a re-run keeps the first row.
+  `purgeAccount` itself writes no tombstone, so a probe that purges its own fixtures leaves none. A request already past its auth when the purge committed can still write a row for the account, so a
+  Vercel cron (`vercel.json`, every five minutes) calls `GET /api/cron/account-sweep` (public in `src/proxy.ts`,
+  authorized only by `CRON_SECRET` as a bearer token, 503 without it), which runs the idempotent purge AGAIN for
+  every tombstone still holding its raw id, oldest first and with no cap, so a new tombstone never waits behind
+  older ones (`sweepTombstones`, `src/lib/account/sweep.ts`).
+  **The window is minutes**: Clerk revokes the account's sessions on delete and a session token lives about a
+  minute, so a late write lands before a sweep and is erased by it. **The raw id is held for 24 hours and no
+  longer**: the first sweep after `deleted_at` + 24h purges once more and sets `clerk_id` null, after which only
+  the hash and the time remain, and nothing can be purged by them. A failed re-purge keeps its raw id for the next
+  sweep. The coverage test keeps `account_tombstones.clerk_id` with that reason, and `probe:purge` proves a late
+  write erased by the sweep and the raw id retired after the day.
+
 - **The wishlist** (scope §2, Hugh's rulings Q7 and Q9, 2026-10-12), behind `SOCIAL_WISHLIST_ENABLED`, which stands
   alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted
   outside any deck at CARD level (any printing), with `quantity` the copies wanted IN ALL. A line is GOT once the

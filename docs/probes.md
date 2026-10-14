@@ -1991,7 +1991,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   anywhere (rows, social counts and the stamp all zero). It WRITES and
   DELETES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging,
   production and local-dev are refused by id. Mutation-checked: without `set constraints all immediate` the stamp
-  row comes back and two checks fail.
+  row comes back and two checks fail. It then proves the TOMBSTONE and the sweep: `recordDeletion` (called before the purge, as the webhook does) wrote the id's hash
+  (never the id as its key), the raw id and the time; a write landing after the purge is erased by
+  `sweepTombstones`, and the young tombstone keeps its raw id and its time; backdated past its day, the next sweep
+  re-purges once more and sets the raw id null, after which no column holds the id. `probe:purge`'s
+  column search skips `account_tombstones.clerk_id` for the day it is held, and checks it by name instead.
   It also proves the purge UNLINKS the account from a friend's game log (a seat naming it as an opponent): the row
   stands with its snapshot, and its friend and deck links go null. Mutation-checked: without the unlink the
   by-value search finds `deck_game_opponents.friend_user_id`.

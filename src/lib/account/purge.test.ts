@@ -9,12 +9,13 @@ import { SOCIAL_PURGED, SOCIAL_UNLINKED } from "../social/purge";
 const schema = readFileSync("src/db/schema.ts", "utf8");
 
 /** Columns that name an account. */
-const ACCOUNT_COLUMNS = ["user_id", "owner_user_id", "inviter_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by", "created_by", "added_by"];
+const ACCOUNT_COLUMNS = ["clerk_id", "user_id", "owner_user_id", "inviter_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by", "created_by", "added_by"];
 
 /**
- * Account columns the purge deliberately leaves, by `table.column`, and why. Each names an ADMIN who did
- * something: the admin's own audit trail, not the player's data. A row ABOUT the account goes by its
- * subject column; these columns survive on rows about other accounts.
+ * Account columns the purge deliberately leaves, by `table.column`, and why. Each but the tombstone names an
+ * ADMIN who did something: the admin's own audit trail, not the player's data. A row ABOUT the account goes by
+ * its subject column; these columns survive on rows about other accounts. The tombstone's raw id is the one
+ * exception, written BY the purge and held for a day so the sweep can purge again, then nulled (`sweep.ts`).
  */
 const KEPT: Record<string, string> = {
   "admin_events.actor_id": "the admin who made the change",
@@ -22,6 +23,7 @@ const KEPT: Record<string, string> = {
   "flag_groups.created_by": "the admin who made the group",
   "flag_group_members.added_by": "the admin who added a member",
   "flag_overrides.updated_by": "the admin who set the override",
+  "account_tombstones.clerk_id": "the deleted account's raw id, written by recordDeletion before the purge and held for a day for the sweep's re-purge, then set null",
 };
 
 /** The account columns each purged table is cleared BY. A row deleted by one goes whole; any other column is not cleared. */

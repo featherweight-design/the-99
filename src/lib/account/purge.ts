@@ -1,8 +1,9 @@
 /**
  * The account purge (Hugh's ruling Q8, 2026-10-12): when a player deletes their account, every row the app
  * holds for them goes, in ONE transaction, so a failure part-way leaves the account whole rather than half
- * deleted. It is the app's first delete-a-user path. The Clerk `user.deleted` webhook
- * (`src/app/api/clerk-webhook/route.ts`) is its only caller.
+ * deleted. It is the app's first delete-a-user path. It has two callers: the Clerk `user.deleted` webhook
+ * (`src/app/api/clerk-webhook/route.ts`), which runs it first, and the account sweep (`sweep.ts`, a cron),
+ * which runs it again for a day to erase writes that landed after it.
  *
  * - Social first (`purgeSocialIn`): pods are left the way a player leaves them, so a pod the account owned
  *   passes to its longest-standing member; then both directions of every friendship, every invite naming
@@ -20,7 +21,12 @@
  * group memberships (`flag_group_members.user_id`).
  *
  * Idempotent: an account with no rows purges to all zeros, so a retried webhook is harmless.
+ *
+ * The account's TOMBSTONE is not written here: `recordDeletion` writes it, and the webhook calls that FIRST,
+ * in its own commit, so a purge that fails is still swept, and a probe that purges its own fixtures leaves
+ * none. The account sweep re-runs this purge for every tombstone younger than a day (`sweep.ts`).
  */
+import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { purgeSocialIn, type SocialPurge } from "../social/purge";
@@ -45,6 +51,23 @@ export const PURGE_ORDER = [
   "stripe_customers", "model_calls", "credit_grants",
   "admin_events", "flag_overrides", "flag_group_members",
 ] as const;
+
+/** The tombstone's key: the SHA-256 of the Clerk id, hex. Random ids, never reissued, so it needs no key. */
+export function tombstoneHash(userId: string): string {
+  return createHash("sha256").update(userId, "utf8").digest("hex");
+}
+
+/**
+ * Record that the account was deleted: the hash of its id, the raw id for a day, and when. Its own statement,
+ * committed before the purge runs, so the sweep re-purges the account even when that purge fails. A re-run
+ * keeps the first row: the sweep's day is counted from the deletion, not from a retry.
+ */
+export async function recordDeletion(userId: string): Promise<void> {
+  if (typeof userId !== "string" || userId.length === 0) throw new Error("recordDeletion: no user id");
+  await db.execute(sql`
+    insert into account_tombstones (id_hash, clerk_id) values (${tombstoneHash(userId)}, ${userId})
+    on conflict (id_hash) do nothing`);
+}
 
 export type PurgeReport = { social: SocialPurge; rows: Record<string, number>; stamp: number };
 
