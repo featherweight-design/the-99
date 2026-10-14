@@ -22,6 +22,8 @@ import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
+import { loadArrivalsBanner } from "../lib/precons/banner";
+import { upcomingPreconsEnabled } from "../lib/precons/upcoming-flag";
 
 /** What the signed-in Home draws, cached whole. First run draws none of it. */
 type HomePayload =
@@ -153,7 +155,7 @@ export default async function HomePage() {
       return { value: { firstRun: true }, store: true };
     }
 
-    const [lastUpdated, ranked, shopping, unplayed] = await Promise.all([
+    const [lastUpdated, ranked, shopping, unplayed, arrivals] = await Promise.all([
       perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
       perf.timed("rankedList", () => getRankedList(userId, env)),
       perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, env)),
@@ -161,6 +163,10 @@ export default async function HomePage() {
       // does). Beside the ranked list, never after it: it reads nothing the list returns. Null on
       // failure, which walks the plain shuffle.
       perf.timed("unplayedCounts", () => loadUnplayedCounts(userId, env)),
+      // The arrivals banner (upcoming precons): read only past the first-run return above, so a first-run
+      // account neither sees it nor reads it. Null when its switch is off, when nothing is new, or when the read
+      // failed, which records a fallback so that render is served and not stored.
+      upcomingPreconsEnabled(env) ? perf.timed("arrivals", () => loadArrivalsBanner(userId, now)) : null,
     ]);
 
     // The slice FIRST, then the printings — the two shown rather than every commander the
@@ -194,7 +200,7 @@ export default async function HomePage() {
     }
 
     return {
-      value: { firstRun: false, stats, lastUpdated, ready, inUse, decks, commitments, shopping },
+      value: { firstRun: false, stats, lastUpdated, ready, inUse, decks, commitments, shopping, arrivals },
       // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
       store: !ranked.degraded,
     };
@@ -210,6 +216,7 @@ export default async function HomePage() {
       decks={data.decks}
       commitments={data.commitments}
       shopping={data.shopping}
+      arrivals={data.arrivals}
       cartEnabled={allDecksCartEnabled(env)}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.

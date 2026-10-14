@@ -2478,3 +2478,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   band. `PROBE_BASE` (a local server; it refuses any other host) and `PROBE_DECK_ID`, a deck of two or
   more cards. It writes only the probe account's About row, restores it, and refuses a `DATABASE_URL`
   reporting the production or staging branch.
+- `pnpm probe:arrivals-banner` presses the upcoming-precons banner on Home (plan `2026-10-14-upcoming-precons.md`, PR 3)
+  at 390x844 and 1300x900: several arrivals draw the count heading, one line each (soonest first), one link and one ✕
+  (44 at 390, 32 at 1300), the link on the heading line at 1300 and last at 390; one arrival draws a sentence and its
+  link; the link and ✕ take the 2px `--accent` ring at a 2px offset; each link lands on `/decks/precons?sort=newest`
+  with its hash, with Most owned SAVED in the browser first, and its target (`#announced`, `#precons-<year>`) is checked
+  only when the Announced group is on the server (plan PR 2; SKIPPED by name without it); ✕, by click and by Enter,
+  closes it, writes the seen keys (read back from `user_prefs`) and focuses Home's `h1`, and a reload draws none with
+  `LIST_CACHE_ENABLED=true` (the stamp retiring cached Home, E5); a fresh first-run account gets no banner and no seen
+  key (H7); the About entry `upcoming-precons` draws with the switch on, and neither it nor the banner with an account
+  override turning `UPCOMING_PRECONS_ENABLED` off (it waits out the resolver's 30-second memo). FIXTURES on local-dev
+  only (production and staging refused by branch id): two `commander` sets `pqaset` and `pqalist`, a precon listing
+  `pqalist`, a day-old non-baseline `catalog_first_seen` stamp per arrival, the override, and a temporary Clerk test
+  user on the DEVELOPMENT instance (its key must be `sk_test_`), all removed in its `finally` with the account's seen
+  keys. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true
+  UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true ABOUT_SHEET_ENABLED=true`; stop it by its own PID.

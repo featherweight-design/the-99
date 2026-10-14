@@ -24,6 +24,7 @@ import { BenchmarksBlock } from "../decks/benchmarks-block";
 import { PreconTile } from "../decks/precons/precon-tile";
 import { TokenRow } from "../decks/token-row";
 import { NotesFigureBody } from "./notes-figure";
+import { UpcomingPreconsFigureBody } from "./upcoming-precons-figure";
 import { BrowseFigureBody } from "./browse-figure";
 import { DecksStatsFigureBody } from "./stats-figures";
 import { AddedCopyFigureBody, AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
@@ -835,6 +836,15 @@ function PreconsFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** One announced set as the Announced group draws it (§G artboard): the name, the date line, one revealed commander. */
+function UpcomingPreconsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="upcoming-precons" width={width}>
+      <UpcomingPreconsFigureBody />
+    </Specimen>
+  );
+}
+
 /** One token row as the deck's Tokens group draws it: a Soldier that is not held, on Shopping, made by one card. */
 function DeckTokensFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1207,6 +1217,7 @@ export const FIGURES: Partial<
   "review-and-commit": ReviewAndCommitFigure,
   "new-deck": NewDeckFigure,
   precons: PreconsFigure,
+  "upcoming-precons": UpcomingPreconsFigure,
   "deck-tokens": DeckTokensFigure,
   "undo-removal": UndoRemovalFigure,
   "locked-cards": LockedCardsFigure,

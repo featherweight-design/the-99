@@ -1,0 +1,86 @@
+{
+  "feature": "Upcoming precons: the arrivals banner on Home and the About entry (handoff design_handoff_the99_upcoming_precons, R2; plan 2026-10-14-upcoming-precons.md, PR 3)",
+  "note": "PR 3 rows. Needs PRECONS_ENABLED=true and UPCOMING_PRECONS_ENABLED=true, and an unseen arrival for the signed-in account: a set or a precon whose catalog_first_seen stamp is not the baseline and is under 30 days old. No such arrival exists on staging until the catalog gains one after the baseline, so the banner rows (H2, H3, H4) are photographed over `pnpm probe:arrivals-banner`'s fixtures on local-dev, and H6, H7 and H8 (focus after ✕, which the sheet has no verb for) by the probe's own presses. H5 (beside the About sheet) needs an unseen About entry for the account as well. A contact sheet photographs what the database holds; the probe and the component tests prove each state.",
+  "rows": [
+    {
+      "id": "h2",
+      "label": "/ with one arrival, unseen: a set announced, one sentence and `See it in Precons` (H2; H3 with a lists arrival)",
+      "view": "src/components/home/arrivals-banner.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "section[aria-label='New in the app']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "h4",
+      "label": "/ with several arrivals: the count heading, the lines capped as the About sheet's, one link and one ✕ (H4)",
+      "view": "src/components/home/arrivals-banner.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "section[aria-label='New in the app'] h2",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "h5",
+      "label": "/ with the banner in the page and the About sheet up beside it, neither yielding (H5)",
+      "view": "src/components/home/arrivals-banner.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "section[aria-label='New in the app']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "h6",
+      "label": "/ after ✕: no banner and no slot held, focus on the page's h1; a reload draws none (H6, H1)",
+      "view": "src/components/home/dashboard.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "section[aria-label='New in the app']",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Dismiss$"
+        },
+        {
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "h7",
+      "label": "/ for a first-run account: the checklist, no banner, nothing marked seen (H7)",
+      "view": "src/components/home/first-run.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "about",
+      "label": "/about#upcoming-precons: `Commander sets on the way` in chapter 03 after `Starting from a precon`, its specimen one announced set",
+      "view": "src/components/about/upcoming-precons-figure.tsx",
+      "steps": [
+        {
+          "goto": "/about#upcoming-precons",
+          "wait": "#upcoming-precons",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}
