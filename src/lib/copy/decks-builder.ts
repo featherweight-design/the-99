@@ -146,7 +146,7 @@ export const addPanelCopy = {
     add: "Add",
     addAria: (name: string) => `Add ${name} to the deck`,
     addUnowned: "Add · to buy",
-    // Names the To buy list rather than trailing off in "to buy": the visible
+    // Names the Shopping list rather than trailing off in "to buy": the visible
     // label can lean on the status vocabulary around it for that noun, and a
     // screen reader has none of it. No em dash either — this surface's copy
     // bans one, and Design's draft used one to join the clauses.
