@@ -86,10 +86,16 @@ async function main() {
     const down = await setBasicQuantityFor(user, deck, basic, 2);
     check("a lower figure lands", down.ok && (await read())?.quantity === 2);
 
-    const notBasic = await setBasicQuantityFor(user, deck, other, 5);
-    const { rows: otherRow } = await db.execute<{ quantity: number }>(
-      sql`select quantity from deck_cards where deck_id = ${deck} and oracle_id = ${other}`);
-    check("a non-basic is refused and left as it was", !notBasic.ok && notBasic.reason === "not-basic" && otherRow[0]?.quantity !== 5);
+    const otherCount = async () => {
+      const { rows } = await db.execute<{ quantity: number }>(
+        sql`select quantity from deck_cards where deck_id = ${deck} and oracle_id = ${other}`);
+      return rows[0]?.quantity ?? null;
+    };
+    const otherBefore = await otherCount();
+    const notBasic = await setBasicQuantityFor(user, deck, other, (otherBefore ?? 0) + 4);
+    const otherAfter = await otherCount();
+    check("a non-basic is refused and left as it was", !notBasic.ok && notBasic.reason === "not-basic" && otherBefore !== null && otherAfter === otherBefore,
+      `${otherBefore} -> ${otherAfter}`);
 
     const range = await setBasicQuantityFor(user, deck, basic, 1000);
     check("a figure past the bound is refused", !range.ok && range.reason === "out-of-range" && (await read())?.quantity === 2);
