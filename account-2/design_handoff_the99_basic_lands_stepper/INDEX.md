@@ -16,7 +16,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-14-basic-lands-stepper.
 | `R1 - Access.dc.html` | Tab order, labels and announcements. |
 | `README.md` | Calls with reasons, component and eng notes, gap report. |
 | `STATES-stepper.md` | The matrix, the rules, per-state copy. |
-| `READINESS.md` | Amber: two calls for Hugh's audit. |
+| `READINESS.md` | Green: R2 approved by Hugh, 2026-10-14. |
 | `basic-lands-stepper - copy strings.ts` | Proposed strings, placeholders for `/copy-review`. |
 | `design-tables/basic-lands-stepper.md` | The design-table section. |
 | `brand/` | The locked brand sheet. |

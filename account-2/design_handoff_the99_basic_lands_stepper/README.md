@@ -3,6 +3,9 @@
 `design/design_handoff_the99_basic_lands_stepper/` · 2026-10-14 · mirrors `design_handoff_the99_undo_removal/`
 (a small control on an existing row). Voice: Kitchen Table. Theme drawn: Kaldheim, the live theme.
 
+**Status: R2, approved (LGTM, Hugh, 2026-10-14).** Build from the R2 files. R1 is kept for history only;
+`R1 - Access.dc.html` still holds for R2.
+
 **Source of truth:** `docs/superpowers/design-briefs/2026-10-14-basic-lands-stepper.md` on branch
 `brief/basic-lands-stepper` (not on main yet). Hugh's locks (2026-10-14) are taken as given:
 

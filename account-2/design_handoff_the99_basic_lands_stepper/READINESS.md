@@ -1,8 +1,8 @@
-# READINESS — Basic lands stepper (R1)
+# READINESS — Basic lands stepper (R2)
 
-**Self-assessed: 🟡 Amber.** Every open question in the brief has a call and every state is drawn at both widths in
-both views. Amber because two things want Hugh's audit: no basics panel (G1), and the change marker reading
-`from 6` rather than the shipped `6 → 8` on basic rows (call 5).
+**🟢 Green: approved (LGTM, Hugh, 2026-10-14).** R2 applies Hugh's one R1 note, "a bit more minimalist": bare
+glyphs and count, no box or bar (README §R2 changes). Hugh's approval covers the two calls R1 flagged for audit: no
+basics panel this round (G1 stays open as a possible later round), and the `from 6` marker on basic rows (call 5).
 
 ## Locks held
 
