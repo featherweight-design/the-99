@@ -16,6 +16,9 @@
 //      order; with the stamp taken at commit both finish. Then the COUNTERFACTUAL: the same
 //      interleaving with the trigger forced immediate (`set constraints ... immediate`) must
 //      deadlock, or the first half proves nothing about the deferral.
+//   6. `user_prefs` (upcoming precons, 0123): a seen write that adds a key moves the stamp by one,
+//      and a repeat of keys already held moves NOTHING (`markUpcomingSeen`'s guard), because the
+//      trigger fires on any UPDATE and a Precons visit would otherwise retire Home's cache.
 //   5. What it costs: a collection replace and a commit at the pulled account's real sizes,
 //      median of 3. `--timing` runs that section alone, which is how the figure is taken on a
 //      database the migration has not reached yet.
@@ -32,6 +35,7 @@ import { tablesRead } from "./lib/list-cache-tables.mjs";
 import { replaceCollection } from "../src/lib/collection/import";
 import { commitVersion } from "../src/lib/decks/versions";
 import type { PendingItem } from "../src/lib/collection/pending";
+import { markUpcomingSeen } from "../src/lib/precons/upcoming";
 // No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
@@ -226,6 +230,23 @@ async function main() {
     const bulk = await moved((c) => c.query("update collection_items set quantity = quantity where user_id = $1", [USER]));
     check(`an update of all ${items.length} collection rows`, bulk === 1, `stamp moved ${bulk}`);
 
+    // ---- 6. user_prefs: the upcoming seen write moves the stamp only when it adds a key ------
+    const prefs = triggers.get("user_prefs");
+    check("trigger on user_prefs", !!prefs && prefs.deferrable && prefs.deferred && prefs.enabled === "O" && prefs.arg === "user_id",
+      prefs ? `deferred ${prefs.deferred}, enabled ${prefs.enabled}, keyed on ${prefs.arg}` : "missing");
+    // `markUpcomingSeen` commits on its own connection (src/db), so each step is read after it returns.
+    const seenStep = async (keys: string[]) => {
+      const was = await stamp();
+      await markUpcomingSeen(USER, keys);
+      return (await stamp()) - was;
+    };
+    const first = await seenStep(["zzp"]);
+    check("a first seen write (inserts the row)", first === 1, `stamp moved ${first}`);
+    const adds = await seenStep(["zzp", "lists:zzp"]);
+    check("a seen write that adds a key", adds === 1, `stamp moved ${adds}`);
+    const repeat = await seenStep(["lists:zzp", "zzp"]);
+    check("a repeat of keys already held", repeat === 0, `stamp moved ${repeat}`);
+
     // ---- 4. No deadlock through the stamp, and the counterfactual that it would ---------------
     const interleave = async (immediate: boolean) => {
       const a = await pool.connect();
@@ -266,7 +287,7 @@ async function main() {
   } finally {
     // Decks cascade to every deck-keyed row; the rest are keyed on the fixture user.
     for (const table of ["decks", "deck_folders", "pull_releases", "card_assignments", "collection_items",
-      "card_art_preferences", "csv_uploads", "commander_scores", "deck_profiles", "deck_games", "user_data_stamps"]) {
+      "card_art_preferences", "csv_uploads", "commander_scores", "deck_profiles", "deck_games", "user_prefs", "user_data_stamps"]) {
       await pool.query(`delete from ${table} where user_id = $1`, [USER]).catch((error) => {
         console.warn(`cleanup of ${table} failed: ${error instanceof Error ? error.message : error}`);
       });

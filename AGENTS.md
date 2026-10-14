@@ -140,8 +140,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   outran its migration. **The first run for a kind is a BASELINE** (`baseline: true`): everything it stamps was already there, so its
   date is the day stamping began, and no reader may call it an arrival. `lib/precons/upcoming.ts` reads the upcoming Commander sets
   (type `commander`, not digital, released after today's UTC day; an upcoming precon is a SET before it is a `precons` row, since MTGJSON
-  lists a deck at release) and `user_prefs.upcoming_seen_codes` holds which a reader has been shown. **It has no caller beyond its tests and
-  `pnpm probe:upcoming-precons`**: the screen is Design's to draw.
+  lists a deck at release), and keeps a set already released for 30 days (`RELEASED_GRACE_DAYS`) while no `precons` row lists it
+  (`lower(precons.set_code) = sets.code`: MTGJSON's codes are uppercase). `user_prefs.upcoming_seen_codes` holds what a reader has been
+  shown: a set code for a set announced, `lists:<code>` for its decklists listed, and `markUpcomingSeen` writes only when it adds a key,
+  because `user_prefs` carries the `user_data_touch` trigger since 0123 and any UPDATE moves the stamp. `revealed.ts` reads a set's
+  revealed commanders, `arrivals-read.ts` the precons listed in the last 30 days, and `arrivals.ts` holds the pure rules (the banner's
+  lines, the seen keys, the countdown, `new`, the Announced filters). **None has a caller beyond its tests and
+  `pnpm probe:upcoming-precons`** until the plan's PR 2 and 3 (`2026-10-14-upcoming-precons.md`), behind `UPCOMING_PRECONS_ENABLED`.
 - `pnpm db:build:index` rebuilds `commander_support` / `commander_support_cards` from EDHREC,
   about 4,750 rate-limited requests. Since the card-data replicate plan (2026-09-28) it is built
   ONCE, on staging, and copied to production. The `Commander index` workflow chains on every

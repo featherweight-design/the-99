@@ -122,7 +122,8 @@ export type PreconOrder = "newest" | "owned";
 export const PRECON_ORDERS: readonly PreconOrder[] = ["newest", "owned"];
 export const isPreconOrder = (v: unknown): v is PreconOrder => v === "newest" || v === "owned";
 
-const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+/** Case- and accent-blind, as every precon search reads. */
+export const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 /**
  * Search reaches the name, the twin's name, every commander and the set code (design call 3).
