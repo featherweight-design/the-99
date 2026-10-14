@@ -23,7 +23,9 @@ vi.mock("../../db", () => {
     q.then = (res: (v: unknown) => unknown) => Promise.resolve(rows).then(res);
     return q;
   };
-  return { db: { select: () => chain(), transaction: (fn: (tx: unknown) => unknown) => fn({}) } };
+  // A transaction reads as the pool does: the start reads its precon inside one snapshot.
+  const reads = { select: () => chain() };
+  return { db: { ...reads, transaction: (fn: (tx: unknown) => unknown) => fn(reads) } };
 });
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => state.enabled }));

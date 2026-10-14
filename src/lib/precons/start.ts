@@ -47,6 +47,12 @@ export type PreparedPreconDeck = {
  * from (the two are one list, design call 4).
  */
 export async function preparePreconDeck(fileName: string): Promise<PreparedPreconDeck> {
+  // One snapshot: the ingest replaces precons, their cards and the catalog rows in one transaction, so
+  // separate reads could pair a head from one generation with a list from the next.
+  return db.transaction((tx) => prepareIn(tx, fileName), { isolationLevel: "repeatable read" });
+}
+
+async function prepareIn(db: Tx, fileName: string): Promise<PreparedPreconDeck> {
   const [head] = await db.select({ fileName: precons.fileName, twinOf: precons.twinOf }).from(precons).where(eq(precons.fileName, fileName));
   if (!head) throw new Error("precon not found");
 
