@@ -67,7 +67,7 @@ export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
             {text.lines.link ? (
               <>
                 {" "}
-                <Link href={text.lines.link.href} className="text-[color:var(--accent)] underline underline-offset-2">{text.lines.link.label}</Link>
+                <Link href={text.lines.link.href} prefetch={false} className="-my-[11px] inline-block py-[11px] text-[color:var(--accent)] underline underline-offset-2">{text.lines.link.label}</Link>
               </>
             ) : null}
           </p>
