@@ -112,12 +112,15 @@ describe("createBasicCounts, round 4", () => {
     counts.set("island", 2, 1);
     await vi.advanceTimersByTimeAsync(SETTLE_MS);
     expect(saves).toEqual([2]);
-    expect(counts.takeOver("island")).toBe(true);
+    const taken = counts.takeOver("island");
+    expect(taken).not.toBeNull();
     counts.set("island", 3, 2);
     answer(2);
     await vi.advanceTimersByTimeAsync(SETTLE_MS);
     expect(saves).toEqual([2, 3]);
     expect(counts.base("island")).toBe(2);
+    // The removal compares against the count the old save confirmed, once it answered.
+    expect(await taken).toBe(2);
   });
 
   // Clear auto stops on an unconfirmed count rather than sweeping over it.

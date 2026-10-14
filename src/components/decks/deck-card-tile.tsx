@@ -206,8 +206,12 @@ export function DeckCardTile({
       async () => {
         try {
           // A − still settling: cancel its save and go by an absolute 0 (as the row does).
-          if (stepperOn && basic.takeOver()) await setBasicQuantity(deckId, card.oracleId, 0);
-          else await removeCardFromDeck(deckId, card.oracleId);
+          const taken = stepperOn ? basic.takeOver() : null;
+          if (taken) {
+            // A refusal (another writer moved the row) is a failed removal, said as one: the row is still there.
+            const outcome = await setBasicQuantity(deckId, card.oracleId, 0, await taken);
+            if (!outcome.ok) throw new Error(outcome.reason);
+          } else await removeCardFromDeck(deckId, card.oracleId);
         } catch (cause) {
           if (shellReportsFailure) reportRemoveFailure(card.oracleId, card.name, generation);
           throw cause;

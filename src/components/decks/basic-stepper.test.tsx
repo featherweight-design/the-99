@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 
 // The basics stepper (handoff `design_handoff_the99_basic_lands_stepper`, R2; plan
 // `2026-10-14-basic-lands-stepper.md`, PR 2): the row and the tile, the settle, and the two failures.
@@ -131,7 +132,7 @@ describe("the basics stepper on a decklist row", () => {
     await settle();
     expect(removeCardFromDeck).not.toHaveBeenCalled();
     expect(setBasicQuantity).toHaveBeenCalledTimes(1);
-    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 0);
+    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 0, 2);
     expect(screen.queryByText(copy.refused)).not.toBeInTheDocument();
   });
 
@@ -197,6 +198,26 @@ describe("the basics stepper on a decklist row", () => {
     });
     expect(spoken().filter((t) => /6/.test(t) && t !== "")).toEqual([]);
     await settle();
+  });
+
+  // Another writer moved the row while the − was settling: the ✕'s compare-and-set refuses, and the row says
+  // the removal failed rather than taking out copies the player never saw.
+  it("says a takeover removal failed when the row moved underneath it", async () => {
+    setBasicQuantity.mockResolvedValueOnce({ ok: false, reason: "moved" });
+    wrap(<DecklistRow deckId="d1" card={{ ...island, quantity: 2 }} newestAsOf={null} />);
+    await press(copy.fewerAria("Island", 1));
+    await press(addPanelCopy.row.removeAria("Island"));
+    await settle();
+    expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 0, 2);
+    expect(removeCardFromDeck).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(DECK_REMOVE_FALLBACK_MESSAGE);
+  });
+
+  // The design's widths are minimums: an imported stack in the thousands widens the field rather than clipping.
+  it("widens the field by its digits", () => {
+    wrap(<DecklistRow deckId="d1" card={{ ...island, quantity: 1000 }} newestAsOf={null} />);
+    expect(field().style.width).toBe("4.5ch");
+    expect(field().style.minWidth).toBe("24px");
   });
 
   describe("the typed count", () => {

@@ -430,8 +430,12 @@ export function DecklistRow({
         try {
           // A − still settling: the burst's save is cancelled and the row goes by an absolute 0, so the
           // order the two land in cannot leave a copy behind.
-          if (stepperOn && basic.takeOver()) await setBasicQuantity(deckId, card.oracleId, 0);
-          else await removeCardFromDeck(deckId, card.oracleId);
+          const taken = stepperOn ? basic.takeOver() : null;
+          if (taken) {
+            // A refusal (another writer moved the row) is a failed removal, said as one: the row is still there.
+            const outcome = await setBasicQuantity(deckId, card.oracleId, 0, await taken);
+            if (!outcome.ok) throw new Error(outcome.reason);
+          } else await removeCardFromDeck(deckId, card.oracleId);
         } catch (cause) {
           // Only when this was the last copy, because only then has the
           // prediction unmounted the row and left `run`'s message with nothing

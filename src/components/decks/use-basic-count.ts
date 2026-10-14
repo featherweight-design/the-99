@@ -94,7 +94,8 @@ export function useBasicCount({
     },
     /**
      * The ✕ at 1 pressed while a burst is open: the burst is cancelled and the caller removes the row by an
-     * ABSOLUTE 0, since the burst's own save may land before or after it. Returns whether a burst was open.
+     * ABSOLUTE 0, compared against the count the server last confirmed (resolved once any save already out has
+     * answered). Null when no burst was open.
      */
     takeOver: () => counts.takeOver(oracleId),
   };

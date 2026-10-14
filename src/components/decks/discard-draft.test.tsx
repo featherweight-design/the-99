@@ -373,7 +373,7 @@ describe("discard and the basics stepper", () => {
     const order: string[] = [];
     const counts = {
       flush: vi.fn(async () => { order.push("flush"); return true; }),
-      set: vi.fn(), takeOver: vi.fn(() => false), base: vi.fn(() => null), subscribe: vi.fn(() => () => {}), configure: vi.fn(),
+      set: vi.fn(), takeOver: vi.fn(() => null), base: vi.fn(() => null), subscribe: vi.fn(() => () => {}), configure: vi.fn(),
     };
     vi.mocked(discardDeckDraft).mockImplementation(async () => { order.push("discard"); return { ok: true }; });
     render(<BasicCountsProvider value={counts}><Host onDiscarded={vi.fn()} /></BasicCountsProvider>);

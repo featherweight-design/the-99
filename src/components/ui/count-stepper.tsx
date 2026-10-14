@@ -81,11 +81,12 @@ function CountField({
     if (draft !== null && draft !== "") onType(Number.parseInt(draft, 10));
     setDraft(null);
   };
+  const shownText = draft ?? String(count);
   return (
     <input
       inputMode="numeric"
       aria-label={label}
-      value={draft ?? String(count)}
+      value={shownText}
       onChange={(e) => setDraft(e.target.value.replace(/\D/g, "").slice(0, 3))}
       onBlur={commit}
       onKeyDown={(e) => {
@@ -106,7 +107,11 @@ function CountField({
           else onStep(delta);
         }
       }}
-      className={`${band ? "w-[32px]" : "w-[24px]"} h-[22px] md:h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
+      // The design's widths are the MINIMUM (24px on a row, 32px on a band); a count past two digits (a press
+      // past 99, an imported stack in the thousands) widens the field by its own digits, at the same font, rather
+      // than clipping. Monospace, so `ch` is one digit.
+      style={{ minWidth: band ? 32 : 24, width: `${shownText.length + 0.5}ch` }}
+      className={`h-[22px] md:h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
     />
   );
 }

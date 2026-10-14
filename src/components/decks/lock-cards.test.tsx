@@ -59,6 +59,7 @@ afterEach(() => {
   setCardLocked.mockReset();
   clearAutoCards.mockReset();
   addCardToDeck.mockReset();
+  setBasicQuantity.mockReset();
 });
 
 function deferred<T>() {

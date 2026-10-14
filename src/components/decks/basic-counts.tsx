@@ -25,8 +25,12 @@ type Entry = {
 export type BasicCounts = {
   /** A press or a typed figure. Opens a burst, or moves the open one's target and restarts its settle. */
   set: (oracleId: string, n: number, base: number) => void;
-  /** The ✕ at 1 inside an open burst: cancel it, sending nothing more and saying nothing. */
-  takeOver: (oracleId: string) => boolean;
+  /**
+   * The ✕ at 1 inside an open burst: cancel it, sending nothing more and saying nothing. Null with no burst open;
+   * otherwise the count the server last confirmed, once any save already out has answered, for the removal's own
+   * compare-and-set.
+   */
+  takeOver: (oracleId: string) => Promise<number> | null;
   /**
    * Settle every open burst now and wait for every save: before a write that would race them. Resolves false
    * when any of them was refused or threw, so the caller can stop rather than write over an unknown count.
@@ -109,8 +113,8 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
             result = { kind: "thrown" };
             break;
           }
-          if (entry.taken) break;
           if (outcome.ok) entry.expected = saved;
+          if (entry.taken) break;
           // Refused (another writer moved the row, most likely): stop, and say so, rather than send a newer
           // figure computed from the same stale count.
           if (outcome.ok && entry.target !== saved) continue;
@@ -140,13 +144,13 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
     },
     takeOver(oracleId) {
       const entry = entries.get(oracleId);
-      if (!entry) return false;
+      if (!entry) return null;
       entry.taken = true;
       // Out of the map now, not when its loop ends: a press after the removal and its Undo opens a FRESH burst,
       // which an in-flight save of this one must not swallow.
       entries.delete(oracleId);
       entry.wake?.(false);
-      return true;
+      return entry.done.then(() => entry.expected);
     },
     async flush() {
       const open = [...entries.values()];

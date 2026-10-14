@@ -739,7 +739,7 @@ describe("adding a basic while the stepper is settling", () => {
     const order: string[] = [];
     const counts = {
       flush: vi.fn(async () => { order.push("flush"); return true; }),
-      set: vi.fn(), takeOver: vi.fn(() => false), base: vi.fn(() => null), subscribe: vi.fn(() => () => {}), configure: vi.fn(),
+      set: vi.fn(), takeOver: vi.fn(() => null), base: vi.fn(() => null), subscribe: vi.fn(() => () => {}), configure: vi.fn(),
     };
     addCardToDeck.mockImplementation(async () => { order.push("add"); return { ok: true as const }; });
     const island = row({ name: "Island Study", oracleId: "basic-island", typeLine: "Basic Land — Island", role: "land" });
