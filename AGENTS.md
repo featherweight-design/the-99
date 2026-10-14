@@ -834,8 +834,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   name is `[x]`, the query is dropped), everything else is a closed enum, a boolean or a bounded integer, and the line
   carries no reader id and no deployment id. Two watchers send it: the navigation provider, for a press still
   pending (`kind=pending`), and `StallWatch` inside every in-page loading screen (`LoadingScreen`, and Help me
-  choose's results skeleton), for a page that committed into its fallback (`kind=fallback`). A browser Back or
-  Forward starts a navigation for the count too. Find them with `vercel logs -p the-99 -q "nav-stall"`, and read a line by field:
+  choose's results skeleton, but not while it stands in for a model read), for a page that committed into its
+  fallback (`kind=fallback`). A press that hangs pending and then in its own fallback reports once; any other
+  loading screen (a route that commits its loading boundary at once, a change of query, a Back) is a navigation of
+  its own. Find them with `vercel logs -p the-99 -q "nav-stall"`, and read a line by field:
 
   - `moved=true` means the address bar already shows the target: the router committed and the PAGE is what never
     arrived. `moved=false`: the press itself never committed.

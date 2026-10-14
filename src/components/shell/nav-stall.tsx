@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 
 import {
   CONNECTIONS,
@@ -32,11 +32,36 @@ let reportedFor: string | null = null;
 let navigationStartedAt = 0;
 let previousStartedAt = 0;
 
-/** Called by the provider when a navigation starts, so the next hang reports again. */
+/** A navigation starts: the next hang reports again, and is timed and matched from here. */
 export function newNavigation(): void {
   reportedFor = null;
   previousStartedAt = navigationStartedAt;
   navigationStartedAt = performance.now();
+}
+
+// The press the provider is waiting on, and when it settled (null while it is still pending). A
+// loading screen the press led to is the SAME navigation, so a hang reported pending is not
+// reported again from its fallback; any other loading screen (a route that commits its loading
+// boundary at once, a change of query on the same page, a Back) is a navigation of its own.
+let pressTo: string | null = null;
+let pressSettledAt: number | null = null;
+const SAME_PRESS_MS = 2_000;
+
+/** The provider's press starts: a navigation. */
+export function pressStarted(to: string): void {
+  newNavigation();
+  pressTo = to;
+  pressSettledAt = null;
+}
+
+/** The provider's press stopped pending, by landing or by being replaced. */
+export function pressSettled(): void {
+  pressSettledAt = performance.now();
+}
+
+function fromThePress(here: string): boolean {
+  if (pressTo !== here) return false;
+  return pressSettledAt === null || performance.now() - pressSettledAt < SAME_PRESS_MS;
 }
 
 /** Which loading screens are on the page right now, read from the page as the reader sees it. */
@@ -197,10 +222,18 @@ export function watchStall(args: {
  */
 export function StallWatch() {
   const config = useContext(StallContext);
+  // Keyed on whether the switch is on, not on the object: a layout re-render hands a new one.
+  const configRef = useRef(config);
   useEffect(() => {
-    if (!config) return;
-    const here = location.pathname;
-    return watchStall({ kind: "fallback", from: here, to: here, config });
+    configRef.current = config;
   }, [config]);
+  const on = config !== null;
+  useEffect(() => {
+    const current = configRef.current;
+    if (!on || !current) return;
+    const here = location.pathname;
+    if (!fromThePress(here)) newNavigation();
+    return watchStall({ kind: "fallback", from: here, to: here, config: current });
+  }, [on]);
   return null;
 }

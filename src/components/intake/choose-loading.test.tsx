@@ -12,8 +12,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("ChooseLoading and the stuck-loader report", () => {
-  it("marks the results skeleton as the page's loading screen and watches it", () => {
+describe("the results skeleton and the stuck-loader report", () => {
+  it("marks the results skeleton as the page's loading screen and watches it (route loader and page fallback alike)", () => {
     vi.useFakeTimers();
     const beacon = vi.fn(() => true);
     Object.defineProperty(navigator, "sendBeacon", { value: beacon, configurable: true });
@@ -27,8 +27,27 @@ describe("ChooseLoading and the stuck-loader report", () => {
         </main>
       </StallContext.Provider>,
     );
-    expect(container.querySelector('[data-testid="choose-loading"]')?.hasAttribute("data-loading-screen")).toBe(true);
+    expect(container.querySelector('[data-testid="results-searching"]')?.hasAttribute("data-loading-screen")).toBe(true);
     vi.advanceTimersByTime(8_000);
     expect(beacon).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("HeldResults", () => {
+  it("draws the skeleton unwatched: a model read may run past 8s by design", async () => {
+    vi.useFakeTimers();
+    const beacon = vi.fn(() => true);
+    Object.defineProperty(navigator, "sendBeacon", { value: beacon, configurable: true });
+    const { ResultsSkeleton } = await import("./choose-results");
+    const { container } = render(
+      <StallContext.Provider value={{ deployment: null }}>
+        <main>
+          <ResultsSkeleton watch={false} />
+        </main>
+      </StallContext.Provider>,
+    );
+    expect(container.querySelector('[data-testid="results-searching"]')?.hasAttribute("data-loading-screen")).toBe(false);
+    vi.advanceTimersByTime(60_000);
+    expect(beacon).not.toHaveBeenCalled();
   });
 });

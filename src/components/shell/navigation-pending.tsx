@@ -22,7 +22,7 @@ import { PendingOverlay } from "./pending-overlay";
 import { ShellLoading } from "./shell-loading";
 import { setRoutePath } from "../../lib/url/mirror";
 import { noteDeckRoute } from "../../lib/decks/visit";
-import { newNavigation, StallContext, watchFetches, watchStall, type StallConfig } from "./nav-stall";
+import { newNavigation, pressSettled, pressStarted, StallContext, watchFetches, watchStall, type StallConfig } from "./nav-stall";
 
 /**
  * Navigation pending, and its escalation to the full screen (the navigation-pending handoff and its
@@ -187,20 +187,31 @@ export function NavigationPendingProvider({ children, stall = null }: { children
   // The stuck-loader diagnostic: a navigation still pending `STALL_AFTER_MS` after it started sends
   // one report, and every new one lets the next hang report again.
   const leftFrom = useRef(pathname);
+  // The effects below key on whether the switch is on, never on the config object: a layout
+  // re-render (a refresh, a revalidating action) hands a new one, and that is not a navigation.
+  const stallOn = stall !== null;
+  const stallRef = useRef(stall);
   useEffect(() => {
-    if (!stall) return;
+    stallRef.current = stall;
+  }, [stall]);
+  useEffect(() => {
+    if (!stallOn) return;
     watchFetches();
     // A browser Back or Forward is a navigation no press reports, so it starts one here: a page it
     // lands in a loading screen is then timed, matched and reported as its own.
     window.addEventListener("popstate", newNavigation);
     return () => window.removeEventListener("popstate", newNavigation);
-  }, [stall]);
+  }, [stallOn]);
   useEffect(() => {
     if (target === null) return;
-    newNavigation();
-    if (!stall) return;
-    return watchStall({ kind: "pending", from: leftFrom.current, to: target, config: stall });
-  }, [target, stall]);
+    pressStarted(target);
+    const config = stallRef.current;
+    const stop = config ? watchStall({ kind: "pending", from: leftFrom.current, to: target, config }) : null;
+    return () => {
+      stop?.();
+      pressSettled();
+    };
+  }, [target, stallOn]);
   useEffect(() => {
     leftFrom.current = pathname;
   }, [pathname]);
