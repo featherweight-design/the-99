@@ -5,6 +5,7 @@ import type { PreconRow } from "../../../lib/precons/list";
 const action = vi.hoisted(() => vi.fn());
 const addAction = vi.hoisted(() => vi.fn());
 vi.mock("../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: action, addPreconToCollection: addAction }));
+vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: "user_A" }) }));
 import { StartPrecon } from "./start-precon";
 
 const row: PreconRow = {

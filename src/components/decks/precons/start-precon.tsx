@@ -5,6 +5,7 @@
 // modal at 900 and a bottom sheet at 390: the commander, the name (prefilled, focused, selected),
 // three facts, and any card the start keeps that is not legal in Commander. Starting never commits.
 
+import { useAuth } from "@clerk/nextjs";
 import { unstable_rethrow } from "next/navigation";
 import { startTransition, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { addPreconToCollection, createDeckFromPrecon } from "../../../app/decks/precon-actions";
@@ -41,16 +42,18 @@ export type StartPreconProps = {
 /**
  * The add's action id, kept for this tab across a reload: an add that THREW may have committed with its response lost,
  * and the id is what lets the retry find the committed entry instead of adding the box twice. Cleared once the outcome
- * is known. Storage can be absent or blocked, so every touch is guarded and the id falls back to memory alone.
+ * is known. The key names the signed-in account, so an id can never cross accounts in a shared tab. Storage can be absent or blocked, so every touch is guarded and the id falls back to memory alone.
  */
-const attemptKey = (fileName: string) => `the99:precon-add-attempt:${fileName}`;
-function readAttempt(fileName: string): string | null {
-  try { return window.sessionStorage.getItem(attemptKey(fileName)); } catch { return null; }
+const attemptKey = (account: string, fileName: string) => `the99:precon-add-attempt:${account}:${fileName}`;
+function readAttempt(account: string | null | undefined, fileName: string): string | null {
+  if (!account) return null;
+  try { return window.sessionStorage.getItem(attemptKey(account, fileName)); } catch { return null; }
 }
-function writeAttempt(fileName: string, id: string | null) {
+function writeAttempt(account: string | null | undefined, fileName: string, id: string | null) {
+  if (!account) return;
   try {
-    if (id === null) window.sessionStorage.removeItem(attemptKey(fileName));
-    else window.sessionStorage.setItem(attemptKey(fileName), id);
+    if (id === null) window.sessionStorage.removeItem(attemptKey(account, fileName));
+    else window.sessionStorage.setItem(attemptKey(account, fileName), id);
   } catch { /* storage is a convenience here, never a requirement */ }
 }
 
@@ -85,7 +88,7 @@ export function StartPrecon(props: StartPreconProps) {
           addedOn={addedAt ?? props.addedOn ?? null}
           addRef={add}
           onAdded={() => setAddedAt(new Date().toISOString())}
-          onAddReverted={() => { add.current = { id: null, at: null }; writeAttempt(row.fileName, null); setAddedAt(null); }}
+          onAddReverted={() => { add.current = { id: null, at: null }; setAddedAt(null); }}
           onDismiss={() => setOpen(false)}
         />
       )}
@@ -111,6 +114,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
   const [own, setOwn] = useState(false);
   // The add went in but the deck did not start: the dialog becomes the receipt (History holds the record).
   const [receipt, setReceipt] = useState<PreconAddReceipt | null>(null);
+  const { userId: account } = useAuth();
   const errorId = useId();
   const titleId = useId();
 
@@ -142,8 +146,8 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
       try {
         if (own && canOwn) {
           // The add goes first, so the draft picks the copies it just added (Hugh, 2026-10-13).
-          addRef.current.id ??= readAttempt(row.fileName) ?? crypto.randomUUID();
-          writeAttempt(row.fileName, addRef.current.id);
+          addRef.current.id ??= readAttempt(account, row.fileName) ?? crypto.randomUUID();
+          writeAttempt(account, row.fileName, addRef.current.id);
           let res: Awaited<ReturnType<typeof addPreconToCollection>>;
           try {
             res = await addPreconToCollection(row.fileName, addRef.current.id);
@@ -157,7 +161,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
             return;
           }
           // An outcome is known (committed, or refused): the stored attempt has done its job.
-          writeAttempt(row.fileName, null);
+          writeAttempt(account, row.fileName, null);
           if (!res.ok) {
             inFlight.current = false;
             setPending(false);

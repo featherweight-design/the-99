@@ -5,6 +5,8 @@ import type { PreconRow } from "../../../lib/precons/list";
 const create = vi.hoisted(() => vi.fn());
 const add = vi.hoisted(() => vi.fn());
 vi.mock("../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: create, addPreconToCollection: add }));
+const account = vi.hoisted(() => ({ id: "user_A" as string | null }));
+vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: account.id }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }), unstable_rethrow: (e: unknown) => { if (String((e as Error)?.message).startsWith("NEXT_REDIRECT")) throw e; } }));
 let reverted: () => void = () => {};
 vi.mock("../../collection/revert-confirm", () => ({ RevertConfirm: (p: { onReverted: () => void }) => { reverted = p.onReverted; return <div data-testid="revert" />; } }));
@@ -26,7 +28,7 @@ const open = (addedOn: string | null = null) => {
 };
 const own = () => screen.getByRole("checkbox", { name: /I own this precon/ });
 
-beforeEach(() => { create.mockReset(); add.mockReset(); window.sessionStorage.clear(); });
+beforeEach(() => { create.mockReset(); add.mockReset(); window.sessionStorage.clear(); account.id = "user_A"; });
 
 describe("Start dialog: I own this precon", () => {
   it("draws the box unticked, and starts the deck without touching the collection", async () => {
@@ -179,7 +181,7 @@ describe("Start dialog: I own this precon", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     const sent = add.mock.calls[0][1];
-    expect(window.sessionStorage.getItem("the99:precon-add-attempt:Multiverse_FRC")).toBe(sent);
+    expect(window.sessionStorage.getItem("the99:precon-add-attempt:user_A:Multiverse_FRC")).toBe(sent);
     // A reload: the page is gone, a new one mounts, and the retry carries the same id.
     first.unmount();
     render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
@@ -189,6 +191,25 @@ describe("Start dialog: I own this precon", () => {
     await waitFor(() => expect(add).toHaveBeenCalledTimes(2));
     expect(add.mock.calls[1][1]).toBe(sent);
     await waitFor(() => expect(create).toHaveBeenCalled());
-    expect(window.sessionStorage.getItem("the99:precon-add-attempt:Multiverse_FRC")).toBeNull();
+    expect(window.sessionStorage.getItem("the99:precon-add-attempt:user_A:Multiverse_FRC")).toBeNull();
+  });
+
+  it("never lends one account's unresolved add id to another account signing in on the same tab", async () => {
+    add.mockRejectedValueOnce(new Error("network")).mockResolvedValueOnce(added);
+    create.mockResolvedValue(undefined);
+    const first = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    const aId = add.mock.calls[0][1];
+    first.unmount();
+    account.id = "user_B";
+    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(2));
+    expect(add.mock.calls[1][1]).not.toBe(aId);
   });
 });
