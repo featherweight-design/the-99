@@ -25,12 +25,12 @@ const text = (p: UploadPreview) => {
 describe("ReviewScreen counts", () => {
   it("says 1 row and 1 card, never 1 rows or 1 cards", () => {
     const t = text(preview({}));
-    expect(t).not.toMatch(/\b1\s*(rows|cards|parse errors|token and emblem rows)/);
+    expect(t).not.toMatch(/\b1\s*(rows|cards|unreadable lines|token and emblem rows)/);
     expect(t).toMatch(/ · 1 row/);
     expect(t).toMatch(/1\s*card matched & ready/);
     expect(t).toMatch(/card matched to the Oracle database/);
     expect(t).not.toMatch(/cards matched/);
-    expect(t).toMatch(/1\s*parse error(?!s)/);
+    expect(t).toMatch(/1\s*unreadable line(?!s)/);
     expect(t).toMatch(/1\s*token and emblem row skipped/);
     expect(t).toMatch(/1\s*row read/);
     expect(t).toMatch(/replaces your 1 card with/);

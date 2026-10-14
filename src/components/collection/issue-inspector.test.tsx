@@ -58,7 +58,7 @@ describe("IssueInspector — phone", () => {
     stubViewport(390);
     const onClose = vi.fn();
     render(<IssueInspector preview={preview(5, 2)} initialTab="unmatched" onClose={onClose} />);
-    drag(screen.getByRole("tab", { name: /Unmatched/ }), 200);
+    drag(screen.getByRole("tab", { name: /Not in catalog/ }), 200);
     drag(screen.getByRole("textbox"), 200);
     drag(screen.getByText("Card 0"), 200);
     expect(onClose).not.toHaveBeenCalled();
@@ -73,7 +73,7 @@ describe("IssueInspector — phone", () => {
     const dialog = screen.getByRole("dialog");
     const held = `${Math.floor(window.innerHeight * 0.86)}px`;
     expect(dialog.style.height).toBe(held);
-    fireEvent.click(screen.getByRole("tab", { name: /Parse errors/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /Unreadable lines/ }));
     expect(dialog.style.height).toBe(held);
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "zzz" } });
     act(() => {
@@ -120,7 +120,7 @@ describe("IssueInspector — phone", () => {
     const dialog = screen.getByRole("dialog");
     // 100 of chrome + the 5-row tab's 250.
     expect(dialog.style.height).toBe("350px");
-    fireEvent.click(screen.getByRole("tab", { name: /Parse errors/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /Unreadable lines/ }));
     expect(dialog.style.height).toBe("350px");
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "zzz" } });
     act(() => {

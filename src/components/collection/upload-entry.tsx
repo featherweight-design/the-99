@@ -9,6 +9,7 @@ import { previewUpload, previewPaste, type UploadPreview } from "../../app/colle
 import { refreshCopy } from "../../lib/copy/refresh";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { COLLECTION_FILE_MAX_BYTES, COLLECTION_FILE_MAX_LABEL, PASTE_MAX_BYTES } from "../../lib/upload-limits";
+import { importReviewCopy } from "../../lib/copy/import-review";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -53,7 +54,7 @@ export function UploadEntry({
     // Checked here as well as on the server: an oversized body never reaches the
     // action's own check, and the reader would see a minified React error instead.
     if (file.size > COLLECTION_FILE_MAX_BYTES) {
-      setError(`File too large (max ${COLLECTION_FILE_MAX_LABEL})`);
+      setError(importReviewCopy.errors.fileTooLarge(COLLECTION_FILE_MAX_LABEL));
       return;
     }
     const fd = new FormData();
@@ -63,7 +64,7 @@ export function UploadEntry({
         const p = await previewUpload(fd);
         onPreview(p);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Upload failed");
+        setError(e instanceof Error ? e.message : importReviewCopy.errors.uploadFailed);
       }
     });
   }
@@ -76,7 +77,7 @@ export function UploadEntry({
         const p = await previewPaste(pasteText);
         onPreview(p);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Parse failed");
+        setError(e instanceof Error ? e.message : importReviewCopy.errors.pasteUnreadable);
       }
     });
   }

@@ -34,7 +34,7 @@ describe("UploadEntry file size", () => {
     render(<UploadEntry currentCardCount={0} onPreview={() => {}} />);
     choose(fileOfSize(COLLECTION_FILE_MAX_BYTES + 1));
     expect(previewUpload).not.toHaveBeenCalled();
-    expect(screen.getByText("File too large (max 4 MB)")).toBeTruthy();
+    expect(screen.getByText("That file is too large (max 4 MB)")).toBeTruthy();
   });
 
   it("sends a file exactly at the cap", () => {

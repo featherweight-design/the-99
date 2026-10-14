@@ -1929,8 +1929,8 @@ No chevron: Cancel in the confirm bar is the phone's exit (calm-replace §3.20).
 ### Copy (issue tallies)
 | Element | Copy |
 |---------|------|
-| Unmatched | `21 unmatched names` |
-| Parse errors | `8 parse errors` |
+| Unmatched | `21 names not in the card catalog` |
+| Parse errors | `8 unreadable lines` |
 | Skipped footnote | `29 rows will be skipped` |
 
 ### Issue Section Headers
@@ -1951,8 +1951,8 @@ No chevron: Cancel in the confirm bar is the phone's exit (calm-replace §3.20).
 ### Copy (issue section headers)
 | Type | Copy |
 |------|------|
-| Unmatched | `Unmatched — 21 skipped` (mobile) / `Unmatched names — 21` (desktop) |
-| Parse errors | `Parse errors — 8` (desktop) |
+| Unmatched | `Not in the catalog: 21 skipped` (mobile) / `Names not in the card catalog: 21` (desktop) |
+| Parse errors | `Unreadable lines: 8` (desktop) |
 
 ### Desktop Issues Layout
 | Property | Desktop |
@@ -2312,7 +2312,7 @@ Reached only by a failed first import (the collection read 0 cards when the prev
 | Import variant keep | `Go back` |
 | Import variant confirm (n = 2,904) | `Import 2,904 cards` |
 | Import variant pending | `Importing…` |
-| Error line | the failed confirm's message; `Confirm failed` when it carries none |
+| Error line | the failed confirm's message; `That didn’t go through. Try again.` when it carries none |
 
 ---
 
@@ -2396,12 +2396,12 @@ Drawn only when the collection has cards; the count span sits between the two pa
 ### Replace — Step 2 Copy
 - `STEP 2 OF 3 · the-vault.csv · 2,933 rows`
 - `[N] cards matched to the Oracle database: ready to import`
-- `[N] unmatched names`
-- `[N] parse errors`
+- `[N] names not in the card catalog`
+- `[N] unreadable lines`
 - `[N] rows will be skipped`
-- `Unmatched names — [N]` (section header)
-- `Parse errors — [N]` (section header)
-- Issue CTA strip (v2, Surfaces v2 §Collection): heading `That CSV put up a fight.`, body `[N] rows didn't parse: quantity columns, mostly. Nothing fatal. Want to see the carnage?` (singular `1 row` derived), CTA `View [N] issues`
+- `Names not in the card catalog: [N]` (section header)
+- `Unreadable lines: [N]` (section header)
+- Issue CTA strip (v2, Surfaces v2 §Collection): heading `That CSV put up a fight.`, body `[N] rows were skipped: quantity columns, mostly. Nothing fatal. Want to see the carnage?` (singular `1 row was` derived), CTA `View [N] issues`
 - `View all 29 issues →` (v1, replaced by the strip above)
 - `Show all 21 unmatched →` / `Show all 8 errors →` (desktop)
 - Sticky bar (mobile): `Skips 29 rows · replaces your 2,933 cards with 2,904`
