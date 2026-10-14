@@ -20,7 +20,7 @@ Mobile = 390. Desktop = 900, from `md` up (the dialog is `md:w-[820px] md:h-[620
 | Band (running) | 1px `--accent`; 7px `--accent` dot | same |
 | Press | filled `--accent`, ink `--bg`, h44, full width, radius 8, 13/600; segment after a 1px rule (`--bg` 35%), mono 11 `◆ 1 credit` | h38, auto width |
 | Press, spent / paused | 50% opacity, disabled, segment dropped | same |
-| Read again / Try again | outline `--accent`, same segment, rule `--accent` | same |
+| Run again / Try again | outline `--accent`, same segment, rule `--accent` | same |
 | Standing line | mono 10.5 `--fg-faint` | same |
 | Skeleton rows | 3, `--surface-sunken`, bars `--elevated` 10 / `--surface-raised` 8; they breathe (`anim-skeleton`, opacity 1 to 0.55 over 1.4s, in-out; still under reduced motion; Hugh, 2026-10-12, superseding "still") | same |
 | Result head | 14/600 `--fg` + mono 10.5 `--fg-faint`, baseline row, wraps | same |
@@ -57,7 +57,7 @@ New, in `findADeckReadCopy` (to land as `swapToolsCopy.fits.read`):
 | offerLeadOne | “A closer read of {deck}, the one deck that can take {card}: how it would help, in that deck’s own cards, and what it would replace.” |
 | running | “Reading {n} decks for {card}” · one: “Reading one deck for {card}” |
 | runningSub | “each deck’s plan and list, against the card’s text” (+ “ · {elapsed}”) |
-| runningKeep | “The list below stays as it is. You can leave this view; the read keeps going and waits here.” |
+| runningKeep | “The list below stays as it is. You can leave this view; the run keeps going and waits here.” |
 | announceStarted | “Reading your decks.” |
 | doorReading | “reading your decks…” |
 | resultHead | “Where it helps most” |
@@ -79,29 +79,29 @@ New, in `findADeckReadCopy` (to land as `swapToolsCopy.fits.read`):
 | swappedAria | “{card} is in {deck} and {cut} is out. Press to put {cut} back.” |
 | swapRefused | “We couldn’t make that swap. The deck is unchanged.” |
 | undoRefused | “We couldn’t undo that. The deck is unchanged.” (shipped, /copy-review: it serves both undos) |
-| announceReady | “The read found {n} decks.” · one: “The read found one deck.” |
+| announceReady | “The run found {n} decks.” · one: “The run found one deck.” |
 | announceSwapped | “Swapped. {card} is in the draft and {cut} is out.” |
 | announceUndone | “Swap undone. {cut} is back and {card} is out.” |
 | thin | “Only one deck held up, so the credit came back.” · “Only {kept} decks held up, so the credit came back.” |
 | thinSub | “The other decks it named didn’t check out” (+ “ · {standing}”) (shipped, /copy-review: READINESS-audit F10) |
 | noFitHead | “None of these decks is a real fit” |
-| noFitBody | “The read went through the {n} decks that can take {card} and found none whose plan it really helps. The credit came back.” |
-| noFitBodyOne | “The read went through {deck}, the one deck that can take {card}, and found it isn’t a real fit. The credit came back.” |
+| noFitBody | “The run went through the {n} decks that can take {card} and found none whose plan it really helps. The credit came back.” |
+| noFitBodyOne | “The run went through {deck}, the one deck that can take {card}, and found it isn’t a real fit. The credit came back.” |
 | announceNoFit | “No real fit. The credit came back.” |
 | failedTag | “Didn’t finish” (FailMark aria-label) |
-| failedHead | “The read didn’t come back” |
+| failedHead | “The run didn’t come back” |
 | failedBody | “The credit came back, and the list below is as it was. It isn’t something you did.” |
 | retry | “Try again” |
-| announceFailed | “The read didn’t come back. The credit came back.” |
-| tooBigHead (eng, no frame) | “Too many decks for one read” (/copy-review; the press refused before any credit, `tooBig`: no Try again, since the same decks refuse again) |
-| tooBigBody (eng, no frame) | “This card fits more of your decks than a read can take at once. No credit is used.” (/copy-review: Proposed cuts' `tooBig` is the sibling) |
-| announceTooBig (eng, no frame) | “Too many decks for one read. No credit is used.” |
+| announceFailed | “The run didn’t come back. The credit came back.” |
+| tooBigHead (eng, no frame) | “Too many decks for one run” (/copy-review; the press refused before any credit, `tooBig`: no Try again, since the same decks refuse again) |
+| tooBigBody (eng, no frame) | “This card fits more of your decks than a run can take at once. No credit is used.” (/copy-review: Proposed cuts' `tooBig` is the sibling) |
+| announceTooBig (eng, no frame) | “Too many decks for one run. No credit is used.” |
 | staleOne | “{deck} has changed since this read on {when}, so the read may not hold any more.” |
 | staleMany | “{n} of your decks have changed since this read on {when}, so the read may not hold any more.” |
 | staleSet | “Your decks that can take this card aren’t the same ones as at this read on {when}, so the read may not hold any more.” |
 | changedTag | “changed since” |
-| readAgain | “Read again” |
-| again | “Replaces this read and uses a credit. {standing}.” |
+| readAgain | “Run again” |
+| again | “Replaces this run and uses a credit. {standing}.” |
 | fold | “Every deck that could take it” |
 | addOnly (R2) | “Add only” · to buy: “Add only, to buy” |
 | added (R2) | “Added” · to buy: “Added, to buy” |
@@ -109,7 +109,7 @@ New, in `findADeckReadCopy` (to land as `swapToolsCopy.fits.read`):
 | addedAria (R2) | “{card} is in the {deck} draft, with nothing cut. Press to take it out.” |
 | addedNote (R2) | “In the draft with nothing cut. Pick a card to cut from {deck} when you’re ready.” (shipped: a draft is not always at 99 before the add) |
 | cutNoteAdded (R2) | “still in · cut it or anything else” |
-| noFitBodyStored (R2) | “The read went through the {n} decks that can take {card} and found none whose plan it really helps.” |
+| noFitBodyStored (R2) | “The run went through the {n} decks that can take {card} and found none whose plan it really helps.” |
 | noFitFootNow (R2) | “read just now · kept until your decks change” (shipped, /copy-review: the second clause restated the first) |
 | noFitFootStored (R2) | “read {when} · kept until your decks change” |
 | noFitChanged (R2) | “{deck} has changed since this read on {when}, so it’s worth asking again.” |
@@ -121,7 +121,7 @@ New, in `findADeckReadCopy` (to land as `swapToolsCopy.fits.read`):
 | srcLinkOlder (addendum) | “Update it on the deck page →” |
 | srcNoteNone (addendum) | “No overview yet, so this read went on {commander} and the deck’s top themes.” |
 | srcLinkNone (addendum) | “Write one on the deck page →” |
-| staleOverview (addendum) | “{deck} has a new overview since this read on {when}. Read again to use it.” |
+| staleOverview (addendum) | “{deck} has a new overview since this read on {when}. Run again to use it.” |
 | changedTagOverview (addendum) | “new overview” |
 | foldAria | “Show every deck that could take it, {n}” · “Hide every deck that could take it, {n}” |
 

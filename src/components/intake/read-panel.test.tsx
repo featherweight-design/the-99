@@ -131,7 +131,7 @@ describe("7d: reading", () => {
     // panel still reads and the results stay dimmed, never a done head over the free order.
     expect(panel().dataset.phase).toBe("reading");
     expect(screen.getByTestId("results-dim").dataset.reading).toBe("true");
-    expect(screen.getByRole("status").textContent).toBe("The read is done, and its picks now lead your results.");
+    expect(screen.getByRole("status").textContent).toBe("The run is done, and its picks now lead your results.");
     // And it asks no more.
     await act(async () => { await vi.advanceTimersByTimeAsync(6_000); });
     expect(state).toHaveBeenCalledTimes(3);
@@ -146,7 +146,7 @@ describe("7d: reading", () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
     // Announced at once, drawn once the refresh brings the refunded standing with it.
     expect(panel().dataset.phase).toBe("reading");
-    expect(screen.getByRole("status").textContent).toBe("The read didn’t finish, so your credit came back.");
+    expect(screen.getByRole("status").textContent).toBe("The run didn’t finish, so your credit came back.");
     expect(router.refresh).toHaveBeenCalled();
   });
 });
@@ -170,7 +170,7 @@ describe("7e, 7f: stopped and failed", () => {
     const tag = screen.getByTestId("read-tag");
     expect(tag.textContent).toBe("didn’t finish");
     expect(tag.className).toContain("text-[color:var(--danger)]");
-    expect(text()).toContain("The read didn’t finish, so your credit came back.");
+    expect(text()).toContain("The run didn’t finish, so your credit came back.");
     expect(screen.getByRole("button", { name: "1 credit. Try again." })).toBeTruthy();
     noReadIt();
   });
@@ -312,7 +312,7 @@ describe("a repeat, and a visit's announcements", () => {
 describe("7l, 7n: unread", () => {
   it("names the cause when another read was still running", () => {
     draw(null, { busy: true });
-    expect(text()).toContain("Another read of yours was still running, so this one didn’t start.");
+    expect(text()).toContain("Another run of yours was still running, so this one didn’t start.");
     expect(text()).not.toContain("Your words are kept for another try.");
   });
 
