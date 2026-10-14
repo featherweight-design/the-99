@@ -21,7 +21,7 @@ const ID = "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11";
 const ok = { ok: true, entryId: ID, cards: 99, copies: 100, foil: 2, placed: [], tokens: { marked: 9, names: ["Soldier"] } };
 
 describe("receiptFileName: which entries are a standing precon add", () => {
-  const entry = (over: object) => ({ source: "precon:Multiverse_FRC", kind: "add", revertedBy: null, ...over });
+  const entry = (over: object) => ({ source: "precon:Multiverse_FRC", kind: "add", revertedBy: null, rows: [], ...over });
   it("names the precon of an unreverted add sourced precon:<file>", () => {
     expect(receiptFileName(entry({}))).toBe("Multiverse_FRC");
   });
@@ -32,6 +32,7 @@ describe("receiptFileName: which entries are a standing precon add", () => {
     ["a purchase", entry({ source: "shopping:d1" })],
     ["a revert", entry({ kind: "revert" })],
     ["an empty file name", entry({ source: "precon:" })],
+    ["a pruned entry (its rows are gone)", entry({ rows: null })],
   ])("draws nothing for %s", (_n, e) => {
     expect(receiptFileName(e as never)).toBeNull();
   });
@@ -53,7 +54,7 @@ describe("readPreconAddReceipt", () => {
 
   it("draws nothing on a deck that was started from a different box (a forged link on an unrelated deck)", async () => {
     standing.ids = [ID];
-    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: null }];
+    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: null, rows: [] }];
     rows.precon = [{ name: "Multiverse Reforged", twinOf: null }];
     rows.deck = [{ builtFrom: "Other_Box" }];
     answer.mockResolvedValueOnce(ok);
@@ -65,7 +66,7 @@ describe("readPreconAddReceipt", () => {
 
   it("draws for a Collector's Edition twin's own add on the deck started from its plain edition", async () => {
     standing.ids = [ID];
-    rows.entry = [{ source: "precon:Multiverse_FRC_CE", kind: "add", revertedBy: null }];
+    rows.entry = [{ source: "precon:Multiverse_FRC_CE", kind: "add", revertedBy: null, rows: [] }];
     rows.precon = [{ name: "Multiverse Reforged (Collector's)", twinOf: "Multiverse_FRC" }];
     rows.deck = [{ builtFrom: "Multiverse_FRC" }];
     answer.mockResolvedValueOnce(ok);
@@ -74,7 +75,7 @@ describe("readPreconAddReceipt", () => {
 
   it("answers for a standing precon add of the reader's own", async () => {
     standing.ids = [ID];
-    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: null }];
+    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: null, rows: [] }];
     rows.precon = [{ name: "Multiverse Reforged", twinOf: null }];
     rows.deck = [{ builtFrom: "Multiverse_FRC" }];
     answer.mockResolvedValueOnce(ok);
@@ -96,13 +97,22 @@ describe("readPreconAddReceipt", () => {
   });
 
   it("draws nothing for another source's entry", async () => {
-    rows.entry = [{ source: "shopping:d1", kind: "add", revertedBy: null }];
+    rows.entry = [{ source: "shopping:d1", kind: "add", revertedBy: null, rows: [] }];
+    expect(await readPreconAddReceipt("u1", ID, "deck-1")).toBeNull();
+  });
+
+  it("draws nothing for a pruned entry, though the ledger would answer 0 copies for it", async () => {
+    standing.ids = [ID];
+    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: null, rows: null }];
+    rows.precon = [{ name: "Multiverse Reforged", twinOf: null }];
+    rows.deck = [{ builtFrom: "Multiverse_FRC" }];
+    answer.mockResolvedValueOnce({ ...ok, cards: 0, copies: 0, foil: 0, tokens: { marked: 0, names: [] } });
     expect(await readPreconAddReceipt("u1", ID, "deck-1")).toBeNull();
   });
 
   it("draws nothing for an add whose cards no longer stand (reverted)", async () => {
     standing.ids = [];
-    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: "r1" }];
+    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: "r1", rows: [] }];
     rows.precon = [{ name: "Multiverse Reforged", twinOf: null }];
     rows.deck = [{ builtFrom: "Multiverse_FRC" }];
     // The ledger WOULD answer for it: only the standing check keeps it from drawing.
@@ -112,7 +122,7 @@ describe("readPreconAddReceipt", () => {
 
   it("still draws one whose revert was itself reverted, as the dialog's 'you added this' does", async () => {
     standing.ids = [ID];
-    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: "r1" }];
+    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: "r1", rows: [] }];
     rows.precon = [{ name: "Multiverse Reforged", twinOf: null }];
     rows.deck = [{ builtFrom: "Multiverse_FRC" }];
     answer.mockResolvedValueOnce(ok);
@@ -121,7 +131,7 @@ describe("readPreconAddReceipt", () => {
 
   it("draws nothing when the ledger cannot answer for it", async () => {
     standing.ids = [ID];
-    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: null }];
+    rows.entry = [{ source: "precon:Multiverse_FRC", kind: "add", revertedBy: null, rows: [] }];
     answer.mockResolvedValueOnce({ ok: false, reason: "failed" });
     expect(await readPreconAddReceipt("u1", ID, "deck-1")).toBeNull();
   });

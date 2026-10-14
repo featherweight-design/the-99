@@ -21,7 +21,7 @@ export type PreconAddReceipt = {
   tokens: { marked: number; names: string[] };
 };
 
-type Entry = { source: string | null; kind: string; revertedBy: string | null };
+type Entry = { source: string | null; kind: string; revertedBy: string | null; rows: unknown[] | null };
 
 /**
  * The precon an entry was written for, or null: only an `add` whose source is `precon:<file>` is one. Whether its
@@ -29,7 +29,8 @@ type Entry = { source: string | null; kind: string; revertedBy: string | null };
  * once in `readPreconAddReceipt`, never restated here.
  */
 export function receiptFileName(entry: Entry | undefined): string | null {
-  if (!entry || entry.kind !== "add" || entry.source === null) return null;
+  // A pruned entry (retention nulls its rows) can no longer say what it added, so it draws no receipt, Undo included.
+  if (!entry || entry.kind !== "add" || entry.source === null || entry.rows === null) return null;
   const prefix = preconSource("");
   return entry.source.startsWith(prefix) && entry.source.length > prefix.length ? entry.source.slice(prefix.length) : null;
 }
@@ -37,7 +38,7 @@ export function receiptFileName(entry: Entry | undefined): string | null {
 /** The entry read, apart so a test can render its SQL: scoped to the reader by id AND user. */
 export function receiptEntryQuery(userId: string, entryId: string) {
   return db
-    .select({ source: collectionHistory.source, kind: collectionHistory.kind, revertedBy: collectionHistory.revertedBy })
+    .select({ source: collectionHistory.source, kind: collectionHistory.kind, revertedBy: collectionHistory.revertedBy, rows: collectionHistory.rows })
     .from(collectionHistory)
     .where(and(eq(collectionHistory.id, entryId), eq(collectionHistory.userId, userId)));
 }

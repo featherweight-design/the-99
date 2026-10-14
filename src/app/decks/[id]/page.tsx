@@ -639,7 +639,7 @@ export default async function DeckBuilderPage({
       // same reason as `imported`; the strip's dismissal is the same per-deck flag.
       preconArrival={preconArrivalRead ? await preconArrivalRead : null}
       preconAddReceipt={preconAddReceiptRead ? await preconAddReceiptRead : null}
-      preconAddedClaimed={typeof preconAddedParam === "string"}
+      preconAddedClaimed={preconAddedParam !== undefined}
       // A linked deck gets neither door: no suggestion (lock 2). Its link is drawn in Versions as v0
       // (precons PR 6b), and on the open precon with Unlink (PR 6a-2).
       preconLink={preconLinkRead
