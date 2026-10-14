@@ -74,3 +74,15 @@ describe("when no held printing has art", () => {
     expect(card.printings.map((x) => [x.scryfallId, x.quantity])).toEqual([["a", 2], ["c", 0]]);
   });
 });
+
+describe("held sibling variants in the details sheet", () => {
+  it("are one row per set and number, the most-held standing for both, with their copies summed", () => {
+    const token = { oracleId: "t", name: "Soldier", typeLine: "Token Creature — Soldier", colors: ["W"], oracleText: null, layout: "token" };
+    const card = assembleTokenDetail(token, [
+      { scryfallId: "a", setCode: "aaa", collectorNumber: "1", imageUri: "img-a", backImageUri: null },
+      { scryfallId: "a2", setCode: "aaa", collectorNumber: "1", imageUri: "img-a2", backImageUri: null },
+      { scryfallId: "b", setCode: "bbb", collectorNumber: "2", imageUri: "img-b", backImageUri: null },
+    ], null, null, [{ tokenPrintingId: "a", quantity: 1 }, { tokenPrintingId: "a2", quantity: 3 }, { tokenPrintingId: "b", quantity: 2 }]);
+    expect(card.printings.map((x) => [x.scryfallId, x.quantity])).toEqual([["a2", 4], ["b", 2]]);
+  });
+});
