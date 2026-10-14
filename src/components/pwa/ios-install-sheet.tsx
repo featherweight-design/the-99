@@ -60,7 +60,6 @@ export function IosInstallSheet({ onClose }: { onClose: () => void }) {
         <PrimaryButton onClick={onClose} className="mt-[6px] min-h-[44px] w-full text-[15px]">
           {copy.done}
         </PrimaryButton>
-        <p className="m-0 text-[12px] text-[color:var(--fg-faint)]">{copy.dismissNote}</p>
       </div>
     </Sheet>
   );

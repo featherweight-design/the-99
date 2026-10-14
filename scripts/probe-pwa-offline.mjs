@@ -59,7 +59,8 @@ for (const [w, h] of [[390, 844], [1300, 900]]) {
   if (SHOT) await page.screenshot({ path: `${SHOT}/pwa-pill-${w}.png` });
   await page.goto(`${BASE}/decks/shopping`, { waitUntil: "load" }).catch((e) => console.log("goto threw", e.message.split("\n")[0]));
   const text = await page.evaluate(() => document.body.innerText).catch(() => "");
-  check(/No signal/i.test(text) && /offline/i.test(text), `${w}: an offline page load shows /offline`);
+  // The page's eyebrow and title (src/lib/copy/pwa.ts), as the reader sees them.
+  check(/No signal/i.test(text) && /need a connection/i.test(text), `${w}: an offline page load shows /offline`);
   check(new URL(page.url()).pathname === "/decks/shopping", `${w}: at the address asked for (${new URL(page.url()).pathname})`);
   if (SHOT) await page.screenshot({ path: `${SHOT}/pwa-offline-${w}.png` });
   await ctx.setOffline(false);
