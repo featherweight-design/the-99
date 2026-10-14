@@ -281,9 +281,9 @@ export const topOffCopy = {
     /** Label AND concession. The visible note is `aria-hidden`, so this is the only place the
      *  figure is spoken, and it is spoken before the press. */
     collectionAria: (n: string, concession: string) =>
-      `Select ${n} cards from your collection — ${concession}`,
+      `Select ${n} cards from your collection : ${concession}`,
     bestAria: (n: string, concession: string) =>
-      `Select the ${n} cards this deck needs — ${concession}`,
+      `Select the ${n} cards this deck needs : ${concession}`,
 
     /** Nil, and still a sentence. The player came to find out whether the cheap option costs
      *  anything; 'no' is the answer, not the absence of one. */

@@ -54,7 +54,7 @@ export const changeCommanderCopy = {
     expandCaption: (n: number, short: string) => `The ${n} ${short}'s decks run`,
     loading: "Reading which commanders' decks run your cards…",
     // The Analysis tab's error composition (2c): heading + body + bone Try again.
-    failed: { heading: "We could not read the candidates.", body: "Nothing about your deck changed.", cta: "Try again" },
+    failed: { heading: "We couldn’t read the candidates.", body: "Nothing about your deck changed.", cta: "Try again" },
     none: {
       head: (identity: string) => `No other commander leads a ${identity} deck yet.`,
       body: "Only commanders in exactly this deck's colors are offered, so the 99 never change. A wider or narrower identity would mean cutting cards, which is a new deck.",
@@ -62,7 +62,7 @@ export const changeCommanderCopy = {
     nonePair: {
       // The handoff's file wrote "four" with a note to take the count from the identity's size.
       head: (count: string) => `No other pair shares these ${count} colors.`,
-      body: "Only pairs whose two identities add up to exactly this deck's are offered, so the 98 never change. When the index sees a new legal pairing in these colors, it shows up here.",
+      body: "Only pairs whose two identities add up to exactly this deck's are offered, so the 98 never change. When a new legal pairing appears in these colors, it shows up here.",
     },
   },
 

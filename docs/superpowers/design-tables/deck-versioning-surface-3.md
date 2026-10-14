@@ -164,7 +164,7 @@ inside the sheet, which overrides both the Component notes' "two lists" and stat
 | font-size | — | `10px` |
 | color | — | `#6A6152` (`--fg-locked`) |
 | margin-top | — | `7px` |
-| text | — | `you cannot add this later: the version is not editable once committed` |
+| text | — | `you can’t add this later: the version is not editable once committed` |
 
 ### Blocks row (money + released)
 

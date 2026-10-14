@@ -111,7 +111,7 @@ export const addPanelCopy = {
       ramp: "— you want your commander out a turn early, every game.",
       draw: "— a four-player table runs you out of cards before it runs you out of life.",
       removalWipes:
-        "— three opponents means three threats you did not plan for.",
+        "— three opponents means three threats you didn’t plan for.",
       land: "— advisory: a cheap curve wants fewer, a heavy one wants more.",
     },
   },
@@ -151,7 +151,7 @@ export const addPanelCopy = {
     // screen reader has none of it. No em dash either — this surface's copy
     // bans one, and Design's draft used one to join the clauses.
     addUnownedAria: (name: string) =>
-      `Add ${name} to the deck, and to your To buy list, because you do not own it`,
+      `Add ${name} to the deck, and to your Shopping list, because you don’t own it`,
     inDeck: "✓ In deck",
     inDeckAria: (name: string) => `${name} is already in this deck`,
     // The art and the name are both CardDetailTrigger; the modal owns its own
@@ -389,7 +389,7 @@ export const addPanelCopy = {
     selectedLabel: "Selected",
     submit: "Create deck →",
     submitPending: "Creating…",
-    failed: "Failed to create deck. Try again.",
+    failed: "We couldn’t create that deck. Try again.",
   },
 } as const;
 

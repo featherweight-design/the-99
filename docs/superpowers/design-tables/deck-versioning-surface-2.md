@@ -533,7 +533,7 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 | tag shape | the same mono tag as variant 1's `deck has changes` | the same mono tag |
 | control | **none at all** — no route releases a commander | **none** |
 | price | stays (state 21) | stays |
-| accessible name | `{card} is {deck}'s commander. It cannot be pulled.` (`review.commanderGuardA11y`) | same |
+| accessible name | `{card} is {deck}'s commander. It can’t be pulled.` (`review.commanderGuardA11y`) | same |
 
 ---
 

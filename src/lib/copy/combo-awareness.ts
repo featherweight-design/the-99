@@ -45,7 +45,7 @@ export const comboAwarenessCopy = {
   /** The inline clause. `partner` is the card's printed name, never truncated in the string. */
   clause: {
     /** State 1 — both halves owned, neither assembled into a deck. `/collection` only. */
-    ownBoth: (partner: string) => `with ${partner} — you own both`,
+    ownBoth: (partner: string) => `with ${partner}, you own both`,
     /**
      * States 2 and 3 have NO words: the clause is the lemniscate and the partner's name.
      * Hugh, 2026-09-22 — `completes with` truncated to `completes wi…` and `complete…` on

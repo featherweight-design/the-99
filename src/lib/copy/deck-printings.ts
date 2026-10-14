@@ -11,7 +11,7 @@ export const deckPrintingsCopy = {
      *  everywhere in the Collection, which is false here. */
     regionIntro: (n: number) => `You own ${count(n)} of these. Pick the one this deck uses.`,
     regionIntroPicked: "Your pick shows in this deck only.",
-    failed: "Didn’t save. Try again.",
+    failed: "That didn’t save. Try again.",
     /** The modal's one live region, on a pick. */
     announcePicked: (setName: string, collectorNumber: string) =>
       collectorNumber
