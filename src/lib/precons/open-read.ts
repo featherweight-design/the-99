@@ -94,10 +94,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
       {
         fileName: head.fileName, name: head.name, setCode: head.setCode, releaseDate: head.releaseDate, twinOf: null,
         unmappedCount: head.unmappedCount,
-        cards: lines.map((l) => ({
-          oracleId: l.oracleId, name: l.name, isCommander: l.isCommander, basic: basicType(l.typeLine),
-          colorIdentity: l.colorIdentity, imageUri: l.imageUri,
-        })),
+        cards: lines.map(sourceCard),
       },
       ...twin.map((t) => ({ fileName: t.fileName, name: t.name, setCode: head.setCode, releaseDate: head.releaseDate, twinOf: head.fileName, unmappedCount: 0, cards: [] })),
     ],
@@ -132,6 +129,14 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
 const basicType = (typeLine: string) => /^Basic\b/.test(typeLine);
 
 type PreconLine = Awaited<ReturnType<typeof openPreconLines>>[number];
+
+/** One line as the list's summary reads it; the small render rides along for the Start dialog's thumb. */
+export function sourceCard(l: PreconLine) {
+  return {
+    oracleId: l.oracleId, name: l.name, isCommander: l.isCommander, basic: basicType(l.typeLine),
+    colorIdentity: l.colorIdentity, imageUri: l.imageUri, imageUriSmall: l.imageUriSmall,
+  };
+}
 
 /** The Collector's Edition twin as the page draws it: its own lines and added date, with the reader's
  *  ownership of the plain edition carried over (the two lists hold the same cards). Pure, for a test. */
@@ -222,6 +227,7 @@ export function openPreconLines(db: Reader, fileName: string) {
       setCode: printings.setCode,
       collectorNumber: printings.collectorNumber,
       printingImage: printings.imageUri,
+      imageUriSmall: printings.imageUriSmall,
       printingBack: printings.backImageUri,
     })
     .from(preconCards)

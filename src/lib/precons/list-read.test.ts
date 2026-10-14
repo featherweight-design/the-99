@@ -17,6 +17,10 @@ describe("the list's thumb art", () => {
     const { sql } = preconCardFacts().toSQL();
     expect(sql).toContain(`"printings"."image_uri_small"`);
   });
+
+  it("is read by the open precon's lines too, which the Start dialog's thumb draws from", () => {
+    expect(openPreconLines(db, "X").toSQL().sql).toContain(`"printings"."image_uri_small"`);
+  });
 });
 
 describe("preconArt", () => {
