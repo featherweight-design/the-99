@@ -19,7 +19,6 @@ import {
   canSave, choosePrinting, openLine, removeLine, setFinish, setQuantity, summarize, toPayload,
   type AddLineState,
 } from "../../lib/collection/add-lines";
-import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import type { CatalogCardResult, PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -35,6 +34,7 @@ import { ReplaceIcon } from "./replace-icon";
 import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
 import { SHEET_PANEL_CLASS } from "./sheet-frame";
 import type { EditCard } from "../../lib/collection/edit-lines";
+import { ArtLayer } from "../ui/art-layer";
 
 const copy = collectionEditCopy.add;
 const SEARCH_DEBOUNCE_MS = 150;
@@ -525,9 +525,11 @@ function ResultRow({
     >
       <span
         aria-hidden
-        className="h-[45px] w-[32px] shrink-0 rounded-[4px]"
-        style={result.imageUri ? { backgroundImage: cssUrl(result.imageUri), backgroundSize: "cover", backgroundPosition: "center" } : { background: identityGradient([]) }}
-      />
+        className="relative h-[45px] w-[32px] shrink-0 overflow-hidden rounded-[4px]"
+        style={{ background: identityGradient([]) }}
+      >
+        {result.imageUri ? <ArtLayer src={result.imageUri} /> : null}
+      </span>
       <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
         <span className="truncate text-[14px] font-semibold">
           {at >= 0 ? (

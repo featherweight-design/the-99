@@ -6,6 +6,7 @@
 // - Escape closes; focus returns to the previously-focused element on close
 
 import Link from "next/link";
+import { ArtLayer } from "../ui/art-layer";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import type { BrowseCard, PreferredPrinting, BrowsePrinting } from "../../lib/collection/browse";
 import {
@@ -534,7 +535,7 @@ const NeighborPlate = React.forwardRef<
   HTMLButtonElement,
   { sibling: SiblingCard; direction: "previous" | "next"; onPress: () => void }
 >(function NeighborPlate({ sibling, direction, onPress }, ref) {
-  const art = siblingArt(sibling);
+  const art = siblingGround(sibling);
   // Anchored from the BACKDROP's own center rather than carried as a flex sibling of the
   // centered dialog (pre-open review, round 1): a flex sibling present on only one side
   // shifts the dialog itself by its width-plus-gap, which moved the dialog and its footer
@@ -556,14 +557,17 @@ const NeighborPlate = React.forwardRef<
     >
       <span
         aria-hidden="true"
-        className="block rounded-[9px] group-focus-visible:outline-2 group-focus-visible:outline-offset-[3px] group-focus-visible:outline-[color:var(--accent)] group-focus-visible:[outline-style:solid]"
+        className="relative block overflow-hidden rounded-[9px] group-focus-visible:outline-2 group-focus-visible:outline-offset-[3px] group-focus-visible:outline-[color:var(--accent)] group-focus-visible:[outline-style:solid]"
         style={{
           width: PLATE_WIDTH,
           height: 235,
           ...art,
           boxShadow: "0 18px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
         }}
-      />
+      >
+        {/* The inset ring rides on the layer too: a host's inset shadow paints under its children. */}
+        {sibling.imageUri ? <ArtLayer src={sibling.imageUri} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} /> : null}
+      </span>
       {sibling.name ? (
         // `--fg`, not the handoff's `--fg-muted` (ledger 1, measured in build on every backdrop
         // pixel behind the name, six themes): `--fg-muted` put 39% to 78% of them under AA's 4.5:1
@@ -604,11 +608,12 @@ function useOwnHeight(ref: React.RefObject<HTMLElement | null>, active: boolean)
   return height;
 }
 
-/** A neighbor's face: its art, else its identity, else a bare plate (README "Notes" §2). */
-function siblingArt(sibling: SiblingCard): React.CSSProperties {
-  return sibling.imageUri
-    ? { backgroundImage: cssUrl(sibling.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
-    : sibling.colorIdentity
+/**
+ * A neighbor's ground: its identity, else a bare plate (README "Notes" §2). Its art, when it has one, is an
+ * `ArtLayer` over this ground, so the plate shows while the art travels and the art fades in on landing.
+ */
+function siblingGround(sibling: SiblingCard): React.CSSProperties {
+  return sibling.colorIdentity
     ? { background: identityGradient([...sibling.colorIdentity]) }
     : { background: "var(--elevated)" };
 }
@@ -636,7 +641,7 @@ const PhonePeek = React.forwardRef<
       inert={covered}
       onClick={onPress}
       aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
-      className="card-grow absolute rounded-[11px] cursor-pointer border-0 p-0"
+      className="card-grow absolute overflow-hidden rounded-[11px] cursor-pointer border-0 p-0"
       style={{
         left,
         // (447 - 330) / 2 at the drawn size: the gap between the two heights, halved, as a share
@@ -646,10 +651,12 @@ const PhonePeek = React.forwardRef<
         width: "calc(var(--card-w) * 0.7375)",
         aspectRatio: "63/88",
         opacity: 0.5,
-        ...siblingArt(sibling),
+        ...siblingGround(sibling),
         boxShadow: "0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
       }}
-    />
+    >
+      {sibling.imageUri ? <ArtLayer src={sibling.imageUri} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} /> : null}
+    </button>
   );
 });
 
@@ -3242,9 +3249,8 @@ function MobileSetRow({
   colorIdentity: string[];
   onClick: () => void;
 }) {
-  const thumbStyle: React.CSSProperties = imageUri
-    ? { backgroundImage: cssUrl(imageUri), backgroundSize: "cover", backgroundPosition: "center" }
-    : { background: identityGradient(colorIdentity) };
+  // The identity is the ground; the art, when there is one, fades in over it (`ArtLayer`).
+  const thumbStyle: React.CSSProperties = { background: identityGradient(colorIdentity) };
   return (
     <button
       ref={ref}
@@ -3264,9 +3270,11 @@ function MobileSetRow({
     >
       <span
         aria-hidden
-        className="flex-none rounded-[5px]"
+        className="relative flex-none overflow-hidden rounded-[5px]"
         style={{ width: 40, height: 56, ...thumbStyle, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }}
-      />
+      >
+        {imageUri ? <ArtLayer src={imageUri} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }} /> : null}
+      </span>
       <span className="min-w-0 flex-1">
         <span
           className="block font-mono uppercase text-[9.5px] tracking-[0.12em]"
