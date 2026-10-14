@@ -60,7 +60,7 @@
         },
         {
           "clickRole": "button",
-          "name": "^Shelf: ",
+          "name": "^Folder: ",
           "wait": "[role=dialog]",
           "settle": 1200
         }
@@ -100,7 +100,7 @@
         },
         {
           "clickRole": "button",
-          "name": "^Shelf: ",
+          "name": "^Folder: ",
           "wait": "[role=dialog]",
           "settle": 900
         },
