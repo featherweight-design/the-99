@@ -16,7 +16,7 @@ import { validateDeckName } from "../../lib/decks/deck-name";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { writeImportedDeck } from "../../lib/decks/write-imported-deck";
-import { PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "../../lib/decks/arrival";
+import { PRECON_ADDED_PARAM, PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "../../lib/decks/arrival";
 import { preconsEnabled } from "../../lib/precons/flag";
 import { addPreconForUser, type PreconAddResult } from "../../lib/precons/add";
 import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
@@ -26,7 +26,7 @@ import { isUuid } from "../../lib/uuid";
 import { after } from "next/server";
 import { isCommanderCandidate } from "../../lib/recs/score";
 
-export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
+export async function createDeckFromPrecon(fileName: string, rawName: string, addedEntryId?: string): Promise<void> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!preconsEnabled(env)) throw new Error("precons are off");
@@ -77,7 +77,9 @@ export async function createDeckFromPrecon(fileName: string, rawName: string): P
     builtFromPrecon: source,
   }));
   revalidateClaims(deckId, userId);
-  redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}`);
+  // The add's entry rides the redirect so the deck page can draw its receipt; it is only a claim there (`readPreconAddReceipt`).
+  const added = typeof addedEntryId === "string" && isUuid(addedEntryId) ? `&${PRECON_ADDED_PARAM}=${addedEntryId}` : "";
+  redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}${added}`);
 }
 
 export type { PreconAddResult };

@@ -6,7 +6,7 @@ import { entryTitle, groupByDay, groupRows, historyReachesBack, rowGroup, timeLa
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e", seq: 1, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
   copiesUp: 1, copiesDown: 0, removesOnly: false, revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false,
-  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, cartDecks: null, wentTo: null, ...over,
+  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, preconName: null, cartDecks: null, wentTo: null, ...over,
 });
 const row = (before: number | null, after: number | null): HistoryRow => ({
   oracleId: "o", setCode: "lea", collectorNumber: "1", finish: "nonfoil", name: "X",
@@ -65,6 +65,9 @@ describe("entryTitle", () => {
     expect(entryTitle(entry({ kind: "upload_add", uploadFilename: null }), none, reach)).toBe("Untitled change");
   });
   it("titles a hand change by its first card and how many more", () => {
+    expect(entryTitle(entry({ rowCount: 100, source: "precon:Multiverse_Reforged", preconName: "Multiverse Reforged" }), none, reach)).toBe("Added from Multiverse Reforged");
+    // A precon since dropped from the feed has no name to give, so the entry reads as any add does.
+    expect(entryTitle(entry({ rowCount: 100, source: "precon:Gone", preconName: null }), none, reach)).toBe("Sol Ring and 99 more");
     expect(entryTitle(entry({ rowCount: 1 }), none, reach)).toBe("Sol Ring");
     expect(entryTitle(entry({ rowCount: 3 }), none, reach)).toBe("Sol Ring and 2 more");
   });

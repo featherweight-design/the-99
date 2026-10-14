@@ -107,6 +107,7 @@
     "probe:search-clear": "node scripts/probe-search-clear.mjs",
     "probe:set-owned-price": "node scripts/probe-set-owned-price.mjs",
     "probe:precon-notice": "node scripts/probe-precon-notice.mjs",
+    "probe:precon-own": "node scripts/probe-precon-own.mjs",
     "probe:cart-scroll": "node scripts/probe-cart-scroll.mjs",
     "probe:sets": "node scripts/probe-sets.mjs",
     "probe:folders": "tsx scripts/probe-folders.ts",

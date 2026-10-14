@@ -68,6 +68,7 @@ export function entryTitle(
     if (undone) return c.undid(entryTitle(undone, byId, reachesBack));
     return entry.revertsVisible ? c.undidOlder : c.undidAged(dayLabel(reachesBack));
   }
+  if (entry.kind === "add" && entry.preconName) return c.addedFromPrecon(entry.preconName);
   if (!entry.firstName) return c.untitled;
   return entry.rowCount > 1 ? c.andMore(entry.firstName, entry.rowCount - 1) : entry.firstName;
 }

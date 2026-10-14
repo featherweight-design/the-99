@@ -112,7 +112,7 @@ export const preconsCopy = {
     basicTag: "basic · not counted",
   },
   start: {
-    button: "Start a deck from this",
+    button: "Start with this precon",
     dock: (name: string, cards: number, owned: number, of: number) =>
       `${name} · ${n(cards)} cards · you own ${n(owned)} of ${n(of)}`,
     title: (name: string) => `Start a deck from ${name}`,
@@ -132,6 +132,16 @@ export const preconsCopy = {
       ownValue: (owned: number, of: number) => `${n(owned)} of ${n(of)} · basic lands not counted`,
       printings: "Printings",
       printingsValue: "picked from the copies you hold",
+      /** The box ticked: the deck picks from the copies this start adds. */
+      printingsValueAdding: "the box’s own, from the copies you add",
+    },
+    /** "I own this precon" (copy-reviewed 2026-10-13): the opt-in to add the precon's cards and tokens first. */
+    owned: {
+      label: "I own this precon. Add its cards and tokens to my collection.",
+      addedOn: (date: string) => `You added this precon on ${date}`,
+      addFailed: "Couldn’t add the cards. Nothing was saved.",
+      /** The cards went in and the deck did not start: never `failed`, whose "Nothing was saved" would be false. */
+      addedNotStarted: "The cards are in your collection, but we couldn’t start the deck.",
     },
     illegal: (names: string[]) =>
       `${names.length === 1 ? "1 card isn’t" : `${n(names.length)} cards aren’t`} legal in Commander: ${names.join(", ")}. ${names.length === 1 ? "It stays" : "They stay"} in, so the deck matches the box.`,
@@ -149,6 +159,12 @@ export const preconsCopy = {
     bodyAll: (cards: number, unmapped: number) =>
       `${cardsIn(cards, unmapped)} You own every one. It’s a draft until you commit it.`,
     meta: (set: string) => `${set} · printings picked from the copies you hold`,
+    /** The receipt of a start that also added the precon to the collection: the add's own title and body come from the Add cards sheet. */
+    receipt: {
+      foil: (foil: number) => `${n(foil)} of them foil`,
+      tokens: (marked: number) => `${n(marked)} ${marked === 1 ? "token" : "tokens"} marked owned`,
+      dismissAria: "Dismiss the receipt",
+    },
   },
   // R3 addendum: the built-from link (`precons-link · copy strings.ts`, placeholders until
   // /copy-review). No verdict word on any share; selection says select / unselect. Every card count

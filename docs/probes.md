@@ -22,6 +22,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   it writes a fixture deck and a fixture precon with the same list (`probe-precon-notice.json`) under the account it
   signs in as and deletes both in a `finally`; it refuses staging and production by `neon.branch_id`. Needs
   `PRECONS_ENABLED=true` on the server, started fresh for the run (the precon catalog is memoized per server for ten minutes). Putting `Link it` back on its own row fails it at both widths.
+- `pnpm probe:precon-own` walks "I own this precon" at 390 and 1300 (precon ownership UI, PR B; Hugh specified it): the Start
+  dialog's box is unticked by default and ticking swaps the Printings fact; starting adds first and lands on the deck with the
+  receipt in the arrival band (copies added, History link, Undo, ✕ in the band's corner, text stopping before it, no horizontal
+  overflow) and `?added=` already stripped while `from=precon` stays; a reload shows no receipt; History titles the entry
+  "Added from Probe Own". Phone presses Undo and Revert (the receipt goes and the copies are gone); desktop presses ✕. It writes a
+  fixture precon of 31 cards the account does not own (`ProbePreconOwn`), and removes it, the decks it started and the
+  collection rows the adds made in a `finally`; it refuses staging and production by `neon.branch_id`. Needs `PRECONS_ENABLED=true`
+  and `COLLECTION_EDIT_ENABLED=true`, on a server started fresh for the run (the precon catalog is memoized per server for ten minutes).
 - `pnpm probe:cart-scroll` walks Shopping for all decks (`/decks/shopping`) at 390 and 1300 (bug batch D item 3,
   Hugh 2026-10-13). Phone: the document scrolls, the list is not its own scroll box, the switch and heading stay pinned
   at `top: 0` after a 700px scroll, and at least five cards show under them (about two and a half did in the old box).

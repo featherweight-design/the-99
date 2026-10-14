@@ -7,6 +7,7 @@ import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
+import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
 import { readDeckOrigin } from "../../../lib/precons/origin-read";
@@ -27,6 +28,7 @@ import { readStoredPermits } from "../../../lib/profile/stored";
 import {
   arrivedFromImport,
   IMPORTED_PARAM,
+  PRECON_ADDED_PARAM,
   PRECON_ARRIVAL_PARAM,
   arrivedFromPrecon,
   PRINTINGS_PARAM,
@@ -273,6 +275,12 @@ export default async function DeckBuilderPage({
   // scoped in its own SQL, so it starts here with the rest and is awaited only where it is drawn.
   const preconArrivalRead = preconsEnabled(env) && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM])
     ? early(perf.timed("preconArrival", () => readPreconArrival(userId, id)))
+    : null;
+  // The receipt of the add that began this start (`?added=<entry>`, beside `from=precon`). The id is a claim off the
+  // URL: the read answers only for the reader's own unreverted precon entry, and draws nothing otherwise.
+  const preconAddedParam = query[PRECON_ADDED_PARAM];
+  const preconAddReceiptRead = preconsEnabled(env) && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]) && typeof preconAddedParam === "string"
+    ? early(perf.timed("preconAddReceipt", () => readPreconAddReceipt(userId, preconAddedParam)).catch(() => null))
     : null;
   // The precon link's doors (R3): an unlinked deck's suggestion and the Versions foot row's picker,
   // counted at read and never stored (lock 2). Owner-scoped in its own SQL. A failed read draws
@@ -630,6 +638,7 @@ export default async function DeckBuilderPage({
       // `?from=precon`: the one navigation "Start a deck from this" made. Left in the URL for the
       // same reason as `imported`; the strip's dismissal is the same per-deck flag.
       preconArrival={preconArrivalRead ? await preconArrivalRead : null}
+      preconAddReceipt={preconAddReceiptRead ? await preconAddReceiptRead : null}
       // A linked deck gets neither door: no suggestion (lock 2). Its link is drawn in Versions as v0
       // (precons PR 6b), and on the open precon with Unlink (PR 6a-2).
       preconLink={preconLinkRead

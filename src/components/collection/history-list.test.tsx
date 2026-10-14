@@ -22,7 +22,7 @@ const NOW = Date.parse("2026-10-09T20:00:00Z");
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e1", seq: 5, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
   copiesUp: 2, copiesDown: 0, removesOnly: false, revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false,
-  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, cartDecks: null, wentTo: null, ...over,
+  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, preconName: null, cartDecks: null, wentTo: null, ...over,
 });
 const row = (name: string, before: number | null, after: number | null): HistoryRow => ({
   oracleId: name, setCode: "lea", collectorNumber: "1", finish: "nonfoil", name,

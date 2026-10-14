@@ -79,6 +79,21 @@ describe("createDeckFromPrecon", () => {
     expect(state.orders).toEqual([preconCards.position]);
   });
 
+  it("carries the add's entry on the redirect, and only when it is a uuid", async () => {
+    const rows = () => [
+      [{ fileName: "EldraziUnbound_CMM", twinOf: null }],
+      [{ oracleId: "zhulodok", quantity: 1, isCommander: true }, { oracleId: "sol-ring", quantity: 1, isCommander: false }],
+      [lead("zhulodok", "Zhulodok, Void Gorger")],
+    ];
+    const id = "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11";
+    state.selects = rows();
+    await expect(createDeckFromPrecon("EldraziUnbound_CMM", "A", id)).rejects.toThrow(`REDIRECT:/decks/deck-1?from=precon&added=${id}`);
+    for (const bad of ["not-a-uuid", "", "&from=x", `${id}&x=1`]) {
+      state.selects = rows();
+      await expect(createDeckFromPrecon("EldraziUnbound_CMM", "A", bad)).rejects.toThrow(/^REDIRECT:\/decks\/deck-1\?from=precon$/);
+    }
+  });
+
   it("starts a twin's plain edition", async () => {
     state.selects = [[{ fileName: "X_CE", twinOf: "X" }], [{ oracleId: "c", quantity: 1, isCommander: true }], [lead("c", "C")]];
     await expect(createDeckFromPrecon("X_CE", "X")).rejects.toThrow(/REDIRECT/);

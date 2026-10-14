@@ -7,16 +7,19 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { startTransition, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { createDeckFromPrecon } from "../../../app/decks/precon-actions";
+import { addPreconToCollection, createDeckFromPrecon } from "../../../app/decks/precon-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
-import { preconsCopy } from "../../../lib/copy/precons";
+import { preconDate, preconsCopy } from "../../../lib/copy/precons";
 import { DECK_NAME_MAX, hasControlChars } from "../../../lib/decks/deck-name";
 import type { PreconRow } from "../../../lib/precons/list";
+import type { PreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { PrimaryButton } from "../../ui/button";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { TextField } from "../../ui/text-field";
+import { PreconAddedReceipt } from "./precon-added-receipt";
 
 const copy = preconsCopy.start;
+
 
 export type StartPreconProps = {
   row: PreconRow;
@@ -30,6 +33,8 @@ export type StartPreconProps = {
   dockSummary?: string;
   /** Docked beside Start at 390, Start the wider (R3 K7's `Link a deck`). */
   dockBeside?: ReactNode;
+  /** When the reader last added this precon to their collection (an unreverted entry), as ISO; null if never. */
+  addedOn?: string | null;
 };
 
 export function StartPrecon(props: StartPreconProps) {
@@ -58,13 +63,19 @@ export function StartPrecon(props: StartPreconProps) {
   );
 }
 
-function StartPreconDialog({ row, cards, body, illegal, onDismiss }: StartPreconProps & { onDismiss: () => void }) {
+function StartPreconDialog({ row, cards, body, illegal, addedOn = null, onDismiss }: StartPreconProps & { onDismiss: () => void }) {
   const dialog = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(row.name.slice(0, DECK_NAME_MAX));
   const [pending, setPending] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<"start" | "add" | false>(false);
+  // "I own this precon": off unless the reader ticks it, and left off when they have added it before.
+  const [own, setOwn] = useState(false);
+  // One id per press-and-retry, so a retry after a dropped response cannot add the cards twice.
+  const addId = useRef<string | null>(null);
+  // The add went in but the deck did not start: the dialog becomes the receipt (History holds the record).
+  const [receipt, setReceipt] = useState<PreconAddReceipt | null>(null);
   const errorId = useId();
   const titleId = useId();
 
@@ -89,16 +100,29 @@ function StartPreconDialog({ row, cards, body, illegal, onDismiss }: StartPrecon
     setFailed(false);
     // In a transition, as the picker's create is, so the router takes the redirect it rethrows.
     startTransition(async () => {
+      let added: PreconAddReceipt | null = null;
+      let creating = false;
       try {
+        if (own) {
+          // The add goes first, so the draft picks the copies it just added (Hugh, 2026-10-13).
+          addId.current ??= crypto.randomUUID();
+          const res = await addPreconToCollection(row.fileName, addId.current);
+          if (!res.ok) throw new Error("the precon add was refused");
+          added = {
+            entryId: res.entryId, name: row.name, cards: res.cards, copies: res.copies, foil: res.foil, tokens: res.tokens,
+          };
+        }
         // Redirects to the new deck on success; a refusal or an outage throws.
-        await createDeckFromPrecon(row.fileName, trimmed);
+        creating = true;
+        await createDeckFromPrecon(row.fileName, trimmed, added?.entryId);
       } catch (err) {
         // The redirect itself arrives here as a throw, before the router navigates: rethrown, or
         // every successful start would paint the failure for the frame the navigation takes.
         unstable_rethrow(err);
-        setFailed(true);
         inFlight.current = false;
         setPending(false);
+        if (added) setReceipt(added);
+        else setFailed(own && !creating ? "add" : "start");
       }
     });
   }
@@ -109,6 +133,26 @@ function StartPreconDialog({ row, cards, body, illegal, onDismiss }: StartPrecon
       <span className="text-right font-mono text-[11px] text-[color:var(--fg-body)]">{v}</span>
     </div>
   );
+
+  // The cards went into the collection and the deck did not start: the dialog becomes the receipt, and the
+  // reader can press Start again (History and the "you added this" note then keep the add from repeating).
+  if (receipt) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:px-[16px]">
+        <div aria-hidden="true" onClick={onDismiss} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
+        <div
+          ref={dialog}
+          role="dialog"
+          aria-modal="true"
+          aria-label={copy.title(row.name)}
+          tabIndex={-1}
+          className="relative z-10 mx-auto flex w-full flex-col overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] md:max-w-[500px] md:rounded-[14px]"
+        >
+          <PreconAddedReceipt receipt={receipt} note={copy.owned.addedNotStarted} onClose={onDismiss} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:px-[16px]">
@@ -159,18 +203,32 @@ function StartPreconDialog({ row, cards, body, illegal, onDismiss }: StartPrecon
             />
           </label>
 
+          <div className="flex flex-col gap-[4px]">
+            <label className="flex cursor-pointer items-start gap-[10px] text-[13px] leading-[1.45] text-[color:var(--fg-body)]">
+              <input
+                type="checkbox"
+                checked={own}
+                disabled={pending}
+                onChange={(e) => { setOwn(e.target.checked); setFailed(false); }}
+                className="mt-[2px] h-[18px] w-[18px] flex-none cursor-pointer accent-[color:var(--accent)]"
+              />
+              <span>{copy.owned.label}</span>
+            </label>
+            {addedOn && <p className="m-0 pl-[28px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.owned.addedOn(preconDate(addedOn))}</p>}
+          </div>
+
           {already && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.already(already.deckName)}</p>}
           {illegal.length > 0 && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.illegal(illegal)}</p>}
 
           <div className="flex flex-col">
             {fact(copy.facts.cards, copy.facts.cardsValue(cards, row.unmapped))}
             {fact(copy.facts.own, copy.facts.ownValue(row.owned, row.of))}
-            {fact(copy.facts.printings, copy.facts.printingsValue)}
+            {fact(copy.facts.printings, own ? copy.facts.printingsValueAdding : copy.facts.printingsValue)}
           </div>
 
           {(failed || !valid) && (
             <p id={errorId} role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
-              {failed ? copy.failed : copy.nameInvalid(DECK_NAME_MAX)}
+              {failed === "add" ? copy.owned.addFailed : failed ? copy.failed : copy.nameInvalid(DECK_NAME_MAX)}
             </p>
           )}
 

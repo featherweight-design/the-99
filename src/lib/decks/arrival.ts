@@ -103,6 +103,13 @@ export function readArrivalPrintings(
 export const PRECON_ARRIVAL_PARAM = "from";
 export const PRECON_ARRIVAL_VALUE = "precon";
 
+/**
+ * `?added=<entry id>` rides beside `from=precon` when the start also added the precon's cards to the collection.
+ * It is a claim, never a fact: the receipt is read by `readPreconAddReceipt`, which answers only for the
+ * reader's own unreverted `precon:` entry, and the page strips the param once it has been read.
+ */
+export const PRECON_ADDED_PARAM = "added";
+
 export function arrivedFromPrecon(value: string | string[] | undefined): boolean {
   return value === PRECON_ARRIVAL_VALUE;
 }
