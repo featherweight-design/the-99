@@ -98,7 +98,7 @@ describe("the chips and the search", () => {
   it("puts features A to Z by name, then plumbing", () => {
     const { features, plumbing } = sections([...r.values()], (x) => x.name);
     expect(features.every((x) => x.kind !== "plumbing")).toBe(true);
-    expect(plumbing.map((x) => x.name)).toEqual(["ABOUT_SHEET_ENABLED", "HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "RATE_LIMIT_ENABLED"]);
+    expect(plumbing.map((x) => x.name)).toEqual(["ABOUT_SHEET_ENABLED", "HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "NAV_STALL_LOG_ENABLED", "RATE_LIMIT_ENABLED"]);
     expect(features.map((x) => x.name)).toEqual([...features.map((x) => x.name)].sort());
   });
 });

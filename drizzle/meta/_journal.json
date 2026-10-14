@@ -841,6 +841,13 @@
       "when": 1791990735073,
       "tag": "0119_precon_add_entry",
       "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1791993318897,
+      "tag": "0120_nav_stall_switch",
+      "breakpoints": true
     }
   ]
 }

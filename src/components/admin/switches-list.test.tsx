@@ -35,7 +35,7 @@ describe("SwitchesList", () => {
     expect(plumbing).toHaveAttribute("data-testid", "switches-plumbing-head");
     expect(plumbing.textContent).toContain("app-wide only");
     const plumbingNames = [...plumbing.parentElement!.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"));
-    expect(plumbingNames).toEqual(["ABOUT_SHEET_ENABLED", "HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "RATE_LIMIT_ENABLED"]);
+    expect(plumbingNames).toEqual(["ABOUT_SHEET_ENABLED", "HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "RATE_LIMIT_ENABLED", "NAV_STALL_LOG_ENABLED"]);
     expect(screen.getByText("Resolved counts the 2 accounts on staging. Signed out gets the app-wide result.")).toBeInTheDocument();
   });
 
@@ -48,7 +48,7 @@ describe("SwitchesList", () => {
 
   it("counts each chip and filters by it, keeping the heads' counts (L2)", () => {
     draw({ DECK_NOTES_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(chip(/^All/).textContent).toBe("All32");
+    expect(chip(/^All/).textContent).toBe("All33");
     expect(chip(/^All/)).toHaveAttribute("aria-pressed", "true");
     expect(chip(/^Model features/).textContent).toBe("Model features7");
     expect(chip(/^Overridden/).textContent).toBe("Overridden1");

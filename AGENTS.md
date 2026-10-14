@@ -827,6 +827,27 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   reads the table (`game-opponents.test.ts` pins who may). `summarizeMatchups` splits a deck's games by commander,
   color identity and friend as `GameSummary` cells: counts with denominators, no rate.
 
+- **Stuck-loader reports** (`NAV_STALL_LOG_ENABLED`, a plumbing switch; `'true'` on staging, off on production
+  until Hugh turns it on). A loading screen still up 8 seconds (`STALL_AFTER_MS`) sends ONE report per navigation to
+  `POST /api/nav-stall` (signed in, the switch re-checked for the reader, a 2KB cap, always 204), which logs one
+  line. `src/lib/nav-stall/report.ts` checks every field: paths arrive as PATTERNS (every segment the app does not
+  name is `[x]`, the query is dropped), everything else is a closed enum, a boolean or a bounded integer, and the line
+  carries no reader id and no deployment id. Two watchers send it: the navigation provider, for a press still
+  pending (`kind=pending`), and `StallWatch` inside every in-page `LoadingScreen`, for a page that committed into its
+  fallback (`kind=fallback`). Find them with `vercel logs -p the-99 -q "nav-stall"`, and read a line by field:
+
+  - `moved=true` means the address bar already shows the target: the router committed and the PAGE is what never
+    arrived. `moved=false`: the press itself never committed.
+  - `rsc=none`: no RSC response for the target finished arriving since the press, so the request never reached the
+    browser whole (network, server or proxy). `rsc=done` with `rscStatus`, `rscMs` and `rscBytes`: it arrived, and
+    the hang is in the browser.
+  - `loader` is what was drawn: the pending `overlay`, the page's own `fallback`, `both`, or `none` (a report from a
+    screen that left in the same instant).
+  - `wasHidden=true` means the tab was backgrounded during the wait, and a frozen tab is not a hang: discount it.
+  - `skew=other` means the page was loaded from a different deployment than the one that answered: it outlived a
+    deploy. `worker`, `online` and `conn` say whether the service worker controlled the page and what the connection
+    was.
+
 - **Security headers and request counting** (payments scope PR S, `boards/scope-payments-2026-10-13.md` §5.8).
   `next.config.ts` sends, on every path, `Strict-Transport-Security` (one year, no `includeSubDomains`, no
   `preload`), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` and a `Permissions-Policy` that leaves the
