@@ -1,6 +1,6 @@
 // /decks/precons/[fileName] (handoff `design_handoff_the99_precons`, R2): one precon as a
 // read-only decklist with how many of its cards the reader owns. A Collector's Edition twin's URL
-// redirects to its plain edition (design call 4). Behind `PRECONS_ENABLED`.
+// redirects to its plain edition (design call 4), with the Collector's Edition chosen. Behind `PRECONS_ENABLED`.
 
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -12,6 +12,7 @@ import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { loadOpenPrecon } from "../../../../lib/precons/open-read";
 import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
 import { OpenPreconView } from "../../../../components/decks/precons/open-precon-view";
+import { parseEdition } from "../../../../lib/precons/edition";
 
 export const metadata: Metadata = { title: preconsCopy.list.title };
 
@@ -27,14 +28,16 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
   if (!preconsEnabled(env)) notFound();
   // Next hands the segment over decoded; decoding it again would throw on a `%`.
   const { fileName: name } = await params;
-  const from = (await searchParams).from;
+  const { from, edition } = await searchParams;
   const precon = await cachePageForUser(userId, "precon", [name], async () => ({
     value: await loadOpenPrecon(userId, name),
     store: true,
   }), env);
   if (!precon) notFound();
   if (precon.kind === "twin") {
-    redirect(`/decks/precons/${encodeURIComponent(precon.plainFileName)}${from === "new" ? "?from=new" : ""}`);
+    // The twin's own URL lands on its plain edition with the Collector's Edition chosen.
+    const qs = new URLSearchParams({ ...(from === "new" ? { from: "new" } : {}), edition: "collector" }).toString();
+    redirect(`/decks/precons/${encodeURIComponent(precon.plainFileName)}?${qs}`);
   }
-  return <OpenPreconView precon={precon} fromNew={from === "new"} canOwn={collectionEditEnabled(env)} />;
+  return <OpenPreconView precon={precon} fromNew={from === "new"} canOwn={collectionEditEnabled(env)} edition={parseEdition(edition)} />;
 }

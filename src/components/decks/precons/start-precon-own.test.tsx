@@ -212,4 +212,26 @@ describe("Start dialog: I own this precon", () => {
     await waitFor(() => expect(add).toHaveBeenCalledTimes(2));
     expect(add.mock.calls[1][1]).not.toBe(aId);
   });
+
+  it("adds the chosen edition's own box, and keeps each edition's added note to itself", async () => {
+    add.mockResolvedValue(added);
+    create.mockRejectedValueOnce(new Error("boom"));
+    const view = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn={null} canOwn addFileName="MultiverseCE_FRC" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(screen.getByText("100 copies added")).toBeInTheDocument());
+    expect(add.mock.calls[0][0]).toBe("MultiverseCE_FRC");
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss the receipt" }));
+    // The reader switches to Regular: its box was never added, so the note is absent and a tick is a new add.
+    view.rerender(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn={null} canOwn addFileName={row.fileName} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    expect(screen.queryByText(/You added this precon on /)).toBeNull();
+    fireEvent.click(own());
+    create.mockResolvedValueOnce(undefined);
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(2));
+    expect(add.mock.calls[1][0]).toBe(row.fileName);
+    expect(add.mock.calls[1][1]).not.toBe(add.mock.calls[0][1]);
+  });
 });

@@ -37,6 +37,11 @@ export type StartPreconProps = {
   addedOn?: string | null;
   /** Collection editing is on: the dialog offers "I own this precon" (the action refuses without it). */
   canOwn?: boolean;
+  /**
+   * The edition the add writes, by file: the precon's own (the default), or its Collector's Edition twin when the page's
+   * edition switch chose it. `addedOn` must be that edition's own, since each edition's box is its own entry.
+   */
+  addFileName?: string;
 };
 
 /**
@@ -62,8 +67,14 @@ export function StartPrecon(props: StartPreconProps) {
   const { row, cards, dockSummary, dockBeside } = props;
   // Kept here, past the dialog: if the cards were added and the deck did not start, the dialog closes onto the receipt, and
   // a reopened one must not add the box twice. The id makes a ticked retry the same write; the date draws "you added this".
-  const add = useRef<{ id: string | null; at: string | null }>({ id: null, at: null });
-  const [addedAt, setAddedAt] = useState<string | null>(null);
+  // Per edition: each edition's box is its own entry, so an add of one never reads as the other's.
+  const addFile = props.addFileName ?? row.fileName;
+  // A plain map held in state (never replaced): the dialog writes an add's id into its edition's slot.
+  const [adds] = useState(() => new Map<string, { id: string | null; at: string | null }>());
+  let slot = adds.get(addFile);
+  if (!slot) { slot = { id: null, at: null }; adds.set(addFile, slot); }
+  const add = { current: slot };
+  const [addedAtBy, setAddedAtBy] = useState<Record<string, string | null>>({});
   return (
     <>
       <PrimaryButton
@@ -85,10 +96,11 @@ export function StartPrecon(props: StartPreconProps) {
       {open && (
         <StartPreconDialog
           {...props}
-          addedOn={addedAt ?? props.addedOn ?? null}
+          addFileName={addFile}
+          addedOn={addedAtBy[addFile] ?? props.addedOn ?? null}
           addRef={add}
-          onAdded={() => setAddedAt(new Date().toISOString())}
-          onAddReverted={() => { add.current = { id: null, at: null }; setAddedAt(null); }}
+          onAdded={() => setAddedAtBy((by) => ({ ...by, [addFile]: new Date().toISOString() }))}
+          onAddReverted={() => { adds.set(addFile, { id: null, at: null }); setAddedAtBy((by) => ({ ...by, [addFile]: null })); }}
           onDismiss={() => setOpen(false)}
         />
       )}
@@ -96,7 +108,7 @@ export function StartPrecon(props: StartPreconProps) {
   );
 }
 
-function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn = false, addRef, onAdded, onAddReverted, onDismiss }: StartPreconProps & {
+function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn = false, addFileName, addRef, onAdded, onAddReverted, onDismiss }: StartPreconProps & {
   addRef: React.RefObject<{ id: string | null; at: string | null }>;
   /** The cards went into the collection (the deck may not have started yet). */
   onAdded: () => void;
@@ -146,11 +158,12 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
       try {
         if (own && canOwn) {
           // The add goes first, so the draft picks the copies it just added (Hugh, 2026-10-13).
-          addRef.current.id ??= readAttempt(account, row.fileName) ?? crypto.randomUUID();
-          writeAttempt(account, row.fileName, addRef.current.id);
+          const addFile = addFileName ?? row.fileName;
+          addRef.current.id ??= readAttempt(account, addFile) ?? crypto.randomUUID();
+          writeAttempt(account, addFile, addRef.current.id);
           let res: Awaited<ReturnType<typeof addPreconToCollection>>;
           try {
-            res = await addPreconToCollection(row.fileName, addRef.current.id);
+            res = await addPreconToCollection(addFile, addRef.current.id);
           } catch (err) {
             // A thrown add is not a refusal: it may have committed with its response lost. The id is kept, so
             // pressing again finds the committed entry rather than adding twice; the line does not claim a rollback.
@@ -161,7 +174,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
             return;
           }
           // An outcome is known (committed, or refused): the stored attempt has done its job.
-          writeAttempt(account, row.fileName, null);
+          writeAttempt(account, addFile, null);
           if (!res.ok) {
             inFlight.current = false;
             setPending(false);

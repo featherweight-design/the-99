@@ -23,6 +23,10 @@ import { DECK_VIEWS, isDeckView } from "../group-toggle";
 import { ReadOnlyCardTile } from "../read-only-card-tile";
 import { useStoredView } from "../../ui/use-stored-view";
 import { ViewToggle } from "../../ui/view-toggle";
+import { useState } from "react";
+import { mirrorUrl } from "../../../lib/url/mirror";
+import { EditionSwitch } from "./edition-switch";
+import type { PreconEdition } from "../../../lib/precons/edition";
 
 /** The open precon's view, kept apart from the deck page's (`the99:deck-view`): one is a reading
  *  choice, the other a building one. List is the default and what the server draws, so no cookie. */
@@ -64,7 +68,7 @@ export function byCard(cards: OpenPreconCard[]): ByCard[] {
   const merged = new Map<string, ByCard>();
   for (const c of cards) {
     const seen = merged.get(c.oracleId);
-    merged.set(c.oracleId, seen ? { ...seen, quantity: seen.quantity + c.quantity, arts: seen.arts + 1 } : { ...c, arts: 1 });
+    merged.set(c.oracleId, seen ? { ...seen, quantity: seen.quantity + c.quantity, foil: seen.foil + c.foil, arts: seen.arts + 1 } : { ...c, arts: 1 });
   }
   return [...merged.values()];
 }
@@ -84,13 +88,36 @@ function commanderNote(cards: OpenPreconCard[]) {
   return copy.group.own(owned, cards.length);
 }
 
-export function OpenPreconView({ precon, fromNew, canOwn = false }: { precon: Loaded; fromNew: boolean; /** Collection editing is on for this reader: the Start dialog offers "I own this precon". */ canOwn?: boolean }) {
+export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initialEdition = "regular" }: {
+  precon: Loaded;
+  fromNew: boolean;
+  /** Collection editing is on for this reader: the Start dialog offers "I own this precon". */
+  canOwn?: boolean;
+  /** The edition the URL named (`?edition=collector`); Regular when the precon has no Collector's Edition. */
+  edition?: PreconEdition;
+}) {
   const { row } = precon;
   const [storedView, storeView] = useStoredView(PRECON_OPEN_VIEW_KEY, isDeckView);
   const view = storedView ?? "list";
   const card = view === "card";
-  const cards = byCard(precon.cards);
+  const [chosen, setChosen] = useState<PreconEdition>(initialEdition);
+  const edition: PreconEdition = precon.collector ? chosen : "regular";
+  const pickEdition = (next: PreconEdition) => {
+    // Only `edition` is this page's to write; Regular, the default, is its absence.
+    const live = new URLSearchParams(window.location.search);
+    live.delete("edition");
+    if (next === "collector") live.set("edition", "collector");
+    const qs = live.toString();
+    mirrorUrl(qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
+    setChosen(next);
+  };
+  // The Collector's Edition is the same list in its own printings and finish: only the art, the
+  // SET number and the foil move, and the counts, ownership and groups stay as they are.
+  const cards = byCard(edition === "collector" && precon.collector ? precon.collector.cards : precon.cards);
   const commanders = cards.filter((c) => c.isCommander);
+  // The head's thumbs follow the edition too: a commander's art is its chosen edition's printing.
+  const editionArt = new Map(commanders.map((c) => [c.oracleId, c.imageUri]));
+  const headCommanders = row.commanders.map((c) => ({ ...c, imageUri: editionArt.get(c.oracleId) ?? c.imageUri }));
   const body = cards.filter((c) => !c.isCommander);
   const basics = body.filter((c) => c.basic);
   const listed = body.filter((c) => !c.basic);
@@ -136,7 +163,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false }: { precon: Lo
           </Link>
           <div className="flex items-start gap-[12px]">
             <div className="flex flex-none gap-[6px]">
-              {row.commanders.map((c) => (
+              {headCommanders.map((c) => (
                 <span key={c.oracleId}>
                   <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size="open" className="md:hidden" />
                   <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size="openWide" className="hidden md:block" />
@@ -165,11 +192,21 @@ export function OpenPreconView({ precon, fromNew, canOwn = false }: { precon: Lo
               illegal={[...new Set(cards.filter((c) => !c.legal && !c.isCommander).map((c) => c.name))]}
               dockSummary={linked[0] ? copy.link.linked.dock(row.name, linked[0].deckName) : undefined}
               dockBeside={linkDeck("h-[48px] min-w-0 flex-1 rounded-[10px] px-[12px] text-[13px]")}
-              addedOn={precon.addedOn}
+              // The chosen edition's own box and its own added date (a Collector's Edition add is its own entry).
+              addedOn={edition === "collector" && precon.collector ? precon.collector.addedOn : precon.addedOn}
+              addFileName={edition === "collector" && precon.collector ? precon.collector.fileName : row.fileName}
               canOwn={canOwn}
             />
           </div>
 
+          {precon.collector && (
+            <div className="flex flex-wrap items-center gap-x-[12px] gap-y-[6px]">
+              <EditionSwitch edition={edition} onEdition={pickEdition} />
+              {edition === "collector" && (
+                <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.open.edition.collectorNote}</p>
+              )}
+            </div>
+          )}
           {!precon.hasCollection && <EmptyCollectionBand />}
           <section aria-label={`${copy.open.ownLead} ${copy.open.own(row.owned, row.of)} ${copy.open.ownTail}`} className="flex flex-col gap-[8px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[11px_13px] md:p-[12px_16px]">
             <p className="m-0 flex flex-wrap items-baseline gap-x-[6px] text-[14px] text-[color:var(--fg-body)]">
@@ -193,7 +230,8 @@ export function OpenPreconView({ precon, fromNew, canOwn = false }: { precon: Lo
                 {b.sameCommanders ? copy.open.builtSame(b.deckName, b.shared, row.commanders.length === 2) : copy.open.builtAny(b.deckName, b.shared)}
               </p>
             ))}
-            {row.twinName && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.twin(row.twinName)}</p>}
+            {/* The edition switch already names the twin; the line stays only where no switch is drawn. */}
+            {row.twinName && !precon.collector && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.twin(row.twinName)}</p>}
             {row.unmapped > 0 && (
               <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.unmapped(row.unmapped, total)}</p>
             )}
