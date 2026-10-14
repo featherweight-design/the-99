@@ -110,8 +110,9 @@ export async function deckMakesTokenIn(tx: Pick<typeof db, "execute">, deckId: s
 
 /**
  * The printing of a token a picker's set and number names, among the printings the player HOLDS: a set and
- * number is not unique (sibling variants share one), and the picker offered only held printings. Most copies
- * first, then by id, the order the picker lists them in. Null when no held printing of the token matches.
+ * number is not unique (sibling variants share one), and the picker offered only held printings. The one with
+ * art first, then most copies, then by id: the printing the details sheet's tile stands for
+ * (`assembleTokenDetail`). Null when no held printing of the token matches.
  */
 export async function heldPrintingByNumber(
   tx: Reader,
@@ -130,8 +131,8 @@ export async function heldPrintingByNumber(
       eq(sql`lower(${tokenPrintings.setCode})`, setCode.toLowerCase()),
       eq(tokenPrintings.collectorNumber, collectorNumber),
     ))
-    .groupBy(tokenPrintings.scryfallId)
-    .orderBy(sql`sum(${tokenPrintingHoldings.quantity}) desc`, tokenPrintings.scryfallId)
+    .groupBy(tokenPrintings.scryfallId, tokenPrintings.imageUri)
+    .orderBy(sql`(${tokenPrintings.imageUri} is null)`, sql`sum(${tokenPrintingHoldings.quantity}) desc`, tokenPrintings.scryfallId)
     .limit(1);
   return p?.id ?? null;
 }

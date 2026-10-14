@@ -109,8 +109,8 @@ export function assembleTokenDetail(
 ): BrowseCard {
   const byId = new Map(printings.map((p) => [p.scryfallId, p]));
   // One row per set and number, the key the picker's tiles carry: sibling variants sharing one would otherwise
-  // draw two tiles under one key. The most-held of them stands for the pair (`heldPrintingByNumber` writes that
-  // same printing), with the pair's copies summed.
+  // draw two tiles under one key. The most-held of them WITH ART stands for the pair, else the most-held
+  // (`heldPrintingByNumber` writes that same printing), with the pair's copies summed.
   const heldRows: { p: TokenDetailPrinting; quantity: number }[] = [];
   const byPair = new Map<string, { p: TokenDetailPrinting; quantity: number }>();
   for (const h of orderHeld(held)) {
@@ -118,7 +118,11 @@ export function assembleTokenDetail(
     if (!p) continue;
     const pair = `${p.setCode.toLowerCase()}|${p.collectorNumber}`;
     const at = byPair.get(pair);
-    if (at) { at.quantity += h.quantity; continue; }
+    if (at) {
+      at.quantity += h.quantity;
+      if (at.p.imageUri === null && p.imageUri !== null) at.p = p;
+      continue;
+    }
     const row = { p, quantity: h.quantity };
     byPair.set(pair, row);
     heldRows.push(row);

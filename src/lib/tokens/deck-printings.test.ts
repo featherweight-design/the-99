@@ -86,3 +86,15 @@ describe("held sibling variants in the details sheet", () => {
     expect(card.printings.map((x) => [x.scryfallId, x.quantity])).toEqual([["a2", 4], ["b", 2]]);
   });
 });
+
+describe("held sibling variants where only one has art", () => {
+  it("the tile stands for the one with art, so the sheet and the row agree", () => {
+    const token = { oracleId: "t", name: "Soldier", typeLine: "Token Creature — Soldier", colors: ["W"], oracleText: null, layout: "token" };
+    const card = assembleTokenDetail(token, [
+      { scryfallId: "a", setCode: "aaa", collectorNumber: "1", imageUri: null, backImageUri: null },
+      { scryfallId: "a2", setCode: "aaa", collectorNumber: "1", imageUri: "img-a2", backImageUri: null },
+    ], null, null, [{ tokenPrintingId: "a", quantity: 4 }, { tokenPrintingId: "a2", quantity: 1 }]);
+    expect(card.printings.map((x) => [x.scryfallId, x.quantity])).toEqual([["a2", 5]]);
+    expect(card.imageUri).toBe("img-a2");
+  });
+});

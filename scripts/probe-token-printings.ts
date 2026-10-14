@@ -178,6 +178,11 @@ async function run() {
   const named = await heldPrintingByNumber(db, USER, A, "TPRB", "1");
   check("k · a set and number shared by a sibling names the held printing", named ? name(named) : null, "A1");
   check("k · and none of another token's", await heldPrintingByNumber(db, USER, B, "tprb", "1"), null);
+  // Both siblings held, only the less-held one with art: it is the one the sheet's tile stands for.
+  await fixture.execute(sql`update token_printings set image_uri = null where scryfall_id = ${A1}::uuid`);
+  await upload("replace", [{ tokenOracleId: A, quantity: 4, printings: [{ tokenPrintingId: A1, quantity: 3 }, { tokenPrintingId: A4, quantity: 1 }] }]);
+  const art = await heldPrintingByNumber(db, USER, A, "tprb", "1");
+  check("k · of two held siblings, the one with art", art ? name(art) : null, "A4");
 
   // g · The purge.
   await purgeAccount(USER);
