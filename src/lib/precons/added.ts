@@ -41,7 +41,7 @@ export function standingIds(links: readonly LedgerLink[]): Set<string> {
 
 export type StandingPreconAdd = { id: string; fileName: string; createdAt: Date };
 
-type Holding = { tokenOracleId: string; quantity: number };
+type Holding = { tokenOracleId: string; quantity: number; printings?: { tokenPrintingId: string; quantity: number }[] };
 
 /**
  * The player's precon adds whose cards still stand, oldest first, for one precon or every one. With

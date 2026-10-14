@@ -33,6 +33,12 @@ describe("aggregateTokenRows", () => {
       { tokenOracleId: T2, quantity: 1 }, { tokenOracleId: T1, quantity: 2 }, { tokenOracleId: T2, quantity: 4 },
     ])).toEqual([{ tokenOracleId: T1, quantity: 2 }, { tokenOracleId: T2, quantity: 5 }]);
   });
+  it("keeps each printing's count beside the token's sum (token printings TP1)", () => {
+    expect(aggregateTokenRows([
+      { tokenOracleId: T1, tokenPrintingId: "pb", quantity: 1 }, { tokenOracleId: T1, tokenPrintingId: "pa", quantity: 2 },
+      { tokenOracleId: T1, tokenPrintingId: "pb", quantity: 3 }, { tokenOracleId: T1, tokenPrintingId: null, quantity: 1 },
+    ])).toEqual([{ tokenOracleId: T1, quantity: 7, printings: [{ tokenPrintingId: "pa", quantity: 2 }, { tokenPrintingId: "pb", quantity: 4 }] }]);
+  });
   it("drops a row with no usable count rather than recording a token the file did not hold", () => {
     expect(aggregateTokenRows([
       { tokenOracleId: T1, quantity: 0 }, { tokenOracleId: T1, quantity: -1 }, { tokenOracleId: T1, quantity: 1.5 }, { tokenOracleId: T1, quantity: Number.NaN },
@@ -60,11 +66,14 @@ const render = (q: unknown) => dialect.sqlToQuery(q as SQL).sql;
 describe("writeUploadTokens", () => {
   it("Replace takes the joins first (the hand mark's lock order), then removes the upload rows, then writes the holdings and the marker", async () => {
     const { tx, log } = recorder();
-    await writeUploadTokens(tx, "u1", "up1", "replace", [{ tokenOracleId: T1, quantity: 3 }]);
+    await writeUploadTokens(tx, "u1", "up1", "replace", [{ tokenOracleId: T1, quantity: 3, printings: [{ tokenPrintingId: "pa", quantity: 3 }] }]);
     expect(log.map((l) => `${l.op}:${l.table}`)).toEqual([
-      "delete:deck_token_joins", "delete:deck_token_joins", "delete:token_ownership", "upsert:token_ownership", "upsert:token_reads",
+      "delete:deck_token_joins", "delete:deck_token_joins", "delete:token_ownership", "delete:token_printing_holdings",
+      "upsert:token_ownership", "upsert:token_printing_holdings", "upsert:token_reads",
     ]);
-    expect(log[3].rows).toEqual([{ userId: "u1", tokenOracleId: T1, quantity: 3, source: "upload" }]);
+    expect(log[4].rows).toEqual([{ userId: "u1", tokenOracleId: T1, quantity: 3, source: "upload" }]);
+    // The printings beside them, under the upload's own source.
+    expect(log[5].rows).toEqual([{ userId: "u1", tokenPrintingId: "pa", source: "upload", quantity: 3 }]);
   });
 
   it("Replace clears the joins of every token whose upload row it drops, a hand mark's none (it has no upload row)", async () => {
@@ -88,8 +97,8 @@ describe("writeUploadTokens", () => {
   it("writes the read marker even for an upload that held no token", async () => {
     const { tx, log } = recorder();
     await writeUploadTokens(tx, "u1", "up1", "replace", []);
-    expect(log.map((l) => `${l.op}:${l.table}`)).toEqual(["delete:deck_token_joins", "delete:token_ownership", "upsert:token_reads"]);
-    expect(log[2].rows).toEqual([{ userId: "u1", uploadId: "up1" }]);
+    expect(log.map((l) => `${l.op}:${l.table}`)).toEqual(["delete:deck_token_joins", "delete:token_ownership", "delete:token_printing_holdings", "upsert:token_reads"]);
+    expect(log[3].rows).toEqual([{ userId: "u1", uploadId: "up1" }]);
   });
 
   it("Add removes no ownership row and accumulates onto an upload row only", async () => {
