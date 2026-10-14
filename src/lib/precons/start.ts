@@ -10,13 +10,14 @@
  */
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, preconCards, precons, printings } from "../../db/schema";
+import { cards, decks, preconCards, precons, printings } from "../../db/schema";
 import { canPair, partnerAbility } from "../decks/partner";
 import { commitVersion } from "../decks/versions";
 import { writeImportedDeck } from "../decks/write-imported-deck";
 import type { ImportPrintingPick } from "../decks/import-printings";
 import { isCommanderCandidate } from "../recs/score";
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PreconLine = { oracleId: string; quantity: number; isCommander: boolean; setCode: string | null; collectorNumber: string | null };
 
 /** One pin per card, at its first printing in the feed's order: the feed lists a basic once per art. */
@@ -29,12 +30,23 @@ export function preconPins(lines: readonly PreconLine[]): ImportPrintingPick[] {
   return [...pins.values()];
 }
 
+/** A precon's deck, read and checked, ready to write: everything but the reader's name for it. */
+export type PreparedPreconDeck = {
+  commanderOracleId: string;
+  partnerOracleId: string | null;
+  /** The list, the commanders taken out, one row per card. */
+  cards: { oracleId: string; quantity: number }[];
+  printings: ImportPrintingPick[];
+  /** The plain edition, which the deck records as the precon it was built from. */
+  builtFromPrecon: string;
+};
+
 /**
- * Writes and commits the deck `fileName` starts, for `userId`, and returns its id. `fileName` is the
- * edition the reader chose: a Collector's Edition twin starts its own printings, and the deck records the
- * plain edition as the precon it was built from (the two are one list, design call 4).
+ * Reads and checks the deck `fileName` starts. `fileName` is the edition the reader chose: a Collector's
+ * Edition twin starts its own printings, and the deck records the plain edition as the precon it was built
+ * from (the two are one list, design call 4).
  */
-export async function startPreconDeck(userId: string, fileName: string, name: string, env: NodeJS.ProcessEnv): Promise<string> {
+export async function preparePreconDeck(fileName: string): Promise<PreparedPreconDeck> {
   const [head] = await db.select({ fileName: precons.fileName, twinOf: precons.twinOf }).from(precons).where(eq(precons.fileName, fileName));
   if (!head) throw new Error("precon not found");
 
@@ -74,19 +86,44 @@ export async function startPreconDeck(userId: string, fileName: string, name: st
     if (l.isCommander) continue;
     body.set(l.oracleId, (body.get(l.oracleId) ?? 0) + l.quantity);
   }
+  return {
+    commanderOracleId: a.oracleId,
+    partnerOracleId: b?.oracleId ?? null,
+    cards: [...body].map(([oracleId, quantity]) => ({ oracleId, quantity })),
+    printings: preconPins(lines),
+    builtFromPrecon: head.twinOf ?? head.fileName,
+  };
+}
 
-  return db.transaction(async (tx) => {
-    const deckId = await writeImportedDeck(tx, {
-      userId,
-      name,
-      commanderOracleId: a.oracleId,
-      partnerOracleId: b?.oracleId ?? null,
-      cards: [...body].map(([oracleId, quantity]) => ({ oracleId, quantity })),
-      printings: preconPins(lines),
-      builtFromPrecon: head.twinOf ?? head.fileName,
-    });
-    // v1, in the deck's own transaction: no snapshot (the deck has declared no bracket to carry).
-    await commitVersion(deckId, null, tx, undefined, env);
-    return deckId;
+/**
+ * Writes the prepared deck inside `tx` and commits it as v1 there: no snapshot (the deck has declared no
+ * bracket to carry). `addEntryId` links the deck to the collection add a start with "I own this precon"
+ * made in the same transaction (`startPreconOwned`). Returns the deck's id.
+ */
+export async function writePreconDeckIn(
+  tx: Tx,
+  userId: string,
+  name: string,
+  deck: PreparedPreconDeck,
+  env: NodeJS.ProcessEnv,
+  addEntryId?: string,
+): Promise<string> {
+  const deckId = await writeImportedDeck(tx, {
+    userId,
+    name,
+    commanderOracleId: deck.commanderOracleId,
+    partnerOracleId: deck.partnerOracleId,
+    cards: deck.cards,
+    printings: deck.printings,
+    builtFromPrecon: deck.builtFromPrecon,
   });
+  if (addEntryId) await tx.update(decks).set({ preconAddEntryId: addEntryId }).where(eq(decks.id, deckId));
+  await commitVersion(deckId, null, tx, undefined, env);
+  return deckId;
+}
+
+/** Writes and commits the deck `fileName` starts, for `userId`, and returns its id. */
+export async function startPreconDeck(userId: string, fileName: string, name: string, env: NodeJS.ProcessEnv): Promise<string> {
+  const deck = await preparePreconDeck(fileName);
+  return db.transaction((tx) => writePreconDeckIn(tx, userId, name, deck, env));
 }
