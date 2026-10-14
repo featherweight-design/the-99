@@ -191,8 +191,8 @@ export const deckVersioningCopy = {
     firstHeading: (n: number) => `${plural(n, "card")}, ready for v1`,
     firstLede:
       "This deck has no version yet, so there is nothing to compare it against. Committing " +
-      "freezes the list exactly as it stands and starts claiming its cards against your " +
-      "other decks.",
+      "freezes the list exactly as it stands and reserves its cards, so your other decks " +
+      "see them as taken.",
 
     chipIn: "in",
     chipOut: "out",
