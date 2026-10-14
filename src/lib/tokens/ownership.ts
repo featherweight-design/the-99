@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { deckTokenJoins, tokenOwnership, tokenReads } from "../../db/schema";
+import { deckTokenJoins, tokenOwnership, tokenPrintingHoldings, tokenReads } from "../../db/schema";
 import { standingPreconAdds } from "../precons/added";
 
 /**
@@ -22,18 +22,48 @@ export function tokenOwnershipState(held: boolean, read: boolean): TokenOwnershi
   return read ? "not" : "unknown";
 }
 
-/** What an upload read of one token, summed over its printings: any printing counts. */
-export type TokenHolding = { tokenOracleId: string; quantity: number };
+/**
+ * What an upload (or a precon add) read of one token: the token, summed over its printings, which is
+ * all ownership asks (any printing counts), and the printings it was read at, which the deck's
+ * printing picker offers (token printings TP1). `printings` is absent on a payload or an entry from
+ * before that, which then names no printing: never an empty list standing for one.
+ */
+export type TokenPrintingCount = { tokenPrintingId: string; quantity: number };
+export type TokenHolding = { tokenOracleId: string; quantity: number; printings?: TokenPrintingCount[] };
 
-/** Sums rows of the same token (a Treasure in four printings is one holding of the four). */
-export function aggregateTokenRows(rows: { tokenOracleId: string; quantity: number }[]): TokenHolding[] {
-  const sums = new Map<string, number>();
+/** Sums rows of the same token (a Treasure in four printings is one holding of the four), keeping each printing's count. */
+export function aggregateTokenRows(rows: { tokenOracleId: string; tokenPrintingId?: string | null; quantity: number }[]): TokenHolding[] {
+  const sums = new Map<string, { quantity: number; printings: Map<string, number> }>();
   for (const r of rows) {
     if (!Number.isInteger(r.quantity) || r.quantity < 1) continue;
-    sums.set(r.tokenOracleId, (sums.get(r.tokenOracleId) ?? 0) + r.quantity);
+    const at = sums.get(r.tokenOracleId) ?? { quantity: 0, printings: new Map<string, number>() };
+    at.quantity += r.quantity;
+    if (r.tokenPrintingId) at.printings.set(r.tokenPrintingId, (at.printings.get(r.tokenPrintingId) ?? 0) + r.quantity);
+    sums.set(r.tokenOracleId, at);
   }
-  return [...sums].map(([tokenOracleId, quantity]) => ({ tokenOracleId, quantity }))
-    .sort((a, b) => (a.tokenOracleId < b.tokenOracleId ? -1 : 1));
+  const byId = (a: string, b: string) => (a < b ? -1 : 1);
+  return [...sums].map(([tokenOracleId, s]) => ({
+    tokenOracleId,
+    quantity: s.quantity,
+    // Absent, not empty, when no row named a printing: the form the type documents.
+    ...(s.printings.size > 0
+      ? { printings: [...s.printings].map(([tokenPrintingId, quantity]) => ({ tokenPrintingId, quantity }))
+        .sort((a, b) => byId(a.tokenPrintingId, b.tokenPrintingId)) }
+      : {}),
+  })).sort((a, b) => byId(a.tokenOracleId, b.tokenOracleId));
+}
+
+/** Every printing count across holdings, summed per printing: what one source's holding rows hold. */
+export function printingCounts(holdings: readonly TokenHolding[]): TokenPrintingCount[] {
+  const sums = new Map<string, number>();
+  for (const h of holdings) {
+    for (const p of h.printings ?? []) {
+      if (!Number.isInteger(p.quantity) || p.quantity < 1) continue;
+      sums.set(p.tokenPrintingId, (sums.get(p.tokenPrintingId) ?? 0) + p.quantity);
+    }
+  }
+  return [...sums].map(([tokenPrintingId, quantity]) => ({ tokenPrintingId, quantity }))
+    .sort((a, b) => (a.tokenPrintingId < b.tokenPrintingId ? -1 : 1));
 }
 
 /** Anything that runs one statement: a transaction or the db. */
@@ -51,6 +81,8 @@ export async function tokenOwnershipTablesExist(runner: Pick<Runner, "execute"> 
     select (to_regclass('public.token_ownership') is not null
         and to_regclass('public.token_reads') is not null
         and to_regclass('public.deck_token_joins') is not null
+        -- 0118's per-printing detail: written beside every ownership write.
+        and to_regclass('public.token_printing_holdings') is not null
         -- 0117's column: every ownership write and the revert's clear name it.
         and exists (select 1 from information_schema.columns
           where table_schema = 'public' and table_name = 'token_ownership' and column_name = 'entry_id')) as ok
@@ -104,6 +136,7 @@ export async function writeUploadTokens(
       ),
     ));
     await tx.delete(tokenOwnership).where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "upload")));
+    await tx.delete(tokenPrintingHoldings).where(and(eq(tokenPrintingHoldings.userId, userId), eq(tokenPrintingHoldings.source, "upload")));
   }
   for (let i = 0; i < holdings.length; i += BATCH) {
     const rows = holdings.slice(i, i + BATCH).map((h) => ({
@@ -123,6 +156,16 @@ export async function writeUploadTokens(
         updatedAt: sql`now()`,
       },
     });
+  }
+  // The printings beside the tokens, the same way round: Replace starts from none, Add accumulates.
+  const counts = printingCounts(holdings);
+  for (let i = 0; i < counts.length; i += BATCH) {
+    await tx.insert(tokenPrintingHoldings)
+      .values(counts.slice(i, i + BATCH).map((c) => ({ userId, tokenPrintingId: c.tokenPrintingId, source: "upload" as const, quantity: c.quantity })))
+      .onConflictDoUpdate({
+        target: [tokenPrintingHoldings.userId, tokenPrintingHoldings.tokenPrintingId, tokenPrintingHoldings.source],
+        set: { quantity: sql`${tokenPrintingHoldings.quantity} + excluded.quantity`, updatedAt: sql`now()` },
+      });
   }
   await tx.insert(tokenReads).values({ userId, uploadId }).onConflictDoUpdate({
     target: tokenReads.userId,
@@ -178,12 +221,29 @@ export async function syncPreconTokens(tx: Runner, userId: string, entryId?: str
         .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.tokenOracleId, h.id), eq(tokenOwnership.source, "precon")));
     }
   }
-  if (fresh.length === 0) return [];
-  const marked = await tx.insert(tokenOwnership)
+  const marked = fresh.length === 0 ? [] : await tx.insert(tokenOwnership)
     .values(fresh.map(([id, w]) => ({ userId, tokenOracleId: id, quantity: w.quantity, source: "precon" as const, entryId: w.entryId })))
     .onConflictDoNothing()
     .returning({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId });
+  // Printings LAST, after every join and ownership write: the order uploads and the purge lock in
+  // (joins, then ownership, then printings), so two of them never wait on each other the other way round.
+  await syncPreconPrintings(tx, userId, adds);
   return marked.filter((m) => m.entryId === entryId).map((m) => m.id);
+}
+
+/**
+ * The `precon` printing rows, re-derived whole from the standing adds' recorded printings: every precon
+ * row goes and the standing adds' sums come back, so an add reverted takes its printings and a revert
+ * reverted brings them back, with nothing to reconcile. Unlike ownership, a printing another source also
+ * holds is not deferred to it: the rows are per source, and each is real copies on the shelf.
+ */
+async function syncPreconPrintings(tx: Runner, userId: string, adds: readonly { tokens: readonly TokenHolding[] }[]): Promise<void> {
+  await tx.delete(tokenPrintingHoldings).where(and(eq(tokenPrintingHoldings.userId, userId), eq(tokenPrintingHoldings.source, "precon")));
+  const counts = printingCounts(adds.flatMap((a) => a.tokens));
+  for (let i = 0; i < counts.length; i += BATCH) {
+    await tx.insert(tokenPrintingHoldings)
+      .values(counts.slice(i, i + BATCH).map((c) => ({ userId, tokenPrintingId: c.tokenPrintingId, source: "precon" as const, quantity: c.quantity })));
+  }
 }
 
 /** The player's own `I have one`. Never writes the read marker; never touches an upload row. */

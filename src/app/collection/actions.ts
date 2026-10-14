@@ -80,7 +80,7 @@ async function buildPreview(args: {
   // Absent when no lookup ran (a paste, or a token catalog not published yet): `[]` is reserved for a
   // lookup that found none, because it is what writes the "read" marker at confirm.
   const tokens = indexes.tokensRead
-    ? aggregateTokenRows(tokenRows.map((t) => ({ tokenOracleId: t.tokenOracleId, quantity: t.row.quantity })))
+    ? aggregateTokenRows(tokenRows.map((t) => ({ tokenOracleId: t.tokenOracleId, tokenPrintingId: t.row.scryfallId, quantity: t.row.quantity })))
     : undefined;
 
   const [{ count: currentCollectionCount }] = await db

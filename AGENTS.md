@@ -429,6 +429,19 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   row it removes, since a held token's join is pre-rule); a hand mark an upload
   also reads becomes an upload row. The review screen's `skipped by design` count still includes tokens: they are
   not in `collection_items`.
+  **Which PRINTINGS are held** is `token_printing_holdings` (token printings TP1, plan
+  `boards/plan-token-printings-2026-10-14.md`): detail beside `token_ownership`, which stays the token-level truth
+  every owned / not owned / not known reader asks. The upload's `TokenHolding` carries each token's `printings` (the
+  row's own Scryfall id, which `matchRows` already resolves), and a precon add keeps the box's printings on its
+  `collection_history.precon_tokens` entry. `writeUploadTokens` writes `upload` rows (Replace removes them all
+  first, Add accumulates) and `syncPreconTokens` re-derives the `precon` rows whole from the standing adds, in the
+  transactions they already run. A hand mark names no printing and writes none; a payload or an entry from before
+  this names none either. `deck_token_printings` holds one chosen printing per token per deck, with no `card_tokens`
+  maker join (a token only the commander makes is a deck's token too). Nothing writes it yet: its writers are to be the
+  deck's picker (TP2, offering only printings the player holds) and a precon start. That a pick's printing is OF its
+  token is checked by the writer and the reader, never by a pair key: the token ingest upserts a printing's
+  `token_oracle_id`, and such a key would roll back the whole catalog publish the day Scryfall re-filed a picked
+  printing. `pnpm probe:token-printings` proves the writes on a scratch branch.
 - **A deck's tokens are read by `loadDeckTokens` and written by two actions** (`DECK_TOKENS_ENABLED`, staging on, production off;
   plan `2026-10-11-tokens-for-my-deck.md`, PR 4a). The makers are the deck's `deck_cards` UNION both commanders (a commander
   makes tokens too), joined through `card_tokens`; `assembleDeckTokens` is the pure half. **A held token is never drawn as joined**

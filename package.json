@@ -44,6 +44,7 @@
     "probe:deck-hero-wash": "node scripts/probe-deck-hero-wash.mjs",
     "probe:commander-carousel": "node scripts/probe-commander-carousel.mjs",
     "probe:tokens": "tsx scripts/probe-tokens.mts",
+    "probe:token-printings": "tsx scripts/probe-token-printings.ts",
     "probe:deck-tokens": "tsx scripts/probe-deck-tokens.mts",
     "probe:owned-support": "tsx scripts/probe-owned-support.mts",
     "probe:game-opponents": "tsx scripts/probe-game-opponents.mts",

@@ -279,6 +279,60 @@ export const tokenOwnership = pgTable("token_ownership", {
 ]);
 
 /**
+ * WHICH PRINTINGS of a token a player holds (token printings plan, TP1, 2026-10-14). Detail beside
+ * `token_ownership`, which stays the token-level truth every owned / not owned / not known reader asks:
+ * a row here never makes a token owned on its own, and a hand mark (`I have one`) names no printing and
+ * writes none. Written in the same transactions as `token_ownership`:
+ *
+ *   `upload`: what the last confirmed upload read, per printing. Replace removes them all first; Add adds.
+ *   `precon`: re-derived from the standing precon adds (each add keeps the printings it read on its
+ *     `collection_history` entry), so an add reverted takes its printings with it.
+ *
+ * The two sources are kept apart, and both are real copies on the shelf: a deck's printing picker offers
+ * every printing with a row here. An upload from before this table names no printing until the next one.
+ */
+export const tokenPrintingHoldings = pgTable("token_printing_holdings", {
+  userId: text("user_id").notNull(),
+  tokenPrintingId: uuid("token_printing_id").notNull(),
+  source: text("source", { enum: ["upload", "precon"] }).notNull(),
+  quantity: integer("quantity").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.tokenPrintingId, t.source] }),
+  // Named: the generated name is 72 bytes, past Postgres's 63.
+  foreignKey({ name: "token_printing_holdings_printing_fk", columns: [t.tokenPrintingId], foreignColumns: [tokenPrintings.scryfallId] }),
+  check("token_printing_holdings_quantity_positive", sql`${t.quantity} > 0`),
+  check("token_printing_holdings_source_check", sql`${t.source} in ('upload', 'precon')`),
+]);
+
+/**
+ * The printing a deck shows for one of its tokens (token printings plan, TP1). One per token per deck,
+ * by the printing's own id. Nothing writes it yet: its writers are to be the deck's printing picker (TP2),
+ * which offers only printings the player holds (`token_printing_holdings`), and a precon start, which will
+ * record the box's own printing. A row names a token, not a maker: a token only the commander makes is a
+ * deck's token too, so nothing here requires a `card_tokens` join. Read the way `deck_printings` is: a pick
+ * the player no longer holds is ignored rather than deleted, so a Replace upload never wipes a deck's choices.
+ *
+ * That the printing is OF the row's token is checked by the writer and again by the reader (a pick whose
+ * printing names another token is ignored), never by a pair key to `token_printings`: the token ingest
+ * upserts a printing's `token_oracle_id`, and a key on it would roll back the whole catalog publish, every
+ * day, the first time Scryfall re-filed a printing a deck had picked.
+ */
+export const deckTokenPrintings = pgTable("deck_token_printings", {
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  tokenOracleId: uuid("token_oracle_id").notNull().references(() => tokens.oracleId),
+  tokenPrintingId: uuid("token_printing_id").notNull(),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.deckId, t.tokenOracleId] }),
+  // Named: the generated name is 69 bytes, past Postgres's 63.
+  foreignKey({ name: "deck_token_printings_printing_fk", columns: [t.tokenPrintingId], foreignColumns: [tokenPrintings.scryfallId] }),
+  index("deck_token_printings_user_idx").on(t.userId),
+]);
+
+/**
  * That a player's tokens have been READ: one row per account, written in the same transaction as every
  * confirmed upload, INCLUDING one that read no token. It is what tells "not owned" from "not known": an
  * empty `token_ownership` beside a row here means the upload was read and held no tokens, and beside no
@@ -449,7 +503,9 @@ export const collectionHistory = pgTable("collection_history", {
   rows: jsonb("rows").$type<HistoryRow[]>(),
   // A precon add's tokens as it read them, kept past pruning: token ownership is derived from the
   // adds that still stand, and must not move when a later ingest changes the precon's token list.
-  preconTokens: jsonb("precon_tokens").$type<{ tokenOracleId: string; quantity: number }[]>(),
+  // Each token the add read, and (since token printings TP1) the printings it read them at; an entry
+  // from before that carries no `printings`, and its tokens name no printing.
+  preconTokens: jsonb("precon_tokens").$type<{ tokenOracleId: string; quantity: number; printings?: { tokenPrintingId: string; quantity: number }[] }[]>(),
   prunedAt: timestamp("pruned_at"),
   raised: integer("raised").notNull(),
   lowered: integer("lowered").notNull(),

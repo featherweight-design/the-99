@@ -2034,6 +2034,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and
   production are refused by id. Mutation-checked five ways (the event row's conflict, the lot's conflict target,
   the attribution check, the mapping read without `FOR SHARE`, a payment-record conflict let through to the grant).
+- `pnpm probe:token-printings` proves which token printings a player holds (token printings TP1) against a real database,
+  through the real `writeUploadTokens`, `syncPreconTokens` and `purgeAccount`, on fixtures of its own (two tokens and three
+  printings under per-run ids, since local-dev holds no token catalog): a Replace upload writes each printing it read as an
+  `upload` row beside the token's ownership row, an Add accumulates and adds, a later Replace removes every printing it does
+  not read, a standing precon add's printing lands as a `precon` row and its revert takes it away, a deck keeps one pick per
+  token, and the purge leaves neither. It WRITES, so
+  it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by
+  id. Mutation-checked two ways (the Replace's delete of upload printings, the precon re-derive).
 - `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
   count and GOT state (summed across printings), that a write moves the owner's data stamp, that an unknown card
   and a quantity outside 1 to 99 write nothing, that a friend reads the lines with only the wanted count and got,

@@ -13,7 +13,7 @@ import { collectionHistory, preconCards, precons, preconTokens, printings, token
 import { applyCollectionChange, type ChangeResult } from "../collection/write";
 import { placedOf, type AddedPlacement } from "../collection/add-placements";
 import type { PendingItem } from "../collection/pending";
-import { tokenOwnershipTablesExist, type TokenHolding } from "../tokens/ownership";
+import { aggregateTokenRows, tokenOwnershipTablesExist, type TokenHolding } from "../tokens/ownership";
 import { preconSource } from "./added";
 import type { Reader } from "./list-read";
 
@@ -26,7 +26,7 @@ export type PreconCardForAdd = {
   printing: { scryfallId: string; setCode: string; collectorNumber: string } | null;
 };
 
-export type PreconTokenForAdd = { tokenOracleId: string; name: string; quantity: number };
+export type PreconTokenForAdd = { tokenOracleId: string; tokenPrintingId: string; name: string; quantity: number };
 
 /** The add's lines: one per (card, printing, finish), non-foil then foil; tokens summed per token. */
 export function preconAddLines(cards: readonly PreconCardForAdd[], tokenRows: readonly PreconTokenForAdd[]) {
@@ -39,14 +39,9 @@ export function preconAddLines(cards: readonly PreconCardForAdd[], tokenRows: re
     if (nonfoil > 0) items.push({ ...base, finish: "nonfoil", condition: null, quantity: nonfoil });
     if (c.foilQuantity > 0) items.push({ ...base, finish: "foil", condition: null, quantity: c.foilQuantity });
   }
-  const sums = new Map<string, PreconTokenForAdd>();
-  for (const t of tokenRows) {
-    const at = sums.get(t.tokenOracleId);
-    if (at) at.quantity += t.quantity;
-    else sums.set(t.tokenOracleId, { ...t });
-  }
-  const tokenHoldings: TokenHolding[] = [...sums.values()].map(({ tokenOracleId, quantity }) => ({ tokenOracleId, quantity }));
-  const tokenNames = Object.fromEntries([...sums.values()].map((t) => [t.tokenOracleId, t.name]));
+  // Summed per token, keeping the box's printing of each (`aggregateTokenRows`, as an upload does).
+  const tokenHoldings: TokenHolding[] = aggregateTokenRows(tokenRows.map((t) => ({ tokenOracleId: t.tokenOracleId, tokenPrintingId: t.tokenPrintingId, quantity: t.quantity })));
+  const tokenNames = Object.fromEntries(tokenRows.map((t) => [t.tokenOracleId, t.name]));
   return {
     items,
     tokens: tokenHoldings,
@@ -81,7 +76,7 @@ async function readPreconIn(db: Reader, fileName: string): Promise<{ cards: Prec
     .where(eq(preconCards.fileName, fileName))
     .orderBy(preconCards.position);
   const tokenRows = await db
-    .select({ tokenOracleId: tokenPrintings.tokenOracleId, name: tokens.name, quantity: preconTokens.quantity })
+    .select({ tokenOracleId: tokenPrintings.tokenOracleId, tokenPrintingId: preconTokens.tokenPrintingId, name: tokens.name, quantity: preconTokens.quantity })
     .from(preconTokens)
     .innerJoin(tokenPrintings, eq(tokenPrintings.scryfallId, preconTokens.tokenPrintingId))
     .innerJoin(tokens, eq(tokens.oracleId, tokenPrintings.tokenOracleId))

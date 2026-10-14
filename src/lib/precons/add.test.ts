@@ -27,11 +27,15 @@ describe("preconAddLines", () => {
 
   it("sums a token listed in two printings into one holding, by its token oracle id", () => {
     const lines = preconAddLines([], [
-      { tokenOracleId: "t-soldier", name: "Soldier", quantity: 1 },
-      { tokenOracleId: "t-soldier", name: "Soldier", quantity: 2 },
-      { tokenOracleId: "t-monarch", name: "The Monarch", quantity: 1 },
+      { tokenOracleId: "t-soldier", tokenPrintingId: "p-soldier-a", name: "Soldier", quantity: 1 },
+      { tokenOracleId: "t-soldier", tokenPrintingId: "p-soldier-b", name: "Soldier", quantity: 2 },
+      { tokenOracleId: "t-monarch", tokenPrintingId: "p-monarch", name: "The Monarch", quantity: 1 },
     ]);
-    expect(lines.tokens).toEqual([{ tokenOracleId: "t-soldier", quantity: 3 }, { tokenOracleId: "t-monarch", quantity: 1 }]);
+    // Each token keeps the box's printings beside the sum (token printings TP1).
+    expect(lines.tokens).toEqual([
+      { tokenOracleId: "t-monarch", quantity: 1, printings: [{ tokenPrintingId: "p-monarch", quantity: 1 }] },
+      { tokenOracleId: "t-soldier", quantity: 3, printings: [{ tokenPrintingId: "p-soldier-a", quantity: 1 }, { tokenPrintingId: "p-soldier-b", quantity: 2 }] },
+    ]);
     expect(lines.tokenNames).toEqual({ "t-soldier": "Soldier", "t-monarch": "The Monarch" });
   });
 
