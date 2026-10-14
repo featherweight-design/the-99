@@ -123,7 +123,7 @@ This form is drawn standalone. The README's page spec above follows §2a and §3
 | Roles and targets (`roles`) | rules, decks | partial | yes, 4 | canvas:558, :564 |
 | Card and commander themes (`themes`); retitled from the canvas's "Themes" in copy review, because the row covers two different kinds of theme | decks, rules | exact and partial | yes, 1 | canvas:565-571 |
 | Commander recommendations (`recommendations`) | decks, you, plus rules | exact | yes, 4 | canvas:572-578; AUDIT:78-79 |
-| Availability and claims (`availability`) | you | exact | yes, 5 | canvas:579-585 |
+| Which deck uses each copy (`availability`; was "Availability and claims") | you | exact | yes, 5 | canvas:579-585 |
 | Prices (`prices`) | list (was untagged) | exact | yes, 3 | canvas:586-592; AUDIT:10-12 |
 | Stand-ins and Find a deck (`stand-ins`) | rules, decks, plus you | partial | yes, 2 | canvas:593-599; AUDIT:78 |
 | Written text and credits (`written`) | model | written | no | canvas:600-606 |

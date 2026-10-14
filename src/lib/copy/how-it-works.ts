@@ -154,17 +154,17 @@ export const howItWorksRowsCopy = {
     },
     {
       id: "how-availability",
-      title: "Availability and claims",
+      title: "Which deck uses each copy",
       methods: ["you"],
       verdict: "exact",
       from:
         "Your Collection and your decks, plus the copies you’ve assigned, the ones you’ve pulled " +
         "and the cards you’ve marked as proxies.",
       how:
-        "A committed deck claims the cards in its newest version. A deck you’ve never committed " +
-        "claims softly, from its list. Commanders claim their copies too. When decks want the same " +
+        "A committed deck uses the cards in its newest version. A deck you’ve never committed " +
+        "uses them loosely, from its list. Commanders use their copies too. When decks want the same " +
         "copy, the one that’s held that card longest keeps it, unless you hand it to another. A " +
-        "card you mark as a proxy claims nothing.",
+        "card you mark as a proxy uses no copy.",
       refresh: "Live.",
       exact: "Exact.",
     },

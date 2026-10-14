@@ -84,7 +84,7 @@ describe("the marked state says what did not happen", () => {
     // reader inferring a purchase.
     const marked = proxyCopy.control.marked("HD Gods");
     expect(marked).toContain("slot is filled");
-    expect(marked.toLowerCase()).toContain("claimed from your collection");
+    expect(marked.toLowerCase()).toContain("no copy in your collection is used");
     // Named, because a sheet paged through with Prev/Next is easy to lose your
     // place in.
     expect(marked).toContain("HD Gods");

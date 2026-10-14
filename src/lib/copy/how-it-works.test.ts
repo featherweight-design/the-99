@@ -75,7 +75,7 @@ describe("How the app reaches its answers: the rows", () => {
   it("names what each rule really reads", () => {
     expect(row("how-roles").how).toMatch(/land is read from its type line/);
     expect(row("how-availability").from).toMatch(/proxies/);
-    expect(row("how-availability").how).toMatch(/proxy claims nothing/);
+    expect(row("how-availability").how).toMatch(/proxy uses no copy/);
     expect(row("how-prices").how).toMatch(/earlier refresh/);
     expect(row("how-prices").how).not.toMatch(/earlier day/);
     // Stand-ins read two catalog inputs on their own cadences; Look deeper reuses a stored answer.
