@@ -16,6 +16,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -69,13 +70,13 @@ try {
   const page = await context.newPage();
   await signIn(page);
   await page.goto(`${BASE}/decks/precons?view=rows`, { waitUntil: "domcontentloaded" });
-  const href = await page.locator('a[href^="/decks/precons/"]').first().getAttribute("href", { timeout: 30_000 });
+  const href = await onPage(page, 'a[href^="/decks/precons/"]').first().getAttribute("href", { timeout: 30_000 });
   if (!href) throw new Error("no precon link on /decks/precons: seed them (pnpm db:seed:precons).");
   await page.evaluate((key) => localStorage.setItem(key, "card"), VIEW_KEY);
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${BASE}${href}`, { waitUntil: "domcontentloaded" });
-    const tile = page.locator('[data-testid="read-only-card-tile"]').first();
+    const tile = onPage(page, '[data-testid="read-only-card-tile"]').first();
     await tile.waitFor({ state: "attached", timeout: 30_000 });
     const m = await tile.evaluate((li) => {
       const shell = li.firstElementChild;

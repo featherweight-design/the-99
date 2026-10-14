@@ -153,4 +153,10 @@ describe("the scaled tile radius", () => {
       expect(src).toContain("TILE_SHELL_SCALED");
     },
   );
+
+  // The browser probe reads the read-only tile's art clip alone; the others are pinned here.
+  it.each(["deck-card-tile", "read-only-card-tile", "token-tile"])("%s clips its art by TILE_ART_CLIP_SCALED", (name) => {
+    const src = readFileSync(join(process.cwd(), "src/components/decks", `${name}.tsx`), "utf8");
+    expect(src).toContain("${TILE_ART_CLIP_SCALED}");
+  });
 });
