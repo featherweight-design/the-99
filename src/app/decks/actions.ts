@@ -1390,7 +1390,7 @@ export async function commitDeckVersion(
   // by name is what keeps `note.trim()` below from throwing a TypeError the action
   // has no result shape for.
   if (note !== null && note !== undefined && typeof note !== "string") {
-    return { ok: false, message: "We couldn't save that note." };
+    return { ok: false, message: "We couldn’t save that. Your note is unchanged." };
   }
   try {
     await requireDeck(deckId, userId);
