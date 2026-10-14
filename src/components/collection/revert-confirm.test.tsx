@@ -85,6 +85,31 @@ describe("RevertConfirm", () => {
     expect(screen.getByRole("button", { name: "Revert" })).toBeEnabled();
   });
 
+  it("holds one height from open: the read breathes inside it, and Show all grows the body, never the dialog", async () => {
+    const many = Array.from({ length: 12 }, (_, i) => row(`Card ${i}`, 0, 1));
+    let land!: (v: unknown) => void;
+    preview.mockReturnValue(new Promise((r) => (land = r)));
+    open();
+    const dialog = screen.getByRole("dialog");
+    const heights = () => dialog.className.split(/\s+/).filter((k) => /^(md:)?h-\[/.test(k));
+    const height = heights();
+    expect(height).toEqual(["h-[88vh]", "md:h-[min(620px,88vh)]"]);
+    expect(dialog.className).not.toMatch(/overflow-y-auto|max-h-/);
+    expect(screen.getByTestId("revert-rows-loading")).toHaveClass("anim-skeleton");
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    const body = () => screen.getByRole("heading").closest(".overflow-y-auto");
+    expect(body()).not.toBeNull();
+    expect(body()!.contains(cancel)).toBe(false);
+
+    await act(async () => land({ ...matches, rows: many, entryRows: many }));
+    expect(screen.queryByTestId("revert-rows-loading")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Show all/ }));
+    expect(screen.getByText("Card 11")).toBeTruthy();
+    expect(heights()).toEqual(height);
+    expect(body()!.contains(screen.getByText("Card 11"))).toBe(true);
+    expect(body()!.contains(screen.getByRole("button", { name: "Revert" }))).toBe(false);
+  });
+
   it("when today differs it says so, hides no row and offers Revert what's left", async () => {
     preview.mockResolvedValue({ ...matches, differs: true, rows: [row("Sol Ring", 5, 1)] });
     open();
