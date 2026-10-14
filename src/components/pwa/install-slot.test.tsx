@@ -64,9 +64,11 @@ describe("InstallSlot", () => {
 
   it("on iPhone Safari, with no offer to hold, opens the how-to sheet and Got it closes it", () => {
     as(IPHONE);
-    render(<InstallSlot />);
+    const { container } = render(<InstallSlot />);
     fireEvent.click(screen.getByRole("button", { name: copy.slotAria }));
-    expect(screen.getByRole("dialog", { name: copy.sheet.ariaLabel })).toBeInTheDocument();
+    const sheet = screen.getByRole("dialog", { name: copy.sheet.ariaLabel });
+    // Out of the phone header, which is hidden from md up: a sideways iPhone can cross it.
+    expect(container.contains(sheet)).toBe(false);
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
     fireEvent.click(screen.getByRole("button", { name: copy.sheet.done }));
     expect(screen.queryByRole("dialog", { name: copy.sheet.ariaLabel })).toBeNull();

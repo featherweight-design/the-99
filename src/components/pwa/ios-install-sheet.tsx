@@ -28,13 +28,14 @@ function StepIcon({ icon }: { icon: string }) {
 /**
  * How to add The 99 to the home screen on iPhone (Concert Crawl's `IosHowToSheet`): three steps and
  * Got it, on the app's own sheet. Mounted only while open, so `useDialogA11y` holds focus, Escape and
- * the scroll lock exactly as long as it is up.
+ * the scroll lock exactly as long as it is up. Portaled out of the phone header, which is hidden from
+ * `md` up: an iPhone turned sideways can cross it, and the open sheet must stay visible to be closed.
  */
 export function IosInstallSheet({ onClose }: { onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogA11y(panelRef, onClose);
   return (
-    <Sheet open onDismiss={onClose} ariaLabel={copy.ariaLabel} panelRef={panelRef}>
+    <Sheet open portal onDismiss={onClose} ariaLabel={copy.ariaLabel} panelRef={panelRef}>
       <div className="flex flex-col gap-[14px] overflow-y-auto px-[20px] pt-[10px] pb-[24px]">
         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
           {copy.eyebrow}
