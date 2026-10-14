@@ -114,6 +114,11 @@ describe("filter, order, group", () => {
     expect(parsePreconParams(new URLSearchParams("sort=oldest")).order).toBeNull();
   });
 
+  it("reads an explicit sort=newest as Newest, so it beats a saved order (the banner's links)", () => {
+    expect(parsePreconParams(new URLSearchParams("sort=newest")).order).toBe("newest");
+    expect(parsePreconParams(new URLSearchParams("")).order).toBeNull();
+  });
+
   it("parses the view, and ignores one it does not know (T2u)", () => {
     expect(parsePreconParams(new URLSearchParams("view=rows")).view).toBe("rows");
     expect(parsePreconParams(new URLSearchParams("view=tiles")).view).toBe("tiles");

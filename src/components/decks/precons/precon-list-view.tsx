@@ -30,6 +30,10 @@ import { PendingReporter } from "../../shell/pending-reporter";
 import { PreconRow } from "./precon-row";
 import { PreconTile } from "./precon-tile";
 import { EmptyCollectionBand } from "./empty-collection-band";
+import { AnnouncedGroup } from "./announced-group";
+import type { ListedJump } from "./announced-parts";
+import { filterAnnounced } from "../../../lib/precons/arrivals";
+import type { AnnouncedProps } from "../../../lib/precons/announced";
 import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 const copy = preconsCopy;
@@ -52,12 +56,18 @@ export type PreconListViewProps = {
   /** The view this browser stored, as the page read it from `PRECONS_VIEW_COOKIE`, so the server
    *  draws the view the reader will see (audit finding 2). */
   storedView?: PreconView | null;
+  /** The Announced group's data (upcoming precons), or null: the switch is off or the read failed (T1, T9). */
+  announced?: AnnouncedProps | null;
+  /** The precons that read `new ·` on their tile, decided by the server against its own clock (L2, L3). */
+  newFileNames?: readonly string[];
 };
 
 const isOrder = (v: string): v is PreconOrder => isPreconOrder(v);
 const isView = (v: string): v is PreconView => isPreconView(v);
 
-export function PreconListView({ rows, hasCollection, fromNew, initial, query, storedView: cookieView = null }: PreconListViewProps) {
+export function PreconListView({
+  rows, hasCollection, fromNew, initial, query, storedView: cookieView = null, announced = null, newFileNames = [],
+}: PreconListViewProps) {
   // `md`, not the chassis's 1000: the table draws the wide form at 900, and this chassis holds
   // three controls where `/decks`' holds six.
   const wide = useMinWidth("(min-width: 768px)");
@@ -130,6 +140,24 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
   const clearColours = () => { setColours([]); mirror({ q, colours: [], order }); };
 
   const shown = useMemo(() => orderPrecons(filterPrecons(rows, q, colours), order), [rows, q, colours, order]);
+  // The Announced group filters with the list, and Most owned hides it, as it drops the year heads (T6, T7).
+  const announcedShown = useMemo(
+    () => (announced && order === "newest" ? filterAnnounced(announced.sets, announced.commanders, { q, colours }) : []),
+    [announced, order, q, colours],
+  );
+  const filtering = q.trim() !== "" || colours.length > 0;
+  // L2: a set still on the way whose decklists are listed jumps to the year its first shown precon leads.
+  const listed = useMemo(() => {
+    const out: Record<string, ListedJump> = {};
+    for (const r of shown) {
+      const code = r.setCode.toLowerCase();
+      const held = out[code];
+      if (held) held.count += 1;
+      else out[code] = { count: 1, year: r.releaseDate.slice(0, 4) };
+    }
+    return out;
+  }, [shown]);
+  const isNew = useMemo(() => new Set(newFileNames), [newFileNames]);
   const dates = rows.map((r) => r.releaseDate).sort();
   const first = dates[0]?.slice(0, 4) ?? "";
   const last = dates[dates.length - 1]?.slice(0, 4) ?? "";
@@ -168,7 +196,7 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
   // search row instead, so neither row overflows at 358px.
   const sort = wide ? <div className="flex items-center gap-[8px]">{sortMenu}{toggle}</div> : sortMenu;
   const item = (r: Row) => view === "tiles"
-    ? <PreconTile key={r.fileName} row={r} href={href(r)} eager={eagerIds.has(r.fileName)} />
+    ? <PreconTile key={r.fileName} row={r} href={href(r)} eager={eagerIds.has(r.fileName)} isNew={isNew.has(r.fileName)} />
     : <PreconRow key={r.fileName} row={r} href={href(r)} eager={eagerIds.has(r.fileName)} />;
   // Tiles: 2-up to 480px (174px at 390, gap 10); a 150px floor from 480 to `md`; from `md` a 178px
   // floor (the deck grid's and /collection's), 4-up at 900 (gap 12). The widest tile any width draws
@@ -215,7 +243,8 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
           sort={sort}
           chips={chips}
           onClearAll={clearAll}
-          resultLine={copy.list.result(shown.length, rows.length, order)}
+          resultLine={copy.list.result(shown.length, rows.length, order)
+            + (filtering && announcedShown.length > 0 ? copy.upcoming.resultSets(announcedShown.length) : "")}
         />
       </div>
 
@@ -223,7 +252,7 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
         <EmptyCollectionBand className="mx-[16px] mt-[12px] md:mx-[22px]" />
       )}
 
-      {shown.length === 0 ? (
+      {shown.length === 0 && announcedShown.length === 0 ? (
         <div className="flex flex-col items-center gap-[8px] px-[16px] py-[48px] text-center">
           <p className="m-0 font-display text-[18px] text-[color:var(--fg)]">
             {q.trim() ? copy.none.head(q.trim()) : copy.none.headColours}
@@ -244,7 +273,22 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
           </div>
         </ArrivalOrder>
       ) : (
-        // One reading order across the years: a year's rows wait on the year above.
+        <>
+        {/* Above the newest year and outside its reading order: a closed group's art never loads, and the
+            years' art must not wait on it. The bottom padding and the years' top padding make the 22px gap. */}
+        {announced && announcedShown.length > 0 && (
+          <div className="p-[16px_16px_6px] md:p-[18px_22px_4px]">
+            <AnnouncedGroup
+              matches={announcedShown}
+              today={announced.today}
+              newCodes={announced.newCodes}
+              opensByItself={announced.opensByItself}
+              view={view}
+              listed={listed}
+            />
+          </div>
+        )}
+        {/* One reading order across the years: a year's rows wait on the year above. */}
         <ArrivalOrder>
         <div className="flex flex-col gap-[22px] p-[16px_16px_24px] md:p-[18px_22px_8px]">
           {groupByYear(shown).map((g) => (
@@ -261,6 +305,7 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
           ))}
         </div>
         </ArrivalOrder>
+        </>
       )}
     </div>
   );

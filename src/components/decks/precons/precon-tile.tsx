@@ -66,11 +66,13 @@ function PairArt({ commanders, eager }: { commanders: [PreconCommander, PreconCo
 
 const FOOT_META = "font-mono text-[9.5px] leading-[1.3]";
 
-export function PreconTile({ row, href, eager = false }: {
+export function PreconTile({ row, href, eager = false, isNew = false }: {
   row: Row;
   href: string;
   /** In the list's first screen (`GRID_EAGER_TILES`), so the art is in the server HTML. */
   eager?: boolean;
+  /** Listed in the last 14 days (upcoming precons L2, L3): `new ·` before `you own`. */
+  isNew?: boolean;
 }) {
   const [first, second] = row.commanders;
   const identity = row.identity.length > 0 ? row.identity : ["C"];
@@ -96,6 +98,7 @@ export function PreconTile({ row, href, eager = false }: {
       <CardTileCaption
         meta={
           <>
+            {isNew && <span className="text-[color:var(--accent)]">{preconsCopy.upcoming.tileNew}</span>}
             <span className="text-[color:var(--fg-faint)]">{rowCopy.ownLead}</span>
             <span className="font-semibold text-[color:var(--fg)]">{rowCopy.own(row.owned, row.of)}</span>
           </>

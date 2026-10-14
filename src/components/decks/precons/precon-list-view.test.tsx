@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { PreconRow } from "../../../lib/precons/list";
+import type { AnnouncedProps } from "../../../lib/precons/announced";
 
 // The real write, so the live query sees the address the view wrote, as it does in the app.
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: (href: string) => window.history.replaceState(null, "", href) }));
@@ -161,5 +162,76 @@ describe("PreconListView", () => {
     fireEvent.change(search, { target: { value: "eldrazi" } });
     expect(window.location.search).toBe("?q=eldrazi");
     expect(screen.getByRole("button", { name: "Tiles view" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("PreconListView, the Announced group (upcoming precons)", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/decks/precons");
+    window.localStorage.clear();
+    document.cookie = "precons_view=; Max-Age=0; Path=/";
+  });
+  const trc: AnnouncedProps["sets"][number] = {
+    code: "trc", name: "Star Trek Commander", releasesOn: "2026-11-13", released: false, cardCount: 41,
+    parentName: null, arrivedAt: null, seen: false,
+  };
+  const announced: AnnouncedProps = {
+    sets: [trc],
+    commanders: { trc: [{ oracleId: "chapel", name: "Christine Chapel, Combat Medic", colorIdentity: ["W"], imageUriSmall: null, collectorNumber: "78" }] },
+    today: "2026-10-14",
+    newCodes: [],
+    opensByItself: false,
+  };
+  const draw = (initial: Parameters<typeof PreconListView>[0]["initial"] = { q: "", colours: [], order: null, view: null }, over: Partial<Parameters<typeof PreconListView>[0]> = {}) =>
+    render(<PreconListView rows={rows} hasCollection fromNew={false} initial={initial} query="" announced={announced} {...over} />);
+  const group = () => screen.queryByTestId("announced-group");
+
+  it("sits above the newest year in Newest order", () => {
+    draw();
+    const heads = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(heads[0]).toMatch(/^Announced/);
+    expect(heads[1]).toMatch(/^2026/);
+  });
+
+  it("is hidden under Most owned (T7)", () => {
+    draw({ q: "", colours: [], order: "owned", view: null });
+    expect(group()).toBeNull();
+  });
+
+  it("is hidden under a Most owned this browser saved, and drawn when the URL says sort=newest", () => {
+    window.localStorage.setItem("the99:precons:order", "owned");
+    const { unmount } = draw();
+    expect(group()).toBeNull();
+    unmount();
+    window.history.replaceState(null, "", "/decks/precons?sort=newest#announced");
+    draw({ q: "", colours: [], order: "newest", view: null }, { query: "sort=newest" });
+    expect(group()).not.toBeNull();
+    expect(screen.getByRole("button", { name: /^Announced/ })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("filters with the list, adds the sets to the result line, and draws no-match only when both are empty (T6)", () => {
+    draw();
+    const search = screen.getAllByRole("searchbox")[0] ?? screen.getAllByRole("textbox")[0];
+    fireEvent.change(search, { target: { value: "chapel" } });
+    expect(screen.getAllByText("0 of 2 decklists · 1 announced set").length).toBeGreaterThan(0);
+    expect(group()).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Clear the search" })).toBeNull();
+    fireEvent.change(search, { target: { value: "zzzz" } });
+    expect(group()).toBeNull();
+    expect(screen.getByRole("button", { name: "Clear the search" })).toBeInTheDocument();
+  });
+
+  it("draws nothing when there is no announced data (switch off or read failed, T1, T9)", () => {
+    draw(undefined, { announced: null });
+    expect(group()).toBeNull();
+  });
+
+  it("marks a precon listed in the last 14 days `new ·` before `you own` (L2, L3)", () => {
+    draw(undefined, { newFileNames: ["CallingAllAngels"] });
+    const tiles = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes("you own"));
+    const angels = tiles.find((t) => t.textContent?.includes("Calling All Angels"))!;
+    const eldrazi = tiles.find((t) => t.textContent?.includes("Eldrazi Unbound"))!;
+    expect(angels.textContent).toContain("new · you own");
+    expect(eldrazi.textContent).not.toContain("new ·");
   });
 });

@@ -124,3 +124,39 @@ Committed from `design/design_handoff_the99_precons/design-tables/precons.md` (R
 | body | 12.5 / 1.55 `--fg-body` `precons.arrival.body(own, of, toBuy)` or `bodyAll` |
 | meta | mono 10.5 `--fg-faint` `precons.arrival.meta(set)` |
 | lifetime | until dismissed or the first commit, per deck |
+
+## Upcoming precons (R2): the Announced group's head and set row
+
+From `design/design_handoff_the99_upcoming_precons/` (R2, `R2 - Precons.dc.html` C1–C3, Q1–Q3; plan
+`2026-10-14-upcoming-precons.md`, E6). The R1 rows (set block, revealed card, strip, none plate, `new` tag, jump,
+precon tile `new`) are that handoff's own table, `design-tables/upcoming-precons.md`, built as drawn. Behind
+`UPCOMING_PRECONS_ENABLED`. Built in `announced-group.tsx`, `announced-parts.tsx`, `announced-row.tsx`.
+
+### Component: AnnouncedGroup head (C1–C3)
+
+| Property | Mobile (390) | Desktop (900) |
+|---|---|---|
+| place | above the newest year, Newest order only; hidden under Most owned and when no set survives the filters | same |
+| element | `<h2>` holding a `<button aria-expanded aria-controls="announced-sets">`; the section is `#announced` | same |
+| box | full width, min-h 44, 1px `--border` bottom rule, no fill | min-h 34, pad-bottom 7 |
+| label | `upcoming.heading` = `Announced`, display 17 `--fg` | same |
+| count | mono 11 `--fg-faint`: closed `upcoming.countNext(n, next)` = `2 sets · next Nov 13` (the next set still to come; `upcoming.count(n)` when every set is out); open `upcoming.count(n)` = `2 sets` | same |
+| `new` | the `new` tag after the count while any shown set is news | same |
+| chevron | `▸` closed, `▾` open, mono 12 `--fg-muted`, at the right | same |
+| default | closed. Opens by itself when a set is news (unseen, arrived within 30 days) or the address is `#announced`; otherwise this browser's last press (`the99:precons:announced`, `open` or `closed`) | same |
+| motion | row-track collapse, 160ms ease-out; none under reduced motion. Closed, the region is `inert` and hidden | same |
+| focus | 2px `--accent` outline, 2px offset, 4px radius | same |
+| gap to first year | 22 | 22 |
+
+### Component: AnnouncedRow (rows view, Q2–Q3)
+
+| Property | Mobile (390) | Desktop (900) |
+|---|---|---|
+| shell | 1px dashed `--border-dashed`, radius 10, no fill | radius 11 |
+| press | an `<h3>` holding a `<button aria-expanded>` over the row, pad 10 8 10 12, gap 11; none (and no chevron) with nothing revealed | pad 11 12 11 15, gap 14 |
+| thumb | the first revealed card, `CommanderThumb` `list` (34 × 48), as `PreconRow`'s; the empty plate (`--surface-sunken`, 1px `--border`) with none | same |
+| line 1 | name display 14.5 `--fg`, the `new` tag beside it; right: `upcoming.until(c)` = `in 30 days` (or `upcoming.outShort` = `out`) mono 11 `--fg-body`, then the chevron `--fg-faint` | name 16, when 12 |
+| line 2 | mono 11 `--fg-muted`, one line: `upcoming.more(first, n)` = `Christine Chapel, Combat Medic and 14 more`; every name with one or two; `upcoming.noneRow` = `No commanders revealed yet` | same |
+| line 3 | mono 10.5 `--fg-faint`: the set's dots (9px; its commanders' identities), then `TRC · Nov 13, 2026` | dots 11px |
+| opened | the set's strip under a 1px dashed `--border-strong` rule, pad 12 0 12 12, one row scrolling sideways, bleeding to the right edge | pad 12 15 14, wraps |
+| default | closed every visit | same |
