@@ -270,7 +270,7 @@ export const collectionEditCopy = {
     done: "Done",
     /** (new) The saved state's link to the entry it just wrote (B8). */
     seeInHistory: "See it in History",
-    failed: "We couldn’t add those. Your collection is unchanged.",
+    failed: "We couldn’t confirm those were added. Check your collection before you try again.",
     printingsFailed: "We couldn’t load that card’s printings. Try picking it again.",
     announceChoose: (card: string, k: number) => `${card}: choose a printing. ${n(k)} printings.`,
     announceAdded: (card: string) => `${card} added to the list`,
@@ -310,7 +310,7 @@ export const collectionEditCopy = {
     retry: "Try again",
     saved: (card: string, q: number) => `Saved. ${card} ×${n(q)}.`,
     undo: "Undo",
-    failed: "We couldn’t save that. Your collection is unchanged.",
+    failed: "We couldn’t confirm that saved. Check your collection before you try again.",
     /** (new) A holding with no catalog printing behind it (a bare Name,Qty import). */
     noPrinting: "No printing recorded",
     /** (new) Reading the card's holdings, and the read failing. */
