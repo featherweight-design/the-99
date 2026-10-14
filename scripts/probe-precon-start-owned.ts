@@ -12,6 +12,8 @@
 //   f  a retry under the same action id lands on the same deck and writes nothing more; the same id sent for another
 //      precon is refused
 //   g  an action id another add already used is refused
+//   i  each token the box holds and the deck makes is pinned to the box's own printing (held), and a plain start,
+//      whose box's tokens the player does not hold, pins none, while one whose box's tokens are held pins them
 //   h  reverting the add releases the start's reservations (a later pick on the new deck stays), and the older decks
 //      are still short
 //
@@ -19,6 +21,7 @@
 //   - the reservation insert dropped from `startPreconOwned`: fails b, c, d and e.
 //   - `releasePreconReservations` dropped from the revert (`write.ts`): fails h.
 //   - the source check dropped from `madeBy`: fails f.
+//   - the token pins dropped from `writePreconDeckIn`: fails i.
 //   - its `created_at` bound dropped, so it releases every reservation the deck holds: fails h.
 //
 // It writes under a per-run `user_id` and purges that account in a `finally`, after the branch guard:
@@ -91,6 +94,26 @@ async function run() {
   const [copies] = await rows<{ n: number }>(sql`select coalesce(sum(quantity), 0)::int n from collection_items where user_id = ${USER}`);
   check("a · the box's 100 copies are in the collection", copies.n, 100);
 
+  // The box's tokens: each one the deck makes shows the box's own printing (the first by id), and is held.
+  const want = await rows<{ token: string; printing: string }>(sql`
+    select tp.token_oracle_id::text token, min(pt.token_printing_id::text) printing
+    from precon_tokens pt join token_printings tp on tp.scryfall_id = pt.token_printing_id
+    where pt.file_name = ${FILE}
+      and exists (select 1 from card_tokens ct where ct.token_oracle_id = tp.token_oracle_id and ct.card_oracle_id in (
+        select dc.oracle_id from deck_cards dc where dc.deck_id = ${deckId}::uuid
+        union select d.commander_oracle_id from decks d where d.id = ${deckId}::uuid
+        union select d.partner_oracle_id from decks d where d.id = ${deckId}::uuid))
+    group by 1 order by 1`);
+  const pinned = await rows<{ token: string; printing: string; held: boolean }>(sql`
+    select dtp.token_oracle_id::text token, dtp.token_printing_id::text printing,
+      exists (select 1 from token_printing_holdings h where h.user_id = ${USER} and h.token_printing_id = dtp.token_printing_id) held
+    from deck_token_printings dtp where dtp.deck_id = ${deckId}::uuid order by 1`);
+  check("i · the box's tokens the deck makes are many enough to mean something", want.length >= 3, true);
+  check("i · each is pinned to the box's own printing", pinned.map(({ token, printing }) => ({ token, printing })), want);
+  check("i · and every pinned printing is held", pinned.every((p) => p.held), true);
+  const [plain] = await rows<{ n: number }>(sql`select count(*)::int n from deck_token_printings where deck_id in (${thorin}::uuid, ${gishath}::uuid)`);
+  check("i · a plain start, whose box's tokens the player does not hold, pins none", plain.n, 0);
+
   const allOwed = (await loadDeckBuyRows(USER, [deckId], undefined, ENV)).filter((r) => r.deckId === deckId);
   check("b · the new deck owes nothing", allOwed.length, 0);
   check("c · the older decks are still short of all four", [await owes(thorin), await owes(gishath)], [FOUR, FOUR]);
@@ -124,6 +147,11 @@ async function run() {
   await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: stranger.id, setCode: "", condition: null, quantity: 1 }] }, { id: otherId, env: ENV });
   const reused = await startPreconOwned(USER, FILE, "Again", otherId, ENV, true);
   check("g · an id another add already used is refused", reused.ok, false);
+
+  // A plain start of the same box, now that its tokens are held: pinned as well, through the same writer.
+  const again = await startPreconDeck(USER, FILE, "Multiverse again", ENV);
+  const [againPins] = await rows<{ n: number }>(sql`select count(*)::int n from deck_token_printings where deck_id = ${again}::uuid`);
+  check("i · a plain start of a box whose tokens are held pins them too", againPins.n, want.length);
 
   // A copy the player gives the new deck LATER, through the chooser, is that pick's, not the start's: the revert keeps it.
   const [later] = await rows<{ id: string }>(sql`

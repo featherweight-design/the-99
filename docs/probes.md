@@ -2049,6 +2049,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   - History's "Went to" for each of the four names the new deck alone;
   - a retry under the same action id lands on the same deck and writes nothing more, and an id another add used is
     refused;
+  - each token the box holds and the deck makes shows the box's own printing (`deck_token_printings`, through
+    `writeDeckTokenPrintingIn`), and is held; a plain start pins a box's tokens only once they are held;
   - reverting the add (after its short warning is confirmed) releases the reservations, and the older decks are
     still short.
 
