@@ -4,7 +4,7 @@ import { cardTokens, cards, deckCards, decks, tokenPrintings, tokens } from "../
 import { loadTokenPrices, type TokenPriceFact } from "./price";
 import { tokenOwnershipTablesExist, type TokenOwnership } from "./ownership";
 import { tokenPriceTablesExist, tokenTablesExist } from "./publish";
-import { collidingTokenIds, sortMakers, tokenState } from "./rules";
+import { collidingTokenIds, sortMakers, tokenState, type TokenSource } from "./rules";
 
 /** A card of the deck that makes the token; its art is what the decklist's hover preview draws. */
 export type TokenMaker = { oracleId: string; name: string; imageUri: string | null };
@@ -33,8 +33,8 @@ export type DeckToken = {
   oracleText: string | null;
   makers: TokenMaker[];
   state: TokenOwnership;
-  /** What holds it, when held: an upload row or the player's own mark. Null when not held. */
-  source: "upload" | "manual" | null;
+  /** What holds it, when held: an upload row, the player's own mark, or an added precon. Null when not held. */
+  source: TokenSource | null;
   /** On THIS deck's Shopping list. An owned token is never drawn as joined, whatever the row says. */
   joined: boolean;
   picture: TokenPictured | null;
@@ -71,7 +71,7 @@ export type DeckTokenInputs = {
   links: { tokenOracleId: string; makerOracleId: string; makerName: string; makerImageUri: string | null }[];
   tokens: TokenRowFacts[];
   /** The player's held tokens, by oracle id. */
-  held: Map<string, "upload" | "manual">;
+  held: Map<string, TokenSource>;
   read: boolean;
   /** Tokens on this deck's Shopping list. */
   joined: Set<string>;
@@ -162,7 +162,7 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
 }
 
 export type UserTokenState = {
-  held: { id: string; source: "upload" | "manual" }[];
+  held: { id: string; source: TokenSource }[];
   read: boolean;
   joined: string[];
 };

@@ -15,7 +15,7 @@ import { pruneOrphanAssignments } from "../decks/prune-assignments";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
-import { recordUploadTokens, type TokenHolding } from "../tokens/ownership";
+import { recordUploadTokens, syncPreconTokens, tokenOwnershipTablesExist, type TokenHolding } from "../tokens/ownership";
 
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
@@ -68,8 +68,12 @@ export type CollectionChange =
    * confirmed in the same transaction, and a stamp already set returns `alreadyConfirmed`.
    */
   | { kind: "replace"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[] }
-  /** Quantities added: an upload in Add mode (`uploadId`, stamped as above), or the Add cards sheet. */
-  | { kind: "add"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[] }
+  /**
+   * Quantities added: an upload in Add mode (`uploadId`, stamped as above), the Add cards sheet, or a
+   * precon added to the collection, whose `preconTokens` are marked owned by this entry
+   * (`syncPreconTokens`) and taken back when it is reverted.
+   */
+  | { kind: "add"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[]; preconTokens?: TokenHolding[] }
   /**
    * Per-row new counts: card details, a row removed. `seen` is every holding of the card the
    * editor showed: a holding of that card the player has now and the editor never saw (another tab
@@ -278,6 +282,8 @@ export type ChangeResult =
       receipt?: ReceiptSnapshots;
       /** With `opts.placements`: each raised card a deck claims, by oracle id. */
       raised?: Record<string, RaisedCard>;
+      /** With `preconTokens`: the token oracle ids this entry marked owned (one already held is not). */
+      tokensMarked?: string[];
       /**
        * With `opts.assign`: whether this write created the reservation, or found it already made,
        * and the other deck's reservation a move displaced.
@@ -589,6 +595,11 @@ export async function applyCollectionChange(
   try {
     return await db.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
+      // A precon add keeps the tokens it read on its entry, where revert chains derive ownership from;
+      // a database without 0117 has neither that column nor the ownership it feeds.
+      const preconTokens = change.kind === "add" && change.preconTokens && await tokenOwnershipTablesExist(tx)
+        ? change.preconTokens
+        : undefined;
 
       // ---- 2. The entry, first. Its id is the action's, so a committed twin conflicts here.
       const [claimed] = await tx.insert(collectionHistory)
@@ -599,6 +610,7 @@ export async function applyCollectionChange(
           source: uploadId ? `csv_uploads:${uploadId}` : opts.source ?? null,
           raised: 0,
           lowered: 0,
+          ...(preconTokens ? { preconTokens } : {}),
           // The clock at the insert, AFTER the per-user lock, so entries' times order as their
           // writes did. `now()`, the column default, is frozen before the lock wait, and an entry
           // queued behind a switch-off upload would read as older than it (`editsSinceUpload`).
@@ -704,6 +716,8 @@ export async function applyCollectionChange(
           .set({ revertsId: change.entryId })
           .where(eq(collectionHistory.id, opts.id));
         target = row;
+        // A precon's tokens go with its cards, and come back with them when a revert is reverted.
+        await syncPreconTokens(tx, userId);
         if (change.ignoreDeckId !== undefined && row.source === `shopping:${change.ignoreDeckId}`) {
           ignoredDecks.add(change.ignoreDeckId);
         }
@@ -877,6 +891,9 @@ export async function applyCollectionChange(
       if (change.kind === "replace" || change.kind === "add") {
         await recordUploadTokens(tx, userId, uploadId, change.kind, change.tokens);
       }
+      const tokensMarked = preconTokens
+        ? await syncPreconTokens(tx, userId, opts.id)
+        : undefined;
 
       const moves = countMoves(rows);
       let short: ShortDeck[] = [];
@@ -919,6 +936,7 @@ export async function applyCollectionChange(
         ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
         ...(raised ? { raised } : {}),
         ...(opts.assign ? { assigned } : {}),
+        ...(tokensMarked ? { tokensMarked } : {}),
       };
     });
   } catch (error) {

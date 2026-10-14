@@ -2,7 +2,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardTokens, deckTokenJoins, tokenOwnership } from "../../db/schema";
 import { deckMakerIds } from "./read";
-import { markTokenOwned, unmarkTokenOwned } from "./ownership";
+import { markTokenOwned, syncPreconTokens, unmarkTokenOwned } from "./ownership";
 
 export type TokenWrite = "done" | "notThisDeck";
 
@@ -74,6 +74,8 @@ export async function unmarkOwned(userId: string, deckId: string, tokenOracleId:
       eq(deckTokenJoins.tokenOracleId, tokenOracleId), eq(deckTokenJoins.userId, userId),
     ));
     await unmarkTokenOwned(userId, tokenOracleId, tx);
+    // A precon added to the collection that holds this token claims it again: its cards still stand.
+    await syncPreconTokens(tx, userId);
   });
   return "done";
 }

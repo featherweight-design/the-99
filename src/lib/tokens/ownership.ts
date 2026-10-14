@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { deckTokenJoins, tokenOwnership, tokenReads } from "../../db/schema";
+import { standingPreconAdds } from "../precons/added";
 
 /**
  * Token ownership (plan `2026-10-11-tokens-for-my-deck.md`, PR 3). Pure rules first, then the writes.
@@ -36,7 +37,7 @@ export function aggregateTokenRows(rows: { tokenOracleId: string; quantity: numb
 }
 
 /** Anything that runs one statement: a transaction or the db. */
-type Runner = Pick<typeof db, "execute" | "insert" | "delete" | "select">;
+type Runner = Pick<typeof db, "execute" | "insert" | "delete" | "select" | "update">;
 
 const BATCH = 500;
 
@@ -49,7 +50,10 @@ export async function tokenOwnershipTablesExist(runner: Pick<Runner, "execute"> 
   const { rows } = await runner.execute<{ ok: boolean }>(sql`
     select (to_regclass('public.token_ownership') is not null
         and to_regclass('public.token_reads') is not null
-        and to_regclass('public.deck_token_joins') is not null) as ok
+        and to_regclass('public.deck_token_joins') is not null
+        -- 0117's column: every ownership write and the revert's clear name it.
+        and exists (select 1 from information_schema.columns
+          where table_schema = 'public' and table_name = 'token_ownership' and column_name = 'entry_id')) as ok
   `);
   return rows[0]?.ok === true;
 }
@@ -114,6 +118,8 @@ export async function writeUploadTokens(
           ? sql`case when ${tokenOwnership.source} = 'upload' then ${tokenOwnership.quantity} + excluded.quantity else excluded.quantity end`
           : sql`excluded.quantity`,
         source: sql`'upload'`,
+        // A precon row the upload reads becomes the upload's, so reverting the precon no longer takes it.
+        entryId: sql`null`,
         updatedAt: sql`now()`,
       },
     });
@@ -122,6 +128,62 @@ export async function writeUploadTokens(
     target: tokenReads.userId,
     set: { uploadId, readAt: sql`now()` },
   });
+}
+
+/**
+ * Re-derives the player's `precon` token rows from the precon adds whose cards still stand
+ * (`standingPreconAdds`: an add reverted, or a revert itself reverted, follows its cards), so any
+ * order of adds and reverts leaves the tokens agreeing with the collection. Each add's tokens are the
+ * ones it read and kept on its entry, never the catalog's current list, which an ingest replaces. Each token a standing add
+ * names is owned, attributed to the OLDEST such add and counted over all of them; a precon row no
+ * standing add names goes. A token the player holds by any other source is left as it stands and is
+ * never taken over; when that other row goes (an unmark, a Replace), this runs again and the precon's
+ * claim comes back. Joins first, as every write that makes a token held does (`writeUploadTokens`).
+ * Never writes the read marker: a precon says nothing about the tokens it does not hold.
+ *
+ * Runs under the per-user lock: the ledger's transaction, a Replace's, or an unmark's. Returns the token oracle ids it newly
+ * marked owned for entry `entryId`, which is what an add reports.
+ */
+export async function syncPreconTokens(tx: Runner, userId: string, entryId?: string): Promise<string[]> {
+  if (!(await tokenOwnershipTablesExist(tx))) return [];
+  const adds = await standingPreconAdds(userId, tx, { withTokens: true });
+  const want = new Map<string, { entryId: string; quantity: number }>();
+  for (const add of adds) {
+    for (const t of add.tokens) {
+      const at = want.get(t.tokenOracleId);
+      if (at) at.quantity += t.quantity;
+      else want.set(t.tokenOracleId, { entryId: add.id, quantity: t.quantity });
+    }
+  }
+
+  const have = await tx.select({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId, quantity: tokenOwnership.quantity })
+    .from(tokenOwnership).where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "precon")));
+  const held = new Set(have.map((h) => h.id));
+  const fresh = [...want].filter(([id]) => !held.has(id));
+  // Joins first, before any ownership row is touched (`writeUploadTokens`, `markOwnedOnDeck`, the purge).
+  // A token another source already holds has no join left, so clearing its joins here is a no-op.
+  if (fresh.length > 0) {
+    await tx.delete(deckTokenJoins).where(and(eq(deckTokenJoins.userId, userId), inArray(deckTokenJoins.tokenOracleId, fresh.map(([id]) => id))));
+  }
+  const gone = have.filter((h) => !want.has(h.id)).map((h) => h.id);
+  if (gone.length > 0) {
+    await tx.delete(tokenOwnership).where(and(
+      eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "precon"), inArray(tokenOwnership.tokenOracleId, gone),
+    ));
+  }
+  for (const h of have) {
+    const w = want.get(h.id);
+    if (w && (w.entryId !== h.entryId || w.quantity !== h.quantity)) {
+      await tx.update(tokenOwnership).set({ entryId: w.entryId, quantity: w.quantity, updatedAt: sql`now()` })
+        .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.tokenOracleId, h.id), eq(tokenOwnership.source, "precon")));
+    }
+  }
+  if (fresh.length === 0) return [];
+  const marked = await tx.insert(tokenOwnership)
+    .values(fresh.map(([id, w]) => ({ userId, tokenOracleId: id, quantity: w.quantity, source: "precon" as const, entryId: w.entryId })))
+    .onConflictDoNothing()
+    .returning({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId });
+  return marked.filter((m) => m.entryId === entryId).map((m) => m.id);
 }
 
 /** The player's own `I have one`. Never writes the read marker; never touches an upload row. */
@@ -166,4 +228,6 @@ export async function recordUploadTokens(
 ): Promise<void> {
   if (!uploadId || !tokens || !(await tokenOwnershipTablesExist(tx))) return;
   await writeUploadTokens(tx, userId, uploadId, mode, tokens);
+  // A Replace dropped every upload row, and with it any token a standing precon add claims beneath one.
+  if (mode === "replace") await syncPreconTokens(tx, userId);
 }

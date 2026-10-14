@@ -242,6 +242,7 @@
     "probe:fits-read-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-fits-read-state.mts",
     "probe:cuts-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-state.mts",
     "probe:payments-ledger": "tsx scripts/probe-payments-ledger.ts",
+    "probe:precon-add": "tsx scripts/probe-precon-add.ts",
     "probe:payments-webhook": "tsx scripts/probe-payments-webhook.ts",
     "probe:spend-cap": "tsx scripts/probe-spend-cap.ts",
     "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",

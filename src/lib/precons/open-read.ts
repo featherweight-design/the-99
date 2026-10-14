@@ -5,6 +5,7 @@
  * edition it folds into, so the page can redirect to it (design call 4).
  */
 import { and, eq, inArray } from "drizzle-orm";
+import { preconAddedOn } from "./added";
 import { db as pool } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { summarisePrecons, type PreconRow, type ReaderDeck } from "./list";
@@ -51,6 +52,8 @@ export type OpenPrecon =
     hasCollection: boolean;
     /** Every deck the reader could link here, most shared first; one already linked here is not. */
     decks: PreconDeckChoice[];
+    /** When the reader last added this precon to their collection (an unreverted entry), as ISO, or null. */
+    addedOn: string | null;
   };
 
 export async function loadOpenPrecon(userId: string, fileName: string): Promise<OpenPrecon | null> {
@@ -107,6 +110,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
     setName: setRow[0]?.name ?? null,
     hasCollection: any.length > 0,
     decks,
+    addedOn: await preconAddedOn(userId, fileName, db),
     cards: lines.map((l) => ({
       oracleId: l.oracleId,
       name: l.name,

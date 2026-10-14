@@ -88,7 +88,8 @@ export function TokenRow({
   const [open, setOpen] = useState(false);
   const { press, pending, refused } = useTokenPress();
 
-  const upload = token.state === "owned" && token.source === "upload";
+  // Held by the collection (an upload, or an added precon): drawn as owned, with no hand mark to press.
+  const upload = token.state === "owned" && (token.source === "upload" || token.source === "precon");
   const byHand = token.state === "owned" && token.source === "manual";
   const pt = tokenPT(token);
   const first = token.makers[0];
