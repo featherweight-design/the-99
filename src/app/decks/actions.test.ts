@@ -2893,6 +2893,14 @@ describe("setBasicQuantity — a basic land's count, set absolutely", () => {
     expect(stamped()).toBe(false);
   });
 
+  it("compares against a stack above the write ceiling, so an imported 1,000 can step down", async () => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 1000 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 999, 1000)).toEqual({ ok: true, quantity: 999, changed: true });
+  });
+
   it("writes when the row still holds the expected count", async () => {
     ownDeck();
     basic();

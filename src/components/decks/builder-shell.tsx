@@ -457,6 +457,9 @@ export function BuilderShell({
   const appRouter = useContext(AppRouterContext);
   const [, startBasicCount] = useTransition();
   const [basicCounts] = useState<BasicCounts>(() => createBasicCounts());
+  // Leaving the builder (for the review page, where the commit is) settles every open burst AT ONCE, so the count
+  // the player saw is saved on the way out rather than 600ms later, behind a commit that would snapshot the old one.
+  useEffect(() => () => void basicCounts.flush(), [basicCounts]);
   useEffect(() => {
     basicCounts.configure({
       save: (oracleId, n, expected) => setBasicQuantity(deck.id, oracleId, n, expected),

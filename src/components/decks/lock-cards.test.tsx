@@ -941,3 +941,18 @@ describe("Clear auto and a stepper save that did not confirm", () => {
     expect(screen.getByText(recommendationsCopy.auto.sweepFailed)).toBeInTheDocument();
   });
 });
+
+describe("leaving the builder settles the basics stepper at once", () => {
+  it("saves a pending count when the builder unmounts, without waiting out the settle", async () => {
+    setBasicQuantity.mockResolvedValue({ ok: true, quantity: 7, changed: true });
+    const island = mk("island", "Island", { typeLine: "Basic Land — Island", cardTypeGroup: "Lands", role: "land", quantity: 6 } as Partial<DeckDetailCard>);
+    const view = renderShell([island], false);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.basicStepper.moreAria("Island", 7) }));
+    });
+    expect(setBasicQuantity).not.toHaveBeenCalled();
+    await act(async () => view.unmount());
+    expect(setBasicQuantity).toHaveBeenCalledWith(expect.any(String), "island", 7, 6);
+  });
+});
+

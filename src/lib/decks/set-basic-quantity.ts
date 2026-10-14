@@ -59,7 +59,9 @@ export async function setBasicQuantityFor(
   expected?: number,
 ): Promise<BasicQuantityOutcome> {
   if (!basicQuantityInRange(n)) return { ok: false, reason: "out-of-range" };
-  if (expected !== undefined && !basicQuantityInRange(expected)) return { ok: false, reason: "out-of-range" };
+  // The ceiling is for the figure WRITTEN, never the one compared: an import can stack more than 999 basics, and
+  // stepping such a stack down must still compare against what it holds.
+  if (expected !== undefined && !(Number.isSafeInteger(expected) && expected >= 0)) return { ok: false, reason: "out-of-range" };
   await requireDeck(deckId, userId);
 
   const [card] = await db.select({ typeLine: cards.typeLine }).from(cards).where(eq(cards.oracleId, oracleId));
