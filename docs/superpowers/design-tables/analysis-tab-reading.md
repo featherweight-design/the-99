@@ -145,7 +145,7 @@ Out of scope: banner (2d/2i), stale/committed date forms, header chips, all shee
 | Live region | frame: `aria-live="polite"`; the loading heading is the live region | same |
 | 2a | `Five brackets. Your cards pick which.` | same |
 | 2b | `Working out your bracket…` (U+2026) | same |
-| 2c | `We could not finish reading this deck.` | same |
+| 2c | `We couldn’t finish reading this deck.` | same |
 
 ### Body paragraph(s)
 | Property | Mobile (390) | Desktop (1300) |

@@ -30,8 +30,8 @@ export const issueInspectorCopy = {
   unmatchedRow: {
     metaLong: (line: number, setCode: string) =>
       setCode
-        ? `line ${line} · set ${setCode} · no Oracle match`
-        : `line ${line} · no Oracle match`,
+        ? `line ${line} · set ${setCode} · no match`
+        : `line ${line} · no match`,
     metaCompact: (line: number, setCode: string) =>
       setCode ? `L${line} · ${setCode} · no match` : `L${line} · no match`,
     quantity: (quantity: number) => `×${quantity}`,
@@ -57,7 +57,7 @@ export const issueInspectorCopy = {
   // not narrate the control underneath it.
   zeroState: {
     noParseErrors: "Every row parsed cleanly.",
-    noUnmatched: "Every card matched the Oracle database.",
+    noUnmatched: "Every card found a match.",
   },
   // Richness pass §Non-safety-critical error moment — the copy gets to be funny
   // here because nothing was lost. Transcribed from Surfaces v2 §Collection.

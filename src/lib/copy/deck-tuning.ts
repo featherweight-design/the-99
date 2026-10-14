@@ -51,9 +51,9 @@ export const deckTuningCopy = {
     resultsLeadOne: "One swap, a card out and a card in. Nothing moves until you apply it.",
     // Replaces `resultsLead` when the checks dropped some: the count is never padded back.
     fewerLead: (nWord: string, droppedWord: string) =>
-      `${nWord} swaps this time. ${droppedWord} more did not hold up to checking.`,
+      `${nWord} swaps this time. ${droppedWord} more didn’t hold up to checking.`,
     fewerLeadOne: (droppedWord: string) =>
-      `One swap this time. ${droppedWord} more did not hold up to checking.`,
+      `One swap this time. ${droppedWord} more didn’t hold up to checking.`,
     allDoneLead: (totalWord: string, applied: number, rejected: number) =>
       `All ${totalWord} answered: ${applied} applied, ${rejected} rejected. Suggest again for a new set, read from the deck as it is now.`,
     allDoneLeadOne: (applied: boolean) =>
@@ -67,7 +67,7 @@ export const deckTuningCopy = {
       rejected > 0 ? `${applied} of ${total} applied · ${rejected} rejected` : `${applied} of ${total} applied`,
     // State 5, rewritten count-neutral. A successful run with an honest answer, in ordinary ink.
     unchanged: (when: string) =>
-      `Nothing has changed since ${when}: no new game, no edit to the list or to what this deck is for, so a new run would only repeat these.`,
+      `Nothing has changed since ${when}: no new game, no edit to the list or to what this deck is for, so asking again would only repeat these.`,
     unchangedReasonGamesKey: "games",
     unchangedReasonGames: (n: number, when: string) =>
       n === 0 ? "none logged yet" : `${n} of ${n} already read, none logged since ${when}`,
@@ -124,34 +124,34 @@ export const deckTuningCopy = {
     unavailable: {
       tag: "unavailable",
       heading: "We couldn\u2019t reach the service",
-      body: "It is not something you did, and it is usually back within a few minutes.",
+      body: "It isn’t something you did, and it’s usually back within a few minutes.",
       kept: "Your games, your notes and your list are untouched. Nothing was changed and no credit was used.",
       note: "or come back later: the button will be here",
     },
     timeout: {
       tag: "timed out",
       heading: "This one took too long",
-      body: "We stopped it before it came back. A long list and a full game log are a lot to read, and now and then it does not finish.",
+      body: "We stopped it before it came back. A long list and a full game log are a lot to read, and now and then it doesn’t finish.",
       kept: "Nothing was applied and no credit was used.",
       note: "trying again usually works",
     },
     malformed: {
       tag: "unusable answer",
       heading: "We couldn\u2019t use that answer",
-      body: "We are not going to show you a guess at what it meant.",
+      body: "We won’t show you a guess at what it meant.",
       kept: "Your games, your notes and your list are untouched, nothing was applied, and no credit was used.",
       note: "this one is on us",
     },
     ungrounded: {
       tag: "nothing held up",
       heading: "None of the swaps held up",
-      body: "Each failed a check: a card outside the deck\u2019s colors, a cut the deck does not hold, or a reason with nothing countable behind it. We would rather show you none than one we cannot back.",
+      body: "Each failed a check: a card outside the deck\u2019s colors, a cut the deck doesn’t hold, or a reason with nothing countable behind it. We would rather show you none than one we can’t back.",
       kept: "Nothing was applied, your list is untouched, and no credit was used.",
       note: "log another game and there is more to go on",
     },
     interrupted: {
       tag: "interrupted",
-      heading: "That run did not finish",
+      heading: "That one didn’t finish",
       body: "Nothing you did caused it.",
       kept: "Nothing was applied and no credit was used.",
       note: "",
@@ -180,14 +180,14 @@ export const deckTuningCopy = {
     undo: "Undo",
     showAgain: "Show it again",
     noLongerApplies: "no longer applies",
-    addAlreadyIn: (name: string) => `${name} is already in the deck, so it cannot be added.`,
-    cutGone: (name: string) => `${name} has left the deck, so it cannot be cut.`,
+    addAlreadyIn: (name: string) => `${name} is already in the deck, so it can’t be added.`,
+    cutGone: (name: string) => `${name} has left the deck, so it can’t be cut.`,
     emptyAdditions: "No additions this time.",
     emptyCuts: "No cuts this time.",
     open: (name: string) => `Open ${name}`,
     resultsLead: "Cards to add and cards to cut, each with its own reason. Nothing moves until you answer one.",
     fewerLead: (droppedWord: string) =>
-      `${droppedWord} more did not hold up to checking. Nothing moves until you answer one.`,
+      `${droppedWord} more didn’t hold up to checking. Nothing moves until you answer one.`,
     allDoneLead: (applied: number, rejected: number) =>
       `All answered: ${applied} applied, ${rejected} rejected. Suggest again for a new set, read from the deck as it is now.`,
     tallyOf: (applied: number, total: number, rejected: number) =>
@@ -206,9 +206,9 @@ export const deckTuningCopy = {
     rejected: "rejected",
     restore: "Show it again",
     noLongerApplies: "no longer applies",
-    cutGone: (name: string) => `${name} has left the deck, so this swap cannot be applied.`,
+    cutGone: (name: string) => `${name} has left the deck, so this swap can’t be applied.`,
     // Eng-written: the add's half of the rule, undrawn.
-    addAlreadyIn: (name: string) => `${name} is already in the deck, so this swap cannot be applied.`,
+    addAlreadyIn: (name: string) => `${name} is already in the deck, so this swap can’t be applied.`,
     // The bracket flag. Compare the LOWEST bracket each set permits (READINESS-r3-audit.md, note
     // 1): higher raises, lower lowers, and an equal lowest with a different set changes. The
     // third is eng-written.
