@@ -15,6 +15,7 @@ import { placedOf, type AddedPlacement } from "../collection/add-placements";
 import type { PendingItem } from "../collection/pending";
 import type { TokenHolding } from "../tokens/ownership";
 import { preconSource } from "./added";
+import type { Reader } from "./list-read";
 
 
 export type PreconCardForAdd = {
@@ -58,6 +59,12 @@ export function preconAddLines(cards: readonly PreconCardForAdd[], tokenRows: re
 
 /** The precon's cards and tokens as the add takes them, or null for a file the catalog does not hold. */
 export async function readPreconForAdd(fileName: string): Promise<{ cards: PreconCardForAdd[]; tokens: PreconTokenForAdd[] } | null> {
+  // One snapshot: the ingest replaces precons, their cards and their tokens in one transaction, so three
+  // separate reads could see a head from one generation and an empty list from the next.
+  return db.transaction((tx) => readPreconIn(tx, fileName), { isolationLevel: "repeatable read" });
+}
+
+async function readPreconIn(db: Reader, fileName: string): Promise<{ cards: PreconCardForAdd[]; tokens: PreconTokenForAdd[] } | null> {
   const [precon] = await db.select({ fileName: precons.fileName }).from(precons).where(eq(precons.fileName, fileName));
   if (!precon) return null;
   const rows = await db
@@ -107,7 +114,9 @@ export type PreconAddResult =
 /**
  * Adds the precon for one player as one entry. `actionId` is the idempotency id: a retry finds the
  * committed entry and answers from it: no placements (the first request's read is gone), and the
- * tokens it marked read back from `token_ownership`, where each carries the entry's id.
+ * tokens it marked read back from `token_ownership`, where each carries the entry's id. A token a later
+ * upload took over, or a revert removed, is no longer the entry's, so a retry after either reports it
+ * no longer; a retry is the same request repeated within seconds, before either can happen.
  */
 export async function addPreconForUser(
   userId: string,

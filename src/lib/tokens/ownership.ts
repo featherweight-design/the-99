@@ -49,7 +49,10 @@ export async function tokenOwnershipTablesExist(runner: Pick<Runner, "execute"> 
   const { rows } = await runner.execute<{ ok: boolean }>(sql`
     select (to_regclass('public.token_ownership') is not null
         and to_regclass('public.token_reads') is not null
-        and to_regclass('public.deck_token_joins') is not null) as ok
+        and to_regclass('public.deck_token_joins') is not null
+        -- 0117's column: every ownership write and the revert's clear name it.
+        and exists (select 1 from information_schema.columns
+          where table_schema = 'public' and table_name = 'token_ownership' and column_name = 'entry_id')) as ok
   `);
   return rows[0]?.ok === true;
 }
