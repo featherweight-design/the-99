@@ -9,9 +9,10 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-14-basic-lands-stepper.
 
 | Read | For |
 |---|---|
-| **`The 99 - Basic Lands Stepper (R1).dc.html`** | The five calls and the row's anatomy at both widths. **Start here.** |
-| `R1 - List-Phone.dc.html`, `R1 - List-Desktop.dc.html` | Every state on the list row. |
-| `R1 - Card-Phone.dc.html`, `R1 - Card-Desktop.dc.html` | Every state on the tile. |
+| **`The 99 - Basic Lands Stepper (R2).dc.html`** | **R2, current.** The five calls and the minimal row at both widths. **Start here.** |
+| `R2 - List-Phone.dc.html`, `R2 - List-Desktop.dc.html` | Every state on the list row. |
+| `R2 - Card-Phone.dc.html`, `R2 - Card-Desktop.dc.html` | Every state on the tile. |
+| `The 99 - Basic Lands Stepper (R1).dc.html`, `R1 - *.dc.html` | R1, the boxed control, kept for the diff. |
 | `R1 - Access.dc.html` | Tab order, labels and announcements. |
 | `README.md` | Calls with reasons, component and eng notes, gap report. |
 | `STATES-stepper.md` | The matrix, the rules, per-state copy. |

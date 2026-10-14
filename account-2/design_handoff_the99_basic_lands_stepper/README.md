@@ -17,6 +17,20 @@ The same canvas is live as a Design artifact in account 2.
 
 ---
 
+## R2 changes (Hugh, 2026-10-14: "a bit more minimalist")
+
+**R2 supersedes R1's component notes below where they differ.** R1's files are kept for the diff. The five calls are
+unchanged; only the drawing of the control changed. `R1 - Access.dc.html` still holds for R2.
+
+| | R1 | R2 |
+|---|---|---|
+| Row, phone | 36px bordered box, radius 9 | **No box, no border.** − and + bare in `--fg-faint`, count in mono `--fg-body`. Buttons still 44×44; 112px in all. |
+| Row, desktop | 28px bordered box; row padding cut to 3px | **Bare glyphs at the ✕'s size and rest ink** (`--border-dashed`, `--fg-body` on hover). 22px per glyph, 24px count, 68px in all. Row keeps its shipped 7px padding. |
+| Tile | Solid `--surface-sunken` bar with a top border | **No bar.** − count + on a 70% `--bg` scrim across the art's foot. Glyphs `--fg-body` (phone) / `--fg-faint` lifting to `--fg` (desktop). |
+| Field focus | Box border goes `--accent` | **A 2px `--accent` underline under the count.** |
+
+The ✕ at 1, the `from N` marker, the refusal line and every state are unchanged.
+
 ## The answer in one line
 
 *The count becomes the control.* On a basic row, `− count +` takes the place of the ✕ and the `×N`. Every press
