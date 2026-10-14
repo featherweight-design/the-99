@@ -240,8 +240,7 @@ async function commitVersionIn(
   // failing the commit, because the version's cards are the commit and the printing is a caption.
   //
   // Read inside the commit's own transaction, so a deck started and committed in one
-  // (`startPreconDeck`, `startPreconOwned`) is resolved against the pins and the copies it has only here
-  // until it commits. In a SAVEPOINT, so the read stays fail-soft: a failed statement would otherwise
+  // (`startPreconDeck`) is resolved against the printing pins it has only here until it commits. In a SAVEPOINT, so the read stays fail-soft: a failed statement would otherwise
   // abort the whole transaction, where the savepoint rolls back alone and the version records nulls.
   const shown = deckPrintingsEnabled(env)
     ? await tx.transaction((sp) => readDeckPrintings(

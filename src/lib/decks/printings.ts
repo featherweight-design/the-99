@@ -62,6 +62,9 @@ export type DeckPrintings = {
   heldPicks: Map<string, DeckPick>;
 };
 
+/** What a deck's printing reads run on: the shared pool, or a transaction whose own writes they must see. */
+export type PrintingsRunner = Pick<typeof db, "execute" | "select">;
+
 /**
  * Every pick stored for these decks, keyed by deck then oracle id.
  *
@@ -69,9 +72,6 @@ export type DeckPrintings = {
  * commander column), like every proxy read: a pick whose card has left the deck names nothing.
  * `pruneOrphanProxies` deletes such a row; this is the reading half of that pair.
  */
-/** What a deck's printing reads run on: the shared pool, or a transaction whose own writes they must see. */
-export type PrintingsRunner = Pick<typeof db, "execute" | "select">;
-
 export async function readDeckPicks(
   userId: string,
   deckIds: string[],
