@@ -54,7 +54,7 @@ export default async function NewDeckPage({
           bracket: answers.bracket,
         },
         resultsHref: resultsHref(asked),
-        changeHref: `${CHOOSE_PATH}${serializeChooseParams({ ...asked, notUsed: [], readId: null, deeper: [], results: false })}`,
+        changeHref: `${CHOOSE_PATH}${serializeChooseParams({ ...asked, notUsed: [], readId: null, results: false })}`,
         drawBlock: hasAnswerRows(answers),
       } : undefined;
       return (

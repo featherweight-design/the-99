@@ -17,7 +17,7 @@ import { printedFaceName } from "../../lib/collection/browse";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { MutationError } from "./mutation-error";
-import { CARD_TILE_CAPTION_H, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
+import { CARD_TILE_CAPTION_H, TILE_ART_RATIO, TILE_FIELD, TILE_SHELL_SCALED } from "../ui/card-tile-caption";
 import { useSpentSlotUndo } from "./spent-slot-undo";
 
 export function UndoTile({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
@@ -25,9 +25,9 @@ export function UndoTile({ deckId, card }: { deckId: string; card: DeckDetailCar
   const { isPending, error, undo: handleUndo } = useSpentSlotUndo(deckId, card);
 
   return (
-    <li className="flex flex-col">
+    <li className={`flex flex-col ${TILE_FIELD}`}>
       <div
-        className={`${TILE_SHELL} bg-surface-sunken border border-dashed border-border-strong`}
+        className={`${TILE_SHELL_SCALED} bg-surface-sunken border border-dashed border-border-strong`}
       >
         {/* The art's box, empty and holding the shape. The removal sentence sits
             in it rather than under it: on a tile the art is most of the height,

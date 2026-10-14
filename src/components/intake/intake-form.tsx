@@ -49,7 +49,7 @@ export function parseBudget(raw: string): number | null {
  * control (F1), so a card a stale address carried must not come back.
  */
 export function submitQuery(p: ChooseParams): string {
-  return serializeChooseParams({ ...p, card: null, readId: null, deeper: [], notUsed: [], results: false });
+  return serializeChooseParams({ ...p, card: null, readId: null, notUsed: [], results: false });
 }
 
 /** The tag picker's lookup, module-level so its identity is stable across renders. */

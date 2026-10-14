@@ -26,7 +26,8 @@ import { ViewToggle } from "../../ui/view-toggle";
 import { useState } from "react";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { EditionSwitch } from "./edition-switch";
-import type { PreconEdition } from "../../../lib/precons/edition";
+import { parseEdition, type PreconEdition } from "../../../lib/precons/edition";
+import { useLiveQuery } from "../../../lib/commanders/live-query";
 
 /** The open precon's view, kept apart from the deck page's (`the99:deck-view`): one is a reading
  *  choice, the other a building one. List is the default and what the server draws, so no cookie. */
@@ -103,6 +104,15 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
   const view = storedView ?? "list";
   const card = view === "card";
   const [chosen, setChosen] = useState<PreconEdition>(initialEdition);
+  // The URL names the edition, and a navigation to another edition of this precon keeps this view
+  // mounted with its first props, so the live address is read on every render and a change of
+  // edition re-seeds the choice during render, before the stale edition can paint.
+  const liveEdition = parseEdition(new URLSearchParams(useLiveQuery(initialEdition === "collector" ? "edition=collector" : "")).get("edition") ?? undefined);
+  const [seenEdition, setSeenEdition] = useState(liveEdition);
+  if (liveEdition !== seenEdition) {
+    setSeenEdition(liveEdition);
+    setChosen(liveEdition);
+  }
   const edition: PreconEdition = precon.collector ? chosen : "regular";
   const pickEdition = (next: PreconEdition) => {
     // Only `edition` is this page's to write; Regular, the default, is its absence.

@@ -17,10 +17,10 @@ const landed = (url: string) => {
 };
 
 describe("the submit redirect", () => {
-  it("is a new ask whatever address it came from: an earlier read and its marks never ride along", () => {
+  it("is a new ask whatever address it came from: an earlier read never rides along", () => {
     const READ = "0000aaaa-0000-4000-8000-0000000000aa";
-    const p = landed(target({ words: "dinosaurs", readId: READ, deeper: ["t:dinosaurs"] }));
-    expect([p.readId, p.deeper]).toEqual([null, []]);
+    const p = landed(target({ words: "dinosaurs", readId: READ }));
+    expect(p.readId).toBeNull();
   });
 
   it("lands on the results with the words resolved into answers and the words kept", () => {
@@ -104,7 +104,7 @@ describe("the submit's theme join", () => {
 });
 
 describe("resultsTarget and formTarget (rework plan PR 3)", () => {
-  const p = { ...emptyParams(), words: "  a Landfall deck  ", themes: ["landfall"], card: "0000aaaa-0000-4000-8000-000000000001", notUsed: ["x"], deeper: ["a"] };
+  const p = { ...emptyParams(), words: "  a Landfall deck  ", themes: ["landfall"], card: "0000aaaa-0000-4000-8000-000000000001", notUsed: ["x"] };
 
   it("lands on the results with the words kept whole and unmatched, r naming the read, and never a card", () => {
     const sp = new URLSearchParams(resultsTarget(p, "r1").split("?")[1]);

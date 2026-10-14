@@ -123,7 +123,7 @@ export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p:
         ? copy.narrow.widenThemesWhy(narrow.anyOf.most, names)
         : null,
       count: copy.narrow.count(narrow.anyOf.count),
-      params: { ...p, themeJoin: "any", readId: null, deeper: [] },
+      params: { ...p, themeJoin: "any", readId: null },
       n: narrow.anyOf.count,
     });
   }
@@ -133,7 +133,7 @@ export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p:
       reason: null,
       count: copy.narrow.count(narrow.widen.count),
       // Widening is a change of answers too, so it carries no read either (`without`).
-      params: { ...p, match: "contains", readId: null, deeper: [] },
+      params: { ...p, match: "contains", readId: null },
       n: narrow.widen.count,
     });
   }
@@ -166,7 +166,7 @@ function answerName(a: AnswerKey, p: ChooseParams, labels: Labels): string {
  * `r` names must not be drawn over answers it never read.
  */
 export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
-  const q = { ...p, readId: null, deeper: [] };
+  const q = { ...p, readId: null };
   switch (a.kind) {
     case "colors": return { ...q, colors: [], match: "contains" };
     case "theme": return { ...q, themes: p.themes.filter((s) => s !== a.slug) };
@@ -183,23 +183,17 @@ export type AnswerChip = {
   value: string;
   /** Drawn after the value, mono and faint: the the-99 chip's *commander owned or not*. */
   tail?: string;
-  /** Added by the deeper look (`d`). */
-  deeper: boolean;
   /** An any-of chip's names, drawn with the joiner between them; `value` is then its spoken name. */
   names?: string[];
   /** A printed-in chip's set codes, drawn mono with the joiner; `value` is then its full names. */
   codes?: string[];
 };
 
-/**
- * The *We read this as* bar's chips, in the form's order. `deeper` holds the marks the page has
- * checked against the reader's own delivered read; an empty list marks nothing.
- */
-export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly string[] = []): AnswerChip[] {
+/** The *We read this as* bar's chips, in the form's order. */
+export function answerChips(p: ChooseParams, labels: Labels): AnswerChip[] {
   const k = copy.readAs.kinds;
-  const marked = (m: string) => deeper.includes(m);
   return [
-    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? k.exactly : k.colors, value: colorsPhrase(p.colors), deeper: false }] : []),
+    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? k.exactly : k.colors, value: colorsPhrase(p.colors) }] : []),
     ...(isAnyOf(p)
       ? [{
         kind: k.anyOf,
@@ -207,9 +201,8 @@ export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly st
         // full name here the group was spoken as "any of Any of Orcs, …".
         value: orList(p.themes.map(labels.theme)),
         names: p.themes.map(labels.theme),
-        deeper: p.themes.some((s) => marked(`t:${s}`)),
       }]
-      : p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s), deeper: marked(`t:${s}`) }))),
+      : p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s) }))),
     ...(p.sets.length > 0
       ? [{
         kind: k.printedIn,
@@ -217,12 +210,11 @@ export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly st
         // any-of chip was spoken with its kind twice).
         value: p.sets.map((c) => labels.set?.(c) ?? c.toUpperCase()).join(` ${copy.readAs.joiner} `),
         codes: p.sets.map((c) => c.toUpperCase()),
-        deeper: false,
       }]
       : []),
-    ...(p.pool === "own" ? [{ kind: k.pool, value: copy.readAs.poolValue, tail: copy.readAs.poolTail, deeper: false }] : []),
-    ...(p.card && labels.card ? [{ kind: k.card, value: labels.card, deeper: marked("a") }] : []),
-    ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}`, deeper: marked("b") }] : []),
-    ...(p.bracket !== null ? [{ kind: k.bracket, value: `${p.bracket} · ${BRACKET_NAMES[p.bracket]}`, deeper: marked("k") }] : []),
+    ...(p.pool === "own" ? [{ kind: k.pool, value: copy.readAs.poolValue, tail: copy.readAs.poolTail }] : []),
+    ...(p.card && labels.card ? [{ kind: k.card, value: labels.card }] : []),
+    ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}` }] : []),
+    ...(p.bracket !== null ? [{ kind: k.bracket, value: `${p.bracket} · ${BRACKET_NAMES[p.bracket]}` }] : []),
   ];
 }

@@ -24,7 +24,7 @@ export function ChooseLoading() {
   const p = parseChooseParams(new URLSearchParams(useSearchParams().toString()));
   if (!p.results) return <LoadingScreen copy={shellCopy.loading.deckNew} />;
   // The page's own way back: a change of answers carries neither the read nor its marks.
-  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
+  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, results: false })}`;
   return (
     <div data-testid="choose-loading" className="flex flex-col">
       <ChooseHeader back={{ href: changeHref, label: copy.results.back }} title={copy.results.title} sub={copy.results.sub} subPhone={copy.results.subPhone} />

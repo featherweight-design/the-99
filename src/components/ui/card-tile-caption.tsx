@@ -112,6 +112,19 @@ export const TILE_SHELL =
   "group flex flex-col overflow-hidden rounded-[9px] md:rounded-[10px]";
 export const TILE_ART_RATIO = "63 / 88";
 
+/**
+ * A tile whose corners SCALE with its width: the deck's Card view (and the open precon's), which is two across up to
+ * `md`, so a tile stretches to ~361px at 767px, where the 3.1% rule asks for 11px and the fixed 9px let the matte
+ * through (the Unranked 2026-10-12 item, ruled 2026-10-14: fix the radius, not the column count, which is a layout
+ * change). The tile's ROOT carries `TILE_FIELD`, a size container for its own width only, and the shell and the art
+ * box round by `max(9px, 3.4cqw)` (10px from md), so a corner clears 3.1% at every width and keeps the fixed value
+ * where the tile is narrow. `cqw` is relative to the nearest container ancestor, so these two classes are only for a
+ * tile whose root has `TILE_FIELD`: without one `cqw` is the viewport's, not the tile's.
+ */
+export const TILE_FIELD = "[container-type:inline-size]";
+export const TILE_SHELL_SCALED = "group flex flex-col overflow-hidden rounded-[max(9px,3.4cqw)] md:rounded-[max(10px,3.4cqw)]";
+export const TILE_ART_CLIP_SCALED = "rounded-b-[max(9px,3.4cqw)] md:rounded-b-[max(10px,3.4cqw)]";
+
 /** Draws an occupant's edge inside its box instead of around it. */
 export function slotOutline(colour: string, dashed = false) {
   return {
