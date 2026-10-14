@@ -28,13 +28,13 @@ export const COLLAPSE_MS = 160;
 const dismissed = new Set<string>();
 
 const RING =
-  "rounded-[6px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 const LINK =
   "text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px] " +
-  "hover:decoration-[color:var(--fg)] " + RING;
+  "hover:decoration-[color:var(--fg)] rounded-[3px] " + RING;
 const CLOSE =
   "flex flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[color:var(--fg-faint)] " +
-  "hover:text-[color:var(--fg)] " + RING;
+  "hover:text-[color:var(--fg)] rounded-[6px] " + RING;
 const SHELL =
   "box-border rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)]";
 
@@ -144,7 +144,7 @@ export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
           <section
             aria-label={copy.regionLabel}
             className={
-              `${SHELL} mx-[16px] mt-[14px] grid grid-cols-[minmax(0,1fr)_auto] items-center pt-[6px] pr-[4px] pb-[4px] pl-[14px] ` +
+              `${SHELL} mx-[16px] mt-[14px] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-[10px] pt-[6px] pr-[4px] pb-[4px] pl-[14px] ` +
               "sm:mx-[26px] sm:mt-[18px] sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-x-[10px] sm:pt-[7px] sm:pr-[8px] sm:pb-[6px]"
             }
           >
@@ -186,7 +186,7 @@ export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
             </Link>
             <CloseButton
               onClose={close}
-              className="col-start-2 row-start-1 h-[44px] w-[44px] text-[14px] sm:col-start-3 sm:h-[32px] sm:w-[32px] sm:text-[13px]"
+              className="col-start-2 row-start-1 -mt-[8px] h-[44px] w-[44px] text-[14px] sm:col-start-3 sm:mt-0 sm:h-[32px] sm:w-[32px] sm:text-[13px]"
             />
           </section>
         )}
