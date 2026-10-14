@@ -1,15 +1,16 @@
-# The 99 — Small polish (design handoff, R1)
+# The 99 — Small polish (design handoff, R2)
 
 `design/design_handoff_the99_small_polish/` · 2026-10-14 · mirrors `design_handoff_the99_basic_lands_stepper/`.
 Voice: Kitchen Table. Theme drawn: Kaldheim, except where all six are asked for.
 
-**Status: R1, awaiting Hugh's audit against the brief.** Nothing here is on main.
+**Status: R2, answering Hugh's R1 audit (2026-10-14).** Nothing here is on main. R1's boards stay beside R2's for the diff.
 
 **Source of truth:** `docs/superpowers/design-briefs/2026-10-14-small-polish.md` on branch `brief/small-polish`
 (not on main yet). Five independent items; each section below answers that item's open questions in order.
 
-Canvas: `The 99 - Small Polish (R1).dc.html` (the five calls) plus a phone and a desktop board per item:
-`R1 - Lock-*`, `R1 - Placeholder-*`, `R1 - Motion-*` (interactive: press Play), `R1 - Skeleton-*`, `R1 - Token-*`.
+Canvas: `The 99 - Small Polish (R2).dc.html` (the five calls) plus a phone and a desktop board per item. R2 redrew three:
+`R2 - Lock-*`, `R2 - Motion-*` (they replay on their own every 2.6s), `R2 - Token-*`. Placeholder and Skeleton are unchanged
+from `R1 - Placeholder-*` and `R1 - Skeleton-*`.
 Open with `support.js` beside them. The same canvas is live as a Design artifact in account 2.
 
 **No About entry, no `ABOUT_VERSION` bump.** All five are cosmetic or a loading state (brief §The About entry).
@@ -23,11 +24,11 @@ Open with `support.js` beside them. The same canvas is live as a Design artifact
 
 | Size | Box | Shackle (stroke, round caps, no fill) | Body (fill, `evenodd`) | Keyhole | Used by |
 |---|---|---|---|---|---|
-| `sm` | 9×11 | `M2.4 5.5V3.1a2.1 2.1 0 0 1 4.2 0v2.4`, 1.3 | `M1.5 5h6A1.5 1.5 0 0 1 9 6.5v3A1.5 1.5 0 0 1 7.5 11h-6A1.5 1.5 0 0 1 0 9.5v-3A1.5 1.5 0 0 1 1.5 5Z` | none | tab-bar bracket |
-| `md` | 11×13 | `M2.8 6.8V3.8a2.7 2.7 0 0 1 5.4 0v3`, 1.6 | `M2 6.5h7a2 2 0 0 1 2 2V11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2Z` | dot, r 1, at (5.5, 9.6), cut out | every LockMark site |
-| `lg` | 12×14 | `M3 7V4a3 3 0 0 1 6 0v3`, 1.6 | `M2 6.5h8a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2Z` | circle r 1.2 at (6, 9.6) plus a 1.2×1.16 slot, cut out | rail foot, first-run page line and cards |
+| `sm` | 9×12 | `M2.4 5V3.1a2.1 2.1 0 0 1 4.2 0V5`, 1.3 | `M1.5 4.6h6A1.5 1.5 0 0 1 9 6.1v4.4A1.5 1.5 0 0 1 7.5 12h-6A1.5 1.5 0 0 1 0 10.5V6.1A1.5 1.5 0 0 1 1.5 4.6Z` (7.4 tall) | none | tab-bar bracket |
+| `md` | 11×14 | `M2.8 6V3.8a2.7 2.7 0 0 1 5.4 0V6`, 1.6 | `M2 5.8h7a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V7.8a2 2 0 0 1 2-2Z` (8.2 tall) | dot, r 1, at (5.5, 9.9), cut out | every LockMark site |
+| `lg` | 12×15 | `M3 6.5V4a3 3 0 0 1 6 0v2.5`, 1.6 | `M2 6h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z` (9 tall) | circle r 1.3 at (6, 9.7) plus a 1.2×1.35 slot, cut out | rail foot, first-run page line and cards |
 
-Exact paths with the keyhole subpaths are in `R1 - Lock-Phone.dc.html`. `open` drops the shackle's right leg (the path
+Exact paths with the keyhole subpaths are in `R2 - Lock-Phone.dc.html`. **R2:** the body is taller at every size (lg 9 of 15, was 7.5 of 14), and each box grows 1px rather than squeezing the shackle; every site centres the glyph in a flex row, so the extra pixel moves nothing around it. `open` drops the shackle's right leg (the path
 ends at the top of the arc), for `md` and `lg`; `sm` has no open state because nothing draws one.
 
 Answers, in the brief's order:
@@ -40,7 +41,7 @@ Answers, in the brief's order:
    takes an `ink` prop; nav sites pass `--fg-locked`; deck sites keep LockMark's `tone`/`open`/`ink` logic unchanged.
 3. **First-run card ink: `--border-strong` → `--fg-locked`.** A solid glyph in a divider color measures 1.2 to 1.5:1 on
    `--surface-rail` and reads as a smudge. `--fg-locked` is the card's own title and reason ink (3.14 to 3.35:1).
-4. **Bracket size: stays 9×11**, solid body, no keyhole. A 1px hole aliases at 1×, and the solid body alone reads as a lock
+4. **Bracket size: 9×12 (R2; was 9×11)**, solid body, no keyhole. A 1px hole aliases at 1×, and the solid body alone reads as a lock
    at that size. The 14px bracket line has no room for more.
 
 Still decorative everywhere (`aria-hidden`); every locked thing keeps saying its state in words.
@@ -153,32 +154,52 @@ never transitioned. Ambient loops are exempt, as before.
 
 ## 5. Token tile actions
 
-1. **Where:** a **foot strip inside the frame**, below the caption, behind a 1px `--border` hairline, within the tile's border
-   and corners. Nothing is drawn over the art, as on `DeckCardTile`. Rules text, when attached, moves inside the frame under the
-   caption, at most three lines.
-2. **What stays visible:** the foot always has two lines.
-   - **State line:** the press that changes Shopping, or the ownership fact. Unowned: `Add to Shopping`, full width at 390 (32
-     tall, 44 hit) and 24px from `md`. Joined: `✓ In Shopping`. Owned by upload: `in your collection`. Owned by hand mark:
-     `✓ I have one`, which unmarks.
-   - **Makers line:** `from <card> and N more` with the chevron, 44px at 390 and 28px from `md`; an orphan reads `from no card in
-     this deck` and has no fold.
-   - **`I have one` moves to the top of the makers fold.** At 173px the two presses cannot share a line, and the fold is exactly
-     where the hand mark can act: an orphan refuses it and has no fold. Once marked, `✓ I have one` takes the state line.
-3. **Heights:** the Tokens grid goes from `items-start` to stretch (the precon tiles' rule), and a spacer sits above the foot,
-   so tiles in a row share a height and their feet line up. An open fold grows its own row.
-4. **States**, all drawn at both widths: unowned, owned by upload, owned by hand mark, joined, pending (label kept,
-   `aria-busy`, 60% opacity), refused (one `--fg-locked` line inside the foot, under the state line), orphan, fold open.
+**R2 (Hugh's audit: the R1 foot made tiles too tall, and the inline error was clutter).**
 
-Labels, presses, `aria-*` and the 44px phone targets are the shipped ones (`tokensCopy.row`). Ownership never takes a warning
-color or a verdict word.
+1. **Where:** a **foot inside the frame**, below the caption, behind a 1px `--border` hairline, within the tile's border and
+   corners. Nothing is drawn over the art. Rules text, when attached, sits inside the frame under the caption, at most three lines.
+2. **One line, always.** The state line alone: `Add to Shopping` (full width at 390, 32 tall with a 44 hit; 24px from `md`),
+   `✓ In Shopping`, `in your collection`, or `✓ I have one` (a word here, not a press). 44px at 390, 30px from `md`. A token
+   tile is that one line taller than a card tile and no more. R1 had two lines and a fold.
+3. **The makers and `I have one` move to Token details.** The art already opens the token's card details. When it is opened
+   from a deck, the sheet draws an **In this deck** box where a card's sits (under the price line), for a token:
+   - a presses line: the Shopping press, and `I have one` / `✓ I have one` beside it (they fit on one line in the sheet at
+     both widths). The hand-mark rules are today's: offered only when a card in the deck makes the token, never when the
+     token is in your collection by upload or precon (that state shows `in your collection` and no press).
+   - the makers: today's `TokenMakers` in its row layout, under its heading `Generated by N cards`, each name opening that
+     card's details stacked over this one, then its printing line. Its scroll box (past 5 names on a phone) comes with it.
+     An orphan reads `from no card in this deck` there.
+   - No box for a token opened outside a deck. Prev and Next still page the deck's tokens.
+   The row view keeps its makers fold: it has the width, and the note was about tiles.
+4. **A failed press is a toast** (`ToastFrame`, `placement="deck"`, the slot I got it's receipt uses): above the tab bar at
+   390, bottom left of the deck pane from `md`. `role="alert"`, title `tokensCopy.row.refused` unchanged, detail the
+   token's name (`Spirit token`), no action, 8 seconds via `useToastClock`, held on hover and focus. The press springs back.
+   The tile, the row and the details box all fail through it, so `useTokenPress` announces instead of returning `refused`.
+5. **Heights:** the Tokens grid stretches (`items-stretch`) with a spacer above the foot, so feet line up.
+6. **States**, both widths: unowned, joined, owned by upload, owned by hand mark, pending (label kept, `aria-busy`, 60%),
+   joined with no maker left. Refused is the toast.
+
+Labels, presses, `aria-*` and 44px phone targets are the shipped ones (`tokensCopy.row`, `tokensCopy.makers`). Ownership
+never takes a warning color or a verdict word.
 
 ---
+
+## R2 changes (2026-10-14)
+
+| Note from Hugh | R2 |
+|---|---|
+| Token tiles too tall; makers should live in Token details | One foot line; makers and `I have one` in an In this deck box in details (§5). |
+| Inline save error is clutter | The deck toast, `role="alert"` (§5.4). |
+| Can't see the motion run | The Motion boards now replay on their own every 2.6s. Open a Motion board on its own (or press its Play) to watch it; on the zoomed-out canvas boards are still images. |
+| Lock body too short | Body taller at every size, boxes +1px (§1). |
 
 ## Gap report
 
 | # | Item | Gap |
 |---|---|---|
-| G1 | 5 | **`I have one` is one press deeper** (inside the makers fold). The main call to audit. The alternative is three stacked 44px lines under every phone tile, as today. |
+| G1 | 5 | **`I have one` is one press away** from a tile (open details, then press). R2 keeps that, since the tile is now one line. The row view is unchanged. |
+| G8 | 5 | The toast's detail line, `Spirit token`, is a new string (`small-polish - copy strings.ts`). |
+| G9 | 5 | Unmarking `✓ I have one` from a tile is now in details too. If one-press unmarking matters, the tile's word can become a press again at no height cost. |
 | G2 | 3 | The motion plan (`boards/plan-motion-2026-10-12.md`) is not in the repo on main or the brief's branch; the table is drawn from the brief's copy of it. The written argument for the stacked-sheet curve was not found, so those two rows were moved to arrival timing. If that argument stands, they join the kept rows. |
 | G3 | 3 | E8 names two figure families. Which Home figures and which stats totals are "counts" is engineering's to list against the current components. |
 | G4 | 2 | The brief counted FIELD_CHROME plus nine hand-set sites; the tree has FIELD_CHROME plus eight. All are listed. Fields whose `placeholder` attribute carries no class inherit the browser's color and are untouched. |

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Token tile · 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+</style>
+</helmet>
+<div style="width:390px;min-height:2400px;box-sizing:border-box;padding:28px 16px 40px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Token tile · Card view · 390 · R2</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:22px">One line under the tile, the rest in details</h2>
+    <p style="margin:0;font-size:12px;line-height:1.5;color:#95A4A6">The tile keeps one foot line inside its frame: the Shopping press, or the word for how you hold it. Which cards make the token, and I have one, move into the token's details, which the art already opens. A press that fails says so in a toast, not in the tile.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="k">R2 · every state, as the grid draws them</span>
+    <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch">
+      <sc-for list="{{tiles}}" as="t" hint-placeholder-count="6">
+        <li style="display:flex;flex-direction:column;gap:5px">
+          <span class="m" style="font-size:9.5px;color:#7C8A8C">{{t.label}}</span>
+          <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;border-radius:9px;border:1px solid #1A1F2B;background:#1E1F26">
+            <span class="m" style="display:flex;align-items:center;justify-content:center;aspect-ratio:63/88;background:{{t.art}};border-radius:0 0 9px 9px;font-size:9px;color:#C6D2D3">{{t.name}}</span>
+            <span style="display:flex;flex-direction:column;gap:3px;padding:7px 9px 6px">
+              <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;box-sizing:border-box;border-radius:50%;{{t.dot}}"></span><span style="width:12px;height:12px;border-radius:50%;background:{{t.pip}}"></span></span>
+              <span style="font-size:12.5px;color:#C6D2D3">{{t.name}}</span>
+              <span class="m" style="font-size:10px;color:#95A4A6">{{t.type}}</span>
+            </span>
+            <sc-if value="{{t.hasRules}}" hint-placeholder-val="{{false}}">
+              <span class="m" style="padding:0 9px 6px;font-size:10px;line-height:1.5;color:#95A4A6">{{t.rules}}</span>
+            </sc-if>
+            <span style="flex:1"></span>
+            <div style="border-top:1px solid #1A1F2B;height:44px;display:flex;align-items:center;padding:0 6px">
+              <sc-if value="{{t.isJoin}}" hint-placeholder-val="{{true}}">
+                <button type="button" aria-pressed="false" class="m" style="flex:1;height:32px;padding:0 8px;background:transparent;border:1px solid #2E3340;border-radius:7px;font-size:11px;font-weight:500;color:#B3C0C2;opacity:{{t.op}}">Add to Shopping</button>
+              </sc-if>
+              <sc-if value="{{t.isJoined}}" hint-placeholder-val="{{false}}">
+                <button type="button" aria-pressed="true" class="m" style="flex:1;height:32px;padding:0 8px;background:rgba(92,134,201,.14);border:1px solid #5C86C9;border-radius:7px;font-size:11px;font-weight:500;color:#C6D2D3">✓ In Shopping</button>
+              </sc-if>
+              <sc-if value="{{t.isUpload}}" hint-placeholder-val="{{false}}">
+                <span class="m" style="padding:0 3px;font-size:10.5px;color:#95A4A6">in your collection</span>
+              </sc-if>
+              <sc-if value="{{t.isHand}}" hint-placeholder-val="{{false}}">
+                <span class="m" style="padding:0 3px;font-size:10.5px;color:#95A4A6">✓ I have one</span>
+              </sc-if>
+            </div>
+          </div>
+        </li>
+      </sc-for>
+    </ul>
+    <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">R1's foot was two lines and a fold (up to 88px plus the open list). R2 is one 44px line, so a token tile is 44px taller than a card tile and no more. ✓ I have one is a word here, not a press: you unmark it in details, beside where you marked it.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="k">Token details · the In this deck box</span>
+    <p style="margin:0;font-size:12px;line-height:1.5;color:#B3C0C2">Card details already draw an <b style="font-weight:600;color:#C6D2D3">In this deck</b> box for a card. A token opened from the deck gets its own: the two presses side by side, then the cards that make it, each opening its own details. It sits where the card's box sits, under the price line.</p>
+    <div style="position:relative;height:640px;border-radius:12px;overflow:hidden;background:#0b0b0e;border:1px solid #1A1F2B">
+      <div style="position:absolute;left:0;right:0;bottom:0;height:600px;background:#22232B;border-radius:16px 16px 0 0;border-top:1px solid #2E3340;display:flex;flex-direction:column">
+        <span style="align-self:center;width:36px;height:4px;border-radius:2px;background:#424755;margin:8px 0 6px"></span>
+        <div style="display:flex;gap:12px;padding:6px 16px 12px">
+          <span class="m" style="flex:none;width:96px;aspect-ratio:63/88;border-radius:6px;background:#5A3E3A;display:flex;align-items:center;justify-content:center;font-size:9px">Goblin</span>
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+            <span style="font-size:17px;font-weight:600">Goblin</span>
+            <span class="m" style="font-size:11px;color:#95A4A6">Token Creature — Goblin · 1/1</span>
+            <span class="m" style="font-size:11px;color:#7C8A8C;margin-top:6px">Set · TM2C 12</span>
+            <span class="m" style="font-size:11px;color:#B3C0C2">$0.25 · Mana Pool ↗</span>
+          </div>
+        </div>
+        <div style="margin:0 16px;border:1px solid #1A1F2B;border-radius:10px;background:#1E1F26;display:flex;flex-direction:column">
+          <span class="k" style="padding:12px 12px 4px;font-size:10px">In this deck</span>
+          <div style="display:flex;align-items:center;gap:8px;padding:4px 12px 10px">
+            <button type="button" aria-pressed="false" class="m" style="height:36px;padding:0 12px;background:transparent;border:1px solid #2E3340;border-radius:7px;font-size:11.5px;font-weight:500;color:#B3C0C2">Add to Shopping</button>
+            <button type="button" aria-pressed="false" class="m" style="height:44px;padding:0 8px;background:transparent;border:0;font-size:11.5px;color:#95A4A6;text-decoration:underline dashed #424755;text-underline-offset:3px">I have one</button>
+          </div>
+          <div style="border-top:1px solid #1A1F2B;padding:10px 12px 4px;display:flex;flex-direction:column">
+            <span class="m" style="font-size:10.5px;color:#7C8A8C;padding-bottom:2px">Generated by 3 cards</span>
+            <sc-for list="{{makers}}" as="mk" hint-placeholder-count="3">
+              <span style="min-height:44px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#C6D2D3;text-decoration:underline;text-decoration-color:rgba(92,134,201,.55);text-underline-offset:3px">{{mk}}</span>
+            </sc-for>
+          </div>
+          <span class="m" style="padding:0 12px 12px;font-size:10px;color:#7C8A8C">pictured and sent: TM2C · $0.25 · cheapest of 4 printings</span>
+        </div>
+      </div>
+    </div>
+    <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">The list is today's <code class="m" style="font-size:10.5px">TokenMakers</code>, row layout, with its heading and its printing line, so its scroll box past 5 names comes with it. Presses act on the deck's token exactly as the tile's do.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <span class="k">The box in each state</span>
+    <sc-for list="{{boxes}}" as="b" hint-placeholder-count="5">
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <span class="m" style="font-size:9.5px;color:#7C8A8C">{{b.label}}</span>
+        <div style="border:1px solid #1A1F2B;border-radius:10px;background:#1E1F26;padding:4px 12px 8px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:8px;min-height:44px">
+            <sc-if value="{{b.join}}" hint-placeholder-val="{{true}}">
+              <button type="button" class="m" style="height:36px;padding:0 12px;background:{{b.joinBg}};border:1px solid {{b.joinBd}};border-radius:7px;font-size:11.5px;font-weight:500;color:{{b.joinFg}}">{{b.joinLabel}}</button>
+            </sc-if>
+            <sc-if value="{{b.word}}" hint-placeholder-val="{{false}}">
+              <span class="m" style="font-size:11.5px;color:#95A4A6">{{b.wordText}}</span>
+            </sc-if>
+            <sc-if value="{{b.have}}" hint-placeholder-val="{{true}}">
+              <button type="button" class="m" style="height:44px;padding:0 8px;background:transparent;border:0;font-size:11.5px;color:{{b.haveFg}};text-decoration:{{b.haveDec}};text-underline-offset:3px">{{b.haveLabel}}</button>
+            </sc-if>
+          </div>
+          <span class="m" style="border-top:1px solid #1A1F2B;padding-top:8px;font-size:10.5px;color:#7C8A8C">{{b.makers}}</span>
+        </div>
+      </div>
+    </sc-for>
+    <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">The rules are today's: I have one shows only where a card makes the token (an orphan refuses it), and a token in your collection by upload offers neither press. No box is drawn for a token opened outside a deck.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="k">A press that fails · the deck toast</span>
+    <p style="margin:0;font-size:12px;line-height:1.5;color:#B3C0C2">The refusal leaves the tile and the row and lands in the deck page's own toast slot (<code class="m" style="font-size:11px">ToastFrame</code>, <code class="m" style="font-size:11px">placement="deck"</code>), the one I got it uses: above the tab bar on a phone. <code class="m" style="font-size:11px">role="alert"</code>, the token's name as its detail line, no action, gone after 8 seconds or held while hovered or focused. The press springs back to where it was.</p>
+    <div style="position:relative;height:300px;border-radius:12px;overflow:hidden;background:#121217;border:1px solid #1A1F2B">
+      <div style="padding:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;opacity:.55">
+        <span style="aspect-ratio:63/88;border-radius:9px;background:#3F4552"></span>
+        <span style="aspect-ratio:63/88;border-radius:9px;background:#4D4A3A"></span>
+      </div>
+      <div role="alert" style="position:absolute;left:16px;right:16px;bottom:66px;min-height:52px;display:flex;align-items:flex-start;gap:10px;padding-left:14px;padding-right:6px;border-radius:10px;border:1px solid #2E3340;background:#2D2E35;box-shadow:0 12px 30px rgba(0,0,0,.45)">
+        <span style="display:flex;flex-direction:column;gap:3px;padding:10px 0">
+          <span style="font-size:13.5px;line-height:1.35;color:#C6D2D3">We couldn’t save that. The token is unchanged.</span>
+          <span class="m" style="font-size:11px;color:#95A4A6">Spirit token</span>
+        </span>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#181920;border-top:1px solid #1A1F2B"></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const owned = 'background:#6FA368';
+    const not = 'border:1px dashed #7C8A8C';
+    const unknown = 'background:transparent';
+    const base = { hasRules: false, rules: '', isJoin: false, isJoined: false, isUpload: false, isHand: false, op: 1 };
+    const t = (o) => Object.assign({}, base, o);
+    const offBtn = { joinBg: 'transparent', joinBd: '#2E3340', joinFg: '#B3C0C2', joinLabel: 'Add to Shopping' };
+    const onBtn = { joinBg: 'rgba(92,134,201,.14)', joinBd: '#5C86C9', joinFg: '#C6D2D3', joinLabel: '✓ In Shopping' };
+    const haveOff = { have: true, haveFg: '#95A4A6', haveDec: 'underline dashed #424755', haveLabel: 'I have one' };
+    const haveOn = { have: true, haveFg: '#5C86C9', haveDec: 'none', haveLabel: '✓ I have one' };
+    const bx = (o) => Object.assign({ join: false, word: false, wordText: '', have: false }, o);
+    return {
+      tiles: [
+        t({ label: 'Unowned', name: 'Goblin', type: 'Creature · 1/1', art: '#5A3E3A', pip: '#D3202A', dot: not, isJoin: true }),
+        t({ label: 'Joined', name: 'Treasure', type: 'Artifact', art: '#4D4A3A', pip: '#8A8A8A', dot: not, isJoined: true }),
+        t({ label: 'Owned by upload', name: 'Clue', type: 'Artifact', art: '#3E4A4D', pip: '#8A8A8A', dot: owned, isUpload: true }),
+        t({ label: 'Owned by hand mark', name: 'Food', type: 'Artifact', art: '#4D433A', pip: '#8A8A8A', dot: owned, isHand: true }),
+        t({ label: 'Pending press', name: 'Soldier', type: 'Creature · 1/1', art: '#4D4D44', pip: '#F8F6D8', dot: unknown, isJoin: true, op: 0.6 }),
+        t({ label: 'Joined, no maker left', name: 'Spirit', type: 'Creature · 1/1', art: '#3F4552', pip: '#F8F6D8', dot: not, isJoined: true, hasRules: true, rules: 'Flying' })
+      ],
+      makers: ['Beetleback Chief', 'Goblin Instigator', 'Krenko, Mob Boss'],
+      boxes: [
+        bx(Object.assign({ label: 'Unowned', join: true, makers: 'Generated by 3 cards' }, offBtn, haveOff)),
+        bx(Object.assign({ label: 'Joined', join: true, makers: 'Generated by 1 card' }, onBtn, haveOff)),
+        bx(Object.assign({ label: 'Owned by hand mark', makers: 'Generated by 1 card' }, haveOn)),
+        bx({ label: 'Owned by upload', word: true, wordText: 'in your collection', makers: 'Generated by 1 card' }),
+        bx(Object.assign({ label: 'Joined, no maker left', join: true, makers: 'from no card in this deck' }, onBtn))
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

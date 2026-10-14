@@ -6,6 +6,11 @@ export const preconsLoadingCopy = {
   status: "Loading precons",
 } as const;
 
-// Item 5 changes no strings: the token tile reuses tokensCopy.row (join, joined, owned, have, haveOn,
-// from, noMaker, refused, and every aria string) unchanged. Only where they draw moves.
+// src/lib/copy/tokens.ts, tokensCopy.row (R2): the refusal toast's detail line names the token.
+export const tokensRowAddition = {
+  refusedDetail: (name: string) => `${name} token`,
+} as const;
+
+// Otherwise item 5 reuses tokensCopy.row and tokensCopy.makers unchanged (join, joined, owned, have, haveOn,
+// noMaker, refused, makers.label, makers.printing). Only where they draw moves.
 // Items 1, 2 and 3 have no copy.
