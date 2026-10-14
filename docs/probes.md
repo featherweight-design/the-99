@@ -2194,7 +2194,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the figure, clears `auto` and stamps the deck; that the same figure again writes and stamps nothing; that a
   non-basic, a figure past the bound and another player's deck are refused with nothing written; that 0 deletes the
   row and leaves the slot's lock DORMANT (Undo revives it, a commit clears it); and that a row already gone is
-  refused. The row, its proxy and lock, the deck's stamp and its analysis's `dirty` flag are put back in a `finally`.
+  refused. The row, its proxy, its printing pick and lock, the deck's stamp and its analysis's `dirty` flag are put back in a `finally`.
   It runs one writer at a time, so it does not prove the row locks. First run 2026-10-14 on a
   scratch branch of staging: every check passed.
 

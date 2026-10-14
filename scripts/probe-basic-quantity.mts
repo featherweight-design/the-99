@@ -9,8 +9,8 @@
 //   PROBE_DB_BRANCH=br-… pnpm probe:basic-quantity
 //
 // It picks a deck holding a basic land, and a non-basic in the same deck, from the branch itself, and puts back
-// in a finally everything the write moves: the row, its proxy and lock, the deck's stamp and its analysis's
-// `dirty` flag. It runs one writer at a time, so it does not prove the row locks; the lock order is read in review.
+// in a finally everything the write moves: the row, its proxy, its printing pick and lock, the deck's stamp
+// and its analysis's `dirty` flag. It runs one writer at a time, so it does not prove the row locks; the lock order is read in review.
 import "./lib/env.mjs";
 
 const PROTECTED = new Set(["br-polished-pond-a6e63y0b", "br-noisy-violet-a6vw4ess", "br-patient-hall-a6nbonvo"]);
@@ -63,6 +63,8 @@ async function main() {
   const stampBefore = await stamp();
   const { rows: proxyBefore } = await db.execute<{ j: unknown }>(
     sql`select coalesce(jsonb_agg(to_jsonb(p)), '[]'::jsonb) as j from deck_proxies p where deck_id = ${deck} and oracle_id = ${basic}`);
+  const { rows: pickBefore } = await db.execute<{ j: unknown }>(
+    sql`select coalesce(jsonb_agg(to_jsonb(p)), '[]'::jsonb) as j from deck_printings p where deck_id = ${deck} and oracle_id = ${basic}`);
   const { rows: dirtyBefore } = await db.execute<{ dirty: boolean }>(sql`select dirty from deck_profiles where deck_id = ${deck}`);
   const { rows: lockBefore } = await db.execute<{ j: unknown }>(
     sql`select coalesce(jsonb_agg(to_jsonb(l)), '[]'::jsonb) as j from deck_locks l where deck_id = ${deck} and oracle_id = ${basic}`);
@@ -118,6 +120,9 @@ async function main() {
     await db.execute(sql`delete from deck_proxies where deck_id = ${deck} and oracle_id = ${basic}`);
     await db.execute(sql`
       insert into deck_proxies select * from jsonb_populate_recordset(null::deck_proxies, ${JSON.stringify(proxyBefore[0]?.j ?? [])}::jsonb)`);
+    await db.execute(sql`delete from deck_printings where deck_id = ${deck} and oracle_id = ${basic}`);
+    await db.execute(sql`
+      insert into deck_printings select * from jsonb_populate_recordset(null::deck_printings, ${JSON.stringify(pickBefore[0]?.j ?? [])}::jsonb)`);
     if (dirtyBefore[0]) await db.execute(sql`update deck_profiles set dirty = ${dirtyBefore[0].dirty} where deck_id = ${deck}`);
     const restored = await read();
     check("the row is put back", restored?.quantity === before?.quantity && restored?.auto === before?.auto);
