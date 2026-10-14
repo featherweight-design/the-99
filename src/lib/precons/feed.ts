@@ -103,13 +103,16 @@ export function deriveDeck(entry: IndexEntry, file: unknown): PreconFeedDeck {
     if (typeof c?.count !== "number" || !Number.isInteger(c.count) || c.count < 1) {
       throw new Error(`${entry.fileName}: a card entry has no positive integer count`);
     }
+    // Every card entry carries it (64 of 64 decks sampled, 2011 to 2026, on 2026-10-14): a missing one
+    // is a shape change, and reading it as non-foil would publish the wrong finish without failing.
+    if (typeof c.isFoil !== "boolean") throw new Error(`${entry.fileName}: a card entry has no boolean isFoil`);
     const ids = c.identifiers ?? {};
     return {
       oracleId: str(ids.scryfallOracleId) ? ids.scryfallOracleId : null,
       scryfallId: str(ids.scryfallId) ? ids.scryfallId : null,
       count: c.count,
       commander,
-      foil: c.isFoil === true,
+      foil: c.isFoil,
     };
   };
   const token = (raw: unknown): FeedToken => {

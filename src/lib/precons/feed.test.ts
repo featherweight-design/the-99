@@ -35,7 +35,7 @@ describe("indexKey", () => {
 
 describe("deriveDeck", () => {
   const card = (count: number, oracle: string | undefined, printing: string | undefined) =>
-    ({ count, name: "Name is never read", identifiers: { scryfallOracleId: oracle, scryfallId: printing } });
+    ({ count, isFoil: false, name: "Name is never read", identifiers: { scryfallOracleId: oracle, scryfallId: printing } });
 
   it("keeps the commander, the main board and the tokens, by id, and drops the rest", () => {
     const d = deriveDeck(entry("A"), {
@@ -65,6 +65,10 @@ describe("deriveDeck", () => {
 
   it("throws on a deck file without its two boards", () => {
     expect(() => deriveDeck(entry("A"), { data: { mainBoard: [] } })).toThrow(/commander or mainBoard/);
+  });
+
+  it("throws on a card with no boolean isFoil, rather than reading it as non-foil", () => {
+    expect(() => deriveDeck(entry("A"), { data: { commander: [{ count: 1, identifiers: {} }], mainBoard: [] } })).toThrow(/isFoil/);
   });
 
   it("throws on a token with no count, rather than inventing one", () => {
