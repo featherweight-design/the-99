@@ -16,7 +16,8 @@ type Entry = {
   timer: ReturnType<typeof setTimeout> | null;
   wake: ((settled: boolean) => void) | null;
   taken: boolean;
-  done: Promise<void>;
+  /** Resolves once the burst has ended: true when its last save was confirmed, false otherwise. */
+  done: Promise<boolean>;
 };
 
 export type BasicCounts = {
@@ -24,8 +25,11 @@ export type BasicCounts = {
   set: (oracleId: string, n: number, base: number) => void;
   /** The ✕ at 1 inside an open burst: cancel it, sending nothing more and saying nothing. */
   takeOver: (oracleId: string) => boolean;
-  /** Settle every open burst now and wait for every save: before a write that would race them. */
-  flush: () => Promise<void>;
+  /**
+   * Settle every open burst now and wait for every save: before a write that would race them. Resolves false
+   * when any of them was refused or threw, so the caller can stop rather than write over an unknown count.
+   */
+  flush: () => Promise<boolean>;
   /** The base of the open burst for this card, or null. */
   base: (oracleId: string) => number | null;
   /** The views of a card hear its burst's outcome here, whichever of them is mounted when it lands. */
@@ -80,7 +84,7 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
   }
 
   function open(oracleId: string, n: number, base: number) {
-    let finish!: () => void;
+    let finish!: (ok: boolean) => void;
     const entry: Entry = { target: n, base, timer: null, wake: null, taken: false, done: new Promise((r) => (finish = r)) };
     entries.set(oracleId, entry);
     deps.transition(async () => {
@@ -106,8 +110,9 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
           break;
         }
       } finally {
-        entries.delete(oracleId);
-        finish();
+        // Only this generation's own entry: a takeOver hands the card to a fresh burst at once.
+        if (entries.get(oracleId) === entry) entries.delete(oracleId);
+        finish(!entry.taken && result.kind === "ok");
       }
       if (entry.taken) return;
       if (result.kind === "thrown") deps.refresh();
@@ -127,13 +132,17 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
       const entry = entries.get(oracleId);
       if (!entry) return false;
       entry.taken = true;
+      // Out of the map now, not when its loop ends: a press after the removal and its Undo opens a FRESH burst,
+      // which an in-flight save of this one must not swallow.
+      entries.delete(oracleId);
       entry.wake?.(false);
       return true;
     },
     async flush() {
       const open = [...entries.values()];
+      if (open.length === 0) return true;
       for (const e of open) e.wake?.(true);
-      await Promise.all(open.map((e) => e.done));
+      return (await Promise.all(open.map((e) => e.done))).every(Boolean);
     },
     base(oracleId) {
       return entries.get(oracleId)?.base ?? null;
@@ -160,7 +169,7 @@ export function useBasicCounts(): BasicCounts | null {
 }
 
 /** Settles the stepper's open bursts before a write that would race them; resolves at once outside the builder. */
-export function useFlushBasicCounts(): () => Promise<void> {
+export function useFlushBasicCounts(): () => Promise<boolean> {
   const counts = useContext(BasicCountsContext);
-  return counts ? counts.flush : async () => {};
+  return counts ? counts.flush : async () => true;
 }

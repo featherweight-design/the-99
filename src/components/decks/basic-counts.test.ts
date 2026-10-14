@@ -8,17 +8,32 @@ import { createBasicCounts, SETTLE_MS } from "./basic-counts";
 function harness() {
   const saves: number[] = [];
   const answers: Array<(v: unknown) => void> = [];
+  const failures: Array<(e: unknown) => void> = [];
   const counts = createBasicCounts({
     save: (_id, n) => {
       saves.push(n);
-      return new Promise((r) => answers.push(r as (v: unknown) => void)) as never;
+      return new Promise((r, j) => {
+        answers.push(r as (v: unknown) => void);
+        failures.push(j);
+      }) as never;
     },
     predict: () => {},
     transition: (fn) => void fn(),
     refresh: vi.fn(),
   });
-  const answer = (n: number) => answers.shift()!({ ok: true, quantity: n, changed: true });
-  return { counts, saves, answer };
+  const answer = (n: number) => {
+    failures.shift();
+    answers.shift()!({ ok: true, quantity: n, changed: true });
+  };
+  const refuse = () => {
+    failures.shift();
+    answers.shift()!({ ok: false, reason: "out-of-range" });
+  };
+  const fail = () => {
+    answers.shift();
+    failures.shift()!(new Error("lost"));
+  };
+  return { counts, saves, answer, refuse, fail };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -83,5 +98,49 @@ describe("createBasicCounts", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(row).not.toHaveBeenCalled();
     expect(tile).toHaveBeenCalledWith({ kind: "ok", n: 7 });
+  });
+});
+
+describe("createBasicCounts, round 4", () => {
+  // Removed at 1 while a save was out, then Undo, then a press on the restored row: the press opens a FRESH
+  // burst, and the taken-over one's late answer neither swallows it nor deletes it from the queue.
+  it("gives the card a fresh burst after a takeover, even with the old save still out", async () => {
+    const { counts, saves, answer } = harness();
+    counts.set("island", 2, 1);
+    await vi.advanceTimersByTimeAsync(SETTLE_MS);
+    expect(saves).toEqual([2]);
+    expect(counts.takeOver("island")).toBe(true);
+    counts.set("island", 3, 2);
+    answer(2);
+    await vi.advanceTimersByTimeAsync(SETTLE_MS);
+    expect(saves).toEqual([2, 3]);
+    expect(counts.base("island")).toBe(2);
+  });
+
+  // Clear auto stops on an unconfirmed count rather than sweeping over it.
+  it("flush says false when a save was refused or threw", async () => {
+    const a = harness();
+    a.counts.set("island", 7, 6);
+    const refused = a.counts.flush();
+    await vi.advanceTimersByTimeAsync(0);
+    a.refuse();
+    expect(await refused).toBe(false);
+
+    const b = harness();
+    b.counts.set("island", 7, 6);
+    const thrown = b.counts.flush();
+    await vi.advanceTimersByTimeAsync(0);
+    b.fail();
+    expect(await thrown).toBe(false);
+  });
+
+  it("flush says true when every save landed, and when nothing was open", async () => {
+    const { counts, answer } = harness();
+    expect(await counts.flush()).toBe(true);
+    counts.set("island", 7, 6);
+    const flushed = counts.flush();
+    await vi.advanceTimersByTimeAsync(0);
+    answer(7);
+    expect(await flushed).toBe(true);
   });
 });

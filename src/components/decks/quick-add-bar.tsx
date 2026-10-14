@@ -436,12 +436,14 @@ function QuickAddRow({
   // The guard lives here rather than on the click handler alone: Enter reaches
   // the row through registerAdd, which would otherwise re-fire the mutation
   // while the optimistic row is showing but deckOracleIds has not caught up.
-  const handleAdd = useCallback(() => {
+  const handleAdd = useCallback(async () => {
     if (applied) return;
+    // Settled BEFORE the add's own prediction: a step pressed while the queue drains then lands in the
+    // stepper's figure, and the one copy this adds is counted once, on top of it.
+    if (isBasicLand(result.typeLine)) await flushBasicCounts();
     const added = beginAdd();
     run(
       async () => {
-        if (isBasicLand(result.typeLine)) await flushBasicCounts();
         const outcome = await addCardToDeck(deckId, result.oracleId);
         if (!outcome || outcome.ok) added();
         return outcome;

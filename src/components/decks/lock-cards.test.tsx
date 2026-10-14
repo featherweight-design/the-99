@@ -925,3 +925,19 @@ describe("Clear auto waits for the basics stepper's settling save", () => {
   });
 });
 
+describe("Clear auto and a stepper save that did not confirm", () => {
+  it("does not sweep over an unknown count, and says the sweep failed", async () => {
+    setBasicQuantity.mockRejectedValue(new Error("lost"));
+    clearAutoCards.mockResolvedValue([]);
+    const island = mk("island", "Island", { typeLine: "Basic Land — Island", cardTypeGroup: "Lands", role: "land", quantity: 6, auto: true } as Partial<DeckDetailCard>);
+    const signet = mk("arcane-signet", "Arcane Signet", { auto: true });
+    renderShell([island, signet], false);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.basicStepper.moreAria("Island", 7) }));
+    });
+    const clear = screen.getAllByRole("button").find((b) => /Clear all/.test(b.getAttribute("aria-label") ?? ""))!;
+    await act(async () => clear.click());
+    expect(clearAutoCards).not.toHaveBeenCalled();
+    expect(screen.getByText(recommendationsCopy.auto.sweepFailed)).toBeInTheDocument();
+  });
+});

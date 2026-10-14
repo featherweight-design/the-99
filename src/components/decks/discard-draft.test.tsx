@@ -364,3 +364,23 @@ describe("the discard confirm", () => {
     ).toBeNull();
   });
 });
+
+// The basics stepper's pending count is settled before the restore (round 4 of #1752): sent after it, the
+// stepper's absolute figure would dirty the draft the player had just discarded.
+describe("discard and the basics stepper", () => {
+  it("flushes the stepper's queue before restoring", async () => {
+    const { BasicCountsProvider } = await import("./basic-counts");
+    const order: string[] = [];
+    const counts = {
+      flush: vi.fn(async () => { order.push("flush"); return true; }),
+      set: vi.fn(), takeOver: vi.fn(() => false), base: vi.fn(() => null), subscribe: vi.fn(() => () => {}), configure: vi.fn(),
+    };
+    vi.mocked(discardDeckDraft).mockImplementation(async () => { order.push("discard"); return { ok: true }; });
+    render(<BasicCountsProvider value={counts}><Host onDiscarded={vi.fn()} /></BasicCountsProvider>);
+    act(raise);
+    await act(async () => {
+      screen.getByRole("button", { name: copy.confirm(36) }).click();
+    });
+    expect(order).toEqual(["flush", "discard"]);
+  });
+});

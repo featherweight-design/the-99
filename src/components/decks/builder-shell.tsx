@@ -1229,11 +1229,15 @@ export function BuilderShell({
       // A LOCKED auto card stays (L3): the server's delete skips it, so the prediction keeps it too,
       // or the card vanishes until revalidation and the announced total is short by its copies.
       const keep = new Set(lockedAutoCards.map((c) => c.oracleId));
+      // A basic the stepper is still settling is about to be claimed (its save clears `auto`): flush first, or
+      // the sweep deletes the land the player just counted. A save that did not confirm leaves that count
+      // unknown, so the sweep does not run over it.
+      if (!(await basicCounts.flush())) {
+        setAutoError(recommendationsCopy.auto.sweepFailed);
+        return;
+      }
       sweepOptimisticAuto(keep);
       try {
-        // A basic the stepper is still settling is about to be claimed (its save clears `auto`): flush first,
-        // or the sweep deletes the land the player just counted.
-        await basicCounts.flush();
         const removed = await clearAutoCards(deck.id);
         setSweptRows(removed);
         setSweptLockedCount(lockedAutoCount);

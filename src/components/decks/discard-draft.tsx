@@ -28,6 +28,7 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { PRIMARY } from "../ui/button";
 import { draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
+import { useFlushBasicCounts } from "./basic-counts";
 import { commanderBackClause } from "./change-commander-banner";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
@@ -189,6 +190,7 @@ export function DiscardConfirm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const flushBasicCounts = useFlushBasicCounts();
   // Per instance rather than a module constant: two drafts drawn on one page
   // would otherwise share one id and leave `aria-describedby` pointing at
   // whichever consequence the document happened to hold first.
@@ -317,6 +319,9 @@ export function DiscardConfirm({
                 // The version the sentence above named, sent along so the
                 // server can refuse rather than land the discard on a version
                 // this confirmation never described.
+                // The basics stepper's pending count first, or it lands after the restore and dirties the draft
+                // the player just discarded.
+                await flushBasicCounts();
                 result = await discardDeckDraft(deckId, version.id);
               } catch {
                 // NOT `refused`. A refusal is the server declining before it

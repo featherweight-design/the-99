@@ -738,7 +738,7 @@ describe("adding a basic while the stepper is settling", () => {
   it("flushes the stepper's queue before adding a basic", async () => {
     const order: string[] = [];
     const counts = {
-      flush: vi.fn(async () => { order.push("flush"); }),
+      flush: vi.fn(async () => { order.push("flush"); return true; }),
       set: vi.fn(), takeOver: vi.fn(() => false), base: vi.fn(() => null), subscribe: vi.fn(() => () => {}), configure: vi.fn(),
     };
     addCardToDeck.mockImplementation(async () => { order.push("add"); return { ok: true as const }; });
