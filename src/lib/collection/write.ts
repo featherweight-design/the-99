@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cardAssignments, cards, collectionHistory, collectionItems, commanderScores, csvUploads, decks,
@@ -219,6 +219,13 @@ export type ChangeOptions = {
    * (`arrivalPlacement`) and build the chooser Change opens with no second read.
    */
   placements?: boolean;
+  /**
+   * Work an `add` does inside its own transaction, after its rows (and a precon's tokens) are written
+   * and BEFORE the placements read and the entry: a start with "I own this precon" writes, commits and
+   * reserves its deck here (`startPreconOwned`), so the copies are read as going to that deck and a
+   * failure anywhere rolls the whole start back. Takes the transaction; never called on a retry.
+   */
+  inside?: (tx: Tx) => Promise<void>;
   /**
    * The reader's resolved switches (`requestSwitchEnv`), which every claim read inside the write
    * takes: the claim model's `locked` key (NEVER_CUT_ENABLED) and its pending clause
@@ -718,6 +725,8 @@ export async function applyCollectionChange(
         target = row;
         // A precon's tokens go with its cards, and come back with them when a revert is reverted.
         await syncPreconTokens(tx, userId);
+        // And the copies a start with "I own this precon" reserved to its deck: they are leaving.
+        await releasePreconReservations(tx, userId, change.entryId);
         if (change.ignoreDeckId !== undefined && row.source === `shopping:${change.ignoreDeckId}`) {
           ignoredDecks.add(change.ignoreDeckId);
         }
@@ -894,6 +903,7 @@ export async function applyCollectionChange(
       const tokensMarked = preconTokens
         ? await syncPreconTokens(tx, userId, opts.id)
         : undefined;
+      if (opts.inside && change.kind === "add") await opts.inside(tx);
 
       const moves = countMoves(rows);
       let short: ShortDeck[] = [];
@@ -942,6 +952,32 @@ export async function applyCollectionChange(
   } catch (error) {
     if (error instanceof Refused) return error.result;
     throw error;
+  }
+}
+
+/**
+ * Drops the reservations the start made for add `entryId` (`startPreconOwned`), each card's claim lock
+ * first, sorted, as every reservation write takes it. Only the START's own: written in the deck's own
+ * transaction, so stamped no later than the deck, while a copy the player gives that deck later through
+ * the chooser is stamped after it and stays. Reverting that revert brings the copies back but not the
+ * reservations: they then go where the claim model's order sends them.
+ */
+async function releasePreconReservations(tx: Tx, userId: string, entryId: string): Promise<void> {
+  const started = await tx.select({ id: decks.id }).from(decks)
+    .where(and(eq(decks.userId, userId), eq(decks.preconAddEntryId, entryId)));
+  for (const deck of started) {
+    // The cards to lock, read before the locks only to name them: the delete below re-applies the
+    // timestamp bound under them, so a reservation the chooser replaced in between is never taken.
+    const ids = [...new Set((await tx.select({ oracleId: cardAssignments.oracleId }).from(cardAssignments)
+      .where(and(eq(cardAssignments.userId, userId), eq(cardAssignments.deckId, deck.id)))).map((r) => r.oracleId))].sort();
+    if (ids.length === 0) continue;
+    for (const id of ids) await lockCardClaims(tx, userId, id);
+    await tx.delete(cardAssignments).where(and(
+      eq(cardAssignments.userId, userId), eq(cardAssignments.deckId, deck.id), inArray(cardAssignments.oracleId, ids),
+      // In SQL, never through a JS Date: a Date keeps milliseconds, and a reservation stamped in the deck's own
+      // transaction carries the same microseconds as the deck, which a truncated bound would read as later.
+      lte(cardAssignments.createdAt, sql`(select d.created_at from decks d where d.id = ${deck.id})`),
+    ));
   }
 }
 

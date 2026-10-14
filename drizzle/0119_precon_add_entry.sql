@@ -1,0 +1,2 @@
+ALTER TABLE "decks" ADD COLUMN "precon_add_entry_id" uuid;--> statement-breakpoint
+ALTER TABLE "decks" ADD CONSTRAINT "decks_precon_add_entry_id_collection_history_id_fk" FOREIGN KEY ("precon_add_entry_id") REFERENCES "public"."collection_history"("id") ON DELETE set null ON UPDATE no action;
