@@ -24,6 +24,7 @@ export const importReviewCopy = {
     unreadableWhy: (reason: string) => `We couldn’t read this file: ${reason}`,
     noFile: "Choose a CSV file first.",
     pasteUnreadable: "We couldn’t read that list.",
+    pasteUnreadableWhy: (reason: string) => `We couldn’t read that list: ${reason}`,
     confirmFailed: "That didn’t go through. Try again.",
   },
 } as const;

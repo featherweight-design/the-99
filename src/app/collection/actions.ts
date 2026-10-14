@@ -64,11 +64,18 @@ async function buildPreview(args: {
   filename: string;
   rows: CollectionRow[];
   errors: ParseError[];
+  /** Which entry the rows came from: a pasted list reads as a list, a file as a file. */
+  source: "file" | "paste";
 }): Promise<UploadPreview> {
-  const { userId, filename, rows, errors } = args;
+  const { userId, filename, rows, errors, source } = args;
 
   if (rows.length === 0) {
-    throw new Error(errors[0] ? importReviewCopy.errors.unreadableWhy(errors[0].reason) : importReviewCopy.errors.unreadable);
+    const e = importReviewCopy.errors;
+    throw new Error(
+      source === "paste"
+        ? errors[0] ? e.pasteUnreadableWhy(errors[0].reason) : e.pasteUnreadable
+        : errors[0] ? e.unreadableWhy(errors[0].reason) : e.unreadable,
+    );
   }
 
   const { catalog, indexes } = await loadMatchInputs(rows);
@@ -130,7 +137,7 @@ export async function previewUpload(formData: FormData): Promise<UploadPreview> 
   if (!(file instanceof File)) throw new Error(importReviewCopy.errors.noFile);
   if (file.size > COLLECTION_FILE_MAX_BYTES) throw new Error(importReviewCopy.errors.fileTooLarge(COLLECTION_FILE_MAX_LABEL));
   const { rows, errors } = parseCollectionCsv(await file.text());
-  return buildPreview({ userId, filename: file.name, rows, errors });
+  return buildPreview({ userId, filename: file.name, rows, errors, source: "file" });
 }
 
 export async function previewPaste(text: string): Promise<UploadPreview> {
@@ -139,7 +146,7 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
   // multi-byte input exceed the intended size guard.
   if (Buffer.byteLength(text, "utf8") > PASTE_MAX_BYTES) throw new Error(importReviewCopy.errors.pasteTooLarge(PASTE_MAX_LABEL));
   const { rows, errors } = parsePasteList(text);
-  return buildPreview({ userId, filename: "paste.txt", rows, errors });
+  return buildPreview({ userId, filename: "paste.txt", rows, errors, source: "paste" });
 }
 
 
