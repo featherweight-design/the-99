@@ -206,7 +206,7 @@ export const preconsCopy = {
       facts: {
         v0: (precon: string, cards: number) => `${precon} · ${n(cards)} cards · before v1`,
         shared: (shared: number, of: number) => `${n(shared)} of its ${n(of)}`,
-        v1: "now diffs against v0",
+        v1: "now compared with v0",
       },
       cancel: "Cancel",
       submit: "Link",

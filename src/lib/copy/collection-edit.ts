@@ -58,7 +58,7 @@ export const collectionEditCopy = {
     cancel: "Cancel",
     /** (new) The comparison could not be read. */
     /** (new) A confirm failed and so did the read that would say whether it landed. */
-    unconfirmed: "We couldn’t confirm whether that went through. Check your collection, then try again if it did not.",
+    unconfirmed: "We couldn’t confirm whether that went through. Check your collection, then try again if it didn’t.",
     prepareFailed: "We couldn’t read how this file compares to your collection. Nothing was changed.",
     /** (new) The upload entry's note once the file can be added instead: the count sits between the two. */
     entryNote: { before: "Your file can replace your current ", after: " or be added to them. You’ll see every match before anything changes." },
