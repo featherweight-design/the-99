@@ -187,6 +187,15 @@ try {
     await page.getByRole("tab").first().waitFor({ timeout: 30_000 }).catch(() => {});
     check((await page.getByText("31 copies added").count()) === 0, `${w.name}: a reload shows no receipt`, "gone");
 
+    // A claim no receipt can be drawn for (an id that is nobody's) is still spent: stripped from the address, nothing drawn.
+    const deckUrl = new URL(page.url());
+    deckUrl.searchParams.set("from", "precon");
+    deckUrl.searchParams.set("added", "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11");
+    await page.goto(deckUrl.toString(), { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => !new URL(location.href).searchParams.has("added"), null, { timeout: 15_000 }).catch(() => {});
+    const stale = await page.evaluate(() => ({ kept: new URL(location.href).searchParams.has("added"), receipt: document.body.innerText.includes("copies added") }));
+    check(!stale.kept && !stale.receipt, `${w.name}: a forged ?added= draws no receipt and is stripped all the same`, `kept=${stale.kept} receipt=${stale.receipt}`);
+
     await page.goto(`${BASE}/collection/history`, { waitUntil: "domcontentloaded" });
     await page.getByText(`Added from ${NAME}`).first().waitFor({ timeout: 30_000 }).catch(() => {});
     check((await page.getByText(`Added from ${NAME}`).count()) > 0, `${w.name}: History titles the entry "Added from ${NAME}"`, "titled");

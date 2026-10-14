@@ -14,7 +14,7 @@ vi.mock("../../collection/revert-confirm", () => ({
     return <div data-testid="revert" data-entry={p.entryId}>{p.title}</div>;
   },
 }));
-import { PreconAddedReceipt } from "./precon-added-receipt";
+import { PreconAddedReceipt, StripAddedParam } from "./precon-added-receipt";
 
 const ID = "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11";
 const receipt = { entryId: ID, name: "Multiverse Reforged", cards: 99, copies: 100, foil: 2, tokens: { marked: 9, names: ["Soldier"] } };
@@ -77,5 +77,13 @@ describe("PreconAddedReceipt", () => {
   it("puts a note above the receipt when given one", () => {
     render(<PreconAddedReceipt receipt={receipt} note="The cards are in your collection, but we couldn’t start the deck." />);
     expect(screen.getByRole("alert")).toHaveTextContent("couldn’t start the deck");
+  });
+
+  it("StripAddedParam spends a claim no receipt could be drawn for, so a reload cannot repeat it", () => {
+    render(<StripAddedParam />);
+    expect(mirror).toHaveBeenCalledTimes(1);
+    const url = mirror.mock.calls[0][0] as URL;
+    expect(url.searchParams.has("added")).toBe(false);
+    expect(url.searchParams.get("from")).toBe("precon");
   });
 });

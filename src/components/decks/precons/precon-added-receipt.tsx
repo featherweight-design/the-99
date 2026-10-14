@@ -21,6 +21,23 @@ import { ArrivalBandShell } from "../arrival-strip";
 const add = collectionEditCopy.add;
 const copy = preconsCopy.arrival.receipt;
 
+/** Takes `?added=` off the address: a one-time claim is spent once the page has seen it, whether or not it drew anything. */
+export function useStripAddedParam(on: boolean) {
+  useEffect(() => {
+    if (!on) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(PRECON_ADDED_PARAM)) return;
+    url.searchParams.delete(PRECON_ADDED_PARAM);
+    mirrorUrl(url);
+  }, [on]);
+}
+
+/** Mounted when `?added=` was supplied and no receipt could be drawn for it (a stale, foreign or failed claim): it only spends the claim. */
+export function StripAddedParam() {
+  useStripAddedParam(true);
+  return null;
+}
+
 export function PreconAddedReceipt({ receipt, went = null, note, stripParam = false, onClose, onReverted }: {
   receipt: PreconAddReceipt;
   /** Where each copy went, when the add's own response is at hand (the dialog's fallback); the ledger read has none. */
@@ -38,13 +55,7 @@ export function PreconAddedReceipt({ receipt, went = null, note, stripParam = fa
   const [gone, setGone] = useState(false);
   const [undoing, setUndoing] = useState(false);
 
-  useEffect(() => {
-    if (!stripParam) return;
-    const url = new URL(window.location.href);
-    if (!url.searchParams.has(PRECON_ADDED_PARAM)) return;
-    url.searchParams.delete(PRECON_ADDED_PARAM);
-    mirrorUrl(url);
-  }, [stripParam]);
+  useStripAddedParam(stripParam);
 
   if (gone) return null;
   const dismiss = () => { setGone(true); onClose?.(); };
