@@ -95,4 +95,24 @@ describe("Start dialog: I own this precon", () => {
     await waitFor(() => expect(create).toHaveBeenCalled());
     expect(add.mock.calls[0][1]).toBe(add.mock.calls[1][1]);
   });
+
+  it("reopened after a failed start, notes the add and repeats it under the same action id (never a second add)", async () => {
+    add.mockResolvedValue(added);
+    create.mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce(undefined);
+    open();
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(screen.getByText("100 copies added")).toBeInTheDocument());
+    // Close the receipt, then open the dialog again from the same page.
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss the receipt" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    expect(screen.getByText(/You added this precon on /)).toBeInTheDocument();
+    expect(own()).not.toBeChecked();
+    // The reader ticks it again anyway: it is the same write, so the ledger answers from the entry it already holds.
+    fireEvent.click(own());
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
+    expect(add).toHaveBeenCalledTimes(2);
+    expect(add.mock.calls[0][1]).toBe(add.mock.calls[1][1]);
+  });
 });

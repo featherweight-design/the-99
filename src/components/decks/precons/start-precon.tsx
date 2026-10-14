@@ -20,7 +20,6 @@ import { PreconAddedReceipt } from "./precon-added-receipt";
 
 const copy = preconsCopy.start;
 
-
 export type StartPreconProps = {
   row: PreconRow;
   /** Every card the precon lists, commanders included. */
@@ -40,6 +39,10 @@ export type StartPreconProps = {
 export function StartPrecon(props: StartPreconProps) {
   const [open, setOpen] = useState(false);
   const { row, cards, dockSummary, dockBeside } = props;
+  // Kept here, past the dialog: if the cards were added and the deck did not start, the dialog closes onto the receipt, and
+  // a reopened one must not add the box twice. The id makes a ticked retry the same write; the date draws "you added this".
+  const add = useRef<{ id: string | null; at: string | null }>({ id: null, at: null });
+  const [addedAt, setAddedAt] = useState<string | null>(null);
   return (
     <>
       <PrimaryButton
@@ -58,12 +61,25 @@ export function StartPrecon(props: StartPreconProps) {
           {dockBeside}
         </div>
       </div>
-      {open && <StartPreconDialog {...props} onDismiss={() => setOpen(false)} />}
+      {open && (
+        <StartPreconDialog
+          {...props}
+          addedOn={addedAt ?? props.addedOn ?? null}
+          addRef={add}
+          onAdded={() => setAddedAt(new Date().toISOString())}
+          onDismiss={() => setOpen(false)}
+        />
+      )}
     </>
   );
 }
 
-function StartPreconDialog({ row, cards, body, illegal, addedOn = null, onDismiss }: StartPreconProps & { onDismiss: () => void }) {
+function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addRef, onAdded, onDismiss }: StartPreconProps & {
+  addRef: React.RefObject<{ id: string | null; at: string | null }>;
+  /** The cards went into the collection (the deck may not have started yet). */
+  onAdded: () => void;
+  onDismiss: () => void;
+}) {
   const dialog = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
   const input = useRef<HTMLInputElement>(null);
@@ -72,8 +88,6 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, onDismis
   const [failed, setFailed] = useState<"start" | "add" | false>(false);
   // "I own this precon": off unless the reader ticks it, and left off when they have added it before.
   const [own, setOwn] = useState(false);
-  // One id per press-and-retry, so a retry after a dropped response cannot add the cards twice.
-  const addId = useRef<string | null>(null);
   // The add went in but the deck did not start: the dialog becomes the receipt (History holds the record).
   const [receipt, setReceipt] = useState<PreconAddReceipt | null>(null);
   const errorId = useId();
@@ -105,9 +119,10 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, onDismis
       try {
         if (own) {
           // The add goes first, so the draft picks the copies it just added (Hugh, 2026-10-13).
-          addId.current ??= crypto.randomUUID();
-          const res = await addPreconToCollection(row.fileName, addId.current);
+          addRef.current.id ??= crypto.randomUUID();
+          const res = await addPreconToCollection(row.fileName, addRef.current.id);
           if (!res.ok) throw new Error("the precon add was refused");
+          onAdded();
           added = {
             entryId: res.entryId, name: row.name, cards: res.cards, copies: res.copies, foil: res.foil, tokens: res.tokens,
           };
@@ -134,8 +149,9 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, onDismis
     </div>
   );
 
-  // The cards went into the collection and the deck did not start: the dialog becomes the receipt, and the
-  // reader can press Start again (History and the "you added this" note then keep the add from repeating).
+  // The cards went into the collection and the deck did not start: the dialog becomes the receipt. Reopening the
+  // dialog finds the "you added this" note (the parent kept the date) and the same action id, so a ticked retry is
+  // the same write and never a second add.
   if (receipt) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:px-[16px]">
