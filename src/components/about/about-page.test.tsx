@@ -1089,7 +1089,7 @@ describe("what each chapter 01 figure actually draws", () => {
     const el = plate("collection-history");
     expect(el.querySelectorAll("li")).toHaveLength(3 + 5);
     expect(el.textContent).toContain(collectionEditCopy.history.reverted);
-    expect(el.textContent).toContain("Undid “Rhystic Study”");
+    expect(el.textContent).toContain("Reverted “Rhystic Study”");
     expect(el.textContent).toContain("Swords to Plowshares");
     expect(el.querySelectorAll("button[aria-label^='Revert']")).toHaveLength(2);
     // No row carries an anchor here, so the Reverted-by note must not link to one.

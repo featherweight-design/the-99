@@ -43,8 +43,11 @@ export const gotItCopy = {
     staleTitle: "This changed while it was open.",
     staleBody: (need: number) => `A copy was added somewhere else, so the deck needs ${n(need)} now. Nothing was added yet.`,
     staleBodyDone: "A copy was added somewhere else, so the deck needs no more. Add anyway if this is a spare.",
-    failedTitle: "That didn’t go through.",
-    failedBody: "Nothing was added. Try again in a moment.",
+    failedTitle: "We couldn’t confirm that was added.",
+    failedBody: "Check your collection before you try again.",
+    /** The printings never loaded, so no add was tried. */
+    loadFailedTitle: "We couldn’t load your printings.",
+    loadFailedBody: "Nothing was added. Close this and try again.",
   },
   slot: {
     /** The spent-slot shape a row that left keeps until the list is next read (call 8). */

@@ -15,6 +15,7 @@ import { TextField } from "@/components/ui/text-field";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 import { CommanderThumb, CARD_ART_RING } from "../ui/commander-thumb";
 import { HandOffAnswersBlock } from "../intake/hand-off-answers";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import type { CreateAnswers } from "../../lib/intake/answers";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
@@ -90,7 +91,7 @@ export function CreatePreFilled({
         // See create-picker.tsx: the action's closing `redirect()` throws, and
         // without this the success path paints a failure on its way out.
         unstable_rethrow(err);
-        setError("We couldn’t create that deck. Try again.");
+        setError(addPanelCopy.createPicker.failed);
       }
     });
   }

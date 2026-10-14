@@ -99,8 +99,8 @@ export const collectionEditCopy = {
       `Replaces your ${cards(from)} with ${n(to)}.${short ? ` ${n(short)} ${short === 1 ? "deck" : "decks"} will read short.` : ""}`,
     confirmReplace: "Replace collection",
     pendingReplace: "Replacing…",
-    failedTitle: "That didn’t go through",
-    failedBody: "Nothing changed. Your collection is exactly as it was, and this review is still here.",
+    failedTitle: "We couldn’t import that",
+    failedBody: "Your collection is unchanged, and this review is still here.",
     retry: "Try again",
   },
   // §E, the short-deck warning. Replace and Revert are drawn so far; Save and Remove join with the
@@ -144,7 +144,7 @@ export const collectionEditCopy = {
     now: "Now",
     confirm: "Revert",
     confirmPartial: "Revert what’s left",
-    nothingLeft: "Nothing left to undo. Every card this changed is already back where it was.",
+    nothingLeft: "Nothing left to revert. Every card this changed is already back where it was.",
     /** (new) The reason beside a row whose copies stay the same but whose printing or condition is restored. */
     reasonDetails: "Printing or condition",
     /** (new) The lede when the revert moves no copies and only restores printings or conditions. */
@@ -159,14 +159,14 @@ export const collectionEditCopy = {
     catalogBody: (names: string[]) =>
       `${names.join(", ")} ${names.length === 1 ? "has" : "have"} been removed from the card catalog since. A revert can’t put back a card that no longer exists. Nothing was changed.`,
     /** (new) The change is already undone, or has aged out. */
-    gone: "That change has already been undone or has aged out of history. Nothing was changed.",
+    gone: "That change has already been reverted or has aged out of history. Nothing was changed.",
     close: "Close",
   },
   // §F, the history list. The handoff's strings; lines marked (new) have no key there and go to
   // /copy-review. Dates and times are UTC, spelled by the caller.
   history: {
     heading: "Changes to your collection",
-    lede: "Every upload and edit from the last 90 days is listed here. A revert undoes a change as of today.",
+    lede: "Every upload and edit from the last 90 days is listed here. A revert takes a change back as of today.",
     kinds: {
       uploadReplace: "Replace upload",
       uploadAdd: "Add upload",
@@ -192,10 +192,10 @@ export const collectionEditCopy = {
     reverted: "Reverted",
     /** Reads after `reverted` and a separator: "Reverted · by the revert at 15:30". */
     revertedBy: (when: string) => `by the revert at ${when}`,
-    undid: (title: string) => `Undid “${title}”`,
+    undid: (title: string) => `Reverted “${title}”`,
     /** (new) A revert whose own entry is not on this page, so it cannot be titled. */
-    undidOlder: "Undid an earlier change",
-    undidAged: (date: string) => `Undid a change from before ${date}`,
+    undidOlder: "Reverted an earlier change",
+    undidAged: (date: string) => `Reverted a change from before ${date}`,
     agedNote: "That change has aged out of history.",
     today: (date: string) => `Today · ${date}`,
     yesterday: (date: string) => `Yesterday · ${date}`,
@@ -214,7 +214,7 @@ export const collectionEditCopy = {
       `History keeps 90 days. Changes from before ${date} have aged out, but your cards haven’t. They’re all still in your collection.`,
     emptyTitle: "Nothing’s changed yet",
     emptyBody: (ship: string) =>
-      `Uploads and edits since ${ship} show up here, ready to undo. Your collection from before that has no history to show.`,
+      `Uploads and edits since ${ship} show up here, ready to revert. Your collection from before that has no history to show.`,
     revert: "Revert",
     reverting: "Reverting…",
     /** (new) The expanded row's per-row quantity change. */
@@ -270,7 +270,7 @@ export const collectionEditCopy = {
     done: "Done",
     /** (new) The saved state's link to the entry it just wrote (B8). */
     seeInHistory: "See it in History",
-    failed: "Nothing was saved. Your list is still here. Try again in a moment.",
+    failed: "We couldn’t confirm those were added. Check your collection before you try again.",
     printingsFailed: "We couldn’t load that card’s printings. Try picking it again.",
     announceChoose: (card: string, k: number) => `${card}: choose a printing. ${n(k)} printings.`,
     announceAdded: (card: string) => `${card} added to the list`,
@@ -310,7 +310,7 @@ export const collectionEditCopy = {
     retry: "Try again",
     saved: (card: string, q: number) => `Saved. ${card} ×${n(q)}.`,
     undo: "Undo",
-    failed: "Nothing was saved. Your changes are still here.",
+    failed: "We couldn’t confirm that saved. Check your collection before you try again.",
     /** (new) A holding with no catalog printing behind it (a bare Name,Qty import). */
     noPrinting: "No printing recorded",
     /** (new) Reading the card's holdings, and the read failing. */

@@ -74,9 +74,9 @@ describe("entryTitle", () => {
   it("titles a revert by what it undid: the entry when on the page, else the aged or earlier wording", () => {
     const undone = entry({ id: "u", kind: "upload_replace", uploadFilename: "x.csv" });
     const byId = new Map([["u", undone]]);
-    expect(entryTitle(entry({ kind: "revert", revertsId: "u", revertsVisible: true }), byId, reach)).toBe("Undid “x.csv”");
-    expect(entryTitle(entry({ kind: "revert", revertsId: "gone", revertsVisible: false }), none, reach)).toBe("Undid a change from before 1 Oct");
-    expect(entryTitle(entry({ kind: "revert", revertsId: "old", revertsVisible: true }), none, reach)).toBe("Undid an earlier change");
+    expect(entryTitle(entry({ kind: "revert", revertsId: "u", revertsVisible: true }), byId, reach)).toBe("Reverted “x.csv”");
+    expect(entryTitle(entry({ kind: "revert", revertsId: "gone", revertsVisible: false }), none, reach)).toBe("Reverted a change from before 1 Oct");
+    expect(entryTitle(entry({ kind: "revert", revertsId: "old", revertsVisible: true }), none, reach)).toBe("Reverted an earlier change");
   });
 });
 

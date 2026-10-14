@@ -425,7 +425,7 @@ export function GotItConfirmForm<F>({
           <div role="alert" className={BANNER}>
             <span aria-hidden style={{ color: "var(--warning)" }}>⚠</span>
             <span>
-              <b className="font-semibold text-[color:var(--fg)]">{c.failedTitle}</b> {c.failedBody}
+              <b className="font-semibold text-[color:var(--fg)]">{loadFailed ? c.loadFailedTitle : c.failedTitle}</b> {loadFailed ? c.loadFailedBody : c.failedBody}
             </span>
           </div>
         ) : null}
