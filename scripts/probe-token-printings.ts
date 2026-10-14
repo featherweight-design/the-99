@@ -130,15 +130,27 @@ async function run() {
   check("g · and no deck pick", (await rows(sql`select 1 from deck_token_printings where user_id = ${USER}`)).length, 0);
 }
 
+// Each step runs on its own, so one that throws (the purge is under test too) never leaves the catalog
+// fixtures behind. The direct deletes cover what the purge should have removed, in child-first order.
 async function cleanup() {
-  try {
-    await purgeAccount(USER);
-    await fixture.execute(sql`delete from collection_history where user_id = ${USER}`);
-    await fixture.execute(sql`delete from token_printings where scryfall_id in (${A1}::uuid, ${A2}::uuid, ${B1}::uuid)`);
-    await fixture.execute(sql`delete from tokens where oracle_id in (${A}::uuid, ${B}::uuid)`);
-  } catch (err) {
-    failures += 1;
-    console.error("cleanup failed", err);
+  const steps: [string, () => Promise<unknown>][] = [
+    ["purge", () => purgeAccount(USER)],
+    ["deck picks", () => fixture.execute(sql`delete from deck_token_printings where user_id = ${USER}`)],
+    ["decks", () => fixture.execute(sql`delete from decks where user_id = ${USER}`)],
+    ["printing rows", () => fixture.execute(sql`delete from token_printing_holdings where user_id = ${USER}`)],
+    ["ownership", () => fixture.execute(sql`delete from token_ownership where user_id = ${USER}`)],
+    ["reads", () => fixture.execute(sql`delete from token_reads where user_id = ${USER}`)],
+    ["history", () => fixture.execute(sql`delete from collection_history where user_id = ${USER}`)],
+    ["token printings", () => fixture.execute(sql`delete from token_printings where scryfall_id in (${A1}::uuid, ${A2}::uuid, ${B1}::uuid)`)],
+    ["tokens", () => fixture.execute(sql`delete from tokens where oracle_id in (${A}::uuid, ${B}::uuid)`)],
+  ];
+  for (const [name, step] of steps) {
+    try {
+      await step();
+    } catch (err) {
+      failures += 1;
+      console.error(`cleanup: ${name} failed`, err);
+    }
   }
 }
 

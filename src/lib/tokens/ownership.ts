@@ -199,7 +199,6 @@ export async function syncPreconTokens(tx: Runner, userId: string, entryId?: str
     }
   }
 
-  await syncPreconPrintings(tx, userId, adds);
   const have = await tx.select({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId, quantity: tokenOwnership.quantity })
     .from(tokenOwnership).where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "precon")));
   const held = new Set(have.map((h) => h.id));
@@ -222,11 +221,13 @@ export async function syncPreconTokens(tx: Runner, userId: string, entryId?: str
         .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.tokenOracleId, h.id), eq(tokenOwnership.source, "precon")));
     }
   }
-  if (fresh.length === 0) return [];
-  const marked = await tx.insert(tokenOwnership)
+  const marked = fresh.length === 0 ? [] : await tx.insert(tokenOwnership)
     .values(fresh.map(([id, w]) => ({ userId, tokenOracleId: id, quantity: w.quantity, source: "precon" as const, entryId: w.entryId })))
     .onConflictDoNothing()
     .returning({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId });
+  // Printings LAST, after every join and ownership write: the order uploads and the purge lock in
+  // (joins, then ownership, then printings), so two of them never wait on each other the other way round.
+  await syncPreconPrintings(tx, userId, adds);
   return marked.filter((m) => m.entryId === entryId).map((m) => m.id);
 }
 
