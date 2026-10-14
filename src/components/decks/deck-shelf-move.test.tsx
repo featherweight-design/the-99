@@ -95,6 +95,21 @@ describe("the deck page's Move", () => {
     expect(moveRowName()).toBe("Move · Pauper");
   });
 
+  it("never lets an older move's late refusal undo a newer move", async () => {
+    let refuseFirst!: (v: boolean) => void;
+    moveDeckAction
+      .mockReturnValueOnce(new Promise<boolean>((r) => (refuseFirst = r)))
+      .mockResolvedValueOnce(true);
+    render(<Header shelf={{ folders: [{ id: "f1", name: "Cube night" }, { id: "f2", name: "Pauper" }], folderId: null, folderName: null }} />);
+    openMove();
+    fireEvent.click(screen.getByRole("button", { name: "Cube night" }));
+    openMove();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Pauper" })));
+    await act(async () => refuseFirst(false));
+    await flush();
+    expect(moveRowName()).toBe("Move · Pauper");
+  });
+
   it("keeps every folder made in one visit until the server's list returns them", async () => {
     moveDeckAction.mockResolvedValue(true);
     createFolderAction

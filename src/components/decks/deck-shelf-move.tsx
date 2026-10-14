@@ -49,21 +49,25 @@ export function useDeckShelfMove(deckId: string, shelf: DeckShelf): {
   const filedOnDismiss = useRef(false);
   const [announced, setAnnounced] = useState("");
 
+  // The newest move's number. A second move can start before the first settles, so only the newest
+  // may take its prediction back: an older refusal landing late must not undo a later move.
+  const latest = useRef(0);
   const onMove = useCallback(
     (to: { id: string | null; name: string | null }, failed: string = folderCopy.move.failed) => {
       const was = current;
+      const seq = (latest.current += 1);
       setCurrent(to);
       setAnnounced(to.name ? folderCopy.move.announceFiled(to.name) : folderCopy.move.announceUnfiled);
       startMove(async () => {
         const answer = await moveDeckAction(deckId, to.id).catch(() => "threw" as const);
-        if (answer === true) return;
+        // A rejection may have committed with its response lost, and no payload is coming for it.
+        if (answer === "threw") router.refresh();
+        if (answer === true || seq !== latest.current) return;
         // Outside the action, as the list does: a state update inside it is held by the transition.
         setTimeout(() => {
           setCurrent(was);
           setAnnounced(answer === "threw" ? failed : folderCopy.move.refused);
         }, 0);
-        // A rejection may have committed with its response lost, and no payload is coming for it.
-        if (answer === "threw") router.refresh();
       });
     },
     [current, deckId, router],
