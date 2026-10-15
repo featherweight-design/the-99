@@ -16,11 +16,14 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock("../../db", () => {
-  const GRANTORS = [{ userId: "user_friend", publicId: "pub_friend", displayName: "Fran" }];
+  const GRANTORS = [{
+    userId: "user_friend", publicId: "pub_friend", displayName: "Fran",
+    commanderOracleId: null, commanderName: null, commanderArt: null, pods: ["Game night"],
+  }];
   const chain = (): unknown => new Proxy(() => {}, {
     get: (_t, prop) => (prop === "then" ? (resolve: (v: unknown) => void) => resolve(GRANTORS) : () => chain()),
   });
-  const reader = { selectDistinct: () => chain() };
+  const reader = { select: () => chain(), selectDistinct: () => chain() };
   return { db: { ...reader, transaction: async (fn: (tx: unknown) => unknown) => fn(reader) } };
 });
 vi.mock("../decks/availability-query", () => ({

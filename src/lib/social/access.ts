@@ -24,6 +24,24 @@ export type Friend = { publicId: string; displayName: string; since: Date; comma
  * inner join), so a missed purge degrades to a friend who vanished rather than a broken row.
  */
 export function friendsQuery(viewerId: string, q: Reader = db) {
+  return friendRows(q)
+    .where(eq(friendLinks.userId, viewerId))
+    .orderBy(asc(socialProfiles.displayName), asc(socialProfiles.publicId));
+}
+
+/**
+ * One friend by public id (Social R2's friend page, handoff G2): the list's own read, narrowed. The
+ * viewer's link row is in the same statement, so a public id that is not the viewer's current friend
+ * reads as nothing, whoever's profile it names.
+ */
+export function friendQuery(viewerId: string, publicId: string, q: Reader = db) {
+  return friendRows(q)
+    .where(and(eq(friendLinks.userId, viewerId), eq(socialProfiles.publicId, publicId)))
+    .limit(1);
+}
+
+/** The columns and joins a friend is drawn from, for the list and for one friend. */
+function friendRows(q: Reader) {
   return q
     .select({
       publicId: socialProfiles.publicId,
@@ -34,13 +52,22 @@ export function friendsQuery(viewerId: string, q: Reader = db) {
     .from(friendLinks)
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
-    .where(eq(friendLinks.userId, viewerId))
-    .orderBy(asc(socialProfiles.displayName), asc(socialProfiles.publicId));
+    .$dynamic();
 }
 
+type FriendRow = Awaited<ReturnType<typeof friendsQuery>>[number];
+const toFriend = (r: FriendRow): Friend =>
+  ({ publicId: r.publicId, displayName: r.displayName, since: r.since, commander: toCommander(r) });
+
 export async function listFriends(viewerId: string, q: Reader = db): Promise<Friend[]> {
-  const rows = await friendsQuery(viewerId, q);
-  return rows.map((r) => ({ publicId: r.publicId, displayName: r.displayName, since: r.since, commander: toCommander(r) }));
+  return (await friendsQuery(viewerId, q)).map(toFriend);
+}
+
+/** The viewer's friend with this public id, or null: not a friend, no profile, or not an id at all. */
+export async function loadFriend(viewerId: string, publicId: unknown, q: Reader = db): Promise<Friend | null> {
+  if (!isUuid(publicId)) return null;
+  const [row] = await friendQuery(viewerId, publicId, q);
+  return row ? toFriend(row) : null;
 }
 
 /** The account a `publicId` names, ONLY when it is the viewer's current friend. Anything else is null. */

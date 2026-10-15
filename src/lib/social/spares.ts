@@ -9,10 +9,12 @@
  *
  * A spare is a copy no deck of the friend's, committed or draft, is asking for: `owned − hard − soft`
  * from the friend's own claim model, never restated here (Q12: a copy only in a draft is NOT spare).
- * What comes back is the card, the friend's public id and display name, and the spare count. Never
- * `owned`, never a claim, never a deck name: a share is a fact about spares, not about decks.
+ * What comes back is the card, the friend (public id, display name, face, and the names of the pods the
+ * grant holds through), and the spare count. Never `owned`, never a claim, never a deck name: a share is a
+ * fact about spares, not about decks.
  *
- * Nothing here moves a card or asks for one (no borrowing, no cart change). No surface calls it yet.
+ * Nothing here moves a card or asks for one (no borrowing, no cart change). It is served by
+ * `GET /api/friend-spares`, uncached, so no cached key carries a friend's data.
  */
 import { and, asc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -23,6 +25,7 @@ import { loadAvailability } from "../decks/availability-query";
 // friend's override flip moves no key there, so such a page must first key on the friends' resolved switches.
 import { resolveSwitchEnv } from "../switches/snapshot";
 import type { Reader } from "./access";
+import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
 import { isUuid } from "./rules";
 
 const viewerIn = alias(podMembers, "viewer_in");
@@ -48,6 +51,35 @@ export function spareGrantorsQuery(viewerId: string, q: Reader = db) {
     .orderBy(asc(friendLinks.friendUserId));
 }
 
+/**
+ * The same grant, with what a spare row draws of the friend (Social R2, plan `2026-10-15-social-r2.md` PR 2):
+ * the face, through the friendship this statement already joins (D1), and the names of the pods the grant
+ * holds through, `shares with {pod}`. One row per friend, its pods in name order.
+ */
+export function spareGrantDetailsQuery(viewerId: string, q: Reader = db) {
+  return q
+    .select({
+      userId: friendLinks.friendUserId,
+      publicId: socialProfiles.publicId,
+      displayName: socialProfiles.displayName,
+      ...commanderColumns,
+      pods: sql<string[]>`array_agg(${pods.name} order by ${pods.name}, ${pods.id})`,
+    })
+    .from(friendLinks)
+    .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
+    .innerJoin(podSpareShares, eq(podSpareShares.userId, friendLinks.friendUserId))
+    .innerJoin(friendIn, and(eq(friendIn.podId, podSpareShares.podId), eq(friendIn.userId, friendLinks.friendUserId)))
+    .innerJoin(viewerIn, and(eq(viewerIn.podId, podSpareShares.podId), eq(viewerIn.userId, viewerId)))
+    .innerJoin(pods, eq(pods.id, podSpareShares.podId))
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .where(eq(friendLinks.userId, viewerId))
+    .groupBy(
+      friendLinks.friendUserId, socialProfiles.publicId, socialProfiles.displayName,
+      commanderCard.oracleId, commanderCard.name, commanderCard.artCropUri,
+    )
+    .orderBy(asc(friendLinks.friendUserId));
+}
+
 /** `max(0, owned − hard − soft)`: copies none of the owner's decks, committed or draft, is asking for. */
 export function spareCount(a: { owned: number; hard: number; soft: number }): number {
   return Math.max(0, a.owned - a.hard - a.soft);
@@ -56,7 +88,18 @@ export function spareCount(a: { owned: number; hard: number; soft: number }): nu
 /** How many friends' claim models one read runs at once. */
 export const CLAIM_MODELS_AT_ONCE = 4;
 
-export type FriendSpare = { oracleId: string; friend: { publicId: string; displayName: string }; spare: number };
+export type SpareFriend = {
+  publicId: string;
+  displayName: string;
+  /** The friend's face (G10), or null for initials. */
+  commander: ProfileCommander | null;
+  /** The pods the share reaches the viewer through, in name order: `shares with {pod}`. */
+  pods: string[];
+};
+export type FriendSpare = { oracleId: string; friend: SpareFriend; spare: number };
+
+/** The most cards one spares read asks about: a request past it is refused rather than cut. */
+export const MAX_SPARES_BATCH = 200;
 
 /**
  * Each granting friend's claim model narrowed to `asked`, in input order, at most CLAIM_MODELS_AT_ONCE at a
@@ -96,7 +139,7 @@ export async function claimModelsFor(viewerId: string, friends: readonly string[
 export async function loadFriendSpares(viewerId: string, oracleIds: readonly string[]): Promise<FriendSpare[]> {
   const asked = [...new Set(oracleIds.filter(isUuid))];
   if (asked.length === 0) return [];
-  const grantors = await spareGrantorsQuery(viewerId);
+  const grantors = await spareGrantDetailsQuery(viewerId);
   // One claim model per friend, at most CLAIM_MODELS_AT_ONCE side by side: measured at ~100ms each on a
   // staging copy (`measure:friend-spares`), so a handful of friends costs about one model, not their sum,
   // and a large pod queues behind the bound rather than taking the whole connection pool.
@@ -105,9 +148,10 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
   grantors.forEach((g, i) => {
     const model = models[i];
     if (model === null) return;
+    const friend: SpareFriend = { publicId: g.publicId, displayName: g.displayName, commander: toCommander(g), pods: g.pods };
     for (const [oracleId, a] of model) {
       const spare = spareCount(a);
-      if (spare > 0) out.push({ oracleId, friend: { publicId: g.publicId, displayName: g.displayName }, spare });
+      if (spare > 0) out.push({ oracleId, friend, spare });
     }
   });
   return out.sort((x, y) =>
