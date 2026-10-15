@@ -1,8 +1,8 @@
 # READINESS — Social R1 (friends and pods)
 
 **🟡 R1, for Hugh's audit against the brief's locks.** Every R1 state in the brief is drawn at both widths and every
-§Open R1 item is called. Not green until Hugh rules on G3 (does a friend invite admit a new player?) and G4 (an
-already-friends link stays open), and engineering confirms G1 and G2 are in the plan.
+§Open R1 item is called. Hugh ruled G3 (the app stays invite-only) and G4 (an already-friends open spends the link)
+on 2026-10-15. Not green until Hugh approves the round and engineering confirms G1 and G2 are in the plan.
 
 ## Locks held
 

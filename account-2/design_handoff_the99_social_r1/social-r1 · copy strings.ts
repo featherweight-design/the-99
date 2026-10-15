@@ -142,7 +142,7 @@ export const socialCopy = {
     selfTitle: "This is your own invite link",
     selfBody: "Send it to the friend you want to add. It works once, for the first person who opens it.",
     alreadyTitle: (name: string) => `You and ${name} are already friends`,
-    alreadyBody: "Nothing to accept. The link stays open for someone else until it expires.",
+    alreadyBody: "Nothing to accept. This link is used up now.", // opening it spent it (redeemInvite)
     declinedTitle: "Invite declined",
     declinedBody: (name: string) => `${name} isn’t told. The link no longer works.`,
     toFriends: "Go to Friends",

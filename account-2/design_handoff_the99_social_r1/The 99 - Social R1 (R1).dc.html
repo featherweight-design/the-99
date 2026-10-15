@@ -69,8 +69,8 @@ code{font:12px 'IBM Plex Mono',monospace;color:#E6E8F0;background:#20222A;paddin
         <div class="g">
           <i>G1</i><span>No read lists your open invites. The page needs <code>listOpenInvites(viewer)</code>: token, created, expires.</span>
           <i>G2</i><span><code>/invite/[token]</code> must be public in <code>src/proxy.ts</code> to draw the signed-out card, and it reads nothing while signed out.</span>
-          <i>G3</i><span>The 99 is invite-only. A friend invite cannot create an account; the signed-out card says so. Hugh to confirm.</span>
-          <i>G4</i><span>“Already friends” is known on read, so Accept is not offered and the link stays open until it expires.</span>
+          <i>G3</i><span>Ruled (Hugh): the app stays invite-only. A friend invite cannot create an account, and the signed-out card says so. An invite for trusted new players is out of scope.</span>
+          <i>G4</i><span>Ruled (Hugh): opening a link from someone already your friend spends it. The page calls <code>redeemInvite</code>, which already handles that case.</span>
           <i>G5</i><span>A brand-new account with no cards meets the first-run lock; /friends is not a nav item, so the lock does not touch it.</span>
           <i>G6</i><span>Every name, pod and date here is placeholder data. Staging has none.</span>
           <i>G7</i><span>The production host in the link (<code>the-99.dev</code>) is read from docs, not config.</span>

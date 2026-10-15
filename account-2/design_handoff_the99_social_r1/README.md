@@ -72,7 +72,7 @@ from the server and the shared toast says so, with no retry.
 forwarded or guessed link learns nothing; a bad token (`null`) reads exactly as a used one, as `friends.ts` intends.
 Expired keeps its own line because "ask for a new one" is the plain remedy. Redeemed, declined, revoked and not found
 are one card: `This invite link no longer works`. Your own link offers `Copy link` (the likeliest reason to open it is to
-check it) and no Accept or Decline. Already friends offers no Accept. Every ended card has one way on.
+check it) and no Accept or Decline. Already friends offers no Accept, and opening it spends the link (Hugh, G4). Every ended card has one way on.
 
 **8. Signed out, the landing reads nothing and offers Sign in only.** The route must be public in `src/proxy.ts` (G2) to
 draw it; otherwise `auth.protect()` sends the reader straight to Clerk with no idea why. It uses the signed-out
@@ -137,8 +137,8 @@ removing, every pod write. `false` from a write that is already done (a double s
 |---|---|---|
 | G1 | No read lists your open invites. `/friends` needs `listOpenInvites(viewer)`: token, `createdAt`, `expiresAt`, open only. | Eng |
 | G2 | `/invite/[token]` must join `isPublic` in `src/proxy.ts` to draw the signed-out card; it must read nothing without a session. | Eng |
-| G3 | The 99 is invite-only. A friend invite cannot create an account, and the signed-out card says so. Should a friend invite also admit a new player? | Hugh |
-| G4 | Already friends is known on read, so Accept is never offered and the link stays open until it expires or is revoked. Spending it there would need a call the page does not make. | Hugh / Eng |
+| G3 | Ruled (Hugh, 2026-10-15): the app stays invite-only. A friend invite cannot create an account, and the signed-out card says so. An invite for trusted new players is out of scope. | Closed |
+| G4 | Ruled (Hugh, 2026-10-15): an already-friends open spends the link. When `readInvite` says `alreadyFriends`, the page calls `redeemInvite`, which already returns `alreadyFriends: true` and writes no new friendship; the link leaves the inviter's list. | Eng |
 | G5 | A brand-new account (no cards) has the first-run lock. `/friends` and `/invite` are not nav items, so the lock does not touch them; drawn as such. | Note |
 | G6 | All names, pods and dates are placeholders. Staging holds zero social rows (2026-10-15). | Note |
 | G7 | The link's host (`the-99.dev`) is read from docs, not config. | Eng |

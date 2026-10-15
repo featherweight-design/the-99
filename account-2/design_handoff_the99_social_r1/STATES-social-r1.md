@@ -52,7 +52,7 @@ Both widths carry every state; where the phone board omits a frame, the desktop 
 | Revoked | Landing L4 | Same card. |
 | Not found | Landing L4 | Same card, by design (`readInvite` null). |
 | Your own link | Landing L5 | No Accept/Decline; Copy link; the link stays open. |
-| Already friends | Landing L6 | Names the friend; no Accept; the link stays open (G4). |
+| Already friends | Landing L6 | Names the friend; no Accept; opening it spends the link (G4). |
 | Accepted, and where you land | Friends F3 | `/friends` with the receipt. |
 | After Decline | Landing L7 | `Invite declined`; Go to Home. |
 | Accept failed | Landing L8 | Toast, `Try again`; card stays. Spent mid-press → redraws L4. |
