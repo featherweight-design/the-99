@@ -204,6 +204,23 @@ describe("S11: the add refused", () => {
     expect(importDeck.mock.calls[2][0].commanderOracleId).toBeUndefined();
   });
 
+  // Unticking after a lost answer would send the retry with no tick and no id, making a second deck instead of finding
+  // the first; the box holds still until the press is answered.
+  it("holds the tick while a lost press is unanswered, so its retry keeps the tick and the id", async () => {
+    importDeck.mockRejectedValueOnce(new Error("network"));
+    render(<ImportEntry canOwn />);
+    fillPaste();
+    fireEvent.click(tick());
+    submit();
+    await screen.findByRole("alert");
+    // Disabled, so a browser takes no press on it (jsdom would still toggle one, so none is simulated).
+    expect(tick().disabled).toBe(true);
+    expect(tick().checked).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
+    expect(importDeck.mock.calls[1][0]).toMatchObject({ own: true, actionId: importDeck.mock.calls[0][0].actionId });
+  });
+
   it("a different list is a different submission, with a new id", async () => {
     importDeck.mockResolvedValueOnce({ ok: false, reason: "addFailed", notes: [] });
     render(<ImportEntry canOwn />);

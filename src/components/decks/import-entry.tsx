@@ -471,6 +471,9 @@ export function ImportEntry({ compact = false, canOwn = false }: {
         <OptInCheckbox
           checked={own}
           onChange={setOwn}
+          // A press whose answer was lost may have added the cards and made the deck: its retry must keep the tick and
+          // the id that find them, so the box holds still until that press is answered or the list changes.
+          disabled={failure?.kind === "addUnsure"}
           className="mt-[16px] min-h-[44px] items-center md:min-h-0 md:items-start"
         >
           {copy.entry.own}
