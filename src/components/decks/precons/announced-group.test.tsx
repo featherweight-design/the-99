@@ -195,6 +195,16 @@ describe("AnnouncedGroup", () => {
       expect(strip.className).toContain("focus-visible:outline-[color:var(--accent)]");
     });
 
+    it("re-measures when a filter grows the strip without either box resizing (a search cleared)", () => {
+      wide = 300;
+      const one = match(trc.set, trc.commanders.slice(0, 1), 15);
+      const { rerender } = draw({ opensByItself: true, matches: [one] });
+      expect(screen.queryByRole("region", { name: /revealed commander/ })).toBeNull();
+      wide = 1200;
+      rerender(<G matches={[trc]} today="2026-10-14" newCodes={[]} opensByItself view="tiles" listed={{}} />);
+      expect(screen.getByRole("region", { name: "15 revealed commanders" })).toHaveAttribute("tabindex", "0");
+    });
+
     it("is no stop at all once it wraps and fits", () => {
       wide = 300;
       draw({ opensByItself: true });

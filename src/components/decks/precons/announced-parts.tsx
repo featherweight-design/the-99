@@ -67,8 +67,11 @@ function NonePlate() {
   );
 }
 
-/** Whether a box scrolls sideways now: its content is wider than it is. Re-measured as it resizes. */
-function useOverflowsX<T extends HTMLElement>() {
+/**
+ * Whether a box scrolls sideways now: its content is wider than it is. Re-measured as the box or its list resizes,
+ * and whenever `size` (the number of cards) changes, since a filter can grow the content without either box moving.
+ */
+function useOverflowsX<T extends HTMLElement>(size: number) {
   const ref = useRef<T | null>(null);
   const [overflows, setOverflows] = useState(false);
   useEffect(() => {
@@ -80,7 +83,7 @@ function useOverflowsX<T extends HTMLElement>() {
     if (el.firstElementChild) observer.observe(el.firstElementChild);
     measure();
     return () => observer.disconnect();
-  }, []);
+  }, [size]);
   return [ref, overflows] as const;
 }
 
@@ -90,7 +93,7 @@ function useOverflowsX<T extends HTMLElement>() {
  * scroll to the cards past the edge (the cards take no focus: they link nowhere). Wrapped, it is neither.
  */
 export function RevealedStrip({ commanders, className = "" }: { commanders: readonly RevealedCommander[]; className?: string }) {
-  const [ref, overflows] = useOverflowsX<HTMLDivElement>();
+  const [ref, overflows] = useOverflowsX<HTMLDivElement>(commanders.length);
   return (
     <div
       ref={ref}
@@ -98,7 +101,7 @@ export function RevealedStrip({ commanders, className = "" }: { commanders: read
       {...(overflows ? { role: "region", "aria-label": copy.stripLabel(commanders.length), tabIndex: 0 } : {})}
       className={`-mr-[12px] overflow-x-auto rounded-[4px] pr-[12px] md:mr-0 md:overflow-visible md:pr-0 ${FOCUS_RING} ${className}`}
     >
-      <ul className="m-0 flex list-none flex-nowrap gap-[8px] p-0 md:flex-wrap md:gap-x-[8px] md:gap-y-[12px]">
+      <ul className="m-0 flex w-max list-none flex-nowrap gap-[8px] p-0 md:w-auto md:flex-wrap md:gap-x-[8px] md:gap-y-[12px]">
         {commanders.length === 0 ? <NonePlate /> : commanders.map((c) => <RevealedCard key={c.oracleId} card={c} />)}
       </ul>
     </div>
