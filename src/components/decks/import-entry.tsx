@@ -121,10 +121,22 @@ export function ImportEntry({ compact = false, canOwn = false }: {
     [pasteText],
   );
 
+  /**
+   * A different list is a different submission: it drops the id, the retry's arguments (the commanders a picker
+   * chose for the old list) and a refused add's banner, whose Try again would otherwise send the new list under them.
+   */
+  function newSubmission() {
+    actionIdRef.current = null;
+    lastSubmit.current = null;
+    setFailure((f) => (f && (f.kind === "addFailed" || f.kind === "addUnsure") ? null : f));
+  }
+
   function selectMode(next: ImportMode) {
+    // Pressing the tab already chosen changes nothing, so it keeps the id and a refused add's Try again.
+    if (next === mode) return;
     setMode(next);
     setFailure(null);
-    actionIdRef.current = null;
+    newSubmission();
   }
 
   function acceptFile(candidate: File) {
@@ -142,7 +154,7 @@ export function ImportEntry({ compact = false, canOwn = false }: {
     }
     setFailure(null);
     setFile(candidate);
-    actionIdRef.current = null;
+    newSubmission();
   }
 
   /**
@@ -355,7 +367,7 @@ export function ImportEntry({ compact = false, canOwn = false }: {
             value={pasteText}
             onChange={(e) => {
               setPasteText(e.target.value);
-              actionIdRef.current = null;
+              newSubmission();
             }}
             maxLength={PASTE_MAX_BYTES}
             placeholder={copy.entry.pastePlaceholder}

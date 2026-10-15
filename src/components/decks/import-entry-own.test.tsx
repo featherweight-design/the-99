@@ -12,6 +12,7 @@ vi.mock("../../app/decks/import-actions", () => ({ importDeck }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const { ImportEntry } = await import("./import-entry");
+const { deckImportCopy: copy } = await import("../../lib/copy/deck-import");
 
 const LABEL = "I own these cards. Add them to my collection.";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -124,7 +125,8 @@ describe("S11: the add refused", () => {
 
   // A retry may rename: the name in the field now is the one sent, under the same id, and the field keeps it.
   it("Try again sends the name as edited since the refusal, with the same id", async () => {
-    importDeck.mockResolvedValueOnce({ ok: false, reason: "addFailed", notes: [] });
+    // Refused twice, so the form is still there to read once the retry has answered.
+    importDeck.mockResolvedValue({ ok: false, reason: "addFailed", notes: [] });
     render(<ImportEntry canOwn />);
     fillPaste();
     fireEvent.click(tick());
@@ -136,7 +138,8 @@ describe("S11: the add refused", () => {
     const [first, second] = importDeck.mock.calls.map((c) => c[0]);
     expect(second.name).toBe("Renamed deck");
     expect(second.actionId).toBe(first.actionId);
-    expect((screen.getByLabelText("Deck name") as HTMLInputElement).value).toBe("Renamed deck");
+    // Read once the retry's refusal has drawn the form back (the press shows the reading screen meanwhile).
+    expect(((await screen.findByLabelText("Deck name")) as HTMLInputElement).value).toBe("Renamed deck");
   });
 
   // The row is centred on the phone as drawn: the caller's alignment beats the box's own.
@@ -160,6 +163,45 @@ describe("S11: the add refused", () => {
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
     expect(importDeck.mock.calls[1][0].actionId).toBe(importDeck.mock.calls[0][0].actionId);
+  });
+
+  // The tab already chosen changes nothing: a press whose answer was lost keeps its banner and its id, so the retry
+  // lands on the deck it made instead of adding the cards twice.
+  it("pressing the Paste tab already chosen keeps a lost press's banner and its id", async () => {
+    importDeck.mockRejectedValueOnce(new Error("network"));
+    render(<ImportEntry canOwn />);
+    fillPaste();
+    fireEvent.click(tick());
+    submit();
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: copy.entry.modePaste }));
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
+    expect(importDeck.mock.calls[1][0].actionId).toBe(importDeck.mock.calls[0][0].actionId);
+  });
+
+  // A refused press from the commander step holds the commander picked for the OLD list; a new list drops the banner
+  // and those arguments, so its next press resolves its own commander rather than inheriting one.
+  it("a new list after a refused commander-step press drops the banner and the old commander", async () => {
+    importDeck
+      .mockResolvedValueOnce({
+        ok: false, reason: "commanderNeeded", lineCount: 99, notes: [],
+        candidates: [{ oracleId: "oracle-4", name: "Atraxa, Praetors' Voice", sourceLine: 4, colorIdentity: ["G"], imageUri: null, owned: true }],
+      })
+      .mockResolvedValueOnce({ ok: false, reason: "addFailed", notes: [] });
+    render(<ImportEntry canOwn />);
+    fillPaste();
+    fireEvent.click(tick());
+    submit();
+    await screen.findByText("Which one’s the commander?");
+    fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
+    await screen.findByRole("alert");
+    fireEvent.change(screen.getByLabelText("Your list"), { target: { value: "1 Kinnan, Bonder Prodigy\n1 Sol Ring" } });
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    submit();
+    await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(3));
+    expect(importDeck.mock.calls[2][0].commanderOracleId).toBeUndefined();
   });
 
   it("a different list is a different submission, with a new id", async () => {
