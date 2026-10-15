@@ -199,8 +199,8 @@ describe("G4 · Replace's issues panel is unchanged", () => {
 describe("ConflictRow", () => {
   it("is a fieldset named by the card and its counts, with two 44px radios and nothing pre-picked", () => {
     render(<SyncConflicts rows={[conflict(1, { name: "Arcane Signet" }), conflict(2, { name: "Esper Sentinel", base: 0, app: 1 })]} total={2} since="Oct 2" answers={{}} onAnswers={vi.fn()} disabled={false} />);
-    const group = screen.getByRole("group", { name: "Arcane Signet, at Oct 2 ×1, app ×3, file ×2" });
-    expect(screen.getByRole("group", { name: "Esper Sentinel, at Oct 2 ×0, app ×1, file ×2" })).toBeTruthy();
+    const group = screen.getByRole("group", { name: "Arcane Signet, printing CMM 401, nonfoil, at Oct 2 ×1, app ×3, file ×2" });
+    expect(screen.getByRole("group", { name: "Esper Sentinel, printing CMM 402, nonfoil, at Oct 2 ×0, app ×1, file ×2" })).toBeTruthy();
     const radios = within(group).getAllByRole("radio");
     expect(radios.map((r) => r.closest("label")!.textContent)).toEqual(["App ×3", "File ×2"]);
     expect(radios.every((r) => !(r as HTMLInputElement).checked)).toBe(true);
@@ -208,6 +208,16 @@ describe("ConflictRow", () => {
     // Unanswered: the 3px warning edge, with 2px less left padding to keep the content where an answered row's sits.
     expect(group.className).toContain("border-l-[color:var(--warning)]");
     expect(group.className).toContain("p-[10px_12px_10px_10px]");
+  });
+
+  it("names the printing and finish, so two holdings of one card do not sound the same", () => {
+    const foil = conflict(2, { oracleId: "o1", name: "Arcane Signet", collectorNumber: "401", finish: "foil", key: "o1|cmm|401|foil" });
+    render(<SyncConflicts rows={[conflict(1, { name: "Arcane Signet" }), foil]} total={2} since="Oct 2" answers={{}} onAnswers={vi.fn()} disabled={false} />);
+    const names = screen.getAllByRole("group").map((g) => g.querySelector("legend")!.textContent);
+    expect(names).toEqual([
+      "Arcane Signet, printing CMM 401, nonfoil, at Oct 2 ×1, app ×3, file ×2",
+      "Arcane Signet, printing CMM 401, foil, at Oct 2 ×1, app ×3, file ×2",
+    ]);
   });
 
   it("answers a row by key, and drops the warning edge once answered", () => {

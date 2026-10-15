@@ -85,7 +85,9 @@ export function ReplaceFlow({
   const [knownCount, setKnownCount] = useState(currentCardCount);
   // §E: the decks this replace would leave short, as the server last said. `fresh` marks the
   // ones the previous answer did not name; `changed` is set when this answer replaced one.
-  const [warning, setWarning] = useState<{ decks: ShortDeck[]; fresh: Set<string>; changed: boolean } | null>(null);
+  // `sync` marks the Sync review's own dialog (Confirm X1): it opens over the review before the shortage is
+  // acknowledged, and the review, not the dialog, answers every refusal but a changed set of decks.
+  const [warning, setWarning] = useState<{ decks: ShortDeck[]; fresh: Set<string>; changed: boolean; sync?: boolean } | null>(null);
 
   // Keyed on the upload, not on the preview object: a server refusal re-sets the preview with a
   // corrected count (#1097), and that is the same review still open.
@@ -233,6 +235,9 @@ export function ReplaceFlow({
   const syncSeq = useRef(0);
   // Set by a `stale` refusal: the read it asks for lands with the notice that the figures moved.
   const syncMoved = useRef(false);
+  // Set by an `undecided` refusal: the conflict still open may be one the drawn read never showed, so focus
+  // waits for the re-read that refusal asks for to land and draw its rows.
+  const focusAfterRead = useRef(false);
   const conflictsRef = useRef<SyncConflictsHandle>(null);
   const syncKey = (answersNow: SyncAnswers, nonce: number) => `${pickNow}|${JSON.stringify(answersNow)}|${nonce}`;
   const syncWant = reviewing && picked === "sync" && change !== null ? syncKey(answers, syncNonce) : null;
@@ -241,12 +246,15 @@ export function ReplaceFlow({
   useEffect(() => {
     if (!syncReading || !syncWant || !previewedId) return;
     const seq = ++syncSeq.current;
+    // A read already sent is dropped once this effect is cleaned up: leaving the review (Cancel, then Replace or
+    // Add) or asking again must not let its late answer overwrite whichever review is drawn by then.
+    let live = true;
     const want = syncWant;
     const opts = { pick: pickNow, answers };
     const timer = setTimeout(() => {
       previewUploadChange(previewedId, "sync", opts).then(
         (r) => {
-          if (seq !== syncSeq.current) return;
+          if (!live || seq !== syncSeq.current) return;
           // Confirmed elsewhere since: its receipt is the answer.
           if (r === null) {
             if (summaryPath) nav.go(summaryPath);
@@ -261,12 +269,18 @@ export function ReplaceFlow({
             setChange((was) => was && { ...was, failure: { body: collectionEditCopy.upload.prepareFailed } });
             return;
           }
+          // The base went while the review was open (another tab reverted the anchor): no comparison was made,
+          // so nothing here may read as one. Back to the choice, as the confirm's own refusal goes.
+          if (r.sync.unavailable !== null) {
+            syncUnavailable(r.sync.unavailable);
+            return;
+          }
           const moved = syncMoved.current;
           syncMoved.current = false;
           setChange((was) => was && { ...was, data: r, decks: r.decks, fresh: new Set(), changed: moved, failure: null });
         },
         () => {
-          if (seq !== syncSeq.current) return;
+          if (!live || seq !== syncSeq.current) return;
           // The figures on screen are the last read's; a confirm sends that read's digest and, if the plan has
           // moved, is refused as `stale` rather than writing a merge the player did not see.
           setSyncDrawn(want);
@@ -274,10 +288,35 @@ export function ReplaceFlow({
         },
       );
     }, SYNC_REREAD_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
     // `answers` and `pickNow` are in `syncWant`, which is what decides a read.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syncReading, syncWant, previewedId]);
+
+  // The focus an `undecided` refusal asked for, once its re-read has drawn and the radios are live again.
+  useEffect(() => {
+    if (!focusAfterRead.current) return;
+    if (syncWant === null) {
+      focusAfterRead.current = false;
+      return;
+    }
+    if (syncReading || pending) return;
+    focusAfterRead.current = false;
+    conflictsRef.current?.focusFirstUndecided();
+  }, [syncWant, syncReading, pending, change]);
+
+  /** No base to merge against any more: back to the choice, where the Sync card now says why. */
+  function syncUnavailable(reason: NonNullable<UploadSyncPreview["unavailable"]>) {
+    setRead((was) =>
+      was?.datas?.sync ? { ...was, datas: { ...was.datas, sync: { ...was.datas.sync, sync: { ...was.datas.sync.sync, unavailable: reason } } } } : was,
+    );
+    setPicked(null);
+    setReviewing(false);
+    setChange(null);
+  }
 
   function openReview(mode: UploadMode) {
     if (!datas || pending) return;
@@ -295,12 +334,15 @@ export function ReplaceFlow({
 
   async function onConfirm(confirmShort?: ShortDeck[]) {
     if (!preview || pending) return;
-    let focusUndecided = false;
+    // The Sync review's short-deck dialog stays open only to redraw a changed set of decks (E6); every other
+    // answer belongs to the review under it.
+    const syncDialog = confirming && warning?.sync === true;
+    let keepDialog = false;
     setPending(true);
     setConfirmError(null);
     // The review answers a press on its own bar; a confirm made inside the dialog (a first import
     // that found a collection after all, or the fallback) is answered by the dialog.
-    const review = confirming ? null : change;
+    const review = confirming && !syncDialog ? null : change;
     try {
       // `firstImport` is read off the preview, which a server refusal corrects before the
       // modal opens, so a confirm from that modal is no longer "first". A retry after a
@@ -326,20 +368,20 @@ export function ReplaceFlow({
         // The decks moved since the review drew them: redraw the same section with a notice and
         // `new` on the ones that were not there, and wait for another press (E6).
         const was = new Set(review.decks.map((d) => d.deckId));
-        setChange({
-          ...review,
-          decks: outcome.wouldShort,
-          fresh: new Set(outcome.wouldShort.map((d) => d.deckId).filter((id) => !was.has(id))),
-          changed: true,
-          failure: null,
-        });
+        const fresh = new Set(outcome.wouldShort.map((d) => d.deckId).filter((id) => !was.has(id)));
+        setChange({ ...review, decks: outcome.wouldShort, fresh, changed: true, failure: null });
+        // Sync asks in its dialog: the same dialog, redrawn, never a second one (E6).
+        if (syncDialog) {
+          keepDialog = true;
+          setWarning({ decks: outcome.wouldShort, fresh, changed: true, sync: true });
+        }
         return;
       }
       // Sync's refusals. Nothing was written in any of them, and the answers stand.
       if (review && outcome && "undecided" in outcome) {
         // Another read, and the reader is taken to what is still open, once the controls are live again.
         setSyncNonce((n) => n + 1);
-        focusUndecided = true;
+        focusAfterRead.current = true;
         return;
       }
       if (review && outcome && "stale" in outcome) {
@@ -354,14 +396,7 @@ export function ReplaceFlow({
         return;
       }
       if (outcome && "unavailable" in outcome) {
-        // No base to merge against any more: back to the choice, where the Sync card now says why.
-        const reason = outcome.unavailable;
-        setRead((was) =>
-          was?.datas?.sync ? { ...was, datas: { ...was.datas, sync: { ...was.datas.sync, sync: { ...was.datas.sync.sync, unavailable: reason } } } } : was,
-        );
-        setPicked(null);
-        setReviewing(false);
-        setChange(null);
+        syncUnavailable(outcome.unavailable);
         return;
       }
       if (review && outcome && "missingCard" in outcome) {
@@ -418,8 +453,10 @@ export function ReplaceFlow({
       if (!warning) setConfirming(true);
     } finally {
       setPending(false);
-      // After the radios are live again: a disabled radio cannot take focus.
-      if (focusUndecided) setTimeout(() => conflictsRef.current?.focusFirstUndecided(), 0);
+      if (syncDialog && !keepDialog) {
+        setConfirming(false);
+        setWarning(null);
+      }
     }
   }
 
@@ -600,7 +637,11 @@ export function ReplaceFlow({
         }}
         onContinue={() => {
           if (firstImport) void onConfirm();
-          else if (change) void onConfirm(change.decks);
+          // Sync's short decks ask in a dialog before the shortage is acknowledged (Confirm X1): Cancel focused.
+          else if (change && choosing && picked === "sync" && change.decks.length > 0) {
+            setWarning({ decks: change.decks, fresh: new Set(), changed: false, sync: true });
+            setConfirming(true);
+          } else if (change) void onConfirm(change.decks);
           else setConfirming(true);
         }}
         pending={pending && !confirming}
@@ -627,7 +668,7 @@ export function ReplaceFlow({
           onConfirm={() => onConfirm()}
           checking={deckCheck}
           history={deckCheck || history}
-          warning={warning ? { ...warning, onConfirm: () => onConfirm(warning.decks) } : undefined}
+          warning={warning ? { ...warning, source: warning.sync ? "sync" : "replace", onConfirm: () => onConfirm(warning.decks) } : undefined}
         />
       )}
     </>

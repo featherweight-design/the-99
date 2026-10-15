@@ -40,7 +40,7 @@ export function ConfirmModal({
   /** History can revert this replace: say so. Follows `checking` unless a caller turns it on alone (first run). */
   history?: boolean;
   /** The decks the confirm would leave short: the dialog shows §E in place of the confirm. */
-  warning?: { decks: ShortDeck[]; changed: boolean; fresh: ReadonlySet<string>; onConfirm: () => void };
+  warning?: { decks: ShortDeck[]; changed: boolean; fresh: ReadonlySet<string>; onConfirm: () => void; source?: "replace" | "sync" };
 }) {
   const c = replaceCopy.confirm;
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -108,6 +108,7 @@ export function ConfirmModal({
           <>
             <ShortDeckWarning
               titleId="confirm-title"
+              source={warning.source}
               decks={warning.decks}
               pending={pending}
               error={error}

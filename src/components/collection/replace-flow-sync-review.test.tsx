@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
 import type { SyncAnswers, SyncReviewRow } from "../../lib/collection/sync";
+import type { ShortDeck } from "../../lib/collection/write";
 
 // Collection Sync, the review in the flow (plan PR 3): each answer re-reads the dry run so every figure and the
 // digest stay the server's, the newest read wins, and each of Sync's confirm refusals is answered in place.
@@ -36,20 +37,27 @@ const plain = (copiesAfter: number) => ({ ...common, detail: detail(copiesAfter)
 const conflict = (i: number, name: string): SyncReviewRow => ({
   oracleId: `o${i}`, setCode: "cmm", collectorNumber: String(i), finish: "nonfoil", key: `o${i}|cmm|${i}|nonfoil`, name, base: 1, app: 3, file: 2,
 });
-const rows = [conflict(1, "Arcane Signet"), conflict(2, "Esper Sentinel"), conflict(3, "Swords to Plowshares")];
+const baseRows = [conflict(1, "Arcane Signet"), conflict(2, "Esper Sentinel"), conflict(3, "Swords to Plowshares")];
+const rows = baseRows;
+const shortDeck: ShortDeck = { deckId: "d1", deckName: "Tithe and Tax", oracleId: "o9", cardName: "Smothering Tithe", short: 1 };
 
 /** A sync read under `answers`, its figures following them the way the engine's would. */
-function syncRead(answers: SyncAnswers = {}, over: { nothing?: boolean; digest?: string } = {}) {
+function syncRead(
+  answers: SyncAnswers = {},
+  over: { nothing?: boolean; digest?: string; unavailable?: "noRecord"; extra?: SyncReviewRow[]; decks?: ShortDeck[] } = {},
+) {
+  const rows = [...baseRows, ...(over.extra ?? [])];
   const side = (r: SyncReviewRow) => answers.byKey?.[r.key] ?? answers.all;
   const file = rows.filter((r) => side(r) === "file").length;
   const undecided = rows.filter((r) => !side(r)).length;
   return {
     ...common,
+    decks: over.decks ?? [],
     detail: detail(4632),
     sync: {
-      unavailable: null, pick: "everything",
-      counts: { taken: 15, kept: 119, agreed: 0, unchanged: 3385, conflicts: 3, undecided, answeredFile: file, ignored: 0 },
-      conflicts: { rows: rows.map((r) => (side(r) ? { ...r, answer: side(r) } : r)), total: 3 },
+      unavailable: over.unavailable ?? null, pick: "everything",
+      counts: { taken: 15, kept: 119, agreed: 0, unchanged: 3385, conflicts: rows.length, undecided, answeredFile: file, ignored: 0 },
+      conflicts: { rows: rows.map((r) => (side(r) ? { ...r, answer: side(r) } : r)), total: rows.length },
       kept: empty, stale: null, anchorConfirmedAt: "2026-10-02T12:00:00.000Z", missingFromAnchor: 0, raisingConflicts: 1,
       tokens: { count: 114, copies: 313 }, tokensChange: true, tokensChanged: 114, nothing: over.nothing ?? false,
       planDigest: over.digest ?? `d:${JSON.stringify(answers)}`,
@@ -217,5 +225,85 @@ describe("ReplaceFlow · the Sync review", () => {
     fireEvent.click(within(row("Esper Sentinel")).getByRole("radio", { name: "File ×2" }));
     await screen.findByText(/overwrites 1 card /);
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+  it("goes back to the choice when a re-read finds the base gone, never drawing `already has everything`", async () => {
+    let gone = false;
+    choiceReads((o) => syncRead(o?.answers, gone ? { unavailable: "noRecord", nothing: true } : {}));
+    await reachSyncReview();
+    gone = true;
+    fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
+    const card = await screen.findByRole("radio", { name: "Sync my collection" });
+    expect(card.getAttribute("aria-disabled")).toBe("true");
+    expect(screen.queryByText(/already has everything/)).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Review before you sync" })).toBeNull();
+  });
+
+  it("drops a Sync read still in flight once the reader leaves for another review", async () => {
+    let release: (v: unknown) => void = () => {};
+    choiceReads((o) => {
+      if (o?.answers?.all === "app") return new Promise((resolve) => { release = () => resolve(syncRead(o.answers, { decks: [shortDeck] })); });
+      return syncRead(o?.answers);
+    });
+    await reachSyncReview();
+    fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
+    await waitFor(() => expect(syncCalls().at(-1)?.[2]).toEqual({ pick: "everything", answers: { all: "app" } }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(await screen.findByRole("radio", { name: /Replace my collection/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Review the replace →" }));
+    await screen.findByRole("heading", { name: /Review before you replace/ });
+    await act(async () => release(undefined));
+    // The Sync read's short deck never lands on the Replace review.
+    expect(screen.queryByText(/Decks that will read short/)).toBeNull();
+    expect(screen.getByRole("heading", { name: /Review before you replace/ })).toBeTruthy();
+  });
+
+  it("focuses a conflict the drawn review never showed, once the re-read an `undecided` asks for has drawn it", async () => {
+    const late = conflict(4, "Teferi's Protection");
+    let more = false;
+    choiceReads((o) => syncRead(o?.answers, more ? { extra: [late] } : {}));
+    await reachSyncReview();
+    for (const name of ["Arcane Signet", "Esper Sentinel", "Swords to Plowshares"]) {
+      fireEvent.click(within(row(name)).getByRole("radio", { name: "App ×3" }));
+      await waitFor(() => expect(within(row(name)).getByRole("radio", { name: "App ×3" })).toBeChecked());
+    }
+    await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
+    more = true;
+    confirmUpload.mockResolvedValueOnce({ undecided: 1 });
+    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    await waitFor(() => expect(document.activeElement).toBe(within(row("Teferi's Protection")).getByRole("radio", { name: "App ×3" })));
+  }, 15_000);
+
+  it("asks in Sync's own short-deck dialog before the shortage is acknowledged (Confirm X1)", async () => {
+    choiceReads((o) => syncRead(o?.answers, { decks: [shortDeck] }));
+    await reachSyncReview();
+    fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
+    await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
+    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    const dialog = await screen.findByRole("dialog", { name: "Syncing leaves a deck short" });
+    expect(confirmUpload).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(within(dialog).getByRole("button", { name: "Cancel" }));
+    // Cancel writes nothing, and the review and its answers stay.
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(confirmUpload).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    confirmUpload.mockResolvedValueOnce(undefined);
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Sync anyway" }));
+    await waitFor(() => expect(confirmUpload).toHaveBeenCalled());
+    expect(confirmUpload.mock.calls[0][1]).toMatchObject({ mode: "sync", confirmShort: [shortDeck], answers: { all: "app" } });
+    await waitFor(() => expect(go).toHaveBeenCalledWith("/collection/replace/summary/up_1"));
+  });
+
+  it("closes Sync's dialog for a refusal the review answers, keeping the answers", async () => {
+    choiceReads((o) => syncRead(o?.answers, { decks: [shortDeck] }));
+    await reachSyncReview();
+    fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
+    await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
+    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    confirmUpload.mockResolvedValueOnce({ stale: true });
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Sync anyway" }));
+    await screen.findByText(/This changed while you were deciding\./);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("button", { name: "Keep the app’s for all 3" }).getAttribute("aria-pressed")).toBe("true");
   });
 });

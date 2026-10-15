@@ -204,7 +204,7 @@ async function walk(browser, w, userId, P) {
     check(legends.join("|") === [...legends].sort((a, b) => a.localeCompare(b)).join("|"), `${w.name}: the conflict rows read in name order`, JSON.stringify(legends));
     // P1 is the one conflict at base ×1, app ×3, file ×2; its name is drawn as printed, so it is found by its counts.
     const p1Name = legends.find((l) => l.endsWith(" ×1, app ×3, file ×2"));
-    check(/, at [A-Z][a-z]{2} \d+ ×1, app ×3, file ×2$/.test(p1Name ?? ""), `${w.name} K4: a row's name carries the card and its counts`, p1Name);
+    check(/, printing [A-Z0-9]+ \S+, \w+, at [A-Z][a-z]{2} \d+ ×1, app ×3, file ×2$/.test(p1Name ?? ""), `${w.name} K4: a row's name carries the card, its printing and its counts`, p1Name);
     const picked = await onPage(page, "fieldset input[type=radio]:checked").count();
     check(picked === 0, `${w.name} K1: nothing is pre-picked`, `${picked} checked`);
 

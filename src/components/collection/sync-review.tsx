@@ -423,7 +423,7 @@ export function ConflictRow({
           : "border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--warning)] p-[10px_12px_10px_10px] md:p-[8px_12px_8px_10px]"
       } ${ringed ? "shadow-[0_0_0_2px_var(--accent)]" : ""}`}
     >
-      <legend className="sr-only">{s.rowAria(name, since, was, count(row.app), count(row.file))}</legend>
+      <legend className="sr-only">{s.rowAria(name, s.rowPrinting(row.setCode.toUpperCase(), row.collectorNumber, row.finish), since, was, count(row.app), count(row.file))}</legend>
       <div aria-hidden className="min-w-0">
         <div className="truncate text-[13.5px] text-[color:var(--fg)] md:text-[14px]">{name}</div>
         <div className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">

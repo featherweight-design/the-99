@@ -174,7 +174,11 @@ export const collectionEditCopy = {
       colFile: "IN THE FILE",
       pickApp: "App",
       pickFile: "File",
-      rowAria: (card: string, since: string, b: string, a: string, f: string) => `${card}, at ${since} ${b}, app ${a}, file ${f}`,
+      // The printing is named too: conflicts are per printing and finish, and two holdings of one card would
+      // otherwise sound the same.
+      rowAria: (card: string, printing: string, since: string, b: string, a: string, f: string) =>
+        `${card}, printing ${printing}, at ${since} ${b}, app ${a}, file ${f}`,
+      rowPrinting: (set: string, number: string, finish: string) => `${set} ${number}, ${finish}`,
       rowWas: (since: string, b: string) => `at ${since} ${b}`,
       bulkApp: (k: number) => `Keep the app’s for all ${n(k)}`,
       bulkFile: (k: number) => `Take the file’s for all ${n(k)}`,
