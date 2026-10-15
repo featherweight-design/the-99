@@ -36,7 +36,7 @@ the phone board omits a frame, the desktop frame's rule holds unchanged.
 | By friend, every row one game | M4, MP3 | Snapshot name; face from the commander played; labels are not friends. |
 | A row past ten games | M5, MP4 | `7 W · 5 L` beside `12 games`. |
 | A friend later removed | M2, M4 (Alex) | Reads exactly as before: snapshot name and deck. |
-| A deck renamed since | M2 (Dave's `Sokka Tempo`) | History keeps the logged name; the picker shows today's (F3). |
+| A deck renamed since | M2 (Dave's `Avengers Tempo`) | History keeps the logged name; the picker shows today's (F3). |
 | A friend's account deleted | Gap G5 | One row per game under the same name; not drawn. |
 | History row with opponents | M2, MP2 | `vs` line under the marks; trophy before the winner. |
 | History row without | M1, M2 (older games) | No line, nothing reserved. |

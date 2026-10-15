@@ -1,4 +1,4 @@
-# The 99 — Social R3 (opponents and matchups) · R1 handoff package
+# The 99 — Social R3 (opponents and matchups) · R1 handoff package (approved)
 
 Round 3 of 3 of the social line: seating opponents in the log-a-game form, who won on a loss, the history row's
 opponents, and the matchup panel on the Games tab. Phone and desktop. Behind `SOCIAL_GAMES_ENABLED` (needs friends on).

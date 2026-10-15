@@ -24,7 +24,7 @@ inside the seat picker, with R1's commander faces at pick time, and nothing here
 | `STATES-social-r3.md` | Every brief state, where it is drawn, and its rule. |
 | `READINESS.md` | Verdict, locks held, engineering needs. |
 | `social-r3 · copy strings.ts` | Every new string, placeholders for `/copy-review`. |
-| `art/`, `brand/`, `support.js` | Six commander crops (stand-ins: the canvas cannot load Scryfall, and the Colors frames' identities are sample data), the brand sheet, the runtime. |
+| `art/`, `brand/`, `support.js` | Six commander crops from the app's precon grid (the canvas cannot load Scryfall), the brand sheet, the runtime. |
 
 The same canvas is live as a Design artifact in account 2. Open a `.dc.html` with `support.js` beside it.
 

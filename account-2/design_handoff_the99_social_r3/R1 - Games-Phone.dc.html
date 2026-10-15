@@ -100,7 +100,7 @@ a{color:#FF4D9A}
         <span class="k">{{f.label}}</span>
         <div class="ph">
           <div class="mh"><span class="wm"><span>◆◆◆</span><b>99</b></span><button class="mav" type="button" aria-label="Account">HH</button></div>
-          <div class="dh"><img src="art/hero-master.png" alt=""><div><h1 class="dn">Master of Time</h1><div class="dsub">The Master, Transcendent</div></div></div>
+          <div class="dh"><img src="art/zimone.png" alt=""><div><h1 class="dn">Quandrix Unlimited</h1><div class="dsub">Zimone, Infinite Analyst</div></div></div>
           <div class="tabs" role="tablist" aria-label="Deck views"><button class="tab" type="button" role="tab" aria-selected="false">Your deck <small>100</small></button><button class="tab" type="button" role="tab" aria-selected="false">Consider</button><button class="tab on" type="button" role="tab" aria-selected="true">Games <small>{{f.n}}</small></button><button class="tab" type="button" role="tab" aria-selected="false">Analysis</button></div>
           <div class="pane">
             <header class="hl"><h3>Cards in hand is letting this deck down.</h3><p>{{f.subA}}<span>{{f.rec}}</span>.</p></header>
@@ -155,16 +155,16 @@ a{color:#FF4D9A}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2280,"height":2400}}'>
 class Component extends DCLogic {
 renderVals() {
-const ART = { master: 'art/hero-master.png', sokka: 'art/hero-sokka.png', aang: 'art/resume-aang.png', omnath: 'art/resume-omnath.png', baral: 'art/resume-wizards.png', kilo: 'art/resume-kilo.png' };
+const ART = { master: 'art/zimone.png', sokka: 'art/captain-america.png', aang: 'art/heroes.png', omnath: 'art/jace.png', baral: 'art/sai.png', kilo: 'art/rootha.png' };
 const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
 const pips = (s) => s.split('').map((k) => ({ bg: C[k] }));
 const GW = '#6FA368', GH = '#E0913C';
 const o = (name, img, sub, won, ini) => ({ name, img: img || '', ini: ini || '', sub: sub || '', won: !!won });
 const g = (r, pod, date, v, marks, vs) => ({ r, rsCls: r === 'W' ? 'rs w' : 'rs', meta: pod + '-player · ' + date, v, marks: marks.map(([l, c]) => ({ l, c })), vs: vs && vs.length ? vs : null });
 const gamesWith = [
-g('L', 4, 'Oct 14', 'v3', [['Cards in hand', GH], ['Answers', GH]], [o('Dave', ART.sokka, 'Sokka Tempo', true), o('Priya', ART.aang, 'Elements'), o('Lee', ART.omnath, 'Omnath')]),
-g('W', 4, 'Oct 12', 'v3', [['Mana', GW], ['Speed', GW]], [o('Alex', ART.baral, 'Baral Counters'), o('Kilo', ART.kilo), o('Jo', '', '', false, 'JO')]),
-g('L', 3, 'Oct 9', 'v2', [['Cards in hand', GH]], [o('Lee', ART.omnath, 'Omnath', true), o('Marcus', ART.kilo, 'Kilo Proliferate')])
+g('L', 4, 'Oct 14', 'v3', [['Cards in hand', GH], ['Answers', GH]], [o('Dave', ART.sokka, 'Avengers Tempo', true), o('Priya', ART.aang, 'Elements'), o('Lee', ART.omnath, 'Jace')]),
+g('W', 4, 'Oct 12', 'v3', [['Mana', GW], ['Speed', GW]], [o('Alex', ART.baral, 'Sai Thopters'), o('Rootha', ART.kilo), o('Jo', '', '', false, 'JO')]),
+g('L', 3, 'Oct 9', 'v2', [['Cards in hand', GH]], [o('Lee', ART.omnath, 'Jace', true), o('Marcus', ART.kilo, 'Rootha Elementals')])
 ];
 const sq = (s) => s.split('').map((c) => ({ g: c, cls: c === 'W' ? 'q w' : 'q' }));
 const word = { W: 'won', L: 'lost', D: 'drawn' };
@@ -173,14 +173,14 @@ const row = (name, thumb, s, beat, sub) => Object.assign({ name, sub: sub || '',
 const art = (img) => ({ thCls: 'mth', img, ini: '', pips: [] });
 const ini = (t) => ({ thCls: 'mth', img: '', ini: t, pips: [] });
 const seg = (on) => ['Commander', 'Colors', 'Friend'].map((l) => ({ label: l, on: l === on ? 'true' : 'false', cls: l === on ? 'sg on' : 'sg' }));
-const byCommander = [row('Kilo, Apogee Mind', art(ART.kilo), 'WL'), row('Omnath, Locus of Creation', art(ART.omnath), 'LL', 1), row('Avatar Aang', art(ART.aang), 'L'), row('Baral, Chief of Compliance', art(ART.baral), 'W'), row('Sokka, Tenacious Tactician', art(ART.sokka), 'L', 1)];
+const byCommander = [row('Rootha, Mastering the Moment', art(ART.kilo), 'WL'), row('Jace, Multiverse Architect', art(ART.omnath), 'LL', 1), row('Heroes in a Half Shell', art(ART.aang), 'L'), row('Sai, Master Thopterist', art(ART.baral), 'W'), row('Captain America, Team Leader', art(ART.sokka), 'L', 1)];
 const byFriend = [row('Alex', art(ART.baral), 'W'), row('Dave', art(ART.sokka), 'L', 1), row('Jo', ini('JO'), 'W'), row('Marcus', art(ART.kilo), 'L'), row('Priya', art(ART.aang), 'L')];
-const later = [Object.assign(row('Kilo, Apogee Mind', art(ART.kilo), 'W', 3), { squares: false, text: '7 W · 5 L', aria: '7 won, 5 lost', games: '12 games' }), row('Omnath, Locus of Creation', art(ART.omnath), 'WWWLLL', 2), row('Sokka, Tenacious Tactician', art(ART.sokka), 'WWDL', 1), row('Avatar Aang', art(ART.aang), 'WLL', 1)];
+const later = [Object.assign(row('Rootha, Mastering the Moment', art(ART.kilo), 'W', 3), { squares: false, text: '7 W · 5 L', aria: '7 won, 5 lost', games: '12 games' }), row('Jace, Multiverse Architect', art(ART.omnath), 'WWWLLL', 2), row('Captain America, Team Leader', art(ART.sokka), 'WWDL', 1), row('Heroes in a Half Shell', art(ART.aang), 'WLL', 1)];
 const base = { n: '6', subA: 'Marked in 3 of 6 games. Record ', rec: '3–3', c1: '3 of 6 · 3 down', c3: '3 of 6 · 3 up', recorded: 'recorded in 3 of 6 games', empty: false, hasRows: true, seg: seg('Commander'), mucap: 'Most rows are a single game. A row means more each time a name comes back.', rows: byCommander, games: gamesWith };
 const fr = (x) => Object.assign({}, base, x);
 const frames = [
 fr({ label: 'MP1 · no opponents recorded yet', recorded: 'recorded in 0 of 6 games', empty: true, hasRows: false, rows: [], mucap: '', games: gamesWith.map((x) => Object.assign({}, x, { vs: null })), note: 'The heading and its 0 of 6, and one dashed line. No switch until there is something to split.' }),
-fr({ label: 'MP2 · by commander · mostly one-game rows', note: 'Dave’s deck reads Sokka Tempo, its name on Oct 14, though it is Sokka’s Seminar now. Alex, removed as a friend since, still reads Alex · Baral Counters.' }),
+fr({ label: 'MP2 · by commander · mostly one-game rows', note: 'Dave’s deck reads Avengers Tempo, its name on Oct 14, though it is Avengers Assemble now. Alex, removed as a friend since, still reads Alex · Sai Thopters.' }),
 fr({ label: 'MP3 · by friend · every row one game', seg: seg('Friend'), rows: byFriend, mucap: 'Every row so far is a single game.', note: 'Faces come from the commander each friend played, Jo’s initials from a seat with none. Lee is a label, not a friend.' }),
 fr({ label: 'MP4 · later · a row past ten games', n: '28', subA: 'Marked in 15 of 28 games. Record ', rec: '15–12–1', c1: '15 of 28 · 15 down', c3: '13 of 28 · 13 up', recorded: 'recorded in 22 of 28 games', mucap: '', rows: later, games: gamesWith.slice(0, 1), note: 'Past ten games a row reads its counts (7 W · 5 L) beside its total. History is cut to one row here.' })
 ];

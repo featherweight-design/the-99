@@ -1,8 +1,9 @@
 # READINESS — Social R3 (opponents and matchups)
 
-**🟡 R1, for Hugh's audit.** Every state the brief and Hugh's message name is drawn at both widths over the shipped
-form and Games tab. Not green until Hugh approves and answers G4 and G5, and engineering confirms G1, G6 and G7 are in
-the plan.
+**🟢 Approved.** Hugh approved R1 on 2026-10-15 with one change: the stand-in pictures became real commander art
+(Zimone, Rootha, Jace, Heroes in a Half Shell, Sai, Captain America), cropped from the app's precon grid, with the
+Colors boards using those commanders' own identities. G4 (no label-only anyone seat) and G5 (a deleted account's
+friend rows) ship as drawn. Engineering still confirms G1, G6 and G7 in the plan.
 
 ## Locks held
 

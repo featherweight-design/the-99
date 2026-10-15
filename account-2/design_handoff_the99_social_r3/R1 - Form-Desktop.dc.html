@@ -154,7 +154,7 @@ a{color:#FF4D9A}
             <button class="av" type="button" aria-label="Account">HH</button>
           </nav>
           <main class="main">
-            <div class="dh"><img src="art/hero-master.png" alt=""><div><h1 class="dn">Master of Time</h1><div class="dsub">The Master, Transcendent · 100 of 100</div></div></div>
+            <div class="dh"><img src="art/zimone.png" alt=""><div><h1 class="dn">Quandrix Unlimited</h1><div class="dsub">Zimone, Infinite Analyst · 100 of 100</div></div></div>
             <div class="tabs" role="tablist" aria-label="Deck views">
               <button class="tab" type="button" role="tab" aria-selected="false">Your deck <small>100</small></button>
               <button class="tab" type="button" role="tab" aria-selected="false">Consider</button>
@@ -266,7 +266,7 @@ a{color:#FF4D9A}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":7000}}'>
 class Component extends DCLogic {
 renderVals() {
-const ART = { master: 'art/hero-master.png', sokka: 'art/hero-sokka.png', aang: 'art/resume-aang.png', omnath: 'art/resume-omnath.png', baral: 'art/resume-wizards.png', kilo: 'art/resume-kilo.png' };
+const ART = { master: 'art/zimone.png', sokka: 'art/captain-america.png', aang: 'art/heroes.png', omnath: 'art/jace.png', baral: 'art/sai.png', kilo: 'art/rootha.png' };
 const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
 const pips = (s) => s.split('').map((k) => ({ bg: C[k] }));
 const AX = [
@@ -279,7 +279,7 @@ const cols = (worked, hurt) => [
 ];
 const results = (r) => [['win', 'Won'], ['loss', 'Lost'], ['draw', 'Draw']].map(([v, l]) => ({ label: l, on: r === v ? 'true' : 'false', cls: r === v ? (v === 'win' ? 'rb win' : 'rb on') : 'rb' }));
 const podsOf = (n, heldBelow) => [2, 3, 4, 5, 6, 7, 8].map((p) => ({ n: p, on: p === n ? 'true' : 'false', held: p < (heldBelow || 0) ? 'true' : 'false', cls: p === n ? 'pz on' : (p < (heldBelow || 0) ? 'pz held' : 'pz') }));
-const you = { cls: 'seat you', isYou: true, isOpp: false, art: ART.master, name: 'You', sub: 'Master of Time', subCls: 'ss', subBtn: '', input: '' };
+const you = { cls: 'seat you', isYou: true, isOpp: false, art: ART.master, name: 'You', sub: 'Quandrix Unlimited', subCls: 'ss', subBtn: '', input: '' };
 const opp = (o) => Object.assign({ cls: 'seat', isYou: false, isOpp: true, art: '', noArt: false, ini: '', sub: '', subCls: 'ss', subBtn: '', input: '', inputCount: '', trophy: false, trCls: 'tr', won: 'false' }, o);
 const fd = (name, deck, art) => opp({ name, sub: deck, art });
 const fo = (name, btn) => opp({ name, noArt: true, ini: name.slice(0, 2).toUpperCase(), subBtn: btn });
@@ -289,11 +289,11 @@ const friendRows = (seated) => [
 { name: 'Alex', img: ART.baral, meta: '1 deck' }, { name: 'Dave', img: ART.sokka, meta: '3 decks' }, { name: 'Jo', ini: 'JO', meta: 'no decks' },
 { name: 'Marcus', img: ART.omnath, meta: '1 deck' }, { name: 'Priya', img: ART.aang, meta: '2 decks' }, { name: 'Sam', img: ART.kilo, meta: '1 deck' }
 ].map((r, i) => Object.assign({ sub: '', ini: '', img: '', search: false, pips: null, thCls: 'th', dis: 'false', cls: i === 0 ? 'pr hl' : 'pr' }, r, (seated || []).includes(r.name) ? { meta: 'seated', dis: 'true', cls: 'pr dim' } : {}));
-const cmdRows = [['Avatar Aang', ART.aang, ''], ['Baral, Chief of Compliance', ART.baral, 'U'], ['Kilo, Apogee Mind', ART.kilo, 'UR'], ['Sokka, Tenacious Tactician', ART.sokka, ''], ['The Master, Transcendent', ART.master, '']].map(([n, img, p], i) => ({ name: n, img, sub: '', ini: '', search: false, meta: '', pips: p ? pips(p) : null, thCls: 'th wide', dis: 'false', cls: i === 2 ? 'pr hl' : 'pr' }));
+const cmdRows = [['Heroes in a Half Shell', ART.aang, ''], ['Sai, Master Thopterist', ART.baral, 'U'], ['Rootha, Mastering the Moment', ART.kilo, 'UR'], ['Captain America, Team Leader', ART.sokka, ''], ['Zimone, Infinite Analyst', ART.master, '']].map(([n, img, p], i) => ({ name: n, img, sub: '', ini: '', search: false, meta: '', pips: p ? pips(p) : null, thCls: 'th wide', dis: 'false', cls: i === 2 ? 'pr hl' : 'pr' }));
 const deckRows = [
-{ name: 'Sokka’s Seminar', sub: 'Sokka, Tenacious Tactician', img: ART.sokka, cls: 'pr hl' },
-{ name: 'Kilo Spells', sub: 'Kilo, Apogee Mind', img: ART.kilo },
-{ name: 'Aang Airbenders', sub: 'Avatar Aang', img: ART.aang }
+{ name: 'Avengers Assemble', sub: 'Captain America, Team Leader', img: ART.sokka, cls: 'pr hl' },
+{ name: 'Rootha Spells', sub: 'Rootha, Mastering the Moment', img: ART.kilo },
+{ name: 'Turtle Power', sub: 'Heroes in a Half Shell', img: ART.aang }
 ].map((r) => Object.assign({ ini: '', search: false, meta: '', pips: null, thCls: 'th wide', dis: 'false', cls: 'pr' }, r));
 const extra = (who) => [
 { name: 'Another commander', sub: 'search the catalog for what ' + who + ' played', search: true, img: '', ini: '', thCls: 'th wide ic' },
@@ -302,23 +302,23 @@ const extra = (who) => [
 const base = { results: results(null), pods: podsOf(4), seating: true, count: '', hasPods: false, podChips: [], seats: [you], addTile: true, addCls: 'add', pkOpen: 'false', pk: false, pkSearch: true, sfCls: 'sf', ph: 'Friend or any commander', q: 'Friend or any commander', pkBack: false, backArt: '', backIni: '', backName: '', backMeta: '', pkMsg: '', pkHead: '', rows: [], pkHead2: '', rows2: [], foot: '', wonHint: '', held: '', cols: cols([], []) };
 const pods = (on) => ['Thursday night', 'Store league'].map((n) => ({ name: n, on: n === on ? 'true' : 'false', cls: n === on ? 'pchip on' : 'pchip' }));
 const fr = (o) => Object.assign({}, base, o);
-const lostSeats = lost([you, fd('Dave', 'Sokka’s Seminar', ART.sokka), fo('Jo', 'Add a commander'), an('Kilo, Apogee Mind', ART.kilo, 'Lee')], 'Dave');
+const lostSeats = lost([you, fd('Dave', 'Avengers Assemble', ART.sokka), fo('Jo', 'Add a commander'), an('Rootha, Mastering the Moment', ART.kilo, 'Lee')], 'Dave');
 const frames = [
-fr({ label: 'F1 · no friends yet · only anyone seats · the picker searching', results: results('win'), count: '1 of 3 seats', seats: [you, an('Omnath, Locus of Creation', ART.omnath, 'Lee')], addCls: 'add open', pkOpen: 'true', pk: true, sfCls: 'sf on', ph: 'Any commander', q: 'a|', pkHead: 'Commanders', rows: cmdRows, foot: 'Any commander in the catalog. Name who played it on the seat.', cols: cols([0], []),
-  note: 'A player with no friends, which is every account on staging today. The row is the same; the picker’s field is Any commander and finds commanders only, drawn as the shipped commander search draws them (art, name, color pips). Arrow keys move, Enter seats. Nothing points at friends: where friends live is Round 1’s call. Lee is an anyone seat: Omnath, plus the name typed on the seat.' }),
+fr({ label: 'F1 · no friends yet · only anyone seats · the picker searching', results: results('win'), count: '1 of 3 seats', seats: [you, an('Jace, Multiverse Architect', ART.omnath, 'Lee')], addCls: 'add open', pkOpen: 'true', pk: true, sfCls: 'sf on', ph: 'Any commander', q: 'a|', pkHead: 'Commanders', rows: cmdRows, foot: 'Any commander in the catalog. Name who played it on the seat.', cols: cols([0], []),
+  note: 'A player with no friends, which is every account on staging today. The row is the same; the picker’s field is Any commander and finds commanders only, drawn as the shipped commander search draws them (art, name, color pips). Arrow keys move, Enter seats. Nothing points at friends: where friends live is Round 1’s call. Lee is an anyone seat: Jace, plus the name typed on the seat.' }),
 fr({ label: 'F2 · with friends · the picker before typing', count: '0 of 3 seats', hasPods: true, podChips: pods(''), addCls: 'add open', pkOpen: 'true', pk: true, sfCls: 'sf on', pkHead: 'Friends', rows: friendRows([]), foot: 'Type to search every commander too.',
   note: 'One field, two kinds of answer, so there is no friend / deck / anyone switch to set first. Before typing it lists your friends by name, each with R1’s commander face and how many decks they have; typing filters them and adds commander results under them (a second list, Commanders). The faces are live here, at pick time only. Seat a pod sits on the row’s own line, R1’s pods by name.' }),
 fr({ label: 'F3 · a friend picked · their decks', count: '0 of 3 seats', hasPods: true, podChips: pods(''), addCls: 'add open', pkOpen: 'true', pk: true, pkSearch: false, pkBack: true, backArt: ART.sokka, backName: 'Dave', backMeta: '3 decks', pkHead: 'Dave’s decks', rows: deckRows.concat(extra('Dave')), foot: 'Name and commander only: nothing else of Dave’s is read.',
-  note: 'Picking Dave opens his decks in place, newest first, by name and commander: listFriendDecks, through your own friendship. One press seats Dave with that deck, and the seat snapshots both names and the commanders. Another commander seats Dave with a catalog commander (a friend seat with a commander of its own). Just Dave seats him with neither. Dave renamed Sokka Tempo to Sokka’s Seminar last week: the picker shows today’s name, and old games keep the old one (Games board).' }),
+  note: 'Picking Dave opens his decks in place, newest first, by name and commander: listFriendDecks, through your own friendship. One press seats Dave with that deck, and the seat snapshots both names and the commanders. Another commander seats Dave with a catalog commander (a friend seat with a commander of its own). Just Dave seats him with neither. Dave renamed Avengers Tempo to Avengers Assemble last week: the picker shows today’s name, and old games keep the old one (Games board).' }),
 fr({ label: 'F4 · a friend with no decks', count: '0 of 3 seats', hasPods: true, podChips: pods(''), addCls: 'add open', pkOpen: 'true', pk: true, pkSearch: false, pkBack: true, backIni: 'JO', backName: 'Jo', backMeta: 'no decks', pkMsg: 'Jo has no decks in The 99.', pkHead: '', rows: extra('Jo').map((r, i) => i === 0 ? Object.assign({}, r, { name: 'Pick a commander', cls: 'pr hl' }) : r), foot: 'Either way, Jo’s name is kept with the game.',
   note: 'The same step with nothing to list: one sentence, then the two ways that still work. Jo is seated by name alone, or by name with the commander Jo played.' }),
-fr({ label: 'F5 · seated three ways · a name being typed', results: results('win'), count: '3 of 3 seats', seats: [you, fd('Dave', 'Sokka’s Seminar', ART.sokka), fo('Jo', 'Add a commander'), opp({ name: 'Kilo, Apogee Mind', art: ART.kilo, input: 'Le|', inputCount: '2 / 30' })], addTile: false, cols: cols([0, 2], [3]),
-  note: 'A friend’s deck (Dave), a friend alone (Jo), and anyone by commander (Kilo). Pressing Add a name turns the line under an anyone seat into the label field in place, up to 30 characters, counter shown; Enter or leaving the field keeps it. A friend’s seat has no label: the friend’s name is the name. Pressing a seat’s art reopens the picker to change it; ✕ empties it. With all three seats filled the dashed seat is gone.' }),
+fr({ label: 'F5 · seated three ways · a name being typed', results: results('win'), count: '3 of 3 seats', seats: [you, fd('Dave', 'Avengers Assemble', ART.sokka), fo('Jo', 'Add a commander'), opp({ name: 'Rootha, Mastering the Moment', art: ART.kilo, input: 'Le|', inputCount: '2 / 30' })], addTile: false, cols: cols([0, 2], [3]),
+  note: 'A friend’s deck (Dave), a friend alone (Jo), and anyone by commander (Rootha). Pressing Add a name turns the line under an anyone seat into the label field in place, up to 30 characters, counter shown; Enter or leaving the field keeps it. A friend’s seat has no label: the friend’s name is the name. Pressing a seat’s art reopens the picker to change it; ✕ empties it. With all three seats filled the dashed seat is gone.' }),
 fr({ label: 'F6 · lost · who won', results: results('loss'), count: '3 of 3 seats', seats: lostSeats, addTile: false, wonHint: 'Lost. If one of them won, press their trophy. Optional.', cols: cols([], [1, 3]),
   note: 'Lost turns on one trophy per seated opponent. Dave’s is pressed: his seat gets the bone ring and says won this game. Pressing Jo’s would move it; pressing Dave’s again clears it. At most one, never asked for. Switch the result to Won or Draw and the trophies go, and so does the mark.' }),
 fr({ label: 'F7 · pod quick-seat · Thursday night', count: '3 of 3 seats', hasPods: true, podChips: pods('Thursday night'), seats: [you, fo('Dave', 'Which deck?'), fo('Priya', 'Which deck?'), fo('Sam', 'Which deck?')], addTile: false,
   note: 'One press on a pod seats its members who are your friends and sets the pod size to the pod’s, here 4. Each seat starts as the friend alone, with Which deck? under the name, which opens that friend’s decks. A pod member who is not your friend (after a hand-on) is not seated, and leaves a dashed seat. The chip stays pressed until a seat is changed by hand; pressing it again clears the seats it filled.' }),
-fr({ label: 'F8 · a full pod of 8 · seven seats · a smaller pod held', pods: podsOf(8, 8), count: '7 of 7 seats', results: results('draw'), seats: [you, fd('Dave', 'Sokka’s Seminar', ART.sokka), fd('Priya', 'Elements', ART.aang), fd('Marcus', 'Omnath Lands', ART.omnath), fd('Alex', 'Baral Counters', ART.baral), fo('Jo', 'Add a commander'), an('Kilo, Apogee Mind', ART.kilo, 'Lee'), an('Kilo, Apogee Mind', ART.kilo, '')], addTile: false, held: 'All 7 seats are filled. Clear a seat to make the pod smaller.',
+fr({ label: 'F8 · a full pod of 8 · seven seats · a smaller pod held', pods: podsOf(8, 8), count: '7 of 7 seats', results: results('draw'), seats: [you, fd('Dave', 'Avengers Assemble', ART.sokka), fd('Priya', 'Elements', ART.aang), fd('Marcus', 'Jace Superfriends', ART.omnath), fd('Alex', 'Sai Thopters', ART.baral), fo('Jo', 'Add a commander'), an('Rootha, Mastering the Moment', ART.kilo, 'Lee'), an('Rootha, Mastering the Moment', ART.kilo, '')], addTile: false, held: 'All 7 seats are filled. Clear a seat to make the pod smaller.',
   note: 'Seats never outnumber the pod: the form offers pod minus one, so “more opponents than seats” cannot be sent. Lowering the pod size drops empty seats first; once only filled seats remain, the smaller sizes are held (dimmed, aria-disabled) and a press says why in one line. Two seats can hold the same commander. Eight seats wrap to one row at 124px each.' }),
 fr({ label: 'F9 · games off · seating hidden entirely', seating: false, results: results('win'), cols: cols([0], []),
   note: 'SOCIAL_GAMES_ENABLED off (production today), or friends off, which it needs. The form is exactly the shipped one: no row, no reserved space, no hint that seating exists. History and the Games tab likewise draw no vs line and no Matchups.' })

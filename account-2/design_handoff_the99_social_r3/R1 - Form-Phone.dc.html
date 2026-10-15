@@ -115,7 +115,7 @@ a{color:#FF4D9A}
         <span class="k">{{f.label}}</span>
         <div class="ph" style="height:{{f.h}}">
           <div class="mh"><span class="wm"><span>◆◆◆</span><b>99</b></span><button class="mav" type="button" aria-label="Account">HH</button></div>
-          <div class="scrolled">Master of Time · Games · scrolled to the form</div>
+          <div class="scrolled">Quandrix Unlimited · Games · scrolled to the form</div>
           <div class="body">
             <div class="form">
               <div class="fh"><h3>Log a game</h3><button class="date" type="button">played <span>tonight</span></button></div>
@@ -187,12 +187,12 @@ a{color:#FF4D9A}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2280,"height":2200}}'>
 class Component extends DCLogic {
 renderVals() {
-const ART = { master: 'art/hero-master.png', sokka: 'art/hero-sokka.png', aang: 'art/resume-aang.png', omnath: 'art/resume-omnath.png', baral: 'art/resume-wizards.png', kilo: 'art/resume-kilo.png' };
+const ART = { master: 'art/zimone.png', sokka: 'art/captain-america.png', aang: 'art/heroes.png', omnath: 'art/jace.png', baral: 'art/sai.png', kilo: 'art/rootha.png' };
 const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
 const pips = (s) => s.split('').map((k) => ({ bg: C[k] }));
 const results = (r) => [['win', 'Won'], ['loss', 'Lost'], ['draw', 'Draw']].map(([v, l]) => ({ label: l, on: r === v ? 'true' : 'false', cls: r === v ? (v === 'win' ? 'rb win' : 'rb on') : 'rb' }));
 const podsOf = (n, heldBelow) => [2, 3, 4, 5, 6, 7, 8].map((p) => ({ n: p, on: p === n ? 'true' : 'false', held: p < (heldBelow || 0) ? 'true' : 'false', cls: p === n ? 'pz on' : (p < (heldBelow || 0) ? 'pz held' : 'pz') }));
-const you = { rowCls: 'prow you', isYou: true, isOpp: false, art: ART.master, name: 'You', sub: 'Master of Time' };
+const you = { rowCls: 'prow you', isYou: true, isOpp: false, art: ART.master, name: 'You', sub: 'Quandrix Unlimited' };
 const opp = (o) => Object.assign({ rowCls: 'prow', isYou: false, isOpp: true, art: '', noArt: false, ini: '', sub: '', subCls: 'ps', subBtn: '', input: '', inputCount: '', trophy: false, trCls: 'won-p', won: 'false' }, o);
 const fd = (name, deck, art) => opp({ name, sub: deck, art });
 const fo = (name, btn) => opp({ name, noArt: true, ini: name.slice(0, 2).toUpperCase(), subBtn: btn });
@@ -202,11 +202,11 @@ const friendRows = [
 { name: 'Alex', img: ART.baral, meta: '1 deck' }, { name: 'Dave', img: ART.sokka, meta: '3 decks' }, { name: 'Jo', ini: 'JO', meta: 'no decks' },
 { name: 'Marcus', img: ART.omnath, meta: '1 deck' }, { name: 'Priya', img: ART.aang, meta: '2 decks' }
 ].map((r, i) => Object.assign({ sub: '', ini: '', img: '', search: false, pips: null, thCls: 'th', dis: 'false', cls: i === 0 ? 'pr hl' : 'pr' }, r));
-const cmdRows = [['Avatar Aang', ART.aang, ''], ['Baral, Chief of Compliance', ART.baral, 'U'], ['Kilo, Apogee Mind', ART.kilo, 'UR'], ['Sokka, Tenacious Tactician', ART.sokka, ''], ['The Master, Transcendent', ART.master, '']].map(([n, img, p], i) => ({ name: n, img, sub: '', ini: '', search: false, meta: '', pips: p ? pips(p) : null, thCls: 'th wide', dis: 'false', cls: i === 2 ? 'pr hl' : 'pr' }));
+const cmdRows = [['Heroes in a Half Shell', ART.aang, ''], ['Sai, Master Thopterist', ART.baral, 'U'], ['Rootha, Mastering the Moment', ART.kilo, 'UR'], ['Captain America, Team Leader', ART.sokka, ''], ['Zimone, Infinite Analyst', ART.master, '']].map(([n, img, p], i) => ({ name: n, img, sub: '', ini: '', search: false, meta: '', pips: p ? pips(p) : null, thCls: 'th wide', dis: 'false', cls: i === 2 ? 'pr hl' : 'pr' }));
 const deckRows = [
-{ name: 'Sokka’s Seminar', sub: 'Sokka, Tenacious Tactician', img: ART.sokka, cls: 'pr hl' },
-{ name: 'Kilo Spells', sub: 'Kilo, Apogee Mind', img: ART.kilo },
-{ name: 'Aang Airbenders', sub: 'Avatar Aang', img: ART.aang }
+{ name: 'Avengers Assemble', sub: 'Captain America, Team Leader', img: ART.sokka, cls: 'pr hl' },
+{ name: 'Rootha Spells', sub: 'Rootha, Mastering the Moment', img: ART.kilo },
+{ name: 'Turtle Power', sub: 'Heroes in a Half Shell', img: ART.aang }
 ].map((r) => Object.assign({ ini: '', search: false, meta: '', pips: null, thCls: 'th wide', dis: 'false', cls: 'pr' }, r));
 const extra = (who) => [
 { name: 'Another commander', sub: 'search the catalog', search: true, img: '', ini: '', thCls: 'th wide ic' },
@@ -216,13 +216,13 @@ const pods = (on) => ['Thursday night', 'Store league'].map((n) => ({ name: n, o
 const base = { h: '844px', results: results(null), pods: podsOf(4), seating: true, count: '', hasPods: false, podChips: [], seats: [you], addTile: true, addCls: 'padd', sheet: false, pkSearch: true, sfCls: 'sf', ph: 'Friend or any commander', q: 'Friend or any commander', pkBack: false, backArt: '', backIni: '', backName: '', backMeta: '', pkMsg: '', pkHead: '', rows: [], foot: '', wonHint: '', held: '' };
 const fr = (o) => Object.assign({}, base, o);
 const frames = [
-fr({ label: 'P1 · no friends · the sheet searching', results: results('win'), count: '1 of 3', seats: [you, an('Omnath, Locus of Creation', ART.omnath, 'Lee')], addCls: 'padd open', sheet: true, sfCls: 'sf on', ph: 'Any commander', q: 'a|', pkHead: 'Commanders', rows: cmdRows, foot: 'Any commander. Name who played it on the seat.', note: 'The sheet rises over the form with the field focused and the keyboard up (not drawn). Commanders only: no friends, no pods. One tap seats; the sheet closes.' }),
+fr({ label: 'P1 · no friends · the sheet searching', results: results('win'), count: '1 of 3', seats: [you, an('Jace, Multiverse Architect', ART.omnath, 'Lee')], addCls: 'padd open', sheet: true, sfCls: 'sf on', ph: 'Any commander', q: 'a|', pkHead: 'Commanders', rows: cmdRows, foot: 'Any commander. Name who played it on the seat.', note: 'The sheet rises over the form with the field focused and the keyboard up (not drawn). Commanders only: no friends, no pods. One tap seats; the sheet closes.' }),
 fr({ label: 'P2 · with friends · before typing', count: '0 of 3', hasPods: true, podChips: pods(''), addCls: 'padd open', sheet: true, sfCls: 'sf on', pkHead: 'Friends', rows: friendRows, foot: 'Type to search every commander too.', note: 'Friends by face and name, with their deck count. Typing filters them and adds Commanders under them. Seat a pod scrolls sideways on its own line above the seats.' }),
 fr({ label: 'P3 · a friend picked · their decks', count: '0 of 3', hasPods: true, podChips: pods(''), addCls: 'padd open', sheet: true, pkSearch: false, pkBack: true, backArt: ART.sokka, backName: 'Dave', backMeta: '3 decks', pkHead: 'Dave’s decks', rows: deckRows.concat(extra('Dave')), foot: 'Name and commander only.', note: 'The same step as desktop, in the sheet: Dave’s decks by today’s names, then Another commander and Just Dave. Back returns to friends; ✕ closes with the seat still empty. A friend with no decks reads “Jo has no decks in The 99.” over the last two rows (desktop F4).' }),
-fr({ label: 'P4 · seated three ways · a name being typed', results: results('win'), count: '3 of 3', seats: [you, fd('Dave', 'Sokka’s Seminar', ART.sokka), fo('Jo', 'Add a commander'), opp({ name: 'Kilo, Apogee Mind', art: ART.kilo, input: 'Le|', inputCount: '2 / 30' })], addTile: false, note: 'Add a name opens the label field under the seat, full width, 16px text so the phone does not zoom. Jo, a friend alone, offers Add a commander on the row. The dashed row is gone with every seat filled.' }),
-fr({ label: 'P5 · lost · who won', results: results('loss'), count: '3 of 3', seats: lost([you, fd('Dave', 'Sokka’s Seminar', ART.sokka), fo('Jo', ''), an('Kilo, Apogee Mind', ART.kilo, 'Lee')], 'Dave'), addTile: false, wonHint: 'Lost. If one of them won, press their Won. Optional.', note: 'On a loss each opponent row gains a Won pill, 36px inside a 44px row. Dave’s is pressed: bone fill, his row’s border lifts, and his line says won this game. The row’s own deck and name actions step aside for the pill while the result is Lost.' }),
+fr({ label: 'P4 · seated three ways · a name being typed', results: results('win'), count: '3 of 3', seats: [you, fd('Dave', 'Avengers Assemble', ART.sokka), fo('Jo', 'Add a commander'), opp({ name: 'Rootha, Mastering the Moment', art: ART.kilo, input: 'Le|', inputCount: '2 / 30' })], addTile: false, note: 'Add a name opens the label field under the seat, full width, 16px text so the phone does not zoom. Jo, a friend alone, offers Add a commander on the row. The dashed row is gone with every seat filled.' }),
+fr({ label: 'P5 · lost · who won', results: results('loss'), count: '3 of 3', seats: lost([you, fd('Dave', 'Avengers Assemble', ART.sokka), fo('Jo', ''), an('Rootha, Mastering the Moment', ART.kilo, 'Lee')], 'Dave'), addTile: false, wonHint: 'Lost. If one of them won, press their Won. Optional.', note: 'On a loss each opponent row gains a Won pill, 36px inside a 44px row. Dave’s is pressed: bone fill, his row’s border lifts, and his line says won this game. The row’s own deck and name actions step aside for the pill while the result is Lost.' }),
 fr({ label: 'P6 · pod quick-seat · Thursday night', count: '3 of 3', hasPods: true, podChips: pods('Thursday night'), seats: [you, fo('Dave', 'Which deck?'), fo('Priya', 'Which deck?'), fo('Sam', 'Which deck?')], addTile: false, note: 'One tap seats Dave, Priya and Sam and sets the pod to 4. Which deck? on each row opens that friend’s decks in the sheet (P3).' }),
-fr({ label: 'P7 · a full pod of 8 · smaller pod held', h: '1180px', results: results('draw'), pods: podsOf(8, 8), count: '7 of 7', seats: [you, fd('Dave', 'Sokka’s Seminar', ART.sokka), fd('Priya', 'Elements', ART.aang), fd('Marcus', 'Omnath Lands', ART.omnath), fd('Alex', 'Baral Counters', ART.baral), fo('Jo', 'Add a commander'), an('Kilo, Apogee Mind', ART.kilo, 'Lee'), an('Kilo, Apogee Mind', ART.kilo, '')], addTile: false, held: 'All 7 seats are filled. Clear a seat to make the pod smaller.', note: 'A longer screenshot: eight rows. Pod sizes under 8 are held; a press on one says why under the list. Nothing is cleared for you.' }),
+fr({ label: 'P7 · a full pod of 8 · smaller pod held', h: '1180px', results: results('draw'), pods: podsOf(8, 8), count: '7 of 7', seats: [you, fd('Dave', 'Avengers Assemble', ART.sokka), fd('Priya', 'Elements', ART.aang), fd('Marcus', 'Jace Superfriends', ART.omnath), fd('Alex', 'Sai Thopters', ART.baral), fo('Jo', 'Add a commander'), an('Rootha, Mastering the Moment', ART.kilo, 'Lee'), an('Rootha, Mastering the Moment', ART.kilo, '')], addTile: false, held: 'All 7 seats are filled. Clear a seat to make the pod smaller.', note: 'A longer screenshot: eight rows. Pod sizes under 8 are held; a press on one says why under the list. Nothing is cleared for you.' }),
 fr({ label: 'P8 · games off · the shipped form', results: results('win'), seating: false, note: 'Switch off: no row, no space kept for it. The form is today’s.' })
 ];
 return { frames };
