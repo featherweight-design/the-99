@@ -10,6 +10,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `probe:arrivals` deletes the given user's whole collection via `replaceCollection`;
   mutate on `local-dev` or a scratch branch, never anywhere else, and measure
   comparisons on staging.
+- **A probe that deletes or reseeds the headless account's (or the busiest account's) whole collection, history,
+  uploads or decks runs on a scratch branch off `local-dev`, and nowhere else.** `assertScratchBranch`
+  (`scripts/lib/scratch-branch.mjs`) refuses production, staging AND `local-dev` by `neon.branch_id`, before the
+  first write. Today that is `probe:collection-sync-ui` and `measure:collection-revert`. The refusal is the guard
+  working, not a broken probe: local-dev holds the headless account's real snapshot (`pull:staging`) that every
+  other lane's probes read, and one of these wiped its printings on 2026-10-15. To cut a scratch branch, create a
+  Neon branch of project `misty-rain-01681654` with parent `br-patient-hall-a6nbonvo` (local-dev; it inherits the
+  account's snapshot, migrations and catalog), get its connection string, point the worktree's `.env`
+  `DATABASE_URL` at it (`env.mjs` reads `.env` over the shell), run the probe, then delete the branch. Never
+  cut one from staging or production, and never `restore_snapshot` or `reset_from_parent` anything to make one.
+  `probe:onboarding`, `probe:locked-nav` and `probe:issues-sheet` also clear a collection, but only the dedicated
+  empty `onboard-probe` account they sign in as, so they may run on local-dev. Each wipe goes through
+  `assertDisposableAccount` (`scripts/lib/probe-account.mjs`): it refuses any email but that account's and any
+  account that owns a deck, so a `PROBE_EMAIL` pointed at a fixture account cannot be wiped.
 - Never `pkill` or `killall` by pattern. Stop a dev server only by the exact PID you
   started, checked first with `ps -o pid=,comm= -p <pid>`.
 - **A probe that presses anything model-backed calls `assertModelStandIn` before it can
@@ -546,7 +560,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   lands in the first unanswered row with no alert, answers one row App and watches the tiles follow the server's
   re-read, presses `Take the file’s for all 3` as a rule, then confirms and checks the collection holds the merge
   the review drew and one `upload_sync` entry. It WRITES the signed-in account's collection and a base upload, so it
-  refuses staging and production by `neon.branch_id`, and puts back every table the confirm can write from a
+  runs on a scratch branch off local-dev only (it refuses production, staging and local-dev by `neon.branch_id`, `assertScratchBranch`; cut one as in the safety rules above), and puts back every table the confirm can write from a
   snapshot in a `finally`. Run against `next start` with `COLLECTION_EDIT_ENABLED=true COLLECTION_SYNC_ENABLED=true`.
 
 - `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload
@@ -558,8 +572,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the acceptance check for Hugh's case before the flip (0 taken, 40 kept, 0 conflicts, `noNewer`).
 
 - `pnpm measure:collection-revert` times the ledger's worst deck check and the score recompute a
-  collection write costs, on the busiest account of a scratch branch of staging (it writes, so it
-  refuses production and staging by `neon.branch_id`). Measured 2026-10-09 on 3,393 rows and 23
+  collection write costs, on the busiest account of a scratch branch off local-dev, which holds a `pull:staging` snapshot (it writes, so it
+  refuses local-dev itself, `assertScratchBranch`). Measured 2026-10-09 on 3,393 rows and 23
   committed versions: reverting a Replace that raised every row lowers 2,926 cards, and its dry run
   takes about 2.1s, of which each of the check's two claim reads is about 140ms; a one-card edit
   takes about 0.5s, and the ranked list it leaves to recompute about 2.2s warm (14.1s on the

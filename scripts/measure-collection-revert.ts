@@ -14,12 +14,13 @@
 //      `commander_scores` (plan Decision 4), so the next ranked list recomputes from scratch.
 //      Timed as `recommendCommanders`, the compute that recompute runs, median of 3.
 //
-// It WRITES the account's collection, so it runs only on a scratch branch: refused on production
-// and staging by `neon.branch_id`. Make one from staging (`pull:staging` is not needed: a branch
-// of staging already holds the real collection and decks) and point DATABASE_URL at it.
+// It WRITES the account's collection, so it runs only on a scratch branch: refused on local-dev, production
+// and staging by `neon.branch_id`. Make one from local-dev (it holds a `pull:staging` snapshot of the
+// real collection and decks, so nothing more is needed) and point DATABASE_URL at it.
 //
 // Run: `pnpm measure:collection-revert`
 import { requireEnv } from "./lib/env.mjs";
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { randomUUID } from "node:crypto";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
@@ -33,8 +34,6 @@ neonConfig.webSocketConstructor = ws;
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL, max: 2 });
-const PRODUCTION = "br-noisy-violet-a6vw4ess";
-const STAGING = "br-polished-pond-a6e63y0b";
 
 const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 const timed = async <T>(f: () => Promise<T>): Promise<[T, number]> => {
@@ -45,9 +44,7 @@ const timed = async <T>(f: () => Promise<T>): Promise<[T, number]> => {
 
 async function main() {
   const { branch } = (await pool.query("select current_setting('neon.branch_id', true) as branch")).rows[0];
-  if (!branch || branch === PRODUCTION || branch === STAGING) {
-    throw new Error(`refusing branch ${branch ?? "(unknown)"}: this writes; point DATABASE_URL at a scratch branch`);
-  }
+  assertScratchBranch(branch, "measure:collection-revert");
   const { user_id: userId } = (await pool.query(
     "select user_id from collection_items group by user_id order by count(*) desc limit 1",
   )).rows[0];

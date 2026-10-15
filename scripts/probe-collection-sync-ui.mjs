@@ -11,7 +11,7 @@
 //   - the confirm landing on the receipt with the merge the review drew, written as one `upload_sync` entry.
 //
 // THE FIXTURE, per width, for the signed-in account (`E2E_AUDIT_USER_EMAIL`), on the database `.env` names. It
-// must be a SCRATCH branch: staging and production are refused by `neon.branch_id`. Five printings no deck of
+// must be a SCRATCH branch: production, staging and local-dev are refused (`assertScratchBranch`) by `neon.branch_id`. Five printings no deck of
 // the account holds, so no lowering can leave a deck short or prune a reservation:
 //   - the account's collection becomes the APP side (the hand changes since the last upload): P1 ×3, P2 ×1,
 //     P3 ×1, P4 ×1, P5 ×2;
@@ -34,6 +34,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
@@ -50,8 +51,6 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
 const sql = neon(DATABASE_URL);
-const PRODUCTION = "br-noisy-violet-a6vw4ess";
-const STAGING = "br-polished-pond-a6e63y0b";
 
 /** Every per-account table a Sync's confirm can write, restored exactly from the snapshot. */
 const RESTORED = ["collection_items", "token_ownership", "token_reads", "token_printing_holdings", "deck_token_joins", "card_assignments", "commander_scores"];
@@ -268,9 +267,7 @@ async function walk(browser, w, userId, P) {
 }
 
 const [{ id: branch }] = await sql`select current_setting('neon.branch_id', true) as id`;
-if (!branch || branch === PRODUCTION || branch === STAGING) {
-  throw new Error(`refusing to run against ${branch ?? "an unknown branch"}: this probe replaces the account's collection. Point DATABASE_URL at a scratch branch.`);
-}
+assertScratchBranch(branch, "probe:collection-sync-ui");
 console.log(`branch ${branch}`);
 
 await clerkSetup();
