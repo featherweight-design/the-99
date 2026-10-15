@@ -1,14 +1,18 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AboutLine } from "../../lib/about/notice";
 import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
 
 const dismiss = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("../../app/arrivals-actions", () => ({ dismissArrivals: dismiss }));
+// The checklist's live step needs the app router; About's line is what these tests read.
+vi.mock("./first-run-step-one", () => ({ FirstRunStepOne: () => null }));
 
 const { ArrivalsBanner, COLLAPSE_MS, HOME_HEADING_ID } = await import("./arrivals-banner");
 const { Dashboard } = await import("./dashboard");
-const { acknowledgeArrivals, resetArrivalsAcknowledged } = await import("./arrivals-seen");
+const { acknowledgeAbout, acknowledgeArrivals, resetArrivalsAcknowledged } = await import("./arrivals-seen");
+const { FirstRunChecklist } = await import("./first-run");
 
 const TRC: BannerLine = { kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 };
 const FRC: BannerLine = { kind: "lists", code: "frc", name: "Reality Fracture Commander", count: 4 };
@@ -117,7 +121,7 @@ describe("ArrivalsBanner, ✕", () => {
     vi.useFakeTimers();
     render(<Dashboard {...DASH} arrivals={one(FRC, ["frc", "lists:frc"])} />);
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
-    expect(dismiss).toHaveBeenCalledWith(["frc", "lists:frc"]);
+    expect(dismiss).toHaveBeenCalledWith(["frc", "lists:frc"], []);
     const wrap = document.querySelector("[data-arrivals-banner]")!;
     expect(wrap.getAttribute("data-arrivals-banner")).toBe("closing");
     expect(wrap.className).toContain("grid-rows-[0fr]");
@@ -220,5 +224,149 @@ describe("Dashboard", () => {
     const header = container.querySelector("header")!;
     const banner = container.querySelector("[data-arrivals-banner]")!;
     expect(header.nextElementSibling).toBe(banner);
+  });
+});
+
+// About on the banner (plan 2026-10-15, PR A; `R2 - Home-About`, A1–A3).
+const behind = (titles: string[], ids = titles.map((t) => t.toLowerCase().replace(/\W+/g, "-"))): AboutLine => ({
+  kind: "behind",
+  titles,
+  ids,
+});
+const FIRST: AboutLine = { kind: "firstRun", ids: ["browse", "import"] };
+
+describe("ArrivalsBanner, About's line", () => {
+  it("names what is new in About in one sentence, with Show me to /about and ✕ (A1)", () => {
+    render(<ArrivalsBanner data={null} about={behind(["Commander sets on the way", "Organizing decks into folders"])} />);
+    const r = region()!;
+    expect(r.tagName).toBe("SECTION");
+    expect(r).toHaveTextContent("2 new in About: Commander sets on the way, and Organizing decks into folders.");
+    expect(within(r).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+    expect(within(r).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
+    expect(within(r).queryByRole("heading")).toBeNull();
+  });
+
+  it("caps the titles as the sheet did: four in full, past four three and `N more`", () => {
+    const { unmount } = render(<ArrivalsBanner data={null} about={behind(["A", "B", "C", "D"])} />);
+    expect(region()).toHaveTextContent("4 new in About: A, B, C, and D.");
+    unmount();
+    render(<ArrivalsBanner data={null} about={behind(["A", "B", "C", "D", "E", "F"])} />);
+    expect(region()).toHaveTextContent("6 new in About: A, B, C, and 3 more.");
+  });
+
+  it("reads one title as one", () => {
+    render(<ArrivalsBanner data={null} about={behind(["Commander sets on the way"])} />);
+    expect(region()).toHaveTextContent("1 new in About: Commander sets on the way.");
+  });
+
+  it("introduces a first-run reader to the page in one line (A3)", () => {
+    render(<ArrivalsBanner data={null} about={FIRST} />);
+    expect(region()).toHaveTextContent(/What The\s99 does: every mark and figure in the app, and where to find it, on one page\./);
+    expect(screen.getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+  });
+
+  it("leads with About beside an arrival, under `New in the app`, each line with its own link (A2)", () => {
+    render(<ArrivalsBanner data={one(TRC, ["trc", "a2"])} about={behind(["Commander sets on the way", "Folders"])} />);
+    const r = region()!;
+    expect(within(r).getByRole("heading", { level: 2, name: "New in the app" })).toBeInTheDocument();
+    const items = within(r).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("2 new in About: Commander sets on the way, and Folders. Show me");
+    expect(within(items[0]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+    expect(items[1]).toHaveTextContent("Star Trek Commander is announced, with 15 commanders revealed. See it in Precons");
+    expect(within(items[1]!).getByRole("link")).toHaveAttribute("href", "/decks/precons?sort=newest#announced");
+    expect(within(r).getAllByRole("button", { name: "Dismiss" })).toHaveLength(1);
+    expect(r.querySelector("[aria-live], [role=alert]")).toBeNull();
+  });
+
+  it("caps several arrivals beside About and closes them with one Precons link", () => {
+    render(<ArrivalsBanner data={many(6)} about={behind(["Folders"])} />);
+    const items = within(region()!).getAllByRole("listitem");
+    // About, three arrivals, and `and 3 more` carrying the link.
+    expect(items).toHaveLength(5);
+    expect(items[4]).toHaveTextContent("and 3 more See them in Precons");
+    expect(within(region()!).getAllByRole("link", { name: /Precons/ })).toHaveLength(1);
+  });
+
+  it("one ✕ writes both halves: the arrival keys and About's ids", () => {
+    vi.useFakeTimers();
+    render(<ArrivalsBanner data={one(TRC, ["trc", "both"])} about={behind(["Folders"], ["folders-both"])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(dismiss).toHaveBeenCalledWith(["trc", "both"], ["folders-both"]);
+    act(() => vi.advanceTimersByTime(COLLAPSE_MS));
+    expect(region()).toBeNull();
+  });
+
+  it("✕ on About alone writes its ids and no keys, and Back re-mounts it closed", () => {
+    vi.useFakeTimers();
+    const about = behind(["Folders"], ["folders-back"]);
+    const first = render(<ArrivalsBanner data={null} about={about} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(dismiss).toHaveBeenCalledWith([], ["folders-back"]);
+    act(() => vi.advanceTimersByTime(COLLAPSE_MS));
+    first.unmount();
+    render(<ArrivalsBanner data={null} about={about} />);
+    expect(region()).toBeNull();
+  });
+
+  it("drops About's line after a /about visit in this document, and keeps the arrival", () => {
+    const about = behind(["Folders"], ["folders-visit"]);
+    acknowledgeAbout(["folders-visit", "browse"]);
+    render(<ArrivalsBanner data={one(TRC, ["trc", "visit"])} about={about} />);
+    const r = region()!;
+    expect(r).not.toHaveTextContent("new in About");
+    expect(r).toHaveTextContent("Star Trek Commander is announced");
+    expect(within(r).queryByRole("heading")).toBeNull();
+  });
+
+  it("draws nothing once a visit answered About and there are no arrivals", () => {
+    acknowledgeAbout(["folders-only"]);
+    render(<ArrivalsBanner data={null} about={behind(["Folders"], ["folders-only"])} />);
+    expect(region()).toBeNull();
+  });
+
+  it("is a Show me press, not an acknowledgement: a re-mount draws it again", () => {
+    const about = behind(["Folders"], ["folders-press"]);
+    const first = render(<ArrivalsBanner data={null} about={about} />);
+    fireEvent.click(screen.getByRole("link", { name: "Show me" }));
+    expect(dismiss).not.toHaveBeenCalled();
+    first.unmount();
+    render(<ArrivalsBanner data={null} about={about} />);
+    expect(region()).not.toBeNull();
+  });
+
+  it("draws no ✕ where it is not closable", () => {
+    render(<ArrivalsBanner data={null} about={FIRST} closable={false} />);
+    expect(region()).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
+  });
+});
+
+describe("About's line on both Home surfaces", () => {
+  it("Dashboard draws About alone between the header and Ready to build (A1)", () => {
+    const { container } = render(<Dashboard {...DASH} arrivals={null} about={behind(["Folders"], ["folders-dash"])} />);
+    expect(container.querySelector("header")!.nextElementSibling).toBe(container.querySelector("[data-arrivals-banner]"));
+    expect(region()).toHaveTextContent("1 new in About: Folders.");
+  });
+
+  it("Dashboard draws the first-run line for an account that imported before opening /about, with ✕", () => {
+    render(<Dashboard {...DASH} arrivals={null} about={{ kind: "firstRun", ids: ["browse", "dash-first"] }} />);
+    expect(region()).toHaveTextContent(/What The\s99 does:/);
+    expect(screen.getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
+  });
+
+  it("the checklist draws About's line with no ✕ and no arrivals (A3)", () => {
+    render(<FirstRunChecklist about={{ kind: "firstRun", ids: ["browse", "checklist-first"] }} />);
+    expect(region()).toHaveTextContent(/What The\s99 does:/);
+    expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
+  });
+
+  it("the checklist draws an About line for a reader behind (A1, no ✕), and nothing without one", () => {
+    const { unmount } = render(<FirstRunChecklist about={behind(["Folders"], ["checklist-behind"])} />);
+    expect(region()).toHaveTextContent("1 new in About: Folders.");
+    expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
+    unmount();
+    render(<FirstRunChecklist />);
+    expect(region()).toBeNull();
   });
 });

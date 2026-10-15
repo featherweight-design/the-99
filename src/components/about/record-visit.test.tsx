@@ -3,12 +3,16 @@ import { renderToString } from "react-dom/server";
 import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const recordAboutVisit = vi.fn(async () => {});
+const recordAboutVisit = vi.fn(async (_shown?: readonly string[]) => {});
 vi.mock("../../app/about/actions", () => ({ recordAboutVisit }));
 
 const { RecordVisit } = await import("./record-visit");
+const { aboutAcknowledged, resetArrivalsAcknowledged } = await import("../home/arrivals-seen");
 
-beforeEach(() => recordAboutVisit.mockClear());
+beforeEach(() => {
+  recordAboutVisit.mockClear();
+  resetArrivalsAcknowledged();
+});
 
 describe("RecordVisit (R6 §O4, audit E2)", () => {
   it("records once after mount when the reader is behind", () => {
@@ -34,5 +38,27 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
   it("records nothing during a server render, which is all a prefetch is", () => {
     renderToString(<RecordVisit behind shown={[]} />);
     expect(recordAboutVisit).not.toHaveBeenCalled();
+  });
+
+  // About on the banner: Back to Home after a visit must not bring About's line back from the router's payload.
+  it("tells Home's banner, in this document, that every entry the page drew is answered", () => {
+    render(<RecordVisit behind shown={["notes"]} drawn={["browse", "notes"]} />);
+    expect(aboutAcknowledged(["notes"])).toBe(true);
+    expect(aboutAcknowledged(["browse", "notes"])).toBe(true);
+    expect(aboutAcknowledged(["notes", "lineup"])).toBe(false);
+  });
+
+  it("takes the acknowledgement back when the write fails", async () => {
+    recordAboutVisit.mockRejectedValueOnce(new Error("offline"));
+    render(<RecordVisit behind shown={["notes"]} drawn={["notes"]} />);
+    expect(aboutAcknowledged(["notes"])).toBe(true);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(aboutAcknowledged(["notes"])).toBe(false);
+  });
+
+  it("acknowledges nothing for a current reader", () => {
+    render(<RecordVisit behind={false} shown={[]} drawn={["notes"]} />);
+    expect(aboutAcknowledged(["notes"])).toBe(false);
   });
 });

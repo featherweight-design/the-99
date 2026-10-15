@@ -395,7 +395,11 @@ export function AboutPage({
       {/* The appendix is recorded by the same visit, and a reader current on every entry who has
           not seen it still owes the write. Not `behind`: nothing about the appendix is NEW. */}
       {sheetMode && (
-        <RecordVisit behind={behind || (howItWorks && !seenIds.includes(HOW_IT_WORKS_ID))} shown={shown} />
+        <RecordVisit
+          behind={behind || (howItWorks && !seenIds.includes(HOW_IT_WORKS_ID))}
+          shown={shown}
+          drawn={visible.map((e) => e.id)}
+        />
       )}
       {(sheetMode || howItWorks) && <JumpMark />}
 

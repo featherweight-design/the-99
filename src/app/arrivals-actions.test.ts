@@ -17,7 +17,15 @@ vi.mock("../lib/precons/upcoming", async (importOriginal) => ({
   markUpcomingSeen: stub.mark,
 }));
 
+const about = vi.hoisted(() => ({
+  seen: { version: 14, ids: [] as string[] },
+  read: vi.fn(),
+  mark: vi.fn(),
+}));
+vi.mock("../lib/about/read", () => ({ aboutSeen: about.read, markAboutVisited: about.mark }));
+
 const { dismissArrivals } = await import("./arrivals-actions");
+const { ABOUT_VERSION } = await import("../lib/copy/about");
 
 const NOW = new Date("2026-10-14T12:00:00Z");
 const LINES = [
@@ -30,6 +38,10 @@ beforeEach(() => {
   stub.lines.mockReset();
   stub.lines.mockResolvedValue(LINES);
   stub.mark.mockReset();
+  about.read.mockReset();
+  about.read.mockImplementation(async () => about.seen);
+  about.mark.mockReset();
+  about.seen = { version: ABOUT_VERSION, ids: [] };
 });
 
 describe("dismissArrivals", () => {
@@ -55,5 +67,48 @@ describe("dismissArrivals", () => {
     await dismissArrivals(["trc"]);
     expect(stub.lines).not.toHaveBeenCalled();
     expect(stub.mark).not.toHaveBeenCalled();
+  });
+});
+
+// About's half (About on the banner, Q2): ✕ writes About's seen, re-decided against the reader's notice now.
+describe("dismissArrivals, About's line", () => {
+  const ABOUT_ON = { ABOUT_SHEET_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", NEVER_CUT_ENABLED: "true" };
+
+  it("writes the drawn ids the reader's notice still names, as a visit writes them", async () => {
+    stub.env = ABOUT_ON;
+    await dismissArrivals([], ["change-commander"]);
+    expect(about.read).toHaveBeenCalledWith("user_1");
+    expect(about.mark).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["change-commander"]);
+    // No arrival keys claimed: the arrival read is not made.
+    expect(stub.lines).not.toHaveBeenCalled();
+  });
+
+  it("never writes an id the page did not draw, nor one no longer new", async () => {
+    stub.env = ABOUT_ON;
+    about.seen = { version: ABOUT_VERSION, ids: ["locked-cards"] };
+    // `locked-cards` is already met; `notes` is behind a switch that is off; neither is written.
+    await dismissArrivals([], ["change-commander", "locked-cards", "notes", "how-it-works"]);
+    expect(about.mark).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["change-commander"]);
+  });
+
+  it("writes nothing when the reader is already current", async () => {
+    stub.env = ABOUT_ON;
+    about.seen = { version: ABOUT_VERSION, ids: ["change-commander", "locked-cards"] };
+    await dismissArrivals([], ["change-commander"]);
+    expect(about.mark).not.toHaveBeenCalled();
+  });
+
+  it("takes both halves in one press", async () => {
+    stub.env = { ...stub.env, ...ABOUT_ON };
+    await dismissArrivals(["trc"], ["locked-cards"]);
+    expect(stub.mark).toHaveBeenCalledWith("user_1", ["trc"]);
+    expect(about.mark).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["locked-cards"]);
+  });
+
+  it("reads and writes nothing for About with its switch off", async () => {
+    stub.env = { CHANGE_COMMANDER_ENABLED: "true" };
+    await dismissArrivals([], ["change-commander"]);
+    expect(about.read).not.toHaveBeenCalled();
+    expect(about.mark).not.toHaveBeenCalled();
   });
 });

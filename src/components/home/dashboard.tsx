@@ -13,6 +13,7 @@ import { formatWhen } from "../../lib/format/when";
 import type { Commitments } from "../../lib/home/commitments";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import type { ReadySlice } from "../../lib/recs/ready-to-build";
+import type { AboutLine } from "../../lib/about/notice";
 import type { ArrivalsBannerData } from "../../lib/precons/banner";
 import { ArrivalsBanner, HOME_HEADING_ID } from "./arrivals-banner";
 import { CommitmentsCard } from "./commitments-card";
@@ -36,6 +37,12 @@ export type DashboardProps = {
    * cached payload; a ✕ moves the reader's stamp, which retires it.
    */
   arrivals?: ArrivalsBannerData | null;
+  /**
+   * About's line on the same banner (About on the banner, PR A), or null: `ABOUT_SHEET_ENABLED` off, nothing new in
+   * About, or this browser already showed the sheet for these entries. Decided per request, outside the cached
+   * payload, because the sheet cookie is per browser.
+   */
+  about?: AboutLine | null;
   /** `ALL_DECKS_CART_ENABLED`, resolved for this reader: the card links to /decks/shopping only when it is on. */
   cartEnabled?: boolean;
   /**
@@ -126,8 +133,14 @@ export function Dashboard(props: DashboardProps) {
       </header>
 
       {/* Between the header and Ready to build, in the flow and spanning both columns (handoff call 4). */}
-      {/* Keyed by its arrivals, so a new batch is a new banner and never inherits an earlier one's dismissal. */}
-      {props.arrivals && <ArrivalsBanner key={props.arrivals.keys.join(",")} data={props.arrivals} />}
+      {/* Keyed by what it draws, so a new batch is a new banner and never inherits an earlier one's dismissal. */}
+      {(props.arrivals || props.about) && (
+        <ArrivalsBanner
+          key={[...(props.arrivals?.keys ?? []), ...(props.about?.ids.map((id) => `about:${id}`) ?? [])].join(",")}
+          data={props.arrivals ?? null}
+          about={props.about ?? null}
+        />
+      )}
 
       {/* §HomeBody. One row of two columns on desktop; on a phone the same two
           columns stack, and nothing drops at either width — that is the whole

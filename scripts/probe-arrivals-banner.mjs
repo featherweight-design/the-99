@@ -357,7 +357,10 @@ async function firstRun(browser, w, email) {
   const page = await context.newPage();
   const id = await signIn(page, email, "");
   await home(page);
-  check(await onPage(page, REGION).count() === 0, `${w.name} H7: a first-run account gets no banner`, `${await onPage(page, REGION).count()} regions`);
+  // Since About moved to the banner (plan 2026-10-15, PR A), a first-run account's checklist carries About's
+  // first-run line (A3), so the band may draw; what H7 holds is that no ARRIVAL line does.
+  const arrivalText = (await onPage(page, REGION).allTextContents()).join(" ");
+  check(!arrivalText.includes("Probe "), `${w.name} H7: a first-run account gets no arrival line`, arrivalText || "no banner");
   const keys = await seenKeys(id);
   check(keys.length === 0, `${w.name} H7: and nothing is marked seen`, JSON.stringify(keys));
   await context.close();

@@ -479,7 +479,7 @@ export const adminCopy = {
     mean: (mean: string) => `Priced runs so far average ${mean}.`,
     noMean: "No run has been priced yet, so there is no mean to go on.",
     credits: (limits: string) => `Each run uses one of the account’s ${limits} credits in a rolling 24 hours.`,
-    whatsNew: (n: number, name: string) => `The ${n} account${n === 1 ? "" : "s"} see ${name} in the What’s new sheet on their next visit.`,
+    whatsNew: (n: number, name: string) => `The ${n} account${n === 1 ? "" : "s"} see ${name} in About’s line on Home on their next visit.`,
     noWhatsNew: "No What’s new entry changes.",
     when: "Within 30 seconds, on every server.",
     note: "Note (optional)",
@@ -496,7 +496,7 @@ export const adminCopy = {
  * already does.
  */
 export const switchCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
-  ABOUT_SHEET_ENABLED: { label: "About sheet", description: "The What’s new sheet. While off, a redirect to About instead." },
+  ABOUT_SHEET_ENABLED: { label: "About sheet", description: "What’s new, as a line on Home’s banner. While off, a redirect to About instead." },
   ADDED_COPY_ENABLED: { label: "Added copy", description: "An added copy says where it went, with Change to move it." },
   ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },

@@ -176,6 +176,7 @@
     "probe:about-numerals": "node scripts/probe-about-numerals.mjs",
     "probe:about-how-it-works": "node scripts/probe-about-how-it-works.mjs",
     "probe:arrivals-banner": "node scripts/probe-arrivals-banner.mjs",
+    "probe:about-banner": "tsx scripts/probe-about-banner.mts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
     "probe:delete-confirm": "node scripts/probe-delete-confirm.mjs",
     "probe:deck-locks": "node scripts/probe-deck-locks.mjs",

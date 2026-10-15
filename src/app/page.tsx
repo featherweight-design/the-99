@@ -24,11 +24,32 @@ import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
 import { loadArrivalsBanner } from "../lib/precons/banner";
 import { upcomingPreconsEnabled } from "../lib/precons/upcoming-flag";
+import { cookies } from "next/headers";
+import { aboutSheetEnabled } from "../lib/about/flag";
+import { SHEET_COOKIE, sheetCookieIsCurrent } from "../lib/about/gate";
+import { aboutLine, aboutNotice } from "../lib/about/notice";
+import { aboutSeen } from "../lib/about/read";
+import { visibleEntries, type SeenState } from "../lib/about/visible";
 
-/** What the signed-in Home draws, cached whole. First run draws none of it. */
+/**
+ * What the signed-in Home draws, cached whole. First run draws none of the Dashboard. Both carry the reader's About
+ * seen state (null with `ABOUT_SHEET_ENABLED` off, or when the read failed), which About's banner line is decided
+ * from; `user_prefs` carries the stamp trigger, so a write to it retires the entry.
+ */
 type HomePayload =
-  | { firstRun: true }
-  | ({ firstRun: false } & Omit<ComponentProps<typeof Dashboard>, "now">);
+  | { firstRun: true; aboutSeen: SeenState | null }
+  | ({ firstRun: false; aboutSeen: SeenState | null } & Omit<ComponentProps<typeof Dashboard>, "now" | "about">);
+
+/** The reader's About seen state for the banner line, or null. A failed read draws no line and is not stored. */
+async function readAboutSeen(userId: string, env: NodeJS.ProcessEnv): Promise<SeenState | null> {
+  if (!aboutSheetEnabled(env)) return null;
+  try {
+    return await aboutSeen(userId);
+  } catch {
+    recordSoftFailure();
+    return null;
+  }
+}
 
 export default async function HomePage() {
   const { userId } = await auth();
@@ -122,7 +143,7 @@ export default async function HomePage() {
   // the Ready-to-build pair rotates on it (`dailyPicks`, whose boundary is UTC by Hugh's call),
   // so a pair cached yesterday is never served today.
   const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10)], async (env): Promise<PageLoad<HomePayload>> => {
-    const [stats, decks] = await Promise.all([
+    const [stats, decks, seen] = await Promise.all([
       perf.timed("collectionStats", () => getCollectionStats(userId)),
       // `name`, which is the CHEAPEST ORDER this reader offers. Home does not use
       // the order it asks for: the resume block re-sorts by `byTouched` and
@@ -150,9 +171,12 @@ export default async function HomePage() {
         // The env the load is handed, which is the one the entry is keyed on.
         env,
       })),
+      // About's notice (About on the banner): read on both surfaces, since About's first run and Home's checklist
+      // are separate states. One primary-key lookup.
+      perf.timed("aboutSeen", () => readAboutSeen(userId, env)),
     ]);
     if (stats.uniqueCards === 0 && decks.length === 0) {
-      return { value: { firstRun: true }, store: true };
+      return { value: { firstRun: true, aboutSeen: seen }, store: true };
     }
 
     const [lastUpdated, ranked, shopping, unplayed, arrivals] = await Promise.all([
@@ -200,12 +224,21 @@ export default async function HomePage() {
     }
 
     return {
-      value: { firstRun: false, stats, lastUpdated, ready, inUse, decks, commitments, shopping, arrivals },
+      value: { firstRun: false, aboutSeen: seen, stats, lastUpdated, ready, inUse, decks, commitments, shopping, arrivals },
       // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
       store: !ranked.degraded,
     };
   }, env);
-  if (data.firstRun) return <FirstRunChecklist addByHand={collectionEditEnabled(env)} />;
+  // About's line, decided per request from the cached seen state and THIS browser's sheet cookie, which stays out
+  // of the cache because it is per browser: a browser that already showed the sheet for these entries is not told
+  // again on Home. The cookie is read, never written; the proxy no longer writes it.
+  let about = null;
+  if (data.aboutSeen) {
+    const visible = visibleEntries(env);
+    const shown = sheetCookieIsCurrent((await cookies()).get(SHEET_COOKIE)?.value, userId, visible);
+    about = aboutLine(aboutNotice(data.aboutSeen, visible, shown), visible);
+  }
+  if (data.firstRun) return <FirstRunChecklist addByHand={collectionEditEnabled(env)} about={about} />;
 
   return (
     <Dashboard
@@ -217,6 +250,7 @@ export default async function HomePage() {
       commitments={data.commitments}
       shopping={data.shopping}
       arrivals={data.arrivals}
+      about={about}
       cartEnabled={allDecksCartEnabled(env)}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
