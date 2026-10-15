@@ -310,6 +310,17 @@ describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () =
     expect(screen.queryByText(new RegExp(copy.summary.fileDelta(0)))).toBeNull();
   });
 
+  it("a Sync that moved cards no deck cares about keeps the file's own delta beside the stamp", () => {
+    render(synced(summary({ arrived: 3, left: 1, totalAfter: 102 }), sync({ kept: 0, decided: 0, tokens: 0, cards: 4 })));
+    expect(screen.getByText(copy.summary.ledeNothingToReportSync({ kept: 0, decided: 0, tokens: 0 }))).toBeTruthy();
+    expect(screen.getByText(new RegExp(copy.summary.fileDelta(4)))).toBeTruthy();
+  });
+
+  it("a Sync whose rows moved no copy count says no `0 cards differ`", () => {
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 2, decided: 0, tokens: 0, cards: 3 })));
+    expect(screen.queryByText(new RegExp(copy.summary.fileDelta(0)))).toBeNull();
+  });
+
   it("a Sync that moved cards no deck cares about keeps the kept clause, and never says the collection is the file", () => {
     render(synced(summary(), sync({ kept: 7, decided: 1, tokens: 0 })));
     const lede = copy.summary.ledeNothingToReportSync({ kept: 7, decided: 1 });

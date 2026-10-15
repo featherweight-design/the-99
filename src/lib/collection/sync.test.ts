@@ -350,7 +350,18 @@ describe("changedTokenCount", () => {
 
 describe("readSyncSummary", () => {
   it("reads the receipt's and History's figures off a stored summary", () => {
-    expect(readSyncSummary({ pick: "everything", kept: 119, decided: 3, answeredFile: 1, tokens: 114 })).toEqual({ kept: 119, decided: 3, tokens: 114 });
+    // Two of the three conflicts were answered App, and keep the player's count like the 119.
+    expect(readSyncSummary({ pick: "everything", kept: 119, decided: 3, answeredFile: 1, tokens: 114 })).toEqual({ kept: 121, decided: 3, tokens: 114 });
+  });
+
+  it("counts a conflict answered App as kept, as the review's keep figure does", () => {
+    // No app-only change, two App answers and a token change: the review said keep 2.
+    const stored = storedSyncSummary("everything", { kept: 0, conflicts: 2, undecided: 0, answeredFile: 0 }, [{ kind: "token", id: "t1", from: 0, to: 1 }], 0);
+    expect(readSyncSummary(stored)).toEqual({ kept: 2, decided: 2, tokens: 1, cards: 0 });
+    // Every conflict answered File keeps nothing.
+    expect(readSyncSummary({ kept: 0, decided: 2, answeredFile: 2, tokens: 0 })?.kept).toBe(0);
+    // A malformed answeredFile above decided never takes a kept card away.
+    expect(readSyncSummary({ kept: 4, decided: 1, answeredFile: 3, tokens: 0 })?.kept).toBe(4);
   });
 
   it("is null for an upload with no summary, a Replace's or an Add's", () => {

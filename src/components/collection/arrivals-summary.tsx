@@ -255,9 +255,13 @@ export function ArrivalsSummary({
         {sync ? copy.summary.syncFileStamp(stampDate, filename) : copy.summary.fileStamp(stampDate, filename)}
         {/* On the empty receipt the lede says nothing your DECKS care about moved, and without
             the file's own delta beside it that reads as an import which did nothing at all. A
-            Sync's lede already says what it kept and what tokens changed, and "differ from the old list"
-            would count the cards it kept as the file's. */}
-        {nothingToReport && summary && !sync ? ` · ${copy.summary.fileDelta(summary.arrived + summary.left)}` : ""}
+            Sync keeps it too: it is the only figure that says cards outside every deck moved, and it
+            cannot count a kept card, because `buildArrivalsSummary` takes it from what was owned before
+            and after, where a kept card did not move. What a Sync drops is a ZERO delta: a tokens-only
+            Sync already says its cards are as you left them, and one that moved only a printing, a
+            finish or a condition changed rows a copy count cannot see, so `0 cards differ` is not its. */}
+        {nothingToReport && summary && (!sync || summary.arrived + summary.left > 0)
+          ? ` · ${copy.summary.fileDelta(summary.arrived + summary.left)}` : ""}
       </p>
 
       {/* The issues line. Counts and a route back, never the list again: `IssueInspector`

@@ -47,12 +47,19 @@ const count = (v: unknown) => (typeof v === "number" && Number.isInteger(v) && v
 /**
  * A stored `syncSummary` read back, or null when there is none (a Replace's or an Add's upload). A
  * figure missing or malformed reads as 0, which draws no clause rather than a wrong one.
+ *
+ * `kept` is what the review's `syncFigures` called `keep`: the app-only changes kept PLUS every conflict
+ * answered App (`decided - answeredFile`), because an App answer keeps the player's count too. The stored
+ * `kept` holds the first alone, so it is derived here, in the reader, and a summary already stored reads
+ * the review's figure as well. An `answeredFile` above `decided` (malformed) never takes a kept card away.
  */
 export function readSyncSummary(value: unknown): SyncEntrySummary | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const v = value as Record<string, unknown>;
   const cards = typeof v.cards === "number" && Number.isInteger(v.cards) && v.cards >= 0 ? { cards: v.cards } : {};
-  return { kept: count(v.kept), decided: count(v.decided), tokens: count(v.tokens), ...cards };
+  const decided = count(v.decided);
+  const answeredApp = Math.max(0, decided - count(v.answeredFile));
+  return { kept: count(v.kept) + answeredApp, decided, tokens: count(v.tokens), ...cards };
 }
 
 /**
