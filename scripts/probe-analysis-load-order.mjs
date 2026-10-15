@@ -14,7 +14,8 @@
 //        comparison cannot prove that, since a fast response lands in the empty state's own frame on
 //        a correct build. On a second, unheld load the note must arrive within 2.5s of the empty state.
 //        On the held load the Tuning hub under the empty state must not move, from its first frame
-//        through the note's landing (PROBE_HUB=on, the default): the note's frame is reserved.
+//        through the note's landing (PROBE_HUB=on, the default), for a note of up to two lines: two of
+//        its lines are reserved. A longer note may move it by its extra lines, and is named.
 //   d.   The tab row stays one line with Analysis selected, on a deck with versions.
 //
 // It WRITES, on the deck it walks, only what the deck lacked: a reading (Analyze) and an overview
@@ -34,6 +35,7 @@ import { requireEnv } from "./lib/env.mjs";
 import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { judgeHubMove, NOTE_SHAPE } from "./lib/note-variant.mjs";
 
 const { E2E_AUDIT_USER_EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Its own variables, read AFTER `env.mjs`: that loads `.env` with override, so a `DATABASE_URL`
@@ -291,16 +293,21 @@ async function run() {
       const noteAfter = await held.waitForFunction(() => Boolean(window.__parts.pressNote), null, { timeout: 30_000 })
         .then(() => true, () => false);
       report(at("and the credit note arrives once the read is released"), noteAfter, noteAfter ? "drawn" : "never drawn");
-      // THE HUB DOES NOT MOVE WHEN IT LANDS (Hugh, 2026-10-15): the empty state holds the note's frame from
-      // its first frame. Before, the note pushed the hub down once, 56px at 1300 and 35px at 390. The held
-      // read makes the landing late, well after the hub's first frame, so a move cannot hide in one frame.
+      // THE HUB DOES NOT MOVE WHEN A NOTE OF UP TO TWO LINES LANDS (Hugh, 2026-10-15): the empty state holds
+      // two of the note's lines from its first frame. Before, the note pushed the hub down once, 56px at 1300
+      // and 35px at 390. A longer note (used up, paused, owner share) may move it by its extra lines, and is
+      // named; an unrecognised note fails (`scripts/lib/note-variant.mjs`). The held read makes the landing
+      // late, well after the hub's first frame, so a move cannot hide in one frame.
       await held.waitForTimeout(1_000);
       const hubTops = await held.evaluate(() => window.__hubTops);
       if (HUB === "on") {
-        const first = hubTops[0]?.top ?? null;
-        report(at("the Tuning hub stays put from its first frame through the credit note's landing"),
-          first !== null && noteAfter && hubTops.every((t) => Math.abs(t.top - first) <= 1),
-          JSON.stringify({ tops: hubTops, noteAt: (await held.evaluate(() => window.__parts.pressNote ?? null)) }));
+        const shape = await held.evaluate(NOTE_SHAPE, PAGE);
+        const judged = judgeHubMove(hubTops.map((t) => t.top), shape);
+        report(at(judged.strict
+          ? `the Tuning hub stays put from its first frame through the ${judged.variant} note's landing`
+          : `the Tuning hub moves by at most the ${judged.variant} note's lines past the reserved two`),
+          noteAfter && judged.ok,
+          JSON.stringify({ variant: judged.variant, moved: judged.moved, allowed: judged.allowed, lines: shape?.lines ?? null, tops: hubTops, noteAt: (await held.evaluate(() => window.__parts.pressNote ?? null)) }));
       } else {
         console.log(`  info  ${at("PROBE_HUB=off: the hub's stillness is not checked")} — ${JSON.stringify(hubTops)}`);
       }

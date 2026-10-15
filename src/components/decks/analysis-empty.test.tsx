@@ -57,7 +57,7 @@ describe("AnalysisEmpty's credit note frame", () => {
     expect(note.nextElementSibling?.className).toContain("md:basis-full");
   });
 
-  it("takes the frame away when the read settles with no note (7d), and draws none over a blocked press", () => {
+  it("takes the frame away when the read settles with no note (2a), and draws none over a blocked press", () => {
     const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} notePending />);
     rerender(<AnalysisEmpty phase="idle" onRequest={() => {}} />);
     expect(screen.queryByTestId("press-note-slot")).toBeNull();

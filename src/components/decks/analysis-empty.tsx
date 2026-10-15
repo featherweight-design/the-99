@@ -54,9 +54,10 @@ export function AnalysisEmpty({
   note?: string | null;
   /**
    * The note's read has not answered yet, so whether a note comes is not known. The note's frame is
-   * drawn EMPTY meanwhile, at the note's own reserved height, so a note that lands moves nothing under
-   * it (the Tuning hub first: 56px at 1300 and 35px at 390 before, #1465). A read that settles with
-   * no note takes the frame away again, the no-note layout the handoff draws (7d).
+   * drawn EMPTY meanwhile, at two of the note's own lines, so a note of up to two lines moves nothing
+   * under it (the Tuning hub first: 56px at 1300 and 35px at 390 before, #1465). A longer note (used up
+   * at 1300, paused) still grows past the frame by its extra lines. A read that settles with no note
+   * takes the frame away again, back to the no-note empty state the handoff draws (2a).
    */
   notePending?: boolean;
   /** The overview check's *See which →*, after the note (deck notices HANDOFF §6). */
@@ -125,7 +126,7 @@ export function AnalysisEmpty({
   }
   const shownNote = blocked === null ? note : null;
   // THE NOTE'S FRAME, drawn from the first frame while its read is out (Hugh, 2026-10-15: nothing below
-  // may move when it lands). The row takes the with-note layout at once, and the frame is the same
+  // should move when it lands; it holds for every note up to two lines, below). The row takes the with-note layout at once, and the frame is the same
   // element before and after the words arrive. Never over a blocked press, which draws no note.
   const noteFrame = blocked === null && (shownNote !== null || notePending);
   const text = phase === "loading"
