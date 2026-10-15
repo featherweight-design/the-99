@@ -98,6 +98,14 @@ describe("aboutDismissal (the ✕)", () => {
     expect(aboutDismissal(["a"], seen(5, ["a"]), visible, 6)).toBeNull();
   });
 
+  it("writes the variant id of an entry drawn in its variant, the one isSeen checks, so the notice stops naming it", () => {
+    const varied: AboutEntry = { ...aboutEntries[0], id: "varied", since: 5, switch: undefined, variantOn: "COLLECTION_SYNC_ENABLED" };
+    const vis = [plain, varied];
+    const out = aboutDismissal(["plain", "varied"], seen(2), vis, 6);
+    expect(out).toEqual({ version: 6, ids: ["varied@COLLECTION_SYNC_ENABLED"] });
+    expect(aboutNotice({ version: out!.version, ids: out!.ids }, vis, false)).toBeNull();
+  });
+
   it("takes a first-run reader past first run with what a visit writes", () => {
     expect(aboutDismissal(visible.map((e) => e.id), seen(0), visible, 6)).toEqual({ version: 6, ids: ["a", "b"] });
   });

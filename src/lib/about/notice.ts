@@ -11,7 +11,7 @@
 // it); the cookie is per browser and is read per request, outside it, and the page combines the two.
 
 import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
-import { isFirstRun, unseenEntries, type SeenState } from "./visible";
+import { isFirstRun, switchedIds, unseenEntries, type SeenState } from "./visible";
 
 export type AboutNotice =
   | { kind: "firstRun" }
@@ -59,8 +59,8 @@ const MAX_CLAIMED = 200;
  *
  * The version floor is `ABOUT_VERSION`, as a visit writes, when every unswitched entry the notice names now was
  * claimed. When one was not (a deploy added it after the render, or the client dropped it), the floor rises only to
- * the newest claimed unswitched entry and never to an unclaimed one's, so every unclaimed one stays new. The ids are the claimed switched entries; an
- * unswitched entry is seen by the floor alone. Null when there is nothing to write.
+ * the newest claimed unswitched entry and never to an unclaimed one's, so every unclaimed one stays new. The ids are the claimed switched entries and the
+ * variant ids of claimed entries drawn in a variant; any other entry is seen by the floor alone. Null when there is nothing to write.
  */
 export function aboutDismissal(
   claimed: unknown,
@@ -85,7 +85,9 @@ export function aboutDismissal(
         Math.max(0, ...valid.filter((e) => !e.switch).map((e) => e.since)),
         Math.min(...unclaimed.map((e) => e.since)) - 1,
       );
-  const ids = valid.filter((e) => e.switch).map((e) => e.id);
+  // What a visit writes for the claimed entries (`switchedIds`): a switched entry's id, and an entry drawn in its
+  // variant by its variant id, the one `isSeen` checks for it. The floor alone never sees a variant.
+  const ids = switchedIds(valid);
   if (ids.length === 0 && floor <= seen.version) return null;
   return { version: floor, ids };
 }
