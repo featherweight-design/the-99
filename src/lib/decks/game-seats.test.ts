@@ -51,6 +51,13 @@ describe("filling and clearing seats", () => {
     expect(seatLabelled([seat("a")], "a", "Sam ")[0].label).toBe("Sam ");
     expect(opponentsFor([seat("a", { label: "Sam   Lee " })], "win")).toEqual([{ commander: "a", label: "Sam Lee" }]);
   });
+  it("caps after normalizing, because composing can add code points the server would count", () => {
+    // U+0958 is one code point that NFC turns into two: 29 letters after it would read 30 and be sent as 31.
+    const typed = seatLabelled([seat("a")], "a", "\u0958" + "x".repeat(29))[0].label;
+    expect(Array.from(typed).length).toBeLessThanOrEqual(30);
+    const sent = opponentsFor([seat("a", { label: typed })], "win")[0].label as string;
+    expect(cleanName(sent, 30)).toBe(sent);
+  });
   it("caps a label at 30 characters by code point", () => {
     const out = seatLabelled([seat("a")], "a", "😀".repeat(40));
     expect(Array.from(out[0].label)).toHaveLength(30);

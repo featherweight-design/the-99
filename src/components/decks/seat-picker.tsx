@@ -53,6 +53,14 @@ function Body({
     return () => window.clearTimeout(timer);
   }, [query]);
 
+  // A new query drops the old answer at once and invalidates any still in flight: until the debounce fires,
+  // the previous query's hits would stay on screen, selectable, under a field that no longer names them.
+  function change(next: string) {
+    asked.current += 1;
+    setSearch({ state: "idle" });
+    setQuery(next);
+  }
+
   const short = query.trim().length < 2;
   return (
     <div className="flex min-h-0 flex-col">
@@ -60,8 +68,8 @@ function Body({
         <SearchField
           ref={inputRef}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onClear={() => setQuery("")}
+          onChange={(e) => change(e.target.value)}
+          onClear={() => change("")}
           placeholder={copy.placeholder}
           aria-label={copy.placeholder}
           aria-describedby={describedBy}
@@ -120,6 +128,14 @@ export function SeatPicker({
   const anchorRef = useRef<HTMLElement>(anchor);
   const { at, panelRef: placedRef, triggerRef } = useAnchoredPanel<HTMLElement>({ open: desktop, width: PANEL_WIDTH });
   useEffect(() => { triggerRef.current = anchor; anchorRef.current = anchor; }, [anchor, triggerRef]);
+  // The panel is hidden until it is placed, and a hidden field takes no focus: the dialog hook's own attempt, in
+  // the first layout pass, fails. Focus the search once it is visible.
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!desktop || !at || focused.current) return;
+    focused.current = true;
+    inputRef.current?.focus();
+  }, [desktop, at]);
   // The sheet holds the page; the panel does not (it hangs off a control on a page the reader can still see).
   useDialogA11y(desktop ? placedRef : panelRef, onClose, { initialFocusRef: inputRef, returnFocusRef: anchorRef, lockScroll: !desktop });
 
@@ -147,8 +163,9 @@ export function SeatPicker({
       ref={placedRef}
       role="dialog"
       aria-label={copy.title}
-      className={`${ANCHORED_PANEL_CLASS} fixed`}
-      style={{ width: PANEL_WIDTH, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
+      // Held to the viewport and a column, so the list inside it scrolls instead of running off a short window.
+      className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col`}
+      style={{ width: PANEL_WIDTH, maxHeight: "calc(100dvh - 16px)", top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
     >
       <Body onPick={onPick} inputRef={inputRef} describedBy={footId} />
     </div>

@@ -167,6 +167,28 @@ describe("who won", () => {
   });
 });
 
+describe("the picker", () => {
+  it("drops the previous query's hits the moment the query changes", async () => {
+    mount(true);
+    fireEvent.click(screen.getByRole("button", { name: seatsCopy.add }));
+    const dialog = await screen.findByRole("dialog", { name: gameSeatsCopy.picker.title });
+    fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: "yur" } });
+    await within(dialog).findByRole("button", { name: /Yuriko/ });
+    fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: "tym" } });
+    // Before the debounce fires: the old answer is not on screen to be pressed.
+    expect(within(dialog).queryByRole("button", { name: /Yuriko/ })).toBeNull();
+    expect(await within(dialog).findByRole("button", { name: /Tymna/ })).toBeInTheDocument();
+  });
+
+  it("returns focus to the seat just filled when it was the last and Add opponent is gone", async () => {
+    mount(true);
+    pod(2);
+    await seat(seatsCopy.add, "yur", "Yuriko");
+    expect(screen.queryByRole("button", { name: seatsCopy.add })).toBeNull();
+    await waitFor(() => expect(screen.getByRole("button", { name: seatsCopy.change("Yuriko") })).toHaveFocus());
+  });
+});
+
 describe("the pod", () => {
   it("holds a pod size below the filled seats, and says why", async () => {
     mount(true);

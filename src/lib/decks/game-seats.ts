@@ -57,7 +57,8 @@ export function cleanLabel(text: string): string {
 }
 
 export function seatLabelled(seats: readonly Seat[], key: string, label: string): Seat[] {
-  const typed = Array.from(stripUnsendable(label)).slice(0, SEAT_LABEL_MAX).join("");
+  // NFC first: composing can ADD code points (U+0958 becomes two), and the cap is the server's, counted after it.
+  const typed = Array.from(stripUnsendable(label).normalize("NFC")).slice(0, SEAT_LABEL_MAX).join("");
   return seats.map((s) => (s.key === key ? { ...s, label: typed } : s));
 }
 

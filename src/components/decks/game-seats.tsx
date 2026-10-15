@@ -8,7 +8,7 @@
 // The row holds no state of its own beyond which seat's picker is open; the seats, the result and the pod size
 // are the form's, so what is saved is what is drawn.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { hasRoom, seatCount, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatCommander } from "../../lib/decks/game-seats";
 import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
@@ -66,6 +66,7 @@ function SeatView({
         onClick={(e) => onOpen(e.currentTarget)}
         aria-label={copy.change(name)}
         aria-expanded={editing}
+        data-seat-art
         className={`shrink-0 cursor-pointer rounded-[8px] border-0 bg-transparent p-0 md:rounded-[10px] ${seat.won ? "outline outline-2 outline-offset-2 outline-[color:var(--fg)]" : ""}`}
       >
         <Art uri={seat.commander.imageUri} />
@@ -158,14 +159,30 @@ export function GameSeats({
   const lost = result === "loss" && seats.length > 0;
   const addRef = useRef<HTMLButtonElement>(null);
 
+  const section = useRef<HTMLElement>(null);
+  // Set when a pick closes a picker whose opener may now be gone.
+  const refocus = useRef<HTMLElement | null>(null);
+
   function pick(hit: OpponentCommanderHit) {
     if (!picking) return;
+    refocus.current = picking.anchor;
     onSeat(picking.at, { oracleId: hit.oracleId, name: hit.name, imageUri: hit.imageUri, colorIdentity: hit.colorIdentity });
     setPicking(null);
   }
 
+  // Filling the last seat removes Add opponent in the same commit that closes the picker, so the dialog's own
+  // focus return lands on a detached button and focus drops to the page. The seat just filled is the last one.
+  useEffect(() => {
+    const opener = refocus.current;
+    if (!opener || picking) return;
+    refocus.current = null;
+    if (opener.isConnected) return;
+    const arts = section.current?.querySelectorAll<HTMLElement>("[data-seat-art]");
+    arts?.[arts.length - 1]?.focus();
+  }, [picking, seats]);
+
   return (
-    <section aria-labelledby="game-seats-label" className="mb-[18px] mt-[16px] border-0 border-t border-solid border-t-[color:var(--border)] pt-[14px] md:mt-[2px] md:pt-[16px]">
+    <section ref={section} aria-labelledby="game-seats-label" className="mb-[18px] mt-[16px] border-0 border-t border-solid border-t-[color:var(--border)] pt-[14px] md:mt-[2px] md:pt-[16px]">
       <div className="mb-[10px] flex items-baseline justify-between gap-[12px]">
         <span id="game-seats-label" className="block font-mono text-[9.5px] uppercase tracking-[0.14em] text-fg-faint md:text-[10px]">
           {copy.label}
