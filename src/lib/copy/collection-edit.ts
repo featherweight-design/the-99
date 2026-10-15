@@ -8,6 +8,7 @@ const decks = (x: number) => (x === 1 ? "a deck" : `${n(x)} decks`);
 export const cards = (x: number) => (x === 1 ? "1 card" : `${n(x)} cards`);
 export const rows = (x: number) => (x === 1 ? "1 row" : `${n(x)} rows`);
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
+const tokens = (x: number) => (x === 1 ? "1 token" : `${n(x)} tokens`);
 
 export const collectionEditCopy = {
   head: {
@@ -56,6 +57,38 @@ export const collectionEditCopy = {
     nextReplace: "Next: a review of every card this replace moves.",
     nextAdd: "Next: a review of every card this add raises.",
     cancel: "Cancel",
+    // Collection Sync, the choice step (plan `2026-10-15-collection-sync.md` PR 2). The handoff's
+    // `collection-sync · copy strings.ts`, `choice` and `stale`, adopted as drawn for /copy-review.
+    /** The step's title, at both widths, when the Sync card is drawn (README G10). */
+    choiceTitleSync: "What’s this file for?",
+    syncTitle: "Sync my collection",
+    syncBody: "Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.",
+    syncKeeps: (k: number, since: string) => `Keeps the ${cards(k)} you changed in the app since your ${since} upload.`,
+    syncKeepsNone: (since: string) => `You haven’t changed anything in the app since your ${since} upload, so this does what Replace does.`,
+    syncTokensOnly: (t: number) => `Your cards stay as they are. Sync records the file’s ${tokens(t)}.`,
+    syncNothingNew: "Nothing new in this file. It matches your last upload, tokens included.",
+    syncUnavailableLead: "Sync can’t be used for this file.",
+    syncUnavailableNoRecord: (since: string) =>
+      `We have no record of what changed since your ${since} upload, so we can’t tell your changes from the file’s.`,
+    syncUnavailableNoUpload: "Sync compares a file with your last upload, and your collection was built in the app without one. Replace or Add will work.",
+    continueSync: "Review the sync →",
+    nextSync: "Next: what this sync takes from the file, what it keeps, and anything it needs you to decide.",
+    nextSyncTokens: "Next: the tokens this sync records. Your cards don’t move.",
+    nextSyncAdds: (c: number, t: number) => `Next: the ${cards(c)} and ${tokens(t)} this sync takes. Nothing leaves.`,
+    staleOlderTitle: (since: string) => `This file looks older than your ${since} upload.`,
+    staleOlderBody: (k: number) =>
+      `It’s missing ${cards(k)} that upload added, which usually means an earlier export. If it’s older, taking everything from it would undo them.`,
+    staleSameTitle: (since: string) => `This file looks no newer than your ${since} upload.`,
+    staleSameBody: (t: number) => `Its cards match that upload exactly. What it does have is ${tokens(t)} your collection hasn’t recorded.`,
+    staleQuestion: "What should Sync take from this file?",
+    staleAddsTitle: "Only what it adds",
+    /** `c` counts raises as well as new holdings, so it reads as the review's own `going up or new`. */
+    staleAddsBody: (c: number, t: number) => `${cards(c)} going up or new, and its ${tokens(t)}. Nothing leaves or goes down.`,
+    staleTokensTitle: "Only its tokens",
+    staleTokensBody: (t: number) => `Its ${tokens(t)}. Your cards stay as they are.`,
+    staleAllTitle: "Everything, removals too",
+    staleAllBody: (up: number, leaving: number, down: number, t: number) =>
+      `${n(up)} going up or new, ${n(leaving)} leaving, ${n(down)} going down, and its ${tokens(t)}.`,
     /** (new) The comparison could not be read. */
     /** (new) A confirm failed and so did the read that would say whether it landed. */
     unconfirmed: "We couldn’t confirm whether that went through. Check your collection, then try again if it didn’t.",

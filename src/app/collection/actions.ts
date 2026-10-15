@@ -203,6 +203,8 @@ export type UploadSyncPreview = {
   tokens: { count: number; copies: number };
   /** Whether the confirm would record any token change. */
   tokensChange: boolean;
+  /** How many distinct tokens the confirm would change the count of (the token plan's `token` changes). */
+  tokensChanged: number;
   /** No card and no token would change. */
   nothing: boolean;
   /** Sent back with the confirm as `planDigest`. Empty when unavailable. */
@@ -325,7 +327,7 @@ export async function previewUploadChange(
           unavailable: result.reason, pick: sync!.pick,
           counts: { taken: 0, kept: 0, agreed: 0, unchanged: 0, conflicts: 0, undecided: 0, answeredFile: 0, ignored: 0 },
           conflicts: { rows: [], total: 0 }, kept: { rows: [], total: 0 }, stale: null,
-          tokens: tokenTotals(tokens), tokensChange: false, nothing: true, planDigest: "",
+          tokens: tokenTotals(tokens), tokensChange: false, tokensChanged: 0, nothing: true, planDigest: "",
         },
       };
     default: throw new Error(`upload preview refused: ${result.status}`);
@@ -350,6 +352,7 @@ export async function previewUploadChange(
             stale: s.stale,
             tokens: tokenTotals(tokens),
             tokensChange: s.tokenChanges.length > 0,
+            tokensChanged: new Set(s.tokenChanges.filter((c) => c.kind === "token").map((c) => c.id)).size,
             nothing: s.nothing,
             planDigest: s.planDigest,
           },
