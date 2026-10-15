@@ -4,12 +4,13 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { assertScratchBranch, LOCAL_DEV_BRANCH, PRODUCTION_BRANCH, STAGING_BRANCH } from "./scratch-branch.mjs";
 
-/** Every script that wipes or reseeds the signed-in account's collection, history, uploads or decks wholesale. */
+/**
+ * Every script that wipes or reseeds the headless account's (or the busiest account's) collection, history,
+ * uploads or decks wholesale. probe:onboarding, probe:locked-nav and probe:issues-sheet wipe too, but only the
+ * dedicated empty `onboard-probe` account they sign in as, so they may still run on local-dev.
+ */
 const WHOLE_ACCOUNT_WRITERS = [
   "probe-collection-sync-ui.mjs",
-  "probe-issues-sheet.mjs",
-  "probe-locked-nav.mjs",
-  "probe-onboarding.mjs",
   "measure-collection-revert.ts",
 ];
 

@@ -18,14 +18,13 @@
 // DEDICATED empty account `probe:onboarding` uses, on Clerk's DEVELOPMENT instance
 // (`onboard-probe+clerk_test@the99.app`, override with PROBE_EMAIL). Its collection and uploads
 // are cleared on the way in and out, and the one deck the dashboard case writes is deleted in a
-// `finally`. Point it at a scratch branch made from local-dev: it wipes the account's collection, and `assertScratchBranch` refuses local-dev, staging and production.
+// `finally`. Point it at `local-dev`, NEVER production.
 //
 //   PROBE_BASE=http://localhost:3319 pnpm probe:locked-nav
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { onPageRole } from "./lib/surface.mjs";
 
@@ -35,6 +34,8 @@ const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const sql = neon(DATABASE_URL);
 // `cleanup` deletes the signed-in account's collection and uploads, so the target is checked,
 // and refused when it cannot be read, before any write (the `probe:onboarding` rule).
+const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
+const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 
 let failures = 0;
 function report(ok, name, detail) {
@@ -289,7 +290,9 @@ async function dashboard(page, userId) {
 
 async function main() {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
-  assertScratchBranch(branch, "probe:locked-nav");
+  if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
+    throw new Error(`probe:locked-nav refuses branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch.`);
+  }
   await clerkSetup();
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1300, height: 900 }, hasTouch: true });
