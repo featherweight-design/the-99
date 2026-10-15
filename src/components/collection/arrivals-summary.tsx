@@ -266,7 +266,7 @@ export function ArrivalsSummary({
             : still.length > 0 || nowShort.length > 0
               ? copy.summary.ledeOwing(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0, lede)
               : copy.summary.ledeNoContention(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0, lede)}
-        {nowShort.length > 0 ? ` ${copy.summary.nowShort(nowShort, sync ? "Syncing" : "Replacing")}` : ""}
+        {nowShort.length > 0 ? ` ${copy.summary.nowShort(nowShort, sync ? "Syncing" : add ? "Adding" : "Replacing")}` : ""}
       </p>
       <p className="font-mono text-[10.5px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
         {sync ? copy.summary.syncFileStamp(stampDate, filename) : copy.summary.fileStamp(stampDate, filename)}

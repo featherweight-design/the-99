@@ -496,6 +496,18 @@ describe("ArrivalsSummary for an Add", () => {
     expect(screen.queryByText(copy.summary.headingNoReceipt)).toBeNull();
   });
 
+  // An Add cannot normally lower a copy, but the sentence is drawn from the receipt's own rows and must not
+  // name an action the upload did not take.
+  it("names its own action when a deck is left short", () => {
+    render(added(summary({
+      version: 3,
+      nowShort: [{ deckId: "d1", oracleId: CARD, short: 1 }],
+      names: { cards: { [CARD]: "Brushland" }, decks: { d1: "Gishath" } },
+    })));
+    expect(screen.getByText(/Adding left a deck short: Gishath\./)).toBeTruthy();
+    expect(screen.queryByText(/Replacing left/)).toBeNull();
+  });
+
   it("leaves a Replace's words alone", () => {
     render(view(summary()));
     expect(screen.getByText(copy.summary.eyebrow)).toBeTruthy();
