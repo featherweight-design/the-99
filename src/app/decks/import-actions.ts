@@ -322,21 +322,27 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   let printingPicks: ImportPrintingPick[] = [];
   let printingsKept = 0;
   let printingsNotOwned = 0;
-  if (deckPrintingsEnabled(env) && result.printings.length > 0) {
-    const members = new Set([
-      ...deckCardValues.map((c) => c.oracleId),
-      commanderOracleId,
-      ...(partnerOracleId !== null ? [partnerOracleId] : []),
-    ]);
-    const held = await heldPrintingKeys(userId, [...new Set(result.printings.map((p) => p.oracleId))]);
+  const pickPrintings = deckPrintingsEnabled(env) && result.printings.length > 0;
+  const members = new Set([
+    ...deckCardValues.map((c) => c.oracleId),
+    commanderOracleId,
+    ...(partnerOracleId !== null ? [partnerOracleId] : []),
+  ]);
+  const body = new Set(deckCardValues.map((c) => c.oracleId));
+  let held: Set<string> = new Set();
+  /** The deck's picks and the strip's two clauses, from the printings the player holds. */
+  const choosePrintings = () => {
     const chosen = importPicks(result.printings, held, members);
     printingPicks = chosen.picks;
     // The strip's clauses count what its headline counts, the body's lines, so a commander's pick
     // is written but not counted: `All 99 lines … 100 with the printing you own` would contradict
     // itself.
-    const body = new Set(deckCardValues.map((c) => c.oracleId));
     printingsKept = chosen.picks.filter((p) => body.has(p.oracleId)).length;
     printingsNotOwned = chosen.notOwned.filter((id) => body.has(id)).length;
+  };
+  if (pickPrintings) {
+    held = new Set(await heldPrintingKeys(userId, [...new Set(result.printings.map((p) => p.oracleId))]));
+    choosePrintings();
   }
 
   const deck = {
@@ -359,7 +365,22 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
       picks: printingPicks,
       named: result.printings,
     });
-    const owned = await importDeckOwned(userId, deck, items, input.actionId as string, env);
+    // The add makes the player hold every printing it names, so the deck's picks and the strip's
+    // clauses are chosen again as of after it: a named printing the add brings in is the deck's
+    // pick and is not counted as missing from the collection.
+    if (pickPrintings) {
+      for (const i of items) if (i.setCode && i.collectorNumber) held.add(heldKey(i.oracleId, i.setCode, i.collectorNumber));
+      choosePrintings();
+      deck.printings = printingPicks;
+    }
+    let owned: Awaited<ReturnType<typeof importDeckOwned>>;
+    try {
+      owned = await importDeckOwned(userId, deck, items, input.actionId as string, env);
+    } catch {
+      // A write that throws has rolled back with its transaction, so it is the same refusal as one
+      // that returns: the deck and the cards are both absent.
+      owned = { ok: false };
+    }
     if (!owned.ok) return { ok: false, reason: "addFailed", notes };
     deckId = owned.deckId;
     // After the response, as every collection write does (`edit-actions.ts`, `settled`).

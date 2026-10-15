@@ -671,6 +671,32 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
     expect(stub.state.revalidated).toEqual([]);
   });
 
+  // A write that throws has rolled back, so it is the same refusal: never an exception at the caller.
+  it("ticked and the write throws, answers addFailed", async () => {
+    switchOn();
+    own.importDeckOwned.mockRejectedValue(new Error("deadlock"));
+    const result = await run({ own: true, actionId: ACTION });
+    expect(result).toMatchObject({ ok: false, reason: "addFailed" });
+    expect(stub.state.revalidated).toEqual([]);
+  });
+
+  // With deck printings on and nothing held, the named Sol Ring LTC 284 is one the add brings in: it is the
+  // deck's pick and the strip does not call it missing from the collection.
+  it("with deck printings on, takes a named printing the add brings in as the pick, not as missing", async () => {
+    switchOn();
+    process.env.DECK_PRINTINGS_ENABLED = "true";
+    own.readDeckOwnLines.mockResolvedValue([
+      { oracleId: SOL_RING, setCode: "ltc", collectorNumber: "284", scryfallId: "s1", finish: "nonfoil", condition: null, quantity: 1 },
+      { oracleId: ATREUS, setCode: "", scryfallId: null, finish: "nonfoil", condition: null, quantity: 1 },
+    ]);
+    const result = await run({ own: true, actionId: ACTION });
+    if (!result.ok) throw new Error(JSON.stringify(result));
+    expect(result.printingsKept).toBe(1);
+    expect(result.printingsNotOwned).toBe(0);
+    const [, deck] = own.importDeckOwned.mock.calls[0];
+    expect(deck.printings).toEqual([{ oracleId: SOL_RING, setCode: "ltc", collectorNumber: "284" }]);
+  });
+
   it("ticked, refuses a missing or malformed action id before any write", async () => {
     switchOn();
     await expect(run({ own: true })).rejects.toThrow(/action id/);
