@@ -5,8 +5,8 @@
  * A holding with a null `added_at` is dated from the best evidence there is, and says how sure it is:
  *  - the ledger, when the holding's CURRENT ownership began with a hand entry (`add`, `edit` or `revert` raising it
  *    from nothing: Add cards, I got it, a precon add): that entry's time, EXACT. Valid only when no entry removed
- *    the holding after that raise and no upload that could have replaced the collection (anything but a pure Add)
- *    was confirmed after it, so a holding that was added, removed and brought back some other way is not dated
+ *    the holding after that raise and no upload that could have replaced the collection (one with no ledger entry,
+ *    or an `upload_replace`; never an Add or a Sync) was confirmed after it, so a holding that was added, removed and brought back some other way is not dated
  *    to its first life. The ledger keeps 90 days, so this reaches recent holdings only. An upload's own
  *    entries are `upload_*` kinds (`kindOf`), so these entries are hand changes by construction;
  *  - else the first confirmed upload whose stored file (`pendingItems`, kept forever) holds it, INEXACT always:
@@ -42,14 +42,22 @@ with from_upload as (
   where h.rows is not null and ($1::text is null or h.user_id = $1)
   group by 1, 2, 3, 4, 5
 ), anchors as (
-  -- Uploads that can have REPLACED the collection: anything but a pure Add (no ledger entry is a Replace by
-  -- construction, the Sync base's rule). One of them after a hand add may have removed the holding without a
-  -- ledger entry (editing off), so the add no longer proves the current ownership began there.
+  -- Uploads that can have REPLACED the collection: one with no ledger entry (pre-ledger, or confirmed with editing off:
+  -- a Replace by construction, the Sync base's rule) or whose entry is an upload_replace. One of them after a hand add
+  -- may have removed the holding without a ledger entry, so the add no longer proves the current ownership began there.
+  -- An upload_add only raises, and an upload_sync keeps every app-side change by design and lists what it removed
+  -- (the removed_at test above sees those), so neither breaks the chain.
   select u.user_id, u.confirmed_at from csv_uploads u
   where u.confirmed_at is not null and ($1::text is null or u.user_id = $1)
-    and not exists (
-      select 1 from collection_history h
-      where h.user_id = u.user_id and h.source = 'csv_uploads:' || u.id::text and h.kind = 'upload_add'
+    and (
+      not exists (
+        select 1 from collection_history h
+        where h.user_id = u.user_id and h.source = 'csv_uploads:' || u.id::text
+      )
+      or exists (
+        select 1 from collection_history h
+        where h.user_id = u.user_id and h.source = 'csv_uploads:' || u.id::text and h.kind = 'upload_replace'
+      )
     )
 ), candidates as (
   select user_id, oracle_id, set_code, collector_number, finish, at, false as exact from from_upload
