@@ -54,7 +54,16 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
       console.error("precons: the pick could not be read", error);
     }
     if (!picked || picked.rows.length === 0) return <PreconsDown />;
-    return <PreconPickView rows={picked.rows} entry={pickEntry(params.get("from"))} initial={parsePreconParams(params)} />;
+    // With cards, every row carries the shipped `you own N of M` (E2), and a box with a standing precon add its mark (S17).
+    return (
+      <PreconPickView
+        rows={picked.rows}
+        entry={pickEntry(params.get("from"))}
+        initial={parsePreconParams(params)}
+        hasCollection={picked.hasCollection}
+        added={picked.added ?? {}}
+      />
+    );
   }
 
   // Upcoming precons (plan PR 2): the Announced group, the `new ·` tags and the visit's seen write, all behind

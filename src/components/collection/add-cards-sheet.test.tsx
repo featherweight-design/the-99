@@ -19,10 +19,13 @@ vi.mock("../../app/collection/edit-actions", () => ({
   addToCollection: (...a: unknown[]) => add(...a),
 }));
 vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
+const pendingGo = vi.hoisted(() => vi.fn());
+vi.mock("../shell/pending-push", () => ({ usePendingPush: () => ({ go: pendingGo }) }));
 vi.mock("next/link", () => ({
-  // A press runs `onNavigate` as the real Link does on a client navigation, and goes nowhere.
-  default: ({ href, children, onNavigate, ...rest }: React.ComponentProps<"a"> & { href: string; onNavigate?: () => void }) => (
-    <a href={href} onClick={(e) => { e.preventDefault(); onNavigate?.(); }} {...rest}>{children}</a>
+  // A press runs `onNavigate` as the real Link does on a client navigation in this tab, and goes nowhere; a
+  // modified click opens a new tab, so the real Link runs no `onNavigate` for it.
+  default: ({ href, children, onNavigate, onClick, ...rest }: React.ComponentProps<"a"> & { href: string; onNavigate?: (e: { preventDefault: () => void }) => void }) => (
+    <a href={href} onClick={(e) => { onClick?.(e); e.preventDefault(); if (!e.metaKey && !e.ctrlKey && !e.shiftKey) onNavigate?.({ preventDefault: () => {} }); }} {...rest}>{children}</a>
   ),
   useLinkStatus: () => ({ pending: false }),
 }));
@@ -384,3 +387,55 @@ describe("AddCardsSheet (add)", () => {
 });
 void OID2;
 void act;
+
+// No-collection entry S18: the way into Precons I own, one 52px row in the empty state at both widths.
+describe("AddCardsSheet (add): the precon row", () => {
+  const precon = () => screen.queryByRole("link", { name: `${copy.preconLead} ${copy.preconPress}` });
+  const upload = () => screen.getByRole("link", { name: `${copy.uploadLead} ${copy.uploadInstead}` });
+
+  it("is absent unless the host turns it on, and the empty state is as shipped", () => {
+    mount();
+    expect(precon()).toBeNull();
+    expect(upload()).toBeInTheDocument();
+  });
+
+  it("sits under the upload on the phone and is the only row on desktop, in the same 52px shape", () => {
+    mount({ preconPick: true });
+    const row = precon()!;
+    expect(row).toHaveAttribute("href", "/decks/precons?pick=own&from=collection");
+    // Upload first in document order; the upload is phone only, so on desktop the precon row stands alone.
+    expect(upload().compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(upload().className).toContain("md:hidden");
+    expect(row.className).not.toContain("md:hidden");
+    expect(row.className).toContain("min-h-[52px]");
+    expect(row.parentElement).toBe(upload().parentElement);
+  });
+
+  it("closes the sheet as it opens the pick, through the provider's push so the pending report outlives the sheet", () => {
+    pendingGo.mockClear();
+    const { onClose } = mount({ preconPick: true });
+    fireEvent.click(precon()!);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(pendingGo).toHaveBeenCalledWith("/decks/precons?pick=own&from=collection");
+  });
+
+  // A modified click opens the pick in another tab: this tab never navigates, so its sheet stays open and its
+  // history entry is left alone.
+  it("leaves the sheet as it was on a click that opens a new tab", () => {
+    pendingGo.mockClear();
+    const { onClose } = mount({ preconPick: true });
+    fireEvent.click(precon()!, { metaKey: true });
+    fireEvent.click(precon()!, { ctrlKey: true });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(pendingGo).not.toHaveBeenCalled();
+  });
+
+  it("leaves once the list has a line, as the upload row does", async () => {
+    mount({ preconPick: true });
+    await find("sol ring", [card()]);
+    await pickFirst();
+    fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    await screen.findByText(copy.listHeading(1));
+    expect(precon()).toBeNull();
+  });
+});

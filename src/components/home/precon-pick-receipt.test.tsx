@@ -55,3 +55,17 @@ describe("the precon pick's receipt (S5)", () => {
     expect(screen.getAllByRole("link", { name: "History" })[0]).toHaveAttribute("href", "/collection/history?entry=e9");
   });
 });
+
+// S19: Collection draws this same strip under its tabs, under the same dismiss key, so a receipt dismissed on one page
+// is dismissed on the other.
+describe("the precon pick's receipt on Collection (S19)", () => {
+  it("shares its dismissal with Home's, by the receipt's own entries", () => {
+    const home = render(<PreconPickReceipt receipt={receipt} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByRole("status")).toBeNull();
+    home.unmount();
+    window.history.replaceState(null, "", "/collection?precons=e1,e2,e3");
+    render(<PreconPickReceipt receipt={receipt} />);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+});

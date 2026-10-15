@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { PreconRow } from "../../../lib/precons/list";
 
 const addPrecons = vi.hoisted(() => vi.fn());
@@ -125,13 +125,13 @@ describe("Precons I own: refusals", () => {
     await waitFor(() => expect(screen.getByRole("checkbox", { name: /Revival Trance/ }).closest("[inert]")).toBeNull());
   });
 
-  // Only Home draws the receipt, so a pick opened from Collection still lands there once boxes are added.
-  it("lands on Home with the receipt even when opened from Collection", async () => {
+  // S19: Collection draws the receipt under its tabs, so a pick opened from Collection returns there with it.
+  it("lands back on Collection with the receipt when opened from Collection", async () => {
     addPrecons.mockResolvedValueOnce([{ rowFile: "Abzan", ok: true, entryId: "e1" }]);
     render(<PreconPickView rows={rows} entry="collection" initial={{ q: "", colours: [] }} />);
     tick("Abzan Armor");
     fireEvent.click(addButton());
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/?precons=e1"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/collection?precons=e1"));
   });
 
   // A box whose add threw is unknown, not refused: it stays ticked and held, and the press says so.
@@ -204,5 +204,60 @@ describe("Precons I own: refusals", () => {
     expect(addPrecons.mock.calls[1][0][0].actionId).toBe(addPrecons.mock.calls[0][0][0].actionId);
     expect(screen.getByRole("checkbox", { name: /Abzan Armor/ })).toBeChecked();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
+});
+
+// No-collection entry R3: the pick opened from Collection by a player with cards (E2, S17, S19).
+describe("Precons I own, with cards", () => {
+  const owning = rows.map((r, i) => ({ ...r, owned: [61, 0, 99, 40][i], of: [88, 99, 99, 100][i] }));
+  const ISO = "2026-06-30T12:00:00.000Z";
+  const drawWith = (over: { hasCollection?: boolean; added?: Record<string, string>; entry?: "home" | "collection" } = {}) =>
+    render(<PreconPickView rows={owning} entry={over.entry ?? "collection"} initial={{ q: "", colours: [] }} hasCollection={over.hasCollection ?? true} added={over.added ?? {}} />);
+  const rowOf = (name: string) => screen.getByRole("checkbox", { name: new RegExp(name) }).closest("li")!;
+  const NOTE = "You added this box on Jun 30. Adding it again adds a second copy of each card.";
+
+  it("shows the shipped `you own N of M` on every row while the collection holds any card (E2)", () => {
+    drawWith();
+    expect(rowOf("Abzan Armor").textContent).toContain("you own61 of 88");
+    expect(rowOf("Sultai Arisen").textContent).toContain("you own0 of 99");
+    expect(rowOf("Abzan Armor").textContent).not.toContain("100 cards");
+  });
+
+  it("keeps the zero-card row's card count with no collection", () => {
+    drawWith({ hasCollection: false });
+    expect(rowOf("Abzan Armor").textContent).not.toContain("you own");
+    expect(rowOf("Abzan Armor").textContent).toContain("100 cards");
+  });
+
+  it("reads `‹ Collection` and goes back there with nothing added (E2)", () => {
+    drawWith();
+    expect(screen.getByRole("link", { name: "‹ Collection" })).toHaveAttribute("href", "/collection");
+  });
+
+  it("marks a box with a standing add, keeps it pickable, and notes the second copy once it is ticked (S17)", () => {
+    drawWith({ added: { Abzan: ISO } });
+    expect(within(rowOf("Abzan Armor")).getByText("✓ added Jun 30")).toBeInTheDocument();
+    expect(within(rowOf("Sultai Arisen")).queryByText(/✓ added/)).toBeNull();
+    expect(screen.queryByText(NOTE)).toBeNull();
+    const box = screen.getByRole("checkbox", { name: /Abzan Armor/ });
+    expect(box).toBeEnabled();
+    tick("Abzan Armor");
+    expect(box).toBeChecked();
+    expect(within(rowOf("Abzan Armor")).getByText(NOTE)).toBeInTheDocument();
+    expect(foot()).toContain("1 box · 100 cards and 10 tokens");
+  });
+
+  it("drops the mark for the box's own `added just now` once it lands this visit", async () => {
+    addPrecons.mockResolvedValueOnce([{ rowFile: "Abzan", ok: true, entryId: "e1" }, { rowFile: "Sultai", ok: false }]);
+    drawWith({ added: { Abzan: ISO } });
+    tick("Abzan Armor"); tick("Sultai Arisen");
+    fireEvent.click(addButton());
+    await screen.findByRole("alert");
+    expect(within(rowOf("Abzan Armor")).queryByText("✓ added Jun 30")).toBeNull();
+    expect(within(rowOf("Abzan Armor")).getAllByText("✓ added just now").length).toBeGreaterThan(0);
+    // Done carries the landed box back to Collection's receipt.
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(push).toHaveBeenCalledWith("/collection?precons=e1");
+    expect(screen.getByRole("link", { name: "‹ Collection" })).toHaveAttribute("href", "/collection?precons=e1");
   });
 });

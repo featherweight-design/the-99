@@ -1,0 +1,77 @@
+{
+  "feature": "No-collection entry PR 5: Precons I own, once the player has cards (handoff design_handoff_the99_no_collection_entry, R3 addendum: S17, S18, S19, E2; plan 2026-10-15-no-collection-entry.md, PR 5)",
+  "note": "Needs an account that holds cards, with PRECONS_ENABLED=true, COLLECTION_EDIT_ENABLED=true and NO_COLLECTION_ENTRY_ENABLED=true for the reader. The S18, E2 and S17 rows write nothing: the S17 note row ticks the first box carrying an added mark and never presses the add. The S19 row presses the add, so each cell ADDS one precon box to the signed-in account's collection (one History entry): run the sheet on a scratch branch off local-dev ONLY, never on local-dev, staging or production. The switch-off states and the receipt's shared dismissal are proven by the component tests. The S19 row runs first, so its add is the standing precon add the S17 rows draw.",
+  "out": "contact-sheets/no-collection-entry-pr5",
+  "rows": [
+    {
+      "id": "s19-collection-receipt",
+      "label": "/collection after one box is added from Collection: the receipt strip under the tabs, ✕ alone (S19). WRITES one box",
+      "view": "src/components/home/precon-pick-receipt.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&from=collection",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(1) input[type=checkbox]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add 1 box"
+        },
+        {
+          "wait": "[role=status] button[aria-label=Dismiss]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "s18-sheet-row",
+      "label": "/collection, Add cards sheet, empty list: `Own precon boxes? Pick them ›` under the upload row on the phone, the only row on desktop (S18)",
+      "view": "src/components/collection/add-cards-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "e2-s17-pick-with-cards",
+      "label": "/decks/precons?pick=own&from=collection with cards: `‹ Collection`, `you own N of M` on every row, `✓ added <date>` on a box already added (E2, S17)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&from=collection",
+          "wait": "input[type=checkbox]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "s17-note",
+      "label": "A box already added, ticked: still pickable, with `You added this box on <date>. Adding it again adds a second copy of each card.` under it (S17)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&from=collection",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "checkbox",
+          "name": "✓ added",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

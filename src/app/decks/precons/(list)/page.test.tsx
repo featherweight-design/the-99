@@ -37,6 +37,7 @@ vi.mock("../../../../lib/precons/list-read", () => ({
     return {
     rows: [{ fileName: "TRC_A", name: "A", setCode: "TRC", releaseDate: "2026-11-13", twinName: null, commanders: [], identity: [], owned: 0, of: 1, unmapped: 0, built: [] }],
     listed: 1, hasCollection: true, newest: "2026-11-13",
+    ...((opts as { boxes?: boolean } | undefined)?.boxes ? { added: { TRC_A: "2026-06-30T12:00:00.000Z" } } : {}),
     };
   },
 }));
@@ -174,6 +175,13 @@ describe("/decks/precons?pick=own (no-collection entry S2)", () => {
     expect(el.props.entry).toBe("collection");
     expect((el.props.initial as { q: string }).q).toBe("abz");
     expect((await visit({ pick: "own", from: "/elsewhere" })).props.entry).toBe("home");
+  });
+
+  it("hands the pick the collection's presence and each box's standing add (E2, S17)", async () => {
+    h.env = LINE;
+    const el = await visit({ pick: "own", from: "collection" });
+    expect(el.props.hasCollection).toBe(true);
+    expect(el.props.added).toEqual({ TRC_A: "2026-06-30T12:00:00.000Z" });
   });
 
   it("draws the shipped down state when the pick cannot be read", async () => {

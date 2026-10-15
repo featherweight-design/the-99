@@ -92,6 +92,7 @@ export function CollectionPlaceHead({
   lastUpdatedLabel: initialLastUpdatedLabel,
   editEnabled = false,
   historyHasEntries = false,
+  preconPick = false,
 }: {
   stats: { totalCards: number; uniqueCards: number };
   // Pre-formatted on the server ("today", "yesterday", or a dated string) rather than a raw
@@ -107,6 +108,8 @@ export function CollectionPlaceHead({
   editEnabled?: boolean;
   /** The ledger holds an entry inside the window: History shows on an empty collection when it does. */
   historyHasEntries?: boolean;
+  /** The Add cards sheet's way into Precons I own (no-collection entry S18), decided by the layout from the switches. */
+  preconPick?: boolean;
 }) {
   const pathname = usePathname();
   const current = placeFromPathname(pathname);
@@ -320,6 +323,7 @@ export function CollectionPlaceHead({
           mode="add"
           returnFocusRef={addTrigger}
           totalCards={stats.totalCards}
+          preconPick={preconPick}
           onSaved={() => {
             savedWhileOpen.current = true;
             reread();

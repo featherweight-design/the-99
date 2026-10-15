@@ -9,7 +9,18 @@ vi.mock("../../../lib/switches/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
   return { requestSwitchEnv: async () => ENV_VIEW };
 });
-vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: 0, totalCards: 0 }) }));
+const h = vi.hoisted(() => ({ unique: 0, receiptReads: [] as unknown[], receiptFails: false }));
+vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: h.unique, totalCards: h.unique }) }));
+vi.mock("../../../lib/precons/pick-receipt-read", () => ({
+  readPickReceipt: async (_u: string, claim: unknown) => {
+    h.receiptReads.push(claim);
+    if (h.receiptFails) throw new Error("ledger down");
+    return { entryIds: ["e1"], names: ["Abzan Armor"], copies: 100, tokens: 10 };
+  },
+}));
+vi.mock("../../../components/home/precon-pick-receipt", () => ({
+  PreconPickReceipt: ({ receipt }: { receipt: { names: string[] } }) => <div role="status">receipt: {receipt.names.join(", ")}</div>,
+}));
 vi.mock("../../../lib/collection/browse-read", async (orig) => ({
   ...(await orig<typeof import("../../../lib/collection/browse-read")>()),
   loadOwnedSetMeta: async () => [],
@@ -17,7 +28,7 @@ vi.mock("../../../lib/collection/browse-read", async (orig) => ({
 vi.mock("../../../lib/collection/payload", () => ({ loadCollectionList: async () => ({ cards: [], pricesFailed: false }) }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability: async () => null }));
 vi.mock("../../../components/collection/add-cards-sheet", () => ({ AddCardsSheet: () => null }));
-vi.mock("../../../components/collection/collection-client", () => ({ CollectionClient: () => null }));
+vi.mock("../../../components/collection/collection-client", () => ({ CollectionClient: () => <div data-testid="browser" /> }));
 
 const { default: CollectionPage } = await import("./page");
 
@@ -75,5 +86,56 @@ describe("/collection, empty collection", () => {
     await renderEmpty();
     expect(screen.getByRole("link", { name: "Upload your CSV" })).toBeTruthy();
     expect(screen.queryByRole("group", { name: "No file? Start another way" })).toBeNull();
+  });
+});
+
+// S19: a pick opened from Collection lands here with Home's receipt strip under the tabs, above the collection.
+describe("/collection, after a precon pick", () => {
+  const LINE = () => {
+    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
+    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
+    vi.stubEnv("PRECONS_ENABLED", "true");
+  };
+  const visit = async (query: Record<string, string>) => render(await CollectionPage({ searchParams: Promise.resolve(query) }));
+  afterEach(() => { vi.unstubAllEnvs(); h.unique = 0; h.receiptReads = []; h.receiptFails = false; });
+
+  it("draws the receipt the address claims, first, above the collection", async () => {
+    LINE();
+    h.unique = 40;
+    const { container } = await visit({ precons: "e1" });
+    expect(h.receiptReads).toEqual(["e1"]);
+    const strip = screen.getByRole("status");
+    expect(strip).toHaveTextContent("receipt: Abzan Armor");
+    expect(container.querySelector("section")!.firstElementChild).toBe(strip);
+    expect(strip.compareDocumentPosition(screen.getByTestId("browser")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("reads nothing and draws nothing without a claim, or with the line's switch off", async () => {
+    LINE();
+    h.unique = 40;
+    await visit({});
+    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "");
+    await visit({ precons: "e1" });
+    expect(h.receiptReads).toEqual([]);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("reads nothing and draws nothing with precons off, the line's switch on", async () => {
+    LINE();
+    vi.stubEnv("PRECONS_ENABLED", "");
+    h.unique = 40;
+    await visit({ precons: "e1" });
+    expect(h.receiptReads).toEqual([]);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("draws the collection without a strip when the receipt cannot be read", async () => {
+    LINE();
+    h.unique = 40;
+    h.receiptFails = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await visit({ precons: "e1" });
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByTestId("browser")).toBeTruthy();
   });
 });

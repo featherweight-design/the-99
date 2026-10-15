@@ -10,13 +10,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { addPrecons } from "../../../app/decks/precon-actions";
-import { preconsCopy, preconMonth } from "../../../lib/copy/precons";
+import { preconAddedDay, preconsCopy, preconMonth } from "../../../lib/copy/precons";
 import { colorNames } from "../../../lib/copy/color-labels";
 import { PIP_ORDER, type PipCode } from "../../../lib/copy/filter-chassis";
 import { WUBRG_COLOR } from "../../../lib/collection/browse";
 import { filterPrecons, groupByYear, orderPrecons, type PreconBox, type PreconRow as Row } from "../../../lib/precons/list";
 import {
-  PICK_ENTRY_HREF, PICK_RECEIPT_PARAM, pickFile, pickTotals, type PickEdition, type PickEntry, type PickOutcome,
+  PICK_ENTRY_HREF, pickFile, pickReceiptHref, pickTotals, type PickEdition, type PickEntry, type PickOutcome,
 } from "../../../lib/precons/pick";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { ColourPips } from "../../ui/colour-pips";
@@ -59,10 +59,14 @@ function writeAttempts(account: string | null | undefined, attempts: Attempts) {
   } catch { /* a convenience here, never a requirement */ }
 }
 
-export function PreconPickView({ rows, entry, initial }: {
+export function PreconPickView({ rows, entry, initial, hasCollection = false, added = {} }: {
   rows: Row[];
   entry: PickEntry;
   initial: { q: string; colours: string[] };
+  /** The collection holds any card: every row then shows the shipped `you own N of M` (E2). */
+  hasCollection?: boolean;
+  /** Each row's newest standing precon add, by row file (S17, `pickAddedOn`): its mark, and its note once ticked. */
+  added?: Readonly<Record<string, string>>;
 }) {
   const router = useRouter();
   const { userId: account } = useAuth();
@@ -122,10 +126,9 @@ export function PreconPickView({ rows, entry, initial }: {
   const totals = pickTotals(picked.map((p) => ({ box: boxOf(p.row), edition: p.edition })));
   const landedFiles = new Set(landed.map((l) => l.rowFile));
   const dest = PICK_ENTRY_HREF[entry];
-  // Once a box has landed, the way out carries its receipt to Home, the one page that draws it (S5), whichever page
-  // the pick was opened from; with nothing added it goes back where it came from.
-  const receiptHref = (entries: { entryId: string }[]) =>
-    `${PICK_ENTRY_HREF.home}?${PICK_RECEIPT_PARAM}=${entries.map((l) => l.entryId).join(",")}`;
+  // Once a box has landed, the way out carries its receipt back to the page the pick was opened from, Home (S5) or
+  // Collection (S19), each of which draws it; with nothing added it goes back where it came from.
+  const receiptHref = (entries: { entryId: string }[]) => pickReceiptHref(entry, entries.map((l) => l.entryId));
   const out = landed.length > 0 ? receiptHref(landed) : dest;
 
   function mirror(next: { q: string; colours: string[] }) {
@@ -281,6 +284,8 @@ export function PreconPickView({ rows, entry, initial }: {
                   row={r}
                   edition={ticked.get(r.fileName) ?? null}
                   landed={landedFiles.has(r.fileName)}
+                  owned={hasCollection}
+                  addedAt={added[r.fileName] ?? null}
                   onTick={(edition) => tick(r.fileName, edition)}
                 />
               ))}
@@ -323,16 +328,27 @@ export function PreconPickView({ rows, entry, initial }: {
 }
 
 /** One box (S2, S3): the whole row is the checkbox's label; a ticked twin opens its edition under it, outside the label. */
-function PickRow({ row, edition, landed, onTick }: {
+function PickRow({ row, edition, landed, owned, addedAt, onTick }: {
   row: Row;
   edition: PickEdition | null;
   landed: boolean;
+  /** E2: the row's figure is the shipped `you own N of M` in place of its card count. */
+  owned: boolean;
+  /** S17: the newest standing add of this box (either edition), or null. The box stays pickable. */
+  addedAt: string | null;
   onTick: (edition: PickEdition | null) => void;
 }) {
   const box = boxOf(row);
   const on = edition !== null;
   const side = edition === "collector" && box.twin ? box.twin : box;
   const meta = `${row.setCode} · ${preconMonth(row.releaseDate)}`;
+  // A box that landed this visit says so instead (`✓ added just now`), and its mark would only repeat it.
+  const addedDay = addedAt && !landed ? preconAddedDay(addedAt) : null;
+  const mark = addedDay ? (
+    <span className="ml-[6px] inline-block rounded-[4px] px-[6px] py-[1px] font-mono text-[10px] text-[color:var(--success)] [background:color-mix(in_srgb,var(--success)_12%,transparent)] md:px-[7px] md:py-[2px] md:text-[11px]">
+      {copy.added(addedDay)}
+    </span>
+  ) : null;
   return (
     <li className="flex flex-col border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)]">
       <label className={`flex min-h-[56px] cursor-pointer items-center gap-[12px] px-[4px] md:min-h-[52px] md:gap-[14px] md:px-[10px] ${on ? "bg-[color:var(--surface-sunken)]" : ""}`}>
@@ -356,14 +372,27 @@ function PickRow({ row, edition, landed, onTick }: {
           <span className={`font-mono text-[10.5px] text-[color:var(--fg-faint)] md:inline md:text-[11px] ${landed ? "hidden" : ""}`}>
             {meta}
             {row.twinName ? <span className="hidden md:inline"> · {preconsCopy.row.twin}</span> : null}
+            {mark}
           </span>
         </span>
         {landed ? <span className="hidden flex-none font-mono text-[10.5px] text-[color:var(--success)] md:inline">{copy.landed}</span> : null}
-        <span className="flex-none text-right font-mono text-[11px] text-[color:var(--fg-muted)] md:w-[80px] md:text-[12px]">
-          <span className="md:hidden">{copy.cardsShort(side.copies)}</span>
-          <span className="hidden md:inline">{copy.cards(side.copies)}</span>
-        </span>
+        {owned ? (
+          <span className="flex-none whitespace-nowrap text-right font-mono text-[12px] font-medium text-[color:var(--fg)] md:text-[13px]">
+            <span className="mr-[4px] text-[10px] font-normal text-[color:var(--fg-faint)]">{preconsCopy.row.ownLead}</span>
+            {preconsCopy.row.own(row.owned, row.of)}
+          </span>
+        ) : (
+          <span className="flex-none text-right font-mono text-[11px] text-[color:var(--fg-muted)] md:w-[80px] md:text-[12px]">
+            <span className="md:hidden">{copy.cardsShort(side.copies)}</span>
+            <span className="hidden md:inline">{copy.cards(side.copies)}</span>
+          </span>
+        )}
       </label>
+      {on && addedDay ? (
+        <p className="m-[0_4px_10px] rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[8px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] md:m-[0_10px_12px_49px]">
+          {copy.addedAgain(addedDay)}
+        </p>
+      ) : null}
       {on && box.twin ? (
         <div role="radiogroup" aria-label={copy.edition} className="flex flex-col p-[0_4px_8px_38px] text-[13px] text-[color:var(--fg-body)] md:flex-row md:items-center md:gap-[18px] md:p-[2px_10px_12px_44px] md:text-[12.5px]">
           <span aria-hidden className="hidden font-mono text-[11px] uppercase text-[color:var(--fg-faint)] md:inline">{copy.edition}</span>

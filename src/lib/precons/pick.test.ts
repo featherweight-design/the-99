@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { summarisePrecons, type PreconSource } from "./list";
-import { parsePickReceipt, pickEntry, pickFile, pickReceiptDismissKey, pickTotals, recoverCommitted, resolvePick, runPickAdds } from "./pick";
+import {
+  PICK_FROM_COLLECTION_HREF, parsePickReceipt, pickAddedOn, pickEntry, pickFile, pickReceiptDismissKey, pickReceiptHref, pickTotals,
+  recoverCommitted, resolvePick, runPickAdds,
+} from "./pick";
 import { pickEntryFile, summarisePickReceipt } from "./pick-receipt-read";
 import type { PreconAddResult } from "./add";
 
@@ -171,5 +174,47 @@ describe("recovering a retry from its committed entry", () => {
 
   it("refuses a new add whose asked file is not the one its edition adds today", () => {
     expect(resolvePick([{ fileName: "Revival", edition: "collector", file: "Old_CE", actionId: A }], catalog)).toBeNull();
+  });
+});
+
+// No-collection entry R3: the way in from Collection (S18), where an add lands (S19), and the added mark (S17).
+describe("the pick from Collection", () => {
+  it("is opened from the sheet with from=collection, and pickEntry reads that back", () => {
+    const url = new URL(PICK_FROM_COLLECTION_HREF, "https://x");
+    expect(url.pathname).toBe("/decks/precons");
+    expect(url.searchParams.get("pick")).toBe("own");
+    expect(pickEntry(url.searchParams.get("from"))).toBe("collection");
+  });
+
+  it("lands an add where the pick was opened, carrying every landed entry", () => {
+    expect(pickReceiptHref("collection", [ID(1), ID(2)])).toBe(`/collection?precons=${ID(1)},${ID(2)}`);
+    expect(pickReceiptHref("home", [ID(1)])).toBe(`/?precons=${ID(1)}`);
+  });
+});
+
+describe("pickAddedOn (S17)", () => {
+  const at = (d: string) => new Date(`${d}T12:00:00Z`);
+  const box = (twin: string | null = null) => ({ copies: 100, tokens: 0, twin: twin ? { fileName: twin, copies: 100, tokens: 0 } : null });
+  const rows = [
+    { fileName: "Abzan", box: box() },
+    { fileName: "Revival", box: box("Revival_CE") },
+    { fileName: "Temur", box: box() },
+  ];
+
+  it("keys each row's newest standing add by the row's file, and marks nothing else", () => {
+    const out = pickAddedOn(rows, [
+      { fileName: "Abzan", createdAt: at("2026-06-30") },
+      { fileName: "Abzan", createdAt: at("2026-10-13") },
+      { fileName: "Sultai", createdAt: at("2026-07-01") },
+    ]);
+    expect(out).toEqual({ Abzan: at("2026-10-13").toISOString() });
+  });
+
+  it("marks a twin pair's row from an add of either edition, the newer of the two", () => {
+    expect(pickAddedOn(rows, [{ fileName: "Revival_CE", createdAt: at("2026-08-01") }])).toEqual({ Revival: at("2026-08-01").toISOString() });
+    expect(pickAddedOn(rows, [
+      { fileName: "Revival_CE", createdAt: at("2026-08-01") },
+      { fileName: "Revival", createdAt: at("2026-06-01") },
+    ])).toEqual({ Revival: at("2026-08-01").toISOString() });
   });
 });

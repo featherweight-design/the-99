@@ -7,6 +7,8 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks, preconCards, precons, preconTokens, printings, tokenPrintings, tokens } from "../../db/schema";
 import { summarisePrecons, type PreconRow, type PreconSource, type ReaderDeck } from "./list";
+import { standingPreconAdds } from "./added";
+import { pickAddedOn } from "./pick";
 
 export type PreconList = {
   rows: PreconRow[];
@@ -15,6 +17,12 @@ export type PreconList = {
   /** Whether the reader owns any card at all (L2 reads differently from a collection that misses). */
   hasCollection: boolean;
   newest: string | null;
+  /**
+   * The pick's read only (`boxes`): each row's newest standing precon add, keyed by row file (S17, `pickAddedOn`). Read
+   * once for the whole list, in the list's own snapshot; `collection_history` moves the reader's stamp, so a Revert
+   * retires the cached entry.
+   */
+  added?: Record<string, string>;
 };
 
 /** `db`, or a transaction on it: the list's reads run in one snapshot. */
@@ -150,7 +158,9 @@ export async function loadPreconList(userId: string, opts: { boxes?: boolean } =
     const readerDecks = any.length > 0 ? await readReaderDecks(userId, tx) : [];
     const rows = summarisePrecons(sources, new Set(ownedRows.map((r) => r.oracleId)), readerDecks, opts);
     const newest = rows.reduce<string | null>((m, r) => (m === null || r.releaseDate > m ? r.releaseDate : m), null);
-    return { rows, listed: sources.length, hasCollection: any.length > 0, newest };
+    if (!opts.boxes) return { rows, listed: sources.length, hasCollection: any.length > 0, newest };
+    const added = pickAddedOn(rows, await standingPreconAdds(userId, tx));
+    return { rows, listed: sources.length, hasCollection: any.length > 0, newest, added };
     // No `accessMode: "read only"`: on the pooled connection it leaks into the next transaction
     // (`READ_SNAPSHOT` in `decks/draft-state.ts` says how).
   }, { isolationLevel: "repeatable read" });
