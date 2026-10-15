@@ -28,6 +28,7 @@ import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import type { ShortDeck } from "../../lib/collection/write";
 import { usePendingPush } from "../shell/pending-push";
+import { LoadingScreen } from "../shell/loading-screen";
 
 /** A sync dry run: the whole preview, with its Sync extras. */
 type SyncRead = UploadChangePreview & { sync: UploadSyncPreview };
@@ -573,9 +574,19 @@ export function ReplaceFlow({
     if (!datas) {
       return (
         <section className="flex flex-col gap-[14px] p-[20px_18px] md:max-w-[1280px] md:p-[36px_56px]">
-          <p className="m-0 font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">
-            {collectionEditCopy.upload.step(2, 4)} · {preview.filename}
-          </p>
+          {prepareError ? null : (
+            // The comparison is still being read: the app's own loading screen (the crown, a heading, one status
+            // line), carrying the step and the file in its status. Not a navigation, so it reports no stall.
+            <LoadingScreen
+              copy={{ heading: collectionEditCopy.upload.preparing, status: `${collectionEditCopy.upload.step(2, 4)} · ${preview.filename}` }}
+              watch={false}
+            />
+          )}
+          {prepareError ? (
+            <p className="m-0 font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">
+              {collectionEditCopy.upload.step(2, 4)} · {preview.filename}
+            </p>
+          ) : null}
           {prepareError ? (
             <div role="alert" className="rounded-[10px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--danger)] bg-[color:var(--surface)] p-[12px_14px]">
               <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{prepareError}</p>
@@ -587,11 +598,7 @@ export function ReplaceFlow({
                 {collectionEditCopy.upload.retry}
               </button>
             </div>
-          ) : (
-            <p role="status" className="m-0 text-[13px] text-[color:var(--fg-muted)]">
-              {collectionEditCopy.upload.preparing}
-            </p>
-          )}
+          ) : null}
           <div>
             <GhostButton type="button" onClick={cancel} className="h-[44px] px-[20px] text-[14px]">
               {collectionEditCopy.upload.cancel}

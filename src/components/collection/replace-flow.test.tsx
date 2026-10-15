@@ -405,7 +405,14 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
-    expect((await screen.findByRole("status")).textContent).toMatch(/Comparing with your collection/);
+    const status = await screen.findByRole("status");
+    expect(status.textContent).toMatch(/Comparing with your collection/);
+    // The app's loading screen, not a bare line: it carries the step and the file, and reports no stall (this
+    // is a read in a flow, not a navigation), and Cancel stays.
+    expect(status.hasAttribute("data-loading-screen")).toBe(false);
+    expect(status.querySelector("svg")).not.toBeNull();
+    expect(status.textContent).toMatch(/STEP 2 OF 4/);
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
     expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
   });

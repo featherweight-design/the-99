@@ -1,0 +1,19 @@
+{
+  "feature": "Sync choice polish: the comparing step as the loading screen, and the three choice cards at one height (lane 7e, Hugh's production test of Collection Sync, 2026-10-15). Uses existing components only.",
+  "clearAbout": true,
+  "note": "Needs COLLECTION_EDIT_ENABLED=true and COLLECTION_SYNC_ENABLED=true, and an account whose newest confirmed upload with no ledger entry is the Sync base (the Sync card is unavailable without one). SYNC_PASTE is a short card list, one `N Name` per line. The comparing step is a transient read and is not a row: it is photographed by holding the server actions (see the PR).",
+  "rows": [
+    {
+      "id": "sync-choice-cards",
+      "label": "/collection/replace: the choice, Replace, Add these cards and Sync my collection at one height on desktop, stacked on the phone",
+      "view": "src/components/collection/upload-choice.tsx",
+      "steps": [
+        { "goto": "/collection/replace", "wait": "h1:visible", "settle": 8000 },
+        { "clickRole": "button", "name": "Paste a list instead", "wait": "textarea", "settle": 300 },
+        { "fill": "textarea", "text": "${SYNC_PASTE}", "settle": 300 },
+        { "clickRole": "button", "name": "^Preview", "settle": 20000 },
+        { "wait": "[role=radiogroup]", "settle": 3000 }
+      ]
+    }
+  ]
+}

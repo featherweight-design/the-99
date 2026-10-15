@@ -44,7 +44,10 @@ describe("UploadChoice with the Sync switch off", () => {
   it("puts the radio on the title row on desktop (R2), for Replace and Add too", () => {
     render(<UploadChoice {...base} picked={null} onPick={noop} />);
     const replace = screen.getAllByRole("radio")[0];
-    expect(replace.className).toContain("md:block");
+    // On desktop each card is a subgrid over the group's four rows, so the cards stand the same height and
+    // their rows line up (jsdom draws no layout: the browser walk measures it).
+    expect(replace.className).toContain("md:grid-rows-subgrid");
+    expect(replace.className).toContain("md:row-span-4");
     const ring = replace.querySelector("[aria-hidden]")?.className ?? "";
     expect(ring).toContain("md:absolute");
     // The ring keeps its 2px drop under top 22 on desktop too.
@@ -55,6 +58,17 @@ describe("UploadChoice with the Sync switch off", () => {
 });
 
 describe("UploadChoice with Sync", () => {
+  it("lets the grid stretch the three cards to one height and shares their rows", () => {
+    render(<UploadChoice {...base} sync={sync()} picked={null} onPick={noop} />);
+    const group = screen.getByRole("radiogroup");
+    expect(group.className).not.toContain("md:items-start");
+    expect(group.className).toContain("md:gap-y-0");
+    for (const r of screen.getAllByRole("radio")) {
+      expect(r.className).toContain("md:row-span-4");
+      expect(r.className).toContain("md:grid-rows-subgrid");
+    }
+  });
+
   it("draws three cards with nothing picked, Sync third with its figure and quiet note, under one title", () => {
     render(<UploadChoice {...base} sync={sync()} picked={null} onPick={noop} />);
     const radios = screen.getAllByRole("radio");
