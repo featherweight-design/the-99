@@ -264,7 +264,8 @@ describe("a past run opened from History (PR 3)", () => {
     draw(picked(14, 0), "done", [], {}, undefined, { pastRun: true, gone: goneGroup });
     const group = screen.getByTestId("gone-group");
     expect(group.closest("ol")).toBeNull();
-    expect(group.compareDocumentPosition(screen.getByText("Commander 10")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Before the first free row, best fits included.
+    expect(group.compareDocumentPosition(screen.getByText("Commander 1")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("draws the group after the last pick when no free row follows it", () => {
@@ -280,5 +281,10 @@ describe("a past run opened from History (PR 3)", () => {
     cleanup();
     draw(missing, "done", [], {});
     expect(screen.queryByTestId("row-reason-gone")).toBeNull();
+  });
+
+  it("still draws the group when no free result remains", () => {
+    draw(page(0), "done", [], {}, undefined, { pastRun: true, gone: goneGroup });
+    expect(screen.getByTestId("gone-group")).toBeTruthy();
   });
 });

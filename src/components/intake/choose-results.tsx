@@ -102,7 +102,13 @@ export function ChooseResults({
 
   // Nothing fits everything: the note replaces the results, with no order line (5b).
   if (rows.length === 0) {
-    return <NarrowNote count={0} options={options} changeHref={changeHref} />;
+    // A past run's picks that went still draw: their Open deck links are the way into the decks built since.
+    return (
+      <div className="flex flex-col gap-[14px] md:gap-[18px]">
+        {gone ?? null}
+        <NarrowNote count={0} options={options} changeHref={changeHref} />
+      </div>
+    );
   }
 
   const free = orderLine(page.order, params, labels);
@@ -183,6 +189,8 @@ export function ChooseResults({
 
       {/* One reading order across the best fits and the rest (`ArrivalOrder`). */}
       <ArrivalOrder>
+      {/* A past run whose picks all went: the group heads the results, before any free row. */}
+      {gone && !picked ? gone : null}
       {best.length > 0 && (
         <section aria-labelledby="best-fits" className="flex flex-col gap-[10px]">
           <h3 id="best-fits" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--accent)]">
@@ -197,8 +205,6 @@ export function ChooseResults({
         </section>
       )}
 
-      {/* A past run whose picks all went: the group heads the page, before the rest of the results. */}
-      {gone && !picked ? gone : null}
       <ol data-dim={dim || undefined} className={`m-0 p-0 list-none flex flex-col gap-[10px] ${dim ? "opacity-[0.45]" : ""}`}>
         {rest.map((r, i) => (i === restAt ? [gone ? <li key="gone-picks" className="list-none">{gone}</li> : null, <RestDivider key="rest-divider" owned={owned} />, row(r)] : row(r)))}
         {gone && picked && restAt === -1 ? <li key="gone-picks" className="list-none">{gone}</li> : null}

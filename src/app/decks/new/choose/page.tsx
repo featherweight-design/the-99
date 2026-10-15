@@ -37,7 +37,7 @@ import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
 import { BUSY_PARAM, CHOOSE_PATH, formTarget, FORM_PARAM, PAST_PARAM, REPEAT_PARAM } from "../../../../lib/intake/submit";
 import { GonePicks, PastRunMeta, PastRunNote, PastWontOpen } from "../../../../components/intake/past-run";
-import { loadGonePicks } from "../../../../lib/intake/past-run";
+import { completePastDeckNames, loadGonePicks } from "../../../../lib/intake/past-run";
 import { toStanding } from "../../../../lib/intake/standing";
 import { DimWhileReading, ReadAnnouncer, ReadPanel, ReadScope } from "../../../../components/intake/read-panel";
 import { phaseOf } from "../../../../lib/intake/read-phase";
@@ -169,7 +169,10 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // A done read orders the results, and its reasons name the player's decks by their commanders.
   const picks: ReadPicks | null = served?.kind === "done" ? served.result : null;
   const decks = picks ? await loadReadDecks(userId).catch(() => null) : null;
-  const deckNames = Object.fromEntries((decks ?? []).map((d) => [d.commanderOracleId, shortName(d.commander)]));
+  const deckNames: Record<string, string> = Object.fromEntries((decks ?? []).map((d) => [d.commanderOracleId, shortName(d.commander)]));
+  // A past run's reasons name decks the read listed THEN: see `completePastDeckNames`.
+  let deckLookupFailed = isPast && picks !== null && decks === null;
+  if (isPast && picks && !deckLookupFailed) deckLookupFailed = !(await completePastDeckNames(userId, picks, deckNames, shortName));
   const setNames = new Map(sets.map((s) => [s.code, s.name]));
   const labels = {
     theme: (slug: string) => themeLabels[slug] ?? slug,
@@ -255,7 +258,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               picks={picks}
               deckNames={deckNames}
               hold={holdList ? by : null}
-              past={isPast ? { nothing: served?.kind === "nothing", picks: picks?.picks.length ?? 0, at: pastAt as string } : null}
+              past={isPast ? { nothing: served?.kind === "nothing", picks: picks?.picks.length ?? 0, at: pastAt as string, deckLookupFailed } : null}
             />
           </Suspense>
           </DimWhileReading>
@@ -295,7 +298,7 @@ async function Results({
   /** Non-null while the form's read is pending: the order line to name, and no rows to draw. */
   hold: string | null;
   /** A run opened from History: its note, the picks that went, and a line for a deleted deck's reason. */
-  past: { nothing: boolean; picks: number; at: string } | null;
+  past: { nothing: boolean; picks: number; at: string; deckLookupFailed: boolean } | null;
 }) {
   let page;
   try {
@@ -309,7 +312,7 @@ async function Results({
   // The search still runs, for the pool the read's first step names; its rows wait for the read.
   if (hold !== null) return <HeldResults total={page.total} by={hold} />;
   // The picks that went since the run: a decoration, so a failed read draws the run without the group.
-  const gone = past ? await loadGonePicks(userId, page.gone, new Date(past.at)).catch(() => []) : [];
+  const gone = past ? await loadGonePicks(userId, page.gone, new Date(past.at), env).catch(() => []) : [];
   const results = (
     <ChooseResults
       // A settled read re-orders the list: a fresh list, mounted inside the Suspense that already
@@ -323,7 +326,7 @@ async function Results({
       queryString={queryString}
       changeHref={changeHref}
       deckNames={deckNames}
-      pastRun={past !== null}
+      pastRun={past !== null && !past.deckLookupFailed}
       gone={gone.length > 0 ? <GonePicks picks={gone} /> : null}
     />
   );

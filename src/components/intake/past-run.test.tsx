@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
@@ -26,6 +27,10 @@ describe("PastRunMeta", () => {
     expect(title.getAttribute("tabindex")).toBe("-1");
     expect(document.activeElement).toBe(title);
     expect(screen.getByTestId("past-run-meta").textContent).toContain("a past run");
+  });
+
+  it("draws the server's date in UTC, so a hydrating client has one text to match and then moves to its own zone", () => {
+    expect(renderToString(<PastRunMeta at="2026-10-13T21:40:00.000Z" titleId="t" />)).toContain("Oct 13 · 9:40 PM");
   });
 
   it("does nothing to a title that is not there", () => {

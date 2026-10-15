@@ -4,22 +4,35 @@
 // panel's place, the group of picks that went, and the state for a run that will not open.
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
 import type { GonePick } from "../../lib/intake/past-run";
 import { ArtLayer } from "../ui/art-layer";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
-import { FailureMark, historyDate } from "../decks/tuning-history";
+import { FailureMark } from "../decks/tuning-history";
 
 const copy = helpMeChooseHistoryCopy.past;
 
 /**
- * The date under the title and the note, in the reader's own zone: drawn here, on the client, with the
- * hydration warning off, because the server cannot know the zone. Focus moves to the title on open, whose
+ * The date under the title, in the reader's own zone: UTC while the server renders and the page hydrates, the
+ * reader's zone from the first client pass after (the server cannot know it). Focus moves to the title on open, whose
  * accessible name adds that this is a past run (the heading is outside this module: it takes `titleId`).
  */
+const noop = () => () => {};
+/** False on the server and on the hydrating pass, true after: the date is drawn in UTC until the zone is known. */
+const useZoned = () => useSyncExternalStore(noop, () => true, () => false);
+
+function metaDate(iso: string, zoned: boolean): string {
+  const d = new Date(iso);
+  const zone = zoned ? {} : { timeZone: "UTC" as const };
+  const day = d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...zone });
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", ...zone });
+  return `${day} · ${time}`;
+}
+
 export function PastRunMeta({ at, titleId }: { at: string; titleId: string }) {
   const done = useRef(false);
+  const zoned = useZoned();
   useEffect(() => {
     if (done.current) return;
     done.current = true;
@@ -31,8 +44,8 @@ export function PastRunMeta({ at, titleId }: { at: string; titleId: string }) {
     title.focus({ preventScroll: true });
   }, [at, titleId]);
   return (
-    <span suppressHydrationWarning data-testid="past-run-meta" className="font-mono text-[10.5px] text-[color:var(--fg-faint)] md:text-[11px]">
-      {copy.meta(historyDate(at))}
+    <span data-testid="past-run-meta" className="font-mono text-[10.5px] text-[color:var(--fg-faint)] md:text-[11px]">
+      {copy.meta(metaDate(at, zoned))}
     </span>
   );
 }
@@ -74,6 +87,7 @@ export function GonePicks({ picks }: { picks: readonly GonePick[] }) {
                 oracleId={p.oracleId}
                 name={p.name}
                 imageUri={p.imageUri}
+                preview
                 className="min-w-0 truncate text-left text-[13px] text-[color:var(--fg-body)] underline decoration-dotted underline-offset-[3px] cursor-pointer"
               >
                 {p.name}

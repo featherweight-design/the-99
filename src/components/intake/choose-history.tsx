@@ -103,11 +103,14 @@ export function ChooseHistory({
       if (!id) return;
       if (root.current?.offsetParent === null) return;
       sessionStorage.removeItem(LAST_OPENED);
-      root.current?.querySelector<HTMLElement>(`[data-history-run="${CSS.escape(id)}"]`)?.focus();
+      // A run opened from a later page is not in the first page the list mounts with: focus lands on the heading.
+      const target = root.current?.querySelector<HTMLElement>(`[data-history-run="${CSS.escape(id)}"]`)
+        ?? root.current?.querySelector<HTMLElement>(`[id="${CSS.escape(headingId)}"]`);
+      target?.focus();
     } catch {
       // Storage can be unavailable (a private window); focus then starts where the page puts it.
     }
-  }, []);
+  }, [headingId]);
 
   // A run in flight settles in place: re-read the first page while one is `reading`. One read at a time
   // (a slow answer never overtakes a newer one), and only the instance that is drawn reads at all: the
@@ -147,7 +150,7 @@ export function ChooseHistory({
       }
     >
       <div className="flex flex-wrap items-baseline gap-[10px]">
-        <h2 id={headingId} className={`m-0 font-display font-normal text-[color:var(--fg)] ${column ? "text-[19px]" : "text-[24px]"}`}>
+        <h2 id={headingId} tabIndex={-1} className={`m-0 font-display font-normal text-[color:var(--fg)] ${column ? "text-[19px]" : "text-[24px]"}`}>
           {copy.title}
         </h2>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{empty ? copy.subEmpty : copy.sub}</span>
