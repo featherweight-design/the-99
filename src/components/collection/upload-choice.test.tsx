@@ -157,6 +157,40 @@ describe("UploadChoice with Sync", () => {
   });
 });
 
+describe("UploadChoice · a file with no matched card", () => {
+  const reason = "No card in this file matched, only tokens. There’s nothing here to replace or add.";
+
+  it("draws Replace and Add unavailable with the reason in place of the figure, and names Sync at the foot", () => {
+    const picks: string[] = [];
+    render(
+      <UploadChoice {...base} noCards sync={sync({ note: { kind: "tokensOnly", tokens: 114 }, next: { kind: "tokens" } })} picked={null} onPick={(m) => picks.push(m)} />,
+    );
+    const [replace, add, syncCard] = screen.getAllByRole("radio");
+    for (const card of [replace, add]) {
+      expect(card.getAttribute("aria-disabled")).toBe("true");
+      expect(within(card).getByText(reason)).toBeTruthy();
+      fireEvent.click(card);
+    }
+    // No figure, no overwrite warning, no overlap note on a card that cannot be picked.
+    expect(within(replace).queryByText(/→/)).toBeNull();
+    expect(within(replace).queryByText(/overwritten/)).toBeNull();
+    expect(within(add).queryByText(/You already own/)).toBeNull();
+    expect(syncCard.getAttribute("aria-disabled")).toBeNull();
+    // The arrow lands on them without picking; it picks Sync.
+    fireEvent.keyDown(replace, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(add);
+    fireEvent.keyDown(add, { key: "ArrowRight" });
+    expect(picks).toEqual(["sync"]);
+    expect(screen.getByRole("button", { name: "Review the sync →" })).toBeDisabled();
+    expect(screen.getByText("Next: the tokens this sync changes. Your cards don’t move.")).toBeTruthy();
+  });
+
+  it("draws both cards as shipped without it", () => {
+    render(<UploadChoice {...base} sync={sync()} picked={null} onPick={noop} />);
+    expect(screen.queryByText(reason)).toBeNull();
+  });
+});
+
 describe("UploadChoice · the stale file", () => {
   const followUp = (pick: "additions" | "tokens" | "everything" = "additions", onPick = noop) => ({
     // Each option's tokens are its own pick's: 40, 38 and 44, never the file's total.

@@ -64,6 +64,10 @@ describe("the follow-up and the pick (S1, S2)", () => {
     expect(effectivePick(read({ stale: "older", up: 3 }), "everything")).toBe("everything");
     // Never Everything by default for an older file that adds nothing: its removals are all it would take.
     expect(effectivePick(read({ stale: "older" }), "everything")).toBe("tokens");
+    // A file of no card was read under Only its tokens, and stays there under any follow-up pick.
+    const tokensOnly = (stale: "older" | null) => { const r = read({ stale }); return { ...r, sync: { ...r.sync, pick: "tokens" as const } }; };
+    expect(effectivePick(tokensOnly(null), "everything")).toBe("tokens");
+    expect(effectivePick(tokensOnly("older"), "additions")).toBe("tokens");
   });
 });
 

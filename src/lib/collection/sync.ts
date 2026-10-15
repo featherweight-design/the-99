@@ -23,6 +23,23 @@ import { toCollectionItemValues, type PendingItem } from "./pending";
  * that wins, so a holding that differs only in condition keeps `a`, and is never a conflict.
  */
 
+/**
+ * Whether an upload goes straight through as a FIRST import, with no choice step: an empty collection, and no
+ * Sync to offer (its switch off, or no anchor to merge against). With an anchor, a player who emptied the
+ * collection by hand can still Sync, so the choice is shown. `syncAnchored` is the switch AND the anchor.
+ */
+export function isFirstImport(collectionCount: number, syncAnchored: boolean): boolean {
+  return collectionCount === 0 && !syncAnchored;
+}
+
+/**
+ * The pick a file's PLAIN Sync read is taken under: a file with no matched card can be synced for its tokens
+ * alone (the server refuses it under any other pick, `tokensOnlySync`), and every other file under Everything.
+ */
+export function plainSyncPick(matchedCardCount: number): SyncPick {
+  return matchedCardCount === 0 ? "tokens" : "everything";
+}
+
 /** How an upload is synced: every change, only what it adds, or only its tokens. */
 export type SyncPick = "everything" | "additions" | "tokens";
 export const SYNC_PICKS: readonly SyncPick[] = ["everything", "additions", "tokens"];
@@ -321,6 +338,9 @@ export function staleness(
   anchor: ReadonlyMap<string, number>,
   earlier: readonly ReadonlyMap<string, number>[],
 ): Staleness {
+  // A file of tokens alone holds no card to date it by: it is never stale, so no banner reads it as older (a
+  // Sync of it can only run under Only its tokens, which takes no card either way).
+  if (file.size === 0) return null;
   const fromAnchor = holdingDistance(file, anchor);
   if (fromAnchor === 0) return "noNewer";
   if (earlier.some((e) => holdingDistance(file, e) < fromAnchor)) return "older";
