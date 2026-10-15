@@ -1,0 +1,167 @@
+{
+  "feature": "A way in without a collection, the whole line (handoff design_handoff_the99_no_collection_entry, R2 + R3; plan 2026-10-15-no-collection-entry.md, the route x viewport inventory)",
+  "clearAbout": true,
+  "note": "State A: the account holds zero cards and no decks. Nothing here writes a card or a deck, so both widths see the same state; clearAbout marks the About gate seen and restores it after, so run it on a scratch branch too. Needs COLLECTION_EDIT_ENABLED=true, NO_COLLECTION_ENTRY_ENABLED=true and PRECONS_ENABLED=true for the reader. The sheet keeps no fixtures of its own, so each file is one account state and is run on a FRESH account: a scratch branch made from local-dev, prepared as the file says, and deleted after. Steps press only controls inside <main>: the nav's locked-slot note is opened from the shell and is pinned by the nav tests. S4 (pending), S6, S7 and S11 (refusals) and the switch-off states (S15, S16) cannot be forced from a browser and are proved by component tests. The ways group's shared-component check is no-collection-entry-shared.json.",
+  "out": "contact-sheets/no-collection-entry-a",
+  "rows": [
+    {
+      "id": "s1-first-run",
+      "label": "Home, first run: step 1 with the ways group under the upload, Collection open, three slots locked (S1)",
+      "view": "src/components/home/first-run-step-one.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-ways-group=step1]",
+          "settle": 1000
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s13-empty-collection",
+      "label": "/collection at zero cards: one Upload tile, then the ways group with Add cards (S13)",
+      "view": "src/components/collection/collection-empty-doors.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "[data-ways-group=empty]",
+          "settle": 1000
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "nav-zero-outside-first-run",
+      "label": "The nav at zero cards outside first run: Collection open, the well (desktop) and the bracket (phone) over Commanders, Discover and Decks. The note opens from a shell press the sheet cannot make; the nav tests pin its three forms",
+      "view": "src/components/shell/nav.tsx",
+      "account": "A: zero cards, no decks",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "commanders-empty",
+      "label": "/commanders at zero cards: `Nothing to rank yet` and `Add your cards` (EmptyState)",
+      "view": "src/app/commanders/page.tsx",
+      "account": "A: zero cards, no decks",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "discover-empty",
+      "label": "/discover at zero cards: `Nothing to rank yet` and `Add your cards` (EmptyState)",
+      "view": "src/app/discover/page.tsx",
+      "account": "A: zero cards, no decks",
+      "steps": [
+        {
+          "goto": "/discover",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "s8-unticked",
+      "label": "/decks/import, the box under Deck name, unticked (S8)",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1200
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s8-ticked",
+      "label": "/decks/import with a list, a name and the box ticked; the button keeps `Import N cards` (S8)",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "fill": "#import-paste",
+          "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise"
+        },
+        {
+          "fill": "#import-deck-name",
+          "text": "Kinnan Ramp"
+        },
+        {
+          "click": "input[type=checkbox]",
+          "settle": 600
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s2-open",
+      "label": "/decks/precons?pick=own, nothing ticked: `Tick the boxes you own.` and the add held (S2)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own",
+          "wait": "input[type=checkbox]",
+          "settle": 1200
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s3-three",
+      "label": "Three boxes ticked: the foot's lead and `Add 3 boxes · N cards` (S3)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(1) input[type=checkbox]"
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(2) input[type=checkbox]"
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(3) input[type=checkbox]",
+          "settle": 600
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s3-twin",
+      "label": "A twin ticked: Regular / Collector's Edition under its row (S3)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&q=Avengers",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "click": "li:nth-of-type(1) input[type=checkbox]"
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 600
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    }
+  ]
+}

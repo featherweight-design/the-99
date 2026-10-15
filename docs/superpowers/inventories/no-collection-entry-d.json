@@ -1,0 +1,110 @@
+{
+  "feature": "A way in without a collection, the whole line (handoff design_handoff_the99_no_collection_entry, R2 + R3; plan 2026-10-15-no-collection-entry.md, the route x viewport inventory)",
+  "clearAbout": true,
+  "note": "State D: the account holds cards. s19 runs first and ADDS one precon box per width, which is the standing add the S17 rows draw; clearAbout marks the About gate seen and restores it after. WRITES: scratch branch only. Needs COLLECTION_EDIT_ENABLED=true, NO_COLLECTION_ENTRY_ENABLED=true and PRECONS_ENABLED=true for the reader. The sheet keeps no fixtures of its own, so each file is one account state and is run on a FRESH account: a scratch branch made from local-dev, prepared as the file says, and deleted after. Steps press only controls inside <main>: the nav's locked-slot note is opened from the shell and is pinned by the nav tests. S4 (pending), S6, S7 and S11 (refusals) and the switch-off states (S15, S16) cannot be forced from a browser and are proved by component tests. The ways group's shared-component check is no-collection-entry-shared.json.",
+  "out": "contact-sheets/no-collection-entry-d",
+  "rows": [
+    {
+      "id": "s19-collection-receipt",
+      "label": "/collection after one box is added from Collection: the receipt strip under the tabs, ✕ alone (S19). WRITES one box",
+      "view": "src/components/home/precon-pick-receipt.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&from=collection",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(1) input[type=checkbox]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add 1 box"
+        },
+        {
+          "wait": "[role=status] button[aria-label=Dismiss]",
+          "settle": 2000
+        }
+      ],
+      "account": "D: holds cards"
+    },
+    {
+      "id": "s18-sheet-row",
+      "label": "/collection, Add cards sheet, empty list: `Own precon boxes? Pick them ›` under the upload row on the phone, the only row on desktop (S18)",
+      "view": "src/components/collection/add-cards-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ],
+      "account": "D: holds cards"
+    },
+    {
+      "id": "e2-s17-pick-with-cards",
+      "label": "/decks/precons?pick=own&from=collection with cards: `‹ Collection`, `you own N of M` on every row, `✓ added <date>` on a box already added (E2, S17)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&from=collection",
+          "wait": "input[type=checkbox]",
+          "settle": 1200
+        }
+      ],
+      "account": "D: holds cards"
+    },
+    {
+      "id": "s17-note",
+      "label": "A box already added, ticked: still pickable, with `You added this box on <date>. Adding it again adds a second copy of each card.` under it (S17)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&from=collection",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "checkbox",
+          "name": "✓ added",
+          "settle": 600
+        }
+      ],
+      "account": "D: holds cards"
+    },
+    {
+      "id": "about-start-without",
+      "label": "/about: the new entry `Starting without a collection file` with the ways group as its figure, one caption at both widths",
+      "view": "src/components/about/figures.tsx",
+      "account": "D: holds cards",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='start-without-a-collection']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='start-without-a-collection']"
+        }
+      ]
+    },
+    {
+      "id": "about-precons-edit",
+      "label": "/about: the precons entry with R3's sentence (`Press Add cards in your Collection, then Pick them…`)",
+      "view": "src/components/about/about-page.tsx",
+      "account": "D: holds cards",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "#precons",
+          "settle": 1200,
+          "scrollTo": "#precons"
+        }
+      ]
+    }
+  ]
+}

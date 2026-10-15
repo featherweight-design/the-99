@@ -6,6 +6,7 @@ import { cartDecksOf, type CartDecks } from "./deck-line";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { HISTORY_RETENTION_DAYS } from "./write";
 import { readSyncSummary, type SyncEntrySummary } from "./sync";
+import { standingIds } from "../precons/added";
 
 /**
  * The anchor and the hand entries after it, shared by the count and the keys below. The anchor is the
@@ -105,17 +106,39 @@ export async function editedKeysSinceUpload(userId: string): Promise<Set<string>
   return (await handChangesSinceUpload(userId)).keys;
 }
 
+type BuiltEntry = { source: string | null; rows: HistoryRow[] | null };
+
 /**
- * Every standing hand entry the player has (an `add` or `edit` that no revert took back), with its source and
- * rows: what `builtLeaving` attributes a first Replace's removals to (S14). Read only for a player who has never
- * uploaded, so it is the whole of how their collection was built.
+ * The hand entries whose effect stands, in ledger order: an entry stands while nothing reverted it, or while the
+ * revert that did was itself reverted, up the chain (`standingIds`, the rule precon adds already use). So an add,
+ * its revert and that revert's revert leaves the add standing though it still carries `reverted_by`. Pure; `reverts`
+ * holds the revert entries a chain can pass through.
  */
-export async function readBuiltEntries(userId: string): Promise<{ source: string | null; rows: HistoryRow[] | null }[]> {
-  const res = await db.execute<{ source: string | null; rows: HistoryRow[] | null }>(sql`
-    select source, rows from collection_history
-    where user_id = ${userId} and kind in ('add', 'edit') and reverted_by is null
-    order by seq`);
-  return res.rows;
+export function standingBuiltEntries(
+  entries: readonly (BuiltEntry & { id: string; revertedBy: string | null })[],
+  reverts: readonly { id: string; revertedBy: string | null }[],
+): BuiltEntry[] {
+  const standing = standingIds([...entries, ...reverts]);
+  return entries.filter((e) => standing.has(e.id)).map(({ source, rows }) => ({ source, rows }));
+}
+
+/**
+ * Every standing hand entry the player has (an `add` or `edit` whose effect stands), with its source and rows: what
+ * `builtLeaving` attributes a first Replace's removals to (S14). Read only for a player who has never uploaded, so it
+ * is the whole of how their collection was built. Owner-scoped in both statements.
+ */
+export async function readBuiltEntries(userId: string): Promise<BuiltEntry[]> {
+  const [entries, reverts] = await Promise.all([
+    db.execute<BuiltEntry & { id: string; revertedBy: string | null }>(sql`
+      select id, source, rows, reverted_by as "revertedBy" from collection_history
+      where user_id = ${userId} and kind in ('add', 'edit')
+      order by seq`),
+    // Only a revert that was itself reverted can flip anything: one nobody reverted stands, as absent.
+    db.execute<{ id: string; revertedBy: string | null }>(sql`
+      select id, reverted_by as "revertedBy" from collection_history
+      where user_id = ${userId} and kind = 'revert' and reverted_by is not null`),
+  ]);
+  return standingBuiltEntries(entries.rows, reverts.rows);
 }
 
 /** How many entries one page of history holds. */

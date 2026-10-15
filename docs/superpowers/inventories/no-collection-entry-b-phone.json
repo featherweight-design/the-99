@@ -1,0 +1,119 @@
+{
+  "feature": "A way in without a collection, the whole line (handoff design_handoff_the99_no_collection_entry, R2 + R3; plan 2026-10-15-no-collection-entry.md, the route x viewport inventory)",
+  "clearAbout": true,
+  "note": "State B at the phone width: start from state A; the rows run in order and their writes build the collection (s12 and s10 import decks, s5 adds a precon box). WRITES: scratch branch only. Needs COLLECTION_EDIT_ENABLED=true, NO_COLLECTION_ENTRY_ENABLED=true and PRECONS_ENABLED=true for the reader. The sheet keeps no fixtures of its own, so each file is one account state and is run on a FRESH account: a scratch branch made from local-dev, prepared as the file says, and deleted after. Steps press only controls inside <main>: the nav's locked-slot note is opened from the shell and is pinned by the nav tests. S4 (pending), S6, S7 and S11 (refusals) and the switch-off states (S15, S16) cannot be forced from a browser and are proved by component tests. The ways group's shared-component check is no-collection-entry-shared.json.",
+  "out": "contact-sheets/no-collection-entry-b-phone",
+  "rows": [
+    {
+      "id": "s12-unticked-arrival",
+      "label": "/decks/[id] after an unticked import: the shipped one-line strip, now with the ✕ alone (S12) WRITES",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "fill": "#import-paste",
+          "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise"
+        },
+        {
+          "fill": "#import-deck-name",
+          "text": "PR2 sheet · unticked"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Import \\d+ cards$"
+        },
+        {
+          "wait": "button[aria-label=Dismiss]",
+          "settle": 1500
+        }
+      ],
+      "account": "B: zero cards, then the writes that build a collection (in this order)",
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "home-zero-with-deck",
+      "label": "Home with a deck and no cards: `0 cards · 1 deck`, `Add your cards` the header's one action (S12)",
+      "view": "src/app/page.tsx",
+      "account": "B: zero cards, then the writes that build a collection (in this order)",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "s10-ticked-arrival",
+      "label": "/decks/[id] after a ticked import: the strip in three lines (head, the add with History, meta) and the ✕ alone (S10) WRITES",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "fill": "#import-paste",
+          "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise"
+        },
+        {
+          "fill": "#import-deck-name",
+          "text": "PR2 sheet · ticked"
+        },
+        {
+          "click": "input[type=checkbox]",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Import \\d+ cards$"
+        },
+        {
+          "wait": "button[aria-label=Dismiss]",
+          "settle": 1500
+        }
+      ],
+      "account": "B: zero cards, then the writes that build a collection (in this order)",
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "s5-home-receipt",
+      "label": "Home after one box is added: the receipt strip over the dashboard, ✕ alone (S5). WRITES one box",
+      "view": "src/components/home/precon-pick-receipt.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(1) input[type=checkbox]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add 1 box"
+        },
+        {
+          "wait": "[role=status] button[aria-label=Dismiss]",
+          "settle": 2000
+        }
+      ],
+      "account": "B: zero cards, then the writes that build a collection (in this order)",
+      "widths": [
+        "phone"
+      ]
+    }
+  ]
+}

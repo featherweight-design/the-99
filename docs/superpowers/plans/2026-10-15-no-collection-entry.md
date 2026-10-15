@@ -142,8 +142,9 @@ S16.
 | `/collection` after a pick from Collection, receipt under the tabs (S19) | ☐ | ☐ | receipt strip |
 | `/about`, the new entry and the precons edit | ☐ | ☐ | — |
 
-`docs/superpowers/inventories/no-collection-entry.json` carries these rows, plus a `shares` block naming the ways
-group for step 1 and the empty Collection.
+`docs/superpowers/inventories/no-collection-entry-{a,b-phone,b-desktop,c,d}.json` carry these rows, one file per
+account state (the sheet keeps no fixtures, so each runs on a fresh scratch-branch account), and
+`no-collection-entry-shared.json` carries the `shares` block naming the ways group for step 1 and the empty Collection.
 
 ## Nothing held
 
