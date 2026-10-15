@@ -7,6 +7,7 @@ import type { ConfirmPreview, WriteResult } from "../../lib/admin/switch-writes"
 import type { Op, Scope, WriteInput } from "../../lib/admin/switch-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import type { OverrideValue } from "../../lib/switches/resolve";
+import { ALL_FEATURES } from "../../lib/switches/registry";
 import { ModelConfirm, type ConfirmContext } from "./model-confirm";
 
 // The switch page's writes (admin STATES F3, F5, F9 to F12; design table, Switch page): the App-wide
@@ -176,6 +177,37 @@ export function AppWideControl({ name, label, value, killed }: { name: string; l
         ringed={keyOf(w.confirming)}
         fill
         onPick={(k) => w.run(k === "notSet" ? { op: "clear", value: null, note: null } : { op: "set", value: k, note: null })}
+      />
+      {w.failure}
+      {w.dialog}
+    </div>
+  );
+}
+
+const ALL_OPTIONS = [
+  { key: "notSet", text: copy.appOpts.notSet },
+  { key: "on", text: copy.appOpts.on },
+] as const;
+type AllKey = (typeof ALL_OPTIONS)[number]["key"];
+
+/**
+ * An account's All features (`ALL_FEATURES`): the App-wide segment's own anatomy at account scope, with
+ * no Off, since an Off row would mean nothing the absence does not. On sets the row, `Not set` clears it;
+ * the write, its confirm on a rise in model access and its `admin_events` row are the override write's.
+ */
+export function AllFeaturesControl({ userId, label, value }: { userId: string; label: string; value: boolean }) {
+  const w = useOverrideWrite({ switchName: ALL_FEATURES, scope: "user", targetUserId: userId }, { switchLabel: label, scope: "user", groupName: null });
+  const keyOf = (p: { op: string } | null): AllKey | null => (p ? (p.op === "clear" ? "notSet" : "on") : null);
+  return (
+    <div className="flex flex-col gap-[8px]">
+      <Seg
+        label={label}
+        options={ALL_OPTIONS}
+        selected={value ? "on" : "notSet"}
+        pressed={keyOf(w.inFlight)}
+        disabled={false}
+        ringed={keyOf(w.confirming)}
+        onPick={(k) => w.run(k === "notSet" ? { op: "clear", value: null, note: null } : { op: "set", value: "on", note: null })}
       />
       {w.failure}
       {w.dialog}

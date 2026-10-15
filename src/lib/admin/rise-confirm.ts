@@ -5,7 +5,7 @@ import { featureWorstCaseMicroUsd } from "../model/prices";
 import type { ModelFeature } from "../model/allowance-rule";
 import type { SwitchRise } from "../switches/explain";
 import type { ModelCapabilityKey } from "../switches/flags";
-import { isSwitchName } from "../switches/registry";
+import { isOverrideName } from "../switches/registry";
 import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
 import { SNAPSHOT_SQL } from "../switches/snapshot";
 import type { Account } from "./accounts";
@@ -52,7 +52,7 @@ export async function lockSwitchWrites(tx: Tx): Promise<void> {
 export async function readSnapshotIn(tx: Tx): Promise<SwitchSnapshot> {
   const { rows } = await tx.execute<{ overrides: OverrideRow[]; members: { userId: string; groupId: string }[] }>(sql.raw(SNAPSHOT_SQL));
   const [row] = rows;
-  return { overrides: row.overrides.filter((o) => isSwitchName(o.switchName)), groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
+  return { overrides: row.overrides.filter((o) => isOverrideName(o.switchName)), groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
 }
 
 // The Overview v2 changes the synopsis's model and method, so it is priced as the synopsis.

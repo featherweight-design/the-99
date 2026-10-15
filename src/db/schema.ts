@@ -15,7 +15,7 @@ import type { ValidationReport } from "../lib/tuning/validate";
 import type { CutCite } from "../lib/tuning/cuts-schema";
 import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
-import { SWITCH_NAMES } from "../lib/switches/registry";
+import { ALL_FEATURES, SWITCH_NAMES } from "../lib/switches/registry";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -2577,7 +2577,7 @@ export const flagOverrides = pgTable("flag_overrides", {
   updatedBy: text("updated_by").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
-  check("flag_overrides_switch_check", sql`${t.switchName} in (${sql.raw(SWITCH_NAMES.map((n) => `'${n}'`).join(", "))})`),
+  check("flag_overrides_switch_check", sql`${t.switchName} in (${sql.raw([...SWITCH_NAMES, ALL_FEATURES].map((n) => `'${n}'`).join(", "))})`),
   check("flag_overrides_scope_check", sql`${t.scope} in ('app', 'group', 'user')`),
   check("flag_overrides_value_check", sql`${t.value} in ('on', 'off')`),
   check("flag_overrides_target_check", sql`(${t.scope} = 'app' and ${t.groupId} is null and ${t.userId} is null)

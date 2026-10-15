@@ -89,3 +89,24 @@ describe("what a write raises", () => {
     expect(rise({ DECK_TOKENS_ENABLED: "true" }, snap(), write({ name: "DECK_TOKENS_ENABLED" })).whatsNew).toEqual([]);
   });
 });
+
+// All features (2026-10-15): the reserved name is written at account scope alone, On only, and its rise
+// is what the confirm counts, so turning it on for an account raises the model capabilities a set of
+// each model switch would.
+describe("All features through the write", () => {
+  it("takes On or a clear at account scope, and refuses every other shape", () => {
+    expect(check("set", { switchName: "ALL_FEATURES", scope: "user", targetUserId: "u1", value: "on" })).toMatchObject({ ok: true, write: { name: "ALL_FEATURES", userId: "u1", value: "on" } });
+    expect(check("clear", { switchName: "ALL_FEATURES", scope: "user", targetUserId: "u1" })).toMatchObject({ ok: true });
+    expect(check("set", { switchName: "ALL_FEATURES", scope: "user", targetUserId: "u1", value: "off" })).toEqual({ ok: false, error: "value" });
+    expect(check("set", { switchName: "ALL_FEATURES", scope: "app", value: "on" })).toEqual({ ok: false, error: "scope" });
+    expect(check("set", { switchName: "ALL_FEATURES", scope: "group", groupId: G, value: "on" })).toEqual({ ok: false, error: "scope" });
+    expect(check("set", { switchName: "ALL_FEATURES", scope: "user", targetUserId: "u9", value: "on" })).toEqual({ ok: false, error: "account" });
+  });
+
+  it("raises the account's model capabilities, so the confirm fires", () => {
+    const after = applyWrite(snap(), write({ name: "ALL_FEATURES", scope: "user", userId: "u1" }));
+    const rise = riseBetween({} as NodeJS.ProcessEnv, snap(), after, ["u1", "u2"]);
+    expect(rise.accounts).toEqual(["u1"]);
+    expect(rise.capabilities.length).toBeGreaterThan(0);
+  });
+});

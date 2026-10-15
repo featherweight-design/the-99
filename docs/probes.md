@@ -2187,7 +2187,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   row and records `override_cleared` with its old value; a set under a kill, a plumbing account override and a group
   that does not exist are refused with nothing written; a snapshot read after the commit carries the change; and
   clearing an app-wide `off` over an env var that is `true` returns a confirm and writes nothing until the confirmed
-  count comes back. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
+  count comes back. It also proves All features (2026-10-15): the reserved `ALL_FEATURES` row written at account
+  scope through the same write, with its event, raising every feature and model switch for that account alone while
+  the account's own Off still wins, an Off row and an app-wide row refused, and a clear removing it. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
   staging, production and local-dev are refused by id. It writes as made-up accounts and removes every row in a
   `finally`.
 - `pnpm probe:admin-groups` proves the admin's group writes (admin plan 9a) against a real database: a create

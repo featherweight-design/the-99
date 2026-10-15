@@ -290,6 +290,11 @@ export const adminCopy = {
     ownerShare: (pct: number, share: string) => `${pct}% of the ${share} testing share`,
     hub: { drawn: "Drawn", notDrawn: "Not drawn", tools: (n: number) => `${n} of its tools on` },
     switchGroups: { override: "Set by an override", rule: "Off by a rule", env: "From the environment" },
+    // Owed to /copy-review.
+    allFeatures: {
+      title: "All features",
+      body: "Every feature switch on for this account, those added later included. An Off set on one switch here still wins, and so does an env var set to off.",
+    },
     envList: { on: (n: number) => `On · ${n}`, off: (n: number) => `Off · ${n}` },
     group: "Group",
     changeGroup: "Change group",
@@ -456,6 +461,7 @@ export const adminCopy = {
     sources: {
       kill: "env var is off",
       account: "account override",
+      all: "All features",
       group: (name: string) => `group ${name}`,
       app: "app-wide override",
       env: "from the env var",

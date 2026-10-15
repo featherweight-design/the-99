@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { SWITCH_NAMES, switchKind } from "./registry";
+import { ALL_FEATURES, SWITCH_NAMES, switchKind } from "./registry";
 
 const SRC = join(process.cwd(), "src");
 const files = (dir: string): string[] =>
@@ -27,13 +27,14 @@ describe("the switch registry", () => {
     expect([...SWITCH_NAMES].sort()).toEqual([...readVariables()].sort());
   });
 
+  // The set, plus All features' reserved name (2026-10-15), which the table holds and no variable carries.
   it("checks the overrides table against exactly this set", () => {
     const migrations = readdirSync(join(process.cwd(), "drizzle")).filter((f) => f.endsWith(".sql")).sort();
     // The newest migration that (re)states the constraint is the one in force.
     const sources = migrations.map((f) => readFileSync(join(process.cwd(), "drizzle", f), "utf8"));
     const last = sources.filter((s) => s.includes("flag_overrides_switch_check")).at(-1) ?? "";
     const listed = /flag_overrides_switch_check" CHECK \([^)]*in \(([^)]*)\)/.exec(last)?.[1] ?? "";
-    expect(listed.split(",").map((s) => s.trim().replace(/'/g, "")).sort()).toEqual([...SWITCH_NAMES].sort());
+    expect(listed.split(",").map((s) => s.trim().replace(/'/g, "")).sort()).toEqual([...SWITCH_NAMES, ALL_FEATURES].sort());
   });
 
   // LABEL_ROLE_COUNTS is a scoring basis no reader sees as a feature (admin PR 6d-2): a per-account
