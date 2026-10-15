@@ -383,6 +383,16 @@ describe("a Sync's tokens keep the player's hand marks (three-way, like cards)",
     }
   });
 
+  it("still records the file's printings for a token whose hand count is kept", () => {
+    const file = [{ tokenOracleId: "t1", quantity: 2, printings: [{ tokenPrintingId: "p1", quantity: 1 }, { tokenPrintingId: "p2", quantity: 1 }] }];
+    const state = hand(2);
+    const kept = keepHandMarks(state, file);
+    expect(kept).toEqual([]);
+    const { final } = planTokenWrite("replace", state, kept, file);
+    expect(final.owned.get("t1")).toMatchObject({ quantity: 2, source: "manual" });
+    expect([...final.uploadPrintings]).toEqual([["p1", 1], ["p2", 1]]);
+  });
+
   it("leaves every token without a hand mark to Replace's rule", () => {
     const state = { owned: [{ tokenOracleId: "t1", quantity: 2, source: "upload" }], uploadPrintings: [], read: true };
     const holdings = keepHandMarks(state, [{ tokenOracleId: "t1", quantity: 1 }], [{ tokenOracleId: "t1", quantity: 1 }]);

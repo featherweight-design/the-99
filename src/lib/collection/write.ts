@@ -895,7 +895,7 @@ export async function applyCollectionChange(
           const mode = syncTokenMode(change.pick);
           syncTokens = tokenState && change.tokens && mode === "replace"
             ? keepHandMarks(tokenState, change.tokens, base.anchor.tokens) : change.tokens;
-          const tokenPlan = tokenState && syncTokens ? planTokenWrite(mode, tokenState, syncTokens) : null;
+          const tokenPlan = tokenState && syncTokens ? planTokenWrite(mode, tokenState, syncTokens, change.tokens) : null;
           const tokenChanges = tokenPlan?.changes ?? [];
           const digest = planDigest(plan, tokenChanges, tokenPlan?.final ?? null);
           // The file folded per holding key as the anchor's items are, so a key on two rows counts once, summed.
@@ -1037,7 +1037,7 @@ export async function applyCollectionChange(
       if (change.kind === "replace" || change.kind === "add") {
         await recordUploadTokens(tx, userId, uploadId, change.kind, change.tokens);
       } else if (change.kind === "sync") {
-        await recordUploadTokens(tx, userId, uploadId, syncTokenMode(change.pick), syncTokens);
+        await recordUploadTokens(tx, userId, uploadId, syncTokenMode(change.pick), syncTokens, change.tokens);
       }
       const tokensMarked = preconTokens
         ? await syncPreconTokens(tx, userId, opts.id)
