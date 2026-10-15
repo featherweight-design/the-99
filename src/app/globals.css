@@ -833,6 +833,22 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    schedule. */
 .anim-card-turn { transition: transform var(--motion-duration) var(--motion-ease-out); }
 
+/* E7, hover on tiles (small-polish R2 §3): the art BRIGHTENS, `brightness(1.06)` on the tile's art, over `--motion-quick` on
+   `--motion-ease`, only where there is a hover (a touch screen has none to answer). Nothing translates and no shadow
+   grows, so no tile takes its own compositor layer on a 200-tile grid and only the hovered image repaints. The host is
+   the tile's root (`art-lift-host`), the art an `art-lift` image or, for the deck tile's commander wash, the `art-wash-art`
+   layers inside the host. The shipped border lift stays; commander rows and list rows have no host. Reduced motion keeps the
+   end state with no transition. */
+.art-lift,
+.art-lift-host .art-wash-art { transition: filter var(--motion-quick) var(--motion-ease); }
+/* An image that already carries a filter of its own (the set cell's unowned dimming) names it as `--art-base`, so the
+   brighten composes with it rather than losing to an inline `filter`. */
+.art-lift { filter: var(--art-base, none); }
+@media (hover: hover) {
+  .art-lift-host:hover .art-lift { filter: var(--art-base, ) brightness(1.06); }
+  .art-lift-host:hover .art-wash-art { filter: brightness(1.06); }
+}
+
 /* THE RING READING (Analysis tab handoff §2, 2b). Each of the five marks lights in turn,
    1 to 5 clockwise: the stagger is the component's `animation-delay`, 0.16s per mark.
    It rests at 0.22, below DIM_OPACITY, which is fine because the ring is decorative
@@ -1137,6 +1153,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .sheet-snap.sheet-gentle,
   .band-dim,
   .card-grow { transition: none; }
+
+  .art-lift,
+  .art-lift-host .art-wash-art { transition: none; }
 
   /* Reading, still: the ring holds at full ink, and only the heading says it is reading. */
   .anim-at-wave { animation: none; opacity: 1; }

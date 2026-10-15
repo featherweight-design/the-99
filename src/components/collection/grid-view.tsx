@@ -136,7 +136,7 @@ export function GridView({
           // §Grid Tile Container: radius 9/10px, overflow hidden, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: an inline
           // border outranks the hover: variant and the accent hover never lands.
-          className={`text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border}`}
+          className={`art-lift-host text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border}`}
         >
           {/* Art region — §Grid Tile: Art Region */}
           <div
@@ -176,7 +176,7 @@ export function GridView({
                 src={c.imageUri}
                 alt=""
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover object-center"
+                className="art-lift absolute inset-0 h-full w-full object-cover object-center"
               />
             )}
             {/* The 1px inner edge, drawn OVER the art. An inset shadow on this box would
