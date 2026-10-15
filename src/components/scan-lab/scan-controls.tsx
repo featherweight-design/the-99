@@ -12,7 +12,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import { EMBED_H, EMBED_W } from "../../lib/scan-lab/geometry";
 import { readingCrop } from "../../lib/scan-lab/reading";
-import { tapTarget, type Display } from "../../lib/scan-lab/steady";
+import { sameAnswer, tapTarget, type Display } from "../../lib/scan-lab/steady";
 
 /** A verdict's target: the reading it is recorded against, what was on screen at the press, and how long before. */
 export type Tap = ReturnType<typeof tapTarget>;
@@ -33,10 +33,12 @@ export function tensorToImage(t: Float32Array, w: number, h: number): ImageData 
 /** How long a ✓/✗ press waits for its click before letting go of the hold on its own. */
 export const VERDICT_CLICK_WAIT_MS = 1500;
 
-type Held = { tap: Tap };
+/** A hold: what the screen showed when the press began (its reading, when that last changed, and what it showed
+ * before), and the tap that press makes on it. */
+type Held = { display: Display; tap: Tap };
 
-/** The tap a press makes now, on what the screen says now. Called from the press handlers, never while rendering. */
-const tapNow = (display: Display): Tap => tapTarget(display, performance.now());
+// The clock taps and holds are timed on, the camera loop's own. Read from the press handlers, never while rendering.
+const clock = () => performance.now();
 
 export function ScanControls({
   display,
@@ -58,10 +60,39 @@ export function ScanControls({
   // rendered in between; the state copy is what draws.
   const hold = useRef<Held | null>(null);
   const [held, setHeld] = useState<Held | null>(null);
+  // The held display ON SCREEN (the state's twin, for handlers and timers), the newest display the loop published, and
+  // the change the player SAW when a hold let go: the camera kept reading behind the hold, so the live display's own
+  // change time and previous reading can describe changes nobody saw (Copilot, #1887 round 1).
+  const onScreen = useRef<Held | null>(null);
+  const live = useRef(display);
+  useLayoutEffect(() => { live.current = display; }, [display]);
+  const afterHold = useRef<{ at: number; view: Display } | null>(null);
+  /** What the screen says now, as the player saw it change. */
+  function visible(): Display {
+    if (onScreen.current) return onScreen.current.display;
+    const d = live.current;
+    const a = afterHold.current;
+    // Until the live display changes again after the hold let go, its last change is the one the release showed.
+    return a && d.changedAt <= a.at ? { ...a.view, reading: d.reading } : d;
+  }
+  /** Shows a hold, or lets one go; letting go is itself a change on screen when the live answer moved meanwhile. */
+  function show(h: Held | null) {
+    const prev = onScreen.current;
+    if (prev && !h) {
+      const at = clock();
+      const now = live.current.reading;
+      afterHold.current = {
+        at,
+        view: sameAnswer(now, prev.display.reading) ? prev.display : { reading: now, changedAt: at, before: prev.display.reading },
+      };
+    }
+    onScreen.current = h;
+    setHeld(h);
+  }
   // Verdicts still saving. Each took its OWN press's reading at its click and cleared the hold, so a second tap
   // while the first saves holds the reading in front of it then, never the first press's again.
   const saving = useRef(0);
-  const shown = held ? held.tap.shown : display.reading;
+  const shown = held ? held.display.reading : display.reading;
 
   const previewRef = useRef<HTMLCanvasElement>(null);
   // The preview is painted from the reading ON SCREEN, in the same commit as its guess, so the two never
@@ -87,10 +118,11 @@ export function ScanControls({
   function grab(e: React.PointerEvent) {
     if (hold.current && pressing.current) return;
     pressing.current = true;
-    // What the player is LOOKING AT: while an earlier verdict saves, that is still its held reading, recorded as it
-    // was then. Otherwise the display now, judged at this press.
-    hold.current = { tap: held ? held.tap : tapNow(display) };
-    setHeld(hold.current);
+    // What the player is LOOKING AT, judged at THIS press: while an earlier verdict saves, that is still its held
+    // display, so a change it showed counts from when it showed, not from the earlier press.
+    const v = visible();
+    hold.current = { display: v, tap: tapTarget(v, clock()) };
+    show(hold.current);
     const which = hold.current;
     const pointer = e.pointerId;
     const up = (ev: PointerEvent) => { if (ev.pointerId === pointer) { stop(); maybeRelease(which, ev.target); } };
@@ -111,7 +143,7 @@ export function ScanControls({
     // Only the hold this release was for: a newer press keeps its own.
     if (which === null || hold.current !== which) return;
     hold.current = null;
-    if (saving.current === 0) setHeld(null);
+    if (saving.current === 0) show(null);
   }
   // A press that ends with no verdict lets go. Off a ✓/✗ button (Keep this frame) that is the next task. On one, the
   // click that consumes the hold may come a task or more after the pointerup on a phone, so the hold waits for it and
@@ -121,7 +153,7 @@ export function ScanControls({
     setTimeout(() => release(which), onVerdictButton ? VERDICT_CLICK_WAIT_MS : 0);
   }
   async function verdict(correct: boolean) {
-    const tap = hold.current ? hold.current.tap : tapNow(display);
+    const tap = hold.current ? hold.current.tap : tapTarget(visible(), clock());
     hold.current = null;
     saving.current += 1;
     try {
@@ -129,7 +161,7 @@ export function ScanControls({
     } finally {
       saving.current -= 1;
       // The held reading stays on screen until its verdict is saved, unless a newer press holds another.
-      if (saving.current === 0 && hold.current === null) setHeld(null);
+      if (saving.current === 0 && hold.current === null) show(null);
     }
   }
 

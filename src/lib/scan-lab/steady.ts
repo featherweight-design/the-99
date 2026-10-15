@@ -34,6 +34,11 @@ export type SteadyState = Display & {
 
 const keyOf = (r: Reading): string => (r.kind === "card" ? (r.guesses[0]?.oracleId ?? "none") : "none");
 
+/** Whether two readings give the same answer: the same top-1 card, both no card, or both unsure. */
+export function sameAnswer(a: Reading | null, b: Reading | null): boolean {
+  return a === null || b === null ? a === b : keyOf(a) === keyOf(b);
+}
+
 export function startSteady(now: number): SteadyState {
   return { reading: null, changedAt: now, before: null, candidate: null, seenAt: now };
 }

@@ -178,4 +178,45 @@ describe("ScanControls", () => {
     render(<ScanControls display={at(null)} keepFrame onKeepFrame={vi.fn()} onVerdict={vi.fn(async () => {})} />);
     expect(screen.getByText(copy.unsure)).toBeTruthy();
   });
+
+  it("times a change the camera made behind a hold from when the hold let go and showed it", async () => {
+    const now = vi.spyOn(performance, "now").mockReturnValue(10_000);
+    const pending: (() => void)[] = [];
+    const onVerdict = vi.fn((_t: unknown, _c: boolean) => new Promise<void>((r) => { pending.push(r); }));
+    const view = render(<ScanControls display={at(ZIRDA)} keepFrame onKeepFrame={vi.fn()} onVerdict={onVerdict} />);
+    const right = screen.getByRole("button", { name: copy.right });
+    fireEvent.pointerDown(right);
+    // Behind the hold, Sol Ring settled at 10,100: the player never saw that change.
+    view.rerender(<ScanControls display={at(NEXT, 10_100, ZIRDA)} keepFrame onKeepFrame={vi.fn()} onVerdict={onVerdict} />);
+    fireEvent.pointerUp(right);
+    await act(async () => { fireEvent.click(right); });
+    // The save lands at 11,000 and the screen shows Sol Ring then; a press 200ms later came too soon to react to it.
+    now.mockReturnValue(11_000);
+    await act(async () => { pending.forEach((done) => done()); });
+    expect(screen.getByText("Sol Ring")).toBeTruthy();
+    now.mockReturnValue(11_200);
+    fireEvent.pointerDown(right);
+    await act(async () => { fireEvent.click(right); });
+    now.mockRestore();
+    expect(onVerdict.mock.calls[1][0]).toEqual({ reading: ZIRDA, shown: NEXT, changedMsBeforeTap: 200 });
+  });
+
+  it("judges a second press during a save at its own time, on the display still held", async () => {
+    const now = vi.spyOn(performance, "now").mockReturnValue(10_000);
+    const onVerdict = vi.fn((_t: unknown, _c: boolean) => new Promise<void>(() => {}));
+    render(<ScanControls display={at(NEXT, 9_700, ZIRDA)} keepFrame onKeepFrame={vi.fn()} onVerdict={onVerdict} />);
+    const right = screen.getByRole("button", { name: copy.right });
+    fireEvent.pointerDown(right);
+    fireEvent.pointerUp(right);
+    await act(async () => { fireEvent.click(right); });
+    // The first save never lands; a second press a second later sees Sol Ring that has been up for 1,300ms.
+    now.mockReturnValue(11_000);
+    fireEvent.pointerDown(right);
+    await act(async () => { fireEvent.click(right); });
+    now.mockRestore();
+    expect(onVerdict.mock.calls.map((c) => c[0])).toEqual([
+      { reading: ZIRDA, shown: NEXT, changedMsBeforeTap: 300 },
+      { reading: NEXT, shown: NEXT, changedMsBeforeTap: 1300 },
+    ]);
+  });
 });
