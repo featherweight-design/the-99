@@ -11,7 +11,7 @@ Builds on Round 1: `design_handoff_the99_social_r1/` (PR #1796).
 
 | Read | For |
 |---|---|
-| **`The 99 - Social R2 (R3).dc.html`** and `R3 - *.dc.html` | **Start here: round 3, Hugh's notes on round 2 answered.** |
+| **`The 99 - Social R2 (R3).dc.html`** and `R3 - *.dc.html` | **Start here: round 3, approved 2026-10-15.** Includes `R3 - Rows-Phone options` (B chosen) and `R3 - Option B opened`. |
 | `The 99 - Social R2 (R2).dc.html`, `R2 - *.dc.html` | Round 2, superseded. |
 | `R2 - Wishlist-Desktop.dc.html` / `R2 - Wishlist-Phone.dc.html` | Collection › Wishlist, empty first, through Collected. |
 | `R2 - Details-Desktop.dc.html` / `R2 - Details-Phone.dc.html` | Card details' Add to wishlist and In your wishlist. |

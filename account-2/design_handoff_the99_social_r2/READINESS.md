@@ -1,8 +1,7 @@
 # READINESS — Social R2 (the wishlist, and friends' spares)
 
-**🟡 Round 3, for Hugh's audit** (round 3 boards are `R3 - *`). Every R2 state is drawn at both widths, empty states first, over the shipped pages Hugh
-sent, with every board rendered and measured so none is cut off. Not green until Hugh approves (and picks the icon and
-the word) and engineering confirms G1 to G4 and G7 are in the plan.
+**🟢 Approved by Hugh, 2026-10-15** (round 3 boards, `R3 - *`). Engineering confirms G1 to G5 and G8 in the plan. Every R2 state is drawn at both widths, empty states first, over the shipped pages, with every board rendered and
+measured so none is cut off. Bookmark icon and the word Collected are locked.
 
 ## Locks held
 
@@ -14,7 +13,7 @@ the word) and engineering confirms G1 to G4 and G7 are in the plan.
 | Works with no friends | Own switch and tab; no friends line, markers or friend pages (W1, WP1). |
 | A friend's wishlist always visible | One quiet line says so; no toggle anywhere. |
 | A friend sees card, wanted, collected; never owned | Friend tiles read `wants N` / `✓ collected`. |
-| Spares view-only, per pod | A marker, a key item and a list of names, pods and counts; nothing to press but ✕. |
+| Spares view-only, per pod | A press beside the buy tag (one combined press on phone) opening the stand-ins modal's Friends with a spare section; no Take on a friend row. |
 | A spare excludes drafts | The modal's foot line says "none of their decks uses, drafts included". |
 | No borrowing, no cart change | Cart figure, buy tags and Mana Pool unchanged (S5). |
 | No model calls, no About entry | Nothing typed reaches a prompt; no entry drawn. |
@@ -28,7 +27,11 @@ the word) and engineering confirms G1 to G4 and G7 are in the plan.
 - **G4** Add to wishlist writes owned + 1.
 - **G7** commander image focus applies to every face here.
 
-## Audit first
+## Audited
+
+Row layout B and the Before you buy modal chosen by Hugh.
+
+## Audit first (historical)
 
 1. The marker and its modal (S2, S3): quiet enough on a dense row, clear enough from the key.
 2. Collection › Wishlist as a tab (W1, WP1).

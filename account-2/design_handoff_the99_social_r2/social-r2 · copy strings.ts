@@ -51,9 +51,12 @@ export const wishlistCopy = {
 };
 
 export const spareCopy = {
-  key: "a friend has a spare", // Shopping key and cart key
+  key: "a friend has a spare", // desktop Shopping key and cart key
+  keyPhone: "other ways to get it", // phone key item for the combined press, when a spare is shown
+  modalTitleBoth: "Before you buy", // stand-ins modal title when spares and stand-ins are both present
+  modalTitleSpares: "Friends with a spare", // title when only spares; also the section label
+  // only stand-ins: the shipped "Cheaper stand-ins", unchanged
   markerAria: (card: string) => `Friends with a spare ${card}`,
-  title: (card: string) => `Spares of ${card}`,
   via: (pod: string) => `shares with ${pod}`,
   count: (n: number) => spares(n),
   foot: "A spare is a copy none of their decks uses, drafts included. Reach out to offer a trade or bargain your prized family goat, and it’s yours!",

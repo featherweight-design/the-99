@@ -43,8 +43,10 @@ Frames are named on the boards: W (Wishlist), D (Details), P (Friend), S (Spares
 | State | Drawn | Rule |
 |---|---|---|
 | None | S1, SP1 | Nothing added: no marker, no key item. |
-| Some | S2, SP2 | `--fact` glyph after the row's marks; key gains `a friend has a spare`. |
-| Pressed | S3, SP3 | ModalChrome 560 / sheet from 52px: `Spares of {card}`, friend, pod, count, foot line. |
+| Some | S2, SP2 | Desktop: marker beside the buy tag, key `a friend has a spare`. Phone (option B): one press with ⇄ and/or the spare glyph, key `other ways to get it`. |
+| Pressed, spares only | S3, SP3, O2 | Stand-ins modal titled `Friends with a spare`: Replacing box, friends, foot line. |
+| Pressed, spares and stand-ins | O1, OP1 | Titled `Before you buy`: friends first, then the stand-ins as shipped. |
+| Pressed, stand-ins only | O3 | Today's `Cheaper stand-ins`, unchanged. |
 | All view | S4 | Missing rows only. |
 | Shopping for all decks | S5 | Same marker on cart lines; cart unchanged otherwise. |
 | Unshare or unfriend mid-visit, a failed read | — | Gone on the next read, silently; absent on failure. |
