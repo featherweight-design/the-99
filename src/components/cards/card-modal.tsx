@@ -1754,6 +1754,12 @@ export function CardModal({
   // and each side has its own art.
   const twoFaced = Boolean(backImage)
     && (isTwoFaced(card.layout) || Boolean(resolved?.hasOwnBack));
+  // A pick that takes the back away mid-turn unmounts the turn box, so its transitionend never comes: end the turn
+  // here, during render, or a later pick that brings a back would find the host still pinned and refuse every tilt.
+  if (!twoFaced && (turning || zoomTurning)) {
+    setTurning(false);
+    setZoomTurning(false);
+  }
   // CLAMPED TO WHAT EXISTS, not to what the reader last asked for.
   //
   // `flipped` survives a printing pick by design — only a card change remounts this —

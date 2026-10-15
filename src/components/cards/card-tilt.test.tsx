@@ -204,6 +204,17 @@ describe("the flip (G4)", () => {
     expect(tiltValues(host).tilting).toBe(true);
   });
 
+  it("ends a turn whose back a pick took away, so a later pick with a back is not pinned flat", () => {
+    const { rerender } = mount(twoFaced());
+    fireEvent.click(within(screen.getByTestId("modal-under-card")).getByRole("button", { name: /Turn over to/ }));
+    expect(desktopHost()).toHaveAttribute("data-turning");
+    const props = { position: 1, total: 1, onClose: vi.fn(), onPrev: null, onNext: null };
+    rerender(<CardModal card={card()} {...props} />);
+    rerender(<CardModal card={twoFaced()} {...props} />);
+    expect(desktopHost()).not.toHaveAttribute("data-turning");
+    expect(phoneHost()).not.toHaveAttribute("data-turning");
+  });
+
   it("never sets data-turning under reduced motion, where no transition would clear it", () => {
     restore = reducedMotion();
     mount(twoFaced());
