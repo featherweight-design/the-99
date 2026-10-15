@@ -1,6 +1,6 @@
 {
   "feature": "Segmented switch, PR 3a",
-  "note": "PR 3a: the tablists converge on SegmentedSwitch (kind tabs, tone neutral). The version diff's In / Out and the review screen's Coming in / Going out are phone only (md:hidden) and name no panel, since both columns show from md. The import and update Paste / File switches link each tab to its panel; their accent fill is gone. Collection history's row groups are size compact in a well that scrolls sideways (the new scroll prop). VERSION_ROWS_DECK is the version-rows fixture (two versions, the newest moving cards both ways); LOCKED_DECK is the never-cut fixture, whose draft holds an In and an Out column; SWITCH_DECK is any deck the account owns (local-dev: d0000000-0000-4000-8000-00000000cafe). The history row needs an account with a Replace upload long enough to open on its groups.",
+  "note": "PR 3a: the tablists converge on SegmentedSwitch (kind tabs, tone neutral). The version diff's In / Out and the review screen's Coming in / Going out are phone only (md:hidden) and name no panel, since both columns show from md. The import and update Paste / File switches link each tab to its panel; their accent fill is gone. Collection history's row groups are size compact in a well that scrolls sideways (the new scroll prop). VERSION_ROWS_DECK is the version-rows fixture (two versions, the newest moving cards both ways); LOCKED_DECK is the never-cut fixture, whose draft holds an In and an Out column; SWITCH_DECK is any deck the account owns. The history row needs an account with an Added in the app entry long enough to open on its groups.",
   "clearAbout": true,
   "shares": {
     "module": "src/components/ui/segmented-switch.tsx",
@@ -26,7 +26,8 @@
           "settle": 800
         },
         {
-          "click": "button[aria-expanded='false']",
+          "clickRole": "button",
+          "name": "^v2",
           "settle": 800
         },
         {
@@ -103,7 +104,7 @@
     },
     {
       "id": "collection-history",
-      "label": "/collection/history: a long Replace opened on its row groups (compact, scrolling at phone)",
+      "label": "/collection/history: a long entry opened on its row groups (compact, scrolling at phone)",
       "view": "src/components/collection/history-list.tsx",
       "steps": [
         {
@@ -113,7 +114,7 @@
         },
         {
           "clickRole": "button",
-          "name": "Replace upload",
+          "name": "Added in the app",
           "wait": "[role=tablist]",
           "settle": 1500
         }
