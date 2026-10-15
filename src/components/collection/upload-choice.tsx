@@ -135,8 +135,10 @@ function Card({
       // R2: on desktop the radio sits on the title row and everything below runs the card's full
       // width; the phone keeps the radio column. On desktop the card is a SUBGRID over the choice's four
       // rows (title, body, figure or reason, note), so the cards stand the same height and each row's
-      // content lines up across them: a longer body in one card moves the figure line in all three.
-      className={`relative flex gap-[12px] rounded-[12px] p-[14px] outline-none md:row-span-4 md:grid md:grid-rows-subgrid md:gap-y-[8px] md:p-[22px] ${
+      // content lines up across them: a longer body in one card moves the figure line in all three. The row
+      // count is four because a card draws at most four items (the note is one element or none): a fifth would
+      // fall outside the span. The one column is minmax(0, 1fr) so a long unbroken token cannot widen it.
+      className={`relative flex gap-[12px] rounded-[12px] p-[14px] outline-none md:row-span-4 md:grid md:grid-cols-[minmax(0,1fr)] md:grid-rows-subgrid md:gap-y-[8px] md:p-[22px] ${
         off ? "cursor-default bg-[color:var(--surface-sunken)]" : "cursor-pointer bg-[color:var(--surface)]"
       } ${
         picked

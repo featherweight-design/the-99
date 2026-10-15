@@ -66,6 +66,13 @@ describe("UploadChoice with Sync", () => {
     for (const r of screen.getAllByRole("radio")) {
       expect(r.className).toContain("md:row-span-4");
       expect(r.className).toContain("md:grid-rows-subgrid");
+      expect(r.className).toContain("md:grid-cols-[minmax(0,1fr)]");
+      // The content wrapper dissolves on desktop, so its items are the subgrid's: without it the whole card
+      // is one item in row 1 and the rows no longer line up.
+      const wrapper = [...r.children].find((c) => !c.hasAttribute("aria-hidden"));
+      expect(wrapper?.className).toContain("md:contents");
+      // At most four items (title, body, figure or reason, note) so none falls outside the four-row span.
+      expect(wrapper?.children.length).toBeLessThanOrEqual(4);
     }
   });
 
