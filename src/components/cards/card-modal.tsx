@@ -52,7 +52,7 @@ import { TokenCardLine } from "../decks/token-card-line";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { Chevron, CHEVRON_CLASS } from "../ui/chevron";
-import { RECEIPT_LINK_CLASS, STACK_DROP_MS } from "./card-modal-shared";
+import { RECEIPT_LINK_CLASS, STACK_DROP_EASE, STACK_DROP_MS } from "./card-modal-shared";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 const pickerCopy = printingPickerCopy.printing;
@@ -1011,7 +1011,7 @@ export function CardModal({
     const from = getComputedStyle(el).transform;
     const drop = el.animate(
       [{ transform: from === "none" ? "translateY(0)" : from }, { transform: "translateY(100%)" }],
-      { duration: STACK_DROP_MS, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" },
+      { duration: STACK_DROP_MS, easing: STACK_DROP_EASE, fill: "forwards" },
     );
     return () => drop.cancel();
   }, [dropping]);

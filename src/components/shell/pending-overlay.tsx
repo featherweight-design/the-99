@@ -6,7 +6,8 @@ import { shellCopy } from "../../lib/copy/shell";
 import type { LoadingKey } from "../../lib/shell/pending-routes";
 import { LoadingScreen } from "./loading-screen";
 
-export const OVERLAY_OUT_MS = 120;
+/** The fade out's length: `--motion-exit-quick` in `globals.css` (a test holds the two together). */
+export const OVERLAY_OUT_MS = 140;
 
 /**
  * The escalation screen (escalation addendum): the target route's `LoadingScreen`, laid over the
