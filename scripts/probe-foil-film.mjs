@@ -8,6 +8,9 @@
 // background with its film span inside it, the film alone carrying the arrival mark (`FoilFilm`). The face's own
 // computed opacity must read 1 whatever the film's mark says, under both motion preferences. And the peek's markup:
 // an ArtLayer div carrying the mark, then the film span that reads it as a sibling.
+//
+// R2 PR 2 adds the TILT HOST (G17): `[data-turning]` pins the centre only without inline values, which beat it (G4), and
+// the drop shadow, seam included, draws under reduced motion too (G3).
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -38,10 +41,20 @@ const peek = (id, mark) =>
   `<button id="${id}" style="position:relative;overflow:hidden;display:block;width:120px;aspect-ratio:63/88;padding:0;border:0;border-radius:11px;background:#222">` +
   `<div data-arrival="${mark}" style="pointer-events:none;position:absolute;inset:0;border-radius:inherit;background:url('${img}') center/cover"></div>` +
   `<span aria-hidden="true" data-foil="foil" data-foil-still="" style="pointer-events:none;position:absolute;inset:0;border-radius:inherit"></span></button>`;
+// R2 PR 2: tilt hosts in the shipped markup (`data-tilt` round the art; a seam on a one-faced host).
+const tiltHost = (id, attrs = "", style = "") =>
+  `<div id="${id}" data-tilt="" ${attrs} style="position:relative;width:180px;aspect-ratio:63/88;border-radius:12px;${style}">` +
+  `<div style="position:absolute;inset:0;border-radius:inherit;background:url('${img}') center/cover"></div>` +
+  `<span aria-hidden="true" data-glare="" style="pointer-events:none;position:absolute;inset:0;border-radius:inherit"></span></div>`;
+const TILTS = tiltHost("tilt-rest", 'data-tilt-seam=""') +
+  // Inside a box carrying off-centre values, which it inherits unless the turning rule pins its own.
+  `<div style="--tilt-x:.9;--tilt-y:.1;--tilt-lift:1">${tiltHost("tilt-turning", 'data-turning=""')}</div>` +
+  tiltHost("tilt-turning-inline", 'data-turning="" data-tilting=""', "--tilt-x:.9;--tilt-y:.1;--tilt-lift:1") +
+  tiltHost("tilt-zoom", "").replace('data-tilt=""', 'data-tilt="zoom"');
 const FACE_MARKS = [["face-pending", "pending"], ["face-in", "in"], ["face-done", "done"], ["face-failed", "failed"], ["face-unmarked", null]];
 // Its own row, wrapped under R1's: in R1's flex row the tiles would shrink to nothing.
 const r2 = `<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:12px;padding:20px;background:#111">${FACE_MARKS.map(([id, m]) => face(id, m)).join("")}` +
-  `${peek("peek-pending", "pending")}${peek("peek-failed", "failed")}${peek("peek-done", "done")}</div>`;
+  `${peek("peek-pending", "pending")}${peek("peek-failed", "failed")}${peek("peek-done", "done")}${TILTS}</div>`;
 fs.writeFileSync(path.join(dir, "page.html"), html.replace("display:flex;gap:12px", "display:flex;flex-wrap:wrap;gap:12px").replace("</body>", `${r2}</body>`));
 const url = "file://" + path.join(dir, "page.html");
 const browser = await chromium.launch();
@@ -93,6 +106,29 @@ for (const motion of ["no-preference", "reduce"]) {
   await page.hover("#peek-done");
   const still = await pseudo(page, "peek-done", "::after", "animationName");
   check(`${motion}: a hovered peek's film stays still`, still === "none", still);
+  // R2 PR 2: the tilt host.
+  const tiltOf = (id) => page.$eval(`#${id}`, (e) => {
+    const c = getComputedStyle(e);
+    return { x: c.getPropertyValue("--tilt-x").trim(), lift: c.getPropertyValue("--tilt-lift").trim(), transform: c.transform, shadow: c.boxShadow };
+  });
+  const atRest = await tiltOf("tilt-rest");
+  // G3: the drop shadow and the one-faced seam, whatever the motion preference.
+  check(`${motion}: a tilt host draws the card's drop shadow`, atRest.shadow.includes("0px 24px 50px"), atRest.shadow);
+  check(`${motion}: a one-faced host keeps its seam in that shadow`, atRest.shadow.includes("0px 0px 0px 1px inset"), atRest.shadow);
+  const zoomShadow = (await tiltOf("tilt-zoom")).shadow;
+  check(`${motion}: the zoom host draws the zoom's own shadow`, zoomShadow.includes("0px 24px 60px"), zoomShadow);
+  if (motion === "reduce") {
+    check("reduce: no tilt transform", atRest.transform === "none", atRest.transform);
+  } else {
+    check("no-preference: a tilt host carries the tilt's perspective transform", atRest.transform.startsWith("matrix3d"), atRest.transform);
+    // G4: the turn's rule pins the host to the centre, but only with no inline values on it.
+    const turning = await tiltOf("tilt-turning");
+    check("no-preference: [data-turning] pins a host with no inline values to the centre, over inherited ones", turning.x === "0.5" && turning.lift === "0", JSON.stringify(turning));
+    const inline = await tiltOf("tilt-turning-inline");
+    check("no-preference: an inline value beats [data-turning], so a turn must take them off", inline.x === "0.9", JSON.stringify(inline));
+    const glare = await page.$eval("#tilt-turning-inline [data-glare]", (e) => getComputedStyle(e).backgroundImage);
+    check("no-preference: the light is a radial gradient", glare.startsWith("radial-gradient"), glare);
+  }
   if (motion === "no-preference") {
     const rest = await pseudo(page, "etched", "::after", "animationName");
     check("only the hovered tile sweeps", rest === "none", rest);
@@ -135,6 +171,8 @@ for (const [feature, expectShadow] of [["prefers-reduced-transparency", true], [
   check(`${feature}: no large film either`, ld === "none", ld);
   const faceOp = await page.$eval("#face-done", (e) => getComputedStyle(e).opacity);
   check(`${feature}: the face still draws`, faceOp === "1", faceOp);
+  const glare = await page.$eval("#tilt-turning-inline [data-glare]", (e) => getComputedStyle(e).display);
+  check(`${feature}: no light`, glare === "none", glare);
   if (expectShadow) {
     const sh = await page.$eval("#done [data-foil]", (e) => getComputedStyle(e).boxShadow);
     check(`${feature}: 2px inset ring instead`, sh.includes("inset") && sh.includes("2px"), sh);

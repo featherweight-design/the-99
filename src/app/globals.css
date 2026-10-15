@@ -1158,13 +1158,72 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   }
 }
 
+/* The tilt (foil handoff R2, PR 2), on every card in details and the zoom. The host sits OUTSIDE the box that turns and
+   inside any box an entry or paging animation moves (audit G1, G2). JS writes the target values inline (`card-tilt.ts`);
+   registered, they interpolate, so the rotation, the edge, the light and the film all ease together. */
+@property --tilt-x { syntax: "<number>"; inherits: true; initial-value: .5; }
+@property --tilt-y { syntax: "<number>"; inherits: true; initial-value: .5; }
+@property --tilt-lift { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+/* The host's own drop shadow, OUTSIDE the motion query (G3): a reader who asked for less motion keeps the card's shadow.
+   The one-faced box is its own face, so its 1px seam rides in the same shadow. */
+[data-tilt] { --card-shadow: 0 24px 50px rgb(0 0 0 / .55); box-shadow: var(--card-shadow); }
+[data-tilt][data-tilt-seam] { --card-shadow: 0 24px 50px rgb(0 0 0 / .55), inset 0 0 0 1px rgb(0 0 0 / .3); }
+[data-tilt="zoom"] { --card-shadow: 0 24px 60px rgb(0 0 0 / .6); }
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-tilt] {
+    --tilt-ease: cubic-bezier(.22, 1, .36, 1);
+    /* The full swing, ±6° (R2-G10, audit G11): the one constant both axes read. */
+    --tilt-swing: 12deg;
+    transform: perspective(1000px)
+      rotateX(calc((var(--tilt-y) - .5) * var(--tilt-swing)))
+      rotateY(calc((.5 - var(--tilt-x)) * var(--tilt-swing)));
+    /* A hairline of card edge on the pointer's sides, a faint rim, then the card's own drop shadow. */
+    box-shadow:
+      calc((var(--tilt-x) - .5) * 3px) calc((var(--tilt-y) - .5) * 3px) 0 0 rgb(205 210 218 / calc(var(--tilt-lift) * .55)),
+      0 0 0 .5px rgb(255 255 255 / calc(var(--tilt-lift) * .12)),
+      var(--card-shadow);
+    transition: --tilt-x 600ms var(--tilt-ease), --tilt-y 600ms var(--tilt-ease), --tilt-lift 600ms var(--tilt-ease);
+  }
+  [data-tilt][data-tilting] { transition-duration: 300ms; }
+  /* A flip holds it flat until the turn settles. The turn takes the inline values off first, or they would win (G4). */
+  [data-tilt][data-turning] { --tilt-x: .5; --tilt-y: .5; --tilt-lift: 0; transition-duration: 300ms; }
+
+  /* The light: every card, as strong as the lift. */
+  [data-tilt] [data-glare] {
+    opacity: var(--tilt-lift);
+    background: radial-gradient(circle at calc(var(--tilt-x) * 100%) calc(var(--tilt-y) * 100%),
+      rgb(255 255 255 / .20), rgb(255 255 255 / .06) 40%, rgb(255 255 255 / 0) 72%);
+  }
+
+  /* A foil film drifts against the pointer on the same values. */
+  [data-tilt] [data-foil-size="large"]::before { transform: translateX(calc((var(--tilt-x) - .5) * -33.333%)); }
+}
+
+/* Desktop: keyboard focus on the zoom trigger, the host's direct child, plays R1's one band (G6); R1's own rule needs the
+   film inside the button. Hover has the tilt, and no band. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  [data-tilt]:has(> button:focus-visible) [data-foil-size="large"]::after {
+    animation: foil-sweep calc(var(--motion-duration) * 2) var(--motion-ease);
+  }
+}
+
+/* Phone: the card lifts higher once a hold picks it up. */
+@media (hover: none) and (prefers-reduced-motion: no-preference) {
+  [data-tilt][data-tilting] { --card-shadow: 0 34px 70px rgb(0 0 0 / .7); }
+  [data-tilt][data-tilting][data-tilt-seam] { --card-shadow: 0 34px 70px rgb(0 0 0 / .7), inset 0 0 0 1px rgb(0 0 0 / .3); }
+}
+
 @media (prefers-reduced-transparency: reduce) {
   [data-foil]::before, [data-foil]::after { display: none; }
   [data-foil] { box-shadow: inset 0 0 0 2px var(--fg-muted); }
+  [data-glare] { display: none; }
 }
 
 @media (forced-colors: active) {
   [data-foil]::before, [data-foil]::after { display: none; }
+  [data-glare] { display: none; }
 }
 
 /* Find a deck's view arriving inside card details, in place of the details pane (handoff R2 §1): a

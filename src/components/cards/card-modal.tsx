@@ -46,7 +46,8 @@ import { manapoolCardUrl } from "../../lib/manapool/links";
 import { FitsDoor } from "./fits-door";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
-import { SHEET, useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
+import { SHEET, SWIPE, useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
+import { dropTilt, liftTilt, tiltsOnHover } from "./card-tilt";
 import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
@@ -960,6 +961,16 @@ export function CardModal({
   // The layer turns its own copy. `flipped` belongs to the art behind it, which the
   // reader may have turned for their own reasons.
   const [zoomFlipped, setZoomFlipped] = useState(false);
+  // THE TILT (foil R2): a turn pins its hosts flat (`data-turning`) from the press to the settle, and only where the turn
+  // animates: under reduced motion no transition would end it (G4).
+  const desktopTiltRef = useRef<HTMLDivElement | null>(null);
+  const phoneTiltRef = useRef<HTMLDivElement | null>(null);
+  const zoomTiltRef = useRef<HTMLDivElement | null>(null);
+  const [turning, setTurning] = useState(false);
+  const [zoomTurning, setZoomTurning] = useState(false);
+  // The zoom tilts on a press that moves past the swipe's slop; its release must not also close the layer.
+  const zoomPress = useRef<{ id: number; x: number; y: number; tilting: boolean } | null>(null);
+  const zoomDragged = useRef(false);
   /**
    * A face the art landed on while the zoom covered it, waiting for the zoom to
    * close. A ref rather than state: nothing renders from it, and holding it in
@@ -1414,6 +1425,7 @@ export function CardModal({
    */
   const closeZoom = useCallback(() => {
     setZoomed(false);
+    setZoomTurning(false);
     // The layer's own announcements go with it. Reopening shows the front, and a live
     // region still reading "Showing <back face>" would describe a card that is no
     // longer there.
@@ -1435,6 +1447,7 @@ export function CardModal({
     // the front, and a region still reading "Showing <back face>" would describe it
     // wrongly from the first frame.
     setAnnouncement("");
+    setZoomTurning(false);
     setZoomed(true);
   }, []);
 
@@ -1500,6 +1513,7 @@ export function CardModal({
     // only a set of surfaces without the pull, Change Commander's candidates among them.
     canCollapse: !cramped,
     disabled: locked,
+    tiltRef: phoneTiltRef,
   });
 
   // Focus follows the sheet when the control that moved it is gone: `All details` unmounts as the
@@ -1771,6 +1785,7 @@ export function CardModal({
   function onZoomFlip() {
     const next = !zoomFlipped;
     setZoomFlipped(next);
+    dropTilt(zoomTiltRef.current);
     // Announced when the card has LANDED, not when the press happened: a reader who
     // presses twice quickly would otherwise be told about a face the card never
     // rested on. `onTransitionEnd` below carries the animated path; where there is no
@@ -1779,17 +1794,22 @@ export function CardModal({
     const reduced = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduced) setAnnouncement(shownLabel(next));
+    else setZoomTurning(true);
   }
 
   function onTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
     // Only the box's own turn, not a transition bubbling from something inside it.
     if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
+    setZoomTurning(false);
     setAnnouncement(shownLabel(zoomFlipped));
   }
 
   function onFlip() {
     const next = !flipped;
     setFlipped(next);
+    // The inline tilt values come off, or they would beat the turn's flat centre (G4).
+    dropTilt(desktopTiltRef.current);
+    dropTilt(phoneTiltRef.current);
     // Same rule as the zoom's turn, for the same reason, now that the art in the
     // modal turns rather than swapping: announced when the card has LANDED. The
     // reduced-motion path has no transition to wait for, so the press is the
@@ -1797,10 +1817,12 @@ export function CardModal({
     const reduced = typeof window !== "undefined"
       && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduced) setAnnouncement(shownLabel(next));
+    else setTurning(true);
   }
 
   function onArtTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
+    setTurning(false);
     const face = shownLabel(showingBack);
     // NOT while the zoom is up. A reader who turns the art and opens the zoom
     // inside the 320ms turn leaves this transition still running underneath a
@@ -1840,7 +1862,24 @@ export function CardModal({
   const frontFilm = { finish: faceFilm(resolved, "front"), src: resolved?.imageUri };
   const backFilm = { finish: faceFilm(resolved, "back"), src: backImage };
   // A one-faced card's art box IS its face, and draws the front.
-  const oneFaceFilm = twoFaced ? null : <FoilFilm {...frontFilm} size="large" />;
+  const oneFaceFilm = twoFaced ? null : <><FoilFilm {...frontFilm} size="large" /><Glare /></>;
+  // The desktop's hover tilt (G12: a mouse or a pen only), on the host round the art alone.
+  const tiltHover = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (tiltsOnHover(e.pointerType)) liftTilt(e.currentTarget, e.clientX, e.clientY);
+  };
+  const tiltLeave = (e: React.PointerEvent<HTMLDivElement>) => dropTilt(e.currentTarget);
+  const endZoomPress = (e: React.PointerEvent<HTMLDivElement>) => {
+    const p = zoomPress.current;
+    if (!p || p.id !== e.pointerId) return;
+    zoomPress.current = null;
+    if (!p.tilting) return;
+    dropTilt(e.currentTarget);
+    zoomDragged.current = true;
+    // This release's click only, never the next tap's.
+    setTimeout(() => { zoomDragged.current = false; }, 0);
+  };
+  // A turn pins the host flat, but only while the art can turn: a pick that takes the back away mid-turn ends it.
+  const turningAttr = turning && twoFaced ? "" : undefined;
 
   // `set · code · collector number`, and the field AND its separator go when the
   // holding carries no number — never "no number" (the printing picker's ruling).
@@ -2182,18 +2221,23 @@ export function CardModal({
                 left: "calc(50% - var(--card-w) / 2)",
                 width: "var(--card-w)",
                 aspectRatio: "63/88",
-                perspective: "1400px",
-                // A two-faced card paints its faces inside; this box only holds them, turns them,
-                // and keeps the drop shadow, as the desktop's does.
-                ...(twoFaced ? null : artStyle),
-                boxShadow: twoFaced
-                  ? "0 24px 50px rgba(0,0,0,0.55)"
-                  : "0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3)",
                 ...(phoneEnterX !== null ? ({ "--enter-x": phoneEnterX } as React.CSSProperties) : null),
               }}
             >
-              {turningArt("rounded-[14px]")}
-              {oneFaceFilm}
+              {/* THE TILT HOST (foil R2, G2): inside, as the entry animation owns this box's `transform`. Its shadow is
+                  the stylesheet's (G3); the hold that lifts it is the sheet gesture's (G13). */}
+              <div
+                ref={phoneTiltRef}
+                data-testid="modal-art-mobile-tilt"
+                data-tilt=""
+                data-tilt-seam={twoFaced ? undefined : ""}
+                data-turning={turningAttr}
+                className="absolute inset-0 rounded-[14px]"
+                style={{ perspective: "1400px", ...(twoFaced ? null : artStyle) }}
+              >
+                {turningArt("rounded-[14px]")}
+                {oneFaceFilm}
+              </div>
               {/* The turn plate, centred along the card's bottom and 10px up: the
                   bottom-right corner it sat in covered the power/toughness box. OUTSIDE the box
                   that turns, for the reason the desktop's is. */}
@@ -2326,26 +2370,37 @@ export function CardModal({
               // the height the column actually stretches to.
               width: `min(264px, calc((min(620px, 85vh) - 2px - ${artWidthReservePx(underCardHeight)}px) * 0.7159))`,
               aspectRatio: "63/88",
-              perspective: "1400px",
-              ...(twoFaced ? null : artStyle),
-              boxShadow: twoFaced
-                ? "0 24px 50px rgba(0,0,0,0.55)"
-                : "0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3)",
             }}
           >
-            {turningArt("rounded-[12px]")}
-            {oneFaceFilm}
-            {/* Same trigger at this width, stretched over the art and outside the box
-                that turns — on the back face it would otherwise be facing away. */}
-            <button
-              type="button"
-              ref={(el) => { zoomTriggerRefs.current[1] = el; }}
-              onClick={openZoom}
-              aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
-              aria-expanded={zoomed}
-              aria-controls={zoomed ? ZOOM_REGION : undefined}
-              className="absolute inset-0 rounded-[12px] cursor-pointer bg-transparent border-0 p-0"
-            />
+            {/* THE TILT HOST (foil R2, G1): the art alone, clear of the stack below and of the paging animation's
+                `transform`. Its shadow is the stylesheet's (G3). The trigger is its direct child, so focus on it plays
+                R1's one band (G6). */}
+            <div
+              ref={desktopTiltRef}
+              data-testid="modal-art-desktop-tilt"
+              data-tilt=""
+              data-tilt-seam={twoFaced ? undefined : ""}
+              data-turning={turningAttr}
+              onPointerEnter={tiltHover}
+              onPointerMove={tiltHover}
+              onPointerLeave={tiltLeave}
+              className="absolute inset-0 rounded-[12px]"
+              style={{ perspective: "1400px", ...(twoFaced ? null : artStyle) }}
+            >
+              {turningArt("rounded-[12px]")}
+              {oneFaceFilm}
+              {/* Same trigger at this width, stretched over the art and outside the box
+                  that turns — on the back face it would otherwise be facing away. */}
+              <button
+                type="button"
+                ref={(el) => { zoomTriggerRefs.current[1] = el; }}
+                onClick={openZoom}
+                aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
+                aria-expanded={zoomed}
+                aria-controls={zoomed ? ZOOM_REGION : undefined}
+                className="absolute inset-0 rounded-[12px] cursor-pointer bg-transparent border-0 p-0"
+              />
+            </div>
             {/* Hint, turn, price — 10px under the art and centred on the card (table
                 row 1.1). Hung off the art's own box rather than added to the column,
                 because the column centres its children: a stack joining it would lift
@@ -2859,7 +2914,14 @@ export function CardModal({
             // backdrop blur (README:256). The blur needs no prefix: the utility emits the
             // WebKit declaration beside the standard one.
             className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden anim-zoom-in bg-[color:var(--surface-sunken)] md:bg-[color-mix(in_srgb,var(--bg)_94%,transparent)] md:backdrop-blur-[10px]"
-            onClick={closeZoom}
+            onClick={() => {
+              // A press that tilted the card is not a tap on the layer.
+              if (zoomDragged.current) {
+                zoomDragged.current = false;
+                return;
+              }
+              closeZoom();
+            }}
             style={{
               // Shallow enough to be a turn rather than a lens (table row 4.2).
               perspective: "1400px",
@@ -2883,6 +2945,30 @@ export function CardModal({
             {/* The whole card, at the largest 63/88 the rect allows — 372x520 desktop,
                 318x444 phone. Clicking it closes too: three doors, one stage. */}
             <div className="relative flex flex-col items-center" data-testid="card-zoom-stage">
+            {/* THE TILT HOST round the zoom card, which turns itself (desktop only, G5): a press that moves past the
+                swipe's slop tilts it and closes nothing. Its own transform flattens, so it carries the perspective. */}
+            <div
+              ref={zoomTiltRef}
+              data-testid="card-zoom-tilt"
+              data-tilt="zoom"
+              data-turning={zoomTurning && twoFaced ? "" : undefined}
+              className="relative rounded-[13px] md:rounded-[14px]"
+              style={{ perspective: "1400px" }}
+              onPointerDown={(e) => {
+                if (e.pointerType === "mouse" && e.button !== 0) return;
+                zoomPress.current = { id: e.pointerId, x: e.clientX, y: e.clientY, tilting: false };
+                try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* already released */ }
+              }}
+              onPointerMove={(e) => {
+                const p = zoomPress.current;
+                if (!p || p.id !== e.pointerId) return;
+                if (!p.tilting && Math.hypot(e.clientX - p.x, e.clientY - p.y) < SWIPE.lockPx) return;
+                p.tilting = true;
+                liftTilt(e.currentTarget, e.clientX, e.clientY);
+              }}
+              onPointerUp={(e) => endZoomPress(e)}
+              onPointerCancel={(e) => endZoomPress(e)}
+            >
             <div
               data-testid="card-zoom-card"
               className={`relative rounded-[13px] md:rounded-[14px] w-[var(--zoom-w)] md:w-[var(--zoom-w-md)] ${
@@ -2915,7 +3001,8 @@ export function CardModal({
                 ...(twoFaced ? null : artStyle),
                 transformStyle: twoFaced ? "preserve-3d" : undefined,
                 transform: twoFaced && zoomFlipped ? "rotateY(180deg)" : undefined,
-                boxShadow: "0 24px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.35)",
+                // The seam only: the drop shadow is the tilt host's, from the stylesheet (G3).
+                boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
               } as React.CSSProperties}
             >
               {/* Two faces on one piece of card stock. Both are drawn, both hide their
@@ -2937,6 +3024,7 @@ export function CardModal({
                 />
               )}
               {oneFaceFilm}
+            </div>
             </div>
             {/* OUTSIDE the box that turns. Inside it, the control rode the rotation:
                 on the back face its corner became the opposite one and its glyph was
@@ -3021,6 +3109,11 @@ export function CardModal({
  * each face paints over differs, so both are props. Everything else is the
  * construction, and a second copy of it is where the two would drift.
  */
+/** The tilt's light (foil R2): one per face, after its film, drawn by the stylesheet as strong as the lift. */
+function Glare() {
+  return <span aria-hidden data-glare="" className="pointer-events-none absolute inset-0 rounded-[inherit]" />;
+}
+
 function CardFaces({
   front,
   back,
@@ -3048,6 +3141,7 @@ function CardFaces({
         style={{ ...front, backfaceVisibility: "hidden", boxShadow: seam }}
       >
         {frontFilm ? <FoilFilm {...frontFilm} size="large" /> : null}
+        <Glare />
       </div>
       <div
         aria-hidden
@@ -3061,6 +3155,7 @@ function CardFaces({
         }}
       >
         {backFilm ? <FoilFilm {...backFilm} size="large" /> : null}
+        <Glare />
       </div>
     </>
   );

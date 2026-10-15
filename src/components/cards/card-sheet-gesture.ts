@@ -17,6 +17,8 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from "react";
+import { dropTilt, liftTilt, TILT_HOLD_MS } from "./card-tilt";
+import { prefersReducedMotion } from "../../lib/ui/motion";
 
 /** The R1 swipe constants, carried into R2 unchanged (README decision 3, STATES §Motion). */
 export const SWIPE = {
@@ -181,6 +183,10 @@ type Drag = {
   sheetTop: number;
   /** A pull down the full sheet's body from its top, which the body's own scroll would take. */
   pull: boolean;
+  /** The pending hold on the card (foil R2): it lifts the card unless the press moves or ends first. */
+  hold: ReturnType<typeof setTimeout> | null;
+  /** The hold landed: the card follows the finger, and paging, the sheet and the tap all stand down. */
+  held: boolean;
 };
 
 export type CardSheetGestureOptions = {
@@ -211,6 +217,8 @@ export type CardSheetGestureOptions = {
    * at once, with its window listeners, so its release cannot page or snap, and no new one starts.
    */
   disabled?: boolean;
+  /** The phone card's tilt host (foil R2): a press on it resting 300ms inside the slop lifts the card (G7, G13). */
+  tiltRef?: RefObject<HTMLElement | null>;
 };
 
 // The release spring: the same length and curve as `.sheet-snap` (`--motion-quick`, `--motion-ease-out`), which it hands to;
@@ -270,6 +278,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
   // sheet back where they rest and stops listening.
   useEffect(() => {
     if (!options.disabled || !drag.current) return;
+    if (drag.current.held) dropTilt(opts.current.tiltRef?.current);
     drag.current = null;
     detach.current?.();
     detach.current = null;
@@ -295,6 +304,13 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     // The release itself is a sample. Touch sends no move while a finger rests, so without it a
     // drag that stopped and then lifted would still read as the flick it was before it stopped.
     if (!cancelled) d.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
+    // A hold's release: the card settles flat, and the press opens nothing and snaps nothing (G13).
+    if (d.held) {
+      dropTilt(opts.current.tiltRef?.current);
+      suppressClick.current = true;
+      setTimeout(() => { suppressClick.current = false; }, 0);
+      return;
+    }
     if (d.axis !== null) {
       suppressClick.current = true;
       // A drag that ends without a click (released off the element, say) must not swallow the
@@ -354,12 +370,22 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     if (!d || e.pointerId !== d.pointerId) return;
     d.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
     if (d.samples.length > 32) d.samples.splice(0, d.samples.length - 32);
+    if (d.held) {
+      const host = opts.current.tiltRef?.current;
+      if (host) liftTilt(host, e.clientX, e.clientY);
+      return;
+    }
     const dx = e.clientX - d.start.x;
     const dy = e.clientY - d.start.y;
     const { bandRef, sheetRef, full, canPrev, canNext } = opts.current;
     if (d.axis === null) {
       d.axis = lockAxis(dx, dy);
       if (d.axis === null) return;
+      // A press that moves first stays a swipe, exactly as before the tilt.
+      if (d.hold) {
+        clearTimeout(d.hold);
+        d.hold = null;
+      }
       // A pull is a drag DOWN. Anything else from the body's top is the body's own: a scroll up
       // its content, or a sideways drag that pages nothing in the full state. Dropped whole, so the
       // `touchmove` guard stops holding the scroller back for the rest of the gesture.
@@ -429,11 +455,12 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       // Min is one step below the teaser: a drag from the full sheet stops at the teaser, as shipped.
       const minTop = canMinimize && !full ? height - SHEET.minHeight : undefined;
       const startTop = full ? SHEET.fullTop : min && minTop !== undefined ? minTop : teaserTop;
-      drag.current = {
+      const onControl = e.target instanceof Element && e.target.closest("button, a") !== null;
+      const d: Drag = {
         pointerId: e.pointerId,
         source,
         // The grip is a button too, so a tap on it is its own click and never also a tap here.
-        onControl: e.target instanceof Element && e.target.closest("button, a") !== null,
+        onControl,
         start: { x: e.clientX, y: e.clientY },
         samples: [{ t: e.timeStamp, x: e.clientX, y: e.clientY }],
         axis: null,
@@ -448,7 +475,24 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         bandX: 0,
         sheetTop: startTop,
         pull,
+        hold: null,
+        held: false,
       };
+      drag.current = d;
+      // The hold (foil R2): on the card's own box alone, never a control, never at full, not under reduced motion (G7, G13).
+      const host = opts.current.tiltRef?.current;
+      const target = e.target instanceof Element ? e.target : null;
+      if (source === "band" && !full && !onControl && host && target && host.contains(target) && !prefersReducedMotion()) {
+        d.hold = setTimeout(() => {
+          d.hold = null;
+          if (drag.current !== d || d.axis !== null) return;
+          d.held = true;
+          d.dead = true;
+          try { target.setPointerCapture?.(d.pointerId); } catch { /* released: the window listeners still see it */ }
+          const last = d.samples[d.samples.length - 1] ?? { x: d.start.x, y: d.start.y };
+          liftTilt(host, last.x, last.y);
+        }, TILT_HOLD_MS);
+      }
       const onMove = (ev: PointerEvent) => move(ev);
       const onUp = (ev: PointerEvent) => end(ev, false);
       const onCancel = (ev: PointerEvent) => end(ev, true);
@@ -487,6 +531,8 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       window.addEventListener("pointercancel", onCancel);
       if (pull) window.addEventListener("touchmove", onTouchMove, { passive: false });
       detach.current = () => {
+        if (d.hold) clearTimeout(d.hold);
+        d.hold = null;
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
         window.removeEventListener("pointercancel", onCancel);

@@ -207,5 +207,24 @@ The tilt (`data-tilt`, `@property`, the glare, the hover rule that plays no band
 | 14 Peek, neighbor plate | tile film, still | `data-foil-still` after the `ArtLayer` |
 | 15 to 17 Reduced motion, transparency, forced colors | as R1 | R1's rules cover every `[data-foil]` |
 | 18 Token | plain | no finish recorded |
-| 1b, 1c, 1d, 2, phone hold, tilt | not built | PR 2 |
+| 1b, 1c, 1d, 2, phone hold, tilt | not built here | PR 2, below |
 
+
+## R2 · Large views, PR 2: the tilt
+
+Source: README §R2 (the CSS, the markup, Timing), `STATES-foil-large-views.md` 1b to 1d, 2, 12, 15 to 17, `READINESS-r2-audit.md`
+(PR 2 owns G1 to G7, G11 to G14 and the tilt's half of G17). Hosts: `modal-art-desktop-tilt` and `modal-art-mobile-tilt`
+(inner boxes round the art alone, G1 and G2) and `card-zoom-tilt`; helpers in `components/cards/card-tilt.ts`; the phone
+hold is `useCardSheetGestures`' (`tiltRef`). The drop shadow is `var(--card-shadow)` outside the motion query (G3).
+
+### State coverage, R2 PR 2
+
+| STATES row | Built here | How |
+|---|---|---|
+| 1b Hovered or held | tilt, edge, light, film travel | `liftTilt` writes `--tilt-x`, `--tilt-y`, `--tilt-lift` |
+| 1c A quick drag on the phone | pages or moves the sheet | the hold's timer is cleared once an axis locks |
+| 1d A flip while tilted | eases flat, resumes on the next move | `dropTilt` on the press, `data-turning` until the settle |
+| 2 Keyboard focus | R1 band, once | the `:has(> button:focus-visible)` rule |
+| 12 Zoom | tilts on press and move, a tap closes | `card-zoom-tilt` (no phone zoom, G5) |
+| 15 to 17 | reduced motion: no tilt, shadow kept, no hold; transparency and forced colors: no light | no-preference; `[data-glare]` hidden |
+| Phone caption "No hover, no tilt." | not built | a canvas slip (G14) |

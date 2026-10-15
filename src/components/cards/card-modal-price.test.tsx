@@ -469,7 +469,7 @@ describe("a card opened at a printing", () => {
     );
 
     expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$15.00");
-    expect(screen.getByTestId("modal-art-desktop").getAttribute("style"))
+    expect(screen.getByTestId("modal-art-desktop-tilt").getAttribute("style"))
       .toContain("exact.jpg");
   });
 
@@ -502,7 +502,7 @@ describe("a card opened at a printing", () => {
     );
 
     expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$15.00");
-    expect(screen.getByTestId("modal-art-desktop").getAttribute("style"))
+    expect(screen.getByTestId("modal-art-desktop-tilt").getAttribute("style"))
       .toContain("exact.jpg");
   });
 
@@ -558,7 +558,7 @@ describe("a card opened at a printing", () => {
     );
 
     expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent("$1.00");
-    expect(screen.getByTestId("modal-art-desktop").getAttribute("style"))
+    expect(screen.getByTestId("modal-art-desktop-tilt").getAttribute("style"))
       .toContain("owned.jpg");
   });
 });
