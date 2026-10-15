@@ -16,7 +16,7 @@ export const REVEAL_CAP = 11;
  */
 export function useRevealFrom(ids: readonly string[]): number {
   const [seen, setSeen] = useState({ n: ids.length, first: ids[0], last: ids[ids.length - 1], from: ids.length });
-  if (ids.length !== seen.n || ids[0] !== seen.first) {
+  if (ids.length !== seen.n || ids[0] !== seen.first || ids[ids.length - 1] !== seen.last) {
     const grew = seen.n > 0 && ids.length > seen.n && ids[0] === seen.first && ids[seen.n - 1] === seen.last;
     setSeen({ n: ids.length, first: ids[0], last: ids[ids.length - 1], from: grew ? seen.n : ids.length });
   }

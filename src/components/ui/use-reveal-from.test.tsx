@@ -33,6 +33,15 @@ describe("useRevealFrom", () => {
     expect(result.current).toBe(50);
   });
 
+  it("follows a same-size, same-head replacement, so the next Show more on the new list still reveals", () => {
+    const { result, rerender } = renderHook(({ list }) => useRevealFrom(list), { initialProps: { list: ids(200) } });
+    const swapped = [...ids(199), "other-tail"];
+    rerender({ list: swapped }); // another filter result: same size, same first card, a different tail
+    expect(result.current).toBe(200);
+    rerender({ list: [...swapped, ...ids(200, 500)] });
+    expect(result.current).toBe(200);
+  });
+
   it("copes with an empty list", () => {
     const { result, rerender } = renderHook(({ list }) => useRevealFrom(list), { initialProps: { list: [] as string[] } });
     expect(result.current).toBe(0);
