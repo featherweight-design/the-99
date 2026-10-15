@@ -433,7 +433,10 @@ function Terminal({
       <p className="mt-[8px] md:max-w-[520px] text-[13.5px] md:text-[15px] leading-[1.6] text-[color:var(--fg-body)]">
         {body}
       </p>
-      <div className="mt-[20px] flex flex-col md:flex-row justify-center gap-[10px] md:gap-[12px]">
+      {/* `self-stretch` on the phone: under the column's `items-center` this row would shrink to
+          its widest label, and the buttons' `w-full` would then be that label's width, with no
+          side padding to spare (their phone padding is `px-0`, drawn as full-width rows). */}
+      <div className="mt-[20px] flex flex-col md:flex-row justify-center gap-[10px] md:gap-[12px] self-stretch md:self-auto">
         {children}
       </div>
     </div>

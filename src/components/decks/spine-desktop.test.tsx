@@ -6,6 +6,7 @@ await (await import("../cards/card-detail-provider")).warmCardModal();
 import { SpineDesktop } from "./spine-desktop";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { deck, pairDeck, props } from "./spine-fixtures";
 
 const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
@@ -461,5 +462,30 @@ describe("SpineDesktop — the deck's ⋯ beside Export", () => {
     expect(trigger.parentElement!.parentElement).toBe(exportButton.parentElement);
     fireEvent.click(trigger);
     expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
+  });
+});
+
+// Hugh, 2026-10-15: the ⋯ is always the row's last control, and while `Commit as v1` is offered
+// it is the one primary and Export drops to the ghost style.
+describe("SpineDesktop — the commit offer and Export", () => {
+  const FILL = "bg-[color:var(--fg)]";
+  const before = (a: Element, b: Element) =>
+    Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it("puts Commit as v1 before the ⋯, as the primary, with Export as a ghost", () => {
+    renderSpine(<SpineDesktop {...props} offerFirstCommit />);
+    const exportButton = screen.getByRole("button", { name: /Export/ });
+    const commit = screen.getByRole("link", { name: deckVersioningCopy.pending.firstCommitCta });
+    const trigger = screen.getByRole("button", { name: "Actions for Atraxa Superfriends" });
+    expect(before(exportButton, commit)).toBe(true);
+    expect(before(commit, trigger)).toBe(true);
+    expect(commit.className).toContain(FILL);
+    expect(exportButton.className).not.toContain(FILL);
+  });
+
+  it("keeps Export the primary when no commit is offered", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    expect(screen.getByRole("button", { name: /Export/ }).className).toContain(FILL);
+    expect(screen.queryByRole("link", { name: deckVersioningCopy.pending.firstCommitCta })).toBeNull();
   });
 });
