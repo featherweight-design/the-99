@@ -4,7 +4,7 @@ import {
   answerFor, holdingDistance, isFirstImport, plainSyncPick, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, readSyncSummary, storedSyncSummary, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
   type SyncAnswers, type SyncHolding, type SyncPick,
 } from "./sync";
-import { planTokenWrite } from "../tokens/ownership";
+import { keepHandMarks, planTokenWrite } from "../tokens/ownership";
 
 const oracle = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const id = (n: number): CollectionItemIdentity => ({ oracleId: oracle(n), setCode: "lea", collectorNumber: "1", finish: "nonfoil" });
@@ -351,6 +351,52 @@ describe("changedTokenCount", () => {
     const same = planTokenWrite("replace", { owned: [{ tokenOracleId: "t1", quantity: 2, source: "manual" }], uploadPrintings: [], read: true },
       [{ tokenOracleId: "t1", quantity: 2 }]);
     expect(changedTokenCount(same.changes)).toBe(0);
+  });
+});
+
+describe("a Sync's tokens keep the player's hand marks (three-way, like cards)", () => {
+  const hand = (quantity: number) => ({ owned: [{ tokenOracleId: "t1", quantity, source: "manual" }], uploadPrintings: [], read: true });
+  const planned = (state: ReturnType<typeof hand>, file: number, base?: number) => {
+    const holdings = keepHandMarks(state, [{ tokenOracleId: "t1", quantity: file }], base === undefined ? undefined : [{ tokenOracleId: "t1", quantity: base }]);
+    return planTokenWrite("replace", state, holdings);
+  };
+
+  it("never lowers a hand mark at 2 when the file lists it at 1, whether or not the file moved", () => {
+    for (const base of [undefined, 1, 3]) {
+      const { changes, final } = planned(hand(2), 1, base);
+      expect(final.owned.get("t1")).toMatchObject({ quantity: 2, source: "manual" });
+      expect(changedTokenCount(changes)).toBe(0);
+    }
+  });
+
+  it("keeps a hand mark below the file when the file did not change since the base", () => {
+    const { changes, final } = planned(hand(1), 3, 3);
+    expect(final.owned.get("t1")).toMatchObject({ quantity: 1, source: "manual" });
+    expect(changedTokenCount(changes)).toBe(0);
+  });
+
+  it("takes the file when it changed since the base and reads more, or when there is no base to say", () => {
+    for (const base of [undefined, 1]) {
+      const { changes, final } = planned(hand(1), 3, base);
+      expect(final.owned.get("t1")).toMatchObject({ quantity: 3, source: "upload" });
+      expect(changedTokenCount(changes)).toBe(1);
+    }
+  });
+
+  it("still records the file's printings for a token whose hand count is kept", () => {
+    const file = [{ tokenOracleId: "t1", quantity: 2, printings: [{ tokenPrintingId: "p1", quantity: 1 }, { tokenPrintingId: "p2", quantity: 1 }] }];
+    const state = hand(2);
+    const kept = keepHandMarks(state, file);
+    expect(kept).toEqual([]);
+    const { final } = planTokenWrite("replace", state, kept, file);
+    expect(final.owned.get("t1")).toMatchObject({ quantity: 2, source: "manual" });
+    expect([...final.uploadPrintings]).toEqual([["p1", 1], ["p2", 1]]);
+  });
+
+  it("leaves every token without a hand mark to Replace's rule", () => {
+    const state = { owned: [{ tokenOracleId: "t1", quantity: 2, source: "upload" }], uploadPrintings: [], read: true };
+    const holdings = keepHandMarks(state, [{ tokenOracleId: "t1", quantity: 1 }], [{ tokenOracleId: "t1", quantity: 1 }]);
+    expect(planTokenWrite("replace", state, holdings).final.owned.get("t1")).toMatchObject({ quantity: 1, source: "upload" });
   });
 });
 

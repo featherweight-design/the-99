@@ -25,7 +25,7 @@ import { nothingToSync, planSync, staleness, STALE_REVERSAL_SHARE, SYNC_PICKS, t
 import { normalizeItems } from "../src/lib/collection/write";
 import { collectionItemKey } from "../src/lib/collection/key";
 import type { PendingItem } from "../src/lib/collection/pending";
-import { readTokenState, tokenWritePlan, type TokenHolding } from "../src/lib/tokens/ownership";
+import { keepHandMarks, readTokenState, tokenWritePlan, type TokenHolding } from "../src/lib/tokens/ownership";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -86,7 +86,7 @@ async function main() {
     const plan = planSync({ base: base.anchor.items, app, file: items, pick: PICK });
     const stale = staleness(new Map(items.map((i) => [collectionItemKey(i), i.quantity])), base.anchor.items, base.earlier.map((e) => e.items));
     const tokenState = tokens ? await readTokenState(tx, MEASURE_USER_ID) : null;
-    const tokenChanges = tokens && tokenState ? tokenWritePlan(PICK === "additions" ? "additive" : "replace", tokenState, tokens) : [];
+    const tokenChanges = tokens && tokenState ? tokenWritePlan(PICK === "additions" ? "additive" : "replace", tokenState, PICK === "additions" ? tokens : keepHandMarks(tokenState, tokens, base.anchor.tokens), tokens) : [];
 
     console.log(`anchor ${base.anchor.uploadId}, confirmed ${base.anchor.confirmedAt.toISOString()}, ${base.anchor.items.size} holdings`);
     console.log(`earlier uploads compared: ${base.earlier.length}`);

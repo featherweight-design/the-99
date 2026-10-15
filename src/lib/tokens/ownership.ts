@@ -149,7 +149,7 @@ export function preconSyncWrites(
  * Sync's "nothing to sync" and its plan digest read: empty changes when nothing the player can see would move
  * (the marker's upload id moving is not a change).
  */
-export function planTokenWrite(mode: TokenWriteMode, state: TokenState, holdings: readonly TokenHolding[]): { final: TokenFinal; changes: TokenChange[] } {
+export function planTokenWrite(mode: TokenWriteMode, state: TokenState, holdings: readonly TokenHolding[], printingsOf: readonly TokenHolding[] = holdings): { final: TokenFinal; changes: TokenChange[] } {
   const owned: TokenFinal["owned"] = new Map(state.owned.map((o) => [o.tokenOracleId, { quantity: o.quantity, source: o.source, entryId: o.entryId ?? null }]));
   const uploadPrintings = new Map(state.uploadPrintings.map((p) => [p.tokenPrintingId, p.quantity]));
   const preconPrintings = new Map((state.preconPrintings ?? []).map((p) => [p.tokenPrintingId, p.quantity]));
@@ -169,7 +169,7 @@ export function planTokenWrite(mode: TokenWriteMode, state: TokenState, holdings
     const quantity = mode === "add" && o?.source === "upload" ? o.quantity + h.quantity : h.quantity;
     owned.set(h.tokenOracleId, { quantity, source: "upload", entryId: null });
   }
-  for (const p of printingCounts(holdings)) {
+  for (const p of printingCounts(printingsOf)) {
     const held = uploadPrintings.get(p.tokenPrintingId) ?? 0;
     uploadPrintings.set(p.tokenPrintingId, mode === "additive" ? Math.max(held, p.quantity) : held + p.quantity);
   }
@@ -209,9 +209,37 @@ export function planTokenWrite(mode: TokenWriteMode, state: TokenState, holdings
   return { final: { owned, uploadPrintings, preconPrintings }, changes };
 }
 
+/**
+ * The file's holdings a Sync under Everything or Only its tokens may WRITE over the player's hand marks
+ * (`I have one`, the Shopping buy tag: source `manual`). Cards merge three ways against the base; tokens
+ * follow the same rule through the base file's own token list (`baseTokens`, the anchor upload's payload):
+ * a hand-marked token the file did not change since the base keeps the hand count, and one the file did
+ * change is never LOWERED, so it is taken only when the file reads more than the hand mark. A token with no
+ * hand mark follows Replace's rule as before. When `baseTokens` is unknown only the unchanged-file test is skipped: a hand count at or above the file's still stays. Applied to both
+ * the plan and the write, so the review's count is what the confirm writes. The file's PRINTINGS for a kept
+ * token are still recorded (callers pass the whole list as `printingsOf`): they say which printings the file
+ * held, whoever owns the count. Asks nothing: a hand mark is a
+ * count of copies, so the greater of the two is the only answer that never loses a copy.
+ */
+export function keepHandMarks(
+  state: Pick<TokenState, "owned">,
+  holdings: readonly TokenHolding[],
+  baseTokens?: readonly TokenHolding[],
+): TokenHolding[] {
+  const hand = new Map(state.owned.filter((o) => o.source === "manual").map((o) => [o.tokenOracleId, o.quantity]));
+  if (hand.size === 0) return [...holdings];
+  const was = baseTokens ? new Map(baseTokens.map((b) => [b.tokenOracleId, b.quantity])) : null;
+  return holdings.filter((h) => {
+    const held = hand.get(h.tokenOracleId);
+    if (held === undefined) return true;
+    const unchanged = was !== null && (was.get(h.tokenOracleId) ?? 0) === h.quantity;
+    return !(unchanged || held >= h.quantity);
+  });
+}
+
 /** `planTokenWrite`'s changes alone. */
-export function tokenWritePlan(mode: TokenWriteMode, state: TokenState, holdings: readonly TokenHolding[]): TokenChange[] {
-  return planTokenWrite(mode, state, holdings).changes;
+export function tokenWritePlan(mode: TokenWriteMode, state: TokenState, holdings: readonly TokenHolding[], printingsOf: readonly TokenHolding[] = holdings): TokenChange[] {
+  return planTokenWrite(mode, state, holdings, printingsOf).changes;
 }
 
 /** A final state as plain sorted entries, for a digest. */
@@ -296,6 +324,8 @@ export async function writeUploadTokens(
   uploadId: string,
   mode: TokenWriteMode,
   holdings: TokenHolding[],
+  /** The holdings whose printings are recorded; the file's whole list when a Sync keeps a hand mark's count. */
+  printingsOf: readonly TokenHolding[] = holdings,
 ): Promise<void> {
   // Joins first, for every token read, before any ownership row is touched: the hand mark takes the join
   // rows and then its ownership row (`markOwnedOnDeck`), so the two cannot each hold what the other waits for.
@@ -349,7 +379,7 @@ export async function writeUploadTokens(
   }
   // The printings beside the tokens, the same way round: Replace starts from none, Add accumulates, Additive
   // takes the greater (each row is already the upload's own source, so no case is needed).
-  const counts = printingCounts(holdings);
+  const counts = printingCounts(printingsOf);
   for (let i = 0; i < counts.length; i += BATCH) {
     await tx.insert(tokenPrintingHoldings)
       .values(counts.slice(i, i + BATCH).map((c) => ({ userId, tokenPrintingId: c.tokenPrintingId, source: "upload" as const, quantity: c.quantity })))
@@ -471,9 +501,10 @@ export async function recordUploadTokens(
   uploadId: string | undefined,
   mode: TokenWriteMode,
   tokens: TokenHolding[] | undefined,
+  printingsOf?: readonly TokenHolding[],
 ): Promise<void> {
   if (!uploadId || !tokens || !(await tokenOwnershipTablesExist(tx))) return;
-  await writeUploadTokens(tx, userId, uploadId, mode, tokens);
+  await writeUploadTokens(tx, userId, uploadId, mode, tokens, printingsOf);
   // A Replace dropped every upload row, and with it any token a standing precon add claims beneath one.
   if (mode === "replace") await syncPreconTokens(tx, userId);
 }
