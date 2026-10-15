@@ -15,6 +15,12 @@ import { DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 
 /** The menu's own width; the delete pane takes `DELETE_CONFIRM_WIDTH`. */
 const MENU_WIDTH = 186;
+/**
+ * The newest Export press across every tile. Each tile's busy flag is its own, so a second tile's menu can
+ * press Export while the first tile's read is still out; only the newest press may open a dialog, or two
+ * reads landing would stack two modals and the first to close would hand focus to a tile behind the other.
+ */
+let latestExport = 0;
 import { folderCopy } from "../../lib/copy/folders";
 import { decksStatsCopy } from "../../lib/copy/decks-stats";
 
@@ -210,10 +216,13 @@ export function DeckCardOverflow({
     e.preventDefault();
     e.stopPropagation();
     if (busy) return;
+    const ticket = ++latestExport;
     setBusy(true);
     setExportFailed(false);
     try {
       const [read, mod] = await Promise.all([readDeckExport(deckId), import("./export-dialog")]);
+      // A newer press on another tile superseded this one: its answer is dropped, success or failure.
+      if (ticket !== latestExport) return;
       if (!read.ok) {
         setExportFailed(true);
         return;
@@ -224,7 +233,7 @@ export function DeckCardOverflow({
         commanderPrinting: read.commanderPrinting, partnerPrinting: read.partnerPrinting,
         decklistCards: read.decklistCards, shoppingCards: read.shoppingCards }, Dialog: mod.ExportDialog });
     } catch {
-      setExportFailed(true);
+      if (ticket === latestExport) setExportFailed(true);
     } finally {
       setBusy(false);
     }

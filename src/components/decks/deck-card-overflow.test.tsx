@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { redirect } from "next/navigation";
 
@@ -377,6 +377,30 @@ describe("DeckCardOverflow · Export", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Export deck" })).toBeNull());
     expect(document.activeElement).toBe(trigger("Atraxa Counters"));
   });
+
+  it.each([["the older read lands first", [0, 1]], ["the newer read lands first", [1, 0]]] as const)(
+    "opens one dialog, the newest press's, when two tiles export at once (%s)",
+    async (_, order) => {
+      const lands: ((r: typeof read) => void)[] = [];
+      readDeckExport.mockImplementation(() => new Promise((resolve) => void lands.push(resolve)));
+      render(
+        <>
+          <DeckCardOverflow deckId="d1" deckName="Atraxa Counters" built={99} placement="tile" />
+          <DeckCardOverflow deckId="d2" deckName="Kenrith Politics" built={99} placement="tile" />
+        </>,
+      );
+      fireEvent.click(trigger("Atraxa Counters"));
+      fireEvent.click(screen.getByRole("button", { name: "Export" }));
+      fireEvent.click(trigger("Kenrith Politics"));
+      fireEvent.click(screen.getAllByRole("button", { name: "Export" })[1]);
+      const reads = [read, { ...read, deckName: "Kenrith Politics", decklistCards: [{ name: "Arcane Signet", quantity: 1 }] }];
+      for (const i of order) await act(async () => lands[i](reads[i]));
+      const dialogs = await screen.findAllByRole("dialog", { name: "Export deck" });
+      expect(dialogs).toHaveLength(1);
+      expect(dialogs[0].textContent).toContain("Arcane Signet");
+      readDeckExport.mockReset();
+    },
+  );
 
   it("is absent from the deck header's menu, which has its own Export button", () => {
     render(<DeckCardOverflow deckId="d1" deckName="Atraxa Counters" built={99} placement="header" />);
