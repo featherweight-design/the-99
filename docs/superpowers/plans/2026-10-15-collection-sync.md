@@ -41,7 +41,9 @@ dropped, and a conflict answered File lowers or removes the player's own count.
   `past 90 days` (C3b) no longer fires. The state is drawn and kept for the copy file, and no code path reaches it.
 - **Tokens** (ruling 2):
   - Under **Everything** and a plain Sync, Replace's rule (`writeUploadTokens` in replace mode).
-  - Under **Only what it adds**, additive: upsert what the file reads and delete nothing.
+  - Under **Only what it adds**, additive: for each token and each token printing the file reads, the `upload` row
+    becomes the GREATER of what it holds and what the file reads, and nothing is deleted. That makes it idempotent:
+    re-syncing an unchanged export changes nothing, where Add's accumulate would double it.
   - Under **Only its tokens**, Replace's rule, which is Hugh's case. Lock 2 says tokens are synced the way Replace
     records them, and this pick exists for exactly that.
   - Tokens are never conflicts.
@@ -134,14 +136,19 @@ Each PR merges before the next opens. There are no stacked PRs. The sizes are es
   - the dry run returns the counts;
   - the confirm stores `syncSummary: { pick, kept, decided, answeredFile }` on the upload's payload (G9; no column);
   - deck check, `wouldShort` and `confirmShort` unchanged.
-- **`ownership.ts`:** `writeUploadTokens` takes `mode: "replace" | "add" | "additive"`. Ruling 2's additive is Add's
-  accumulate, never a delete. The test pins that a `manual` row the file reads still becomes an `upload` row under
+- **`ownership.ts`:** `writeUploadTokens` takes `mode: "replace" | "add" | "additive"`. Ruling 2's additive is
+  `greatest(held, file)` per token and per token printing: never a delete, and never an accumulate. Add's accumulate
+  would turn 2 recorded plus an unchanged export of 2 into 4. A test pins that an unchanged re-sync changes nothing. The test pins that a `manual` row the file reads still becomes an `upload` row under
   replace.
 - **`actions.ts`:**
   - `UploadMode` gains `"sync"`, behind the switch;
   - `previewUploadChange(uploadId, "sync", { pick, answers })` returns the counts, the conflict rows (capped at 500,
-    with the total), the kept rows, `stale`, `unavailable` and the token totals;
-  - `confirmUpload` takes the same;
+    with the total), the kept rows, `stale`, `unavailable`, the token totals, and **`planDigest`**. That is a hash over
+    every planned row's key, `before` and `after`, sorted, and over the token plan.
+  - `confirmUpload` takes the same plus that digest. The confirm plans again under the lock and refuses `stale`, writing
+    nothing, when its digest differs. This is the stale-preview contract, Sync's form of Revert's `expected` map. A
+    holding another tab moved since the preview (a File answer that would now remove more copies than were reviewed,
+    say) changes a row's `before`, so it changes the digest;
   - `parseMode` refuses `"sync"` with the switch off.
 - **`pnpm probe:collection-sync`** (`scripts/probe-collection-sync.ts`) runs on a scratch branch from local-dev. Its
   fixtures are its own, and it refuses staging and production by `neon.branch_id`. Each check is mutation-checked
@@ -273,6 +280,6 @@ Each PR merges before the next opens. There are no stacked PRs. The sizes are es
 - **A wrong base deletes data.** The base read is the one place a bug turns "keep" into "remove". It is unit tested,
   `.toSQL()` tested, probed (e), and measured on production read-only before the flip.
 - **Concurrency.** The confirm re-reads the base and the collection under the write's per-user lock, and plans again.
-  If the plan differs from the preview's, it refuses as `stale`, as a Revert does, rather than writing a merge the
-  player did not see.
+  If the plan's `planDigest` differs from the one the preview returned, it refuses as `stale`, as a Revert does, rather
+  than writing a merge the player did not see.
 - **Stale heuristics** are unmeasured (G2). The warning says "looks". **Only what it adds** is the safe pre-pick.
