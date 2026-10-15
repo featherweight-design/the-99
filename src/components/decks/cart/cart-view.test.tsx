@@ -292,7 +292,7 @@ describe("CartView by deck (A5)", () => {
   it("opens the ?deck= group on a one-deck cart too, with no switch", () => {
     const one = cart({ decks: cart().decks.slice(0, 1) });
     render(<CartView cart={one} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
-    expect(screen.queryByRole("button", { name: copy.view.byDeck })).toBeNull();
+    expect(screen.queryByRole("radiogroup", { name: copy.view.label })).toBeNull();
     expect(screen.getAllByRole("region", { name: /HD - / })).toHaveLength(1);
     expect(screen.getByText("Command Tower")).toBeTruthy();
   });
