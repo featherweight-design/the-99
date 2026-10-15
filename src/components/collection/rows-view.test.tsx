@@ -219,6 +219,14 @@ describe("RowsView foil glint", () => {
     expect(glint.closest("span.font-mono")!.textContent).toContain(`×${card.quantity}`);
     expect(screen.getAllByRole("button")[0].getAttribute("aria-label")).toContain(`${card.name}, foil`);
   });
+  it("lets the glint wrap under a count of 1000 or more on the phone, and never wraps a smaller one", () => {
+    renderRows({ ...card, quantity: 1000, imageUri: "https://cards.example/t.jpg", foil: "foil" });
+    const cell = () => document.querySelector("button [data-testid='foil-mark']")!.closest("span.font-mono")!;
+    expect(cell().className).toContain("max-md:flex-wrap");
+    cleanup();
+    renderRows({ ...card, quantity: 999, imageUri: "https://cards.example/t.jpg", foil: "foil" });
+    expect(cell().className).not.toContain("max-md:flex-wrap");
+  });
   it("draws nothing for a plain card, or one with no art", () => {
     renderRows({ ...card, imageUri: "https://cards.example/t.jpg" });
     expect(document.querySelector("button [data-testid='foil-mark']")).toBeNull();
