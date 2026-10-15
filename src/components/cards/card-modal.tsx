@@ -51,6 +51,7 @@ import { dropTilt, liftTilt, tiltsOnHover } from "./card-tilt";
 import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
+import { CardWishlist } from "../wishlist/card-wishlist";
 import { TokenCardLine } from "../decks/token-card-line";
 import { TokenDeckBox } from "../decks/token-deck-box";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -843,7 +844,7 @@ export function CardModal({
    * is today's collection-scoped picker.
    */
   deckPrinting?: DeckPrintingScope;
-  /** Invalidates this card in the provider's cache after a proxy write, so the
+  /** Invalidates this card in the provider's cache after a proxy or wishlist write, so the
    *  receipt beside the control stops describing the state before the tap. */
   onProxyWrite?: () => void;
   /**
@@ -2716,6 +2717,19 @@ export function CardModal({
               />
               <AvailabilityDetail card={card} deckPage={deckPage} onEditCopies={onEditCopies} receiptLink={receiptLink} />
               <ProxyDetail card={card} />
+
+              {/* Social R2 PR 5: the Wishlist box, its own box at the same place whatever opened the card (a deck's
+                  Shopping view included), after what the reader HAS and before the deck-scoped box. Absent while the
+                  switch is off for this reader. A write stales the provider's cached copy, as a proxy write does. */}
+              {card.wishlist && (
+                <CardWishlist
+                  key={card.oracleId}
+                  oracleId={card.oracleId}
+                  want={card.wishlist.want}
+                  owned={card.quantity}
+                  onWrite={onProxyWrite ?? (() => {})}
+                />
+              )}
 
               {/* Deck-scoped, and absent without a deck: opened from `/collection`
                   there is nothing for it to be about. */}
