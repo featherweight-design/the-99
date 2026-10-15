@@ -82,7 +82,7 @@ function makeDeck(overrides: Partial<DeckDetail> = {}): DeckDetail {
   } as DeckDetail;
 }
 
-function renderBuilder(deck: DeckDetail, arrivedFromImport = false) {
+function renderBuilder(deck: DeckDetail, arrivedFromImport = false, importAddReceipt: { entryId: string; copies: number } | null = null) {
   return render(
     <BuilderShell mix={TEST_MIX}
       deck={deck}
@@ -91,6 +91,7 @@ function renderBuilder(deck: DeckDetail, arrivedFromImport = false) {
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={arrivedFromImport}
+      importAddReceipt={importAddReceipt}
      newestAsOf={null}/>,
   );
 }
@@ -203,6 +204,38 @@ describe("Arrival strip (state 13)", () => {
     });
     expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
     expect(desktopSentence(copy.unresolved.banner(2))).toBeInTheDocument();
+  });
+});
+
+// No-collection entry S10: a ticked import's strip states the add, and over unresolved lines it still does,
+// beside the banner, without calling the import clean.
+describe("The ticked import's strip", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("takes the three-line form on a clean import", async () => {
+    await act(async () => {
+      renderBuilder(makeDeck(), true, { entryId: "e1", copies: 100 });
+    });
+    expect(screen.getByText(copy.arrival.own.head("99"))).toBeInTheDocument();
+    expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
+  });
+
+  it("draws beside the unresolved banner, saying only what was added", async () => {
+    await act(async () => {
+      renderBuilder(shortDeck(), true, { entryId: "e1", copies: 97 });
+    });
+    expect(screen.getByText(copy.arrival.own.headUnresolved(97))).toBeInTheDocument();
+    expect(screen.getByText(copy.unresolved.bannerMobile(2))).toBeInTheDocument();
+    expect(screen.queryByText(/came over clean/)).not.toBeInTheDocument();
+  });
+
+  it("is absent over unresolved lines when the import added nothing, as shipped", async () => {
+    await act(async () => {
+      renderBuilder(shortDeck(), true);
+    });
+    expect(screen.queryByRole("button", { name: copy.arrival.dismiss })).not.toBeInTheDocument();
   });
 });
 

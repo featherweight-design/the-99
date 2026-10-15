@@ -1,0 +1,102 @@
+{
+  "feature": "No-collection entry PR 2: the import's `I own these cards` tick and the ✕-only arrival dismiss (handoff design_handoff_the99_no_collection_entry, R2; plan 2026-10-15-no-collection-entry.md, PR 2)",
+  "note": "Needs COLLECTION_EDIT_ENABLED=true and NO_COLLECTION_ENTRY_ENABLED=true for the reader. The S8 rows type a list and tick the box without pressing Import, so they write nothing. The S10 and S12 rows press Import, so each cell WRITES a deck (and, ticked, adds its three cards to the signed-in account's collection): run them on local-dev or a scratch branch only, never staging or production. They photograph the arrival strip with the ✕ alone, 44px on the phone and 32px on desktop. S11 (a refused add) cannot be forced from a browser and is proved by the component tests.",
+  "rows": [
+    {
+      "id": "s8-unticked",
+      "label": "/decks/import, the box under Deck name, unticked (S8)",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "s8-ticked",
+      "label": "/decks/import with a list, a name and the box ticked; the button keeps `Import N cards` (S8)",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "fill": "#import-paste",
+          "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise"
+        },
+        {
+          "fill": "#import-deck-name",
+          "text": "Kinnan Ramp"
+        },
+        {
+          "click": "input[type=checkbox]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "s10-ticked-arrival",
+      "label": "/decks/[id] after a ticked import: the strip in three lines (head, the add with History, meta) and the ✕ alone (S10)",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "fill": "#import-paste",
+          "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise"
+        },
+        {
+          "fill": "#import-deck-name",
+          "text": "PR2 sheet · ticked"
+        },
+        {
+          "click": "input[type=checkbox]",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Import \\d+ cards$"
+        },
+        {
+          "wait": "button[aria-label=Dismiss]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "s12-unticked-arrival",
+      "label": "/decks/[id] after an unticked import: the shipped one-line strip, now with the ✕ alone (S12)",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "fill": "#import-paste",
+          "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise"
+        },
+        {
+          "fill": "#import-deck-name",
+          "text": "PR2 sheet · unticked"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Import \\d+ cards$"
+        },
+        {
+          "wait": "button[aria-label=Dismiss]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}
