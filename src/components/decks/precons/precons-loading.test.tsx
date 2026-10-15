@@ -5,6 +5,7 @@ let search = "";
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(search) }));
 
 const { PreconsLoading } = await import("./precons-loading");
+import { CARD_TILE_CAPTION_SUB_H } from "../../ui/card-tile-caption";
 import { PRECON_ROWS_CLASS, PRECON_TILES_COLUMNS } from "./precon-grid";
 
 describe("PreconsLoading", () => {
@@ -60,5 +61,11 @@ describe("PreconsLoading", () => {
   it("is marked as a loading screen and mounts the stall watch, as LoadingScreen is", () => {
     const { container } = render(<PreconsLoading />);
     expect(container.firstElementChild!.hasAttribute("data-loading-screen")).toBe(true);
+  });
+
+  it("holds the real tile's caption floor, so the tiles do not grow when the list lands", () => {
+    const { container } = render(<PreconsLoading />);
+    const caption = container.querySelector("[data-testid=tile-skeleton] > div:last-child")!;
+    for (const token of CARD_TILE_CAPTION_SUB_H.split(" ")) expect(caption.className, token).toContain(token);
   });
 });

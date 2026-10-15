@@ -5,7 +5,7 @@
 // `TileSkeleton` is the tile and `RowSkeleton` the row view's. Nothing here is interactive or announces itself:
 // every shape is `aria-hidden`.
 
-import { TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "./card-tile-caption";
+import { CARD_TILE_CAPTION_SUB_H, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "./card-tile-caption";
 
 const BAR = "rounded-[3px] bg-[color:var(--elevated)]";
 
@@ -24,7 +24,9 @@ export function TileSkeleton({ index = 0 }: { index?: number }) {
         className={`relative w-full overflow-hidden bg-[color:var(--surface-sunken)] ${TILE_ART_CLIP}`}
         style={{ aspectRatio: TILE_ART_RATIO }}
       />
-      <div className="flex flex-col gap-[7px] p-[9px_10px_11px]">
+      {/* The real tile's caption floor (a precon tile always has the three-line form: 70 below md, 65 from it), so the page does not
+          grow by 5px a tile when the list lands. */}
+      <div className={`flex flex-col gap-[7px] p-[9px_10px_11px] ${CARD_TILE_CAPTION_SUB_H}`}>
         <span className={`${BAR} h-[9px] bg-[color:var(--surface-raised)]`} style={{ width: `${OWNED[index % OWNED.length]}%` }} />
         <span className={`${BAR} h-[12px]`} style={{ width: `${NAME[index % NAME.length]}%` }} />
         <span className="mt-[2px] flex gap-[3px]">
