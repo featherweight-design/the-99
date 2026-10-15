@@ -443,6 +443,15 @@ describe("Sync review · the bar", () => {
     // Nothing of yours kept and only tokens moving: no "including the 0 you changed".
     expect(f({ taken: 0, kept: 0 })).toEqual({ kind: "confirm", line: "Your cards stay as they are. 114 tokens change.", label: "Sync 114 token changes" });
   });
+
+  it("names no token count when none moves, though the write still records the file's tokens", () => {
+    // `planTokenWrite` can plan a write that changes no count (a read marker, a printing, an ownership source).
+    renderReview(data({ counts: { taken: 0, kept: 2 }, tokensChange: true, tokensChanged: 0, nothing: false }));
+    expect(screen.getByText("Your cards stay as they are, including the 2 you changed. The file’s tokens are recorded, and no count changes.")).toBeTruthy();
+    expect(confirmButton().textContent).toBe("Sync collection");
+    expect(screen.queryByText(/\b0 tokens? changes?\b/)).toBeNull();
+    expect(screen.queryByText(/Sync 0/)).toBeNull();
+  });
 });
 
 describe("ShortDeckWarning · Sync's words", () => {

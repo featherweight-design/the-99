@@ -207,6 +207,10 @@ export const collectionEditCopy = {
         /** (reworded, for /copy-review) The kept clause goes at 0: there is nothing of yours it could name. */
         tokensOnly: (keep: number, t: number) =>
           `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. ${tokensChange(t)}.`,
+        /** (new, for /copy-review) No card moves and no token COUNT changes, yet the write still records the file's
+         * tokens (a read marker, a printing, an ownership source): the plain confirm, never `Sync 0 token changes`. */
+        tokensRecorded: (keep: number) =>
+          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. The file’s tokens are recorded, and no count changes.`,
         undecided: (k: number) => `${cards(k)} still to decide.`,
         nothing: "Nothing will change.",
         confirm: "Sync collection",

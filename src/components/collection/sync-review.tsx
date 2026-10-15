@@ -85,6 +85,8 @@ export function syncBar(f: SyncFigures): SyncBar {
   const b = s.bar;
   if (f.decide > 0) return { kind: "held", line: b.undecided(f.decide) };
   if (f.nothingToSync) return { kind: "nothing", line: b.nothing };
+  // A count is named only when one moves: a write that only records the file's tokens is the plain confirm.
+  if (f.take === 0 && f.tokens === 0) return { kind: "confirm", line: b.tokensRecorded(f.keep), label: b.confirm };
   if (f.take === 0) return { kind: "confirm", line: b.tokensOnly(f.keep, f.tokens), label: b.confirmTokens(f.tokens) };
   if (f.keep === 0) return { kind: "confirm", line: b.noneKept(f.take, f.tokens), label: b.confirm };
   return { kind: "confirm", line: b.sync(f.take, f.keep, f.tokens, f.decided, f.short), label: b.confirm };
