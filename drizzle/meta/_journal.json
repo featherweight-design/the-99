@@ -932,6 +932,13 @@
       "when": 1792086649127,
       "tag": "0132_wishlist_collected",
       "breakpoints": true
+    },
+    {
+      "idx": 133,
+      "version": "7",
+      "when": 1792090020723,
+      "tag": "0133_phone_shopping_row_b_switch",
+      "breakpoints": true
     }
   ]
 }
