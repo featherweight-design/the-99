@@ -293,7 +293,7 @@ export function HistoryEntryItem({
               {/* A Sync leads with what it kept and what the player decided (Y2): not rows of the
                   entry, since the Sync never wrote them, so they sit above the groups, not in them. */}
               {detail.sync ? (
-                <p className="m-0 pb-[8px] text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
+                <p className="m-0 pb-[10px] text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
                   {c.syncNote(detail.sync.kept, detail.sync.decided, detail.sync.tokens)}
                 </p>
               ) : null}
