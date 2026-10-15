@@ -31,7 +31,7 @@
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:collection-sync-ui
 import { neon } from "@neondatabase/serverless";
-import { setupClerkTestingToken } from "@clerk/testing/playwright";
+import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
@@ -179,7 +179,7 @@ async function walk(browser, w, userId, P) {
   try {
     await signIn(page, EMAIL, PASSWORD);
     await clearAboutSheet(page, userId);
-    await page.goto(`${BASE}/collection/replace`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${BASE}/collection/replace`, { waitUntil: "networkidle" });
     await onPage(page, "input[aria-label='Upload collection CSV']").setInputFiles({
       name: "probe-sync-file.csv", mimeType: "text/csv", buffer: Buffer.from(csv(P)),
     });
@@ -200,8 +200,11 @@ async function walk(browser, w, userId, P) {
     check(t[0] === "3to decide" && t[1] === "1from the file" && t[2] === "1kept from The 99", `${w.name} K1: the tiles read 3 to decide, 1 from the file, 1 kept`, JSON.stringify(t));
     const groups = onPage(page, "fieldset");
     check((await groups.count()) === 3, `${w.name} K1: three conflict rows`, `${await groups.count()}`);
-    const firstName = await groups.first().locator("legend").textContent();
-    check(/, at [A-Z][a-z]{2} \d+ ×1, app ×3, file ×2$/.test(firstName ?? ""), `${w.name} K4: a row's name carries the card and its counts`, firstName);
+    const legends = await groups.locator("legend").allTextContents();
+    check(legends.join("|") === [...legends].sort((a, b) => a.localeCompare(b)).join("|"), `${w.name}: the conflict rows read in name order`, JSON.stringify(legends));
+    // P1 is the one conflict at base ×1, app ×3, file ×2; its name is drawn as printed, so it is found by its counts.
+    const p1Name = legends.find((l) => l.endsWith(" ×1, app ×3, file ×2"));
+    check(/, at [A-Z][a-z]{2} \d+ ×1, app ×3, file ×2$/.test(p1Name ?? ""), `${w.name} K4: a row's name carries the card and its counts`, p1Name);
     const picked = await onPage(page, "fieldset input[type=radio]:checked").count();
     check(picked === 0, `${w.name} K1: nothing is pre-picked`, `${picked} checked`);
 
@@ -267,6 +270,7 @@ if (!branch || branch === PRODUCTION || branch === STAGING) {
 }
 console.log(`branch ${branch}`);
 
+await clerkSetup();
 const browser = await chromium.launch();
 let userId = null;
 let snap = null;

@@ -129,6 +129,8 @@ export function SyncReviewDetail({
     ...syncData.kept.rows,
     ...syncData.conflicts.rows.filter((r) => r.answer === "app"),
   ].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+  // Conflict rows read in the same name order as every other list on the review; the engine sorts by key.
+  const conflictRows = [...syncData.conflicts.rows].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
   const kept: PreviewList = {
     total: f.keep,
     rows: keptRows.map((r) => ({
@@ -193,7 +195,7 @@ export function SyncReviewDetail({
       ) : null}
       {syncData.conflicts.total > 0 ? (
         <SyncConflicts
-          rows={syncData.conflicts.rows}
+          rows={conflictRows}
           total={syncData.conflicts.total}
           since={since}
           answers={answers}

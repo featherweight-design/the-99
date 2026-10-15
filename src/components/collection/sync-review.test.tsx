@@ -120,6 +120,13 @@ describe("Sync review · the lists", () => {
     expect((kept.lastElementChild as HTMLElement).style.color).toBe("var(--fg-body)");
   });
 
+  it("reads the conflict rows in name order, whatever order the engine's keys put them in", () => {
+    const rows = [conflict(1, { name: "Sol Ring" }), conflict(2, { name: "Arcane Signet" }), conflict(3, { name: "Esper Sentinel" })];
+    renderReview(data({ counts: { conflicts: 3, undecided: 3 }, conflicts: { rows, total: 3 } }));
+    const legends = [...document.querySelectorAll("fieldset legend")].map((l) => l.textContent?.split(",")[0]);
+    expect(legends).toEqual(["Arcane Signet", "Esper Sentinel", "Sol Ring"]);
+  });
+
   it("draws the overwrite banner and `edited` tags only for conflicts answered File", () => {
     const { unmount } = renderReview(data({ counts: { conflicts: 3, undecided: 0, answeredFile: 0 } }));
     expect(screen.queryByText(/overwrites/)).toBeNull();
