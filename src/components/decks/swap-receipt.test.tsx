@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -44,6 +44,21 @@ describe("SwapReceiptRow", () => {
     // Whole text, never a substring: the free form begins with the bought one.
     expect(screen.getByText(swapToolsCopy.row.receipt("Plateau", "Rugged Prairie"), { exact: true })).toBeInTheDocument();
     expect(screen.getByText(swapToolsCopy.row.receiptAria("Plateau", "Rugged Prairie"))).toHaveClass("sr-only");
+  });
+
+  it("keeps the 96px of option B's row below md only when told it replaces a whole row", async () => {
+    const shell = () => screen.getByTestId("swap-receipt").firstElementChild as HTMLElement;
+    await act(async () => {
+      render(
+        <SwapToolsProvider deckId="d1" deckName="Deck" storedLimitCents={null}>
+          <SwapReceiptRow receipt={base} tall />
+        </SwapToolsProvider>,
+      );
+    });
+    expect(shell().className).toContain("max-md:min-h-[96px]");
+    cleanup();
+    await draw(base);
+    expect(shell().className).not.toContain("96px");
   });
 
   it("names a free copy", async () => {

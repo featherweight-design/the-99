@@ -222,9 +222,9 @@ export function BuyTag({
    */
   overLimit?: boolean;
   /**
-   * Phone Shopping row option B (Social R2 PR 7): below `lg` an over-limit plate is OUTLINED, with no wash, and
+   * Phone Shopping row option B (Social R2 PR 7): below `md` an over-limit plate is OUTLINED, with no wash, and
    * the `over $N` that used to stack under it is spoken but not drawn (the key says what the outline means).
-   * From `lg` the plate and the stack are the ones they were.
+   * From `md` the plate and the stack are the ones they were.
    */
   foldOver?: boolean;
   /**
@@ -309,10 +309,10 @@ export function BuyTag({
           : `font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]} ${
               variant === "tile" ? TILE_CORNER[corner] : ""
             }`
-      }${folded ? " bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] max-lg:bg-transparent" : ""}`}
+      }${folded ? " bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] max-md:bg-transparent" : ""}`}
       style={{
         color: "var(--warning)",
-        // A folded plate takes its wash from a class instead, so `max-lg:` can lift it.
+        // A folded plate takes its wash from a class instead, so `max-md:` can lift it.
         ...(captionBox ? {} : folded ? { ...PLATE[variant], background: undefined } : PLATE[variant]),
         ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
       }}
@@ -379,7 +379,7 @@ function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagP
         id={descriptionId}
         className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT.row} group-focus-visible/buy:outline-2 group-focus-visible/buy:outline-offset-2 group-focus-visible/buy:[outline-style:solid] group-focus-visible/buy:outline-[color:var(--accent)] ${
           pressState === "rest" ? WASH.rest : pressState === "open" ? WASH.open : WASH.idle
-        }${foldOver && pressState === "rest" ? " max-lg:bg-transparent" : ""}`}
+        }${foldOver && pressState === "rest" ? " max-md:bg-transparent" : ""}`}
         style={{
           color: "var(--warning)",
           ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
@@ -389,7 +389,7 @@ function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagP
         {children}
       </span>
       {under ? (
-        <span id={underId} className={`${foldOver ? "sr-only" : "block"} lg:hidden font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
+        <span id={underId} className={`${foldOver ? "max-md:sr-only " : ""}block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
           {under}
         </span>
       ) : null}

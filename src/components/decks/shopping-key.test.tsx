@@ -67,11 +67,11 @@ describe("the key's `over $N` item (phone Shopping row option B)", () => {
     <DeckPageSwitches howItWorks={false} phoneShoppingRowB={rowB}>{withTools(ui)}</DeckPageSwitches>
   );
 
-  it("draws an outlined plate and `over $10` after the buy item, phone only", () => {
+  it("draws an outlined plate and `over $10` after the buy item, below md", () => {
     render(on(<GotItProvider deckId={DECK}>{head()}</GotItProvider>));
     const item = screen.getByTestId("shopping-key-over");
     expect(item).toHaveTextContent(swapToolsCopy.row.over("$10"));
-    expect(item.className).toContain("lg:hidden");
+    expect(item.className).toContain("md:hidden");
     expect((item.firstElementChild as HTMLElement).style.boxShadow).toBe(OVER_LIMIT_RING);
     // After the buy item, in the key's own grid.
     const key = screen.getByTestId("shopping-key");

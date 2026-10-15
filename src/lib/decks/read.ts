@@ -166,6 +166,12 @@ export type DeckCommander = {
   imageUri: string | null;
   artCropUri: string | null;
   /**
+   * The catalog layout, for the Shopping row's front-face name (a two-face commander shows its front face alone on
+   * the phone under option B). Optional for the reason `printedName` is: fixtures build `DeckCommander` literals
+   * that never touch the catalog, and absent means unknown, which reads as one face.
+   */
+  layout?: string | null;
+  /**
    * The name printed on the copy the player owns, where it differs from the oracle
    * card's — Secret Lair's renames. Null when they own no copy, or when the copy
    * they own prints the oracle name, which is almost every printing.
@@ -318,6 +324,7 @@ export function deckDetailReads(deckId: string, userId: string) {
         oracleText: cards.oracleText,
         imageUri: cards.imageUri,
         artCropUri: cards.artCropUri,
+        layout: cards.layout,
         cmc: cards.cmc,
         // COMMANDERS ARE CARDS. The bracket rules count a Game Changer in the command zone
         // against every limit, so the card note's ordinal has to count it too — and this is

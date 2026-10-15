@@ -75,21 +75,22 @@ const ROW_SHELL_META = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] md:min-h
 const ROW_SHELL_SHOPPING = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] lg:min-h-[34px]`;
 
 /**
- * Option B of the phone Shopping row (Social R2 PR 7; `PHONE_SHOPPING_ROW_B_ENABLED`). Below `lg` the shell
+ * Option B of the phone Shopping row (Social R2 PR 7; `PHONE_SHOPPING_ROW_B_ENABLED`). Below `md` the shell
  * wraps in two lines by `order`: the dot, the name and the ✕ are line 1 (the name takes the width, the ✕ keeps
  * its 44px hit), a zero-height full-width break ends it (its own flex line, so `gap-y` falls on both sides: 4px between the lines, a 96px row), and line 2 is the meta line (which takes the width),
  * the availability marker, ⇄ and the buy tag, each in a 44px line so no two hit areas overlap. The classes are
- * spelled whole so Tailwind sees them, and every one is `max-lg:`, so from `lg` the row is the one it was.
+ * spelled whole so Tailwind sees them, and every one is `max-md:`, so from `md` up the row is the one it was.
  */
-const B_SHELL = "max-lg:flex-wrap max-lg:min-h-0 max-lg:gap-y-[2px] max-lg:py-[2px]";
-const B_NAME_BLOCK = "max-lg:contents";
-const B_NAME = "max-lg:order-1 max-lg:flex-1";
-const B_REMOVE = "max-lg:order-2";
-const B_BREAK = "hidden max-lg:block max-lg:order-3 max-lg:h-0 max-lg:basis-full";
-const B_META = "max-lg:order-5 max-lg:flex-1 max-lg:min-h-[44px] max-lg:pl-[16px]";
-const B_MARK = "max-lg:order-6";
-const B_SWAP = "max-lg:order-7";
-const B_BUY = "max-lg:flex max-lg:order-8 max-lg:min-h-[44px] max-lg:items-center lg:contents";
+const B_SHELL = "max-md:flex-wrap max-md:min-h-0 max-md:gap-y-[2px] max-md:py-[2px]";
+const B_NAME_BLOCK = "max-md:contents";
+const B_NAME = "max-md:order-1 max-md:flex-1";
+const B_REMOVE = "max-md:order-2";
+const B_BREAK = "hidden max-md:block max-md:order-3 max-md:h-0 max-md:basis-full";
+const B_META = "max-md:order-5 max-md:flex-1 max-md:min-h-[44px] max-md:pl-[16px] max-md:overflow-hidden";
+const B_MARK = "max-md:order-6";
+const B_SWAP = "max-md:order-7";
+const B_BUY_STACK = "max-md:order-8 max-md:min-h-[44px] max-md:justify-center";
+const B_BUY = "max-md:flex max-md:order-8 max-md:min-h-[44px] max-md:items-center md:contents";
 
 /** Phone pips ride the meta line at their own size, plain and uncapped — there
  *  the line is theirs alone and has the width to spend. Desktop takes the shared
@@ -299,9 +300,9 @@ export function DecklistRow({
   // cannot cut its commander from a buying list, so neither the ring, the ⇄ nor the door draws.
   const commanderRow = card.commander === true;
   const swapTools = useSwapTools();
-  // Option B of the phone Shopping row (Social R2 PR 7, behind its own switch): below `lg`, the name and the ✕
+  // Option B of the phone Shopping row (Social R2 PR 7, behind its own switch): below `md`, the name and the ✕
   // take line 1; pips, the figure, the marker, ⇄ and the buy tag take line 2; `over $N` folds into an outlined
-  // tag. Off, or outside Shopping, none of the `max-lg:` classes below is spelled and the row is as shipped.
+  // tag. Off, or outside Shopping, none of the `max-md:` classes below is spelled and the row is as shipped.
   const { phoneShoppingRowB } = useDeckPageSwitches();
   const rowB = phoneShoppingRowB && inShopping && !readOnly;
   const overLimit = swapTools !== null && inShopping && !commanderRow && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
@@ -343,7 +344,7 @@ export function DecklistRow({
   const fullName = printedNameOf(card);
   // Option B's phone name: the front face of a two-face card whose name still carries both (`printedFaceName`
   // already cuts a printed name to its front face at every width). Null when there is nothing to cut.
-  const frontFace = !card.printedName && isTwoFaced(card.layout) ? faceNames(card.name).front : null;
+  const frontFace = !card.printedName && isTwoFaced(card.layout ?? card.catalogLayout) ? faceNames(card.name).front : null;
   // What the row prints. A recounted row carries its pair inline with the name,
   // because the brass rule says only "the draft touched this" and a reader
   // looking at `Sol Ring` cannot tell 1 → 2 from a card that was not there.
@@ -486,9 +487,9 @@ export function DecklistRow({
   // live (H29: a receipt that is always 44px shrinks the slot of any card
   // that would have shown a meta line, and several stacked compound the
   // drift) — the one thing a bare `<UndoRow>` cannot know on its own.
-  // The receipts keep the live row's height: option B's row is 96px below `lg` (two 44px lines), and a one-line
+  // The receipts keep the live row's height: option B's row is 96px below `md` (two 44px lines), and a one-line
   // receipt at 52px would shift every row under it, and shift them back on Undo.
-  const slotShell = rowB ? `${rowShell} max-lg:min-h-[96px]` : rowShell;
+  const slotShell = rowB ? `${rowShell} max-md:min-h-[96px]` : rowShell;
   if (spent) return <UndoRow deckId={deckId} card={card} rowShell={slotShell} />;
   if (held) return <HeldSlot card={card} rowShell={slotShell} />;
 
@@ -564,7 +565,7 @@ export function DecklistRow({
       type="button"
       onClick={handleRemove}
       disabled={isPending}
-      className={`flex-none flex items-center justify-center w-[44px] h-[44px] ${stepperOn ? "md:w-[22px] md:h-[20px]" : rowB ? "lg:w-auto lg:h-auto" : "md:w-auto md:h-auto"}${rowB ? ` ${B_REMOVE}` : ""}
+      className={`flex-none flex items-center justify-center w-[44px] h-[44px] ${stepperOn ? "md:w-[22px] md:h-[20px]" : "md:w-auto md:h-auto"}${rowB ? ` ${B_REMOVE}` : ""}
         rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
         active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
         md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors`}
@@ -663,12 +664,16 @@ export function DecklistRow({
                 describedBy={describedBy}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
               >
-                {/* Option B: a two-face card shows its front face alone below `lg`; the whole name is still
-                    the trigger's accessible name, and from `lg` the row prints what it printed. */}
-                {rowB && frontFace && rowLabel === displayName ? (
+                {/* Option B: a two-face card shows its front face alone below `md`; the whole name is still
+                    the trigger's accessible name, and from `md` the row prints what it printed. */}
+                {rowB && frontFace ? (
                   <>
-                    <span className="lg:hidden" aria-hidden="true">{frontFace}</span>
-                    <span className="hidden lg:inline" aria-hidden="true">{rowLabel}</span>
+                    <span className="md:hidden" aria-hidden="true">
+                      {recounted && !stepperOn
+                        ? deckImportCopy.update.diff.recountedItem(frontFace, String(recounted.from), String(recounted.to))
+                        : frontFace}
+                    </span>
+                    <span className="hidden md:inline" aria-hidden="true">{rowLabel}</span>
                   </>
                 ) : rowLabel}
               </CardDetailTrigger>
@@ -834,21 +839,18 @@ export function DecklistRow({
               {card.printedSetCode.toUpperCase()} {card.printedCollectorNumber}{card.printedFoil ? ` · ${preconsCopy.open.edition.foil}` : ""}
             </span>
           ) : null
-        ) : rowB && (pressable || tag === "buy") ? (
-          // Option B: `over $N` is not drawn on the phone; it folds into the outlined tag (the key says so),
-          // and the words stay in the tag's description for a reader who cannot see the outline.
-          <span className={B_BUY}>
-            {buyTag}
-            {!pressable && overText ? <span className="sr-only lg:hidden">{overText}</span> : null}
-          </span>
-        ) : pressable ? buyTag : overText ? (
-          <span className={`flex flex-none flex-col items-end gap-[2px]${rowB ? ` ${B_MARK}` : ""}`}>
-            <span className="block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
+        ) : pressable ? (
+          // Option B: below `md`, `over $N` is not drawn under the tag; it folds into the outlined tag (the key says
+          // so), and the words stay in the tag's description for a reader who cannot see the outline.
+          rowB ? <span className={B_BUY}>{buyTag}</span> : buyTag
+        ) : overText ? (
+          <span className={`flex flex-none flex-col items-end gap-[2px]${rowB ? ` ${B_BUY_STACK}` : ""}`}>
+            <span className={`${rowB ? "max-md:sr-only " : ""}block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
               {overText}
             </span>
             {tag === "buy" ? buyTag : null}
           </span>
-        ) : tag === "buy" ? buyTag : null}
+        ) : tag === "buy" ? (rowB ? <span className={B_BUY}>{buyTag}</span> : buyTag) : null}
 
         {/* Auto tag — one per stack. Not in Shopping (Hugh, 2026-09-28): where a card came from is
             nothing a buying trip needs, and that row is the busiest in the app. */}
@@ -900,15 +902,15 @@ export function DecklistRow({
               type="button"
               aria-label={swapToolsCopy.row.swapOverAria(displayName, formatLimit(swapTools.limitCents))}
               onClick={() => swapTools.openStandIns(card)}
-              className={`flex flex-none items-center justify-center w-[44px] h-[44px] -mr-[9px] md:mr-0 ${rowB ? "lg:w-[22px] lg:h-[20px]" : "md:w-[22px] md:h-[20px]"} rounded-[6px] font-mono text-[13px] leading-none bg-transparent border-0 p-0 cursor-pointer text-[color:var(--warning)]${rowB ? ` max-lg:mr-0 ${B_SWAP}` : ""}`}
+              className={`flex flex-none items-center justify-center w-[44px] h-[44px] -mr-[9px] md:mr-0 md:w-[22px] md:h-[20px] rounded-[6px] font-mono text-[13px] leading-none bg-transparent border-0 p-0 cursor-pointer text-[color:var(--warning)]${rowB ? ` max-md:mr-0 ${B_SWAP}` : ""}`}
             >
               {/* Option B draws it as an outlined 40x36 press inside its 44px hit (the phone's marker size). */}
               {rowB ? (
-                <span aria-hidden="true" className="flex items-center justify-center max-lg:h-[36px] max-lg:w-[40px] max-lg:rounded-[9px] max-lg:border max-lg:border-[color:var(--border)] max-lg:text-[16px]">⇄</span>
+                <span aria-hidden="true" className="flex items-center justify-center max-md:h-[36px] max-md:w-[40px] max-md:rounded-[9px] max-md:border max-md:border-[color:var(--border)] max-md:text-[16px]">⇄</span>
               ) : "⇄"}
             </button>
           ) : (
-            <span aria-hidden="true" className={`hidden ${rowB ? "lg:block" : "md:block"} flex-none w-[22px]`} />
+            <span aria-hidden="true" className={`hidden md:block flex-none w-[22px]`} />
           )
         ) : null}
 
@@ -938,7 +940,7 @@ export function DecklistRow({
             // `md:-my-[1px]`: the drawn box stays 26×22, but a desktop row's content box is 20px
             // tall, so without it every row grew 2px the moment the mode began (Hugh, 2026-09-26).
             // The phone's 44px hit is the row's own 44, and needs nothing.
-            className={`flex-none flex items-center justify-center w-[44px] h-[44px] ${rowB ? "lg:w-[26px] lg:h-[22px] lg:-my-[1px]" : "md:w-[26px] md:h-[22px] md:-my-[1px]"} bg-transparent border-0 p-0 cursor-pointer${rowB ? ` ${B_REMOVE}` : ""}`}
+            className={`flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[26px] md:h-[22px] md:-my-[1px] bg-transparent border-0 p-0 cursor-pointer${rowB ? ` ${B_REMOVE}` : ""}`}
           >
             <span
               className={`flex items-center justify-center w-[36px] h-[36px] md:w-[26px] md:h-[22px] rounded-[6px] border ${
@@ -956,7 +958,7 @@ export function DecklistRow({
             so the buy tag stays in the column every other row's ✕ holds it in. */
         <span
           aria-hidden="true"
-          className={`invisible flex-none flex items-center justify-center w-[44px] h-[44px] ${rowB ? "lg:w-auto lg:h-auto" : "md:w-auto md:h-auto"} text-[13px] leading-none${rowB ? ` ${B_REMOVE}` : ""}`}
+          className={`invisible flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto text-[13px] leading-none${rowB ? ` ${B_REMOVE}` : ""}`}
         >
           {addPanelCopy.row.remove}
         </span>

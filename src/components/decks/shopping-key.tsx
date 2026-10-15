@@ -43,15 +43,15 @@ export function ShoppingKey({ shoppingCount }: { shoppingCount: number }) {
 
 /**
  * The phone Shopping row's option B key item (Social R2 PR 7): an outlined buy plate and `over $N`, the one
- * place the limit is drawn now that it no longer stacks on the tag. Phone only (the desktop row still writes
- * `over $N` after the figure), and only with the swap tools, which are what mark a row over a limit.
+ * place the limit is drawn now that it no longer stacks on the tag. Phone only, below `md` (from there the row still draws
+ * `over $N` stacked or after the figure), and only with the swap tools, which are what mark a row over a limit.
  */
 export function ShoppingKeyOver() {
   const { phoneShoppingRowB } = useDeckPageSwitches();
   const tools = useSwapTools();
   if (!phoneShoppingRowB || !tools) return null;
   return (
-    <span className={`${ITEM} lg:hidden`} data-testid="shopping-key-over">
+    <span className={`${ITEM} md:hidden`} data-testid="shopping-key-over">
       <span
         className="rounded-[3px] px-[4px] text-[color:var(--warning)]"
         style={{ boxShadow: OVER_LIMIT_RING }}

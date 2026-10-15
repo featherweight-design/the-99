@@ -10,6 +10,7 @@ import { GotItDoorRegistration } from "./got-it-door";
 import { StandInsSheet } from "./stand-ins-sheet";
 import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
+import { useDeckPageSwitches } from "./deck-page-switches";
 import { placeReceipts } from "../../lib/swaps/place-receipts";
 import { isOverLimit } from "../../lib/swaps/limit";
 import { isLandFace } from "../../lib/cards/facet";
@@ -388,6 +389,8 @@ export function Decklist({
   //
   // List until this browser says otherwise, which is also what the server
   // renders: the stored choice arrives on the pass after hydration.
+  // Option B of the phone Shopping row: a receipt that replaces a whole row keeps that row's height below `md`.
+  const { phoneShoppingRowB } = useDeckPageSwitches();
   const [storedView, chooseView] = useStoredView(DECK_VIEW_KEY, isDeckView);
   // The panel's body, held for this visit to this deck (`useDeckPanel`), not remembered. Stats is a
   // third segment of the All / Shopping control, so choosing either list segment returns here.
@@ -1233,7 +1236,7 @@ export function Decklist({
                 style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}
               >
                 {placeReceipts(groupCards, receiptsInSection(key), sort.key, compareCards).map((item) => {
-                  if ("receipt" in item) return <SwapReceiptRow key={item.receipt.swapId} receipt={item.receipt} />;
+                  if ("receipt" in item) return <SwapReceiptRow key={item.receipt.swapId} receipt={item.receipt} tall={phoneShoppingRowB} />;
                   const card = item.card;
                   const row = (
                     <DecklistRow
