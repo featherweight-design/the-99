@@ -20,6 +20,8 @@ export function ChooseHeader({
   subPhone,
   centered = false,
   trailing,
+  titleId,
+  meta,
 }: {
   back: { href: string; label: string };
   title: string;
@@ -28,6 +30,10 @@ export function ChooseHeader({
   centered?: boolean;
   /** Drawn at the back line's far end (the form's phone-only way into History). */
   trailing?: React.ReactNode;
+  /** The title's id, for a surface that moves focus to it (a past run). */
+  titleId?: string;
+  /** A line under the title (a past run's date). */
+  meta?: React.ReactNode;
 }) {
   return (
     <header
@@ -53,7 +59,8 @@ export function ChooseHeader({
           <PendingReporter href={back.href} />
         </Link>
       )}
-      <h1 className="m-0 font-display font-bold text-[20px] md:text-[28px] text-[color:var(--fg)]">{title}</h1>
+      <h1 id={titleId} className="m-0 font-display font-bold text-[20px] md:text-[28px] text-[color:var(--fg)] outline-none">{title}</h1>
+      {meta}
       <p className="m-0 md:hidden font-mono text-[10px] text-[color:var(--fg-faint)]">{subPhone}</p>
       <p className="m-0 hidden md:block max-w-[640px] text-[14px] text-[color:var(--fg-muted)]">{sub}</p>
     </header>

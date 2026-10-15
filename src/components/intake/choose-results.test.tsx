@@ -20,7 +20,7 @@ const row = (i: number): ResultRow => ({
   cardFit: null, ownedSupport: 0, supportTotal: 0,
 });
 const page = (n: number, over: Partial<ResultsPage> = {}): ResultsPage => ({
-  order: "fit", tooNarrow: null, card: null, rows: Array.from({ length: n }, (_, i) => row(i + 1)), hasMore: false, total: n, ...over,
+  order: "fit", tooNarrow: null, card: null, rows: Array.from({ length: n }, (_, i) => row(i + 1)), hasMore: false, total: n, gone: [], ...over,
 });
 const narrow = { without: [{ answers: [{ kind: "theme" as const, slug: "dinosaurs" }], count: 30 }], widen: null, anyOf: null, cardOverBracket: null };
 
