@@ -24,7 +24,7 @@ import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
-import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
+import { applyCollectionChange, type ChangeResult, type ShortDeck } from "../src/lib/collection/write";
 import { collectionGeneration } from "../src/lib/recs/store";
 import { commitVersion } from "../src/lib/decks/versions";
 import { collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt, getHistoryEntry, listHistory } from "../src/lib/collection/history";
@@ -356,6 +356,23 @@ async function main() {
       JSON.stringify([...resolved.keys()]));
     check("a row an edit creates stores the printing and condition the edit named",
       created?.scryfall_id === printing && created?.condition === "LP", JSON.stringify(created));
+    // The Replace warning counts holdings the hand changes left different from the upload, not entries: an add
+    // and its revert (a precon add taken back) net to nothing, and one that stands is one change.
+    const netBefore = await editsSinceUpload(USER);
+    const keysBefore = await editedKeysSinceUpload(USER);
+    const cancelId = randomUUID();
+    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(B), collectorNumber: "9", condition: null, quantity: 3 }] }, { id: cancelId, env: process.env });
+    const netAdded = await editsSinceUpload(USER);
+    // The probe's committed deck holds a copy of B by now: the revert says so first, and is confirmed with what it showed.
+    const revertOf = (confirmShort?: ShortDeck[]) =>
+      applyCollectionChange(USER, { kind: "revert", entryId: cancelId }, { id: randomUUID(), confirmShort, env: process.env });
+    let cancelled = await revertOf();
+    if (cancelled.status === "wouldShort") cancelled = await revertOf(cancelled.decks);
+    const netAfter = await editsSinceUpload(USER);
+    const keysAfter = await editedKeysSinceUpload(USER);
+    check("an add and its revert net to no change in the Replace warning's count or its edited keys",
+      cancelled.status === "applied" && netAdded === netBefore + 1 && netAfter === netBefore && keysAfter.size === keysBefore.size,
+      `revert ${cancelled.status}; ${netBefore} -> ${netAdded} -> ${netAfter}; keys ${keysBefore.size} -> ${keysAfter.size}`);
   } finally {
     // One statement for the ledger: its two self-references are checked at the statement's end.
     await pool.query("delete from collection_history where user_id = $1", [USER]);

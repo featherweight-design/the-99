@@ -237,7 +237,7 @@ export type UploadChangePreview = {
   lowered: number;
   /** Committed decks the upload would leave short (a Replace only; an Add lowers nothing). */
   decks: ShortDeck[];
-  /** Hand changes since the last upload, which a Replace overwrites. */
+  /** Holdings the hand changes since the last upload left different from it, net (an add and its revert are none), which a Replace overwrites. */
   editsSinceUpload: number;
   /** ISO time of the newest confirmed upload, or null for none. */
   lastUploadAt: string | null;

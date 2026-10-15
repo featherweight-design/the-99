@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { handEntriesSince, listColumns, revertDiffers, syncSummaryColumn } from "./history";
+import { handEntriesSince, listColumns, netHandChanges, revertDiffers, syncSummaryColumn } from "./history";
+import type { HistoryRow, HistoryRowState } from "../../db/schema";
 import { cartDecksOf } from "./deck-line";
 
 const id = { oracleId: "a", setCode: "lea", collectorNumber: "1", finish: "nonfoil" };
@@ -99,5 +100,59 @@ describe("an opened Sync's summary (G9)", () => {
     expect(text).toContain("case when h.kind = 'upload_sync' then ( select u.preview_payload -> 'syncSummary' from csv_uploads u");
     expect(text).toContain("where u.user_id = h.user_id");
     expect(text).toContain("then substr(h.source, 13)::uuid end ) end as sync_summary");
+  });
+});
+
+// The Replace warning counts holdings the hand changes left different from the upload, not entries.
+describe("netHandChanges", () => {
+  const st = (quantity: number, scryfallId: string | null = "s1", condition: string | null = null): HistoryRowState => ({ quantity, scryfallId, condition });
+  const row = (card: string, before: HistoryRowState | null, after: HistoryRowState | null, finish = "nonfoil"): HistoryRow =>
+    ({ oracleId: card, setCode: "set", collectorNumber: "1", finish, name: card, before, after });
+  const entry = (seq: number, ...rows: HistoryRow[]) => ({ seq, rows });
+
+  it("counts an add and its revert as nothing (two precon adds and their two reverts)", () => {
+    const net = netHandChanges([
+      entry(1, row("a", null, st(70))), entry(2, row("a", st(70), null)),
+      entry(3, row("b", null, st(70))), entry(4, row("b", st(70), null)),
+    ]);
+    expect(net.count).toBe(0);
+    expect(net.keys.size).toBe(0);
+  });
+
+  it("counts a holding once, however many entries touched it", () => {
+    expect(netHandChanges([entry(1, row("a", st(1), st(2))), entry(2, row("a", st(2), st(3)))]).count).toBe(1);
+    // Added, reverted, added again: it differs from the upload.
+    expect(netHandChanges([entry(1, row("a", null, st(1))), entry(2, row("a", st(1), null)), entry(3, row("a", null, st(1)))]).count).toBe(1);
+  });
+
+  it("counts an edit undone by a later edit as nothing, and one that only moves partway as a change", () => {
+    expect(netHandChanges([entry(1, row("a", st(2), st(5))), entry(2, row("a", st(5), st(2)))]).count).toBe(0);
+    expect(netHandChanges([entry(1, row("a", st(2), st(5))), entry(2, row("a", st(5), st(3)))]).count).toBe(1);
+  });
+
+  it("counts each differing holding, and reads a printing, a finish or a condition as a difference", () => {
+    const net = netHandChanges([
+      entry(1, row("a", null, st(1)), row("b", st(1), st(1, "s2")), row("c", st(1), st(1, "s1", "LP"))),
+      entry(2, row("d", null, st(1), "foil")),
+    ]);
+    expect(net.count).toBe(4);
+    // A finish is part of the key, so the foil and the nonfoil of one card are two holdings.
+    expect(netHandChanges([entry(1, row("a", null, st(1), "foil"), row("a", null, st(1), "nonfoil"))]).count).toBe(2);
+  });
+
+  it("nets by the ledger's order, whatever order the rows arrive in", () => {
+    expect(netHandChanges([entry(2, row("a", st(70), null)), entry(1, row("a", null, st(70)))]).count).toBe(0);
+    // An add then an edit that raises it is one change; read in the wrong order it would net to nothing.
+    expect(netHandChanges([entry(2, row("a", st(1), st(3))), entry(1, row("a", null, st(1)))]).count).toBe(1);
+  });
+
+  it("counts an entry whose rows were pruned as one change, as it always did, and keys nothing for it", () => {
+    const net = netHandChanges([{ seq: 1, rows: null }, entry(2, row("a", null, st(1)))]);
+    expect(net.count).toBe(2);
+    expect(net.keys.size).toBe(1);
+  });
+
+  it("is nothing when there are no hand changes", () => {
+    expect(netHandChanges([])).toEqual({ count: 0, keys: new Set() });
   });
 });
