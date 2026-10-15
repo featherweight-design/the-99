@@ -3,7 +3,7 @@
  * carries `precon:<file>` as its source (`add.ts`). Its own module, so a page that only asks the
  * question does not import the write path.
  */
-import { and, eq, isNotNull, like, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, like, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { collectionHistory } from "../../db/schema";
 
@@ -81,4 +81,17 @@ export async function standingPreconAdds(
 export async function preconAddedOn(userId: string, fileName: string, runner: Pick<typeof db, "select"> = db): Promise<string | null> {
   const adds = await standingPreconAdds(userId, runner, { fileName });
   return adds.length > 0 ? adds[adds.length - 1].createdAt.toISOString() : null;
+}
+
+/**
+ * This reader's own precon add entries among `ids`, each to the box file its source names: what a pick's retry is
+ * recovered from (`recoverCommitted`). Owner-scoped in its own query; an id that is not a precon add of theirs is absent.
+ */
+export async function committedPreconAdds(userId: string, ids: readonly string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db.select({ id: collectionHistory.id, source: collectionHistory.source }).from(collectionHistory)
+    .where(and(eq(collectionHistory.userId, userId), eq(collectionHistory.kind, "add"), inArray(collectionHistory.id, [...ids])));
+  const out = new Map<string, string>();
+  for (const r of rows) if (r.source?.startsWith(PREFIX)) out.set(r.id, r.source.slice(PREFIX.length));
+  return out;
 }

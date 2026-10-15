@@ -79,6 +79,13 @@ export function PreconPickView({ rows, entry, initial }: {
   // One idempotency id per box and edition, kept across retries and dropped only once that box has landed, so a
   // retry after an unknown outcome is answered from the entry it wrote, and a box ticked again later adds again.
   const ids = useRef(new Map<string, string>());
+  // Whether the pick is still on screen: the header's way back and the shell stay live during an add, and a reader who
+  // left must not be pulled to Home when its answer arrives.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const searchWrap = useRef<HTMLDivElement>(null);
   const foot = useRef<HTMLDivElement>(null);
   const add = useRef<HTMLButtonElement>(null);
@@ -174,7 +181,7 @@ export function PreconPickView({ rows, entry, initial }: {
     const nowLanded = [...landed, ...ok.map((o) => ({ rowFile: o.rowFile, entryId: o.entryId }))];
     if (failed.length === 0) {
       // S5: every box written. The inputs stay locked while the destination loads.
-      router.push(receiptHref(nowLanded));
+      if (mounted.current) router.push(receiptHref(nowLanded));
       return;
     }
     setLanded(nowLanded);

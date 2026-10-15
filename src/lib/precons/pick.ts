@@ -68,6 +68,33 @@ export function resolvePick(requests: unknown, catalog: readonly { fileName: str
 }
 
 /**
+ * The requests a committed precon add already answers, split from the rest. A retry after a lost answer is recovered
+ * from its own entry BEFORE the catalog is consulted, because a refresh between the commit and the retry can drop or
+ * re-map the box and refuse a request whose add already landed. `committed` maps this reader's own precon add entries,
+ * by id, to the box file their source names. A Regular request is recovered only by an entry for its own file; a
+ * Collector's Edition one by an entry for another file, its twin, which the catalog may no longer map. Recovery writes
+ * nothing: it reports an add of this reader's that already stands. An id any other write holds is left in the rest,
+ * where the add itself refuses it. Pure.
+ */
+export function recoverCommitted(
+  requests: unknown,
+  committed: ReadonlyMap<string, string>,
+): { recovered: PickOutcome[]; rest: unknown[] } | null {
+  if (!Array.isArray(requests)) return null;
+  const recovered: PickOutcome[] = [];
+  const rest: unknown[] = [];
+  for (const r of requests as unknown[]) {
+    const { fileName, edition, actionId } = (typeof r === "object" && r !== null ? r : {}) as Record<string, unknown>;
+    const file = typeof actionId === "string" ? committed.get(actionId) : undefined;
+    const ofRow = typeof fileName === "string" && file !== undefined
+      && (edition === "collector" ? file !== fileName : edition === "regular" && file === fileName);
+    if (ofRow) recovered.push({ rowFile: fileName as string, ok: true, entryId: actionId as string });
+    else rest.push(r);
+  }
+  return { recovered, rest };
+}
+
+/**
  * A box's outcome. `unknown` is a box whose add threw: it may have committed with its answer lost, so it is neither
  * added nor refused, and only a retry under the same id can say which.
  */
@@ -89,8 +116,8 @@ export async function runPickAdds(
     try {
       result = await add(b.fileName, b.actionId);
     } catch (error) {
-      // Not a refusal: the add may have committed with its answer lost. Reported as unknown, so the caller holds the
-      // box and its edition until a retry under the same id says which.
+      // not a fallback: and not a refusal either. The add may have committed with its answer lost, so it is reported as
+      // unknown and the caller holds the box and its edition until a retry under the same id says which.
       console.error("precons: a pick's box failed", error);
       out.push({ rowFile: b.rowFile, ok: false, unknown: true });
       continue;

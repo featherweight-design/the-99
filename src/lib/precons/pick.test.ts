@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { summarisePrecons, type PreconSource } from "./list";
-import { parsePickReceipt, pickEntry, pickFile, pickReceiptDismissKey, pickTotals, resolvePick, runPickAdds } from "./pick";
+import { parsePickReceipt, pickEntry, pickFile, pickReceiptDismissKey, pickTotals, recoverCommitted, resolvePick, runPickAdds } from "./pick";
 import { pickEntryFile, summarisePickReceipt } from "./pick-receipt-read";
 import type { PreconAddResult } from "./add";
 
@@ -136,5 +136,27 @@ describe("the entry and the receipt", () => {
       { id: ID(2), name: "Temur Roar", rows: [{ before: null, after: { quantity: 1 } }], preconTokens: null },
     ])).toEqual({ entryIds: [ID(1), ID(2)], names: ["Abzan Armor", "Temur Roar"], copies: 5, tokens: 4 });
     expect(summarisePickReceipt([])).toBeNull();
+  });
+});
+
+describe("recovering a retry from its committed entry", () => {
+  const A = "00000000-0000-4000-8000-0000000000a1";
+  const B = "00000000-0000-4000-8000-0000000000b2";
+  it("recovers a Regular box by its own file and a Collector's Edition by its twin's, leaving the rest", () => {
+    const out = recoverCommitted(
+      [{ fileName: "Abzan", edition: "regular", actionId: A }, { fileName: "Revival", edition: "collector", actionId: B }, { fileName: "Temur", edition: "regular", actionId: "x" }],
+      new Map([[A, "Abzan"], [B, "Revival_CE"]]),
+    );
+    expect(out!.recovered).toEqual([{ rowFile: "Abzan", ok: true, entryId: A }, { rowFile: "Revival", ok: true, entryId: B }]);
+    expect(out!.rest).toEqual([{ fileName: "Temur", edition: "regular", actionId: "x" }]);
+  });
+
+  it("recovers nothing from an entry of another box, nor a Collector's Edition from its own Regular file", () => {
+    const out = recoverCommitted(
+      [{ fileName: "Abzan", edition: "regular", actionId: A }, { fileName: "Revival", edition: "collector", actionId: B }],
+      new Map([[A, "Sultai"], [B, "Revival"]]),
+    );
+    expect(out!.recovered).toEqual([]);
+    expect(out!.rest).toHaveLength(2);
   });
 });

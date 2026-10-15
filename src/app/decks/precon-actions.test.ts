@@ -39,6 +39,11 @@ vi.mock("../../lib/collection/edit-flag", () => ({
 vi.mock("../../lib/precons/add", () => ({
   addPreconForUser: async (...args: unknown[]) => { state.picks.push(args); return state.pickResult(args[1] as string); },
 }));
+const committed = vi.hoisted(() => ({ map: new Map<string, string>(), asked: [] as string[][] }));
+vi.mock("../../lib/precons/added", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/precons/added")>()),
+  committedPreconAdds: async (_user: string, ids: string[]) => { committed.asked.push(ids); return committed.map; },
+}));
 vi.mock("../../lib/collection/added-copy-flag", () => ({ addedCopyEnabled: () => state.addedCopy }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: (id: string) => state.invalidated.push(id) }));
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async (id: string) => { state.warmed.push(id); } }));
@@ -67,6 +72,7 @@ const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}
 beforeEach(() => {
   state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; state.committed = [];
   state.line = true; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}` });
+  committed.map = new Map(); committed.asked = [];
   state.enabled = true; state.collectionEdit = true; state.addedCopy = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
@@ -217,6 +223,29 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
     state.selects = [CATALOG];
     await expect(addPrecons([{ fileName: "Revival_CE", edition: "regular", actionId: ID(1) }])).rejects.toThrow("bad pick");
     expect(state.picks).toEqual([]);
+  });
+
+  // A retry after a lost answer is answered from the entry it wrote before the catalog is read: a refresh that dropped
+  // the box since cannot refuse an add that stands, and nothing is added twice.
+  it("recovers a committed retry before the catalog, adding only the rest", async () => {
+    committed.map = new Map([[ID(2), "Revival_CE"]]);
+    state.selects = [[{ fileName: "Abzan", twinOf: null }]];
+    const out = await addPrecons([
+      { fileName: "Abzan", edition: "regular", actionId: ID(1) }, { fileName: "Revival", edition: "collector", actionId: ID(2) },
+    ]);
+    expect(committed.asked).toEqual([[ID(1), ID(2)]]);
+    expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Abzan", ID(1)]]);
+    expect(out).toEqual([{ rowFile: "Revival", ok: true, entryId: ID(2) }, { rowFile: "Abzan", ok: true, entryId: "entry-Abzan" }]);
+  });
+
+  it("recovers nothing from an entry of another box, and refuses a request naming a box or id twice", async () => {
+    committed.map = new Map([[ID(1), "Sultai"]]);
+    state.selects = [CATALOG];
+    await addPrecons([{ fileName: "Abzan", edition: "regular", actionId: ID(1) }]);
+    expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Abzan", ID(1)]]);
+    await expect(addPrecons([
+      { fileName: "Abzan", edition: "regular", actionId: ID(3) }, { fileName: "Abzan", edition: "regular", actionId: ID(4) },
+    ])).rejects.toThrow("bad pick");
   });
 
   it("retires nothing when no box landed", async () => {

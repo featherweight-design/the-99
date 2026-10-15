@@ -162,6 +162,18 @@ describe("Precons I own: refusals", () => {
     expect(window.sessionStorage.getItem("the99:precon-pick-attempts:user_1")).toBeNull();
   });
 
+  // A reader who left during the add is not pulled to Home when its answer arrives.
+  it("does not navigate once the pick has unmounted", async () => {
+    let settle!: (v: unknown) => void;
+    addPrecons.mockReturnValueOnce(new Promise((r) => { settle = r; }));
+    const view = draw();
+    tick("Abzan Armor");
+    fireEvent.click(addButton());
+    view.unmount();
+    await act(async () => settle([{ rowFile: "Abzan", ok: true, entryId: "e1" }]));
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it("keeps the ticks when nothing landed, and an unknown outcome retries under the same ids", async () => {
     addPrecons.mockRejectedValueOnce(new Error("network"));
     draw();
