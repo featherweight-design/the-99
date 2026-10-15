@@ -51,7 +51,7 @@ function Seat({ member, podName, onRemove }: { member: PodMember; podName: strin
         ) : (
           <span
             data-testid="pod-seat-initials"
-            className="flex h-full w-full items-center justify-center bg-[radial-gradient(120px_80px_at_50%_40%,color-mix(in_oklab,var(--elevated)_70%,var(--border-dashed)),var(--surface))] font-display text-[26px] font-bold text-[color:var(--fg-muted)]"
+            className="flex h-full w-full items-center justify-center bg-[radial-gradient(120px_80px_at_50%_40%,color-mix(in_oklab,var(--elevated)_50%,var(--border-dashed)),var(--surface))] font-display text-[26px] font-bold text-[color:var(--fg-muted)]"
           >
             {faceInitials(member.displayName)}
           </span>
@@ -67,7 +67,7 @@ function Seat({ member, podName, onRemove }: { member: PodMember; podName: strin
           aria-label={copy.removeMemberAria(member.displayName, podName)}
           onClick={onRemove}
           // 28px as drawn, with a 44px press (C-3): the pseudo-element takes the 8px around it.
-          className="absolute right-[4px] top-[4px] flex h-[28px] w-[28px] cursor-pointer items-center justify-center rounded-full border-0 bg-[rgba(14,15,20,.78)] p-0 text-[11px] text-[color:var(--fg)] after:absolute after:-inset-[8px] after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+          className="absolute right-[4px] top-[4px] flex h-[28px] w-[28px] cursor-pointer items-center justify-center rounded-full border-0 bg-[color-mix(in_oklab,var(--bg)_78%,transparent)] p-0 text-[11px] text-[color:var(--fg)] after:absolute after:-inset-[8px] after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
         >
           {"✕"}
         </button>

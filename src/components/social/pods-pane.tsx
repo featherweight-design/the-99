@@ -14,6 +14,7 @@ import type { Friend, Pod, PodMember } from "../../lib/social/access";
 import { socialCopy } from "../../lib/copy/social";
 import { capName, POD_NAME_MAX } from "../../lib/social/client-rules";
 import { addMembersAction, createPodAction, removeMemberAction, shareSparesWithAction } from "../../app/friends/actions";
+import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { PodCard } from "./pod-card";
 import { PodAddFriends } from "./pod-add-friends";
 import { SocialToast, type SocialToastState } from "./social-toast";
@@ -153,14 +154,17 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
         >
           <label htmlFor="pod-new-name" className="text-[13px] font-semibold text-[color:var(--fg)]">{copy.nameLabel}</label>
           <div className="flex flex-col gap-[8px] md:flex-row md:items-center">
-            <input
-              id="pod-new-name"
-              autoFocus
-              value={name}
-              onChange={(e) => setName(capName(e.target.value, POD_NAME_MAX))}
-              autoComplete="off"
-              className="box-border h-[46px] w-full rounded-[8px] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] outline-none [border:1px_solid_var(--accent)] md:h-[40px] md:flex-1 md:rounded-[6px] md:text-[14px]"
-            />
+            {/* The field draws its focus (the accent edge the board shows while it is open), the input none (AFFIX). */}
+            <div className={`box-border flex h-[46px] w-full rounded-[8px] bg-[color:var(--surface-sunken)] [border:1px_solid_var(--border-strong)] md:h-[40px] md:flex-1 md:rounded-[6px] ${AFFIX_FOCUS}`}>
+              <input
+                id="pod-new-name"
+                autoFocus
+                value={name}
+                onChange={(e) => setName(capName(e.target.value, POD_NAME_MAX))}
+                autoComplete="off"
+                className={`h-full w-full min-w-0 px-[12px] text-[16px] text-[color:var(--fg)] md:text-[14px] ${AFFIX_INPUT}`}
+              />
+            </div>
             <div className="flex gap-[8px] max-md:order-last">
               <button
                 type="button"

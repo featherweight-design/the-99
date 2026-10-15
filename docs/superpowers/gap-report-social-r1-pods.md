@@ -198,8 +198,8 @@ Files: `src/components/social/pods-pane.tsx` (PP), `pod-card.tsx` (PC), `pod-add
 ## Resolution (author, after Agent 2)
 
 1. **Seat list role: FIXED.** The seats' `ul` carries `role="list"`.
-2. **Initials gradient inner stop: FIXED.** `color-mix(in oklab, var(--elevated) 70%, var(--border-dashed))`, which is
-   #2A2C36 in Kamigawa and follows every other theme, where a literal would not.
+2. **Initials gradient inner stop: FIXED.** `color-mix(in oklab, var(--elevated) 50%, var(--border-dashed))`, which is
+   #2A2D36 in Kamigawa (#2A2C36 drawn) and follows every other theme, where a literal would not.
 3. **The 40px face in the Add picker: kept.** It is the shared `Face` (PR C's friend rows draw the same size); one face
    component everywhere is README 22's rule, so a pod-only variant would fork it.
 4. **The picker's sub margin: kept.** It is the shared `SocialModal` shell's spacing (C-18).
