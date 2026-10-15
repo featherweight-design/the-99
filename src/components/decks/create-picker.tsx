@@ -57,6 +57,8 @@ type CreateModeProps = {
   /** Draw Help me choose's door first in the list column (HANDOFF §1). The page passes the
       feature's flag; every other create-mode caller, `/about`'s figure included, leaves it off. */
   helpDoor?: boolean;
+  /** The player has a Help me choose run History would list: the door adds its link. */
+  pastRuns?: boolean;
   /** Draw the precon door after Help me choose's (or first without it). The page passes
       `PRECONS_ENABLED`; every other caller leaves it off. */
   preconDoor?: boolean;
@@ -419,7 +421,7 @@ export function CreatePicker(props: CreatePickerProps) {
           // only the footer stacked on top of it.
           style={{ "--picker-reserve": `${footerHeight + 12}px` } as CSSProperties}
         >
-          {helpDoor && <HelpMeChooseDoor />}
+          {helpDoor && <HelpMeChooseDoor pastRuns={props.pastRuns === true} />}
           {preconDoor && <PreconDoor />}
           {isImport ? (
             /* §Commander picker — intro (mobile) / count (desktop) */

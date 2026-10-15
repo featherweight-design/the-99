@@ -1,6 +1,6 @@
 {
   "feature": "Help me choose history (handoff design_handoff_the99_hmc_history, R1; plan 2026-10-14-hmc-history.md)",
-  "note": "PR 2 rows: the list. The column beside the form (desktop), the phone's History view and its entry link. Needs HELP_ME_CHOOSE_ENABLED=true and fixture runs for the signed-in account on local-dev (a temporary script writes them; none is checked in). PR 3 adds the opened run, the door and About.",
+  "note": "PR 2 rows: the list. The column beside the form (desktop), the phone's History view and its entry link. Needs HELP_ME_CHOOSE_ENABLED=true and fixture runs for the signed-in account on local-dev (a temporary script writes them; none is checked in). The opened run, a run that will not open and the New deck door are in hmc-history-past.json, which declares no `shares` (those rows do not render the History control).",
   "out": "contact-sheets/hmc-history",
   "shares": {
     "module": "src/components/intake/choose-history.tsx",

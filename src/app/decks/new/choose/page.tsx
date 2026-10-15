@@ -4,6 +4,8 @@
 //  - `v=submit`: the retired GET submit. It lands on the form with its answers, never charging:
 //    the submit is a Server Action now (`submitChoose`, rework plan PR 3), which starts the read;
 //  - `v=results`: the results. The bar is drawn at once, and the search streams in under it;
+//  - a results address with `h=1` is a past run opened from History (PR 3): the same page, dated and
+//    read-only, its note in the read panel's place;
 //  - `v=history`: the phone's History view (Help me choose history, PR 2). From `lg` (1024px) up History is a
 //    column beside the form, so there the form draws as ever.
 //
@@ -23,7 +25,7 @@ import { SearchFailed } from "../../../../components/intake/search-failed";
 import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseHistoryCopy as historyCopy } from "../../../../lib/copy/help-me-choose-history";
-import { loadChooseHistory } from "../../../../lib/intake/history-read";
+import { loadChooseHistory, loadPastRead } from "../../../../lib/intake/history-read";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { answersOf, parseLiveParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
@@ -33,7 +35,9 @@ import { buysCard } from "../../../../lib/intake/buys-card";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
-import { BUSY_PARAM, CHOOSE_PATH, formTarget, FORM_PARAM, REPEAT_PARAM } from "../../../../lib/intake/submit";
+import { BUSY_PARAM, CHOOSE_PATH, formTarget, FORM_PARAM, PAST_PARAM, REPEAT_PARAM } from "../../../../lib/intake/submit";
+import { GonePicks, PastRunMeta, PastRunNote, PastWontOpen } from "../../../../components/intake/past-run";
+import { completePastDeckNames, loadGonePicks } from "../../../../lib/intake/past-run";
 import { toStanding } from "../../../../lib/intake/standing";
 import { DimWhileReading, ReadAnnouncer, ReadPanel, ReadScope } from "../../../../components/intake/read-panel";
 import { phaseOf } from "../../../../lib/intake/read-phase";
@@ -44,6 +48,9 @@ import { readAllowance } from "../../../../lib/model/allowance";
 
 // A row's figures come from a real fill run in a Server Action posted from this page.
 export const maxDuration = 120;
+
+/** The title's id on a past run, which `PastRunMeta` moves focus to when the run opens. */
+const PAST_TITLE_ID = "past-run-title";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -122,23 +129,50 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // and the credit standing its panel's line says.
   const words = p.words.trim();
   const now = new Date();
-  const [card, [served, allowance]] = await Promise.all([
+  const openedFromHistory = !!words && !!p.readId && sp.get(PAST_PARAM) === "1";
+  const [card, [served, allowance, pastAt]] = await Promise.all([
     // `undefined` when the read failed, which says nothing about the card; `null` when it is no card.
     p.card ? loadCardChip(userId, p.card, env).catch(() => undefined) : null,
     // The standing is read AFTER the read's state: reading the state can reap an abandoned read and
     // refund its credit, and a standing read beside it could count the credit the panel says came back.
     (async () => {
+      // A run opened from History is read with its date; a run that is not the player's reads as none.
+      if (openedFromHistory) {
+        const past = await loadPastRead(p.readId!, userId, now).catch(() => null);
+        return [past?.state ?? ({ kind: "none" } as TheReadState), null, past?.at ?? null] as const;
+      }
       // A failed read of the read's state draws it as running: the panel then asks again itself.
       const state = words && p.readId
         ? await loadTheRead(p.readId, userId, now).catch((): TheReadState => ({ kind: "pending", phase: null }))
         : null;
-      return [state, words ? await readAllowance(userId, now, "intake").catch(() => null) : null] as const;
+      return [state, words ? await readAllowance(userId, now, "intake").catch(() => null) : null, null] as const;
     })(),
   ]);
+  // A past run is one that settled with an answer; a run still in flight opens as the live page, and one
+  // that is gone, another player's or failed will not open.
+  const isPast = openedFromHistory && pastAt !== null && (served?.kind === "done" || served?.kind === "nothing");
+  if (openedFromHistory && !isPast && served?.kind !== "pending") {
+    return (
+      <div className="flex flex-col">
+        <ChooseHeader
+          back={{ href: `${CHOOSE_PATH}?v=history`, label: historyCopy.past.back }}
+          title={copy.results.title}
+          sub={copy.results.sub}
+          subPhone={copy.results.subPhone}
+        />
+        <div className={RESULTS_COLUMN}>
+          <PastWontOpen historyHref={`${CHOOSE_PATH}?v=history`} />
+        </div>
+      </div>
+    );
+  }
   // A done read orders the results, and its reasons name the player's decks by their commanders.
   const picks: ReadPicks | null = served?.kind === "done" ? served.result : null;
   const decks = picks ? await loadReadDecks(userId).catch(() => null) : null;
-  const deckNames = Object.fromEntries((decks ?? []).map((d) => [d.commanderOracleId, shortName(d.commander)]));
+  const deckNames: Record<string, string> = Object.fromEntries((decks ?? []).map((d) => [d.commanderOracleId, shortName(d.commander)]));
+  // A past run's reasons name decks the read listed THEN: see `completePastDeckNames`.
+  let deckLookupFailed = isPast && picks !== null && decks === null;
+  if (isPast && picks && !deckLookupFailed) deckLookupFailed = !(await completePastDeckNames(userId, picks, deckNames, shortName));
   const setNames = new Map(sets.map((s) => [s.code, s.name]));
   const labels = {
     theme: (slug: string) => themeLabels[slug] ?? slug,
@@ -147,7 +181,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   };
   // A change of answers is a new ask: it carries neither the read nor its marks.
   const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, results: false })}`;
-  const panel = words ? (
+  const panel = words && !isPast ? (
     <ReadPanel
       key={served?.kind ?? "unread"}
       readId={p.readId}
@@ -160,6 +194,10 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
       hasDecks={decks === null ? null : decks.length > 0}
     />
   ) : null;
+  // A past run that found nothing keeps today's empty panel, with its stored pool and no credit line.
+  const nothingPanel = isPast && served?.kind === "nothing" ? (
+    <ReadPanel key="past-nothing" readId={p.readId} served={served} standing={null} params={p} changeHref={changeHref} repeat={false} busy={false} hasDecks={null} />
+  ) : null;
   const queryString = serializeChooseParams(p).slice(1);
   // What the Suspense is keyed on: the answers, not the read. A retry's address carries a new `r`
   // but asks for the same commanders, and a new key would swap the list the player is looking at
@@ -168,7 +206,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // The form's own submit started this read: the free list was never on screen, and an inaccurate
   // list replaced moments later reads as a bug. While the read is pending the results' loading
   // state stands in for it; a settled read (or a stopped or failed one) draws the list as ever.
-  const holdList = !!words && sp.get(FORM_PARAM) === "1" && served?.kind === "pending";
+  const holdList = !!words && !isPast && sp.get(FORM_PARAM) === "1" && served?.kind === "pending";
   const ranking = [...p.themes.map(labels.theme), ...(card ? [card.name] : [])];
   // Said as the order line will say it: any of with no card ranks by the best-fitting theme.
   const by = isAnyOf(p) && !card
@@ -179,15 +217,17 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     <CardDetailProvider>
       <div className="flex flex-col">
         <ChooseHeader
-          back={{ href: changeHref, label: copy.results.back }}
+          back={isPast ? { href: `${CHOOSE_PATH}?v=history`, label: historyCopy.past.back } : { href: changeHref, label: copy.results.back }}
           title={copy.results.title}
           sub={copy.results.sub}
           subPhone={copy.results.subPhone}
+          titleId={isPast ? PAST_TITLE_ID : undefined}
+          meta={isPast && pastAt ? <PastRunMeta at={pastAt} titleId={PAST_TITLE_ID} /> : undefined}
         />
         <div className={RESULTS_COLUMN}>
           {/* Keyed on the read: a new read (Try again) starts silent, while the refresh that draws
               this read settled keeps what it just announced. */}
-          {words && <ReadAnnouncer key={p.readId ?? "unread"} />}
+          {words && !isPast && <ReadAnnouncer key={p.readId ?? "unread"} />}
           {/* NOT keyed on the server's state: a remount here would remount the results' Suspense, and a
               settled read would flash its loading skeleton again. The scope adopts the new state in
               place; the panel (above) and the results list (in `Results`) are keyed on it instead. */}
@@ -195,13 +235,16 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           <ReadAsBar
             chips={answerChips(p, labels)}
             words={plainText(words)}
-            offer={panel}
+            offer={isPast && served?.kind === "nothing" ? nothingPanel : panel}
             card={card ?? null}
             changeHref={changeHref}
             startOverHref={CHOOSE_PATH}
           />
           <DimWhileReading hold={holdList}>
-          <Suspense key={resultsKey} fallback={<ResultsSkeleton by={by} />}>
+          <Suspense
+            key={resultsKey}
+            fallback={isPast ? <><PastRunNote nothing={served?.kind === "nothing"} aged={null} /><ResultsSkeleton by={by} /></> : <ResultsSkeleton by={by} />}
+          >
             <Results
               userId={userId}
               env={env}
@@ -215,6 +258,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               picks={picks}
               deckNames={deckNames}
               hold={holdList ? by : null}
+              past={isPast ? { nothing: served?.kind === "nothing", picks: picks?.picks.length ?? 0, at: pastAt as string, deckLookupFailed } : null}
             />
           </Suspense>
           </DimWhileReading>
@@ -238,6 +282,7 @@ async function Results({
   picks,
   deckNames,
   hold,
+  past,
 }: {
   userId: string;
   /** The reader's resolved switches, the page's own, for the search's claim reads. */
@@ -252,6 +297,8 @@ async function Results({
   deckNames: Record<string, string>;
   /** Non-null while the form's read is pending: the order line to name, and no rows to draw. */
   hold: string | null;
+  /** A run opened from History: its note, the picks that went, and a line for a deleted deck's reason. */
+  past: { nothing: boolean; picks: number; at: string; deckLookupFailed: boolean } | null;
 }) {
   let page;
   try {
@@ -264,7 +311,9 @@ async function Results({
   }
   // The search still runs, for the pool the read's first step names; its rows wait for the read.
   if (hold !== null) return <HeldResults total={page.total} by={hold} />;
-  return (
+  // The picks that went since the run: a decoration, so a failed read draws the run without the group.
+  const gone = past ? await loadGonePicks(userId, page.gone, new Date(past.at), env).catch(() => []) : [];
+  const results = (
     <ChooseResults
       // A settled read re-orders the list: a fresh list, mounted inside the Suspense that already
       // shows the old one, so the swap needs no loading skeleton.
@@ -277,6 +326,16 @@ async function Results({
       queryString={queryString}
       changeHref={changeHref}
       deckNames={deckNames}
+      pastRun={past !== null}
+      pastReasons={past !== null && !past.deckLookupFailed}
+      gone={gone.length > 0 ? <GonePicks picks={gone} /> : null}
     />
+  );
+  if (!past) return results;
+  return (
+    <>
+      <PastRunNote nothing={past.nothing} aged={page.gone.length > 0 ? { open: past.picks - page.gone.length, picks: past.picks } : null} />
+      {results}
+    </>
   );
 }

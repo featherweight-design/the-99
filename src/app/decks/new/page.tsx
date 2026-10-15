@@ -7,10 +7,11 @@ import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
+import { hasListableRun } from "../../../lib/intake/history-read";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { MAX_SETS, MAX_THEMES } from "../../../lib/intake/answers";
-import { handOffFrom, resultsHref } from "../../../lib/intake/hand-off";
+import { handOffFrom, pastFrom, resultsHref } from "../../../lib/intake/hand-off";
 import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-load";
 import { serializeChooseParams } from "../../../lib/intake/params";
 import { CHOOSE_PATH } from "../../../lib/intake/submit";
@@ -53,7 +54,7 @@ export default async function NewDeckPage({
           budgetDollars: answers.budgetDollars,
           bracket: answers.bracket,
         },
-        resultsHref: resultsHref(asked),
+        resultsHref: resultsHref(asked, pastFrom(searchParamsOf(raw))),
         changeHref: `${CHOOSE_PATH}${serializeChooseParams({ ...asked, notUsed: [], readId: null, results: false })}`,
         drawBlock: hasAnswerRows(answers),
       } : undefined;
@@ -75,9 +76,14 @@ export default async function NewDeckPage({
   }
 
   // Picker door: load all owned legal commanders.
-  const legalCommanders = await listOwnedLegalCommanders(userId);
+  const [legalCommanders, pastRuns] = await Promise.all([
+    listOwnedLegalCommanders(userId),
+    // The door's History link: only for a player with a run to list, and never read with the feature off.
+    // A failed read draws the door without it.
+    helpMeChoose ? hasListableRun(userId).catch(() => false) : false,
+  ]);
 
-  return <CreatePicker legalCommanders={legalCommanders} helpDoor={helpMeChoose} preconDoor={preconsEnabled(env)} />;
+  return <CreatePicker legalCommanders={legalCommanders} helpDoor={helpMeChoose} pastRuns={pastRuns} preconDoor={preconsEnabled(env)} />;
 }
 
 /** The page's params as the URL carried them; a repeated key keeps its first value, as `URLSearchParams.get` does. */
