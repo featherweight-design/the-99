@@ -44,7 +44,9 @@ export function topOracles(index: ScanIndex, q: Float32Array, k = 5): Guess[] {
     let s = 0;
     const o = r * dim;
     for (let i = 0; i < dim; i++) s += q[i] * index.codes[o + i];
-    s *= index.scales[r];
+    // Quantisation does not keep a row at unit length, so a near-identical match can read a hair
+    // over 1; bounded, a valid score is always a cosine the result endpoint accepts.
+    s = Math.min(1, Math.max(-1, s * index.scales[r]));
     const oi = rowOracle[r];
     const prev = best.get(oi);
     if (prev === undefined || s > prev) best.set(oi, s);

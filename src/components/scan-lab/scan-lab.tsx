@@ -12,13 +12,18 @@ import {
 } from "../../lib/scan-lab/geometry";
 import { agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan-lab/reading";
+import { sessionHolder } from "../../lib/scan-lab/sessions";
 import {
   AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
 } from "../../lib/scan-lab/models";
 
 /** The slice of onnxruntime-web this page uses; it is loaded from the CDN, so it has no types here. */
 type OrtTensor = { data: Float32Array };
-type OrtSession = { run(feeds: Record<string, unknown>): Promise<Record<string, OrtTensor>>; inputNames: string[] };
+type OrtSession = {
+  run(feeds: Record<string, unknown>): Promise<Record<string, OrtTensor>>;
+  release(): Promise<void>;
+  inputNames: string[];
+};
 type Ort = {
   env: { wasm: { wasmPaths: string; numThreads: number } };
   Tensor: new (type: "float32", data: Float32Array, dims: number[]) => unknown;
@@ -62,6 +67,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const running = useRef(false);
   const history = useRef<{ oracleId: string; margin: number }[]>([]);
   const stream = useRef(streamHolder<MediaStream>());
+  const sessions = useRef(sessionHolder<OrtSession>());
   const [status, setStatus] = useState<"idle" | "loading" | "running" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState<Reading | null>(null);
@@ -72,10 +78,13 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
 
   useEffect(() => {
     const held = stream.current;
+    const models = sessions.current;
     held.open();
+    models.open();
     return () => {
       running.current = false;
       held.close();
+      models.close();
     };
   }, []);
 
@@ -83,6 +92,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     const fail = (e: unknown) => {
       running.current = false;
       stream.current.close();
+      sessions.current.close();
       history.current = [];
       setReading(null);
       setStatus("error");
@@ -113,13 +123,17 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
         }),
       ]);
       indexVersion.current = index.meta.version;
-      const [detector, embedder] = await Promise.all([
-        ort.InferenceSession.create(DETECTOR_URL, { executionProviders: ["wasm"] }),
-        ort.InferenceSession.create(EMBEDDER_URL, { executionProviders: ["wasm"] }),
-      ]);
+      // each held as it loads, so a failed sibling or leaving the page releases it, even late
+      const load = (url: string) =>
+        ort.InferenceSession.create(url, { executionProviders: ["wasm"] }).then((s) => {
+          if (!sessions.current.accept(s)) throw new Error("left the page");
+          return s;
+        });
+      const [detector, embedder] = await Promise.all([load(DETECTOR_URL), load(EMBEDDER_URL)]);
       const video = videoRef.current;
       if (!video) {
         stream.current.close();
+        sessions.current.close();
         return;
       }
       video.srcObject = media;
@@ -156,7 +170,8 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
           sctx.drawImage(frame, lb.dx, lb.dy, lb.dw, lb.dh);
           const sq = sctx.getImageData(0, 0, DETECTOR_SIZE, DETECTOR_SIZE).data;
           const detIn = new ort.Tensor("float32", rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE), [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
-          const det = await detector.run({ [detector.inputNames[0]]: detIn });
+          const det = await sessions.current.use(() => detector.run({ [detector.inputNames[0]]: detIn }));
+          if (!running.current) return;
           const t1 = performance.now();
           const sharpness = det.sharpness.data[0];
           const corners = cornersFromDetector(det.corners.data, frame.width, frame.height);
@@ -165,7 +180,9 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
             const px = fctx.getImageData(0, 0, frame.width, frame.height).data;
             const crop = warpToTensor(px, frame.width, frame.height, corners);
             if (crop) {
-              const out = await embedder.run({ [embedder.inputNames[0]]: new ort.Tensor("float32", crop, [1, 3, EMBED_H, EMBED_W]) });
+              const embIn = new ort.Tensor("float32", crop, [1, 3, EMBED_H, EMBED_W]);
+              const out = await sessions.current.use(() => embedder.run({ [embedder.inputNames[0]]: embIn }));
+              if (!running.current) return;
               const t2 = performance.now();
               const q = normalise(Object.values(out)[0].data);
               const guesses = topOracles(index, q, 5);

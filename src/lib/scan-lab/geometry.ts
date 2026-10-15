@@ -47,6 +47,24 @@ export function sortCorners(pts: Pt[]): Pt[] {
 }
 
 /**
+ * The corners in the order the warp needs: TL, TR, BR, BL of the CARD, not of the frame. The index
+ * was embedded from upright Scryfall scans, portrait, so the card's short edge must land on the
+ * 320-wide side and its long edge on the 448-high side. `sortCorners` starts at the corner nearest
+ * the frame's top left, which on a card turned past 45 degrees (landscape in the frame) is a corner
+ * whose next edge is a LONG one; warping that order squeezes the card a quarter turn. So when the
+ * first and third edges are the longer pair, the ring starts one corner later. Clockwise order is
+ * kept, so the crop is never mirrored; whether a card turned a quarter turn reads upright or upside
+ * down cannot be told from four corners, and is the same 180-degree ambiguity an upright card has.
+ */
+export function cardCorners(pts: Pt[]): Pt[] {
+  const r = sortCorners(pts);
+  const len = (a: Pt, b: Pt) => Math.hypot(b.x - a.x, b.y - a.y);
+  const across = len(r[0], r[1]) + len(r[2], r[3]);
+  const down = len(r[1], r[2]) + len(r[3], r[0]);
+  return across > down ? [r[1], r[2], r[3], r[0]] : r;
+}
+
+/**
  * The 3x3 homography (row-major, h33 = 1) taking each `src[i]` to `dst[i]`, by solving the
  * standard 8x8 system with partial pivoting. Null when the points are degenerate.
  */
@@ -84,7 +102,7 @@ export function applyHomography(H: number[], p: Pt): Pt {
 export function warpToTensor(
   rgba: ArrayLike<number>, w: number, h: number, corners: Pt[], outW = EMBED_W, outH = EMBED_H,
 ): Float32Array | null {
-  const src = sortCorners(corners);
+  const src = cardCorners(corners);
   const dst = [{ x: 0, y: 0 }, { x: outW, y: 0 }, { x: outW, y: outH }, { x: 0, y: outH }];
   const H = homography(dst, src);
   if (!H) return null;

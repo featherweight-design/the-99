@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parseResult } from "./result";
 import { agreement, normalise, parseIndex, topOracles, type IndexMeta } from "./match";
 
 function index() {
@@ -32,5 +33,20 @@ describe("scan-lab match", () => {
     expect(agreement([f("b"), f("a"), f("a"), f("a")], 3)).toBe("a");
     expect(agreement([f("a"), f("a", 0.001), f("a")], 3, 0.02)).toBeNull();
     expect(agreement([f("a"), f("b"), f("a")], 3)).toBeNull();
+  });
+  it("bounds a quantised cosine to 1, so a near-identical match is still a score the endpoint keeps", () => {
+    // a unit vector alternating 1 and 0.603, quantised by its own scale, reads about 1.0015 against itself
+    const dim = 256;
+    const q = normalise(Float32Array.from({ length: dim }, (_, i) => (i % 2 ? 0.603 : 1)));
+    const scale = Math.max(...q) / 127;
+    const meta: IndexMeta = { version: "t", model: "m", dim, rows: 1, oracles: [["a", "A"]], rowOracle: [0] };
+    const bin = new ArrayBuffer(dim + 4);
+    new Int8Array(bin, 0, dim).set(Array.from(q, (v) => Math.round(v / scale)));
+    new Float32Array(bin, dim, 1)[0] = scale;
+    const [g] = topOracles(parseIndex(meta, bin), q, 1);
+    expect(g.score).toBeLessThanOrEqual(1);
+    expect(g.score).toBeGreaterThan(0.999);
+    const stored = parseResult({ guessOracleId: null, correct: true, score: g.score, margin: 0.1, latencyMs: 5, agreedFrames: 0, indexVersion: "t" });
+    expect(stored?.score).toBe(g.score);
   });
 });

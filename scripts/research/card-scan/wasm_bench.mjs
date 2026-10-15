@@ -1,7 +1,9 @@
 // The card-scan lab's BROWSER code path, run under Node: onnxruntime-web's WASM backend on one thread,
 // with the lab's own JS warp and kNN (src/lib/scan-lab). Research only, not part of the app.
 //
-// 1. Parity: on scenes `parity_scenes.py` rendered, the lab's corners and embedding against Python's.
+// 1. Parity: on scenes `parity_scenes.py` rendered, the lab's corners and embeddings against Python's.
+//    The lab ships the fp32 embedder, so the fp32 cosine is the parity figure: expected.json must carry
+//    `emb32`, Python's fp32 embedding of its detected warp. `emb` (int8) is compared too, separately.
 // 2. Latency: median and minimum per stage, and the JS kNN over an exported index.
 //
 // onnxruntime-web is NOT a dependency of this repository. Install it in a scratch directory and pass it:
@@ -28,17 +30,27 @@ const e8 = await ort.InferenceSession.create(readFileSync(`${S}/weights/dhv_embe
 const expected = JSON.parse(readFileSync(`${S}/parity/expected.json`, "utf8"));
 const read = (f) => new Uint8Array(readFileSync(`${S}/parity/${f}`));
 
-// 1. parity (expected.json holds Python's corners and its int8 embedding of the detected warp)
+// 1. parity (expected.json holds Python's corners and its fp32 and int8 embeddings of the detected warp)
+if (!expected.every((e) => Array.isArray(e.emb32))) {
+  throw new Error("expected.json has no fp32 reference (emb32): re-run parity_scenes.py with the fp32 embedder");
+}
+const cosine = (q, ref) => {
+  let c = 0;
+  for (let i = 0; i < q.length; i++) c += q[i] * ref[i];
+  return c;
+};
 for (const e of expected) {
   const d = await det.run({ image: new ort.Tensor("float32", rgbaToTensor(read(`square${e.i}.rgba`), 384, 384), [1, 3, 384, 384]) });
   const corners = cornersFromDetector(d.corners.data, e.w, e.h);
   const err = Math.max(...corners.map((c, k) => Math.hypot(c.x - e.det[k][0], c.y - e.det[k][1])));
   const crop = warpToTensor(read(`frame${e.i}.rgba`), e.w, e.h, corners);
-  const z = await e8.run({ input: new ort.Tensor("float32", crop, [1, 3, 448, 320]) });
-  const q = normalise(z.embedding.data);
-  let cos = 0;
-  for (let i = 0; i < q.length; i++) cos += q[i] * e.emb[i];
-  console.log(`parity scene ${e.i}: corner max error ${err.toFixed(2)}px, sharpness ${d.sharpness.data[0].toFixed(4)} vs ${e.sharp.toFixed(4)}, embedding cosine ${cos.toFixed(4)}`);
+  const input = new ort.Tensor("float32", crop, [1, 3, 448, 320]);
+  const q32 = normalise((await e32.run({ input })).embedding.data);
+  const q8 = normalise((await e8.run({ input })).embedding.data);
+  console.log(
+    `parity scene ${e.i}: corner max error ${err.toFixed(2)}px, sharpness ${d.sharpness.data[0].toFixed(4)} vs ${e.sharp.toFixed(4)}, ` +
+      `fp32 embedding cosine ${cosine(q32, e.emb32).toFixed(4)} (int8 ${cosine(q8, e.emb).toFixed(4)})`,
+  );
 }
 
 // 2. latency
