@@ -82,7 +82,10 @@ def main():
     single = sorted({(g["sid"], g["face"]) for g in sets["single"]})
     which = sys.argv[2].split(",") if len(sys.argv) > 2 else ["dhv", "dino"]
     if "dhv" in which:
-        run(["dhv_fp32", "dhv_int8"], allk)
+        # One pass per model, each over its own missing keys: a resume where only one cache is
+        # incomplete never repeats the other model's inference. A cold run reads each image twice.
+        run(["dhv_fp32"], allk)
+        run(["dhv_int8"], allk)
     if "dino" in which:
         run(["dino"], allk)
 
