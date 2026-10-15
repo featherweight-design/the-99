@@ -23,6 +23,7 @@ import { preconsEnabled } from "../precons/flag";
 import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
 import { rateLimitEnabled } from "../rate/flag";
+import { scanLabEnabled } from "../scan-lab/flag";
 import { socialFriendsEnabled, socialGamesEnabled } from "../social/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
@@ -64,6 +65,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   PRECONS_ENABLED: preconsEnabled,
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,
+  SCAN_LAB_ENABLED: scanLabEnabled,
   SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
   SOCIAL_GAMES_ENABLED: socialGamesEnabled,

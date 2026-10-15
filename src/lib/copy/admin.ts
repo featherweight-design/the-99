@@ -530,6 +530,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   PRECONS_ENABLED: { label: "Precons", description: "Browse Commander precons and start a deck from one." },
   PROPOSED_CUTS_ENABLED: { label: "Proposed cuts", description: "Cuts proposed for a deck over 99." },
   RATE_LIMIT_ENABLED: { label: "Request counting", description: "Counts each player’s requests and logs what a limit would refuse. Refuses nothing." },
+  SCAN_LAB_ENABLED: { label: "Card-scan lab", description: "A camera page at /lab/scan that tries the card scanner and records whether each guess was right. Not linked anywhere." },
   SHOPPING_MARK_BOUGHT_ENABLED: { label: "Mark bought", description: "Mark a shopping line bought and add it to the collection." },
   SOCIAL_FRIENDS_ENABLED: { label: "Friends", description: "Friends, invites and pods. Opponents needs it." },
   SOCIAL_GAMES_ENABLED: { label: "Opponents", description: "Opponents in the game log." },

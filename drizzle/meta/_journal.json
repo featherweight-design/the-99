@@ -904,6 +904,13 @@
       "when": 1792047093033,
       "tag": "0128_no_collection_entry_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 129,
+      "version": "7",
+      "when": 1792049801910,
+      "tag": "0129_scan_lab",
+      "breakpoints": true
     }
   ]
 }

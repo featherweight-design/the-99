@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
-  unique, foreignKey, uniqueIndex, bigint, bigserial, type AnyPgColumn,
+  unique, foreignKey, uniqueIndex, bigint, bigserial, smallint, customType, type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 import { FINISHES } from "../lib/collection/key";
@@ -3422,4 +3422,35 @@ export const accountTombstones = pgTable("account_tombstones", {
   // The sweep reads only the rows still holding a raw id (a day's worth), oldest first; the retired ones pile up
   // for good and must not be scanned every five minutes.
   index("account_tombstones_held_idx").on(t.deletedAt).where(sql`${t.clerkId} is not null`),
+]);
+
+/** Raw bytes. Only the card-scan lab's kept frames use it. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+
+/**
+ * One tap on the card-scan lab (`/lab/scan`, behind the plumbing switch `SCAN_LAB_ENABLED`, staging
+ * only): what the pipeline guessed, whether the player said it was right, and how long it took. It
+ * measures the scanning spike's pipeline on real phone photos. The frame itself is kept ONLY when the
+ * player presses "keep this frame" (`frame`, a JPEG of the warped card); otherwise no pixel leaves the
+ * device. `guess_oracle_id` is null when the player marked a frame with no guess (nothing detected).
+ * Purged with the account.
+ */
+export const scanLabResults = pgTable("scan_lab_results", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  guessOracleId: uuid("guess_oracle_id"),
+  correct: boolean("correct").notNull(),
+  score: real("score"),
+  margin: real("margin"),
+  latencyMs: integer("latency_ms").notNull(),
+  detectorMs: integer("detector_ms"),
+  embedMs: integer("embed_ms"),
+  matchMs: integer("match_ms"),
+  agreedFrames: smallint("agreed_frames").notNull().default(0),
+  indexVersion: text("index_version").notNull(),
+  frame: bytea("frame"),
+}, (t) => [
+  index("scan_lab_results_user_idx").on(t.userId, t.createdAt),
+  check("scan_lab_results_latency_check", sql`${t.latencyMs} >= 0`),
 ]);
