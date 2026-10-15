@@ -10,7 +10,7 @@
       "steps": [
         {
           "goto": "/collection/replace",
-          "wait": "main, [role=main], h1",
+          "wait": "h1:visible",
           "settle": 10000
         },
         {
@@ -39,7 +39,7 @@
       "steps": [
         {
           "goto": "/collection/replace",
-          "wait": "main, [role=main], h1",
+          "wait": "h1:visible",
           "settle": 10000
         },
         {
