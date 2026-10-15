@@ -383,19 +383,20 @@ export const preconsCopy = {
       `Added ${names(landed)} and started ${landed.length === 1 ? "its deck" : "their decks"}. We couldn’t add ${names(failed)}.`,
     tryAgain: "Try again",
     /**
-     * The receipt strip on the destination (S5). `d` counts the boxes whose deck still stands: any at all means the
-     * pick started decks (every box a pick adds now does), so the line names a deck per box, `b`, even when the
-     * player has since deleted one; none means an add from before the pick started decks, which keeps its old line.
+     * The receipt strip on the destination (S5). `d` counts the boxes whose deck still stands. Decks are named only
+     * when every box has one: fewer means a deck the player has since deleted, or a box added before the pick started
+     * decks (a retry spanning that deploy), and the two cannot be told apart, so the line names the precons alone,
+     * which is true either way.
      */
     receipt: {
       head: (b: number, d = 0) =>
-        d > 0
+        d > 0 && d === b
           ? `Added ${plural(b, "deck", "decks")} and ${b === 1 ? "its" : "their"} cards to your collection:`
           : `${plural(b, "precon", "precons")} added to your collection:`,
       body: (boxNames: string[], c: number, t: number) =>
         `${names(boxNames)}. ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}.`,
       phone: (b: number, c: number, d = 0) =>
-        d > 0
+        d > 0 && d === b
           ? `${plural(b, "deck", "decks")} added · ${plural(c, "card", "cards")}`
           : `${plural(b, "precon", "precons")} added · ${plural(c, "card", "cards")}`,
       history: "History",

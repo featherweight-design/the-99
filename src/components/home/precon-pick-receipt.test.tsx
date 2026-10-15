@@ -63,10 +63,10 @@ describe("the precon pick's receipt (S5)", () => {
     expect(strip).toHaveTextContent("1 precon added · 300 cards · History");
   });
 
-  it("names a deck per box the pick added, even when the player has since deleted one of them", () => {
+  it("names the precons alone when fewer boxes have a deck: one deleted since, or an add from before decks (a retry across the deploy)", () => {
     render(<PreconPickReceipt receipt={{ ...receipt, decks: 2 }} />);
-    expect(screen.getAllByText(/Added 3 decks and their cards to your collection:/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/3 decks added · 300 cards/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/decks/)).toBeNull();
+    expect(screen.getAllByText(/3 precons added/).length).toBeGreaterThan(0);
   });
 });
 
