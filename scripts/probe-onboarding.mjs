@@ -252,8 +252,11 @@ async function walk(browser, vp, csvPath) {
     report(fan.width === (vp.phone ? 52 : 56), "4  the mark is the mock's size", `${fan.width}px`);
     await page.keyboard.press("Escape");
   } finally {
-    await cleanup(userId);
-    await context.close();
+    try {
+      await cleanup(userId);
+    } finally {
+      await context.close();
+    }
   }
 }
 
@@ -316,8 +319,11 @@ async function firstImport(browser, vp) {
     report(rows.length === 1 && rows[0].oracle_id === card.oracle_id, "5a and the confirm wrote nothing", `${rows.length} rows`);
     report(!/\/summary\//.test(page.url()), "5a and did not navigate to a receipt");
   } finally {
-    await cleanup(userId);
-    await context.close();
+    try {
+      await cleanup(userId);
+    } finally {
+      await context.close();
+    }
   }
 }
 
@@ -510,8 +516,11 @@ async function calmReplace(browser, vp) {
     const rows = await sql`select count(*)::int n from collection_items where user_id = ${userId}`;
     report(rows[0].n === seeded.length, "D9 and writes nothing", `${rows[0].n} rows`);
   } finally {
-    await cleanup(userId);
-    await context.close();
+    try {
+      await cleanup(userId);
+    } finally {
+      await context.close();
+    }
   }
 }
 
@@ -568,8 +577,11 @@ async function zeroDecks(browser, vp) {
     const [{ scored }] = await sql`select count(*)::int as scored from commander_scores where user_id = ${userId}`;
     report(n > 9 && n === scored, "R2 /decks states the true buildable count, not the old cap of nine", `${text} · scored ${scored}`);
   } finally {
-    await cleanup(userId);
-    await context.close();
+    try {
+      await cleanup(userId);
+    } finally {
+      await context.close();
+    }
   }
 }
 

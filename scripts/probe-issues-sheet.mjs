@@ -282,8 +282,11 @@ async function walkShort(browser, vp, csvPath) {
     );
     await page.keyboard.press("Escape");
   } finally {
-    await cleanup(userId);
-    await context.close();
+    try {
+      await cleanup(userId);
+    } finally {
+      await context.close();
+    }
   }
 }
 
@@ -403,8 +406,11 @@ async function walk(browser, vp, csvPath) {
     await page.waitForTimeout(150);
     report((await dialog.count()) === 0, "Escape dismisses it");
   } finally {
-    await cleanup(userId);
-    await context.close();
+    try {
+      await cleanup(userId);
+    } finally {
+      await context.close();
+    }
   }
 }
 

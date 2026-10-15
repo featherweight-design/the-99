@@ -310,8 +310,11 @@ async function main() {
     await phone(page);
     await dashboard(page, userId);
   } finally {
-    await cleanup(userId);
-    await browser.close();
+    try {
+      await cleanup(userId);
+    } finally {
+      await browser.close();
+    }
   }
   console.log(failures ? `\n${failures} check(s) failed.` : "\nAll checks passed.");
   process.exitCode = failures ? 1 : 0;
