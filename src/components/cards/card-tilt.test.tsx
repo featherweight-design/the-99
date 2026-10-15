@@ -110,8 +110,9 @@ describe("the stylesheet", () => {
   });
 
   it("plays the band again on keyboard focus of the host's own button, on a fine pointer with motion (G6)", () => {
-    // Its own keyframes name: the open's band already ran `foil-band`, and the same name would not restart.
-    expect(FINE).toMatch(/\[data-tilt\]:has\(> button:focus-visible\) \[data-foil\]\[data-foil-size="large"\]:is\(\[data-arrival="in"\], \[data-arrival="done"\]\) \{\s*animation: foil-band-again calc\(var\(--motion-duration\) \* 3\) var\(--motion-ease\);/);
+    // Its own keyframes name, added AFTER the open's unchanged `foil-band`: the same name would not restart, and a list
+    // that dropped the open's band would start it afresh when focus leaves.
+    expect(FINE).toMatch(/\[data-tilt\]:has\(> button:focus-visible\) \[data-foil\]\[data-foil-size="large"\]:is\(\[data-arrival="in"\], \[data-arrival="done"\]\) \{\s*animation:\s*foil-band calc\(var\(--motion-duration\) \* 3\) var\(--motion-ease\) var\(--motion-duration\) both,\s*foil-band-again calc\(var\(--motion-duration\) \* 3\) var\(--motion-ease\);/);
   });
 
   it("drops the light under reduced transparency and forced colors", () => {

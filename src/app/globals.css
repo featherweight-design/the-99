@@ -1233,10 +1233,14 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 
 /* Desktop: keyboard focus on the zoom trigger, the host's direct child, plays the band again (G6); the tile's rule needs
    the film inside the button. Hover has the tilt, and no band. Only once the film has arrived, as on open: a band played
-   while the film is still held at opacity 0 is spent unseen, and holding focus would not play it again. */
+   while the film is still held at opacity 0 is spent unseen, and holding focus would not play it again. The open's
+   band stays FIRST in the list, unchanged: a list that dropped it would start it afresh on blur, a second sweep for a
+   view that never reopened. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   [data-tilt]:has(> button:focus-visible) [data-foil][data-foil-size="large"]:is([data-arrival="in"], [data-arrival="done"]) {
-    animation: foil-band-again calc(var(--motion-duration) * 3) var(--motion-ease);
+    animation:
+      foil-band calc(var(--motion-duration) * 3) var(--motion-ease) var(--motion-duration) both,
+      foil-band-again calc(var(--motion-duration) * 3) var(--motion-ease);
   }
 }
 

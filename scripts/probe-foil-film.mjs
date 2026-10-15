@@ -52,7 +52,13 @@ const TILTS = tiltHost("tilt-rest", 'data-tilt-seam=""') +
   // Inside a box carrying off-centre values, which it inherits unless the turning rule pins its own.
   `<div style="--tilt-x:.9;--tilt-y:.1;--tilt-lift:1">${tiltHost("tilt-turning", 'data-turning=""')}</div>` +
   tiltHost("tilt-turning-inline", 'data-turning="" data-tilting=""', "--tilt-x:.9;--tilt-y:.1;--tilt-lift:1") +
-  tiltHost("tilt-zoom", "").replace('data-tilt=""', 'data-tilt="zoom"');
+  tiltHost("tilt-zoom", "").replace('data-tilt=""', 'data-tilt="zoom"') +
+  // Details' desktop host: the zoom trigger is its direct child, and the face's film lands already cached (`done`).
+  `<div id="tilt-focus" data-tilt="" style="position:relative;width:180px;aspect-ratio:63/88;border-radius:12px">` +
+  `<button id="tilt-focus-trigger" style="position:absolute;inset:0;opacity:0">zoom</button>` +
+  `<div style="position:absolute;inset:0;border-radius:inherit;background:url('${img}') center/cover">` +
+  `<span aria-hidden="true" data-foil="foil" data-foil-size="large" data-arrival="done" style="pointer-events:none;position:absolute;inset:0;border-radius:inherit"></span></div></div>` +
+  `<button id="elsewhere">elsewhere</button>`;
 const FACE_MARKS = [["face-pending", "pending"], ["face-in", "in"], ["face-done", "done"], ["face-failed", "failed"], ["face-unmarked", null]];
 // Its own row, wrapped under R1's: in R1's flex row the tiles would shrink to nothing.
 const r2 = `<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:12px;padding:20px;background:#111">${FACE_MARKS.map(([id, m]) => face(id, m)).join("")}${face("face-etched", "done", "etched")}${face("preview-in", "in", "foil", null)}` +
@@ -181,6 +187,18 @@ for (const motion of ["no-preference", "reduce"]) {
   if (motion === "no-preference") {
     const rest = (await band(page, "etched")).name;
     check("only the hovered tile sweeps", rest === "none", rest);
+    // Keyboard focus on the trigger plays the band again; leaving focus must not play the OPEN's band a second time.
+    const bands = () => page.$eval("#tilt-focus [data-foil]", (e) => e.getAnimations().map((a) => `${a.animationName}:${a.playState}`));
+    await page.waitForTimeout(1400); // the open's band, 320ms + 960ms, has played out
+    await page.focus("#elsewhere");
+    await page.keyboard.press("Shift+Tab"); // keyboard focus, so :focus-visible holds
+    const focused = await bands();
+    check("keyboard focus on the details trigger plays the band again", focused.includes("foil-band-again:running") && focused.includes("foil-band:finished"), JSON.stringify(focused));
+    await page.waitForTimeout(1100);
+    await page.keyboard.press("Tab");
+    await page.waitForTimeout(50);
+    const blurred = await bands();
+    check("and leaving focus replays nothing", blurred.every((b) => !b.endsWith(":running")), JSON.stringify(blurred));
     // The blend REACHES the art: a white card turns pastel under the wash and a black one stays black. A film span that
     // made its own stacking context would multiply against nothing and paint its pastel over both.
     const px = await sample(page, ["white-art", "black-art"]);
