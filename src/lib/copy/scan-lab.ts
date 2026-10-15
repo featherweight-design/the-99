@@ -11,6 +11,7 @@ export const scanLabCopy = {
   noCamera: "This browser can’t open the camera here.",
   noCard: "No card in view",
   guessing: "Best guess",
+  held: "Held for your tap", // replaces Best guess while a finger is on the controls
   agreed: (n: number) => `same answer on ${n} frames in a row`,
   right: "✓ Right card",
   wrong: "✗ Wrong card",
