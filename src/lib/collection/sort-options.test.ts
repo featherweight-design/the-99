@@ -9,7 +9,7 @@ import {
 describe("buildSortOptions", () => {
   it("lists every sort key with only the chosen one carrying a direction hint", () => {
     const options = buildSortOptions("quantity", "desc");
-    expect(options.map((o) => o.code)).toEqual(["name", "quantity", "set", "rarity", "color", "price"]);
+    expect(options.map((o) => o.code)).toEqual(["name", "quantity", "set", "rarity", "color", "price", "added"]);
     expect(options.filter((o) => o.hint !== undefined).map((o) => [o.code, o.hint])).toEqual([
       ["quantity", "Most"],
     ]);
@@ -64,5 +64,13 @@ describe("the Price sort", () => {
     expect(nextSortState({ sort: "name", direction: "asc" }, "price")).toEqual({ sort: "price", direction: "desc" });
     expect(sortOrderLabel("price", "desc")).toBe("Price · Highest first");
     expect(sortOrderLabel("price", "asc")).toBe("Price · Lowest first");
+  });
+});
+
+describe("the Date added sort", () => {
+  it("opens newest first, and reverses to oldest first", () => {
+    expect(nextSortState({ sort: "name", direction: "asc" }, "added")).toEqual({ sort: "added", direction: "desc" });
+    expect(sortOrderLabel("added", "desc")).toBe("Date added · Newest");
+    expect(sortOrderLabel("added", "asc")).toBe("Date added · Oldest");
   });
 });

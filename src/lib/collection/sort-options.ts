@@ -7,6 +7,7 @@
 
 import { DEFAULT_SORT_DIRECTION, type SortDirection, type SortKey } from "./browse";
 import { collectionPriceCopy } from "../copy/collection-price";
+import { collectionAddedCopy } from "../copy/collection-added";
 
 /**
  * Structurally what FilterPanel renders, declared here rather than imported from
@@ -21,7 +22,7 @@ export type SortOption = {
   disabled: boolean;
 };
 
-export const SORT_KEYS = ["name", "quantity", "set", "rarity", "color", "price"] as const satisfies readonly SortKey[];
+export const SORT_KEYS = ["name", "quantity", "set", "rarity", "color", "price", "added"] as const satisfies readonly SortKey[];
 
 const SORT_LABELS: Record<SortKey, string> = {
   name: "Name",
@@ -30,6 +31,7 @@ const SORT_LABELS: Record<SortKey, string> = {
   rarity: "Rarity",
   color: "Color",
   price: collectionPriceCopy.sortLabel,
+  added: collectionAddedCopy.sortLabel,
 };
 
 /**
@@ -43,6 +45,7 @@ const DIRECTION_LABELS: Record<SortKey, Record<SortDirection, string>> = {
   rarity: { asc: "Common first", desc: "Mythic first" },
   color: { asc: "WUBRG", desc: "Colorless first" },
   price: collectionPriceCopy.direction,
+  added: collectionAddedCopy.direction,
 };
 
 export function sortDirectionLabel(sort: SortKey, direction: SortDirection): string {

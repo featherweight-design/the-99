@@ -137,6 +137,17 @@ export type BrowseCard = {
   /** A token's Mana Pool link, for the product its price is for; null when Mana Pool lists none. */
   tokenBuyUrl?: string | null;
   oracleId: string;
+  /**
+   * When the card last arrived, for the Date added sort (`addedOf`): unix MINUTES of its newest EXACT holding,
+   * so a second printing added today lifts the card. Absent when none of its holdings has an exact date.
+   */
+  added?: number;
+  /**
+   * Else, when it has been in the collection since, unix DAYS of its oldest dated holding: an upper bound the
+   * data only supports as "since" (a file that filled an empty collection dates every holding to its day).
+   * Absent when no holding is dated at all, which sorts last and draws nothing.
+   */
+  since?: number;
   name: string;
   typeLine: string;
   manaCost: string | null;
@@ -376,7 +387,7 @@ export type BrowseFilters = {
   availability?: AvailabilityState[];
 };
 
-export type SortKey = "name" | "quantity" | "set" | "rarity" | "color" | "price";
+export type SortKey = "name" | "quantity" | "set" | "rarity" | "color" | "price" | "added";
 export type SortDirection = "asc" | "desc";
 
 export function cssUrl(uri: string): string {
@@ -415,6 +426,9 @@ export const AVAILABLE_TYPES = [
 export type RawCollectionRow = {
   cmc: number;
   oracleId: string;
+  /** The holding's `added_at` and whether it was a real arrival. Absent on a row read without them. */
+  addedAt?: Date | null;
+  addedExact?: boolean;
   quantity: number;
   setCode: string;
   collectorNumber: string;
@@ -628,7 +642,15 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
   // disagreeing" and "never had one" look identical on the entry itself and must
   // not be allowed to heal when a third row arrives carrying an id.
   const ambiguousIds = new Set<string>();
+  // The Date added sort's two figures, per card, folded from its holdings (see `BrowseCard.added`).
+  const added = new Map<string, { exact?: number; since?: number }>();
   for (const r of rows) {
+    if (r.addedAt) {
+      const slot = added.get(r.oracleId) ?? {};
+      if (r.addedExact) slot.exact = Math.max(slot.exact ?? -Infinity, Math.floor(r.addedAt.getTime() / 60_000));
+      else slot.since = Math.min(slot.since ?? Infinity, Math.floor(r.addedAt.getTime() / 86_400_000));
+      added.set(r.oracleId, slot);
+    }
     const setCode = r.setCode.toUpperCase();
     const printing: BrowsePrinting = {
       setCode,
@@ -738,6 +760,9 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
   }
 
   for (const card of byOracle.values()) {
+    const when = added.get(card.oracleId);
+    if (when?.exact !== undefined) card.added = when.exact;
+    else if (when?.since !== undefined) card.since = when.since;
     card.printings = [...printingsByOracle.get(card.oracleId)!.values()].sort(comparePrintings);
     card.setCodes.sort();
     // Every card here was built from at least one collection row, so a primary always exists.
@@ -972,6 +997,11 @@ const SORT_COMPARATORS: Record<SortKey, (a: BrowseListCard, b: BrowseListCard) =
   // Only cards that both carry a figure reach here: `sortCards` puts every card without one
   // last, in both directions, before the direction is applied.
   price: (a, b) => (priceSortCents(a.price) ?? 0) - (priceSortCents(b.price) ?? 0),
+  // Ascending is OLDEST first: the inexact block (every card only known to be there "since" some day) ties and
+  // falls to name, then the exact arrivals by their minute. A card with no date at all reaches here never:
+  // `sortCards` puts it last in both directions.
+  added: (a, b) => (a.added === undefined ? 0 : 1) - (b.added === undefined ? 0 : 1)
+    || (a.added ?? 0) - (b.added ?? 0),
 };
 
 /**
@@ -986,6 +1016,7 @@ export const DEFAULT_SORT_DIRECTION: Record<SortKey, SortDirection> = {
   rarity: "asc",
   color: "asc",
   price: "desc",
+  added: "desc",
 };
 
 export function sortCards(
@@ -998,20 +1029,23 @@ export function sortCards(
   // The name tiebreak stays A→Z in both directions. It is not part of what the
   // user asked to reverse, and flipping it would shuffle every equal-quantity
   // run on a direction change for no reason the user could name.
-  return [...list].sort((a, b) => unpricedLast(sort, a, b)
+  return [...list].sort((a, b) => noFigureLast(sort, a, b)
     || sign * primary(a, b)
     || printedFaceName(a).localeCompare(printedFaceName(b), "en"));
 }
 
 /**
- * The Price sort's one rule the direction does not reverse: a card with no figure (no stock, or
- * nothing reached us) goes after every card with one, in BOTH directions, and those cards then
- * order by name like any tie. A null is not a zero, so it is not the cheapest card either.
+ * The Price and Date added sorts' one rule the direction does not reverse: a card with no figure (no stock, or
+ * nothing reached us; no date at all) goes after every card with one, in BOTH directions, and those cards then
+ * order by name like any tie. A null is not a zero, so it is not the cheapest card or the oldest either.
  */
-function unpricedLast(sort: SortKey, a: BrowseListCard, b: BrowseListCard): number {
+function noFigureLast(sort: SortKey, a: BrowseListCard, b: BrowseListCard): number {
+  if (sort === "added") return Number(hasDate(a) === false) - Number(hasDate(b) === false);
   if (sort !== "price") return 0;
   return Number(priceSortCents(a.price) === null) - Number(priceSortCents(b.price) === null);
 }
+
+const hasDate = (c: Pick<BrowseListCard, "added" | "since">) => c.added !== undefined || c.since !== undefined;
 
 /** The price read for the cards of one collection snapshot. Null when it failed. */
 export function startPriceRead(

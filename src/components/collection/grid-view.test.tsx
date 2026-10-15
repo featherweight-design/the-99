@@ -297,6 +297,27 @@ describe("GridView price clause", () => {
   });
 });
 
+// Date added shares the price slot: a figure leads the sub-line, the clause is spoken last, and a card
+// with no date draws nothing (days are read in UTC, so the draw is the same on any machine).
+describe("GridView Date added figure", () => {
+  const open = () => {};
+  it("draws an exact day and since for an inexact one, spoken after the set and rarity", () => {
+    const exact = { ...card, added: Date.UTC(2026, 9, 12, 15) / 60_000 };
+    const since = { ...card, oracleId: "since", name: "Since Card", printedName: "Since Card", since: Date.UTC(2026, 8, 2) / 86_400_000 };
+    render(<GridView cards={[exact, since]} totalCards={2} onShowMore={() => {}} onOpen={open} showAdded />);
+    const exactName = screen.getByRole("button", { name: /Smothering Tithe/ }).textContent ?? "";
+    expect(exactName.endsWith("added Oct 12")).toBe(true);
+    expect(exactName.indexOf("RVR")).toBeLessThan(exactName.indexOf("added Oct 12"));
+    expect(screen.getByRole("button", { name: /Since Card/ }).textContent).toMatch(/in your collection since Sep 2$/);
+  });
+  it("is silent for a card with no date and off the sort", () => {
+    const { rerender } = render(<GridView cards={[card]} totalCards={1} onShowMore={() => {}} onOpen={open} showAdded />);
+    expect(screen.getByRole("button", { name: /Smothering Tithe/ }).textContent).not.toMatch(/added|since/);
+    rerender(<GridView cards={[{ ...card, added: 1 }]} totalCards={1} onShowMore={() => {}} onOpen={open} />);
+    expect(screen.getByRole("button", { name: /Smothering Tithe/ }).textContent).not.toMatch(/added/);
+  });
+});
+
 // The foil film (foil handoff R1) rides the ring span over the art, read off the drawn printing.
 describe("GridView foil film", () => {
   const film = () => document.querySelector("[data-foil]");
