@@ -44,7 +44,9 @@ export function ArrivalStrip({ deckId, importedLineCount, printings = null, adde
         deckId={deckId}
         lines={{
           head: unresolved
-            ? own.headUnresolved(added.copies)
+            ? printings
+              ? own.headUnresolvedWithPrintings(added.copies, printings.kept, printings.notOwned)
+              : own.headUnresolved(added.copies)
             : printings ? own.headWithPrintings(n, printings.kept, printings.notOwned) : own.head(n),
           body: unresolved ? own.bodyUnresolved : own.body(added.copies),
           meta: own.meta,

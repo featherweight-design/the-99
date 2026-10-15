@@ -41,6 +41,12 @@ describe("the ticked import's strip (S10)", () => {
     expect(screen.getByRole("link", { name: "History" })).toBeTruthy();
   });
 
+  it("over unresolved lines, keeps the printing clauses in the head without saying clean", () => {
+    render(<ArrivalStrip deckId="d6" importedLineCount={100} unresolved printings={{ kept: 3, notOwned: 2 }} added={{ entryId: "e1", copies: 97 }} />);
+    expect(screen.queryByText(/came over clean/)).toBeNull();
+    expect(screen.getByText(/^97 cards added to your collection, .*printing you own/)).toBeTruthy();
+  });
+
   it("reads as shipped with nothing added", () => {
     render(<ArrivalStrip deckId="d5" importedLineCount={100} />);
     expect(screen.getByText("All 100 lines came over clean. Imported from your list a moment ago.")).toBeTruthy();

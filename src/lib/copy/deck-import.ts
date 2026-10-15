@@ -365,6 +365,9 @@ export const deckImportCopy = {
       // keeps its banner, so the strip says only what was added and that those lines added nothing.
       headUnresolved: (copies: number) =>
         `${copies === 1 ? "1 card" : `${copies.toLocaleString("en-US")} cards`} added to your collection.`,
+      // The same head when lines named printings: the clauses join it, as they join the clean head.
+      headUnresolvedWithPrintings: (copies: number, kept: number, notOwned: number) =>
+        `${copies === 1 ? "1 card" : `${copies.toLocaleString("en-US")} cards`} added to your collection, ${printingClauses(kept, notOwned, "with the printing you own")}.`,
       bodyUnresolved: "The lines we couldn’t put a card to added nothing.",
       meta: "Imported from your list a moment ago",
       history: "History",
