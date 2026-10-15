@@ -14,6 +14,8 @@
 //   7. THE BACKFILL: a holding whose current ownership began with a hand entry takes that entry's time, exact; else
 //      the first confirmed upload holding it, INEXACT always; a holding added, removed and not brought back by a
 //      hand entry is not dated to its first life; a holding in none stays null; a second run changes nothing.
+//   8. A SYNC OR AN ADD AFTER A HAND ADD does not break its chain (production, 2026-10-15: 126 hand adds left unknown
+//      behind one Sync that touched none of them); a REPLACE after it does.
 //
 // It writes under a per-run user_id and deletes everything that id created in a `finally`. Refused on
 // production and staging; point DATABASE_URL at local-dev or a scratch branch.
@@ -35,6 +37,7 @@ const pool = new Pool({ connectionString: DATABASE_URL, max: 4 });
 const USER = `probe-added-at-${Date.now()}`;
 const USER_LEGACY = `probe-added-at-legacy-${Date.now()}`;
 const USER_BF = `probe-added-at-backfill-${Date.now()}`;
+const USER_SY = `probe-added-at-sync-${Date.now()}`;
 const PRODUCTION = "br-noisy-violet-a6vw4ess";
 const STAGING = "br-polished-pond-a6e63y0b";
 
@@ -183,8 +186,34 @@ async function main() {
     check("a hand add before a Replace-capable upload that does not hold it is not trusted", bG?.added_at === null, `${bG?.added_at?.toISOString()}`);
     const again = await backfillAddedAt(pool, { userId: USER_BF });
     check("a second run changes nothing", again.dated === 0, JSON.stringify(again));
+
+    // ---- 8. A Sync or an Add after a hand add keeps its date; a Replace does not ---------------
+    // A, B and C are hand-added (exact, on day3), then a Sync and an Add are confirmed after them, each with an empty
+    // ledger entry: neither touches a holding, so all three stay exact. A Replace confirmed after that may have removed
+    // any of them without a row of its own, so none is trusted.
+    const kindUpload = async (kind: string, at: string, rows: unknown[]) => {
+      const id = (await pool.query(
+        `insert into csv_uploads (user_id, filename, row_count, unmatched_count, preview_payload, created_at, confirmed_at)
+         values ($1, $2, 0, 0, $3::jsonb, $4, $4) returning id`, [USER_SY, `${kind}.csv`, pend(), at])).rows[0].id as string;
+      await pool.query(
+        `insert into collection_history (id, user_id, created_at, kind, rows, raised, lowered, source) values ($1, $2, $3, $4, $5::jsonb, 0, 0, $6)`,
+        [randomUUID(), USER_SY, at, kind, JSON.stringify(rows), `csv_uploads:${id}`]);
+    };
+    for (const o of [A, B, C]) {
+      await pool.query(
+        `insert into collection_history (id, user_id, created_at, kind, rows, raised, lowered) values ($1, $2, $3, 'add', $4::jsonb, 1, 0)`,
+        [randomUUID(), USER_SY, day3, JSON.stringify([histRow(o, null, held)])]);
+      await pool.query("insert into collection_items (user_id, oracle_id, quantity, set_code, collector_number, finish) values ($1, $2, 1, 'prb', '1', 'nonfoil')", [USER_SY, o]);
+    }
+    await kindUpload("upload_sync", "2026-10-14T14:39:34Z", []);
+    await kindUpload("upload_add", "2026-10-14T15:00:00Z", []);
+    const syncDry = await backfillAddedAt(pool, { userId: USER_SY, dryRun: true });
+    check("hand adds before a Sync and an Add are all dated, exact", syncDry.undated === 3 && syncDry.dated === 3 && syncDry.exact === 3, JSON.stringify(syncDry));
+    await kindUpload("upload_replace", "2026-10-14T16:00:00Z", []);
+    const replaced = await backfillAddedAt(pool, { userId: USER_SY, dryRun: true });
+    check("a Replace after them breaks the chain: nothing is trusted", replaced.dated === 0, JSON.stringify(replaced));
   } finally {
-    for (const user of [USER, USER_LEGACY, USER_BF]) {
+    for (const user of [USER, USER_LEGACY, USER_BF, USER_SY]) {
       // One statement for the ledger: its two self-references are checked at the statement's end.
       await pool.query("delete from collection_history where user_id = $1", [user]);
       await pool.query("delete from csv_uploads where user_id = $1", [user]);
