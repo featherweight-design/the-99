@@ -16,7 +16,7 @@ import { useState } from "react";
 import type { UploadPreview } from "../../app/collection/actions";
 import type { ArrivalsSummary, ClearedRow, StillRow } from "../../lib/collection/arrivals";
 import type { ContestedCard } from "../../lib/collection/summary-read";
-import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import { cardAssignmentsCopy as copy, type SyncLede } from "../../lib/copy/card-assignments";
 import { addedCopyCopy } from "../../lib/copy/added-copy";
 import { wentSentence } from "../../lib/collection/copy-line";
 import { IssueInspector } from "./issue-inspector";
@@ -158,6 +158,7 @@ export function ArrivalsSummary({
   stampDate,
   addedCopy = false,
   chooser = {},
+  sync = null,
 }: {
   /** Null when the receipt did not survive its write — renders the nothing-to-report state. */
   summary: ArrivalsSummary | null;
@@ -170,6 +171,12 @@ export function ArrivalsSummary({
   addedCopy?: boolean;
   /** The chooser behind each line's Change, by oracle id (`loadSummaryView`). */
   chooser?: Record<string, ContestedCard>;
+  /**
+   * A Sync's own figures, from its upload's `syncSummary` (`loadSummaryView`); null for a Replace or
+   * an Add. The same layout either way (collection sync ruling 3): a Sync changes the eyebrow, the
+   * lede's ending, the short-deck verb and the stamp's word, nothing else.
+   */
+  sync?: (SyncLede & { tokens: number; cards?: number }) | null;
 }) {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [showAllCleared, setShowAllCleared] = useState(false);
@@ -196,6 +203,16 @@ export function ArrivalsSummary({
   const unmatched = summary?.issues.unmatched ?? 0;
   const parseErrors = summary?.issues.parseErrors ?? 0;
   const hasIssues = unmatched + parseErrors > 0;
+  // A Sync that changed no card row at all changed only its tokens (Y1b), and says so. Decided by the card
+  // ROWS it changed (`sync.cards`), never by the receipt's copy delta: `arrived` and `left` count oracle ids,
+  // so a Sync that only moved a printing, a finish or a condition reads 0 and 0 there. A summary stored
+  // before `cards` existed falls back to that delta. A Sync that kept a card or had one decided is not
+  // tokens-only even when no row changed (every conflict answered App): its sentence says neither, and Y1
+  // must not drop the kept clause, so it takes the general Sync lede, which carries both.
+  const tokensOnly = sync !== null && sync.kept === 0 && sync.decided === 0 && (sync.cards !== undefined
+    ? sync.cards === 0
+    : summary !== null && summary.arrived + summary.left === 0);
+  const lede = sync ?? undefined;
 
   return (
     // CENTRED, not pinned left. The 760px cap is the handoff's; what it did not say was where
@@ -203,14 +220,14 @@ export function ArrivalsSummary({
     // narrow strip against a screen of empty ground.
     <div className="mx-auto w-full p-[18px] md:p-[28px_34px] max-w-[760px]">
       <p className="font-mono text-[11px] uppercase tracking-[0.16em] m-0" style={{ color: "var(--fg-faint)" }}>
-        {copy.summary.eyebrow}
+        {sync ? copy.summary.eyebrowSync : copy.summary.eyebrow}
       </p>
       <h1 className="font-display font-bold text-[24px] md:text-[30px] mt-[6px] mb-[8px]" style={{ color: "var(--fg)" }}>
         {/* A LOST RECEIPT HAS NO FIGURE, and must not invent one. `summary` is null only when
             the payload did not survive its write, and `heading(0)` would then tell a player
             with 2,733 cards that they have none — a false statement, and one that makes a
             successful import look like an emptied collection. */}
-        {summary ? copy.summary.heading(summary.totalAfter) : copy.summary.headingNoReceipt}
+        {summary ? copy.summary.heading(summary.totalAfter) : sync ? copy.summary.headingNoReceiptSync : copy.summary.headingNoReceipt}
       </h1>
       <p className="text-[13.5px] m-0" style={{ color: "var(--fg-body)" }}>
         {/* THE FROZEN SECTIONS CHOOSE THE SENTENCE, for the reason the empty state does: a row
@@ -224,19 +241,32 @@ export function ArrivalsSummary({
             which is deliberately not a contested row because there is nobody to choose between.
             That case takes the neutral sentence. */}
         {nothingToReport
-          ? copy.summary.ledeNothingToReport
+          ? tokensOnly && sync ? copy.summary.ledeTokensOnly(sync.tokens)
+            // A LOST SYNC RECEIPT STATES NO DECK OUTCOME. Its empty sections are absence, not a
+            // record that nothing cleared or went back on the buy list: a Sync can commit and
+            // leave a deck short with only the receipt's write failing. The Sync's own figures
+            // are stored on its upload, so those are said.
+            : sync && summary === null ? copy.summary.ledeNoReceiptSync(sync)
+            : sync ? copy.summary.ledeNothingToReportSync(sync)
+            : copy.summary.ledeNothingToReport
           : (summary?.contested.length ?? 0) > 0
-            ? copy.summary.lede(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)
+            ? copy.summary.lede(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0, lede)
             : still.length > 0 || nowShort.length > 0
-              ? copy.summary.ledeOwing(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)
-              : copy.summary.ledeNoContention(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)}
-        {nowShort.length > 0 ? ` ${copy.summary.nowShort(nowShort)}` : ""}
+              ? copy.summary.ledeOwing(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0, lede)
+              : copy.summary.ledeNoContention(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0, lede)}
+        {nowShort.length > 0 ? ` ${copy.summary.nowShort(nowShort, sync ? "Syncing" : "Replacing")}` : ""}
       </p>
       <p className="font-mono text-[10.5px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
-        {copy.summary.fileStamp(stampDate, filename)}
+        {sync ? copy.summary.syncFileStamp(stampDate, filename) : copy.summary.fileStamp(stampDate, filename)}
         {/* On the empty receipt the lede says nothing your DECKS care about moved, and without
-            the file's own delta beside it that reads as an import which did nothing at all. */}
-        {nothingToReport && summary ? ` · ${copy.summary.fileDelta(summary.arrived + summary.left)}` : ""}
+            the file's own delta beside it that reads as an import which did nothing at all. A
+            Sync keeps it too: it is the only figure that says cards outside every deck moved, and it
+            cannot count a kept card, because `buildArrivalsSummary` takes it from what was owned before
+            and after, where a kept card did not move. What a Sync drops is a ZERO delta: a tokens-only
+            Sync already says its cards are as you left them, and one that moved only a printing, a
+            finish or a condition changed rows a copy count cannot see, so `0 cards differ` is not its. */}
+        {nothingToReport && summary && (!sync || summary.arrived + summary.left > 0)
+          ? ` · ${copy.summary.fileDelta(summary.arrived + summary.left)}` : ""}
       </p>
 
       {/* The issues line. Counts and a route back, never the list again: `IssueInspector`

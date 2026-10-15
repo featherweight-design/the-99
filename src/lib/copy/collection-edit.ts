@@ -12,6 +12,7 @@ const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 // restoration), so they read neutrally: never "records", "unrecorded" or "its N tokens".
 const tokensChange = (x: number) => (x === 1 ? "1 token changes" : `${n(x)} tokens change`);
 const tokenChanges = (x: number) => (x === 1 ? "1 token change" : `${n(x)} token changes`);
+const tokens = (x: number) => (x === 1 ? "1 token" : `${n(x)} tokens`);
 
 export const collectionEditCopy = {
   head: {
@@ -208,12 +209,14 @@ export const collectionEditCopy = {
           ].filter(Boolean).join(" "),
         noneKept: (take: number, t: number) => `Taking ${cards(take)} from the file${t ? `, with ${tokenChanges(t)}` : ""}. Nothing of yours to keep.`,
         /** (reworded, for /copy-review) The kept clause goes at 0: there is nothing of yours it could name. */
-        tokensOnly: (keep: number, t: number) =>
-          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. ${tokensChange(t)}.`,
+        tokensOnly: (keep: number, t: number, decided = 0) =>
+          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. ${tokensChange(t)}.` +
+          (decided ? ` You decided ${n(decided)}.` : ""),
         /** (new, for /copy-review) No card moves and no token COUNT changes, yet the write still records the file's
          * tokens (a read marker, a printing, an ownership source): the plain confirm, never `Sync 0 token changes`. */
-        tokensRecorded: (keep: number) =>
-          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. The file’s tokens are recorded, and no count changes.`,
+        tokensRecorded: (keep: number, decided = 0) =>
+          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. The file’s tokens are recorded, and no count changes.` +
+          (decided ? ` You decided ${n(decided)}.` : ""),
         undecided: (k: number) => `${cards(k)} still to decide.`,
         nothing: "Nothing will change.",
         confirm: "Sync collection",
@@ -259,6 +262,13 @@ export const collectionEditCopy = {
   // §F, the revert confirmation (F4 to F7). The handoff's strings; (new) lines go to /copy-review.
   revert: {
     title: (kind: string) => `Revert “${kind}”?`,
+    /** A Sync's revert is titled by what it was, not by its file (collection sync call 7). */
+    titleSync: "Revert this sync?",
+    /**
+     * A Sync's revert, under the lede: token writes are not in the ledger, so a revert leaves them
+     * (G3). Drawn only when the Sync changed any.
+     */
+    syncTokensStay: (t: number) => `The ${tokenChanges(t)} it made ${t === 1 ? "stays" : "stay"}.`,
     // Direction-neutral: a revert can move copies either way, so the lede names what moved without
     // claiming a direction. The Then and Now rows say what changes.
     lede: (when: string, c: number) => `From ${when}. Reverting this changes ${c === 1 ? "1 copy" : `${n(c)} copies`}.`,
@@ -310,6 +320,13 @@ export const collectionEditCopy = {
     addedFromPrecon: (name: string) => `Added from ${name}`,
     /** An import's own-these-cards add, titled by the deck it made (handoff: `titled by the deck`). */
     addedFromDeck: (deckName: string) => `Added from ${deckName}`,
+    /**
+     * An opened Sync's lead line, above its groups (Y2): what it kept and what the player decided are
+     * not rows of the entry, since the Sync never wrote them, so a revert cannot touch them either.
+     */
+    syncNote: (kept: number, decided: number, t: number) =>
+      [kept ? `Kept the ${cards(kept)} you’d changed in the app.` : "", decided ? `You decided ${n(decided)}.` : "", t ? `Changed ${tokens(t)}.` : ""]
+        .filter(Boolean).join(" "),
     figures: (up: number, down: number, cards: number) =>
       // A change that moved no copies (a printing or condition swap, or a Replace that matched the
       // collection exactly) states its zero rather than leaving the figure blank.

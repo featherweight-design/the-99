@@ -14,7 +14,7 @@ import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
-import { collectionEditEnabled } from "../collection/edit-flag";
+import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
@@ -42,6 +42,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   TUNING_ENABLED: tuningEnabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
+  // Already reads COLLECTION_EDIT_ENABLED: Sync is the upload choice's third card.
+  COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   // The block lives on the Analysis tab, so the entry needs the tab too, as tuning's does: it
   // would otherwise describe a tab that is off.
@@ -84,7 +86,12 @@ function resolveLine(text: string, line: string): string {
 
 /** Exported for `visible.test.ts` alone, to build an expectation from the same resolution
  *  `visibleEntries` applies, rather than hand-duplicating its string surgery. */
-export function resolveEntry(entry: AboutEntry, env: NodeJS.ProcessEnv): AboutEntry {
+export function resolveEntry(base: AboutEntry, env: NodeJS.ProcessEnv): AboutEntry {
+  // The variant first, so the line switches below read the form the reader is shown.
+  const v = base.variant;
+  const entry = v && SWITCHES[v.switch](env)
+    ? { ...base, title: v.title, caption: v.caption, keys: v.keys, variantOn: v.switch }
+    : base;
   if (!entry.captionLineSwitches && !entry.keySwitches) return entry;
   let caption = entry.caption;
   for (const [line, sw] of Object.entries(entry.captionLineSwitches ?? {})) {
@@ -120,6 +127,7 @@ export const NEVER_SEEN: SeenState = { version: 0, ids: [] };
  * switches flip in any order: turn B on and read it, then turn A on, and A is still new.
  */
 export function isSeen(entry: AboutEntry, seen: SeenState): boolean {
+  if (entry.variantOn) return seen.ids.includes(variantId(entry.id, entry.variantOn));
   if (entry.switch) return seen.ids.includes(entry.id);
   return entry.since <= seen.version;
 }
@@ -138,7 +146,25 @@ export function unseenEntries(visible: readonly AboutEntry[], seen: SeenState): 
   return visible.filter((e) => !isSeen(e, seen));
 }
 
-/** The switched entries this deployment draws, which a visit records as seen. */
+/** The id an entry drawn in its variant is seen by: its own, with the switch that chose the form. */
+export const variantId = (id: string, sw: AboutSwitch) => `${id}@${sw}`;
+
+/**
+ * The identity of the FORM an entry is drawn in: its variant id when drawn in its variant, else its own id. What a
+ * banner claims and a visit acknowledges in the browser, so a claim or an acknowledgement of one form never answers
+ * the other: a banner drawn before a switch chose the variant names the base form, and the reader has not read the
+ * variant.
+ */
+export const displayedId = (e: AboutEntry) => (e.variantOn ? variantId(e.id, e.variantOn) : e.id);
+
+/**
+ * The switched entries this deployment draws, and the variants it draws them in, which a visit
+ * records as seen. An entry in its variant records its own id too, so the base form is not new
+ * again if that switch is later turned off.
+ */
 export function switchedIds(visible: readonly AboutEntry[]): string[] {
-  return visible.filter((e) => e.switch).map((e) => e.id);
+  return visible.flatMap((e) => [
+    ...(e.switch ? [e.id] : []),
+    ...(e.variantOn ? [variantId(e.id, e.variantOn)] : []),
+  ]);
 }

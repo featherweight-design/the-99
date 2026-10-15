@@ -77,11 +77,16 @@ type View =
   | { k: "refused"; text: string; title: string };
 
 export function RevertConfirm({
-  entryId, title, when, onClose, onReverted,
+  entryId, title, titleShape = "entry", when, onClose, onReverted,
 }: {
   entryId: string;
   /** What the entry is called in the list, for the title. */
   title: string;
+  /**
+   * How the title reads: `Revert “<title>”?` for an entry, `Revert this sync?` for a Sync, which is
+   * titled by what it was rather than by its file (collection sync call 7).
+   */
+  titleShape?: "entry" | "sync";
   /** The entry's time, spelled by the list. */
   when: string;
   onClose: () => void;
@@ -215,7 +220,7 @@ export function RevertConfirm({
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-[14px]">
             {/* The title sits above the scroll box, so it stays put while the body moves. */}
-            <h2 id={headingId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)] md:text-[24px]">{c.title(title)}</h2>
+            <h2 id={headingId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)] md:text-[24px]">{titleShape === "sync" ? c.titleSync : c.title(title)}</h2>
             <div className={`${SCROLL} flex flex-col gap-[14px]`}>
             {view.k === "reading" ? (
               <>
@@ -266,6 +271,10 @@ export function RevertConfirm({
                     ) : null}
                   </div>
                 )}
+                {/* G3: a Sync's tokens are not in the ledger, so its revert leaves them, and says so. */}
+                {preview?.syncTokens ? (
+                  <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{c.syncTokensStay(preview.syncTokens)}</p>
+                ) : null}
                 {error ? <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">{error}</p> : null}
               </>
             )}

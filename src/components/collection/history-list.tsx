@@ -220,7 +220,7 @@ export function HistoryEntryItem({
   isOpen: boolean;
   detail: HistoryEntry | "loading" | "failed" | undefined;
   onToggle: () => void;
-  onRevert: (title: string) => void;
+  onRevert: (title: string, sync: boolean) => void;
   onRetry: () => void;
   /** The row carries `id="entry-…"` for the Add sheet's link. /about draws it without: a page of its own ids. */
   anchor?: boolean;
@@ -254,7 +254,7 @@ export function HistoryEntryItem({
         // Its own control beside the disclosure, never inside it: a button in a button.
         <button
           type="button"
-          onClick={() => onRevert(title)}
+          onClick={() => onRevert(title, kind === "uploadSync")}
           aria-label={`${c.revert} ${title}`}
           className="mr-[10px] min-h-[44px] flex-none cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[12px] text-[13px] text-[color:var(--fg)] md:min-h-[32px]"
         >
@@ -289,7 +289,16 @@ export function HistoryEntryItem({
       {isOpen ? (
         <div className="border-t border-t-[color:var(--border)] px-[14px] py-[8px] md:pl-[176px]">
           {detail && detail !== "loading" && detail !== "failed" ? (
-            <EntryRows rows={detail.rows} rowDecks={detail.rows.length > 1 || !e.wentTo ? detail.rowDecks : null} />
+            <>
+              {/* A Sync leads with what it kept and what the player decided (Y2): not rows of the
+                  entry, since the Sync never wrote them, so they sit above the groups, not in them. */}
+              {detail.sync ? (
+                <p className="m-0 pb-[10px] text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
+                  {c.syncNote(detail.sync.kept, detail.sync.decided, detail.sync.tokens)}
+                </p>
+              ) : null}
+              <EntryRows rows={detail.rows} rowDecks={detail.rows.length > 1 || !e.wentTo ? detail.rowDecks : null} />
+            </>
           ) : detail === "failed" ? (
             <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">
               {c.loadFailed}{" "}
@@ -330,7 +339,7 @@ export function HistoryList({
   const [details, setDetails] = useState<ReadonlyMap<string, HistoryEntry | "loading" | "failed">>(new Map());
   const [pager, setPager] = useState<"idle" | "loading" | "failed">("idle");
   // The entry whose revert is being decided, with the words the dialog quotes.
-  const [reverting, setReverting] = useState<{ id: string; title: string; when: string } | null>(null);
+  const [reverting, setReverting] = useState<{ id: string; title: string; when: string; sync: boolean } | null>(null);
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
   const groups = useMemo(() => groupByDay(entries, nowMs), [entries, nowMs]);
 
@@ -406,7 +415,7 @@ export function HistoryList({
                   isOpen={open.has(e.id)}
                   detail={details.get(e.id)}
                   onToggle={() => toggle(e.id)}
-                  onRevert={(title) => setReverting({ id: e.id, title, when: `${dayLabel(e.createdAt)}, ${timeLabel(e.createdAt)}` })}
+                  onRevert={(title, sync) => setReverting({ id: e.id, title, when: `${dayLabel(e.createdAt)}, ${timeLabel(e.createdAt)}`, sync })}
                   onRetry={() => void fetchDetail(e.id)}
                 />
               ))}
@@ -433,6 +442,7 @@ export function HistoryList({
         <RevertConfirm
           entryId={reverting.id}
           title={reverting.title}
+          titleShape={reverting.sync ? "sync" : "entry"}
           when={reverting.when}
           onClose={() => setReverting(null)}
           onReverted={() => setReverting(null)}

@@ -61,6 +61,11 @@ export type RevertPreview = {
   decks: ShortDeck[];
   /** The after-count per row the confirmation shows; sent back with the revert, checked at the save. */
   expected: Record<string, number>;
+  /**
+   * The tokens a Sync recorded, which its revert leaves recorded (G3: token writes are not in the
+   * ledger). Absent for any other entry, and for a Sync that recorded none.
+   */
+  syncTokens?: number;
 };
 
 export type RevertRefusal =
@@ -150,6 +155,7 @@ export async function previewRevert(
     differs: revertDiffers(entry.rows, result.rows),
     decks: result.decks,
     expected: Object.fromEntries(result.rows.map((r) => [keyOf(r as CollectionItemIdentity), r.after?.quantity ?? 0])),
+    ...(entry.sync && entry.sync.tokens > 0 ? { syncTokens: entry.sync.tokens } : {}),
   };
 }
 

@@ -57,6 +57,20 @@ export function catalogIds(source = readFileSync(CATALOG_FILE, "utf8")) {
 }
 
 /**
+ * The seen id of every entry's variant, `<id>@<SWITCH>`: the form `variantId` in
+ * `src/lib/about/visible.ts` writes and `isSeen` checks for an entry drawn in its variant, mirrored
+ * here because a probe cannot import TypeScript. `about-clear.test.mts` asserts it against the catalog.
+ */
+export function variantIds(source = readFileSync(CATALOG_FILE, "utf8")) {
+  const starts = [...source.matchAll(/^ {4}id: '([^']+)',$/gm)];
+  return starts.flatMap((m, i) => {
+    const body = source.slice(m.index, starts[i + 1]?.index ?? source.length);
+    const v = body.match(/^ {4}variant: \{\n(?:.*\n)*? {6}switch: '([A-Z_]+)',$/m);
+    return v ? [`${m[1]}@${v[1]}`] : [];
+  });
+}
+
+/**
  * Marks the account as having seen everything: the version floor raised to the current version
  * (never lowered), and every catalog id added to the seen ids as a union. Both halves, because a
  * probe may call this before writing any row of its own, and a row holding the ids at version 0
@@ -67,7 +81,8 @@ export async function markEveryEntrySeen(
   sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL),
   version = JSON.parse(readFileSync(VERSION_FILE, "utf8")).version,
 ) {
-  const ids = catalogIds();
+  // Every entry's variant id too: an entry drawn in its variant is seen by that id alone (`isSeen`).
+  const ids = [...catalogIds(), ...variantIds()];
   await sql`insert into user_prefs (user_id, about_version_seen, about_seen_ids) values (${userId}, ${version}, ${ids})
     on conflict (user_id) do update set
       about_version_seen = greatest(user_prefs.about_version_seen, ${version}),

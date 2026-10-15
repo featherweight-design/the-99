@@ -27,6 +27,62 @@ import { toCollectionItemValues, type PendingItem } from "./pending";
 export type SyncPick = "everything" | "additions" | "tokens";
 export const SYNC_PICKS: readonly SyncPick[] = ["everything", "additions", "tokens"];
 
+/**
+ * What a Sync stores on its own upload at confirm, as `preview_payload.syncSummary` (G9: kept and
+ * decided are not ledger rows). `pick` is what `readSyncBase` reads to decide whether the upload
+ * anchors the next Sync; the rest is what its receipt and its History entry draw. `tokens` is the
+ * tokens it changed, the figure the review's tokens line drew (`changedTokenCount`), and `cards` the
+ * card rows it changed (the ledger entry's rows), which is what says a Sync changed only its tokens.
+ */
+export type StoredSyncSummary = { pick: SyncPick; kept: number; decided: number; answeredFile: number; tokens: number; cards: number };
+
+/**
+ * The figures a Sync's receipt and History entry draw. `cards` is absent on a summary stored before it
+ * existed, and the reader then falls back to the receipt's own copy delta.
+ */
+export type SyncEntrySummary = { kept: number; decided: number; tokens: number; cards?: number };
+
+const count = (v: unknown) => (typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : 0);
+
+/**
+ * A stored `syncSummary` read back, or null when there is none (a Replace's or an Add's upload). A
+ * figure missing or malformed reads as 0, which draws no clause rather than a wrong one.
+ *
+ * `kept` is what the review's `syncFigures` called `keep`: the app-only changes kept PLUS every conflict
+ * answered App (`decided - answeredFile`), because an App answer keeps the player's count too. The stored
+ * `kept` holds the first alone, so it is derived here, in the reader, and a summary already stored reads
+ * the review's figure as well. An `answeredFile` above `decided` (malformed) never takes a kept card away.
+ */
+export function readSyncSummary(value: unknown): SyncEntrySummary | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const cards = typeof v.cards === "number" && Number.isInteger(v.cards) && v.cards >= 0 ? { cards: v.cards } : {};
+  const decided = count(v.decided);
+  const answeredApp = Math.max(0, decided - count(v.answeredFile));
+  return { kept: count(v.kept) + answeredApp, decided, tokens: count(v.tokens), ...cards };
+}
+
+/**
+ * What a Sync's confirm stores (`StoredSyncSummary`), from the plan it wrote. `tokens` is the review's own
+ * figure (`changedTokenCount`, what the confirm action sends as `tokensChanged`), never the file's whole token
+ * list, so the receipt, History and Revert say what the review said.
+ */
+export function storedSyncSummary(
+  pick: SyncPick,
+  counts: Pick<SyncCounts, "kept" | "conflicts" | "undecided" | "answeredFile">,
+  tokenChanges: Parameters<typeof changedTokenCount>[0],
+  cardRows: number,
+): StoredSyncSummary {
+  return {
+    pick,
+    kept: counts.kept,
+    decided: counts.conflicts - counts.undecided,
+    answeredFile: counts.answeredFile,
+    tokens: changedTokenCount(tokenChanges),
+    cards: cardRows,
+  };
+}
+
 export type SyncSide = "app" | "file";
 
 /** What the review lists at most of each kind of row (conflicts, kept); the counts always cover every row. */

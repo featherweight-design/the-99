@@ -949,10 +949,11 @@ function CollectionAddFigure({ width }: { width: AboutWidth }) {
   );
 }
 
-function UploadChoiceFigure({ width }: { width: AboutWidth }) {
+/** `variant`: the entry is drawn in its Sync form (`COLLECTION_SYNC_ENABLED`), so the choice has its third card. */
+function UploadChoiceFigure({ width, variant }: { width: AboutWidth; variant?: boolean }) {
   return (
     <Specimen label="upload-choice" width={width}>
-      <UploadChoiceFigureBody />
+      <UploadChoiceFigureBody sync={variant === true} />
     </Specimen>
   );
 }
@@ -1202,7 +1203,8 @@ function StandInsFigure({ width }: { width: AboutWidth }) {
 
 // would let a caller invoke a missing one with no type error.
 export const FIGURES: Partial<
-  Record<string, (props: { width: AboutWidth; creditLimit: number }) => React.JSX.Element>
+  // `variant`: the entry is drawn in its switched form (`AboutEntry.variant`), for a figure that has one.
+  Record<string, (props: { width: AboutWidth; creditLimit: number; variant?: boolean }) => React.JSX.Element>
 > = {
   availability: AvailabilityFigure,
   "commander-availability": CommanderAvailabilityFigure,

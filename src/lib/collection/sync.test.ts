@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  answerFor, holdingDistance, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
+  answerFor, holdingDistance, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, readSyncSummary, storedSyncSummary, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
   type SyncAnswers, type SyncHolding, type SyncPick,
 } from "./sync";
 import { planTokenWrite } from "../tokens/ownership";
@@ -345,5 +345,57 @@ describe("changedTokenCount", () => {
     const same = planTokenWrite("replace", { owned: [{ tokenOracleId: "t1", quantity: 2, source: "manual" }], uploadPrintings: [], read: true },
       [{ tokenOracleId: "t1", quantity: 2 }]);
     expect(changedTokenCount(same.changes)).toBe(0);
+  });
+});
+
+describe("readSyncSummary", () => {
+  it("reads the receipt's and History's figures off a stored summary", () => {
+    // Two of the three conflicts were answered App, and keep the player's count like the 119.
+    expect(readSyncSummary({ pick: "everything", kept: 119, decided: 3, answeredFile: 1, tokens: 114 })).toEqual({ kept: 121, decided: 3, tokens: 114 });
+  });
+
+  it("counts a conflict answered App as kept, as the review's keep figure does", () => {
+    // No app-only change, two App answers and a token change: the review said keep 2.
+    const stored = storedSyncSummary("everything", { kept: 0, conflicts: 2, undecided: 0, answeredFile: 0 }, [{ kind: "token", id: "t1", from: 0, to: 1 }], 0);
+    expect(readSyncSummary(stored)).toEqual({ kept: 2, decided: 2, tokens: 1, cards: 0 });
+    // Every conflict answered File keeps nothing.
+    expect(readSyncSummary({ kept: 0, decided: 2, answeredFile: 2, tokens: 0 })?.kept).toBe(0);
+    // A malformed answeredFile above decided never takes a kept card away.
+    expect(readSyncSummary({ kept: 4, decided: 1, answeredFile: 3, tokens: 0 })?.kept).toBe(4);
+  });
+
+  it("is null for an upload with no summary, a Replace's or an Add's", () => {
+    expect(readSyncSummary(null)).toBeNull();
+    expect(readSyncSummary(undefined)).toBeNull();
+  });
+
+  it("reads a missing or malformed figure as 0, which draws no clause rather than a wrong one", () => {
+    expect(readSyncSummary({ pick: "tokens", kept: 40, decided: "3", answeredFile: 0 })).toEqual({ kept: 40, decided: 0, tokens: 0 });
+  });
+});
+
+describe("storedSyncSummary", () => {
+  const counts = { kept: 4, conflicts: 3, undecided: 0, answeredFile: 1 };
+
+  it("stores the tokens the review counted, never the file's whole token list", () => {
+    // Two tokens move, one only changes source, and a printing row moves: the review says 2.
+    const changes = [
+      { kind: "token", id: "t1", from: 0, to: 2 },
+      { kind: "token", id: "t2", from: 3, to: null },
+      { kind: "token", id: "t3", from: 1, to: 1, source: "upload" },
+      { kind: "printing", id: "t1", from: 0, to: 2 },
+    ];
+    expect(storedSyncSummary("everything", counts, changes, 5)).toEqual({
+      pick: "everything", kept: 4, decided: 3, answeredFile: 1, tokens: 2, cards: 5,
+    });
+  });
+
+  it("stores no tokens when only a source or a printing row moved", () => {
+    expect(storedSyncSummary("tokens", counts, [{ kind: "token", id: "t3", from: 1, to: 1 }], 0).tokens).toBe(0);
+  });
+
+  it("reads back the cards it changed, and a summary stored before it existed has none", () => {
+    expect(readSyncSummary({ pick: "everything", kept: 0, decided: 0, answeredFile: 0, tokens: 2, cards: 0 })).toEqual({ kept: 0, decided: 0, tokens: 2, cards: 0 });
+    expect(readSyncSummary({ pick: "everything", kept: 0, decided: 0, answeredFile: 0, tokens: 2 })).not.toHaveProperty("cards");
   });
 });

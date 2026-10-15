@@ -213,10 +213,138 @@ describe("ArrivalsSummary — decks left short", () => {
 
 describe("copy.summary.nowShort", () => {
   it("names one deck without a count", () => {
-    expect(copy.summary.nowShort(["Gishath"])).toBe("Replacing left a deck short: Gishath.");
+    expect(copy.summary.nowShort(["Gishath"], "Replacing")).toBe("Replacing left a deck short: Gishath.");
   });
   it("joins three with and", () => {
-    expect(copy.summary.nowShort(["A", "B", "C"])).toBe("Replacing left 3 decks short: A, B and C.");
+    expect(copy.summary.nowShort(["A", "B", "C"], "Replacing")).toBe("Replacing left 3 decks short: A, B and C.");
+  });
+});
+
+describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () => {
+  const sync = (over: Partial<{ kept: number; decided: number; tokens: number; cards: number }> = {}) => ({ kept: 119, decided: 3, tokens: 114, ...over });
+  const synced = (s: Summary | null, sy = sync()) => (
+    <ArrivalsSummary summary={s} contested={[]} preview={null} filename="The Vault.csv" stampDate="Oct 15, 2026" sync={sy} />
+  );
+
+  it("carries on past `left` with the kept clause and the decided sentence, on the shipped comma join", () => {
+    const s = summary({ totalBefore: 4616, arrived: 15, left: 2, still: [{ deckId: DECK, oracleId: CARD, owed: 1, reason: { kind: "gone" } }] });
+    render(synced(s, sync({ tokens: 0 })));
+    const lede = copy.summary.ledeOwing(4616, 15, 2, { kept: 119, decided: 3 });
+    expect(lede).toBe(
+      "Was 4,616. 15 arrived, 2 left, and the 119 cards you changed in the app stayed as you had them. " +
+        "You decided 3. Here’s what your decks still need after the update.",
+    );
+    expect(screen.getByText(lede)).toBeTruthy();
+    // The shipped layout: the same heading, Sync's eyebrow, and the stamp below the lede in Sync's word.
+    expect(screen.getByText(copy.summary.heading(102))).toBeTruthy();
+    expect(screen.getByText(copy.summary.eyebrowSync)).toBeTruthy();
+    expect(screen.getByText(copy.summary.syncFileStamp("Oct 15, 2026", "The Vault.csv"))).toBeTruthy();
+    expect(screen.queryByText(/^uploaded /)).toBeNull();
+  });
+
+  it("says the tokens a Sync that also moved cards changed, neutrally and agreeing in number", () => {
+    const s = summary({ totalBefore: 4616, arrived: 15, left: 2, still: [{ deckId: DECK, oracleId: CARD, owed: 1, reason: { kind: "gone" } }] });
+    render(synced(s, sync({ kept: 119, decided: 3, tokens: 114, cards: 17 })));
+    expect(screen.getByText(
+      "Was 4,616. 15 arrived, 2 left, and the 119 cards you changed in the app stayed as you had them. " +
+        "You decided 3. 114 tokens changed. Here’s what your decks still need after the update.",
+    )).toBeTruthy();
+    expect(copy.summary.lede(10, 1, 0, { kept: 0, decided: 0, tokens: 1 })).toMatch(/^Was 10\. 1 arrived, 0 left\. 1 token changed\. Here’s/);
+    expect(copy.summary.ledeNothingToReportSync({ kept: 0, decided: 0, tokens: 2 })).toMatch(/ 2 tokens changed\.$/);
+  });
+
+  it("agrees for one kept card: it stayed as you had it", () => {
+    expect(copy.summary.lede(10, 1, 0, { kept: 1, decided: 0 })).toMatch(/^Was 10\. 1 arrived, 0 left, and the 1 card you changed in the app stayed as you had it\. Here’s/);
+    expect(copy.summary.ledeNothingToReportSync({ kept: 1, decided: 0 })).toContain("The 1 card you changed in the app stayed as you had it.");
+  });
+
+  it("is not tokens-only when a Sync changed a card row that moved no copy count (a printing, a finish, a condition)", () => {
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 0, decided: 0, tokens: 2, cards: 3 })));
+    expect(screen.queryByText(/Your cards are as you left them/)).toBeNull();
+    expect(screen.getByText(copy.summary.ledeNothingToReportSync({ kept: 0, decided: 0, tokens: 2 }))).toBeTruthy();
+  });
+
+  it("is tokens-only when the Sync changed no card row", () => {
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 0, decided: 0, tokens: 2, cards: 0 })));
+    expect(screen.getByText(copy.summary.ledeTokensOnly(2))).toBeTruthy();
+  });
+
+  // An Everything Sync can change no card row and still have answered conflicts (every one App) or kept the
+  // player's own changes. The tokens-only sentence says neither, so it is not that Sync's (Y1: never drop
+  // the kept clause): the general Sync lede carries both.
+  it("is not tokens-only when a Sync that changed no card row decided a conflict or kept a card", () => {
+    for (const [kept, decided] of [[0, 3], [5, 0]] as const) {
+      const { unmount } = render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept, decided, tokens: 2, cards: 0 })));
+      expect(screen.queryByText(/Your cards are as you left them/)).toBeNull();
+      expect(screen.getByText(copy.summary.ledeNothingToReportSync({ kept, decided, tokens: 2 }))).toBeTruthy();
+      unmount();
+    }
+    // The fallback for a summary stored before `cards` reads the same way.
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 0, decided: 1, tokens: 2 })));
+    expect(screen.getByText(copy.summary.ledeNothingToReportSync({ kept: 0, decided: 1, tokens: 2 }))).toBeTruthy();
+  });
+
+  it("drops the decided sentence when nothing was decided, and the kept clause when nothing was kept", () => {
+    expect(copy.summary.lede(10, 1, 0, { kept: 4, decided: 0 })).toMatch(/^Was 10\. 1 arrived, 0 left, and the 4 cards you changed in the app stayed as you had them\. Here’s/);
+    expect(copy.summary.lede(10, 1, 0, { kept: 0, decided: 2 })).toMatch(/^Was 10\. 1 arrived, 0 left\. You decided 2\. Here’s/);
+    // A Replace's lede is byte for byte what it was.
+    expect(copy.summary.lede(10, 1, 0)).toMatch(/^Was 10\. 1 arrived, 0 left\. Here’s/);
+  });
+
+  it("says Syncing, not Replacing, when it left a deck short", () => {
+    const s = summary({ version: 3, arrived: 1, left: 1, nowShort: [{ deckId: DECK, oracleId: CARD, short: 1 }] });
+    render(synced(s));
+    expect(screen.getByText(/Syncing left a deck short: HD Avatar Aang\./)).toBeTruthy();
+    expect(screen.queryByText(/Replacing left/)).toBeNull();
+    expect(copy.summary.nowShort(["A", "B"], "Syncing")).toBe("Syncing left 2 decks short: A and B.");
+  });
+
+  it("a tokens-only Sync takes the nothing-to-report line with Sync's ending, and claims no card moved", () => {
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 0, decided: 0, tokens: 114 })));
+    expect(screen.getByText(copy.summary.ledeTokensOnly(114))).toBeTruthy();
+    expect(copy.summary.ledeTokensOnly(114)).toBe(
+      "Nothing your decks care about moved. Your cards are as you left them, and 114 tokens changed.",
+    );
+    expect(screen.queryByText(copy.summary.ledeNothingToReport)).toBeNull();
+    // No `0 cards differ from the old list` beside the stamp.
+    expect(screen.queryByText(new RegExp(copy.summary.fileDelta(0)))).toBeNull();
+  });
+
+  it("a Sync that moved cards no deck cares about keeps the file's own delta beside the stamp", () => {
+    render(synced(summary({ arrived: 3, left: 1, totalAfter: 102 }), sync({ kept: 0, decided: 0, tokens: 0, cards: 4 })));
+    expect(screen.getByText(copy.summary.ledeNothingToReportSync({ kept: 0, decided: 0, tokens: 0 }))).toBeTruthy();
+    expect(screen.getByText(new RegExp(copy.summary.fileDelta(4)))).toBeTruthy();
+  });
+
+  it("a Sync whose rows moved no copy count says no `0 cards differ`", () => {
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 2, decided: 0, tokens: 0, cards: 3 })));
+    expect(screen.queryByText(new RegExp(copy.summary.fileDelta(0)))).toBeNull();
+  });
+
+  it("a Sync that moved cards no deck cares about keeps the kept clause, and never says the collection is the file", () => {
+    render(synced(summary(), sync({ kept: 7, decided: 1, tokens: 0 })));
+    const lede = copy.summary.ledeNothingToReportSync({ kept: 7, decided: 1 });
+    expect(screen.getByText(lede)).toBeTruthy();
+    expect(lede).toContain("The 7 cards you changed in the app stayed as you had them. You decided 1.");
+    expect(lede).not.toContain("new file");
+  });
+
+  it("a lost Sync receipt says synced, not replaced", () => {
+    render(synced(null));
+    expect(screen.getByText(copy.summary.headingNoReceiptSync)).toBeTruthy();
+  });
+
+  it("a lost Sync receipt claims no deck outcome, and says the Sync's own figures", () => {
+    render(synced(null, sync({ kept: 2, decided: 1, tokens: 3, cards: 5 })));
+    const lede = copy.summary.ledeNoReceiptSync({ kept: 2, decided: 1, tokens: 3 });
+    expect(screen.getByText(lede)).toBeTruthy();
+    expect(lede).toContain("The 2 cards you changed in the app stayed as you had them. You decided 1. 3 tokens changed.");
+    expect(document.body.textContent).not.toMatch(/buy list|contested|Nothing your decks care about moved/);
+  });
+
+  it("a lost Replace receipt keeps the shipped nothing-to-report lede", () => {
+    render(<ArrivalsSummary summary={null} contested={[]} preview={null} filename="f.csv" stampDate="Oct 15, 2026" />);
+    expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
   });
 });
 

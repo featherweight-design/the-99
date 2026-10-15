@@ -40,10 +40,46 @@
  */
 
 const fmt = (n: number) => n.toLocaleString("en-US");
+const cards = (n: number) => (n === 1 ? "1 card" : `${fmt(n)} cards`);
+const tokens = (n: number) => (n === 1 ? "1 token" : `${fmt(n)} tokens`);
+
+/**
+ * What a Sync's receipt adds to the lede: the cards it kept, the conflicts the player decided (G9) and the
+ * tokens it changed, either way.
+ */
+export type SyncLede = { kept: number; decided: number; tokens?: number };
+
+/** `the K cards you changed in the app stayed as you had them`, agreeing for one card (`as you had it`). */
+const keptCards = (k: number, the = "the") =>
+  `${the} ${cards(k)} you changed in the app stayed as you had ${k === 1 ? "it" : "them"}`;
+
+/** ` N tokens changed.`, direction-neutral (a Sync moves token counts either way), or nothing. */
+const tokensChanged = (t: number | undefined) => (t && t > 0 ? ` ${tokens(t)} changed.` : "");
+
+/**
+ * The lede's first sentence, `Was W. A arrived, L left.` A Sync carries on past `left` (collection
+ * sync call 7): the clause for the cards it kept, then the conflicts the player decided. Joined with
+ * the shipped comma, `A arrived, L left`, not the handoff's `arrived and … left` (audit, for
+ * /copy-review).
+ */
+const ledeHead = (was: number, arrived: number, left: number, sync?: SyncLede) =>
+  `Was ${fmt(was)}. ${arrived} arrived, ${left} left` + syncTail(sync);
+
+/**
+ * `, and the K cards you changed in the app stayed as you had them. You decided D. N tokens changed.`, or `.`
+ * for a Replace.
+ */
+const syncTail = (sync?: SyncLede) =>
+  !sync ? "."
+  : (sync.kept > 0 ? `, and ${keptCards(sync.kept)}.` : ".") +
+    (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : "") +
+    tokensChanged(sync.tokens);
 
 export const cardAssignmentsCopy = {
   summary: {
     eyebrow: "Collection replaced",
+    /** (new) A Sync's receipt: it did not replace the collection, so it does not say so. */
+    eyebrowSync: "Collection synced",
     heading: (total: number) => `${fmt(total)} cards in your collection`,
     /**
      * The heading when the receipt itself did not survive its write. It states no figure,
@@ -51,14 +87,16 @@ export const cardAssignmentsCopy = {
      * collection that they have none is worse than telling them nothing.
      */
     headingNoReceipt: "Your collection was replaced",
+    /** (new) The same, for a Sync. */
+    headingNoReceiptSync: "Your collection was synced",
 
     /**
      * Says what the page is FOR, not what the write did internally. An earlier form reassured
      * the player that "no deck's list was edited and no version was cut" — true, and not a fact
      * a player needs: nobody suspected their decks had been rewritten until we said so.
      */
-    lede: (was: number, arrived: number, left: number) =>
-      `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Here’s what your decks still need after ` +
+    lede: (was: number, arrived: number, left: number, sync?: SyncLede) =>
+      `${ledeHead(was, arrived, left, sync)} Here’s what your decks still need after ` +
       "the update, and where one copy has to cover two decks, which one gets it.",
     /**
      * Arrivals, no contention, but some deck is still short. NOT `ledeNoContention`, which says
@@ -67,11 +105,11 @@ export const cardAssignmentsCopy = {
      * contested row because there is nobody to choose between. It still did not have a copy to
      * spare.
      */
-    ledeOwing: (was: number, arrived: number, left: number) =>
-      `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Here’s what your decks still need after ` +
+    ledeOwing: (was: number, arrived: number, left: number, sync?: SyncLede) =>
+      `${ledeHead(was, arrived, left, sync)} Here’s what your decks still need after ` +
       "the update.",
-    ledeNoContention: (was: number, arrived: number, left: number) =>
-      `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Every arrival a committed deck was ` +
+    ledeNoContention: (was: number, arrived: number, left: number, sync?: SyncLede) =>
+      `${ledeHead(was, arrived, left, sync)} Every arrival a committed deck was ` +
       "waiting for had a copy to spare, so there is nothing to decide.",
     /**
      * Rendered rather than redirecting: a collection replace deserves a sentence, and the
@@ -85,20 +123,49 @@ export const cardAssignmentsCopy = {
       "Nothing your decks care about moved. No purchase cleared, nothing went back on the " +
       "buy list, and no copy is contested. Your collection is the new file.",
     /**
+     * A Sync that moved no card, only tokens (Hugh's case, Y1b): the nothing-to-report line with
+     * Sync's ending. Its collection is NOT the new file, so the shipped ending would be false.
+     */
+    ledeTokensOnly: (t: number) =>
+      "Nothing your decks care about moved. Your cards are as you left them" +
+      (t > 0 ? `, and ${tokens(t)} changed.` : "."),
+    /**
+     * (new) A Sync that moved cards none of the decks care about. The shipped ending (`Your collection
+     * is the new file.`) is false after a Sync, which kept the player's own changes; this says so.
+     */
+    /**
+     * (new) A Sync whose receipt did not survive its write. Its deck outcome is unknown, so this states
+     * none (no purchase cleared, nothing owed, nothing contested would all be guesses), only the Sync's
+     * own stored figures: what it kept, what the player decided, the tokens it changed.
+     */
+    ledeNoReceiptSync: (sync: SyncLede) =>
+      "What it did to your decks was not saved." +
+      (sync.kept > 0 ? ` ${keptCards(sync.kept, "The")}.` : "") +
+      (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : "") +
+      tokensChanged(sync.tokens),
+    ledeNothingToReportSync: (sync: SyncLede) =>
+      "Nothing your decks care about moved. No purchase cleared, nothing went back on the buy list, " +
+      "and no copy is contested." +
+      (sync.kept > 0 ? ` ${keptCards(sync.kept, "The")}.` : "") +
+      (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : "") +
+      tokensChanged(sync.tokens),
+    /**
      * Appended to whichever lede is drawn when this upload left committed decks short. The same
      * decks, by the same rule, the warning before the confirm named, so the receipt says
      * afterwards what the player agreed to beforehand. Three names at most; the rest are counted.
      */
-    nowShort: (names: string[]) => {
-      if (names.length === 1) return `Replacing left a deck short: ${names[0]}.`;
+    nowShort: (names: string[], verb: "Replacing" | "Syncing") => {
+      if (names.length === 1) return `${verb} left a deck short: ${names[0]}.`;
       const shown = names.slice(0, 3);
       const rest = names.length - shown.length;
       const list = rest > 0
         ? `${shown.join(", ")} and ${fmt(rest)} more`
         : `${shown.slice(0, -1).join(", ")} and ${shown[shown.length - 1]}`;
-      return `Replacing left ${fmt(names.length)} decks short: ${list}.`;
+      return `${verb} left ${fmt(names.length)} decks short: ${list}.`;
     },
     fileStamp: (date: string, filename: string) => `uploaded ${date} · ${filename}`,
+    /** A Sync's stamp. Named apart from the contested row's `stamp` below, which is a deck version's. */
+    syncFileStamp: (date: string, filename: string) => `synced ${date} · ${filename}`,
     fileDelta: (n: number) => `${n} cards differ from the old list`,
 
     /**

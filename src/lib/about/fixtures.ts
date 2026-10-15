@@ -2208,6 +2208,17 @@ export const UPLOAD_CHOICE = {
   overlap: { held: 97, of: 100 },
 };
 
+/** The upload choice's Sync card, available, keeping the 12 cards changed in the app since Sep 12. */
+export const UPLOAD_CHOICE_SYNC = {
+  unavailable: null,
+  anchorAt: "2026-09-12T10:00:00.000Z",
+  figure: { before: 4492, after: 4392 },
+  note: { kind: "keeps", cards: 12 },
+  next: { kind: "sync" },
+  stale: null,
+  followUp: null,
+} as const;
+
 /** U4: removing Sol Ring leaves one committed deck one copy short. */
 export const REMOVE_CARD_DECKS = [
   { deckId: "about-deck-kinnan", deckName: "HD - Kinnan", oracleId: "about-sol-ring", cardName: "Sol Ring", short: 1 },

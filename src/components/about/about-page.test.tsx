@@ -1,6 +1,6 @@
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { ENV_VIEW } from "@/test/env-view";
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
@@ -1078,6 +1078,21 @@ describe("what each chapter 01 figure actually draws", () => {
     expect(el.textContent).toContain(collectionEditCopy.upload.replaceTitle);
     expect(el.textContent).toContain(collectionEditCopy.upload.addTitle);
     expect(el.textContent).toContain(collectionEditCopy.upload.overwriteCount(12, "Sep 12").slice(0, 12));
+  });
+
+  it("upload-choice: no Sync card without COLLECTION_SYNC_ENABLED, and the third card, live, with it", () => {
+    expect(plate("upload-choice").querySelector("[data-choice='sync']")).toBeNull();
+    cleanup();
+    process.env.COLLECTION_SYNC_ENABLED = "true";
+    try {
+      const el = plate("upload-choice");
+      expect(el.querySelector("[data-choice='sync'][aria-checked='false']")).toBeTruthy();
+      expect(el.querySelector("[data-choice='replace'][aria-checked='true']")).toBeTruthy();
+      // The entry's own words are its Sync form too.
+      expect(screen.getByRole("heading", { name: /Replacing, adding or syncing from a file/ })).toBeTruthy();
+    } finally {
+      delete process.env.COLLECTION_SYNC_ENABLED;
+    }
   });
 
   it("remove-card: the short-deck warning for Sol Ring, one deck named, the removal confirm", () => {

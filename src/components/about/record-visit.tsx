@@ -13,7 +13,7 @@ import { acknowledgeAbout } from "../home/arrivals-seen";
  * idempotent, but a second request is still a second request.
  *
  * It also tells Home's banner, in this document, that About's line is answered (`acknowledgeAbout`, with `drawn`,
- * every entry the page drew): Back to Home restores the payload the router holds, About's line included, and that
+ * every entry the page drew, by the form it drew: `displayedId`, as the banner's line names them): Back to Home restores the payload the router holds, About's line included, and that
  * re-mount must not draw it. A behind reader's visit acknowledges once its write LANDS, a current reader's at once;
  * nothing is ever taken back, so overlapping visits and re-run effects cannot leave a false acknowledgement behind.
  * Back pressed while the write is still in flight draws the line once more, the cheaper failure.

@@ -26,7 +26,7 @@ import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
 import { entryRow, HOW_IT_WORKS_ID, howItWorksLinksCopy } from "../../lib/copy/how-it-works-links";
 import { RecordVisit } from "./record-visit";
-import { switchedIds, unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
+import { displayedId, switchedIds, unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
 import {
   ABOUT_VERSION,
   aboutCopy,
@@ -167,14 +167,14 @@ function Entry({
             <EntryCaption caption={caption} />
           </div>
           <div className="order-1 min-[1000px]:order-1 min-[1000px]:w-[300px] min-[1000px]:flex-none">
-            <Figure width={entry.width} creditLimit={specimenLimit} />
+            <Figure width={entry.width} creditLimit={specimenLimit} variant={entry.variantOn !== undefined} />
           </div>
         </div>
       ) : (
         <EntryCaption caption={caption} className="mt-[6px]" />
       )}
 
-      {Figure && !inset && <Figure width={entry.width} creditLimit={specimenLimit} />}
+      {Figure && !inset && <Figure width={entry.width} creditLimit={specimenLimit} variant={entry.variantOn !== undefined} />}
 
       {/* NUMBERED keys. "Annotation is a numeral and a line" is the handoff's
           grammar, and the lines shipped without the numerals — which is the
@@ -398,7 +398,7 @@ export function AboutPage({
         <RecordVisit
           behind={behind || (howItWorks && !seenIds.includes(HOW_IT_WORKS_ID))}
           shown={shown}
-          drawn={visible.map((e) => e.id)}
+          drawn={visible.map(displayedId)}
         />
       )}
       {(sheetMode || howItWorks) && <JumpMark />}

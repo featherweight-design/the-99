@@ -443,6 +443,13 @@ describe("Sync review · the bar", () => {
     expect(f({ taken: 18 }, { tokensChange: false, tokensChanged: 0 }).line).toBe("Taking 18 cards from the file and keeping 119 of yours.");
     // Nothing of yours kept and only tokens moving: no "including the 0 you changed".
     expect(f({ taken: 0, kept: 0 })).toEqual({ kind: "confirm", line: "Your cards stay as they are. 114 tokens change.", label: "Sync 114 token changes" });
+    // Every conflict answered App: nothing taken, and the decided sentence still said (the receipt's rule).
+    expect(f({ taken: 0, kept: 0, conflicts: 2, undecided: 0, answeredFile: 0 }).line).toBe(
+      "Your cards stay as they are, including the 2 you changed. 114 tokens change. You decided 2.",
+    );
+    expect(f({ taken: 0, kept: 0, conflicts: 2, undecided: 0, answeredFile: 0 }, { tokensChanged: 0 }).line).toBe(
+      "Your cards stay as they are, including the 2 you changed. The file’s tokens are recorded, and no count changes. You decided 2.",
+    );
   });
 
   it("names no token count when none moves, though the write still records the file's tokens", () => {

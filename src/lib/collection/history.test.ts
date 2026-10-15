@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { handEntriesSince, listColumns, revertDiffers } from "./history";
+import { handEntriesSince, listColumns, revertDiffers, syncSummaryColumn } from "./history";
 import { cartDecksOf } from "./deck-line";
 
 const id = { oracleId: "a", setCode: "lea", collectorNumber: "1", finish: "nonfoil" };
@@ -89,5 +89,15 @@ describe("the overwrite anchor (collection sync, G7)", () => {
 
   it("counts hand entries only: no upload of any kind is an edit", () => {
     expect(text).toContain("e.kind in ('add', 'edit', 'revert')");
+  });
+});
+
+describe("an opened Sync's summary (G9)", () => {
+  const text = new PgDialect().sqlToQuery(syncSummaryColumn).sql.replace(/\s+/g, " ");
+
+  it("reads its own upload's syncSummary, for a Sync alone, scoped to the entry's user", () => {
+    expect(text).toContain("case when h.kind = 'upload_sync' then ( select u.preview_payload -> 'syncSummary' from csv_uploads u");
+    expect(text).toContain("where u.user_id = h.user_id");
+    expect(text).toContain("then substr(h.source, 13)::uuid end ) end as sync_summary");
   });
 });

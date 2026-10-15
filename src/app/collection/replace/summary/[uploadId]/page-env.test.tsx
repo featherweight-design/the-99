@@ -8,7 +8,7 @@ import { envViewWith } from "@/test/env-view";
 const UPLOAD = "33333333-3333-4333-8333-333333333333";
 const stub = vi.hoisted(() => ({
   env: null as NodeJS.ProcessEnv | null,
-  view: vi.fn(async () => null),
+  view: vi.fn(async (): Promise<unknown> => null),
 }));
 
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("notFound"); } }));
@@ -33,5 +33,23 @@ describe("the import receipt page", () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  // The stamp's date follows its word: a Sync says "synced" and is dated by the confirm, which is the
+  // day History dates the entry; a Replace says "uploaded" and is dated by the file's arrival. A review
+  // left open overnight is the case that tells them apart.
+  it("dates a Sync's stamp by the confirm and a Replace's by the upload", async () => {
+    stub.env = envViewWith({});
+    const base = {
+      uploadId: UPLOAD, filename: "f.csv", summary: null, contested: [], chooser: {},
+      createdAt: new Date("2026-10-08T23:30:00Z"), confirmedAt: new Date("2026-10-09T08:00:00Z"),
+    };
+    const stampOf = async (sync: unknown) => {
+      stub.view.mockResolvedValueOnce({ ...base, sync });
+      const el = await ImportSummaryPage({ params: Promise.resolve({ uploadId: UPLOAD }) }) as unknown as { props: { children: { props: { stampDate: string } } } };
+      return el.props.children.props.stampDate;
+    };
+    expect(await stampOf({ kept: 0, decided: 0, tokens: 0, cards: 1 })).toBe("9 Oct 2026");
+    expect(await stampOf(null)).toBe("8 Oct 2026");
   });
 });

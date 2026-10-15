@@ -23,3 +23,10 @@ describe("the remove dialog's keep button agrees with its confirm", () => {
   });
 });
 
+
+describe("an opened Sync's lead line names only what it did", () => {
+  it("leaves out the kept clause when the Sync kept nothing", () => {
+    expect(c.history.syncNote(0, 2, 0)).toBe("You decided 2.");
+    expect(c.history.syncNote(3, 0, 0)).toMatch(/^Kept the 3 cards/);
+  });
+});

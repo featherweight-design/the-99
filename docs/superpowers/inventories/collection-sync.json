@@ -1,0 +1,363 @@
+{
+  "feature": "Collection Sync close-out (plan 2026-10-15-collection-sync.md, PRs 1-4): the choice's third card, the Sync review and its conflicts, the receipt, History's Sync entry, its Revert confirm, and the About entry's Sync form",
+  "clearAbout": true,
+  "note": "Needs COLLECTION_EDIT_ENABLED=true and COLLECTION_SYNC_ENABLED=true, and an account whose History holds a confirmed Sync of a file named sync-closeout.csv (SYNC_RECEIPT_ID is its upload id), whose collection has moved since that Sync, and SYNC_PASTE a list that conflicts with it. clearAboutSheet does not mark the switched variant `upload-choice@COLLECTION_SYNC_ENABLED` seen, so mark it first or every row lands on /about. The review rows stop short of the confirm and the revert row never presses Revert; the paste rows leave unconfirmed uploads behind.",
+  "rows": [
+    {
+      "id": "sync-choice",
+      "label": "/collection/replace: the choice with Sync as the third card, nothing picked",
+      "view": "src/components/collection/replace-flow.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 8000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "${SYNC_PASTE}",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "settle": 20000
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "sync-choice-picked",
+      "label": "/collection/replace: Sync picked, its figure and note, Review the sync",
+      "view": "src/components/collection/replace-flow.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 8000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "${SYNC_PASTE}",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "settle": 20000
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "radio",
+          "name": "Sync my collection",
+          "settle": 3000
+        },
+        {
+          "scroll": "bottom",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "sync-review",
+      "label": "/collection/replace: the Sync review, tiles and the conflicts, nothing answered, confirm held",
+      "view": "src/components/collection/replace-review-detail.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 8000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "${SYNC_PASTE}",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "settle": 20000
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "radio",
+          "name": "Sync my collection",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Review the sync",
+          "settle": 20000
+        },
+        {
+          "wait": "section[aria-labelledby='sync-conflicts-heading']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "sync-conflicts",
+      "label": "/collection/replace: the conflict rows and bulk presses in view",
+      "view": "src/components/collection/replace-review-detail.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 8000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "${SYNC_PASTE}",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "settle": 20000
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "radio",
+          "name": "Sync my collection",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Review the sync",
+          "settle": 20000
+        },
+        {
+          "wait": "section[aria-labelledby='sync-conflicts-heading']",
+          "settle": 3000
+        },
+        {
+          "scrollTo": "section[aria-labelledby='sync-conflicts-heading']",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "sync-bulk-file",
+      "label": "/collection/replace: Take the file's for all pressed: status line, overwrite banner, confirm live",
+      "view": "src/components/collection/replace-review-detail.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 8000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "${SYNC_PASTE}",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "settle": 20000
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "radio",
+          "name": "Sync my collection",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Review the sync",
+          "settle": 20000
+        },
+        {
+          "wait": "section[aria-labelledby='sync-conflicts-heading']",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Take the file",
+          "settle": 3500
+        },
+        {
+          "scrollTo": "section[aria-labelledby='sync-conflicts-heading']",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "sync-bulk-file-bar",
+      "label": "/collection/replace: the bulk-answered review at its foot, the Sync bar and Sync collection",
+      "view": "src/components/collection/review-screen.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 8000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "${SYNC_PASTE}",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "settle": 20000
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "radio",
+          "name": "Sync my collection",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Review the sync",
+          "settle": 20000
+        },
+        {
+          "wait": "section[aria-labelledby='sync-conflicts-heading']",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Take the file",
+          "settle": 3500
+        },
+        {
+          "scroll": "bottom",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "sync-receipt",
+      "label": "/collection/replace/summary/[uploadId]: the receipt for a Sync",
+      "view": "src/components/collection/arrivals-summary.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace/summary/${SYNC_RECEIPT_ID}",
+          "wait": "h1",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "sync-receipt-foot",
+      "label": "/collection/replace/summary/[uploadId]: the receipt scrolled to its foot",
+      "view": "src/components/collection/arrivals-summary.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace/summary/${SYNC_RECEIPT_ID}",
+          "wait": "h1",
+          "settle": 6000
+        },
+        {
+          "scroll": "bottom",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "history-sync-open",
+      "label": "/collection/history: the Sync upload entry opened, its lead line and groups",
+      "view": "src/components/collection/history-list.tsx",
+      "steps": [
+        {
+          "goto": "/collection/history",
+          "wait": "h2",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "Sync upload",
+          "wait": "[aria-expanded=true]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "history-sync-revert",
+      "label": "/collection/history: Revert this sync? open on the Sync entry (Revert never pressed)",
+      "view": "src/components/collection/history-list.tsx",
+      "steps": [
+        {
+          "goto": "/collection/history",
+          "wait": "h2",
+          "settle": 5000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Revert sync-closeout",
+          "wait": "[role=dialog]",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "about-upload-choice",
+      "label": "/about: the upload-choice entry in its Sync form, three-card plate",
+      "view": "src/components/about/collection-edit-figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "#upload-choice",
+          "settle": 2500,
+          "scrollTo": "#upload-choice"
+        }
+      ]
+    }
+  ]
+}
