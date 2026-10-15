@@ -5,9 +5,15 @@ import { DECK_COMMANDER_TILES, deckCommandersQuery, deckTiles, searchFaceCommand
 
 const VIEWER = "user_viewer";
 
-const deck = (lead: string, partner: string | null = null) => ({
+const LEGEND = { type: "Legendary Creature — Elf Druid", text: "", cost: "{G}", layout: "normal" };
+/** A deck row; `banned` names a commander of it that is no longer commander-legal. */
+const deck = (lead: string, partner: string | null = null, banned: string[] = []) => ({
   leadId: lead, leadName: `Name ${lead}`, leadArt: `art/${lead}`,
+  leadLegal: !banned.includes(lead), leadType: LEGEND.type, leadText: LEGEND.text, leadCost: LEGEND.cost, leadLayout: LEGEND.layout,
   partnerId: partner, partnerName: partner === null ? null : `Name ${partner}`, partnerArt: partner === null ? null : `art/${partner}`,
+  partnerLegal: partner === null ? null : !banned.includes(partner), partnerType: partner === null ? null : LEGEND.type,
+  partnerText: partner === null ? null : LEGEND.text, partnerCost: partner === null ? null : LEGEND.cost,
+  partnerLayout: partner === null ? null : LEGEND.layout,
 });
 
 describe("deckCommandersQuery", () => {
@@ -41,6 +47,12 @@ describe("deckTiles", () => {
     const tiles = deckTiles(rows);
     expect(tiles).toHaveLength(DECK_COMMANDER_TILES);
     expect(tiles.at(-1)?.oracleId).toBe("l3");
+  });
+
+  it("leaves out a commander that can no longer be a face, keeping its eligible partner, before the count", () => {
+    expect(deckTiles([deck("a", "b", ["a"]), deck("c")]).map((t) => t.oracleId)).toEqual(["b", "c"]);
+    const rows = [deck("x", null, ["x"]), ...Array.from({ length: 8 }, (_, i) => deck(`k${i}`))];
+    expect(deckTiles(rows).map((t) => t.oracleId)).toEqual(Array.from({ length: 8 }, (_, i) => `k${i}`));
   });
 
   it("carries the name and the art crop", () => {

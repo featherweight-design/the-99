@@ -11,6 +11,7 @@ import { db } from "../../db";
 import { cards, decks } from "../../db/schema";
 import { nameSearch } from "../cards/name-search";
 import { isCommanderCandidate } from "../recs/score";
+import { canBeFace } from "../social/commander";
 import { commanderSearchOrder, commanderSupersetWhere } from "./opponent-commanders";
 
 export type CommanderTile = { oracleId: string; name: string; artCropUri: string | null };
@@ -32,7 +33,10 @@ export function deckCommandersQuery(viewerId: string, q: Pick<typeof db, "select
   return q
     .select({
       leadId: lead.oracleId, leadName: lead.name, leadArt: lead.artCropUri,
+      leadLegal: lead.commanderLegal, leadType: lead.typeLine, leadText: lead.oracleText, leadCost: lead.manaCost, leadLayout: lead.layout,
       partnerId: partner.oracleId, partnerName: partner.name, partnerArt: partner.artCropUri,
+      partnerLegal: partner.commanderLegal, partnerType: partner.typeLine, partnerText: partner.oracleText,
+      partnerCost: partner.manaCost, partnerLayout: partner.layout,
     })
     .from(decks)
     .innerJoin(lead, eq(lead.oracleId, decks.commanderOracleId))
@@ -44,18 +48,26 @@ export function deckCommandersQuery(viewerId: string, q: Pick<typeof db, "select
 
 type DeckCommanderRow = Awaited<ReturnType<typeof deckCommandersQuery>>[number];
 
-/** Newest deck first, a partner pair as two tiles (lead, then partner), each commander once, up to eight. */
+/**
+ * Newest deck first, a partner pair as two tiles (lead, then partner), each commander once, up to eight. A
+ * commander that can no longer be a face (banned since the deck was built) is left out before the count, so
+ * the row never offers a tile `setCommander` would refuse.
+ */
 export function deckTiles(rows: readonly DeckCommanderRow[]): CommanderTile[] {
   const out: CommanderTile[] = [];
   const seen = new Set<string>();
-  const push = (oracleId: string | null, name: string | null, artCropUri: string | null) => {
-    if (oracleId === null || name === null || seen.has(oracleId) || out.length >= DECK_COMMANDER_TILES) return;
+  const push = (oracleId: string | null, name: string | null, artCropUri: string | null, eligible: boolean) => {
+    if (oracleId === null || name === null || !eligible || seen.has(oracleId) || out.length >= DECK_COMMANDER_TILES) return;
     seen.add(oracleId);
     out.push({ oracleId, name, artCropUri });
   };
   for (const r of rows) {
-    push(r.leadId, r.leadName, r.leadArt);
-    push(r.partnerId, r.partnerName, r.partnerArt);
+    push(r.leadId, r.leadName, r.leadArt,
+      canBeFace({ commanderLegal: r.leadLegal, typeLine: r.leadType, oracleText: r.leadText, manaCost: r.leadCost, layout: r.leadLayout }));
+    push(r.partnerId, r.partnerName, r.partnerArt, r.partnerType !== null && canBeFace({
+      commanderLegal: r.partnerLegal ?? false, typeLine: r.partnerType, oracleText: r.partnerText,
+      manaCost: r.partnerCost, layout: r.partnerLayout,
+    }));
   }
   return out;
 }
