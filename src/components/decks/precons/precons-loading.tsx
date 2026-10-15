@@ -11,14 +11,17 @@ import { preconsCopy } from "../../../lib/copy/precons";
 import { preconsLoadingCopy } from "../../../lib/copy/shell";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { RowSkeleton, TileSkeleton } from "../../ui/tile-skeleton";
-import { PRECON_ROWS_CLASS, PRECON_TILES_CLASS } from "./precon-grid";
+import { PRECON_ROWS_CLASS, PRECON_TILES_COLUMNS } from "./precon-grid";
 
 const copy = preconsCopy.list;
 const SHAPE = "rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)]";
 
-/** Extra tiles past the visible rows sit in zero-height implicit rows, clipped: the grid shows three rows at 390 and two
- *  from `md`, whatever the column count the page's own class gives. */
-const TILES_CLIP = "grid-rows-[repeat(3,auto)] md:grid-rows-[repeat(2,auto)] [grid-auto-rows:0] overflow-hidden";
+/** The page's own columns with the row gap taken off the grid and put on each tile as a margin: the extra tiles sit in
+ *  zero-height implicit rows (`grid-auto-rows: 0`), and a row GAP would keep adding space for each of them inside the clip.
+ *  Three rows show at 390 and two from `md`, whatever the column count the page's class gives; the rest overflow their zero
+ *  tracks below the box and `overflow-hidden` cuts them. 24 tiles cover a 12-column grid. */
+const TILES_CLASS = `${PRECON_TILES_COLUMNS} gap-x-[10px] md:gap-x-[12px] grid-rows-[repeat(3,auto)] md:grid-rows-[repeat(2,auto)] [grid-auto-rows:0] overflow-hidden [&>li]:mb-[10px] md:[&>li]:mb-[12px]`;
+const TILE_COUNT = 24;
 
 export function PreconsLoading({ view }: { view: "tiles" | "rows" }) {
   return (
@@ -53,8 +56,8 @@ export function PreconsLoading({ view }: { view: "tiles" | "rows" }) {
         <div className="flex flex-col gap-[10px] p-[16px_16px_24px] md:p-[18px_22px_8px]">
           <span className="flex h-[34px] items-start pt-[2px]"><span className="block h-[17px] w-[64px] rounded-[3px] bg-[color:var(--elevated)]" /></span>
           {view === "tiles" ? (
-            <ul className={`${PRECON_TILES_CLASS} ${TILES_CLIP}`}>
-              {Array.from({ length: 12 }, (_, i) => <TileSkeleton key={i} index={i} />)}
+            <ul className={TILES_CLASS}>
+              {Array.from({ length: TILE_COUNT }, (_, i) => <TileSkeleton key={i} index={i} />)}
             </ul>
           ) : (
             <ul className={PRECON_ROWS_CLASS}>

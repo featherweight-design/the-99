@@ -7,6 +7,7 @@
 // where the shell's 10px radius and a partner card's 5px (of ~159px) both clear the 3.1% matte rule; a fixed column
 // count grew tiles past it (329px at 700). Each tile stretches to its row so the art and the caption line up and only
 // the foot differs (R4 §5).
-export const PRECON_TILES_CLASS =
-  "m-0 grid list-none grid-cols-2 items-stretch gap-[10px] p-0 min-[480px]:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[12px]";
+export const PRECON_TILES_COLUMNS =
+  "m-0 grid list-none grid-cols-2 items-stretch p-0 min-[480px]:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))]";
+export const PRECON_TILES_CLASS = `${PRECON_TILES_COLUMNS} gap-[10px] md:gap-[12px]`;
 export const PRECON_ROWS_CLASS = "m-0 flex list-none flex-col gap-[8px] p-0";

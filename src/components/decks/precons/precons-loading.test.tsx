@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PreconsLoading } from "./precons-loading";
-import { PRECON_ROWS_CLASS, PRECON_TILES_CLASS } from "./precon-grid";
+import { PRECON_ROWS_CLASS, PRECON_TILES_COLUMNS } from "./precon-grid";
 
 describe("PreconsLoading", () => {
   it("draws the real header, one status line for a screen reader, and shapes the rest of the way", () => {
@@ -14,13 +14,18 @@ describe("PreconsLoading", () => {
     expect(container.querySelector(".anim-skeleton")).not.toBeNull();
   });
 
-  it("draws tiles on the list's own grid class, clipped to three rows at 390 and two from md", () => {
+  it("draws tiles on the list's own column classes, in three rows at 390 and two from md, with no row gap to add up", () => {
     const { container } = render(<PreconsLoading view="tiles" />);
     const list = container.querySelector("ul")!;
-    for (const token of PRECON_TILES_CLASS.split(" ")) expect(list.className, token).toContain(token);
+    // jsdom computes no layout, so this pins the classes; the heights were measured in a browser (PR body).
+    for (const token of PRECON_TILES_COLUMNS.split(" ")) expect(list.className, token).toContain(token);
     expect(list.className).toContain("grid-rows-[repeat(3,auto)]");
     expect(list.className).toContain("md:grid-rows-[repeat(2,auto)]");
-    expect(container.querySelectorAll("[data-testid=tile-skeleton]")).toHaveLength(12);
+    expect(list.className).toContain("[grid-auto-rows:0]");
+    expect(list.className).toContain("overflow-hidden");
+    // A row gap would be paid once per hidden implicit row: the vertical space is a per-tile margin instead.
+    expect(list.className).not.toMatch(/(^| )(md:)?gap-\[/);
+    expect(container.querySelectorAll("[data-testid=tile-skeleton]").length).toBeGreaterThanOrEqual(24);
     expect(container.querySelector("[data-testid=row-skeleton]")).toBeNull();
   });
 
