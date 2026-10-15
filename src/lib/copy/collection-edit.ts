@@ -12,6 +12,7 @@ const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 // restoration), so they read neutrally: never "records", "unrecorded" or "its N tokens".
 const tokensChange = (x: number) => (x === 1 ? "1 token changes" : `${n(x)} tokens change`);
 const tokenChanges = (x: number) => (x === 1 ? "1 token change" : `${n(x)} token changes`);
+const tokens = (x: number) => (x === 1 ? "1 token" : `${n(x)} tokens`);
 
 export const collectionEditCopy = {
   head: {
@@ -265,7 +266,7 @@ export const collectionEditCopy = {
      * A Sync's revert, under the lede: token writes are not in the ledger, so a revert leaves them
      * (G3). Drawn only when the Sync recorded any.
      */
-    syncTokensStay: (t: number) => `The ${tokens(t)} it recorded ${t === 1 ? "stays" : "stay"} recorded.`,
+    syncTokensStay: (t: number) => `The ${tokenChanges(t)} it made ${t === 1 ? "stays" : "stay"}.`,
     // Direction-neutral: a revert can move copies either way, so the lede names what moved without
     // claiming a direction. The Then and Now rows say what changes.
     lede: (when: string, c: number) => `From ${when}. Reverting this changes ${c === 1 ? "1 copy" : `${n(c)} copies`}.`,
@@ -322,7 +323,7 @@ export const collectionEditCopy = {
      * not rows of the entry, since the Sync never wrote them, so a revert cannot touch them either.
      */
     syncNote: (kept: number, decided: number, t: number) =>
-      [kept ? `Kept the ${cards(kept)} you’d changed in the app.` : "", decided ? `You decided ${n(decided)}.` : "", t ? `Recorded ${tokens(t)}.` : ""]
+      [kept ? `Kept the ${cards(kept)} you’d changed in the app.` : "", decided ? `You decided ${n(decided)}.` : "", t ? `Changed ${tokens(t)}.` : ""]
         .filter(Boolean).join(" "),
     figures: (up: number, down: number, cards: number) =>
       // A change that moved no copies (a printing or condition swap, or a Replace that matched the

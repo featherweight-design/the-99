@@ -124,7 +124,7 @@ describe("HistoryList", () => {
     expect(screen.getByText("Sync upload")).toBeTruthy();
     expect(screen.getByText("The Vault 10-14-26.csv", { exact: false })).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
-    const lead = await screen.findByText("Kept the 119 cards you’d changed in the app. You decided 3. Recorded 114 tokens.");
+    const lead = await screen.findByText("Kept the 119 cards you’d changed in the app. You decided 3. Changed 114 tokens.");
     // Above the rows, never one of them: the kept cards are not the entry's rows.
     const first = screen.getByText("Swords to Plowshares");
     expect(lead.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

@@ -62,18 +62,18 @@ describe("revertLines", () => {
 });
 
 describe("RevertConfirm for a Sync (call 7, G3)", () => {
-  it("is titled `Revert this sync?` and says the tokens it recorded stay recorded", async () => {
+  it("is titled `Revert this sync?` and says the token changes it made stay", async () => {
     preview.mockResolvedValue({ ...matches, syncTokens: 114 });
     render(<RevertConfirm entryId="e1" title="vault.csv" titleShape="sync" when="9 Oct, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
     expect(screen.getByRole("dialog", { name: "Revert this sync?" })).toBeTruthy();
-    expect(await screen.findByText("The 114 tokens it recorded stay recorded.")).toBeTruthy();
+    expect(await screen.findByText("The 114 token changes it made stay.")).toBeTruthy();
     expect(screen.queryByText(/vault\.csv/)).toBeNull();
   });
 
   it("keeps the partial revert's shipped lede and reasons for a Sync, with the tokens line under them (Y3)", async () => {
     preview.mockResolvedValue({ ...matches, rows: [row("Sol Ring", 5, 3)], differs: true, syncTokens: 1 });
     render(<RevertConfirm entryId="e1" title="vault.csv" titleShape="sync" when="9 Oct, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
-    expect(await screen.findByText("The 1 token it recorded stays recorded.")).toBeTruthy();
+    expect(await screen.findByText("The 1 token change it made stays.")).toBeTruthy();
     expect(screen.getByText(/Some of these cards have changed since/)).toBeTruthy();
     expect(screen.getByText("Changed since")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Revert what’s left" })).toBeTruthy();
@@ -84,7 +84,7 @@ describe("RevertConfirm for a Sync (call 7, G3)", () => {
     render(<RevertConfirm entryId="e1" title="box.csv" when="9 Oct, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
     expect(screen.getByRole("dialog", { name: "Revert “box.csv”?" })).toBeTruthy();
     await screen.findByText("Sol Ring");
-    expect(screen.queryByText(/stay recorded/)).toBeNull();
+    expect(screen.queryByText(/token changes? it made/)).toBeNull();
   });
 });
 

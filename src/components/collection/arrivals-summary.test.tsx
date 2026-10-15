@@ -261,7 +261,7 @@ describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () =
     render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 40, decided: 0, tokens: 114 })));
     expect(screen.getByText(copy.summary.ledeTokensOnly(114))).toBeTruthy();
     expect(copy.summary.ledeTokensOnly(114)).toBe(
-      "Nothing your decks care about moved. Your cards are as you left them, and 114 tokens from the file are recorded.",
+      "Nothing your decks care about moved. Your cards are as you left them, and 114 tokens changed.",
     );
     expect(screen.queryByText(copy.summary.ledeNothingToReport)).toBeNull();
     // No `0 cards differ from the old list` beside the stamp.

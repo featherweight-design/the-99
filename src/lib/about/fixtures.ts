@@ -2211,9 +2211,8 @@ export const UPLOAD_CHOICE = {
 /** The upload choice's Sync card, available, keeping the 12 cards changed in the app since Sep 12. */
 export const UPLOAD_CHOICE_SYNC = {
   unavailable: null,
-  lastUploadAt: "2026-09-12T10:00:00.000Z",
-  before: 4492,
-  after: 4392,
+  anchorAt: "2026-09-12T10:00:00.000Z",
+  figure: { before: 4492, after: 4392 },
   note: { kind: "keeps", cards: 12 },
   next: { kind: "sync" },
   stale: null,
