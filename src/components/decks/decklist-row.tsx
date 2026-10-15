@@ -684,8 +684,9 @@ export function DecklistRow({
           className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
         />
         {/* A precon's printed list row: the glint in place of the printed `· foil`, right after the dot (foil addendum
-            M4): `● ✦ … MSC 4`. These rows stay one line, and the box's copies need no art to be foil here. */}
-        {readOnly && card.printedFoil ? <FoilGlint finish="foil" precon={{ quantity: card.quantity }} /> : null}
+            M4): `● ✦ … MSC 4`. These rows stay one line, and the box's copies need no art to be foil here. Not silent: the printed `· foil` was
+            text, and the row has no description to carry the finish instead. */}
+        {readOnly && card.printedFoil ? <FoilGlint finish="foil" silent={false} precon={{ quantity: card.quantity }} /> : null}
         {/* Option B's line break: ends line 1 (dot, name, ✕) so line 2 starts on its own row. */}
         {twoLine ? <span aria-hidden="true" className={at("brk")} /> : null}
 

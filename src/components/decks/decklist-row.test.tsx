@@ -1612,6 +1612,9 @@ describe("DecklistRow readOnly", () => {
     expect(screen.getByText("CMM 712")).toBeInTheDocument();
     expect(screen.queryByText(/· foil/)).toBeNull();
     const glint = screen.getByTestId("foil-mark");
+    // Spoken: the printed `· foil` was text, so the glint that replaces it keeps the finish in the accessibility tree.
+    expect(glint.getAttribute("role")).toBe("img");
+    expect(glint.getAttribute("aria-label")).toBe("foil");
     const row = document.querySelector("[data-decklist-row]")!;
     expect(row.firstElementChild!.nextElementSibling!.contains(glint)).toBe(true);
     cleanup();
