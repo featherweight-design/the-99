@@ -18,6 +18,8 @@ type Entry = {
   timer: ReturnType<typeof setTimeout> | null;
   wake: ((settled: boolean) => void) | null;
   taken: boolean;
+  /** A flush asked for this burst while a save was out: the next settle is skipped, not waited out. */
+  flushing: boolean;
   /** Resolves once the burst has ended: true when its last save was confirmed, false otherwise. */
   done: Promise<boolean>;
 };
@@ -81,6 +83,7 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
   };
 
   function quiet(entry: Entry): Promise<boolean> {
+    if (entry.flushing) return Promise.resolve(true);
     return new Promise((resolve) => {
       entry.wake = (settled) => {
         if (entry.timer) clearTimeout(entry.timer);
@@ -94,7 +97,7 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
 
   function open(oracleId: string, n: number, base: number) {
     let finish!: (ok: boolean) => void;
-    const entry: Entry = { target: n, base, expected: base, timer: null, wake: null, taken: false, done: new Promise((r) => (finish = r)) };
+    const entry: Entry = { target: n, base, expected: base, timer: null, wake: null, taken: false, flushing: false, done: new Promise((r) => (finish = r)) };
     entries.set(oracleId, entry);
     deps.transition(async () => {
       deps.predict(oracleId, n);
@@ -155,7 +158,10 @@ export function createBasicCounts(initial?: Deps): BasicCounts {
     async flush() {
       const open = [...entries.values()];
       if (open.length === 0) return true;
-      for (const e of open) e.wake?.(true);
+      for (const e of open) {
+        e.flushing = true;
+        e.wake?.(true);
+      }
       return (await Promise.all(open.map((e) => e.done))).every(Boolean);
     },
     base(oracleId) {

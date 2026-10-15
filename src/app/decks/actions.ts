@@ -493,7 +493,10 @@ export async function setBasicQuantity(
 ): Promise<BasicQuantityOutcome> {
   const userId = await requireUserId();
   const outcome = await setBasicQuantityFor(userId, deckId, oracleId, n, expected);
-  if (outcome.ok && outcome.changed) revalidateClaims(deckId, userId);
+  // A row that moved or went is drawn stale on the page that sent this: re-render it as well.
+  if ((outcome.ok && outcome.changed) || (!outcome.ok && (outcome.reason === "moved" || outcome.reason === "not-in-deck"))) {
+    revalidateClaims(deckId, userId);
+  }
   return outcome;
 }
 

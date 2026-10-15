@@ -2891,6 +2891,8 @@ describe("setBasicQuantity — a basic land's count, set absolutely", () => {
     expect(await setBasicQuantity(DECK, ISLAND, 7, 6)).toEqual({ ok: false, reason: "moved" });
     expect(cardWrites()).toHaveLength(0);
     expect(stamped()).toBe(false);
+    // The page that sent it draws the old count: it re-renders.
+    expect(stub.state.revalidated.length).toBeGreaterThan(0);
   });
 
   it("compares against a stack above the write ceiling, so an imported 1,000 can step down", async () => {

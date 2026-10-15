@@ -181,3 +181,18 @@ describe("createBasicCounts, round 6: compare-and-set", () => {
   });
 });
 
+describe("createBasicCounts, round 12", () => {
+  // A flush that lands while a save is out still skips the next settle: the newer figure goes the moment the
+  // first save answers, not 600ms later.
+  it("sends a waiting figure at once after a flush asked during a save", async () => {
+    const { counts, saves, answer } = harness();
+    counts.set("island", 7, 6);
+    await vi.advanceTimersByTimeAsync(SETTLE_MS);
+    counts.set("island", 8, 6);
+    void counts.flush();
+    answer(7);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(saves).toEqual([7, 8]);
+  });
+});
+
