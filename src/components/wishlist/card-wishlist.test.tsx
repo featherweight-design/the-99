@@ -292,3 +292,41 @@ describe("a press shows it is pending on the same frame", () => {
     expect(button).not.toHaveAttribute("aria-busy");
   });
 });
+
+describe("a refresh that lands during a write", () => {
+  const view = (want: number | null, owned: number) => <CardWishlist oracleId={CARD} want={want} owned={owned} onWrite={vi.fn()} />;
+
+  it("is applied when the write fails, so the next step starts from the server's count", async () => {
+    let answer!: (v: unknown) => void;
+    set.mockReturnValueOnce(new Promise((r) => { answer = r; }));
+    const { rerender } = render(view(2, 1));
+    fireEvent.click(screen.getByRole("button", { name: c.more }));
+    rerender(view(5, 1));
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("2");
+    await act(async () => answer({ ok: false, reason: "invalid" }));
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("5");
+    set.mockResolvedValueOnce(wanted(6, 1));
+    fireEvent.click(screen.getByRole("button", { name: c.more }));
+    expect(set).toHaveBeenLastCalledWith(CARD, 6);
+  });
+
+  it("is applied when the write throws too", async () => {
+    let fail!: (e: unknown) => void;
+    set.mockReturnValueOnce(new Promise((_, r) => { fail = r; }));
+    const { rerender } = render(view(2, 1));
+    fireEvent.click(screen.getByRole("button", { name: c.more }));
+    rerender(view(5, 1));
+    await act(async () => fail(new Error("down")));
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("5");
+  });
+
+  it("gives way to the write's own answer when the write succeeds", async () => {
+    let answer!: (v: unknown) => void;
+    set.mockReturnValueOnce(new Promise((r) => { answer = r; }));
+    const { rerender } = render(view(2, 1));
+    fireEvent.click(screen.getByRole("button", { name: c.more }));
+    rerender(view(5, 1));
+    await act(async () => answer(wanted(3, 1)));
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
+  });
+});

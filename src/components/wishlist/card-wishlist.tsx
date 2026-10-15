@@ -59,14 +59,23 @@ export function CardWishlist({
   const writing = useRef(false);
   const [busy, setBusy] = useState(false);
   // The provider paints a cached card and then refreshes it under the same key, so the props can move after mount. A
-  // refreshed snapshot is adopted while no write is out; one that lands during a write waits for that write's answer.
+  // refreshed snapshot is adopted while no write is out; one that lands during a write is held, and applied when the
+  // write ends without an answer to draw (a refusal or an exception). A write that succeeds answers for itself.
   const [snap, setSnap] = useState({ want: initial, owned });
+  const [held, setHeld] = useState<{ want: number | null; owned: number } | null>(null);
   if (snap.want !== initial || snap.owned !== owned) {
     setSnap({ want: initial, owned });
-    if (!busy) {
+    if (busy) {
+      setHeld({ want: initial, owned });
+    } else {
       setWant(initial);
       setHave(owned);
     }
+  }
+  if (!busy && held) {
+    setHeld(null);
+    setWant(held.want);
+    setHave(held.owned);
   }
 
   // When the line goes (Remove, or a step down to what the collection already holds) while the stepper held focus, the
@@ -88,6 +97,7 @@ export function CardWishlist({
       setHave(out.have);
       // `held`: the collection already holds what was wanted, so no line stands.
       setWant(out.status === "wanted" ? out.want : null);
+      setHeld(null);
       onWrite();
     } catch {
       fail(failure);
