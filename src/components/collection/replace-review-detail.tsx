@@ -29,8 +29,12 @@ export type ReviewChange = {
   fresh: ReadonlySet<string>;
   /** A confirm came back with a different answer than the one on screen. */
   changed: boolean;
-  /** A confirm that wrote nothing and could not be answered with a warning: shown as A5. */
-  failure: { body: string } | null;
+  /**
+   * A confirm that wrote nothing and could not be answered with a warning: shown as A5. `read` marks a Sync
+   * re-read that failed instead: nothing was confirmed, the figures on screen are the previous read's, and its
+   * Try again reads again rather than writing.
+   */
+  failure: { body: string; read?: true } | null;
 };
 
 export function ReplaceReviewDetail({

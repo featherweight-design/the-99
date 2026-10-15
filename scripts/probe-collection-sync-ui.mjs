@@ -257,8 +257,11 @@ async function walk(browser, w, userId, P) {
     const want = [2, 2, undefined, 2, 2];
     const got = P.map((p) => held2[p.oracle]);
     check(JSON.stringify(got) === JSON.stringify(want), `${w.name}: the collection is the merge the review drew`, `${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
-    const [{ n }] = await sql`select count(*)::int as n from collection_history where user_id = ${userId} and kind = 'upload_sync' and created_at > now() - interval '5 minutes'`;
-    check(n >= 1, `${w.name}: one upload_sync entry written`, `${n}`);
+    // Scoped to THIS receipt's upload (`csv_uploads:<id>`), and exactly one: a time window would let another
+    // recent Sync satisfy it, and `>= 1` would pass a duplicate entry.
+    const receiptId = new URL(page.url()).pathname.split("/").pop();
+    const [{ n }] = await sql`select count(*)::int as n from collection_history where user_id = ${userId} and kind = 'upload_sync' and source = ${`csv_uploads:${receiptId}`}`;
+    check(n === 1, `${w.name}: one upload_sync entry written for this upload`, `${n} for ${receiptId}`);
   } finally {
     await context.close();
   }

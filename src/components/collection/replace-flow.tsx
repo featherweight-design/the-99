@@ -20,7 +20,7 @@ import { ReviewScreen } from "./review-screen";
 import type { ReviewChange } from "./replace-review-detail";
 import { UploadChoice, type SyncChoice } from "./upload-choice";
 import { effectivePick, followUpShown, syncNext, syncNote } from "./sync-choice-view";
-import type { SyncConflictsHandle, SyncReviewControls } from "./sync-review";
+import { syncBar, syncFigures, type SyncConflictsHandle, type SyncReviewControls } from "./sync-review";
 import type { SyncAnswers, SyncPick } from "../../lib/collection/sync";
 import { GhostButton } from "../ui/button";
 import { ConfirmModal } from "./confirm-modal";
@@ -262,11 +262,11 @@ export function ReplaceFlow({
           }
           setSyncDrawn(want);
           if ("missingCard" in r) {
-            setChange((was) => was && { ...was, failure: { body: collectionEditCopy.shortWarning.catalogFailure(r.missingCard) } });
+            setChange((was) => was && { ...was, failure: { body: collectionEditCopy.shortWarning.catalogFailure(r.missingCard), read: true } });
             return;
           }
           if (!isSyncRead(r)) {
-            setChange((was) => was && { ...was, failure: { body: collectionEditCopy.upload.prepareFailed } });
+            setChange((was) => was && { ...was, failure: { body: collectionEditCopy.upload.prepareFailed, read: true } });
             return;
           }
           // The base went while the review was open (another tab reverted the anchor): no comparison was made,
@@ -284,7 +284,7 @@ export function ReplaceFlow({
           // The figures on screen are the last read's; a confirm sends that read's digest and, if the plan has
           // moved, is refused as `stale` rather than writing a merge the player did not see.
           setSyncDrawn(want);
-          setChange((was) => was && { ...was, failure: { body: collectionEditCopy.upload.prepareFailed } });
+          setChange((was) => was && { ...was, failure: { body: collectionEditCopy.upload.prepareFailed, read: true } });
         },
       );
     }, SYNC_REREAD_MS);
@@ -602,6 +602,46 @@ export function ReplaceFlow({
     );
   }
 
+  // The review's confirm, from its bar or from a failure's Try again: one path, so a retry meets every check
+  // the bar's own press does.
+  function pressConfirm() {
+    if (firstImport) {
+      void onConfirm();
+      return;
+    }
+    if (change && choosing && picked === "sync") {
+      // A Sync is HELD while a conflict is undecided or the figures for the answers on screen are being read,
+      // and has nothing to confirm when nothing would change: a retry must not write past either (K1b, call 10).
+      const bar = change.data.sync ? syncBar(syncFigures(change.data.sync, change.decks)) : null;
+      if (syncReading) return;
+      if (bar?.kind === "held") {
+        conflictsRef.current?.focusFirstUndecided();
+        return;
+      }
+      if (bar?.kind === "nothing") return;
+      // Sync's short decks ask in a dialog before the shortage is acknowledged (Confirm X1): Cancel focused.
+      if (change.decks.length > 0) {
+        setWarning({ decks: change.decks, fresh: new Set(), changed: false, sync: true });
+        setConfirming(true);
+        return;
+      }
+    }
+    if (change) void onConfirm(change.decks);
+    else setConfirming(true);
+  }
+
+  // A failure's Try again. A failed Sync RE-READ wrote nothing and left the previous read's figures on screen,
+  // so it reads again; only a failed write is confirmed again, and then through the bar's own checks.
+  function retryFailure() {
+    if (pending || !change) return;
+    if (change.failure?.read) {
+      setChange({ ...change, failure: null });
+      setSyncNonce((n) => n + 1);
+      return;
+    }
+    pressConfirm();
+  }
+
   const syncControls: SyncReviewControls = {
     answers,
     onAnswers: setAnswers,
@@ -635,15 +675,7 @@ export function ReplaceFlow({
             setReviewing(false);
           } else setPreview(null);
         }}
-        onContinue={() => {
-          if (firstImport) void onConfirm();
-          // Sync's short decks ask in a dialog before the shortage is acknowledged (Confirm X1): Cancel focused.
-          else if (change && choosing && picked === "sync" && change.decks.length > 0) {
-            setWarning({ decks: change.decks, fresh: new Set(), changed: false, sync: true });
-            setConfirming(true);
-          } else if (change) void onConfirm(change.decks);
-          else setConfirming(true);
-        }}
+        onContinue={pressConfirm}
         pending={pending && !confirming}
         embedded={embedded}
         change={change}
@@ -651,7 +683,7 @@ export function ReplaceFlow({
         step={choosing ? collectionEditCopy.upload.step(3, 4) : undefined}
         // Not while a confirm is in flight: the pick and the review would move to Replace under a write that is still an Add.
         onSwitchToReplace={choosing && !pending ? () => openReview("replace") : undefined}
-        onRetry={change ? () => void onConfirm(change.decks) : undefined}
+        onRetry={change ? retryFailure : undefined}
         sync={choosing && picked === "sync" ? syncControls : undefined}
       />
       {confirming && (

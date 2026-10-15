@@ -226,6 +226,42 @@ describe("ReplaceFlow · the Sync review", () => {
     await screen.findByText(/overwrites 1 card /);
     expect(screen.queryByRole("alert")).toBeNull();
   });
+  it("answers a failed re-read's Try again with another read, never a write past the held bar", async () => {
+    let fail = false;
+    choiceReads((o) => (fail ? Promise.reject(new Error("read failed")) : syncRead(o?.answers)));
+    await reachSyncReview();
+    expect(tiles()[0]).toBe("3to decide");
+    fail = true;
+    // Answering App leaves the digest a write would check unchanged: only the read decides it.
+    fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
+    await screen.findByRole("alert");
+    // The figures are the previous read's: still three to decide.
+    expect(tiles()[0]).toBe("3to decide");
+    fail = false;
+    const before = syncCalls().length;
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
+    expect(syncCalls().length).toBe(before + 1);
+    expect(syncCalls().at(-1)?.[2]).toEqual({ pick: "everything", answers: { all: "app" } });
+    expect(confirmUpload).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("routes a failed write's Try again through Sync's short-deck dialog, never acknowledging the shortage itself", async () => {
+    choiceReads((o) => syncRead(o?.answers, { decks: [shortDeck] }));
+    await reachSyncReview();
+    fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
+    await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
+    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    confirmUpload.mockRejectedValueOnce(new Error("boom"));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Sync anyway" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t sync that");
+    expect(confirmUpload).toHaveBeenCalledTimes(1);
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("dialog", { name: "Syncing leaves a deck short" })).toBeTruthy();
+    expect(confirmUpload).toHaveBeenCalledTimes(1);
+  });
+
   it("goes back to the choice when a re-read finds the base gone, never drawing `already has everything`", async () => {
     let gone = false;
     choiceReads((o) => syncRead(o?.answers, gone ? { unavailable: "noRecord", nothing: true } : {}));

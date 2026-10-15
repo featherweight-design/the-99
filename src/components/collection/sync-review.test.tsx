@@ -134,6 +134,26 @@ describe("Sync review · the lists", () => {
     expect((kept.lastElementChild as HTMLElement).style.color).toBe("var(--fg-body)");
   });
 
+  it("lists Kept from The 99 as the server shipped it, never merging the conflicts answered App in again", () => {
+    // The server merges App answers into `kept` before its 500 cap; the conflict list here is a separate cap.
+    const answered = conflict(7, { name: "Esper Sentinel", answer: "app" });
+    renderReview(data({
+      counts: { conflicts: 1, undecided: 0, answeredFile: 0, kept: 1 },
+      conflicts: { rows: [answered], total: 1 },
+      kept: { rows: [conflict(90, { name: "Sol Ring", base: 3, app: 4, file: 3 }), answered], total: 2 },
+    }));
+    expect(screen.getByRole("heading", { name: "Kept from The 99 · 2" })).toBeTruthy();
+    // Once in Kept (and once as its conflict row, which is a fieldset, not a list item).
+    expect(screen.getAllByText("Esper Sentinel", { selector: "li span" })).toHaveLength(1);
+  });
+
+  it("notes the cap on Kept from The 99 when the server shipped fewer rows than it counts", () => {
+    const keptRows = Array.from({ length: 10 }, (_, i) => conflict(100 + i, { name: `Kept ${i}` }));
+    renderReview(data({ counts: { kept: 600 }, kept: { rows: keptRows, total: 600 } }));
+    fireEvent.click(screen.getByRole("button", { name: "Show all 10" }));
+    expect(screen.getByText(/10 of 600/)).toBeTruthy();
+  });
+
   it("reads the conflict rows in name order, whatever order the engine's keys put them in", () => {
     const rows = [conflict(1, { name: "Sol Ring" }), conflict(2, { name: "Arcane Signet" }), conflict(3, { name: "Esper Sentinel" })];
     renderReview(data({ counts: { conflicts: 3, undecided: 3 }, conflicts: { rows, total: 3 } }));
@@ -286,6 +306,24 @@ describe("Bulk presses are rules", () => {
     expect(cls).toContain("px-[12px]");
     expect(cls).toContain("md:px-[16px]");
     expect(cls).not.toMatch(/(^|\s)px-\[16px\]/);
+  });
+});
+
+describe("Conflicts · Show all moves focus", () => {
+  const rows = Array.from({ length: 12 }, (_, i) => conflict(i));
+  const draw = (answers: SyncAnswers) =>
+    render(<SyncConflicts rows={rows} total={12} since="Oct 2" answers={answers} onAnswers={vi.fn()} disabled={false} />);
+
+  it("to the first revealed row's first radio while it is unanswered, as the shared Rows does", () => {
+    draw({});
+    fireEvent.click(screen.getByRole("button", { name: "Show all 12" }));
+    expect(document.activeElement).toBe(within(screen.getByRole("group", { name: /^Card 8,/ })).getByRole("radio", { name: "App ×3" }));
+  });
+
+  it("to the first revealed row's selected radio once it is answered", () => {
+    draw({ byKey: { [rows[8].key]: "file" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show all 12" }));
+    expect(document.activeElement).toBe(within(screen.getByRole("group", { name: /^Card 8,/ })).getByRole("radio", { name: "File ×2" }));
   });
 });
 

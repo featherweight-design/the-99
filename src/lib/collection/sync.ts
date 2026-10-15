@@ -163,6 +163,15 @@ export function quantitiesOf(items: readonly PendingItem[]): Map<string, number>
   return out;
 }
 
+/**
+ * Every holding a sync keeps at the app's count, as the review's `Kept from The 99` lists it: the app-only
+ * changes and the conflicts answered App, merged in key order. Uncapped: the caller caps the merged list, so
+ * an App answer is never lost to the conflicts' own cap.
+ */
+export function keptForReview(plan: Pick<SyncPlan, "kept" | "conflicts">): SyncReviewRow[] {
+  return [...plan.kept, ...plan.conflicts.filter((r) => r.answer === "app")].sort((x, y) => (x.key < y.key ? -1 : x.key > y.key ? 1 : 0));
+}
+
 /** The answer that decides a conflict on `key`, or none. */
 export function answerFor(answers: SyncAnswers | undefined, key: string): SyncSide | undefined {
   return answers?.byKey?.[key] ?? answers?.all;

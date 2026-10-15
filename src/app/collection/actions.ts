@@ -21,7 +21,7 @@ import {
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
 import { collectionEditEnabled, collectionSyncEnabled } from "../../lib/collection/edit-flag";
-import { parseSyncOptions, SYNC_REVIEW_CAP, changedTokenCount, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
+import { keptForReview, parseSyncOptions, SYNC_REVIEW_CAP, changedTokenCount, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
 import { summarizeUploadPreview, type UploadPreviewDetail } from "../../lib/collection/upload-preview";
 import { randomUUID } from "node:crypto";
@@ -204,7 +204,10 @@ export type UploadSyncPreview = {
   counts: SyncCounts;
   /** The first `SYNC_REVIEW_CAP` conflicts by key, and how many there are. */
   conflicts: { rows: SyncReviewRow[]; total: number };
-  /** The first `SYNC_REVIEW_CAP` kept holdings by key, and how many there are. */
+  /**
+   * The first `SYNC_REVIEW_CAP` holdings kept at the app's count, by key, and how many there are: the app-only
+   * changes and the conflicts answered App, merged before the cap.
+   */
   kept: { rows: SyncReviewRow[]; total: number };
   stale: Staleness;
   /** ISO time the anchor (the upload this file is compared with) was confirmed; null when unavailable. */
@@ -367,7 +370,12 @@ export async function previewUploadChange(
             pick: sync.pick,
             counts: s.counts,
             conflicts: { rows: await namedRows(s.conflicts.slice(0, SYNC_REVIEW_CAP)), total: s.conflicts.length },
-            kept: { rows: await namedRows(s.kept.slice(0, SYNC_REVIEW_CAP)), total: s.kept.length },
+            // Kept from The 99 is every holding kept at the app's count: the app-only changes AND the conflicts
+            // answered App. Merged before the cap, so an App answer past the conflicts' 500 still reaches it.
+            kept: await (async () => {
+              const all = keptForReview(s);
+              return { rows: await namedRows(all.slice(0, SYNC_REVIEW_CAP)), total: all.length };
+            })(),
             stale: s.stale,
             anchorConfirmedAt: s.anchorConfirmedAt.toISOString(),
             missingFromAnchor: s.missingFromAnchor,

@@ -5,7 +5,7 @@
 // decks short, the shipped file-side lists and `Kept from The 99`. Every figure is the server's last read
 // for the answers on screen; the flow re-reads on each answer, so the tiles follow them.
 
-import { useImperativeHandle, useRef, useState, type Ref } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 import { flushSync } from "react-dom";
 import type { UploadChangePreview, UploadSyncPreview } from "../../app/collection/actions";
 import { answerFor, type SyncAnswers, type SyncReviewRow, type SyncSide } from "../../lib/collection/sync";
@@ -124,15 +124,13 @@ export function SyncReviewDetail({
   const since = syncData.anchorConfirmedAt ? day(syncData.anchorConfirmedAt) : "";
   const head = stalePickLine(syncData, since, f.take);
   const answers = controls.answers;
-  // Conflicts answered App join Kept from The 99 (Conflicts board, K2), as the shipped rows read: at last upload → now.
-  const keptRows = [
-    ...syncData.kept.rows,
-    ...syncData.conflicts.rows.filter((r) => r.answer === "app"),
-  ].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+  // Kept from The 99 is the server's: the app-only changes and the conflicts answered App (Conflicts board, K2),
+  // merged before the 500 cap, as the shipped rows read: at last upload → now.
+  const keptRows = [...syncData.kept.rows].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
   // Conflict rows read in the same name order as every other list on the review; the engine sorts by key.
   const conflictRows = [...syncData.conflicts.rows].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
   const kept: PreviewList = {
-    total: f.keep,
+    total: syncData.kept.total,
     rows: keptRows.map((r) => ({
       oracleId: r.oracleId, name: r.name ?? "", setCode: r.setCode, collectorNumber: r.collectorNumber, finish: r.finish,
       before: r.base, after: r.app, edited: false,
@@ -260,6 +258,16 @@ export function SyncConflicts({
   // A bulk answer is a RULE (G11): it decides every conflict, the ones past the cap included.
   const left = answers.all ? 0 : total - rows.filter((r) => byKey[r.key]).length;
   const shown = all ? rows : rows.slice(0, SHOWN);
+  // Show all is gone once pressed, so focus moves where the shared `Rows` sends it: the first row it revealed,
+  // at its selected radio, or its first radio while it is unanswered. Only that press asks for it: a held
+  // confirm's reveal focuses its own row.
+  const revealFocus = useRef(false);
+  useEffect(() => {
+    if (!all || !revealFocus.current) return;
+    revealFocus.current = false;
+    const row = sectionRef.current?.querySelectorAll<HTMLElement>("[data-key]")[SHOWN];
+    (row?.querySelector<HTMLInputElement>("input:checked") ?? row?.querySelector<HTMLInputElement>("input"))?.focus();
+  }, [all]);
 
   useImperativeHandle(handle, () => ({
     focusFirstUndecided() {
@@ -350,7 +358,10 @@ export function SyncConflicts({
       {!all && rows.length > SHOWN ? (
         <button
           type="button"
-          onClick={() => setAll(true)}
+          onClick={() => {
+            revealFocus.current = true;
+            setAll(true);
+          }}
           className="self-start min-h-[44px] text-[13px] text-[color:var(--accent)] underline underline-offset-2"
         >
           {c.showAll(rows.length)}
