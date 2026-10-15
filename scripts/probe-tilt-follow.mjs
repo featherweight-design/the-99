@@ -1,21 +1,23 @@
-// The card tilt follows the pointer (foil R2 PR 2, #1833; the lag fix), in card details AND the zoom, at 1300x900.
+// The card tilt follows the pointer, and a foil card's band plays once on open (foil R2 PR 2, #1833; #1856; Hugh's
+// decisions of 2026-10-15), in card details AND the zoom, at 1300x900, and on the phone's details at 390x844.
 //
 // What a browser proves and the component tests cannot: what the registered `--tilt-*` values DRAW frame by frame.
 // jsdom runs no transition, so `card-tilt.test.tsx` can only say which attributes and inline targets are written. Here,
-// a real mouse moves one step per animation frame, and every frame the page reads the computed (animated) `--tilt-y`
+// a real mouse moves one step per animation frame, and every frame the page reads the computed (animated) `--tilt-*`
 // beside the inline target the handler wrote:
 //
-// - Details: after the lift has settled the host carries `data-tilt-follow`, and the drawn value IS the target on
-//   every frame of a sweep. Before the fix it trailed a restarted transition by about 67ms (8 frames at 120Hz).
-// - The way in still eases (the first frame after entering is short of the target), and leaving still settles flat.
-// - The zoom tilts on hover for a mouse, as details does. It used to tilt only on a press that moved, which no mouse
-//   reader makes, so desktop drew neither the tilt nor the film's drift there.
+// - Details: the FIRST frame after the pointer's first move already draws at its target (no ease on the way in), and
+//   every frame of a sweep after it does too. Before #1856 the card trailed a restarted transition by about 67ms;
+//   after it, a 300ms ease on the way in still held the first frames back.
+// - Leaving still settles flat over time, not at once.
+// - The zoom tilts on hover for a mouse, as details does, and its foil wash moves with it.
+// - A foil card plays one band when details opens, on desktop and on the phone; a card that is not foil draws no film
+//   and so no band.
 // - Under reduced motion a hover tilts nothing.
 //
 // Run by hand with the dev server up (it writes nothing):
-//   PROBE_CARD="<card the account owns>" node scripts/probe-tilt-follow.mjs
-// PROBE_CARD can be any card the account owns. Name one whose drawn printing is foil to also see the zoom's film drift;
-// on any other card that check says so and is skipped.
+//   PROBE_FOIL_CARD="<a foil card the account owns>" PROBE_CARD="<a nonfoil one>" node scripts/probe-tilt-follow.mjs
+// PROBE_SHOTS=<dir> also saves the foil card's details at both widths.
 // Not part of `pnpm test`: it needs a browser and a signed-in session.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -32,8 +34,10 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requi
   "CLERK_SECRET_KEY",
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const CARD = process.env.PROBE_CARD;
-if (!CARD) throw new Error("Set PROBE_CARD to a card the account owns.");
+const FOIL = process.env.PROBE_FOIL_CARD;
+const PLAIN = process.env.PROBE_CARD;
+if (!FOIL || !PLAIN) throw new Error("Set PROBE_FOIL_CARD and PROBE_CARD to a foil and a nonfoil card the account owns.");
+const SHOTS = process.env.PROBE_SHOTS;
 
 let fails = 0;
 const check = (name, ok, got) => {
@@ -70,7 +74,7 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
-async function openCard(page) {
+async function openCard(page, CARD, host = "modal-art-desktop-tilt") {
   await page.goto(`${BASE}/collection?view=rows&q=${encodeURIComponent(CARD)}`, { waitUntil: "domcontentloaded" });
   // A row's accessible name opens with the card's name and a comma.
   const pattern = new RegExp(`^${CARD.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},`);
@@ -81,10 +85,10 @@ async function openCard(page) {
     if (await page.waitForSelector('[role="dialog"]', { timeout: 10_000 }).then(() => true).catch(() => false)) break;
     if (attempt === 2) throw new Error(`the modal never opened for ${CARD}`);
   }
-  await dialog(page, '[data-testid="modal-art-desktop-tilt"]').waitFor({ state: "visible", timeout: 30_000 });
+  await dialog(page, `[data-testid="${host}"]`).waitFor({ state: "visible", timeout: 30_000 });
 }
 
-/** Starts a per-frame log on the host: the drawn values beside the inline targets and the follow mark. */
+/** Starts a per-frame log on the host: the drawn values beside the inline targets, and whether it is tilting. */
 const startLog = (page, testid) => page.evaluate((id) => {
   const host = [...document.querySelectorAll(`[data-testid="${id}"]`)].find((n) => n.getBoundingClientRect().width > 0);
   window.__tilt = [];
@@ -94,7 +98,7 @@ const startLog = (page, testid) => page.evaluate((id) => {
     window.__tilt.push({
       x: +c.getPropertyValue("--tilt-x"), y: +c.getPropertyValue("--tilt-y"), lift: +c.getPropertyValue("--tilt-lift"),
       tx: host.style.getPropertyValue("--tilt-x"), ty: host.style.getPropertyValue("--tilt-y"),
-      follow: host.hasAttribute("data-tilt-follow"), tilting: host.hasAttribute("data-tilting"),
+      tilting: host.hasAttribute("data-tilting"),
     });
     if (!window.__tiltStop) requestAnimationFrame(tick);
   };
@@ -112,13 +116,10 @@ async function sweep(page, testid) {
   await startLog(page, testid);
   await page.mouse.move(...at(0.9, 0.1));
   for (let i = 0; i < 3; i++) await frame(page);
+  // The first frame the host is tilting: what it draws there is the whole question of "no ease on the way in".
   const entry = (await page.evaluate(() => window.__tilt.slice())).find((r) => r.tilting);
-  await page.waitForTimeout(450);
-  // Past the settle: a mark-setting move, then one move a frame down the right edge.
-  await page.mouse.move(...at(0.9, 0.12));
-  await frame(page);
   const mark = await page.evaluate(() => window.__tilt.length);
-  for (let i = 1; i <= 30; i++) { await page.mouse.move(...at(0.9, 0.12 + 0.76 * (i / 30))); await frame(page); }
+  for (let i = 1; i <= 30; i++) { await page.mouse.move(...at(0.9, 0.1 + 0.8 * (i / 30))); await frame(page); }
   const rows = (await readLog(page)).slice(mark);
   return { entry, rows };
 }
@@ -128,20 +129,44 @@ const browser = await chromium.launch();
 const signedIn = await browser.newContext({ viewport: { width: 1300, height: 900 } });
 const page = await signedIn.newPage();
 await signIn(page);
-await openCard(page);
 
-console.log("── details, 1300 ──");
+/** The band on a details film: the animation the film span itself runs (its background travels). It plays once the
+    film's art has arrived (`in`, or `done` when cached), so that is waited for, when there is a film at all. */
+const bandOf = async (page, host) => {
+  await page.waitForFunction((id) => {
+    const film = [...document.querySelectorAll(`[data-testid="${id}"] [data-foil]`)].find((n) => n.getBoundingClientRect().width > 0);
+    return !film || film.dataset.arrival === "in" || film.dataset.arrival === "done";
+  }, host, { timeout: 10_000 }).catch(() => {});
+  return readBand(page, host);
+};
+const readBand = (page, host) => page.evaluate((id) => {
+  const film = [...document.querySelectorAll(`[data-testid="${id}"] [data-foil]`)].find((n) => n.getBoundingClientRect().width > 0);
+  if (!film) return null;
+  const c = getComputedStyle(film);
+  return { finish: film.dataset.foil, name: c.animationName, delay: c.animationDelay, duration: c.animationDuration, count: c.animationIterationCount };
+}, host);
+
+await openCard(page, PLAIN);
+console.log("── a nonfoil card's details, 1300 ──");
 {
+  const band = await bandOf(page, "modal-art-desktop-tilt");
+  check("draws no film, so plays no band", band === null, band);
+}
+await openCard(page, FOIL);
+console.log("── a foil card's details, 1300 ──");
+{
+  const band = await bandOf(page, "modal-art-desktop-tilt");
+  check("plays one band on open, on desktop too, after the card's entry", band?.name === "foil-band" && band.count === "1" && band.delay === "0.32s" && band.duration === "0.96s", band);
+  if (SHOTS) { await page.waitForTimeout(1500); await page.screenshot({ path: `${SHOTS}/details-1300.png` }); }
   const { entry, rows } = await sweep(page, "modal-art-desktop-tilt");
-  check("the way in still eases: the first tilting frame draws short of the target", entry && Math.abs(entry.x - +entry.tx) > 0.02, entry);
+  check("the first tilting frame already draws at the target (no ease on the way in)", entry && Math.abs(entry.x - +entry.tx) <= 0.002 && Math.abs(entry.y - +entry.ty) <= 0.002, entry);
   const moving = rows.filter((r) => r.ty !== "");
-  check("the host is marked to follow once the lift has settled", moving.length > 0 && moving.every((r) => r.follow), moving.find((r) => !r.follow));
   const worst = Math.max(...moving.map((r) => Math.abs(r.y - +r.ty)));
   check("every frame of the sweep draws where the pointer is (within .002)", moving.length >= 20 && worst <= 0.002, { frames: moving.length, worst });
   await page.mouse.move(5, 5);
   await page.waitForTimeout(150);
-  const leaving = await dialog(page, '[data-testid="modal-art-desktop-tilt"]').evaluate((h) => ({ follow: h.hasAttribute("data-tilt-follow"), y: +getComputedStyle(h).getPropertyValue("--tilt-y") }));
-  check("leaving takes the mark off and settles over time, not at once", !leaving.follow && leaving.y > 0.52, leaving);
+  const leaving = await dialog(page, '[data-testid="modal-art-desktop-tilt"]').evaluate((h) => ({ tilting: h.hasAttribute("data-tilting"), y: +getComputedStyle(h).getPropertyValue("--tilt-y") }));
+  check("leaving settles over time, not at once", !leaving.tilting && leaving.y > 0.52, leaving);
   await page.waitForTimeout(900);
   const flat = await dialog(page, '[data-testid="modal-art-desktop-tilt"]').evaluate((h) => +getComputedStyle(h).getPropertyValue("--tilt-y"));
   check("and lands flat", Math.abs(flat - 0.5) < 0.005, flat);
@@ -160,17 +185,40 @@ console.log("── zoom, 1300 ──");
   check("and it follows the pointer too", written.length >= 20 && worst <= 0.002, { frames: written.length, worst });
   const film = await dialog(page, '[data-testid="card-zoom-tilt"] [data-foil-size="large"]').first()
     .evaluate((f) => getComputedStyle(f, "::before").transform).catch(() => null);
-  console.log(`     (the zoom's film transform: ${film ?? "no film on this printing"})`);
-  if (film) check("a foil film drifts with the tilt", film !== "none" && film !== "matrix(1, 0, 0, 1, 0, 0)", film);
+  console.log(`     (the zoom's film transform: ${film})`);
+  check("the foil wash moves with the tilt", film !== null && film !== "none" && film !== "matrix(1, 0, 0, 1, 0, 0)", film);
+}
+if (SHOTS) {
+  // The tile film, beside a nonfoil tile, for the PR's before and after.
+  await page.goto(`${BASE}/collection?view=grid&q=${encodeURIComponent(FOIL.split(" ")[0])}`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${SHOTS}/tiles-1300.png` });
 }
 await signedIn.close();
+
+console.log("── a foil card's details, 390 ──");
+{
+  const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const p = await phone.newPage();
+  await signIn(p);
+  await openCard(p, FOIL, "modal-art-mobile-tilt");
+  const band = await bandOf(p, "modal-art-mobile-tilt");
+  check("plays one band on open", band?.name === "foil-band" && band.count === "1" && band.delay === "0.32s", band);
+  if (SHOTS) { await p.waitForTimeout(1500); await p.screenshot({ path: `${SHOTS}/details-390.png` }); }
+  if (SHOTS) {
+    await p.goto(`${BASE}/collection?view=grid&q=${encodeURIComponent(FOIL.split(" ")[0])}`, { waitUntil: "networkidle" });
+    await p.waitForTimeout(1500);
+    await p.screenshot({ path: `${SHOTS}/tiles-390.png` });
+  }
+  await phone.close();
+}
 
 console.log("── reduced motion ──");
 {
   const reduced = await browser.newContext({ viewport: { width: 1300, height: 900 }, reducedMotion: "reduce" });
   const p = await reduced.newPage();
   await signIn(p);
-  await openCard(p);
+  await openCard(p, FOIL);
   const box = await boxOf(p, "modal-art-desktop-tilt");
   await p.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.1);
   await p.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.5);

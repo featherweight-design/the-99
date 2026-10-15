@@ -5,6 +5,13 @@ Voice: Kitchen Table. Theme drawn: Kaldheim (First Frost), with all six on every
 
 **Status: R1 approved (Hugh, LGTM, 2026-10-15).**
 
+**Revised by Hugh's decisions, 2026-10-15 (after R2 shipped), as built:** the foil film is a whole-card iridescent
+WASH on every foil surface, tiles and large views alike (a pastel rainbow at 70% that multiplies, under a color-dodge
+sheen at 49%, both moving with the tilt); etched keeps R1's film. The band is slower and softer (960ms, 40% white, which
+reads near 30% under the wash) and is the film span's own background. It plays once when a large foil view opens on
+desktop too, not only the phone. The tilt follows the pointer from its first move, with no ease on the way in. Where a
+section below says otherwise, this note wins; the timing tables are updated in place.
+
 **Source of truth:** `docs/superpowers/design-briefs/2026-10-15-foil-treatment.md` on branch `brief/foil-treatment` (not on main yet).
 Fixture: Avengers Assemble Collector's Edition (MSC), 100 cards, all foil.
 
@@ -134,7 +141,7 @@ reduced-motion list; add a comment there pointing at this block so the list stay
 |---|---|---|---|---|---|
 | Art lands | ring span `opacity` 0→1, with the img | 300ms | 0 | ease-in-out | `--motion-fade`, `--motion-ease` (the art's own `art-in`) |
 | Art still loading | held at `opacity: 0` | — | — | — | `img:not([src])`, `data-arrival="pending"` |
-| Hover or keyboard focus | `::after` `transform` −100% → 100% | 640ms | 0 (pointer feedback takes no beat) | ease-in-out | `calc(var(--motion-duration) * 2)`, `--motion-ease` |
+| Hover or keyboard focus | the span's background-position 100% → 0 (revised 2026-10-15; was `::after` `transform`, 640ms) | 960ms | 0 (pointer feedback takes no beat) | ease-in-out | `calc(var(--motion-duration) * 3)`, `--motion-ease` |
 | Pointer leaves mid-sweep | the band drops back off the tile | instant | — | — | no reverse |
 | Reduced motion | nothing; the film appears with the art | — | — | — | — |
 
@@ -357,17 +364,17 @@ printing or the oracle-level picture (`identityGradient` fallback included) gets
 
 | Motion | Value | Notes |
 |---|---|---|
-| Tilt, following | 300ms · cubic-bezier(.22, 1, .36, 1) (ease out), then none | Each pointermove writes `--tilt-x` / `--tilt-y` (0 to 1). They are registered with `@property` and TRANSITIONED for the first 300ms of a lift, so the card eases in. After that the host is marked `data-tilt-follow` and the two values take no transition: each move draws where the pointer is on its own frame (the lag fix, 2026-10-15: a transition restarted by every move kept the card about 67ms behind). The lift keeps its ease, and leaving still settles over 600ms. No rAF loop. |
+| Tilt, following | none | Each pointermove writes `--tilt-x` / `--tilt-y` (0 to 1), registered with `@property`. While a pointer holds the card they take no transition at all, from the first move (Hugh, 2026-10-15: no ease on the way in; a transition restarted by every move kept the card about 67ms behind). The lift keeps a 300ms ease, and leaving still settles over 600ms. No rAF loop. |
 | Tilt, release | 600ms · same ease out | Pointer leaves or finger lifts: the vars return to .5 and `--tilt-lift` to 0; the card settles flat and the edge and light fade with it. |
 | Tilt, range | ±6° on each axis · perspective 1000px | rotateY((.5 − x) × 12°), rotateX((y − .5) × 12°): the side under the pointer lifts toward you (measured off Hugh’s reference: about 6° at that perspective). |
 | Card edge | up to 1.5px · card-stock grey at 55% · fades in with the lift | A hairline on the sides under the pointer (pointer bottom right: the bottom and right edges), (x − .5) × 3px and (y − .5) × 3px, plus a faint .5px rim. The tilt’s perspective does most of the work. At rest: none. |
 | Light | radial white 20% → 6% at 40% → 0 at 72% | Centred on the pointer; its opacity is `--tilt-lift`, so it fades in and out with the tilt. Every card. |
-| Film travel (foil) | ±25% of the card’s width | translateX((x − .5) × −33.3%) of a film 150% wide: it drifts against the pointer, a parallax against the light. Same eased vars. |
+| Film travel (foil) | ±9% each way, ±20° of turn | The wash (160% of the card) translates by ((x − .5) × −18%, (y − .5) × −18%) and its stripes turn by (x − .5) × 40°; the sheen sits under the pointer. Etched keeps R2's travel: translateX((x − .5) × −33.3%) of a film 150% wide. |
 | Phone pick-up | hold 300ms within 10px (the swipe’s `lockPx`) | Then the card lifts (shadow 0 24 50 → 0 34 70, 200ms) and follows the finger; swipe and sheet stand down; the release opens nothing. |
 | Phone zoom | press and move past 10px | Tilts at once; a tap without movement still closes the zoom. |
 | During a flip | tilt settles flat, 300ms | Held flat until the turn settles (`onTurnSettled`), then resumes on the next move. |
-| Keyboard focus, desktop | 640ms (2 × --motion-duration) · once | R1’s band, unchanged. No tilt from the keyboard. |
-| Card lands, phone | 640ms · delay 320ms (--motion-duration) · once | Plays on mount (details opens, a swipe settles, the zoom opens), after the card’s own entry. |
+| Keyboard focus, desktop | 960ms (3 × --motion-duration) · once | The band again. No tilt from the keyboard. |
+| Card lands, phone and desktop | 960ms · delay 320ms (--motion-duration) · once | Plays on mount (details opens, a swipe settles, the zoom opens), after the card’s own entry. Desktop too since 2026-10-15 (Hugh's D1). Foil and etched films only. |
 | Cold face arrives | opacity 0→1 · 300ms (--motion-fade) | The film only. The face itself is drawn as before, unfaded. |
 | Reduced motion | no motion | No tilt, no light, no follow, no sweep, no fade. The film still draws, centred. |
 

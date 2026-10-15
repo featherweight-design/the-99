@@ -280,13 +280,19 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   its layer's mark and never sweeps on hover; a phone plays one delayed band on a large film and none on a peek; and
   reduced transparency and forced colors drop the large film too, the face still drawn. Its failure path was run:
   marking the face itself `pending` reads opacity 0 under no-preference and fails the run.
-- `pnpm probe:tilt-follow` proves the card tilt FOLLOWS the pointer (foil R2 PR 2, #1833, and the lag fix) in card
-  details and the zoom, at 1300x900, against a dev server, signed in as the audit account (`PROBE_CARD` names a card
-  it owns; a foil one also checks the zoom's film drift). A real mouse moves one step per animation frame while the page
-  logs, every frame, the computed `--tilt-*` beside the inline target: past the 300ms settle the host carries
-  `data-tilt-follow` and the drawn value is the target on every frame (before the fix it trailed a restarted
-  transition by ~67ms), the way in still eases and leaving still settles flat, a mouse hover tilts the zoom (it used to
-  tilt only on a press that moved), and under reduced motion a hover tilts nothing. Writes nothing.
+  Since Hugh's decisions of 2026-10-15 it also reads the WASH (a repeating rainbow at 70% multiply under a 49% dodge
+  sheen, the same on a tile and a large view; etched keeps R1's gradient and R2's spread), the band as the span's own
+  `foil-band` background animation (960ms on hover, and once on a large film's open at either width, never while the
+  film is held), that the span itself never fades, and, from pixels, that the blend REACHES the art: a white tile turns
+  pastel and a black one stays black, which a span with its own stacking context would break.
+- `pnpm probe:tilt-follow` proves the card tilt and the foil band in a real browser, against a dev server, signed in as
+  the audit account (`PROBE_FOIL_CARD` and `PROBE_CARD` name a foil and a nonfoil card it owns; `PROBE_SHOTS=<dir>`
+  also saves details and tiles at 1300 and 390). A real mouse moves one step per animation frame while the page logs,
+  every frame, the computed `--tilt-*` beside the inline target: the FIRST tilting frame already draws at the target
+  (no ease on the way in, Hugh 2026-10-15) and so does every frame of a sweep, leaving still settles flat, a mouse hover
+  tilts the zoom and its foil wash moves with it, and under reduced motion a hover tilts nothing. It also reads the band:
+  a foil card's details play one `foil-band` on open at 1300 and at 390, after the card's entry, and a nonfoil card
+  draws no film and so no band. Writes nothing.
 - `pnpm probe:art-layer` proves card art drawn as a CSS background fades in (card-art fades plan), on deployed
   staging only (`MEASURE_DEPLOYED=1`, signed in as `THE_99_E2E_AUDIT_USER_EMAIL` with a ticket from
   `THE_99_CLERK_SECRET_KEY_STAGING`; it reads pages and writes nothing). On a deck (`MEASURE_DECK_ID`, else the first

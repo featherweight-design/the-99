@@ -14,7 +14,6 @@ vi.mock("../../app/collection/actions", () => ({
 }));
 
 const { CardModal } = await import("./card-modal");
-const { TILT_SETTLE_MS } = await import("./card-tilt");
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
 const CSS = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/globals.css"), "utf8");
@@ -90,11 +89,11 @@ describe("the stylesheet", () => {
     expect(MOTION).toMatch(/\[data-tilt\] \{\s*--tilt-ease: cubic-bezier\(\.22, 1, \.36, 1\);/);
     expect(MOTION).toContain("transition: --tilt-x 600ms var(--tilt-ease), --tilt-y 600ms var(--tilt-ease), --tilt-lift 600ms var(--tilt-ease);");
     expect(MOTION).toContain("[data-tilt][data-turning] { --tilt-x: .5; --tilt-y: .5; --tilt-lift: 0; transition-duration: 300ms; }");
-    // Once settled the card follows: no transition on where it points, and the lift keeps its ease.
-    expect(MOTION).toContain("[data-tilt][data-tilting][data-tilt-follow] { transition: --tilt-lift 300ms var(--tilt-ease); }");
-    expect(MOTION).toContain("[data-tilt][data-tilting] { transition-duration: 300ms; }");
+    // While held, the card follows from the first move: no transition on where it points, and the lift keeps its ease.
+    expect(MOTION).toContain("[data-tilt][data-tilting] { transition: --tilt-lift 300ms var(--tilt-ease); }");
+    expect(CSS).not.toContain("data-tilt-follow");
     expect(MOTION).toMatch(/\[data-tilt\] \[data-glare\] \{\s*opacity: var\(--tilt-lift\);/);
-    expect(MOTION).toContain('[data-tilt] [data-foil-size="large"]::before { transform: translateX(calc((var(--tilt-x) - .5) * -33.333%)); }');
+    expect(MOTION).toContain('[data-tilt] [data-foil="etched"][data-foil-size="large"]::before { transform: translateX(calc((var(--tilt-x) - .5) * -33.333%)); }');
   });
 
   it("draws the card's own shadow outside the motion query, so reduced motion keeps it (G3)", () => {
@@ -110,8 +109,9 @@ describe("the stylesheet", () => {
     expect(MOTION).toContain("rotateY(calc((.5 - var(--tilt-x)) * var(--tilt-swing)));");
   });
 
-  it("plays R1's one band on keyboard focus of the host's own button, on a fine pointer with motion (G6)", () => {
-    expect(FINE).toMatch(/\[data-tilt\]:has\(> button:focus-visible\) \[data-foil\]\[data-foil-size="large"\]:is\(\[data-arrival="in"\], \[data-arrival="done"\]\)::after \{\s*animation: foil-sweep calc\(var\(--motion-duration\) \* 2\) var\(--motion-ease\);/);
+  it("plays the band again on keyboard focus of the host's own button, on a fine pointer with motion (G6)", () => {
+    // Its own keyframes name: the open's band already ran `foil-band`, and the same name would not restart.
+    expect(FINE).toMatch(/\[data-tilt\]:has\(> button:focus-visible\) \[data-foil\]\[data-foil-size="large"\]:is\(\[data-arrival="in"\], \[data-arrival="done"\]\) \{\s*animation: foil-band-again calc\(var\(--motion-duration\) \* 3\) var\(--motion-ease\);/);
   });
 
   it("drops the light under reduced transparency and forced colors", () => {
@@ -190,33 +190,15 @@ describe("desktop hover", () => {
     expect(tiltValues(host)).toMatchObject({ x: "0", y: "0.25" });
   });
 
-  it("eases in for TILT_SETTLE_MS, then follows the pointer, and settles again from the next lift", () => {
-    vi.useFakeTimers();
-    try {
-      mount();
-      const host = sized(desktopHost());
-      const follows = () => host.hasAttribute("data-tilt-follow");
-      fireEvent.pointerEnter(host, { pointerType: "mouse", clientX: 66, clientY: 92 });
-      fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 70, clientY: 92 });
-      expect(follows()).toBe(false);
-      vi.advanceTimersByTime(TILT_SETTLE_MS - 1);
-      fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 80, clientY: 92 });
-      expect(follows()).toBe(false);
-      vi.advanceTimersByTime(1);
-      fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 90, clientY: 92 });
-      expect(follows()).toBe(true);
-      // Leaving takes the mark off with the values, so the card settles flat over the stylesheet's 600ms.
-      fireEvent.pointerLeave(host, { pointerType: "mouse" });
-      expect(follows()).toBe(false);
-      expect(tiltValues(host)).toEqual(FLAT);
-      // A lift long after the last one eases in again: the clock starts at the new lift.
-      vi.advanceTimersByTime(5000);
-      fireEvent.pointerEnter(host, { pointerType: "mouse", clientX: 66, clientY: 92 });
-      fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 70, clientY: 92 });
-      expect(follows()).toBe(false);
-    } finally {
-      vi.useRealTimers();
-    }
+  it("follows from the first move: no settle mark, nothing to wait for", () => {
+    mount();
+    const host = sized(desktopHost());
+    fireEvent.pointerEnter(host, { pointerType: "mouse", clientX: 66, clientY: 92 });
+    expect(tiltValues(host)).toEqual({ x: "0.25", y: "0.25", lift: "1", tilting: true });
+    fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 198, clientY: 276 });
+    expect(tiltValues(host)).toMatchObject({ x: "0.75", y: "0.75" });
+    // What draws it is `[data-tilt][data-tilting]`, which transitions the lift alone (the stylesheet test above).
+    expect([...host.attributes].map((a) => a.name).filter((n) => n.startsWith("data-tilt"))).toEqual(["data-tilt", "data-tilt-seam", "data-tilting"]);
   });
 
   it("does nothing for touch at a desktop width (G12)", () => {

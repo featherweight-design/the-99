@@ -1078,18 +1078,29 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   [data-arrival="in"] { animation: art-in var(--motion-fade) var(--motion-ease); }
 }
 
-/* Foil treatment (handoff R1, `design/design_handoff_the99_foil_treatment/`). The ring span over a
-   tile's art carries data-foil="foil" | "etched" when every owned copy of the printing it draws has
-   that finish. Two pseudo-elements, gradients only: no filter, no blend mode, no image. */
+/* Foil treatment (handoff R1, `design/design_handoff_the99_foil_treatment/`; the film Hugh picked on 2026-10-15). The
+   film span over a card's art carries data-foil="foil" | "etched" when every owned copy of the printing it draws has
+   that finish. Foil is a WASH over the whole card, the same on a tile and a large view (Hugh's C2): a pastel rainbow
+   that multiplies, so it tints the light areas (the text box, the frame) and leaves the darks dark, and a dodge sheen
+   that brightens where the light falls. Both read `--tilt-x` / `--tilt-y`, so on a tilting card they slide and turn
+   with the pointer; anywhere else those sit at their registered .5 and the film is still. Etched keeps R1's quieter
+   gradient. The blend modes reach the art because the span makes no stacking context of its own: its arrival fade is
+   on the pseudo-elements (below), never on the span, whose own opacity would isolate the blend from the art under it. */
 [data-foil] { overflow: hidden; }
-[data-foil]::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit;
+[data-foil]::before, [data-foil="foil"]::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
 }
 [data-foil="foil"]::before {
-  background: linear-gradient(115deg,
-    rgb(255 255 255 / 0) 8%, rgb(255 110 180 / .16) 22%, rgb(255 220 120 / .16) 32%,
-    rgb(255 255 255 / .26) 39%, rgb(130 240 210 / .16) 47%, rgb(120 170 255 / .16) 60%,
-    rgb(200 130 255 / .14) 74%, rgb(255 255 255 / 0) 90%);
+  inset: -30%; mix-blend-mode: multiply; opacity: .7;
+  background: repeating-linear-gradient(calc(110deg + (var(--tilt-x) - .5) * 40deg),
+    hsl(330 90% 82%) 0%, hsl(45 95% 80%) 8%, hsl(160 80% 80%) 16%, hsl(205 90% 82%) 24%, hsl(275 85% 84%) 32%,
+    hsl(330 90% 82%) 40%);
+  transform: translate(calc((var(--tilt-x) - .5) * -18%), calc((var(--tilt-y) - .5) * -18%));
+}
+[data-foil="foil"]::after {
+  mix-blend-mode: color-dodge; opacity: .49;
+  background: radial-gradient(circle at calc(var(--tilt-x) * 100%) calc(var(--tilt-y) * 100%),
+    rgb(190 210 255 / .55), rgb(255 190 230 / .25) 30%, rgb(0 0 0 / 0) 62%);
 }
 [data-foil="etched"]::before {
   background: linear-gradient(115deg,
@@ -1102,71 +1113,81 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    server drew carries no mark until the page hydrates, when it is armed `pending`, `in` or `done`,
    so an unmarked image holds the film too: the film waits for its state, never the art. The hold
    applies under either motion preference, since art that has not landed shows nothing to lie over;
-   only the fade it lands with is motion's, so with reduced motion the film appears with the art. */
+   only the fade it lands with is motion's, so with reduced motion the film appears with the art.
+   The fade runs on the pseudo-elements, never the span (see above). */
 img:not([src]) ~ [data-foil],
 img:not([data-arrival]) ~ [data-foil],
 img[data-arrival="pending"] ~ [data-foil],
 img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
-  img[data-arrival="in"] ~ [data-foil] { animation: art-in var(--motion-fade) var(--motion-ease); }
+  img[data-arrival="in"] ~ [data-foil]::before,
+  img[data-arrival="in"] ~ [data-foil]::after { animation: art-in var(--motion-fade) var(--motion-ease); }
 }
 
-/* The band exists only where it can play: a fine pointer, motion welcome. Phones never draw it. It
-   is defined under no-preference alone, so the reduced-motion list below needs no entry for it. A
-   large film on a phone plays its own one band once its art has landed (R2, below). */
-@keyframes foil-sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+/* THE BAND, one shine across the card: the tile's on hover, and once when a large view opens. It is the span's own
+   background, a gradient three widths wide parked off the left edge, and it travels by `background-position`, which
+   makes no stacking context, so the film's blend still reaches the art. Slower and softer than R1's (Hugh,
+   2026-10-15): 960ms from 640ms, and 40% white from 42%, which reads near 30% because it sits under the wash's
+   multiply. It exists only where motion is welcome. */
+@keyframes foil-band { from { background-position: 100% 0; } to { background-position: 0 0; } }
+/* The same travel under another name, so a focus that comes after the open's band plays it again. */
+@keyframes foil-band-again { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  [data-foil] {
+    background: linear-gradient(105deg,
+      rgb(255 255 255 / 0) 41.87%, rgb(255 255 255 / .4) 50%, rgb(255 255 255 / 0) 58.13%) 100% 0 / 300% 100% no-repeat;
+  }
+}
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  [data-foil]::after {
-    content: ""; position: absolute; inset: 0; border-radius: inherit; transform: translateX(-100%);
-    background: linear-gradient(105deg, rgb(255 255 255 / 0) 30%, rgb(255 255 255 / .42) 50%, rgb(255 255 255 / 0) 70%);
-  }
-  :is(a, button):is(:hover, :focus-visible) [data-foil]::after {
-    animation: foil-sweep calc(var(--motion-duration) * 2) var(--motion-ease);
+  :is(a, button):is(:hover, :focus-visible) [data-foil] {
+    animation: foil-band calc(var(--motion-duration) * 3) var(--motion-ease);
   }
 }
 
-/* Foil, large views (handoff R2). A large film is any [data-foil] with data-foil-size="large": the details
-   face(s) and the zoom card, at 80% strength and spread 1.5x. The peek, the neighbour plate and the hover preview keep
-   R1's tile film. The reduced-transparency and forced-colors rules below cover every [data-foil]. */
-[data-foil-size="large"]::before { inset: 0 -25%; opacity: .8; }
+/* Foil, large views (handoff R2): the details face(s) and the zoom card carry data-foil-size="large". A foil one draws
+   the same wash as a tile (above). An etched one keeps R2's spread: R1's film at 80%, 1.5x wide, drifting with the tilt.
+   The peek, the neighbour plate and the hover preview are tile films. The reduced-transparency and forced-colors rules
+   below cover every [data-foil]. */
+[data-foil="etched"][data-foil-size="large"]::before { inset: 0 -25%; opacity: .8; }
 
 /* A background face has no <img> for R1's hold to read, so its FILM carries its own arrival mark (`FoilFilm`:
    `armArtArrival` on a preloaded Image of the face's own URL). Only the film is held; the face is never marked. The
-   hold applies under either motion preference, as R1's does; only the fade is motion's. */
+   hold applies under either motion preference, as R1's does; only the fade is motion's, and it is the pseudo-elements'
+   (the generic `[data-arrival="in"]` fade would put it on the span, so it is taken off there). */
 [data-foil][data-arrival="pending"], [data-foil][data-arrival="failed"] { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
-  [data-foil][data-arrival="in"] { animation: art-in var(--motion-fade) var(--motion-ease); }
+  [data-foil][data-arrival="in"] { animation: none; }
+  [data-foil][data-arrival="in"]::before,
+  [data-foil][data-arrival="in"]::after { animation: art-in var(--motion-fade) var(--motion-ease); }
 }
 
 /* The peek's and the neighbour plate's art is an ArtLayer div queued in the modal's ArrivalOrder, not an <img>: the
    film after it reads that layer's own mark, held while it travels or broke, fading in with it. */
 [data-arrival="pending"] ~ [data-foil], [data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
-  [data-arrival="in"] ~ [data-foil] { animation: art-in var(--motion-fade) var(--motion-ease); }
+  [data-arrival="in"] ~ [data-foil]::before,
+  [data-arrival="in"] ~ [data-foil]::after { animation: art-in var(--motion-fade) var(--motion-ease); }
 }
 
-/* Mid views are still (R2 call 7): a neighbour plate is a button, and R1's hover band would otherwise play on it. */
+/* Mid views are still (R2 call 7): a neighbour plate is a button, and the hover band would otherwise play on it. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  :is(a, button):is(:hover, :focus-visible) [data-foil][data-foil-still]::after { animation: none; }
+  :is(a, button):is(:hover, :focus-visible) [data-foil][data-foil-still] { animation: none; }
 }
 
-/* Phone: one band when a large card's art lands, after the card's own entry. The band waits for the film's own
-   arrival mark (`in`, or `done` for cached art), so a face whose bytes are slow plays it once the film shows, never
-   while it is still held at opacity 0. */
-@media (hover: none) and (prefers-reduced-motion: no-preference) {
-  [data-foil][data-foil-size="large"]::after {
-    content: ""; position: absolute; inset: 0; border-radius: inherit; transform: translateX(-100%);
-    background: linear-gradient(105deg, rgb(255 255 255 / 0) 30%, rgb(255 255 255 / .42) 50%, rgb(255 255 255 / 0) 70%);
-  }
-  [data-foil][data-foil-size="large"]:is([data-arrival="in"], [data-arrival="done"])::after {
-    animation: foil-sweep calc(var(--motion-duration) * 2) var(--motion-ease) var(--motion-duration) both;
+/* One band when a large foil card's art lands, after the card's own entry, on the phone and on desktop alike (Hugh's
+   D1, 2026-10-15). It waits for the film's own arrival mark (`in`, or `done` for cached art), so a face whose bytes
+   are slow plays it once the film shows, never while it is still held at opacity 0. Only a foil film carries one. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-foil][data-foil-size="large"]:is([data-arrival="in"], [data-arrival="done"]) {
+    animation: foil-band calc(var(--motion-duration) * 3) var(--motion-ease) var(--motion-duration) both;
   }
 }
 
 /* The tilt (foil handoff R2, PR 2), on every card in details and the zoom. The host sits OUTSIDE the box that turns and
    inside any box an entry or paging animation moves (audit G1, G2). JS writes the target values inline (`card-tilt.ts`);
-   registered, they interpolate, so the rotation, the edge, the light and the film all move together: eased on the way in
-   and out, and following the pointer frame by frame once the lift has settled (`data-tilt-follow`, below). */
+   registered, they move the rotation, the edge, the light and the film together. Where the card points follows the
+   pointer from its first move (Hugh, 2026-10-15: no ease on the way in); the lift fades in, and leaving settles flat
+   over 600ms. */
 @property --tilt-x { syntax: "<number>"; inherits: true; initial-value: .5; }
 @property --tilt-y { syntax: "<number>"; inherits: true; initial-value: .5; }
 @property --tilt-lift { syntax: "<number>"; inherits: true; initial-value: 0; }
@@ -1192,10 +1213,10 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
       var(--card-shadow);
     transition: --tilt-x 600ms var(--tilt-ease), --tilt-y 600ms var(--tilt-ease), --tilt-lift 600ms var(--tilt-ease);
   }
-  [data-tilt][data-tilting] { transition-duration: 300ms; }
-  /* Once the lift has settled the card FOLLOWS the pointer (`card-tilt.ts`): a transition restarted by every move kept it
-     a beat behind. The lift keeps its ease; leaving takes the mark off, so the card still settles flat over 600ms. */
-  [data-tilt][data-tilting][data-tilt-follow] { transition: --tilt-lift 300ms var(--tilt-ease); }
+  /* While a pointer holds the card it FOLLOWS: no transition on where it points, from the first move, because any ease
+     there keeps the card a beat behind (#1856 measured 67ms). The lift keeps its 300ms ease. Leaving takes
+     `data-tilting` off, so the 600ms settle above applies. */
+  [data-tilt][data-tilting] { transition: --tilt-lift 300ms var(--tilt-ease); }
   /* A flip holds it flat until the turn settles. The turn takes the inline values off first, or they would win (G4). */
   [data-tilt][data-turning] { --tilt-x: .5; --tilt-y: .5; --tilt-lift: 0; transition-duration: 300ms; }
 
@@ -1206,16 +1227,16 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
       rgb(255 255 255 / .20), rgb(255 255 255 / .06) 40%, rgb(255 255 255 / 0) 72%);
   }
 
-  /* A foil film drifts against the pointer on the same values. */
-  [data-tilt] [data-foil-size="large"]::before { transform: translateX(calc((var(--tilt-x) - .5) * -33.333%)); }
+  /* An etched film drifts against the pointer on the same values (a foil wash moves through its own rule, above). */
+  [data-tilt] [data-foil="etched"][data-foil-size="large"]::before { transform: translateX(calc((var(--tilt-x) - .5) * -33.333%)); }
 }
 
-/* Desktop: keyboard focus on the zoom trigger, the host's direct child, plays R1's one band (G6); R1's own rule needs the
-   film inside the button. Hover has the tilt, and no band. Only once the film has arrived, as on the phone: a band played
+/* Desktop: keyboard focus on the zoom trigger, the host's direct child, plays the band again (G6); the tile's rule needs
+   the film inside the button. Hover has the tilt, and no band. Only once the film has arrived, as on open: a band played
    while the film is still held at opacity 0 is spent unseen, and holding focus would not play it again. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  [data-tilt]:has(> button:focus-visible) [data-foil][data-foil-size="large"]:is([data-arrival="in"], [data-arrival="done"])::after {
-    animation: foil-sweep calc(var(--motion-duration) * 2) var(--motion-ease);
+  [data-tilt]:has(> button:focus-visible) [data-foil][data-foil-size="large"]:is([data-arrival="in"], [data-arrival="done"]) {
+    animation: foil-band-again calc(var(--motion-duration) * 3) var(--motion-ease);
   }
 }
 
@@ -1227,12 +1248,14 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 
 @media (prefers-reduced-transparency: reduce) {
   [data-foil]::before, [data-foil]::after { display: none; }
-  [data-foil] { box-shadow: inset 0 0 0 2px var(--fg-muted); }
+  /* `!important`: the open band's rule carries more attributes than this one. */
+  [data-foil] { box-shadow: inset 0 0 0 2px var(--fg-muted); background: none; animation: none !important; }
   [data-glare] { display: none; }
 }
 
 @media (forced-colors: active) {
   [data-foil]::before, [data-foil]::after { display: none; }
+  [data-foil] { background: none; animation: none !important; }
   [data-glare] { display: none; }
 }
 
@@ -1276,7 +1299,7 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* The foil band (`foil-sweep`, `[data-foil]::after`) is not here: it is only ever defined under
+  /* The foil band (`foil-band`, the `[data-foil]` background) is not here: it is only ever defined under
      no-preference, beside the foil treatment above. */
   .anim-bob,
   .anim-dots,
