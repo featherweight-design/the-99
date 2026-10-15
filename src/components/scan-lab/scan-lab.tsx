@@ -10,7 +10,7 @@ import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import {
   DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor,
 } from "../../lib/scan-lab/geometry";
-import { agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
+import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan-lab/reading";
 import { sessionHolder } from "../../lib/scan-lab/sessions";
 import {
@@ -196,8 +196,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
               const t3 = performance.now();
               const margin = guesses.length > 1 ? guesses[0].score - guesses[1].score : 1;
               history.current = [...history.current.slice(-9), { oracleId: guesses[0].oracleId, margin }];
-              let agreed = 0;
-              for (let i = history.current.length - 1; i >= 0 && history.current[i].oracleId === guesses[0].oracleId; i--) agreed++;
+              const agreed = agreedRun(history.current, AGREE_MARGIN);
               const committed = agreement(history.current, AGREE_FRAMES, AGREE_MARGIN) !== null;
               // the crop and the verdict it produced are published together, as one reading
               setReading({

@@ -70,6 +70,17 @@ export function normalise(v: Float32Array): Float32Array {
  * Frames agree when the same oracle is top-1 on `need` frames in a row, each clearing the margin
  * over its runner-up (the friend's pipeline: commit only after several frames agree).
  */
+/**
+ * How many frames, newest back, name the newest frame's card AND clear `minMargin`: the run `agreement`
+ * accepts, so a recorded count never includes a frame the acceptance rule refused.
+ */
+export function agreedRun(history: { oracleId: string; margin: number }[], minMargin = 0.02): number {
+  const id = history.at(-1)?.oracleId;
+  let n = 0;
+  for (let i = history.length - 1; i >= 0 && history[i].oracleId === id && history[i].margin >= minMargin; i--) n++;
+  return n;
+}
+
 export function agreement(history: { oracleId: string; margin: number }[], need = 3, minMargin = 0.02): string | null {
   if (history.length < need) return null;
   const last = history.slice(-need);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseResult } from "./result";
-import { agreement, normalise, parseIndex, topOracles, type IndexMeta } from "./match";
+import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta } from "./match";
 
 function index() {
   const meta: IndexMeta = {
@@ -48,5 +48,16 @@ describe("scan-lab match", () => {
     expect(g.score).toBeGreaterThan(0.999);
     const stored = parseResult({ guessOracleId: null, correct: true, score: g.score, margin: 0.1, latencyMs: 5, agreedFrames: 0, indexVersion: "t" });
     expect(stored?.score).toBe(g.score);
+  });
+});
+
+describe("agreedRun", () => {
+  it("counts back only frames that name the newest card and clear the margin", () => {
+    const h = (margins: number[], ids = margins.map(() => "a")) => margins.map((margin, i) => ({ oracleId: ids[i], margin }));
+    expect(agreedRun(h([0.001, 0.1, 0.1]), 0.02)).toBe(2);
+    expect(agreement(h([0.001, 0.1, 0.1]), 3, 0.02)).toBeNull();
+    expect(agreedRun(h([0.1, 0.1, 0.1]), 0.02)).toBe(3);
+    expect(agreedRun(h([0.1, 0.1, 0.1], ["b", "a", "a"]), 0.02)).toBe(2);
+    expect(agreedRun([], 0.02)).toBe(0);
   });
 });
