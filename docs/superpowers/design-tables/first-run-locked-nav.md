@@ -68,8 +68,8 @@ Widths: **D** = desktop 1300 (rail), **M** = mobile 390 (tab bar). "—" = eleme
 | # | Property | D 1300 | Source |
 |---|---|---|---|
 | 1b.1 | Block | flex column, align center, gap 5 (padlock to word), margin-top 3 | C `:240` |
-| 1b.2 | Padlock size | 12 × 14 box; shackle 7 × 7.5 at left 2.5 top 0, radius 4 4 0 0, no bottom border; body 12 × 8.5 at bottom, radius 3 | C `:240` |
-| 1b.3 | Padlock stroke | 1.5px `var(--fg-locked)` (up from `--fg-disabled`) | R `:79`, C `:240`, `:511` |
+| 1b.2 | Lock size | `Lock` at `lg` (`ui/lock.tsx`, small-polish R2 §1): 12 × 15 box; a 1.6 round-capped shackle 6 wide over a solid body 12 × 9 with the keyhole cut out | small-polish R2 |
+| 1b.3 | Lock ink | `var(--fg-locked)`, by `currentColor` (up from `--fg-disabled`) | R `:79`, C `:240`, `:511` |
 | 1b.4 | Word copy key | `lock.railLabel` | K `:24` |
 | 1b.5 | Word family | mono (`--font-mono`; canvas IBM Plex Mono) | R `:79`, C `:240` |
 | 1b.6 | Word size | 8.5px | R `:79`, C `:240` |
@@ -90,7 +90,7 @@ Widths: **D** = desktop 1300 (rail), **M** = mobile 390 (tab bar). "—" = eleme
 | 2.5 | Size | 12.5px | R `:82`, C `:250` |
 | 2.6 | Color | `var(--fg-muted)` | R `:82`, C `:250` |
 | 2.7 | Family / weight | body sans, regular (inherited) | C `:250` |
-| 2.8 | Padlock | same 12 × 14 glyph as 1b.2, stroke 1.5 `var(--fg-locked)`, flex none, leading | C `:250` |
+| 2.8 | Lock | same `lg` glyph as 1b.2 in `var(--fg-locked)`, flex none, leading | C `:250` |
 | 2.9 | Phone | not rendered; the bracket carries the reason | R `:83-84`, S `:21` |
 | 2.10 | Account with decks but no collection (no checklist) | **no page line** (per this PR's brief); the audit leaves it open | A `:148-149` — see Contradictions |
 | 2.11 | H1 context | display face 27px/1, 700, `--fg`; kicker mono 10px .18em `--fg-faint` above it, mb 7 | C `:248-249` |
@@ -138,7 +138,7 @@ Widths: **D** = desktop 1300 (rail), **M** = mobile 390 (tab bar). "—" = eleme
 | 4.8 | Label layout | inline flex, align center, gap 5, white-space nowrap | C `:319` |
 | 4.9 | Label copy key | `lock.tabBracket` | K `:25` |
 | 4.10 | Label type | mono 9px, line-height 14px, letter-spacing .08em, uppercase, `var(--fg-locked)` | R `:95`, C `:319` |
-| 4.11 | Label padlock | 9 × 11 box; shackle 5 × 6 at left 2, radius 3 3 0 0; body 9 × 6.5, radius 2; stroke 1.2px `var(--fg-locked)` | R `:95`, C `:319` |
+| 4.11 | Label lock | `Lock` at `sm`: 9 × 12 box; a 1.3 round-capped shackle over a solid body 9 × 7.4, no keyhole; `var(--fg-locked)` | small-polish R2 |
 | 4.12 | Tabs row | flex, below the bracket row | C `:321` |
 | 4.13 | Aria | not specified; bracket text is visible reason text (not a control) | — |
 

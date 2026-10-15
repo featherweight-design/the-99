@@ -105,16 +105,15 @@ describe("LockMark", () => {
     expect(ink()).toBe("var(--fg-muted)");
   });
 
-  it("lets only the left leg into the body when open", () => {
+  it("lifts the shackle's right leg when open, and draws it whole when closed", () => {
+    const shackle = (el: HTMLElement) => el.querySelector("[data-lock-part=shackle]")!.getAttribute("d")!;
     const { container } = render(<LockMark open />);
-    const mark = container.querySelector<HTMLElement>("[data-testid=lock-mark]")!;
-    // arch, left leg, body, keyhole
-    expect(mark.children).toHaveLength(4);
-    expect(mark.children[0].className).toContain("h-[4.5px]");
+    const open = shackle(container.querySelector<HTMLElement>("[data-testid=lock-mark]")!);
     cleanup();
-    const closed = render(<LockMark />).container.querySelector<HTMLElement>("[data-testid=lock-mark]")!;
-    expect(closed.children).toHaveLength(3);
-    expect(closed.children[0].className).toContain("h-[7.5px]");
+    const closed = shackle(render(<LockMark />).container.querySelector<HTMLElement>("[data-testid=lock-mark]")!);
+    expect(closed).toMatch(/V6$/);
+    expect(open).not.toMatch(/V6$/);
+    expect(open).toBe(closed.replace(/V6$/, ""));
   });
 });
 

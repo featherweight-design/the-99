@@ -10,7 +10,7 @@
 
 import { FirstRunStepOne } from "./first-run-step-one";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { Padlock } from "../shell/padlock";
+import { Lock } from "../ui/lock";
 
 /**
  * Three overlapping cards, the front one carrying the numeral. Decorative:
@@ -83,8 +83,8 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
           {reason}
         </span>
       </div>
-      {/* The lock's 12x14 glyph, shared with the rail's well and the page line. */}
-      <Padlock stroke="var(--border-strong)" className="flex-none" />
+      {/* The lock glyph, shared with the rail's well and the page line, in the card's own locked ink. */}
+      <Lock size="lg" ink="var(--fg-locked)" className="flex-none" />
     </div>
   );
 }
@@ -122,7 +122,7 @@ export function FirstRunChecklist({ addByHand = false }: { addByHand?: boolean }
           data-lock-page-line
           className="m-0 mt-[12px] hidden items-center gap-[8px] text-[12.5px] text-[color:var(--fg-muted)] md:flex"
         >
-          <Padlock stroke="var(--fg-locked)" className="flex-none" />
+          <Lock size="lg" ink="var(--fg-locked)" className="flex-none" />
           {c.lock.pageLine}
         </p>
       </div>
