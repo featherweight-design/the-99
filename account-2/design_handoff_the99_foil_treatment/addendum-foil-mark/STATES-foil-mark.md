@@ -14,10 +14,10 @@
 
 | Surface | Where the glint sits |
 |---|---|
-| Collection grid tile | name line, after `×N` |
-| Collection list row | name cell, after the name, before facts |
-| Deck Card view tile | name line, after `//` |
-| Decklist row, Shopping row | name block, after `×N` / `//`, before facts |
-| Precon tile | name line |
+| Collection grid tile | first on the meta line, before the in-use chip and facts |
+| Collection list row | count column, after  |
+| Deck Card view tile | meta line, right after the ownership dot |
+| Decklist row, Shopping row (desktop, phone, option B) | right after the ownership dot, before the name |
+| Precon tile, precon list row | right after the dot |
 
 Size 12px on every surface; `flex-none`; the name truncates first.

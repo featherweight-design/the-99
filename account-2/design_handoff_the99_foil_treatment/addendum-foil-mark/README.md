@@ -1,4 +1,4 @@
-# Addendum M1 · The foil mark
+# Addendum M1 · The foil mark (R2)
 
 Hugh's brief, 2026-10-15. A small, subtle "this copy is foil" mark on card tiles and card rows, which today show foil
 only through the film (invisible in list views, at a glance and in forced colours). Builds on this folder's R1 and R2
@@ -31,46 +31,54 @@ addendum adds; they are annotation, not UI.
    #C79BFF 76%`; etched (silver) `#AEBCCD 26%, #F3F7FB 50%, #B7C5D5 74%`. The one mark that is not one flat ink, so it
    reads as the film shrunk to a glyph. No glow, no filter, no motion.
 3. **12px everywhere.** It rides the 12–13px name line, like the combo glyph does.
-4. **It ends the name**: after the name and its trail (`//`, `×N`), before any fact mark. On a tile that is the name
-   line, so the meta line (dot, chip, $, count, lock, facts) never moves. On a row it sits in the name block. No new
-   column, no row height change, no caption height change. `flex-none`: the name truncates first (costs 18px: 12 + 6 gap).
+4. **It sits beside the ownership indicator** (R2, Hugh), so it reads with "you own this" and never among the Game
+   Changer and tutor marks. Deck tile, precon tile, decklist and Shopping rows (Social R2's layouts included): right
+   after the dot, , one  group. Collection list rows: in the count column, . Collection grid tile
+   (no dot, every tile is owned): first on the meta line, before the in-use chip and the facts. No new column; every
+   name keeps its full width. Where a deck tile's meta line overflows, the shipped truncation order holds (F8): the
+   fact marks drop whole, the glint never does.
 5. **Etched is its own variant**: the same glint in silver, spoken and keyed apart.
 6. **Part-foil shows nothing.** Same as the film. Card details already spells it out (`×3 · 1 foil`).
 7. **Themes**: one recipe, six themes. Weakest measured: `#C79BFF` on kaldheim `--elevated-hover` `#212229`, 7.2:1;
    silver's weakest 8.2:1.
 8. **Forced colours**: `fill: CanvasText`. The film is off there, so the glint is the one foil cue left.
    Reduced transparency: unchanged (it is opaque).
-9. **Key**: `foil` and `etched` join `CollectionMarkKey` unconditionally (like the fact entries). On a deck and a precon
+9. **Collector's Edition keeps the glint** (R2, Hugh): one rule everywhere, and List view and forced colours have no film.
+10. **Precon list rows swap the printed  for the glint** (R2, Hugh): .
+11. **Key**: `foil` and `etched` join `CollectionMarkKey` unconditionally (like the fact entries). On a deck and a precon
    they follow the cards in view, like the deck key's other entries. Shopping's own key is unchanged.
-10. **Tooltip** through the same `FactTooltip` chrome (pointer-fine, 400ms in, instant out). Enhancement only: the key
+12. **Tooltip** through the same `FactTooltip` chrome (pointer-fine, 400ms in, instant out). Enhancement only: the key
     and the spoken clause carry it.
-11. **Shopping** is the decklist row component, so it follows. The glint appears only where the card is owned and still
-    listed (copies sleeved elsewhere). On the busiest desktop row the name already truncates as shipped; with the glint
-    it truncates 18px sooner. The full name stays in the row's label and card details.
-12. **About**: none. Cosmetic, per the foil handoff's own ruling; if Hugh wants one it is an edit to the foil entry.
+13. **Shopping** is the decklist row, drawn in Social R2's layout (desktop: spare marker beside buy; phone: option B).
+    The glint appears only where the card is owned and still listed (copies sleeved elsewhere).
+14. **About**: none. Cosmetic, per the foil handoff's own ruling; if Hugh wants one it is an edit to the foil entry.
 
 ## Engineering
 
-- New `FoilMark` (`cards/foil-mark.tsx`): one inline SVG drawn at 12px, the path above, `fill: url(#id)` from a
-  `linearGradient` (x1 0 y1 0 x2 1 y2 1), unique id per instance (`useId`). `@media (forced-colors: active)`:
-  `fill: CanvasText`. Takes `finish` and `silent`, like `CardFactMark`.
-- `collection/grid-view.tsx`: `nameTrail` gains `FoilMark` after the count when `c.foil`; `nameSpoken` gains the clause.
-- `collection/rows-view.tsx`: in the name cell, after the name, before the facts; the row's `aria-label` gains the clause.
-- `decks/deck-card-tile.tsx`: `nameTrail` becomes `TwoFacedMark` then `FoilMark` (`card.foil`, the read the film uses).
-- `decks/decklist-row.tsx`: after `quantityGlyph` / `fromGlyph`, before `factMarks`, in both name-block branches.
-  Shopping follows. `readOnly` rows keep their printed `· foil` word (M4).
-- `decks/read-only-card-tile.tsx`: name line, `card.printedFoil`.
-- Keys: `CollectionMarkKey` two unconditional entries; `decklist.tsx` and the precon view's key: entries when a card in
-  view has that finish.
+- New  (): one inline SVG drawn at 12px, the path above,  from a
+   (x1 0 y1 0 x2 1 y2 1), unique id per instance (). :
+  . Takes  and , like .
+- : first child of the marks line, before the availability chip and facts, when ;
+   gains the clause.
+- : in the count cell after  (desktop and phone); the row's  gains the clause.
+- : right after the ownership dot on the meta line (), .
+- : right after the ownership dot, before the name block, in one  group, in every
+  branch (desktop, phone, Shopping, and Social R2's option B row when it ships).  rows drop the printed
+   and draw the glint from .
+- : right after the dot, .
+- Keys:  two unconditional entries; , the Shopping view and the precon view's key:
+  entries when a card in view has that finish.
 
 ## Gaps
 
 - **M1** The gradient is a first for a mark. If Hugh wants one flat ink instead, the fallback is the glint in
-  `--fg-body` (drawn on M-Main); shape and placement don't change.
-- **M2** A precon Collector's Edition puts a glint on all 100 tiles beside a film that already says it. Option: precon
-  tiles skip the glint when the edition switch says Collector's Edition. Drawn with the glint, as the brief asks.
+   (drawn on M-Main); shape and placement don't change.
+- **M2** Closed (Hugh, R2): Collector's Edition tiles keep the glint.
 - **M3** Etched has 0 rows on staging, so the silver glint is unseen on real data, like the film's G6.
-- **M4** The precon list row already prints `MSC 4 · foil` after the printing (shipped). Left as is; could swap to the
-  glint for one vocabulary. Hugh's call.
+- **M4** Closed (Hugh, R2): the precon list row swaps  for the glint.
 - **M5** Not drawn: tokens (no finish recorded), suggestion and Consider tiles (never foil), the Add panel's search
   rows, card details (already says it).
+- **M6** The busiest desktop Shopping row (a 590px column at 1300) squeezes the name to one letter once Social R2's
+  spare marker joins every other mark, glint or not. Proposed:  on the name, and the fact marks become
+  the deck tile's wrapping, clipping group (audit F8) so a mark that does not fit drops whole; dropped marks stay in the
+  row's label. Hugh's call: it touches the row beyond the glint.
