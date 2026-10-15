@@ -8,6 +8,8 @@ import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
+import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
+import { noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
 import { readDeckOriginAndStart } from "../../../lib/precons/start-version";
@@ -287,6 +289,11 @@ export default async function DeckBuilderPage({
   const preconAddedParam = query[PRECON_ADDED_PARAM];
   const preconAddReceiptRead = preconsEnabled(env) && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]) && typeof preconAddedParam === "string"
     ? early(perf.timed("preconAddReceipt", () => readPreconAddReceipt(userId, preconAddedParam, id)).catch(() => null))
+    : null;
+  // The ticked import's receipt (no-collection entry S10): `?added=<entry>` beside `imported=1`. The same one-time
+  // claim, read only for the reader's own add written for this deck; a failed read draws the plain strip.
+  const importAddReceiptRead = noCollectionEntryEnabled(env) && arrivedFromImport(query[IMPORTED_PARAM]) && typeof preconAddedParam === "string"
+    ? early(perf.timed("importAddReceipt", () => readImportAddReceipt(userId, preconAddedParam, id)).catch(() => null))
     : null;
   // The precon link's doors (R3): an unlinked deck's suggestion and the Versions foot row's picker,
   // counted at read and never stored (lock 2). Owner-scoped in its own SQL. A failed read draws
@@ -656,6 +663,7 @@ export default async function DeckBuilderPage({
       preconArrival={preconArrivalRead ? await preconArrivalRead : null}
       preconAddReceipt={preconAddReceiptRead ? await preconAddReceiptRead : null}
       preconAddedClaimed={preconAddedParam !== undefined}
+      importAddReceipt={importAddReceiptRead ? await importAddReceiptRead : null}
       // A linked deck gets neither door: no suggestion (lock 2). Its link is drawn in Versions as v0
       // (precons PR 6b), and on the open precon with Unlink (PR 6a-2).
       preconLink={preconLinkRead

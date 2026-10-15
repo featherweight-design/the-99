@@ -82,7 +82,7 @@ function makeDeck(overrides: Partial<DeckDetail> = {}): DeckDetail {
   } as DeckDetail;
 }
 
-function renderBuilder(deck: DeckDetail, arrivedFromImport = false) {
+function renderBuilder(deck: DeckDetail, arrivedFromImport = false, importAddReceipt: { entryId: string; copies: number } | null = null) {
   return render(
     <BuilderShell mix={TEST_MIX}
       deck={deck}
@@ -91,6 +91,7 @@ function renderBuilder(deck: DeckDetail, arrivedFromImport = false) {
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={arrivedFromImport}
+      importAddReceipt={importAddReceipt}
      newestAsOf={null}/>,
   );
 }
@@ -125,6 +126,56 @@ describe("Arrival strip (state 13)", () => {
     });
     expect(screen.getByText(copy.arrival.clean("99"))).toBeInTheDocument();
     expect(screen.getByText(copy.arrival.cleanMobile("99"))).toBeInTheDocument();
+  });
+
+  // The ticked strip's head is a claim about what the import brought over: resolving its lines while the strip is up
+  // (the page redraws with none left) must not turn it into `All N lines came over clean`.
+  it("keeps a ticked import's unresolved head once its lines are resolved", async () => {
+    const receipt = { entryId: "entry-1", copies: 97 };
+    let view!: ReturnType<typeof renderBuilder>;
+    await act(async () => {
+      view = renderBuilder(shortDeck(), true, receipt);
+    });
+    expect(screen.getAllByText(copy.arrival.own.headUnresolved(97)).length).toBeGreaterThan(0);
+    await act(async () => {
+      view.rerender(
+        <BuilderShell mix={TEST_MIX}
+          deck={shortDeck({ unresolvedRows: [] })}
+          suggestions={[]}
+          degraded={false}
+          firstRun={false}
+          commanderIdentity={["B", "R", "G"]}
+          arrivedFromImport
+          importAddReceipt={receipt}
+         newestAsOf={null}/>,
+      );
+    });
+    expect(screen.getAllByText(copy.arrival.own.headUnresolved(97)).length).toBeGreaterThan(0);
+    expect(screen.queryByText(copy.arrival.own.head("97"))).toBeNull();
+  });
+
+  // `added` leaves the URL after the first view while `imported` stays, so a later server refresh brings no receipt:
+  // the strip keeps the add it was shown with for the rest of the visit.
+  it("keeps a ticked import's add line when a refresh arrives without the receipt", async () => {
+    const receipt = { entryId: "entry-1", copies: 97 };
+    let view!: ReturnType<typeof renderBuilder>;
+    await act(async () => {
+      view = renderBuilder(shortDeck(), true, receipt);
+    });
+    await act(async () => {
+      view.rerender(
+        <BuilderShell mix={TEST_MIX}
+          deck={shortDeck()}
+          suggestions={[]}
+          degraded={false}
+          firstRun={false}
+          commanderIdentity={["B", "R", "G"]}
+          arrivedFromImport
+          importAddReceipt={null}
+         newestAsOf={null}/>,
+      );
+    });
+    expect(screen.getAllByText(copy.arrival.own.headUnresolved(97)).length).toBeGreaterThan(0);
   });
 
   it("is absent on an ordinary visit to the same deck", async () => {
@@ -203,6 +254,38 @@ describe("Arrival strip (state 13)", () => {
     });
     expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
     expect(desktopSentence(copy.unresolved.banner(2))).toBeInTheDocument();
+  });
+});
+
+// No-collection entry S10: a ticked import's strip states the add, and over unresolved lines it still does,
+// beside the banner, without calling the import clean.
+describe("The ticked import's strip", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("takes the three-line form on a clean import", async () => {
+    await act(async () => {
+      renderBuilder(makeDeck(), true, { entryId: "e1", copies: 100 });
+    });
+    expect(screen.getByText(copy.arrival.own.head("99"))).toBeInTheDocument();
+    expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
+  });
+
+  it("draws beside the unresolved banner, saying only what was added", async () => {
+    await act(async () => {
+      renderBuilder(shortDeck(), true, { entryId: "e1", copies: 97 });
+    });
+    expect(screen.getByText(copy.arrival.own.headUnresolved(97))).toBeInTheDocument();
+    expect(screen.getByText(copy.unresolved.bannerMobile(2))).toBeInTheDocument();
+    expect(screen.queryByText(/came over clean/)).not.toBeInTheDocument();
+  });
+
+  it("is absent over unresolved lines when the import added nothing, as shipped", async () => {
+    await act(async () => {
+      renderBuilder(shortDeck(), true);
+    });
+    expect(screen.queryByRole("button", { name: copy.arrival.dismiss })).not.toBeInTheDocument();
   });
 });
 

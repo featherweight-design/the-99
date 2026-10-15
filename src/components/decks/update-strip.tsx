@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import type { UpdateArrivalState } from "../../lib/decks/arrival";
+import { ArrivalDismiss } from "./arrival-strip";
 
 const copy = deckImportCopy.update.arrival;
 
@@ -59,15 +60,7 @@ export function UpdateStrip({ arrival }: { arrival: UpdateArrivalState }) {
         <span className="md:hidden font-mono text-[10.5px]">{mobile}</span>
         <span className="hidden md:inline text-[13.5px]">{desktop}</span>
       </p>
-      <button
-        type="button"
-        onClick={() => setDismissed(true)}
-        aria-label={copy.dismiss}
-        className="font-mono text-[10px] md:text-[11px] flex-none cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
-      >
-        <span className="md:hidden">✕</span>
-        <span className="hidden md:inline">{copy.dismiss} ✕</span>
-      </button>
+      <ArrivalDismiss onDismiss={() => setDismissed(true)} label={copy.dismiss} />
     </div>
   );
 }

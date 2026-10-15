@@ -23,12 +23,38 @@ interface ArrivalStripProps {
   importedLineCount: number;
   /** The import's printing counts (deck printings); null adds no clause. */
   printings?: ArrivalPrintings | null;
+  /**
+   * The ticked import's add (no-collection entry S10), read from the ledger for this reader; null when the import
+   * added nothing. Present, the strip takes the precon start's three-line form at both widths.
+   */
+  added?: { entryId: string; copies: number } | null;
+  /** The import left unresolved lines. Only an import that added cards draws a strip then: its head says what was
+   *  added, never "came over clean", which the unresolved banner below it would contradict. */
+  unresolved?: boolean;
 }
 
-export function ArrivalStrip({ deckId, importedLineCount, printings = null }: ArrivalStripProps) {
+export function ArrivalStrip({ deckId, importedLineCount, printings = null, added = null, unresolved = false }: ArrivalStripProps) {
   // The locale is pinned for the same reason src/lib/copy/commanders.ts pins
   // it: an unpinned toLocaleString renders "1.418" under a European locale.
   const n = importedLineCount.toLocaleString("en-US");
+  if (added) {
+    const own = copy.own;
+    return (
+      <ArrivalBand
+        deckId={deckId}
+        lines={{
+          head: unresolved
+            ? printings
+              ? own.headUnresolvedWithPrintings(added.copies, printings.kept, printings.notOwned)
+              : own.headUnresolved(added.copies)
+            : printings ? own.headWithPrintings(n, printings.kept, printings.notOwned) : own.head(n),
+          body: unresolved ? own.bodyUnresolved : own.body(added.copies),
+          meta: own.meta,
+          link: { href: `/collection/history?entry=${added.entryId}`, label: own.history },
+        }}
+      />
+    );
+  }
   return (
     <ArrivalBand
       deckId={deckId}
@@ -83,16 +109,26 @@ export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
           <span className="hidden md:inline text-[13.5px]">{text.desktop}</span>
         </p>
       )}
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label={copy.dismiss}
-        className="font-mono text-[10px] md:text-[11px] flex-none cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
-      >
-        <span className="md:hidden">✕</span>
-        <span className="hidden md:inline">{copy.dismiss} ✕</span>
-      </button>
+      <ArrivalDismiss onDismiss={dismiss} />
     </ArrivalBandShell>
+  );
+}
+
+/**
+ * Every arrival strip's dismiss (no-collection entry R2, Hugh's audit): the ✕ alone at both widths, named for a
+ * screen reader. A 44px press on the phone and 32px on desktop, its negative margins taking back what the press adds,
+ * so the band keeps the height its text gives it.
+ */
+export function ArrivalDismiss({ onDismiss, label = copy.dismiss }: { onDismiss: () => void; label?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onDismiss}
+      aria-label={label}
+      className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center bg-transparent border-0 p-0 -my-[12px] -mr-[12px] ml-auto text-[12px] md:h-[32px] md:w-[32px] md:-my-[6px] md:-mr-[8px] md:text-[13px] text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
+    >
+      <span aria-hidden>✕</span>
+    </button>
   );
 }
 

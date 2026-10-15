@@ -16,6 +16,7 @@ import type { PreconRow } from "../../../lib/precons/list";
 import { PrimaryButton } from "../../ui/button";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { TextField } from "../../ui/text-field";
+import { OptInCheckbox } from "../../ui/opt-in-checkbox";
 
 const copy = preconsCopy.start;
 
@@ -237,16 +238,9 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
           </label>
 
           {canOwn && <div className="flex flex-col gap-[4px]">
-            <label className="flex cursor-pointer items-start gap-[10px] text-[13px] leading-[1.45] text-[color:var(--fg-body)]">
-              <input
-                type="checkbox"
-                checked={own}
-                disabled={pending}
-                onChange={(e) => { setOwn(e.target.checked); setFailed(false); }}
-                className="mt-[2px] h-[18px] w-[18px] flex-none cursor-pointer accent-[color:var(--accent)]"
-              />
-              <span>{copy.owned.label}</span>
-            </label>
+            <OptInCheckbox checked={own} disabled={pending} onChange={(next) => { setOwn(next); setFailed(false); }}>
+              {copy.owned.label}
+            </OptInCheckbox>
             {addedOn && <p className="m-0 pl-[28px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.owned.addedOn(preconAddedDate(addedOn))}</p>}
           </div>}
 

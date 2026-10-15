@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { importDeck, type ImportCommanderCandidate } from "../../app/decks/import-actions";
 import { deckImportCopy as copy } from "../../lib/copy/deck-import";
 import { deckPasteCardCount } from "../../lib/decks/paste-count";
-import { IMPORTED_PARAM, PRINTINGS_PARAM, arrivalPrintingsParam } from "../../lib/decks/arrival";
+import { IMPORTED_PARAM, PRECON_ADDED_PARAM, PRINTINGS_PARAM, arrivalPrintingsParam } from "../../lib/decks/arrival";
 import {
   DECK_IMPORT_FILE_MAX_BYTES,
   PASTE_MAX_BYTES,
@@ -19,6 +19,7 @@ import {
   type DeckImportSource,
 } from "../../lib/upload-limits";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { OptInCheckbox } from "../ui/opt-in-checkbox";
 import { Crown } from "../ui/crown";
 import { TextField } from "../ui/text-field";
 import { CreatePicker } from "./create-picker";
@@ -33,14 +34,21 @@ const MODES: { id: ImportMode; label: string; shortLabel: string }[] = [
   { id: "file", label: copy.entry.modeFile, shortLabel: copy.entry.modeFileShort },
 ];
 
-type FailureKind = "fileRejected" | "noneMatched" | "empty" | "badCsv" | "unexpected";
+type FailureKind = "fileRejected" | "noneMatched" | "empty" | "badCsv" | "unexpected" | "addFailed" | "addUnsure";
 
 type Failure =
   | { kind: "fileRejected"; ext: string; size: string }
   | { kind: "noneMatched"; lineCount: number }
   | { kind: "empty" }
   | { kind: "badCsv"; detail: string }
-  | { kind: "unexpected"; detail: string | null };
+  | { kind: "unexpected"; detail: string | null }
+  /** S11: the ticked import's add was refused; nothing was written. */
+  | { kind: "addFailed" }
+  /** The ticked import threw: the add may have committed with its answer lost, so the retry carries the same id. */
+  | { kind: "addUnsure" };
+
+/** One press's arguments, kept so the banner's Try again repeats exactly that press (the picked commander included). */
+type SubmitArgs = { commanderOracleId?: string; name: string; partnerOracleId: string | null };
 
 /**
  * States 11–12. The source named no commander, so nothing has been written and
@@ -79,7 +87,14 @@ function formatBytes(bytes: number): string {
  * taking more height than the viewport has. The route itself never passes it:
  * on `/decks/import` the heading names the page and the box is a real target.
  */
-export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
+export function ImportEntry({ compact = false, canOwn = false }: {
+  compact?: boolean;
+  /**
+   * `NO_COLLECTION_ENTRY_ENABLED`, resolved for the reader by the page (S8): the form offers `I own these cards`.
+   * Off, the form and the payload are exactly as shipped.
+   */
+  canOwn?: boolean;
+} = {}) {
   const router = useRouter();
   const nav = usePendingPush();
   const [mode, setMode] = useState<ImportMode>("paste");
@@ -89,6 +104,13 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
   const [deckName, setDeckName] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
   const [commanderStep, setCommanderStep] = useState<CommanderStep | null>(null);
+  // `I own these cards`: unticked by default (S8), and kept through the commander step and every failure.
+  const [own, setOwn] = useState(false);
+  // The ticked press's idempotency id: minted once per submission and reused by every retry of it (the commander
+  // step's second pass, Try again), so a press whose answer was lost lands on the deck it made rather than a second.
+  // A different list is a different submission and drops it; a name edit does not, since a retry may rename.
+  const actionIdRef = useRef<string | null>(null);
+  const lastSubmit = useRef<SubmitArgs | null>(null);
   const [pending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
@@ -99,9 +121,22 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
     [pasteText],
   );
 
+  /**
+   * A different list is a different submission: it drops the id, the retry's arguments (the commanders a picker
+   * chose for the old list) and a refused add's banner, whose Try again would otherwise send the new list under them.
+   */
+  function newSubmission() {
+    actionIdRef.current = null;
+    lastSubmit.current = null;
+    setFailure((f) => (f && (f.kind === "addFailed" || f.kind === "addUnsure") ? null : f));
+  }
+
   function selectMode(next: ImportMode) {
+    // Pressing the tab already chosen changes nothing, so it keeps the id and a refused add's Try again.
+    if (next === mode) return;
     setMode(next);
     setFailure(null);
+    newSubmission();
   }
 
   function acceptFile(candidate: File) {
@@ -119,6 +154,7 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
     }
     setFailure(null);
     setFile(candidate);
+    newSubmission();
   }
 
   /**
@@ -149,6 +185,9 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
     // typed before the picker and quietly discard the edit.
     setDeckName(name);
     setFailure(null);
+    lastSubmit.current = { commanderOracleId, name, partnerOracleId };
+    const sentOwn = canOwn && own;
+    const actionId = sentOwn ? (actionIdRef.current ??= crypto.randomUUID()) : null;
     startTransition(async () => {
       let committed = false;
       try {
@@ -163,6 +202,8 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
           // this deck has one commander, and the action reads an absent key as
           // the paste's declaration standing.
           ...(commanderOracleId ? { commanderOracleId, partnerOracleId } : {}),
+          // Only when ticked, so an unticked press sends the exact payload it always has.
+          ...(actionId ? { own: true, actionId } : {}),
         });
         if (result.ok) {
           committed = true;
@@ -170,9 +211,15 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
           // It belongs on the navigation rather than in a column: the deck was
           // not "imported" forever, it was imported on this one trip.
           const printings = arrivalPrintingsParam(result.printingsKept, result.printingsNotOwned);
+          // The add's entry rides beside it as a claim the deck page checks against the ledger (S10's strip).
           router.push(
-            `/decks/${result.deckId}?${IMPORTED_PARAM}=1${printings ? `&${PRINTINGS_PARAM}=${printings}` : ""}`,
+            `/decks/${result.deckId}?${IMPORTED_PARAM}=1${printings ? `&${PRINTINGS_PARAM}=${printings}` : ""}${actionId ? `&${PRECON_ADDED_PARAM}=${actionId}` : ""}`,
           );
+          return;
+        }
+        // S11: nothing was written. The list, the name and the tick stay, and the id is kept for Try again.
+        if (result.reason === "addFailed") {
+          fail({ kind: "addFailed" });
           return;
         }
         if (result.reason === "noRows") {
@@ -206,9 +253,17 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
         // internal invariant ("card is not a legal commander") that would read as
         // gibberish, so those fall back to the generic body.
         const message = e instanceof Error ? e.message : "";
+        const tooLarge = isDeckImportTooLargeMessage(message);
+        // A ticked press that threw may have added the cards and made the deck with its answer lost. Its Try again
+        // carries the same id, so it lands on that deck. The size cap refuses before any write, so it stays the
+        // player's to fix.
+        if (actionId && !tooLarge) {
+          fail({ kind: "addUnsure" });
+          return;
+        }
         fail({
           kind: "unexpected",
-          detail: isDeckImportTooLargeMessage(message) ? message : null,
+          detail: tooLarge ? message : null,
         });
       } finally {
         // Released on every outcome except a deck that was actually written.
@@ -310,7 +365,10 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
           <textarea
             id="import-paste"
             value={pasteText}
-            onChange={(e) => setPasteText(e.target.value)}
+            onChange={(e) => {
+              setPasteText(e.target.value);
+              newSubmission();
+            }}
             maxLength={PASTE_MAX_BYTES}
             placeholder={copy.entry.pastePlaceholder}
             aria-describedby={failure ? "import-failure" : undefined}
@@ -375,6 +433,13 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
           failure={failure}
           onAction={() => {
             setFailure(null);
+            // Try again repeats the refused press, with the same id and the name as it stands now: a name edit
+            // keeps the id, since a retry may rename.
+            if ((failure.kind === "addFailed" || failure.kind === "addUnsure") && lastSubmit.current) {
+              const last = lastSubmit.current;
+              submit(last.commanderOracleId, deckName, last.partnerOracleId);
+              return;
+            }
             if (failure.kind === "fileRejected") fileInputRef.current?.click();
             // All three offer a fresh start, so all three clear whichever input
             // this mode is actually using — clearing only one leaves the other
@@ -400,6 +465,20 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
         maxLength={DECK_NAME_MAX}
         className="block w-full rounded-[8px] p-[12px_14px] text-[16px] md:text-[14.5px]"
       />
+
+      {/* S8: under Deck name, above the import button. A 44px row on the phone, centred there as drawn. */}
+      {canOwn && (
+        <OptInCheckbox
+          checked={own}
+          onChange={setOwn}
+          // A press whose answer was lost may have added the cards and made the deck: its retry must keep the tick and
+          // the id that find them, so the box holds still until that press is answered or the list changes.
+          disabled={failure?.kind === "addUnsure"}
+          className="mt-[16px] min-h-[44px] items-center md:min-h-0 md:items-start"
+        >
+          {copy.entry.own}
+        </OptInCheckbox>
+      )}
 
       <PrimaryButton
         // Wrapped: a bare `submit` would receive the click event as its first
@@ -461,6 +540,8 @@ const FAILURE_ACTION: Record<FailureKind, string> = {
   empty: copy.failures.empty.action,
   badCsv: copy.failures.badCsv.action,
   unexpected: copy.failures.unexpected.action,
+  addFailed: copy.failures.addFailed.action,
+  addUnsure: copy.failures.addUnsure.action,
 };
 
 function failureText(failure: Failure): { heading: string; bodyMobile: string; body: string } {
@@ -495,6 +576,11 @@ function failureText(failure: Failure): { heading: string; bodyMobile: string; b
         bodyMobile: copy.failures.unexpected.bodyMobile(failure.detail),
         body: copy.failures.unexpected.body(failure.detail),
       };
+    // The precon add's own sentence, alone: the handoff draws it as one line with Try again.
+    case "addFailed":
+      return { heading: copy.failures.addFailed.heading, bodyMobile: "", body: "" };
+    case "addUnsure":
+      return { heading: copy.failures.addUnsure.heading, bodyMobile: "", body: "" };
   }
 }
 
@@ -513,10 +599,12 @@ function FailureBanner({ failure, onAction }: { failure: Failure; onAction: () =
         <p className="text-[14px] md:text-[15px] font-semibold leading-[1.4] text-[color:var(--fg)]">
           {heading}
         </p>
-        <p className="mt-[5px] md:mt-[6px] text-[12.5px] md:text-[14px] leading-[1.55] md:leading-[1.6] text-[color:var(--fg-body)]">
-          <span className="md:hidden">{bodyMobile}</span>
-          <span className="hidden md:inline">{body}</span>
-        </p>
+        {body && (
+          <p className="mt-[5px] md:mt-[6px] text-[12.5px] md:text-[14px] leading-[1.55] md:leading-[1.6] text-[color:var(--fg-body)]">
+            <span className="md:hidden">{bodyMobile}</span>
+            <span className="hidden md:inline">{body}</span>
+          </p>
+        )}
         <GhostButton
           onClick={onAction}
           className="w-full md:w-auto mt-[14px] text-[14px] md:text-[13px] py-[12px] md:py-[10px] md:px-[20px] min-h-[44px]"

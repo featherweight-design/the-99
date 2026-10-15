@@ -16,6 +16,7 @@
 //                             quantity > 1 on a non-basic is the only parse note
 
 import { DECK_IMPORT_FILE_MAX_LABEL } from "../upload-limits";
+import { preconsCopy } from "./precons";
 
 /** The import strip's printing clauses, joined: `12 with the printing you own, 3 not in your
  *  Collection`. Either count 0 drops its clause. */
@@ -69,6 +70,8 @@ export const deckImportCopy = {
       n === 0 ? "Import deck →" : n === 1 ? "Import 1 card" : `Import ${n} cards`,
 
     footnoteMobile: "We’ll leave the sideboard behind: Commander doesn’t have one.",
+    // No-collection entry R2 (S8): the precon start's own opt-in, under Deck name. Unticked by default.
+    own: "I own these cards. Add them to my collection.",
     aboutWhatComesHeading: "What comes over",
     aboutWhatComes:
       "The commander and the 99. Sideboard and maybeboard stay behind: Commander doesn’t have either.",
@@ -92,8 +95,8 @@ export const deckImportCopy = {
 
   // ---- Entry failures ------------------------------------------------------
   // Each block is {heading, body, bodyMobile, action}. Nothing here carries a
-  // Try again button: every remaining failure is one where trying the same thing
-  // again cannot succeed. The four the spec wrote for a link fetch — bad URL,
+  // Try again button but the ticked import's two (`addFailed`, `addUnsure`): every
+  // other failure is one where trying the same thing again cannot succeed. The four the spec wrote for a link fetch — bad URL,
   // private, 404, upstream down — went with the mode.
   failures: {
     fileRejected: {
@@ -183,6 +186,19 @@ export const deckImportCopy = {
       // CTA names what it does. Ratification owed.
       action: "Back to your list",
       retry: false,
+    },
+    /**
+     * No-collection entry R2 (S11): `I own these cards` was ticked and the add was refused, so neither the
+     * cards nor the deck were written. The precon add's own sentence, as the handoff says; one line, no body.
+     */
+    addFailed: {
+      heading: preconsCopy.start.owned.addFailed,
+      action: "Try again",
+    },
+    /** The ticked import threw, so the add may have committed with its answer lost. A retry carries the same id. */
+    addUnsure: {
+      heading: preconsCopy.start.owned.addUnsure,
+      action: "Try again",
     },
     /**
      * The update's comparison threw. It only reads, so nothing was written and the
@@ -337,6 +353,25 @@ export const deckImportCopy = {
     cleanWithPrintingsMobile: (n: string, kept: number, notOwned: number) =>
       `All ${n} came over · ${printingClauses(kept, notOwned, kept === 1 ? "printing kept" : "printings kept")}`,
     dismiss: "Dismiss",
+    // No-collection entry R2 (S10): the ticked import's strip, in the precon start's three-line form
+    // at both widths. `lines` is the deck's line count, `copies` the copies the add wrote.
+    own: {
+      head: (lines: string) => `All ${lines} lines came over clean.`,
+      headWithPrintings: (lines: string, kept: number, notOwned: number) =>
+        `All ${lines} lines came over clean, ${printingClauses(kept, notOwned, "with the printing you own")}.`,
+      body: (copies: number) =>
+        `All ${copies === 1 ? "1 card" : `${copies.toLocaleString("en-US")} cards`} added to your collection.`,
+      // Eng-authored, not drawn (the handoff draws the clean case only): an import with unresolved lines
+      // keeps its banner, so the strip says only what was added and that those lines added nothing.
+      headUnresolved: (copies: number) =>
+        `${copies === 1 ? "1 card" : `${copies.toLocaleString("en-US")} cards`} added to your collection.`,
+      // The same head when lines named printings: the clauses join it, as they join the clean head.
+      headUnresolvedWithPrintings: (copies: number, kept: number, notOwned: number) =>
+        `${copies === 1 ? "1 card" : `${copies.toLocaleString("en-US")} cards`} added to your collection, ${printingClauses(kept, notOwned, "with the printing you own")}.`,
+      bodyUnresolved: "The lines we couldn’t put a card to added nothing.",
+      meta: "Imported from your list a moment ago",
+      history: "History",
+    },
   },
 
   // ---- Unresolved rows -----------------------------------------------------
