@@ -57,6 +57,19 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
     expect(aboutAcknowledged(["notes"])).toBe(false);
   });
 
+  it("a late failure of an older visit leaves a later visit's acknowledgement standing", async () => {
+    let reject!: (e: Error) => void;
+    recordAboutVisit.mockImplementationOnce(() => new Promise<void>((_, r) => { reject = r; }));
+    const first = render(<RecordVisit behind shown={["notes"]} drawn={["notes"]} />);
+    first.unmount();
+    // Another tab marked About seen meanwhile: this tab's next /about mount is current and writes nothing.
+    render(<RecordVisit behind={false} shown={[]} drawn={["notes"]} />);
+    reject(new Error("offline"));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(aboutAcknowledged(["notes"])).toBe(true);
+  });
+
   it("acknowledges what it drew for a current reader too, with no write: a stale Home in this tab still holds the line", () => {
     render(<RecordVisit behind={false} shown={[]} drawn={["notes"]} />);
     expect(aboutAcknowledged(["notes"])).toBe(true);
