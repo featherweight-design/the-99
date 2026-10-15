@@ -301,7 +301,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
             maxLength={PASTE_MAX_BYTES}
             placeholder={copy.entry.pastePlaceholder}
             aria-describedby={failure ? "update-failure" : undefined}
-            className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[16px] md:text-[13px] resize-none bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)] caret-[color:var(--accent)] placeholder:text-[color:var(--fg-faint)]"
+            className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[16px] md:text-[13px] resize-none bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)] caret-[color:var(--accent)] placeholder:text-[color:var(--fg-placeholder)]"
           />
         </div>
       ) : (

@@ -182,7 +182,7 @@ dismiss ✕** (README:154–157, 304).
 | padding | `12px 13px` | `12px 14px` | Canvas:210, 236 |
 | leading glyph | `⌕`, mono 15px, `--fg-faint` | `⌕`, mono 15px, `--fg-faint` | Canvas:211, 237 |
 | input font-size | **16px** (iOS no-zoom rule) | 14.5px | README:290; Canvas:212, 238 |
-| placeholder | `moxfield.com/decks/…`, `--fg-faint` | same | copy.entry.urlPlaceholder |
+| placeholder | `moxfield.com/decks/…`, `--fg-placeholder` | same | copy.entry.urlPlaceholder |
 | filled value color | `--fg` | `--fg` | Canvas:238 |
 | row layout with submit | submit **full width below** the field | field + submit **on one row**, `gap:10px`, `align-items:stretch` | README:305; Canvas:215, 235 |
 
