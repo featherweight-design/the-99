@@ -185,7 +185,8 @@ async function reset(id, before) {
 // 56px at 1300 and 35px at 390. #1809 measures from the settled tab, which is after that.
 function hubStaysPut(at, hub, pressAt, released, landings) {
   report(at("the Tuning hub is drawn from the tab's first frame"),
-    hub.at !== null && hub.panelAt !== null && hub.at - hub.panelAt <= 50,
+    // Both are stamped by the same frame sampler, so a hub mounted with its panel shares its frame exactly.
+    hub.at !== null && hub.panelAt !== null && hub.at === hub.panelAt,
     JSON.stringify({ panel: hub.panelAt, hub: hub.at }));
   report(at("it is one node, never missing once drawn"), hub.at !== null && !hub.replaced && hub.missing === 0,
     JSON.stringify({ replaced: hub.replaced, missingFrames: hub.missing }));
