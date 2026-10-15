@@ -58,11 +58,12 @@ export default async function ImportSummaryPage({
         filename={view.filename}
         // Through the app's own formatter, which owns both rules this stamp needs: en-US month
         // names, because en-GB writes `Sept` where every other date in the app writes `Sep`, and
-        // UTC, because `created_at` is a timestamp without a zone and a local boundary would
-        // render one day on the server and another in the browser. `created_at` and not the
-        // confirm: the stamp says "uploaded", and a review left open overnight confirms on a
-        // different day from the one the file arrived.
-        stampDate={formatDeckDate(view.createdAt)}
+        // UTC, because the column is a timestamp without a zone and a local boundary would render
+        // one day on the server and another in the browser. Which column follows the stamp's
+        // word: a Replace or an Add says "uploaded", so `created_at`, the day the file arrived; a
+        // Sync says "synced", so `confirmed_at`, the day the merge was written and the day its
+        // History entry is dated. A review left open overnight confirms on a different day.
+        stampDate={formatDeckDate(view.sync ? view.confirmedAt : view.createdAt)}
       />
     </section>
   );
