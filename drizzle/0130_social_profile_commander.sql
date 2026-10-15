@@ -1,0 +1,2 @@
+ALTER TABLE "social_profiles" ADD COLUMN "commander_oracle_id" uuid;--> statement-breakpoint
+ALTER TABLE "social_profiles" ADD CONSTRAINT "social_profiles_commander_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("commander_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE set null ON UPDATE no action;

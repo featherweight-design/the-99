@@ -3291,6 +3291,11 @@ export const socialProfiles = pgTable("social_profiles", {
   publicId: uuid("public_id").notNull().unique().defaultRandom(),
   /** Player-typed: 1 to 30 code points, validated by `rules.ts` before every write. */
   displayName: text("display_name").notNull(),
+  /**
+   * The commander a player shows as their face (Social R1, G11): null draws initials. Written only by
+   * `setCommander`, which refuses a card that cannot lead a deck. A card leaving the catalog clears it.
+   */
+  commanderOracleId: uuid("commander_oracle_id").references(() => cards.oracleId, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
   check("social_profiles_display_name_check", sql`char_length(${t.displayName}) between 1 and 30`),
