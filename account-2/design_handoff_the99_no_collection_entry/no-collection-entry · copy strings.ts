@@ -57,7 +57,8 @@ export const noCollectionEntryCopy = {
     regular: "Regular", // precons.open.edition.regular
     collector: "Collector’s Edition", // precons.open.edition.collector
     collectorNote: "every card foil",
-    added: (date: string) => `added ${date}`,
+    added: (date: string) => `✓ added ${date}`, // R3: a --success mark after the meta
+    // R3: with cards in the collection the row shows the shipped precons.row.ownLead + own, `you own 61 of 88`.
     addedAgain: (date: string) => `You added this box on ${date}. Adding it again adds a second copy of each card.`,
     leadNone: "Tick the boxes you own.",
     lead: (b: number, c: number, t: number) => `${boxes(b)} · ${cards(c)}${t > 0 ? ` and ${tokens(t)}` : ""}`,
@@ -73,7 +74,15 @@ export const noCollectionEntryCopy = {
     tryAgain: "Try again",
   },
 
-  // The receipt strip on Home after a precon add (S5).
+  // R3: the way in once the player has cards, a row in the Add cards sheet's empty state
+  // (collection-edit.ts `add`, beside `uploadLead` / `uploadInstead`). Both widths, PRECONS_ENABLED.
+  sheetRow: {
+    lead: "Own precon boxes?",
+    press: "Pick them",
+    href: "/decks/precons?pick=own&from=collection", // back reads pick.backCollection, Done returns to /collection
+  },
+
+  // The receipt strip after a precon add (S5): on Home, or under Collection's tabs when the pick was opened there (R3).
   receipt: {
     head: (b: number) => `${b === 1 ? "1 precon" : `${n(b)} precons`} added to your collection:`,
     body: (boxNames: string[], c: number, t: number) =>

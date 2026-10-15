@@ -1,6 +1,6 @@
-# The 99 — No-collection entry (design handoff, R2)
+# The 99 — No-collection entry (design handoff, R2 + R3 addendum)
 
-`design_handoff_the99_no_collection_entry/` · 2026-10-15 · account 2 · **R2, approved by Hugh 2026-10-15.** R2 changes path (a) only: an import checkbox replaces R1's offer after the import, drawn on the shipped pages.
+`design_handoff_the99_no_collection_entry/` · 2026-10-15 · account 2 · **R2, approved by Hugh 2026-10-15.** R2 changes path (a) only: an import checkbox replaces R1's offer after the import, drawn on the shipped pages. **R3 addendum, 2026-10-15, awaiting Hugh's review:** the way into Precons I own for a player who already has cards (below).
 
 A stateful first-run addendum: a way into the app for a player with no collection file, or one who can't upload
 theirs. Phone and desktop. It changes `design/design_handoff_the99_first_run_onboarding/` (step 1 and the locked
@@ -27,6 +27,36 @@ rounds; tokens below are the app's.
 Upload stays the one fill on step 1; under it, one quiet group, **No file? Start another way**, holds Precons I own,
 Import a deck and Add cards by hand, and the empty Collection repeats it; Collection opens at zero cards while
 Commanders, Discover and Decks wait for a card; every write is an add, one History entry per box or deck.
+
+## R3 addendum: Precons I own, once the player has cards
+
+R2 drew the pick for a player with zero cards and left no way back to it afterwards. S17, G7 and the precons About
+edit all assumed one. Boards: `R3 - AddPrecons-Desktop.dc.html` / `-Phone` and `R3 - About-Entry.dc.html`, all
+drawn on the shipped pages in Kamigawa.
+
+- **The way in is one row in the Add cards sheet** (S18), `Own precon boxes? Pick them ›`, in the sheet's empty
+  state at both widths. On the phone it sits under the shipped `Have a file? Upload it instead` row, in the same 52px
+  shape, with the upload first. On desktop it is the only row, because the upload is already in the head. It shows
+  only while the list is empty, as the upload row does, and it is absent with `PRECONS_ENABLED` off. Pressing it
+  closes the sheet and opens `/decks/precons?pick=own&from=collection`.
+  - **Why the sheet:** adding cards is what Add cards is for. The head would need a third button, and the phone's
+    strip has room for one trailing control (`+ Add`, as the shipped comment says). The Precons page's shipped `I own
+    this precon` sits in the start dialog and starts a deck, which is a different job.
+  - **Alternatives weighed:** a Collection head action (rejected: no room on the phone, and it would be a third
+    control); an entry on the Precons page head (workable, but it reaches only players who are browsing precons, and
+    it would leave About's "from your Collection" untrue).
+- **The pick, with cards** (E2): the zero-card pick unchanged, plus the shipped list's `you own 61 of 88` on every row
+  while the collection holds any card. This settles G7. Its back link reads `‹ Collection`.
+- **S17, a box already added:** a `--success` mark `✓ added Jun 30` after the meta, from the box's precon History
+  entry. It stays pickable, because a player can own two of a box. Ticked, the plain note under the row reads `You
+  added this box on Jun 30. Adding it again adds a second copy of each card.` A box owned by card overlap gets no
+  mark: its figure already says how much of it the player holds.
+- **Done returns where the pick was opened** (S19): from Collection, back to Collection with the S5 receipt strip
+  under the tabs, with the same words, History and `✕` alone. Refusals and part-failure are S6 and S7, unchanged.
+- **Locked, held:** each box is one `addPreconForUser` call, so one History entry that Revert takes back. Upload is
+  still the first row on the phone and the head's first button on desktop.
+- **About:** the precons edit now reads `Own a few boxes and don’t want decks from them yet? Press Add cards in your
+  Collection, then Pick them, and they’re added without starting anything.`
 
 ## The open questions, called (brief §Open)
 
@@ -153,7 +183,7 @@ Commanders, Discover and Decks wait for a card; every write is an add, one Histo
 ## About
 
 A new entry, `start-without-a-collection`, plus two ordinary edits (`precons`, `deck-import`) and one bump, 14 → 15,
-at launch, batched to the line's last PR. Drawn on `R1 - About-Entry.dc.html`; code in
+at launch, batched to the line's last PR. Drawn on `R1 - About-Entry.dc.html` (R3 rewords the precons edit: `R3 - About-Entry.dc.html`); code in
 `about · start without a collection.ts`. Chapter 01 after `import`, route `/collection`, `opens the empty
 Collection`, plate, specimen = the step-1 group (from its own copy keys), switch `COLLECTION_EDIT_ENABLED`, the
 precon key line on `PRECONS_ENABLED`.
@@ -172,8 +202,8 @@ precon key line on `PRECONS_ENABLED`.
   so no state here was observed.
 - **G6 · Part-failure.** The pick writes boxes one entry each, so S7 is real; drawn as a toast plus row marks. A
   single transaction for the batch would remove S7 at the cost of one bad box refusing all.
-- **G7 · The pick drops the ownership figure.** For a player with a collection who opens the pick later, `you own N
-  of M` would help. Proposed: show it whenever the collection is not empty.
+- **G7 · The pick drops the ownership figure.** Settled in R3: the pick shows `you own N of M` whenever the
+  collection is not empty, and drops it only at zero cards.
 - **G8 · Home's kicker after a precon add** reads `300 cards · read just now`, the shipped verb. A collection built
   in the app was not "read". Copy-review's call.
 
@@ -190,6 +220,8 @@ precon key line on `PRECONS_ENABLED`.
 | `R1 - Empty-Desktop.dc.html` / `-Phone` | S12 Home, S13 Collection, the lock outside first run, Open 7 |
 | `R1 - LaterUpload.dc.html` | S14 at both widths |
 | `R2 - About-Entry.dc.html` | The new entry, its phone reduction, the two edits (R2 wording for path (a)) |
+| `R3 - AddPrecons-Desktop.dc.html` / `-Phone` | R3: the sheet row (S18), the pick with cards and added marks (E2, S17), done on Collection (S19) |
+| `R3 - About-Entry.dc.html` | R3: the precons edit reworded to name Add cards (replaces `R2 - About-Entry`) |
 | `STATES-no-collection-entry.md` | The matrix |
 | `READINESS.md` | The verdict and what blocks a green |
 | `no-collection-entry · copy strings.ts` | Every new or changed string, for `/copy-review` |
