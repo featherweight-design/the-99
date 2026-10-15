@@ -68,4 +68,25 @@ describe("TokenRefusalToast", () => {
       other.remove();
     }
   });
+
+  it("follows a receipt that grows while the refusal is up", () => {
+    let notify: () => void = () => {};
+    const original = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class { constructor(cb: () => void) { notify = cb; } observe() {} disconnect() {} } as unknown as typeof ResizeObserver;
+    let height = 90;
+    const receipt = document.createElement("div");
+    receipt.setAttribute("data-toast", "deck");
+    receipt.getBoundingClientRect = () => ({ height }) as DOMRect;
+    document.body.appendChild(receipt);
+    try {
+      render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
+      expect(screen.getByRole("alert").style.translate).toBe("0 -100px");
+      height = 150; // the window narrowed and the receipt's body wrapped onto another line
+      act(() => notify());
+      expect(screen.getByRole("alert").style.translate).toBe("0 -160px");
+    } finally {
+      receipt.remove();
+      globalThis.ResizeObserver = original;
+    }
+  });
 });

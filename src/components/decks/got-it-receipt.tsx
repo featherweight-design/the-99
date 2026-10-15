@@ -209,13 +209,16 @@ export function GotItReceipt({
   // A warning closes with its toast; a request out is still the host's, and ends when it settles.
   useEffect(() => {
     mounted.current = true;
-    // The deck slot is this receipt's (it holds an Undo): a token refusal showing there steps aside.
-    window.dispatchEvent(new Event(DECK_TOAST_CLAIM));
     return () => {
       mounted.current = false;
       if (stage.current === "warning") host.end(oracleId);
     };
   }, [host, oracleId]);
+  // The deck slot is this receipt's (it holds an Undo): a token refusal showing there steps aside. Once, when the receipt
+  // enters the slot: `host` is a fresh object on every provider render, so the effect above must not carry this.
+  useEffect(() => {
+    window.dispatchEvent(new Event(DECK_TOAST_CLAIM));
+  }, []);
 
   const facts = written.facts as ReceiptFacts | null;
   const sourceDeckId = typeof deckId === "string" ? deckId : null;

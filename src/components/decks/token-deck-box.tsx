@@ -55,6 +55,11 @@ export function TokenDeckBox({ oracleId, onSelectCard }: { oracleId: string; onS
         <p className="m-0 mt-[8px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{tokensCopy.row.noMaker}</p>
       )}
       {toast}
+      {/* The toast sits outside this modal, where a screen reader confined to it cannot reach: the same refusal is said here too,
+          in the dialog, for the token this box is about. */}
+      {ctx.refusal?.name === token.name ? (
+        <span key={ctx.refusal.key} role="alert" className="sr-only">{tokensCopy.row.refused} {tokensCopy.row.refusedDetail(token.name)}</span>
+      ) : null}
     </div>
   );
 }

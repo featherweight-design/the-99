@@ -78,7 +78,12 @@ describe("TokenDeckBox", () => {
     stub.held.mockResolvedValue({ ok: false });
     draw([token()]);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Mark the Food token as in your collection" })); });
-    expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.Food token");
+    // The deck's toast (outside this sheet) and the same refusal said inside the dialog for a screen reader held in it.
+    const alerts = screen.getAllByRole("alert");
+    expect(alerts.map((a) => a.textContent)).toContain("We couldn’t save that. The token is unchanged.Food token");
+    const inBox = alerts.find((a) => a.closest("[data-token-deck-box]"));
+    expect(inBox?.textContent).toBe("We couldn’t save that. The token is unchanged. Food token");
+    expect(inBox?.className).toContain("sr-only");
   });
 
   it("opens a maker through the sheet's own trail, so Close returns to the token", () => {

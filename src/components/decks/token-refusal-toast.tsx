@@ -14,12 +14,18 @@ export function TokenRefusalToast({ name, onDone }: { name: string; onDone: () =
   const ref = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
-  // Read once, at mount (this only mounts from a press, in the browser): the height of a receipt already in the slot, and a
-  // gap. Another refusal is not a receipt, so a replaced one never lifts its successor.
-  const [lift] = useState(() => {
-    const receipt = document.querySelector('[data-toast="deck"]:not([data-toast-kind="token-refusal"])');
-    return receipt ? Math.ceil(receipt.getBoundingClientRect().height) + 10 : 0;
-  });
+  // The height of a receipt already in the slot, and a gap (this only mounts from a press, in the browser). Another refusal is
+  // not a receipt, so a replaced one never lifts its successor. The receipt's body wraps, so its height is watched while the
+  // refusal is up: a narrowing window that adds a line to it moves this toast with it.
+  const [receipt] = useState(() => document.querySelector<HTMLElement>('[data-toast="deck"]:not([data-toast-kind="token-refusal"])'));
+  const measure = () => (receipt ? Math.ceil(receipt.getBoundingClientRect().height) + 10 : 0);
+  const [lift, setLift] = useState(measure);
+  useEffect(() => {
+    if (!receipt || typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(() => setLift(Math.ceil(receipt.getBoundingClientRect().height) + 10));
+    watch.observe(receipt);
+    return () => watch.disconnect();
+  }, [receipt]);
   useToastClock(ref, !hover && !focus, onDone);
   useEffect(() => {
     window.addEventListener(DECK_TOAST_CLAIM, onDone);

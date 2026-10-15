@@ -14,6 +14,8 @@ type DeckTokensValue = {
   deckId: string; read: DeckTokensRead; provenance: ProvenanceForm | null; ownProvenance: ProvenanceForm | null;
   /** A token press the server refused or that threw: the one refusal toast of this deck (a newer replaces it). */
   refuse: (name: string) => void;
+  /** The refusal showing now, by the token it names: a sheet's own box announces it inside the dialog (the toast is outside). */
+  refusal: { name: string; key: number } | null;
 } | null;
 
 const DeckTokensContext = createContext<DeckTokensValue>(null);
@@ -35,7 +37,7 @@ export function DeckTokensProvider({
 }) {
   const [refusal, setRefusal] = useState<{ name: string; key: number } | null>(null);
   const refuse = useCallback((name: string) => setRefusal({ name, key: Date.now() }), []);
-  const value = useMemo(() => ({ deckId, read, provenance, ownProvenance, refuse }), [deckId, read, provenance, ownProvenance, refuse]);
+  const value = useMemo(() => ({ deckId, read, provenance, ownProvenance, refuse, refusal }), [deckId, read, provenance, ownProvenance, refuse, refusal]);
   return (
     <DeckTokensContext.Provider value={value}>
       {children}
