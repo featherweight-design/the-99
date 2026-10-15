@@ -4,8 +4,9 @@
 `design/design_handoff_the99_no_collection_entry/` (R2, approved by Hugh; G1 settled by his loosened ruling 1, G2
 confirmed 2026-10-15). The engineering audit is in that handoff's READINESS.md.
 
-This plan builds the **zero-card paths**. One phase is **held for Design**: the way into the precon pick for a player
-who already has cards. S17 and the precons About edit wait with it (§Held).
+This plan builds the whole line. The zero-card paths come first (PRs 1 to 4). Then the R3 addendum, also approved by
+Hugh: the way into the precon pick for a player who already has cards, S17, S18 and S19 (PR 5). The seam, About and the
+close-out come last (PR 6). The engineering re-audit of R3 is GREEN, so nothing is held.
 
 **It changes first run for every new account**, so it ships dark behind a switch of its own and goes on in
 production only at close, by Hugh.
@@ -93,7 +94,23 @@ S16.
 - **Stale comments the brief names:** `first-run.tsx:1-4` and `page.tsx:103-106`.
 - **Mobile and desktop parity** in this PR.
 
-**PR 5: the seam, About, and close-out.**
+**PR 5: Precons I own, once the player has cards** (R3 addendum: S17, S18, S19, E2).
+- **The way in (S18):** one row in the Add cards sheet's empty state, `Own precon boxes? Pick them ›`, a 52px row
+  at both widths.
+  - On the phone it sits under the shipped `Have a file? Upload it instead` row, with upload first. On desktop it is
+    the only row, since the upload is already in the head.
+  - It is shown only while the sheet's list is empty, with `PRECONS_ENABLED` and the line's switch on.
+  - Pressing it closes the sheet and opens `/decks/precons?pick=own&from=collection`.
+- **The pick with cards (E2):** the shipped `you own N of M` on every row while the collection holds any card. The
+  back link and Done's destination follow `from` (`‹ Collection`).
+- **S17:** the `✓ added <date>` mark and the plain note under a ticked row. Both read the player's standing precon
+  adds (`standingPreconAdds`) once for the whole list, not once per row. A box marked this way stays pickable.
+- **S19:** Done from Collection returns to Collection, with the receipt strip under the tabs. It uses PR 3's receipt
+  component and its dismiss key.
+- **Tests:** the row shown only while empty and with both switches; `from` deciding the back link and the
+  destination; the added mark keyed by file name.
+
+**PR 6: the seam, About, and close-out.**
 - **S14:** Replace's warning gains the clause naming what a first file would remove. This lands after Collection
   Sync's PR 2 has merged; if it hasn't, this PR waits for it.
 - **About** (batched to the line's last PR, per the multi-round rule):
@@ -102,7 +119,8 @@ S16.
   - its precon sentence is restructured so it can follow `PRECONS_ENABLED` line by line;
   - the app draws one caption at both widths;
   - the `deck-import` entry gains its key line (3 → 4);
-  - the precons-entry edit waits for the held phase.
+  - the `precons` entry gains R3's sentence (`Press Add cards in your Collection, then Pick them…`), since the way in
+    ships in PR 5.
 - **`/copy-review`** over every new string in the line.
 - **`feature-acceptance` close-out walk** on staging at 390 and 1300, against the inventory below.
 
@@ -118,16 +136,18 @@ S16.
 | Home after a precon add, with the receipt strip | ☐ | ☐ | arrival strip |
 | `/commanders` and `/discover` empty | ☐ | ☐ | `EmptyState` |
 | `/collection/replace` choice after a built collection (S14) | ☐ | ☐ | `UploadChoice` |
-| `/about`, the new entry | ☐ | ☐ | — |
+| `/collection` Add cards sheet, empty, with the precon row (S18) | ☐ | ☐ | — |
+| `/decks/precons?pick=own&from=collection` with cards: owned figure, added mark, S17 note | ☐ | ☐ | — |
+| `/collection` after a pick from Collection, receipt under the tabs (S19) | ☐ | ☐ | receipt strip |
+| `/about`, the new entry and the precons edit | ☐ | ☐ | — |
 
 `docs/superpowers/inventories/no-collection-entry.json` carries these rows, plus a `shares` block naming the ways
 group for step 1 and the empty Collection.
 
-## Held for Design
+## Nothing held
 
-**The way into Precons I own for a player who already has cards.** It is drawn nowhere today. The prompt has gone to
-Hugh for Design. When it lands, a held PR places it, makes S17 (a box already added) reachable, and adds the precons
-About edit (`Pick them under Precons I own…`). Until then nothing ships that promises it.
+The R3 addendum (approved by Hugh, 2026-10-15; engineering re-audit GREEN) drew the way in for a player who already
+has cards, so PR 5 builds it. Nothing in the line waits on Design.
 
 ## Risks and how each is held
 
