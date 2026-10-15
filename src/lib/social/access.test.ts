@@ -2,7 +2,7 @@
 // statement. Only the emitted SQL can show that (the `built.test.ts` precedent), so each read's
 // qualified join and viewer predicate are asserted here, and `probe:social` proves the answers.
 import { describe, expect, it } from "vitest";
-import { friendsQuery, podMembersQuery, resolveFriend, resolveFriendQuery, shapePod, viewerPodsQuery } from "./access";
+import { friendQuery, friendsQuery, loadFriend, podMembersQuery, resolveFriend, resolveFriendQuery, shapePod, viewerPodsQuery } from "./access";
 
 const VIEWER = "user_viewer";
 
@@ -13,6 +13,36 @@ describe("access reads", () => {
     expect(q.sql).toContain(`where "friend_links"."user_id" = $1`);
     expect(q.params).toEqual([VIEWER]);
     expect(q.sql).not.toContain(`"friend_links"."friend_user_id" = $`);
+  });
+
+  it("reads one friend by public id only through the viewer's own link row (G2)", () => {
+    const PUB = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+    const q = friendQuery(VIEWER, PUB).toSQL();
+    expect(q.sql).toContain(`inner join "social_profiles" on "social_profiles"."user_id" = "friend_links"."friend_user_id"`);
+    expect(q.sql).toContain(`where ("friend_links"."user_id" = $1 and "social_profiles"."public_id" = $2)`);
+    expect(q.sql).toContain(`left join "cards" "commander_card" on "commander_card"."oracle_id" = "social_profiles"."commander_oracle_id"`);
+    expect(q.sql).toMatch(/ limit \$3$/);
+    expect(q.params).toEqual([VIEWER, PUB, 1]);
+  });
+
+  it("answers one friend in the list's shape, and refuses a malformed public id before any query", async () => {
+    const never = { select: () => { throw new Error("queried"); } } as never;
+    await expect(loadFriend(VIEWER, "not-a-uuid", never)).resolves.toBeNull();
+    const since = new Date("2026-10-01T00:00:00Z");
+    const row = {
+      publicId: "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b", displayName: "Bob", since,
+      commanderOracleId: "11111111-1111-4111-8111-111111111111", commanderName: "Kilo", commanderArt: "art.jpg",
+    };
+    const chain: Record<string, unknown> = {};
+    for (const m of ["from", "innerJoin", "leftJoin", "$dynamic", "where", "limit"]) chain[m] = () => chain;
+    chain.then = (resolve: (v: unknown) => void) => resolve([row]);
+    const reader = { select: () => chain } as never;
+    await expect(loadFriend(VIEWER, row.publicId, reader)).resolves.toEqual({
+      publicId: row.publicId, displayName: "Bob", since,
+      commander: { oracleId: row.commanderOracleId, name: "Kilo", artCropUri: "art.jpg" },
+    });
+    chain.then = (resolve: (v: unknown) => void) => resolve([]);
+    await expect(loadFriend(VIEWER, row.publicId, reader)).resolves.toBeNull();
   });
 
   it("resolves a public id only through the viewer's links", () => {

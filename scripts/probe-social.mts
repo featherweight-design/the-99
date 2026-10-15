@@ -201,6 +201,36 @@ async function main() {
       && seenSpares[0].friend.publicId === b.publicId, JSON.stringify(seenSpares));
     check("a copy only a draft wants is not spare (Y)", seenSpares.every((r) => r.oracleId !== Y));
     check("the row carries no owned count, claim or deck", Object.keys(seenSpares[0] ?? {}).sort().join() === "friend,oracleId,spare");
+    // R2 PR 2: the friend on a spare row carries a face and the pods the grant holds through, and nothing else.
+    check("the friend is a public id, a name, a face and pods", Object.keys(seenSpares[0]?.friend ?? {}).sort().join() === "commander,displayName,pods,publicId");
+    check("its pods are the ones the grant reaches A through, not B's own pod", JSON.stringify(seenSpares[0]?.friend.pods) === JSON.stringify(["Game night"]),
+      JSON.stringify(seenSpares[0]?.friend.pods));
+    check("B has no face yet, so the row draws initials", seenSpares[0]?.friend.commander === null);
+    const faceModule = await import("../src/lib/social/commander");
+    const { rows: faces } = await db.execute<{ oracle_id: string }>(sql`
+      select oracle_id from cards where commander_legal and type_line like 'Legendary Creature%' order by oracle_id limit 50`);
+    let face: string | null = null;
+    for (const f of faces) if ((await faceModule.setCommander(B, f.oracle_id)).ok) { face = f.oracle_id; break; }
+    if (!face) throw new Error("no commander the catalog lets B show");
+    const club = await pods.createPod(A, "Alpha club");
+    if (!club) throw new Error("createPod refused");
+    await pods.addMember(A, club.id, b.publicId);
+    await spares.shareSparesWith(B, club.id, true);
+    const twoPods = await spares.loadFriendSpares(A, [X, Y]);
+    check("a share through two of A's pods is still one row", twoPods.length === 1, JSON.stringify(twoPods));
+    check("and names both pods, in name order", JSON.stringify(twoPods[0]?.friend.pods) === JSON.stringify(["Alpha club", "Game night"]),
+      JSON.stringify(twoPods[0]?.friend.pods));
+    check("and draws B's face", twoPods[0]?.friend.commander?.oracleId === face);
+    check("C, the stranger, still sees nothing", (await spares.loadFriendSpares(C, [X, Y])).length === 0);
+    check("A deletes the second pod", await pods.deletePod(A, club.id));
+
+    // R2 PR 2: one friend by public id, only through the viewer's own link (G2).
+    const one = await access.loadFriend(A, b.publicId);
+    check("A reads B by public id, with B's face", one?.publicId === b.publicId && one.commander?.oracleId === face, JSON.stringify(one));
+    check("C, not B's friend, reads nothing for B's public id", (await access.loadFriend(C, b.publicId)) === null);
+    check("A reads nothing for a stranger's public id", (await access.loadFriend(A, d.publicId)) === null);
+    check("A reads nothing for their own public id", (await access.loadFriend(A, a.publicId)) === null);
+    check("a malformed public id reads nothing", (await access.loadFriend(A, "nope")) === null);
     check("C, the stranger, sees nothing", (await spares.loadFriendSpares(C, [X, Y])).length === 0);
     check("B sees no spares of their own through the friend read", (await spares.loadFriendSpares(B, [X, Y])).length === 0);
     const genShared = await spares.friendGeneration(A);

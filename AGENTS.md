@@ -835,7 +835,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   friendship, the friend's `pod_spare_shares` grant, the friend's membership of that pod and the viewer's, in one
   statement), then runs each granting friend's own claim model, at most four at once, each in a repeatable-read
   snapshot that re-checks that friend's grant first, so a grant revoked mid-read reads nothing. A spare is
-  `owned − hard − soft`, so a copy only a draft wants is not spare.
+  `owned − hard − soft`, so a copy only a draft wants is not spare. Each row's friend carries their face and the names of
+  the pods the grant holds through (Social R2 PR 2), and the spares are served by `GET /api/friend-spares?ids=` (signed in,
+  `SOCIAL_FRIENDS_ENABLED` re-checked for the reader, at most `MAX_SPARES_BATCH` card ids, `private, no-store`), so no
+  cached key carries them. `loadFriend` reads one friend by public id through the viewer's own link row (R2's friend page).
   **A friend's write never moves the viewer's stamp**, so friend data stays out of cached payloads by default; a cached
   page that must draw it puts `await friendGeneration(viewer)` as a bare element of EVERY `cachePageForUser` key on that
   page, for that call's own reader, and `check:list-cache` fails a cached page whose loaders reach `src/lib/social/`
