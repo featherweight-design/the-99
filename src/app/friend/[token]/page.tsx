@@ -27,7 +27,8 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
   if (!userId) {
     // The landing's own ground and mark (R1 decision 8), with no shell: the card face down, naming nobody.
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-[16px] bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_22%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] md:flex-row md:gap-[56px] md:px-0 md:bg-[radial-gradient(1000px_520px_at_50%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]">
+      // A <main> of its own: signed out, the shell draws none (`Shell`).
+      <main className="flex min-h-screen flex-col items-center justify-center gap-[16px] bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_22%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] md:flex-row md:gap-[56px] md:px-0 md:bg-[radial-gradient(1000px_520px_at_50%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]">
         <FriendCard face={null} up={false} />
         <LandingColumn
           kicker={copy.brand}
@@ -42,7 +43,7 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
           }
           fine={copy.signedOutFine}
         />
-      </div>
+      </main>
     );
   }
   if (!socialFriendsEnabled(await requestSwitchEnv(userId))) notFound();

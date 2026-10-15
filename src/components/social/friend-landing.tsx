@@ -69,10 +69,11 @@ export function LandingColumn({
   fine?: string;
   landing?: boolean;
 }) {
+  // A display name is up to 30 characters with no space required, so the column breaks a long one anywhere.
   // Everything under the kicker lands with the card: the heading, the body, the buttons and the fine print.
   const land = landing ? "friend-land-in" : "";
   return (
-    <section aria-labelledby="friend-landing-title" className="flex w-full flex-col gap-[8px] text-center md:w-[380px] md:gap-[10px] md:text-left">
+    <section aria-labelledby="friend-landing-title" className="flex w-full min-w-0 flex-col gap-[8px] text-center [overflow-wrap:anywhere] md:w-[380px] md:gap-[10px] md:text-left">
       <p className={`m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] max-md:hidden ${brand ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}>
         {kicker}
       </p>
@@ -89,13 +90,25 @@ export function LandingColumn({
 export function FriendLanding({ token, view }: { token: string; view: LandingView }) {
   const router = useRouter();
   const { go } = usePendingPush();
-  const [shown, setShown] = useState<Shown>(view);
+  const [shown, setShownState] = useState<Shown>(view);
+  // What is drawn and whether a write is in flight, read by the presses through refs: a toast's Try again runs a
+  // press from the render that failed, and must still meet the guards as they stand now, not as they stood then.
+  const live = useRef<Shown>(view);
+  const inFlight = useRef(false);
+  const setShown = (v: Shown) => {
+    live.current = v;
+    setShownState(v);
+  };
   // The face the card was drawn with stays on its front once it turns back down, so the turn has a front to hide.
   const [face, setFace] = useState(() => faceOf(view));
   const named = face !== null;
   const [up, setUp] = useState(false);
   const [arrival, setArrival] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusyState] = useState(false);
+  const setBusy = (on: boolean) => {
+    inFlight.current = on;
+    setBusyState(on);
+  };
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastSeq = useRef(0);
@@ -137,8 +150,11 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
   }
 
   async function accept() {
-    if (shown.kind !== "open" || busy) return;
-    const { name, commander } = shown;
+    const now = live.current;
+    if (now.kind !== "open" || inFlight.current) return;
+    const { name, commander } = now;
+    // A new press retires the last failure's toast, and its Try again with it.
+    setToast(null);
     setBusy(true);
     try {
       const r = await redeemInviteAction(token);
@@ -158,8 +174,11 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
   }
 
   async function decline() {
-    if (shown.kind !== "open" || busy) return;
-    const { name, commander } = shown;
+    const now = live.current;
+    if (now.kind !== "open" || inFlight.current) return;
+    const { name, commander } = now;
+    // A new press retires the last failure's toast, and its Try again with it.
+    setToast(null);
     setBusy(true);
     try {
       const r = await declineInviteAction(token);

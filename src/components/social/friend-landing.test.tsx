@@ -57,6 +57,8 @@ describe("the arrival", () => {
     expect(screen.getByTestId("friend-card-front").dataset.frame).toBe("art");
     expect(screen.getByText(L.credit(SOL.name))).toBeTruthy();
     expect(screen.getByText(L.openRules("Ana"))).toBeTruthy();
+    // What accepting shares is the image's description, read after its label.
+    expect(screen.getByRole("img").getAttribute("aria-describedby")).toBe(screen.getByText(L.openRules("Ana")).id);
   });
 
   it("draws a sender with no commander by their initials in the grey frame (L2b)", () => {
@@ -152,6 +154,26 @@ describe("Accept", () => {
   });
 });
 
+describe("a press while a failure toast stands", () => {
+  it("retires the toast and its Try again, so the failed press cannot run beside the new one", async () => {
+    m.redeem.mockRejectedValueOnce(new Error("down"));
+    let answer: (v: unknown) => void = () => {};
+    m.decline.mockReturnValue(new Promise((r) => { answer = r; }));
+    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    arrive();
+    await press(L.accept);
+    const retry = screen.getByRole("button", { name: L.retry });
+    await press(L.decline);
+    expect(screen.queryByRole("alert")).toBeNull();
+    // Even a Try again pressed from the old render meets the guards as they stand now.
+    await act(async () => { fireEvent.click(retry); });
+    expect(m.redeem).toHaveBeenCalledTimes(1);
+    await act(async () => answer({ ok: true }));
+    act(() => { vi.advanceTimersByTime(520); });
+    expect(title()).toBe(L.declinedTitle);
+  });
+});
+
 describe("Decline", () => {
   it("turns the card back first, then says the request is declined, by the name it kept", async () => {
     m.decline.mockResolvedValue({ ok: true });
@@ -228,6 +250,13 @@ describe("your own link", () => {
     render(<FriendLanding token={TOKEN} view={{ kind: "self", name: "Hugh", commander: null }} />);
     await press(L.copyLink);
     expect(screen.getByRole("alert").textContent).toContain(L.copyFailed);
+  });
+});
+
+describe("a long name", () => {
+  it("breaks anywhere in the column, so 30 characters with no space stay inside it", () => {
+    render(<FriendLanding token={TOKEN} view={{ kind: "open", name: "W".repeat(30), commander: null }} />);
+    expect(screen.getByRole("region").className).toContain("[overflow-wrap:anywhere]");
   });
 });
 

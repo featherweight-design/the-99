@@ -7,6 +7,7 @@
 // A client component because its art fades in as it lands (`FadingImg`). At phone width the card is drawn at 74%
 // (222×310), scaled from the top centre, with the height the scale frees taken back below it.
 
+import { useId } from "react";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { socialCopy } from "../../lib/copy/social";
 import { FadingImg } from "../ui/hydrated-art";
@@ -79,11 +80,14 @@ function CardBack({ dim }: { dim: boolean }) {
 
 function CardFront({ face, hidden }: { face: CardFace; hidden: boolean }) {
   const art = face.commander?.artCropUri ?? null;
+  // The text box says what accepting shares, so it is the image's description, read after its label.
+  const rulesId = useId();
   return (
     <div
       // One labelled image to assistive tech while it is face up; face down it is not there to read.
       role="img"
       aria-label={copy.cardAria(face.name, face.commander?.name ?? null, face.type)}
+      aria-describedby={rulesId}
       aria-hidden={hidden || undefined}
       data-testid="friend-card-front"
       data-frame={art ? "art" : "grey"}
@@ -111,7 +115,7 @@ function CardFront({ face, hidden }: { face: CardFace; hidden: boolean }) {
           <span>{face.type}</span>
           <i className="text-[11px] not-italic text-[color:var(--accent)]">◆</i>
         </div>
-        <p className="m-0 min-h-0 flex-1 overflow-hidden rounded-[6px] bg-[color:var(--surface-sunken)] px-[11px] py-[9px] font-sans text-[12px] leading-[1.45] text-[color:var(--fg-body)]">{face.rules}</p>
+        <p id={rulesId} className="m-0 min-h-0 flex-1 overflow-hidden rounded-[6px] bg-[color:var(--surface-sunken)] px-[11px] py-[9px] font-sans text-[12px] leading-[1.45] text-[color:var(--fg-body)]">{face.rules}</p>
         <div className="flex flex-none justify-between px-[4px] font-mono text-[9.5px] uppercase tracking-[.04em] text-[color:var(--fg-faint)]">
           <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{face.commander ? copy.credit(face.commander.name) : copy.noCommander}</span>
           <span className="flex-none pl-[8px]">{copy.mark}</span>

@@ -100,6 +100,8 @@ describe("/friend/[token]", () => {
     expect(screen.getByText(socialCopy.landing.signedOutFine)).toBeTruthy();
     // Face down and naming nobody: the back alone, and no Create an account (G3).
     expect(screen.getByTestId("friend-card-back")).toBeTruthy();
+    // Signed out, the shell draws no <main>, so the page is its own.
+    expect(screen.getByRole("main")).toBeTruthy();
     expect(screen.queryByTestId("friend-card-front")).toBeNull();
     expect(screen.queryByText(/create an account/i)).toBeNull();
     // Signing in comes back to this link, so the card turns over for them.
