@@ -7,6 +7,14 @@
 This feature writes collection data and has a delete path. Under **Everything** a Sync removes holdings the file
 dropped, and a conflict answered File lowers or removes the player's own count.
 
+## Approval conditions (d9, 2026-10-15)
+
+1. `measure:sync` opens its production connection inside a READ ONLY transaction (`set transaction read only`, with
+   `default_transaction_read_only` on the session too), takes its URL from the existing env convention
+   (`scripts/lib/env.mjs`), and never writes a connection string to disk.
+2. PRs 1 and 3 carry the delete paths, so their merge bar is clean-after-clean.
+3. The switch is on in staging from PR 2. d9 sets it when PR 1 merges: staging `true`, production `false`.
+
 ## Standing rulings (not re-litigated)
 
 - **The rule** (brief, locked). File-only changes are taken. App-only changes are kept. A conflict is asked, per card
