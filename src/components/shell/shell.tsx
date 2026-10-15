@@ -13,6 +13,7 @@ import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
+import { socialFriendsEnabled } from "../../lib/social/flag";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -63,7 +64,11 @@ export default async function Shell({
   const requestHeaders = await headers();
   const sheet = requestHeaders.get(SHEET_ON_HEADER) === "1" ? readSheetState(requestHeaders) : null;
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
-  const door = isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {};
+  // The Friends row, from the same resolved switches (Social R1): only the boolean reaches the client.
+  const door = {
+    ...(isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {}),
+    friends: socialFriendsEnabled(env),
+  };
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
   const stall = navStallLogEnabled(env)

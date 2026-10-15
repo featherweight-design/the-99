@@ -16,6 +16,7 @@ import Link from "next/link";
 import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
 import { adminCopy } from "../../lib/copy/admin";
+import { socialCopy } from "../../lib/copy/social";
 import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
@@ -57,39 +58,42 @@ type MenuItemsProps = {
   admin: string | null;
   /** Leaves for /admin, as `onAbout` leaves for /about. */
   onAdmin: () => void;
+  /** `SOCIAL_FRIENDS_ENABLED` for this reader, decided on the server: the Friends row, else no row. */
+  friends: boolean;
+  /** Leaves for /friends, as `onAbout` leaves for /about. */
+  onFriends: () => void;
 };
 
 /**
- * The `role="menuitem"` children (three, or four with the Admin row), shared by both panels. Roving focus:
+ * The `role="menuitem"` children (About, then Friends and Admin where they are drawn, then the two
+ * buttons), shared by both panels. Roving focus:
  * exactly one item is tabbable at a time and ↑/↓ move between them with wrap
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin }: MenuItemsProps) {
+function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, friends, onFriends }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
-  // One ref per item, sized from the list rather than written out: the row
-  // count was two for this menu's whole life and is three or four now, and a modulo
-  // hard-coded to the old count wraps focus into the wrong row silently.
-  const aboutRef = useRef<HTMLAnchorElement>(null);
-  const adminRef = useRef<HTMLAnchorElement>(null);
-  const manageRef = useRef<HTMLButtonElement>(null);
-  const signOutRef = useRef<HTMLButtonElement>(null);
-  // Typed as the common supertype so one `move` can focus any of them; the
-  // rows are not the same element and the focus model does not care. The
-  // Admin row sits second when it is drawn, so the buttons start after it.
+  // About first, Friends under it (Social R1 placement), Admin after them; each drawn only where it applies.
   const links: { href: string; label: string; trailing: string | null; go: () => void }[] = [
     { href: "/about", label: aboutLabel, trailing: null, go: onAbout },
+    ...(friends ? [{ href: "/friends", label: socialCopy.menu.friends, trailing: null, go: onFriends }] : []),
     ...(admin ? [{ href: "/admin", label: adminCopy.door.label, trailing: admin, go: onAdmin }] : []),
   ];
-  const refs: React.RefObject<HTMLElement | null>[] = admin
-    ? [aboutRef, adminRef, manageRef, signOutRef]
-    : [aboutRef, manageRef, signOutRef];
+  const buttons = [
+    { label: manageAccount, onClick: onManage, danger: false },
+    { label: signOutLabel, onClick: onSignOut, danger: true },
+  ];
+  // One ref per item, sized from the lists rather than written out (E9): the row count was two for this
+  // menu's whole life and is three to five now, and a ref list or a modulo hard-coded to one count wraps
+  // focus into the wrong row silently. Typed as the common supertype so one `move` can focus any of them.
+  const refs = useRef<(HTMLElement | null)[]>([]);
+  const count = links.length + buttons.length;
 
   function move(delta: number) {
-    const next = (active + delta + refs.length) % refs.length;
+    const next = (active + delta + count) % count;
     setActive(next);
-    refs[next].current?.focus();
+    refs.current[next]?.focus();
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -102,7 +106,7 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
     }
   }
 
-  // About and Admin are real links, not buttons that route: they go somewhere,
+  // About, Friends and Admin are real links, not buttons that route: they go somewhere,
   // so they should open in a new tab when a reader asks them to. Manage account
   // and Sign out act on the session and have no URL to offer.
   const rowClass = (i: number) =>
@@ -115,17 +119,14 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
           }`
     }`;
 
-  const buttons = [
-    { label: manageAccount, onClick: onManage, danger: false },
-    { label: signOutLabel, onClick: onSignOut, danger: true },
-  ];
-
   return (
     <>
       {links.map((link, i) => (
         <Link
           key={link.href}
-          ref={i === 0 ? aboutRef : adminRef}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
           href={link.href}
           role="menuitem"
           tabIndex={active === i ? 0 : -1}
@@ -162,7 +163,9 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
       {buttons.map((item, i) => (
         <button
           key={item.label}
-          ref={i === 0 ? manageRef : signOutRef}
+          ref={(el) => {
+            refs.current[links.length + i] = el;
+          }}
           type="button"
           role="menuitem"
           tabIndex={active === links.length + i ? 0 : -1}
@@ -367,6 +370,7 @@ export function AccountMenu({
   theme,
   adminDoor = false,
   adminEnv,
+  friends = false,
 }: {
   panel: PanelKind;
   theme: ThemeKey;
@@ -374,6 +378,8 @@ export function AccountMenu({
   adminDoor?: boolean;
   /** The admin's environment, named at the row's end. Read only with the door. */
   adminEnv?: string;
+  /** `SOCIAL_FRIENDS_ENABLED` for this reader, resolved by the shell; only the boolean reaches the client. */
+  friends?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -412,6 +418,7 @@ export function AccountMenu({
   }
   const onAbout = () => go("/about");
   const onAdmin = () => go("/admin");
+  const onFriends = () => go("/friends");
   const admin = adminDoor ? (adminEnv ?? "") || null : null;
 
   // Clerk's hosted account page, not its modal (Hugh, 2026-10-12): the app loads none of Clerk's
@@ -515,6 +522,8 @@ export function AccountMenu({
             onSignOut={onSignOut}
             onAbout={onAbout}
             admin={admin}
+            friends={friends}
+            onFriends={onFriends}
             onAdmin={onAdmin}
           />
         ) : (
@@ -530,6 +539,8 @@ export function AccountMenu({
             onSignOut={onSignOut}
             onAbout={onAbout}
             admin={admin}
+            friends={friends}
+            onFriends={onFriends}
             onAdmin={onAdmin}
           />
         ))}

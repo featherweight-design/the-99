@@ -84,6 +84,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/decks/precons", dynamic: false },
   { path: "/decks/precons/[fileName]", dynamic: true },
   { path: "/discover", dynamic: false },
+  // A friend link's landing (Social R1) reads the link, never the collection; it imports `db` for that, and
+  // `db` the whole schema. Listed as /about is, for one pointless revalidation.
+  { path: "/friend/[token]", dynamic: true },
 ];
 
 /**

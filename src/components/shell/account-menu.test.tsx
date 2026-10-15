@@ -448,3 +448,48 @@ describe("AccountMenu admin door (admin STATES D1, D2)", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 });
+
+describe("AccountMenu Friends row (Social R1 placement)", () => {
+  it("draws no Friends row with the switch off", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" adminDoor adminEnv="staging" />);
+    fireEvent.click(trigger());
+    expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
+  });
+
+  it.each(["popover", "sheet"] as const)("puts Friends second, under About and before Admin, in the %s", (panel) => {
+    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" friends />);
+    fireEvent.click(trigger());
+    const items = screen.getAllByRole("menuitem");
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/friends", "/admin", "Manage account", "Sign out"]);
+  });
+
+  it("roves through every row it draws, sized from the rows (E9)", () => {
+    for (const admin of [false, true]) {
+      const { unmount } = render(<AccountMenu panel="popover" theme="amonkhet" adminDoor={admin} adminEnv="staging" friends />);
+      fireEvent.click(trigger());
+      const items = screen.getAllByRole("menuitem");
+      expect(items).toHaveLength(admin ? 5 : 4);
+      for (let i = 0; i < items.length; i++) {
+        fireEvent.keyDown(items[i], { key: "ArrowDown" });
+        expect(document.activeElement).toBe(items[(i + 1) % items.length]);
+      }
+      fireEvent.keyDown(items[0], { key: "ArrowUp" });
+      expect(document.activeElement).toBe(items[items.length - 1]);
+      unmount();
+    }
+  });
+
+  it("hands the Friends navigation to the provider and closes the menu", () => {
+    window.history.replaceState(null, "", "/");
+    const providerPush = vi.fn();
+    render(
+      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush, registerContentScope: () => {} }}>
+        <AccountMenu panel="sheet" theme="amonkhet" friends />
+      </Report.Provider>,
+    );
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "Friends" }));
+    expect(providerPush).toHaveBeenCalledWith("/friends");
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+});

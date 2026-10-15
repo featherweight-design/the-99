@@ -552,8 +552,9 @@ function NavSlot({ href, name, active, pip, className, handlers, children }: Nav
   );
 }
 
-/** The admin door (admin STATES D1): a boolean from the server, and the environment it names. */
-export type AdminDoorProps = { adminDoor?: boolean; adminEnv?: string };
+/** The admin door (admin STATES D1): a boolean from the server, and the environment it names. And the
+ *  Friends row (Social R1), drawn when `SOCIAL_FRIENDS_ENABLED` is on for this reader. */
+export type AdminDoorProps = { adminDoor?: boolean; adminEnv?: string; friends?: boolean };
 
 export function NavRail({
   locked,
@@ -561,6 +562,7 @@ export function NavRail({
   theme,
   adminDoor,
   adminEnv,
+  friends,
 }: { locked: boolean; openLock?: OpenLock; theme: ThemeKey } & AdminDoorProps) {
   const pathname = usePathname();
   // Live slots only: a locked slot's note already names it, and two popovers from one slot is
@@ -655,7 +657,7 @@ export function NavRail({
       <div className="mt-auto flex shrink-0 flex-col items-center">
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
-        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} />
+        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} />
       </div>
       {tag}
     </aside>
@@ -741,7 +743,7 @@ export function TabBar({ locked, openLock = null }: { locked: boolean; openLock?
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme, adminDoor, adminEnv }: { theme: ThemeKey } & AdminDoorProps) {
+export function MobileHeader({ theme, adminDoor, adminEnv, friends }: { theme: ThemeKey } & AdminDoorProps) {
   return (
     <header
       className="md:hidden flex items-center justify-between px-5 pt-5 pb-[14px]"
@@ -771,7 +773,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv }: { theme: ThemeKey }
         {/* Install, phone only: desktop browsers have their own install button (PWA plan, call 1). */}
         <InstallSlot />
         {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-        <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} />
+        <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} />
       </div>
     </header>
   );

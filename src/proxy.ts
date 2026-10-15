@@ -38,7 +38,11 @@ import { switchBits } from "./lib/switches/resolve";
 // cut-down log line and answers 204 (`api/csp-report/route.ts`).
 // /api/stripe-webhook is public because Stripe calls it with no session; its route verifies Stripe's
 // signature on the raw body and refuses anything unsigned (`api/stripe-webhook/route.ts`).
-const isPublic = createRouteMatcher(["/", "/offline", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+// /friend/<token> is public because a friend link is opened by someone who may not be signed in yet: the
+// page draws a signed-out reader a card that reads nothing and offers Sign in, and reads the link only for
+// a signed-in reader whose own switch is on (`app/friend/[token]/page.tsx`, Social R1 E8). `/friends` stays
+// protected: the pattern needs the slash.
+const isPublic = createRouteMatcher(["/", "/offline", "/friend/(.*)", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader
