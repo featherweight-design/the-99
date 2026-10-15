@@ -49,7 +49,9 @@ const SECONDARY_BUTTON = `${BUTTON} bg-transparent px-[20px] font-medium text-[c
 
 /**
  * The column beside the card: a kicker (desktop only; the phone board draws none), the heading that carries the
- * question, an optional body, the buttons and an optional fine print. `landing` holds them back until the card lands.
+ * question, an optional body, the buttons and an optional fine print. `landing` holds them back until the card lands:
+ * `wait` while a turning card is still face down, `go` from the very render that starts its turn, so the two share
+ * one clock however late the page hydrates.
  */
 export function LandingColumn({
   kicker,
@@ -58,7 +60,7 @@ export function LandingColumn({
   body,
   actions,
   fine,
-  landing = false,
+  landing,
 }: {
   kicker: string;
   /** The signed-out kicker is the landing's mark, in the accent. */
@@ -67,17 +69,17 @@ export function LandingColumn({
   body?: string;
   actions: ReactNode;
   fine?: string;
-  landing?: boolean;
+  landing?: "wait" | "go";
 }) {
   // A display name is up to 30 characters with no space required, so the column breaks a long one anywhere.
   // Everything under the kicker lands with the card: the heading, the body, the buttons and the fine print.
-  const land = landing ? "friend-land-in" : "";
+  const land = landing === "go" ? "friend-land-in" : landing === "wait" ? "friend-land-wait" : "";
   return (
     <section aria-labelledby="friend-landing-title" className="flex w-full min-w-0 flex-col gap-[8px] text-center [overflow-wrap:anywhere] md:w-[380px] md:gap-[10px] md:text-left">
       <p className={`m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] max-md:hidden ${brand ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}>
         {kicker}
       </p>
-      <h1 id="friend-landing-title" className={`m-0 font-display text-[21px] font-bold leading-[1.15] text-[color:var(--fg)] md:text-[28px] ${land}`}>
+      <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display outline-none text-[21px] font-bold leading-[1.15] text-[color:var(--fg)] md:text-[28px] ${land}`}>
         {title}
       </h1>
       {body && <p className={`m-0 font-sans text-[14px] leading-[1.55] text-[color:var(--fg-body)] md:text-[14.5px] ${land}`}>{body}</p>}
@@ -202,6 +204,18 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
     }
   }
 
+  // The column lands with a card that turns on arrival, and is drawn plainly once a press has turned it.
+  const landing = arrival ? (up ? "go" : "wait") : undefined;
+
+  // A press that redraws the column (Declined, or a refusal redrawn as what the link now is) takes the Decline or
+  // Accept the reader was on away, so focus moves to the new heading, which says what happened.
+  const drawnKind = useRef(shown.kind);
+  useEffect(() => {
+    if (drawnKind.current === shown.kind) return;
+    drawnKind.current = shown.kind;
+    document.getElementById("friend-landing-title")?.focus();
+  }, [shown.kind]);
+
   const toFriends = <Link href="/friends" className={SECONDARY_BUTTON}>{copy.toFriends}<PendingReporter href="/friends" /></Link>;
   const column = (() => {
     switch (shown.kind) {
@@ -210,7 +224,7 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
           <LandingColumn
             kicker={copy.kicker}
             title={copy.openTitle(shown.name)}
-            landing
+            landing={landing}
             actions={
               <>
                 <button type="button" className={PRIMARY_BUTTON} disabled={busy} aria-busy={busy || undefined} onClick={() => void accept()}>
@@ -230,7 +244,7 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
             kicker={copy.kicker}
             title={copy.selfTitle}
             body={copy.selfBody}
-            landing
+            landing={landing}
             actions={
               <>
                 <button type="button" className={PRIMARY_BUTTON} onClick={() => void copyLink()}>
@@ -243,7 +257,7 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
           />
         );
       case "friends":
-        return <LandingColumn kicker={copy.kicker} title={copy.alreadyTitle(shown.name)} body={copy.alreadyBody} landing actions={toFriends} />;
+        return <LandingColumn kicker={copy.kicker} title={copy.alreadyTitle(shown.name)} body={copy.alreadyBody} landing={landing} actions={toFriends} />;
       case "declined":
         return (
           <LandingColumn

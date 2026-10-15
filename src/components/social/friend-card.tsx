@@ -115,7 +115,7 @@ function CardFront({ face, hidden }: { face: CardFace; hidden: boolean }) {
           <span>{face.type}</span>
           <i className="text-[11px] not-italic text-[color:var(--accent)]">◆</i>
         </div>
-        <p id={rulesId} className="m-0 min-h-0 flex-1 overflow-hidden rounded-[6px] bg-[color:var(--surface-sunken)] px-[11px] py-[9px] font-sans text-[12px] leading-[1.45] text-[color:var(--fg-body)]">{face.rules}</p>
+        <p id={rulesId} className="m-0 min-h-0 flex-1 overflow-hidden [overflow-wrap:anywhere] rounded-[6px] bg-[color:var(--surface-sunken)] px-[11px] py-[9px] font-sans text-[12px] leading-[1.45] text-[color:var(--fg-body)]">{face.rules}</p>
         <div className="flex flex-none justify-between px-[4px] font-mono text-[9.5px] uppercase tracking-[.04em] text-[color:var(--fg-faint)]">
           <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{face.commander ? copy.credit(face.commander.name) : copy.noCommander}</span>
           <span className="flex-none pl-[8px]">{copy.mark}</span>

@@ -48,6 +48,8 @@ describe("the arrival", () => {
     render(<FriendLanding token={TOKEN} view={OPEN} />);
     expect(turn().dataset.up).toBe("false");
     expect(turn().dataset.arrival).toBe("true");
+    // Arriving moves no focus.
+    expect(document.activeElement).toBe(document.body);
     // Face down, the front is not there to read.
     expect(screen.queryByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeRequest) })).toBeNull();
     arrive();
@@ -112,6 +114,7 @@ describe("Accept", () => {
     expect(title()).toBe(L.endedTitle);
     expect(turn().dataset.up).toBe("false");
     expect(m.push).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 }));
   });
 
   it("redraws your own link as your own card", async () => {
@@ -187,6 +190,8 @@ describe("Decline", () => {
     act(() => { vi.advanceTimersByTime(1); });
     expect(title()).toBe(L.declinedTitle);
     expect(screen.getByText(L.declinedBody("Ana"))).toBeTruthy();
+    // The Decline the reader was on is gone: focus is on the heading that says what happened.
+    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 }));
     expect(screen.getByRole("link", { name: L.toHome }).getAttribute("href")).toBe("/");
   });
 
@@ -256,6 +261,8 @@ describe("a long name", () => {
   it("breaks anywhere in the column, so 30 characters with no space stay inside it", () => {
     render(<FriendLanding token={TOKEN} view={{ kind: "open", name: "W".repeat(30), commander: null }} />);
     expect(screen.getByRole("region").className).toContain("[overflow-wrap:anywhere]");
+    arrive();
+    expect(screen.getByText(L.openRules("W".repeat(30))).className).toContain("[overflow-wrap:anywhere]");
   });
 });
 
@@ -280,6 +287,14 @@ describe("landingView", () => {
 describe("the column", () => {
   it("lands its heading and buttons with a card that turns, and draws an unturned card's at once", () => {
     render(<FriendLanding token={TOKEN} view={OPEN} />);
+    // Held while the card waits face down, however late the page hydrates; timed from the turn's own render.
+    expect(screen.getByRole("heading", { level: 1 }).className).toContain("friend-land-wait");
+    expect(screen.getByRole("heading", { level: 1 }).className).not.toContain("friend-land-in");
+    act(() => { vi.advanceTimersByTime(16); });
+    expect(turn().dataset.up).toBe("false");
+    expect(screen.getByRole("heading", { level: 1 }).className).toContain("friend-land-wait");
+    arrive();
+    expect(turn().dataset.up).toBe("true");
     expect(screen.getByRole("heading", { level: 1 }).className).toContain("friend-land-in");
     expect(screen.getByRole("button", { name: L.accept }).parentElement?.className).toContain("friend-land-in");
     cleanup();

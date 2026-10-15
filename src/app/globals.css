@@ -1502,8 +1502,10 @@ html {
   .friend-card-turn[data-up="true"] .friend-card-back,
   .friend-card-turn[data-up="false"] .friend-card-front { opacity: 0; }
 }
-/* The column's heading and buttons arrive as the card lands (200ms + 520ms), on a card that turns. */
+/* The column's heading and buttons arrive as the card lands (200ms + 520ms), on a card that turns: held while the
+   card waits face down (`wait`), and timed from the render that starts its turn (`in`). */
 @media (prefers-reduced-motion: no-preference) {
+  .friend-land-wait { opacity: 0; }
   .friend-land-in { animation: friend-land-in 240ms var(--motion-ease) 720ms both; }
 }
 @keyframes friend-land-in { from { opacity: 0; } }
