@@ -68,8 +68,14 @@ export function ScanControls({
   const unwatch = useRef<(() => void) | null>(null);
   useEffect(() => () => unwatch.current?.(), []);
 
+  // A finger is still down on the press that holds: a second pointer adds nothing. A hold whose press has ended and
+  // is only waiting for a click (or its timer) does not block a new press, which takes a fresh hold of its own, so
+  // the old timer, which lets go only of the hold it was set for, can never clear it.
+  const pressing = useRef(false);
+
   function grab(e: React.PointerEvent) {
-    if (hold.current) return;
+    if (hold.current && pressing.current) return;
+    pressing.current = true;
     // What the player is LOOKING AT: while an earlier verdict saves, that is still its held reading.
     hold.current = { reading: shown };
     setHeld(hold.current);
@@ -77,7 +83,9 @@ export function ScanControls({
     const pointer = e.pointerId;
     const up = (ev: PointerEvent) => { if (ev.pointerId === pointer) { stop(); maybeRelease(which, ev.target); } };
     const cancel = (ev: PointerEvent) => { if (ev.pointerId === pointer) { stop(); release(which); } };
+    // Watching ends with the press, whichever way it ends.
     const stop = () => {
+      pressing.current = false;
       window.removeEventListener("pointerup", up, true);
       window.removeEventListener("pointercancel", cancel, true);
       if (unwatch.current === stop) unwatch.current = null;

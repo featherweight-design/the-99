@@ -109,6 +109,26 @@ describe("ScanControls", () => {
     expect(screen.getByText("Sol Ring")).toBeTruthy();
   });
 
+  it("gives a new press a fresh hold that an abandoned press's timer cannot clear", async () => {
+    vi.useFakeTimers();
+    const { onVerdict, redraw } = setup();
+    const right = screen.getByRole("button", { name: copy.right });
+    const wrong = screen.getByRole("button", { name: copy.wrong });
+    fireEvent.pointerDown(right);
+    redraw(NEXT);
+    // Dragged from ✓ to ✗ and let go: no click, so the hold waits out its timer.
+    fireEvent.pointerUp(wrong);
+    await act(async () => { vi.advanceTimersByTime(VERDICT_CLICK_WAIT_MS - 500); });
+    fireEvent.pointerDown(right);
+    await act(async () => { vi.advanceTimersByTime(600); });
+    // The old timer has fired; the new press's hold stands.
+    expect(screen.getByText("Zirda, the Dawnwalker")).toBeTruthy();
+    fireEvent.pointerUp(right);
+    await act(async () => { fireEvent.click(right); });
+    vi.useRealTimers();
+    expect(onVerdict).toHaveBeenCalledWith(ZIRDA, true);
+  });
+
   it("lets go when the press is released outside the controls", async () => {
     vi.useFakeTimers();
     const { onVerdict, redraw } = setup();
