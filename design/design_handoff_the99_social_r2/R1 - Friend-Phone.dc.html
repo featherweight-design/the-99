@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A friend's wishlist, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.ph{width:390px;height:844px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.mh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #181C26}
+.wm{display:flex;align-items:flex-end;gap:3px}
+.wm span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A;padding-bottom:4px}
+.wm b{font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0;line-height:1}
+.mav{width:38px;height:38px;border-radius:12px;border:1px solid #FF4D9A;color:#FF4D9A;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;background:#0E0F14;padding:0}
+.scroll{flex:1;overflow:hidden;position:relative}
+.tb{flex:none;height:74px;display:flex;align-items:center;padding:8px 8px 14px;box-sizing:border-box;background:#12141B;border-top:1px solid #181C26}
+.ts{flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#6F7486;font:9px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+.pg{padding:10px 16px 30px}
+.back{font-size:13.5px;color:#959AAD;text-decoration:none;display:inline-flex;align-items:center;min-height:44px}
+.hero{position:relative;height:150px;border-radius:12px;overflow:hidden;border:1px solid #262A35;background:#16181F}
+.hero img{width:100%;height:100%;object-fit:cover;display:block}
+.hero:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,15,20,0) 25%,rgba(14,15,20,.92))}
+.hero.ini{background:radial-gradient(circle at 30% 20%,#20222A,#12141B)}
+.hb{position:absolute;left:14px;right:6px;bottom:12px;z-index:2;display:flex;align-items:flex-end;gap:12px}
+.bf{width:60px;height:60px;border-radius:13px;overflow:hidden;border:2px solid #0E0F14;box-shadow:0 0 0 1px #343843;flex:none;background:#20222A;color:#B1B6C7;font:500 18px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.bf img{width:100%;height:100%;object-fit:cover;display:block}
+.who{flex:1;min-width:0}
+.h1{margin:0;font:700 22px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.sub{font-size:12px;color:#B1B6C7;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.more{width:44px;height:44px;border:0;border-radius:8px;background:rgba(14,15,20,.6);color:#E6E8F0;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.sec{margin-top:20px}
+.sh{display:flex;align-items:center;justify-content:space-between;min-height:40px;border-bottom:1px solid #181C26}
+.vo{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.wl{display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #181C26}
+.wa{position:relative;width:58px;height:42px;border-radius:6px;overflow:hidden;border:1px solid #262A35;padding:0;background:#191B22}
+.wa img{display:block;width:100%;height:100%;object-fit:cover}
+.got .wa img{filter:saturate(.55) brightness(.8)}
+.stamp{position:absolute;right:2px;bottom:3px;padding:0 4px;border:1.5px solid #6FA368;border-radius:3px;color:#6FA368;background:rgba(14,15,20,.85);font:700 9px 'Chakra Petch',sans-serif;letter-spacing:.14em;transform:rotate(-8deg)}
+.wi{display:flex;flex-direction:column;gap:3px;min-width:0}
+.wn{border:0;background:transparent;padding:0;text-align:left;font:500 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0;min-height:24px}
+.wq{font:11px 'IBM Plex Mono',monospace;color:#B1B6C7}
+.wq.g{color:#6FA368}
+.empty{margin-top:14px;border:1px dashed #343843;border-radius:12px;padding:20px 18px;display:flex;flex-direction:column;gap:6px}
+.empty b{font:700 16px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.empty span{font-size:13px;line-height:1.55;color:#959AAD}
+.gone{margin:90px 0 0;border:1px solid #262A35;border-radius:14px;background:#12141B;padding:22px 20px;display:flex;flex-direction:column;gap:10px}
+.gone b{font:700 18px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.gone span{font-size:13px;line-height:1.55;color:#959AAD}
+.bp{height:48px;border-radius:8px;background:#FF4D9A;color:#0E0F14;font:600 15px 'IBM Plex Sans',sans-serif;margin-top:6px;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.h1f{margin:8px 0 0;font:700 22px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.fr{display:flex;align-items:center;gap:12px;height:60px;border-bottom:1px solid #181C26;text-decoration:none;flex:1;min-width:0}
+.face{width:40px;height:40px;border-radius:10px;border:1px solid #262A35;background:#16181F;color:#B1B6C7;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
+.face img{display:block;width:100%;height:100%;object-fit:cover}
+.nm{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.fn{font-size:15px;font-weight:500;color:#E6E8F0}
+.fc{font-size:12px;color:#959AAD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{color:#6F7486;font-size:16px}
+.mo{width:44px;height:44px;border:0;border-radius:8px;background:transparent;color:#959AAD;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+</style>
+</helmet>
+<div style="width:1720px;min-height:2260px;box-sizing:border-box;padding:40px 32px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">/friends/[id] · phone 390 · view only</span>
+    <h2 style="margin:0;font:700 24px 'Chakra Petch',sans-serif">The same page on a phone: a shorter banner, then their list</h2>
+    <p class="cap" style="max-width:1500px">The banner drops to 150px and the face to 60px; the since line keeps one line by dropping the commander’s name when it would wrap (the art already says it). Lines are art, name, wants N. Frames match the desktop board.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,390px);gap:30px 32px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="ph">
+          <header class="mh"><span class="wm" aria-hidden="true"><b>99</b><span>◆◆◆</span></span><button class="mav" type="button" aria-label="Account">HH</button></header>
+          <div class="scroll">
+            <div class="pg">
+              <sc-if value="{{f.list}}" hint-placeholder-val="{{false}}">
+                <h1 class="h1f">Friends</h1>
+                <div style="margin-top:18px;border-bottom:1px solid #181C26;padding-bottom:8px"><span class="k">Friends · 4</span></div>
+                <sc-for list="{{f.rows}}" as="r" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center">
+                    <a class="fr" href="#"><span class="face"><sc-if value="{{r.hasArt}}" hint-placeholder-val="{{true}}"><img src="{{r.art}}" alt=""></sc-if><sc-if value="{{r.noArt}}" hint-placeholder-val="{{false}}">{{r.ini}}</sc-if></span><span class="nm"><span class="fn">{{r.name}}</span><span class="fc">{{r.cmd}}</span></span><span class="chev" aria-hidden="true">›</span></a>
+                    <button class="mo" type="button" aria-label="More for {{r.name}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{f.page}}" hint-placeholder-val="{{true}}">
+                <a class="back" href="#">‹ Friends</a>
+                <div class="{{f.heroCls}}">
+                  <sc-if value="{{f.hasArt}}" hint-placeholder-val="{{true}}"><img src="{{f.art}}" alt=""></sc-if>
+                  <div class="hb">
+                    <span class="bf"><sc-if value="{{f.hasArt}}" hint-placeholder-val="{{true}}"><img src="{{f.art}}" alt=""></sc-if><sc-if value="{{f.noArt}}" hint-placeholder-val="{{false}}">{{f.ini}}</sc-if></span>
+                    <div class="who"><h1 class="h1">{{f.name}}</h1><div class="sub">{{f.sub}}</div></div>
+                    <button class="more" type="button" aria-label="More for {{f.name}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+                  </div>
+                </div>
+                <section class="sec" aria-label="Wishlist">
+                  <div class="sh"><span class="k">{{f.wlHead}}</span><span class="vo">view only</span></div>
+                  <sc-if value="{{f.empty}}" hint-placeholder-val="{{false}}">
+                    <div class="empty"><b>{{f.emptyTitle}}</b><span>When Dave adds a card, it shows here with how many they want, and GOT once they have it.</span></div>
+                  </sc-if>
+                  <sc-for list="{{f.lines}}" as="l" hint-placeholder-count="3">
+                    <div class="{{l.cls}}">
+                      <button class="wa" type="button" aria-label="{{l.name}}, card details"><img src="{{l.art}}" alt=""><sc-if value="{{l.got}}" hint-placeholder-val="{{false}}"><span class="stamp" aria-hidden="true">GOT</span></sc-if></button>
+                      <div class="wi"><button class="wn" type="button">{{l.name}}</button><span class="{{l.qCls}}">{{l.q}}</span></div>
+                    </div>
+                  </sc-for>
+                </section>
+              </sc-if>
+              <sc-if value="{{f.gone}}" hint-placeholder-val="{{false}}">
+                <div class="gone"><b>This person isn’t on your friends list</b><span>A friend’s page shows only while you’re friends. If you were removed, nobody was told, and nothing here can say more.</span><a class="bp" href="#">Go to Friends</a></div>
+              </sc-if>
+            </div>
+          </div>
+          <nav class="tb" aria-label="Primary">
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span>Home</span></span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg><span>Collection</span></span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg><span>Commanders</span></span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg><span>Discover</span></span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg><span>Decks</span></span>
+          </nav>
+        </div>
+        <p class="cap">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1720,"height":2260}}'>
+class Component extends DCLogic {
+renderVals() {
+const A = { zimone: 'art/zimone.png', rootha: 'art/rootha.png', jace: 'art/jace.png', cap: 'art/captain-america.png', sai: 'art/sai.png', heroes: 'art/heroes.png', sokka: 'art/hero-sokka.png', aang: 'art/resume-aang.png', omnath: 'art/resume-omnath.png' };
+const row = (name, cmd, art) => ({ name, cmd, art, hasArt: !!art, noArt: !art, ini: name.slice(0, 2).toUpperCase() });
+const rows = [row('Dave', 'Sokka, Tenacious Tactician', A.sokka), row('Jo', '', ''), row('Priya', 'Avatar Aang', A.aang), row('Sam', 'Omnath, Locus of Creation', A.omnath)];
+const L = (name, art, want, got) => ({ cls: got ? 'wl got' : 'wl', name, art, got, q: got ? 'got · wanted ' + want : 'wants ' + want, qCls: got ? 'wq g' : 'wq' });
+const daveLines = [L('Captain America, Team Leader', A.cap, 1, false), L('Zimone, Infinite Analyst', A.zimone, 2, false), L('Jace, Multiverse Architect', A.jace, 1, false), L('Heroes in a Half Shell', A.heroes, 1, true), L('Sai, Master Thopterist', A.sai, 3, true)];
+const base = { list: false, page: false, gone: false, rows: [], heroCls: 'hero', hasArt: true, noArt: false, art: A.sokka, ini: 'DA', name: 'Dave', sub: 'Friend since Oct 2', wlHead: '', empty: false, emptyTitle: '', lines: [] };
+const F = (o) => Object.assign({}, base, o);
+const frames = [
+F({ label: 'PP1 · /friends · rows open a page', list: true, rows, note: 'As P1: the row is the link, › before the … menu (44px each).' }),
+F({ label: 'PP2 · Dave · empty wishlist', page: true, wlHead: 'Dave’s wishlist · 0', empty: true, emptyTitle: 'Dave’s wishlist is empty', note: 'As P2.' }),
+F({ label: 'PP3 · Dave · lines and GOT', page: true, wlHead: 'Dave’s wishlist · 5', lines: daveLines, note: 'As P3: wants N, or got · wanted N with the stamp. Never an owned count.' }),
+F({ label: 'PP4 · Jo · no commander', page: true, heroCls: 'hero ini', hasArt: false, noArt: true, ini: 'JO', name: 'Jo', sub: 'Friend since Sep 14', wlHead: 'Jo’s wishlist · 2', lines: [L('Rootha, Mastering the Moment', A.rootha, 1, false), L('Captain America, Team Leader', A.cap, 2, false)], note: 'As P4: initials and a plain banner.' }),
+F({ label: 'PP5 · not a friend', gone: true, note: 'As P5: one card for a former friend, a stranger and a bad id.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>
