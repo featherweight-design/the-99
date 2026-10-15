@@ -7,16 +7,15 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { wishlistCopy, type CopyPart } from "../../lib/copy/wishlist";
+import { wishlistCopy } from "../../lib/copy/wishlist";
 import { CardDetailProvider, CardDetailTrigger, type SiblingCard } from "../cards/card-detail-provider";
-import { TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
-import { HydratedImg } from "../ui/hydrated-art";
 import { ArrivalDismiss } from "../decks/arrival-strip";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
 import { GRID_EAGER_TILES } from "../collection/grid-view";
 import { dismissCollectedAction } from "../../app/collection/wishlist/actions";
 import { WishlistSearch } from "./wishlist-search";
+import { Parts, WISHLIST_TILE_SHELL, WishlistTileFace } from "./wishlist-tile";
 
 const copy = wishlistCopy;
 
@@ -26,23 +25,6 @@ export type WishlistViewTile = { oracleId: string; name: string; imageUri: strin
 export type WishlistViewNotice = { oracleId: string; name: string; collectedAt: string };
 
 type Sort = "newest" | "name";
-
-/** Copy parts as the boards draw them: a strong part in the caller's strong class. */
-function Parts({ parts, strong }: { parts: readonly CopyPart[]; strong: string }) {
-  return (
-    <>
-      {parts.map((p, i) =>
-        p.strong ? (
-          <span key={i} className={strong}>
-            {p.text}
-          </span>
-        ) : (
-          <span key={i}>{p.text}</span>
-        ),
-      )}
-    </>
-  );
-}
 
 export function WishlistView({
   tiles: served,
@@ -186,29 +168,9 @@ function WishlistTile({ tile, eager, siblings }: { tile: WishlistViewTile; eager
         name={tile.name}
         siblings={siblings}
         imageUri={tile.imageUri}
-        className={`${TILE_SHELL} art-lift-host w-full text-left bg-[color:var(--surface)] border border-solid border-[color:var(--border)] md:hover:border-[color:var(--accent)] transition-colors`}
+        className={`${WISHLIST_TILE_SHELL} art-lift-host md:hover:border-[color:var(--accent)] transition-colors`}
       >
-        <span
-          className={`relative block w-full overflow-hidden ${TILE_ART_CLIP}`}
-          style={{ aspectRatio: TILE_ART_RATIO, background: "var(--surface-sunken)" }}
-        >
-          {tile.imageUri && (
-            <HydratedImg
-              eager={eager}
-              src={tile.imageUri}
-              alt=""
-              decoding="async"
-              className="art-lift absolute inset-0 block h-full w-full object-cover object-center"
-            />
-          )}
-          <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]" />
-        </span>
-        <span className="flex min-h-[54px] min-w-0 flex-col justify-center gap-[3px] px-[7px] pb-[8px] pt-[6px] md:min-h-[62px] md:gap-[4px] md:px-[10px] md:pb-[9px] md:pt-[7px]">
-          <span className="truncate text-[12px] font-semibold leading-[16px] text-[color:var(--fg)] md:text-[13px] md:leading-[17px]">{tile.name}</span>
-          <span data-testid="wishlist-tile-caption" className="truncate font-mono text-[9px] leading-[1.2] text-[color:var(--fg-faint)] md:text-[9.5px]">
-            <Parts parts={copy.tile.caption(tile.want, tile.have)} strong="font-semibold text-[color:var(--fg-body)]" />
-          </span>
-        </span>
+        <WishlistTileFace tile={tile} eager={eager} />
       </CardDetailTrigger>
     </li>
   );

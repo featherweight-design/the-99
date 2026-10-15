@@ -85,7 +85,7 @@ import {
   StartWithoutACollectionFigureBody,
   UploadChoiceFigureBody,
 } from "./collection-edit-figures";
-import { FriendsFigureBody, OpponentsFigureBody } from "./social-figures";
+import { FriendsFigureBody, OpponentsFigureBody, WishlistFigureBody } from "./social-figures";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -959,6 +959,14 @@ function FriendsFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+function WishlistFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="wishlist" width={width}>
+      <WishlistFigureBody />
+    </Specimen>
+  );
+}
+
 function OpponentsFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="opponents" width={width}>
@@ -1297,6 +1305,7 @@ export const FIGURES: Partial<
   "start-without-a-collection": StartWithoutACollectionFigure,
   friends: FriendsFigure,
   opponents: OpponentsFigure,
+  wishlist: WishlistFigure,
   "collection-add": CollectionAddFigure,
   "upload-choice": UploadChoiceFigure,
   "edit-copies": EditCopiesFigure,

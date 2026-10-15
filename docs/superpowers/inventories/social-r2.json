@@ -134,6 +134,22 @@
           "settle": 1500
         }
       ]
+    },
+    {
+      "id": "about-wishlist",
+      "label": "/about: the Keeping a wishlist figure (the tab's own tile)",
+      "view": "src/components/about/social-figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='wishlist']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='wishlist']"
+        },
+        {
+          "settle": 3000
+        }
+      ]
     }
   ]
 }
