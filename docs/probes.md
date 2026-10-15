@@ -2412,10 +2412,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   id. Mutation-checked four ways (the Replace's delete of upload printings, the precon re-derive, the writer's
   printing-of-token check, the reader's join on the token).
 - `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
-  count and GOT state (summed across printings), that a write moves the owner's data stamp, that an unknown card
-  and a quantity outside 1 to 99 write nothing, that a friend reads the lines with only the wanted count and got,
-  that a stranger, a forged or malformed public id and a former friend read nothing, that a got line stays until
-  cleared, and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
+  count (summed across printings), that a write moves the owner's data stamp, that an unknown card and a quantity
+  outside 1 to 99 write nothing, that a friend reads the lines with the card and the wanted count and no owned count
+  or got, that a stranger, a forged or malformed public id and a former friend read nothing, that a line the
+  collection reaches is hidden from every read (the friend's included) and deleted by the write that reached it
+  (Social R2 G5), and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. Mutation-checked:
   dropping the viewer predicate from the friendship join makes the stranger see the list.
 - `pnpm probe:upcoming-precons` proves the upcoming-precons backend against a real database: that a non-digital

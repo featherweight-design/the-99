@@ -9,6 +9,7 @@
 // lands, so the list itself is the receipt, and a failure is the page's toast.
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { Friend } from "../../lib/social/access";
 import { socialCopy } from "../../lib/copy/social";
 import { folderCopy } from "../../lib/copy/folders";
@@ -16,6 +17,7 @@ import { sinceDay } from "../../lib/social/when";
 import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { Face } from "./face";
+import { PendingReporter } from "../shell/pending-reporter";
 
 const f = socialCopy.friends;
 
@@ -29,6 +31,7 @@ export function FriendsList({
   fresh,
   removing,
   onRemove,
+  linkable = false,
 }: {
   friends: Friend[];
   now: Date;
@@ -38,6 +41,11 @@ export function FriendsList({
   /** The friend whose removal is in flight. */
   removing: string | null;
   onRemove: (friend: Friend) => void;
+  /**
+   * Each row is a link to the friend's page, with a › before its … (R2 P1, PP1). Only while the wishlist is on for
+   * the reader (G9); off, the row is Round 1's.
+   */
+  linkable?: boolean;
 }) {
   // A removal takes its row, its ⋯ and the confirm with it, so the dialog's own return lands on nothing: when
   // the list shrinks and focus is left on the page itself, it goes to the Friends heading. Effects run after the
@@ -67,6 +75,7 @@ export function FriendsList({
               fresh={friend.publicId === fresh}
               removing={removing === friend.publicId}
               onRemove={() => onRemove(friend)}
+              linkable={linkable}
             />
           ))}
         </ul>
@@ -81,12 +90,58 @@ function FriendRow({
   fresh,
   removing,
   onRemove,
+  linkable,
 }: {
   friend: Friend;
   since: string;
   fresh: boolean;
   removing: boolean;
   onRemove: () => void;
+  linkable: boolean;
+}) {
+  return (
+    <li className="relative flex h-[60px] items-center gap-[12px] [border-bottom:1px_solid_var(--border)]" data-friend-row="">
+      <Face name={friend.displayName} commander={friend.commander} size={40} />
+      <div className="flex min-w-0 flex-1 flex-col gap-[1px]">
+        {linkable ? (
+          // The whole row is the link: its box is stretched over the row, and the … sits above it.
+          <Link
+            href={`/friends/${friend.publicId}`}
+            aria-label={f.openAria(friend.displayName)}
+            className="truncate text-[15px] font-medium text-[color:var(--fg)] no-underline outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:rounded-[8px] focus-visible:after:[outline:2px_solid_var(--accent)] md:text-[14.5px]"
+          >
+            {friend.displayName}
+            <PendingReporter href={`/friends/${friend.publicId}`} />
+          </Link>
+        ) : (
+          <span className="truncate text-[15px] font-medium md:text-[14.5px] text-[color:var(--fg)]">{friend.displayName}</span>
+        )}
+        {friend.commander ? <span className="truncate text-[12px] text-[color:var(--fg-muted)]">{friend.commander.name}</span> : null}
+      </div>
+      {/* PP1: a linked row drops its since date at phone width, so the › and … sit at the right edge. */}
+      <span className={`flex-none font-mono text-[10.5px] md:text-[11px] ${linkable ? "hidden md:inline" : ""} ${fresh ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
+        {f.since(since)}
+      </span>
+      {linkable ? <span aria-hidden className="flex-none px-[4px] text-[18px] leading-none text-[color:var(--fg-muted)]">›</span> : null}
+      <FriendMenu friend={friend} removing={removing} onRemove={onRemove} className="relative z-10" />
+    </li>
+  );
+}
+
+/**
+ * A friend's … menu: its one row, Remove friend, turns into the shared delete pane (Keep it first and focused). On
+ * the friends list's rows and in a friend page's head (R2 P2), the same control.
+ */
+export function FriendMenu({
+  friend,
+  removing,
+  onRemove,
+  className = "",
+}: {
+  friend: Pick<Friend, "displayName">;
+  removing: boolean;
+  onRemove: () => void;
+  className?: string;
 }) {
   const [menu, setMenu] = useState<"closed" | "menu" | "confirm">("closed");
   const trigger = useRef<HTMLButtonElement>(null);
@@ -109,16 +164,7 @@ function FriendRow({
   }
 
   return (
-    <li className="relative flex h-[60px] items-center gap-[12px] [border-bottom:1px_solid_var(--border)]" data-friend-row="">
-      <Face name={friend.displayName} commander={friend.commander} size={40} />
-      <div className="flex min-w-0 flex-1 flex-col gap-[1px]">
-        <span className="truncate text-[15px] font-medium md:text-[14.5px] text-[color:var(--fg)]">{friend.displayName}</span>
-        {friend.commander ? <span className="truncate text-[12px] text-[color:var(--fg-muted)]">{friend.commander.name}</span> : null}
-      </div>
-      <span className={`flex-none font-mono text-[10.5px] md:text-[11px] ${fresh ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
-        {f.since(since)}
-      </span>
-      <div ref={wrap} className="relative flex-none">
+      <div ref={wrap} className={`relative flex-none ${className}`}>
         <button
           ref={trigger}
           type="button"
@@ -159,7 +205,6 @@ function FriendRow({
           </MenuPanel>
         ) : null}
       </div>
-    </li>
   );
 }
 

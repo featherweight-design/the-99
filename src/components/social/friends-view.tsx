@@ -71,6 +71,7 @@ export function FriendsView({
   origin,
   nowMs,
   maxLinks,
+  friendPages = false,
 }: {
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
@@ -83,6 +84,8 @@ export function FriendsView({
   origin: string | null;
   /** The server's clock, so the first client render draws the same times. */
   nowMs: number;
+  /** Each friend row links to the friend's page (R2 P1): the wishlist is on for this reader. */
+  friendPages?: boolean;
   maxLinks: number;
 }) {
   const hydrated = useHydrated();
@@ -268,6 +271,7 @@ export function FriendsView({
           fresh={receipt?.publicId ?? null}
           removing={removing}
           onRemove={remove}
+          linkable={friendPages}
         />
         {pods}
         <OpenLinks

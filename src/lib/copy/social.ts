@@ -46,6 +46,19 @@ export const socialCopy = {
     removeBody: (name: string) => `${name} leaves the pods you own, and you leave ${name}’s. ${name} isn’t told.`,
     removeConfirm: "Remove friend",
     removeFailed: "We couldn’t remove that friend. Try again.", // toast, role alert
+    // The row's link to the friend's page (R2 P1), spoken; the › itself is drawn.
+    openAria: (name: string) => `${name}’s page`,
+  },
+
+  // A friend's page, `/friends/[publicId]` (Social R2 P2, P3; handoff `social-r2 · copy strings.ts` friend block).
+  friendPage: {
+    back: "‹ Friends",
+    since: (since: string) => `Friend ${since}`, // `since` is friends.since's "since Oct 2"
+    head: (name: string) => `${name}’s wishlist`,
+    viewOnly: "view only",
+    wants: "wants", // a tile's sub-line: `wants 2`, the count drawn after it in --fg-body
+    emptyTitle: (name: string) => `${name}’s wishlist is empty`,
+    emptyBody: (name: string) => `When ${name} adds a card, it shows here with how many they want until they have them.`,
   },
 
   invites: {

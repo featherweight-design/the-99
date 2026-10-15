@@ -72,7 +72,8 @@ async function main() {
 
     const seen = await loadFriendWishlist(A, b.publicId);
     check("A, a friend, sees both lines", seen.length === 2, JSON.stringify(seen));
-    check("with the wanted count and got, and nothing else", seen.every((l) => Object.keys(l).sort().join() === "got,oracleId,quantity"));
+    check("with the card and the wanted count, and no owned count or got",
+      seen.every((l) => Object.keys(l).sort().join() === "backImageUri,imageUri,layout,name,oracleId,quantity" && l.name.length > 0));
     check("C, the stranger, sees nothing", (await loadFriendWishlist(C, b.publicId)).length === 0);
     check("a forged public id reads nothing", (await loadFriendWishlist(A, "00000000-0000-0000-0000-000000000000")).length === 0);
     check("a malformed id reads nothing", (await loadFriendWishlist(A, "nope")).length === 0);
@@ -91,6 +92,8 @@ async function main() {
     await db.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${B}, ${Y}, 1, 'prb')`);
     const lineCount = async () => Number((await db.execute<{ n: number }>(sql`select count(*)::int as n from wishlist_items where user_id = ${B}`)).rows[0].n);
     check("a read leaves out Y, which the collection now reaches", (await wishlist.loadWishlist(B)).map((l) => l.oracleId).join() === X);
+    check("and so does a friend's read (R2 PR 6: no got, a collected line is gone)",
+      (await loadFriendWishlist(A, b.publicId)).map((l) => l.oracleId).join() === X);
     check("and so does card details", (await wishlist.loadWishlistWant(B, Y)) === null);
     check("but the read deleted nothing", (await lineCount()) === 2);
 

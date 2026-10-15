@@ -11,6 +11,7 @@ import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
 import { socialFriendsEnabled } from "../../lib/social/flag";
+import { wishlistEnabled } from "../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { ensureProfile, listOpenInvites } from "../../lib/social/friends";
 import { listFriends, listPods } from "../../lib/social/access";
@@ -22,7 +23,8 @@ import { FriendsView } from "../../components/social/friends-view";
 
 export default async function FriendsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const userId = await requireUserId();
-  if (!socialFriendsEnabled(await requestSwitchEnv(userId))) notFound();
+  const env = await requestSwitchEnv(userId);
+  if (!socialFriendsEnabled(env)) notFound();
   const accepted = (await searchParams)[ACCEPTED_PARAM];
   const now = new Date();
   // The name a first visit starts with is the Clerk first name (decision 10); `ensureProfile` keeps a stored one.
@@ -44,6 +46,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       origin={originFrom(await headers())}
       nowMs={now.getTime()}
       maxLinks={MAX_OPEN_INVITES}
+      friendPages={wishlistEnabled(env)}
     />
   );
 }
