@@ -104,10 +104,10 @@ export function ChooseResults({
   if (rows.length === 0) {
     // A past run's picks that went still draw: their Open deck links are the way into the decks built since.
     return (
-      <div className="flex flex-col gap-[14px] md:gap-[18px]">
+      <HoverPreviewProvider className="flex flex-col gap-[14px] md:gap-[18px]">
         {gone ?? null}
         <NarrowNote count={0} options={options} changeHref={changeHref} />
-      </div>
+      </HoverPreviewProvider>
     );
   }
 

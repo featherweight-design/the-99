@@ -287,4 +287,18 @@ describe("a past run opened from History (PR 3)", () => {
     draw(page(0), "done", [], {}, undefined, { pastRun: true, gone: goneGroup });
     expect(screen.getByTestId("gone-group")).toBeTruthy();
   });
+
+  it("previews a gone pick on hover even when no free result remains", async () => {
+    const { GonePicks } = await import("./past-run");
+    const picks = [{ oracleId: "0000aaaa-0000-4000-8000-000000000001", name: "Gone One", imageUri: "https://x/g.jpg", artCropUri: null, deck: null }];
+    draw(page(0), "done", [], {}, undefined, { pastRun: true, gone: <GonePicks picks={picks} /> });
+    vi.useFakeTimers();
+    try {
+      fireEvent.mouseEnter(screen.getByText("Gone One"), { clientX: 10, clientY: 10 });
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://x/g.jpg");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
