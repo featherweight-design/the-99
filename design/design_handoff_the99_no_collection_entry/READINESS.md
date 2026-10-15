@@ -58,6 +58,8 @@ About edit (`Pick them under Precons I own, from your Collection`) depend on tha
 The prompt has gone to Hugh for Design. Until it is drawn, the build ships the zero-card paths, leaves S17 and the
 precons About edit for the held phase, and words the new About entry so it promises nothing that is not built.
 
+**Design's answer, R3 addendum (2026-10-15, awaiting Hugh's review):** the way in is one row in the Add cards sheet. See README §R3 addendum, S17 to S19, and the reworded About edit.
+
 **Engineering-resolvable, decided in the plan.** A History kind, source and title for the deck add; the deck add's
 printing fallback (the list's named printing, then a default) and its commander lines, written in one transaction
 through `applyCollectionChange`'s `inside`; the import's tick through unresolved lines, printing clauses and the
