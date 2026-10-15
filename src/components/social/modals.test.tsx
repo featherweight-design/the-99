@@ -10,9 +10,9 @@ import { CommanderPicker } from "./commander-picker";
 import { socialCopy } from "../../lib/copy/social";
 
 const c = socialCopy.commander;
-const tile = (name: string) => ({ oracleId: `o-${name}`, name, artCropUri: `https://x/${name}.jpg` });
+const tile = (name: string, colorIdentity: string[] = ["W", "U"]) => ({ oracleId: `o-${name}`, name, artCropUri: `https://x/${name}.jpg`, colorIdentity });
 const AANG = tile("Avatar Aang");
-const BARAL = tile("Baral, Chief of Compliance");
+const BARAL = tile("Baral, Chief of Compliance", ["U"]);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -93,5 +93,61 @@ describe("CommanderPicker", () => {
     expect((await screen.findByRole("button", { name: AANG.name })).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: c.clear }));
     expect(onPick).toHaveBeenCalledWith(null);
+  });
+
+  it("names a deck tile up to the first comma, keeping the whole name for assistive tech", async () => {
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [BARAL] });
+    render(<CommanderPicker current={null} onPick={() => {}} onClose={() => {}} />);
+    const press = await screen.findByRole("button", { name: BARAL.name });
+    expect(press.textContent).toBe("Baral");
+  });
+
+  it("draws each result's colour identity on its row", async () => {
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
+    a.searchFaceCommandersAction.mockResolvedValue({ ok: true, tiles: [AANG, BARAL] });
+    render(<CommanderPicker current={null} onPick={() => {}} onClose={() => {}} />);
+    await type("ba");
+    const rows = screen.getAllByRole("option");
+    expect(rows.map((r) => r.querySelector("[data-identity]")!.getAttribute("data-identity"))).toEqual(["WU", "U"]);
+    expect(rows.map((r) => r.querySelectorAll("[data-identity] > span > span").length)).toEqual([2, 1]);
+  });
+
+  it("picks nothing with Enter, and highlights no row, while the results are an earlier query's", async () => {
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
+    a.searchFaceCommandersAction.mockResolvedValueOnce({ ok: true, tiles: [AANG, BARAL] });
+    const onPick = vi.fn();
+    render(<CommanderPicker current={null} onPick={onPick} onClose={() => {}} />);
+    await type("av");
+    const box = screen.getByRole("combobox", { name: c.search });
+    expect(box.getAttribute("aria-activedescendant")).toBeTruthy();
+
+    let answer!: (v: unknown) => void;
+    a.searchFaceCommandersAction.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    // In the debounce: the field says "bar", the list still answers "av".
+    fireEvent.change(box, { target: { value: "bar" } });
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(onPick).not.toHaveBeenCalled();
+    // In flight: still "av"'s rows.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(onPick).not.toHaveBeenCalled();
+    expect(box.getAttribute("aria-activedescendant")).toBeNull();
+    expect(screen.getAllByRole("option").some((o) => o.getAttribute("aria-selected") === "true")).toBe(false);
+
+    await act(async () => answer({ ok: true, tiles: [BARAL] }));
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(onPick).toHaveBeenCalledWith(BARAL);
+  });
+
+  it("says a search that failed in the list's place, and announces it", async () => {
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
+    a.searchFaceCommandersAction.mockRejectedValue(new Error("down"));
+    render(<CommanderPicker current={null} onPick={() => {}} onClose={() => {}} />);
+    await type("krenko");
+    expect(screen.getByRole("alert").textContent).toBe(c.searchFailed);
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("status")).toBeNull();
   });
 });

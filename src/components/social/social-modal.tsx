@@ -1,12 +1,13 @@
 "use client";
-// The frame `/friends` opens its two modals in (Social R1 PR C): the Add a friend dialog and the commander
-// picker. A dialog at desktop and the shipped bottom sheet at phone (grabber, 20px top corners, the scrim
+// The frame `/friends` opens its modals in (Social R1 PR C). PR C1 opens one, the commander picker; the Add a
+// friend dialog arrives with the friends list (PR C2). A dialog at desktop and the shipped bottom sheet at phone (grabber, 20px top corners, the scrim
 // over the tab bar), one markup that CSS turns at md, as the admin's setting dialog does. `tall` is the
 // picker's: a search with a keyboard needs the room, so the phone sheet is drawn tall.
 //
 // Portalled into `<main>` (`useSheetHost`), so a head's stacking context never puts the tab bar over it, and
 // focus, Escape and the scroll lock are `useDialogA11y`'s. The ✕ is in the header, and takes focus on open
-// unless the caller names another control (the picker opens on its search).
+// unless the caller names another control (the picker opens on its search). Closing returns focus to the opener,
+// or to `returnFocusRef` when the opener may be gone by then (a pick removes `Choose your commander`).
 
 import { useId, useRef, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
@@ -19,6 +20,7 @@ export function SocialModal({
   closeLabel,
   onClose,
   initialFocusRef,
+  returnFocusRef,
   tall = false,
   width = 440,
   children,
@@ -28,6 +30,7 @@ export function SocialModal({
   closeLabel: string;
   onClose: () => void;
   initialFocusRef?: RefObject<HTMLElement | null>;
+  returnFocusRef?: RefObject<HTMLElement | null>;
   tall?: boolean;
   /** The desktop dialog's width: 440 for Add a friend, 520 for the picker. */
   width?: 440 | 520;
@@ -37,7 +40,7 @@ export function SocialModal({
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef<HTMLButtonElement>(null);
   const id = useId();
-  useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? close });
+  useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? close, returnFocusRef });
 
   const frame = (
     <div
@@ -57,10 +60,10 @@ export function SocialModal({
         className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "h-[86vh] md:h-auto md:max-h-[80vh]" : "max-h-[92vh]"} ${width === 520 ? "md:w-[520px]" : "md:w-[440px]"}`}
       >
         <div aria-hidden className="flex justify-center pt-[9px] pb-[2px] md:hidden">
-          <span className="h-[4px] w-[36px] rounded-full bg-[color:var(--border-strong)]" />
+          <span className="h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
         </div>
         <div className="flex items-start gap-[12px] px-[18px] pt-[8px] md:px-[20px] md:pt-[12px]">
-          <h2 id={`${id}-title`} className="m-0 min-w-0 flex-1 pt-[10px] font-display text-[19px] font-bold text-[color:var(--fg)]">
+          <h2 id={`${id}-title`} className="m-0 min-w-0 flex-1 pt-[10px] font-display text-[18px] font-bold md:text-[19px] text-[color:var(--fg)]">
             {title}
           </h2>
           <button

@@ -8,9 +8,10 @@ const VIEWER = "user_viewer";
 const LEGEND = { type: "Legendary Creature — Elf Druid", text: "", cost: "{G}", layout: "normal" };
 /** A deck row; `banned` names a commander of it that is no longer commander-legal. */
 const deck = (lead: string, partner: string | null = null, banned: string[] = []) => ({
-  leadId: lead, leadName: `Name ${lead}`, leadArt: `art/${lead}`,
+  leadId: lead, leadName: `Name ${lead}`, leadArt: `art/${lead}`, leadIdentity: ["G"],
   leadLegal: !banned.includes(lead), leadType: LEGEND.type, leadText: LEGEND.text, leadCost: LEGEND.cost, leadLayout: LEGEND.layout,
   partnerId: partner, partnerName: partner === null ? null : `Name ${partner}`, partnerArt: partner === null ? null : `art/${partner}`,
+  partnerIdentity: partner === null ? null : ["U"],
   partnerLegal: partner === null ? null : !banned.includes(partner), partnerType: partner === null ? null : LEGEND.type,
   partnerText: partner === null ? null : LEGEND.text, partnerCost: partner === null ? null : LEGEND.cost,
   partnerLayout: partner === null ? null : LEGEND.layout,
@@ -31,6 +32,8 @@ describe("deckCommandersQuery", () => {
     expect(q.sql).toContain(`inner join "cards" "lead_card" on "lead_card"."oracle_id" = "decks"."commander_oracle_id"`);
     expect(q.sql).toContain(`left join "cards" "partner_card" on "partner_card"."oracle_id" = "decks"."partner_oracle_id"`);
     expect(q.sql).toContain(`"lead_card"."art_crop_uri"`);
+    expect(q.sql).toContain(`"lead_card"."color_identity"`);
+    expect(q.sql).toContain(`"partner_card"."color_identity"`);
   });
 });
 
@@ -57,8 +60,11 @@ describe("deckTiles", () => {
     expect(deckTiles(rows).map((t) => t.oracleId)).toEqual(Array.from({ length: 8 }, (_, i) => `k${i}`));
   });
 
-  it("carries the name and the art crop", () => {
-    expect(deckTiles([deck("a")])).toEqual([{ oracleId: "a", name: "Name a", artCropUri: "art/a" }]);
+  it("carries the name, the art crop and the colour identity", () => {
+    expect(deckTiles([deck("a", "b")])).toEqual([
+      { oracleId: "a", name: "Name a", artCropUri: "art/a", colorIdentity: ["G"] },
+      { oracleId: "b", name: "Name b", artCropUri: "art/b", colorIdentity: ["U"] },
+    ]);
   });
 });
 

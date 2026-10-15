@@ -17,7 +17,7 @@ vi.mock("../../app/friends/actions", () => a);
 import { FriendsView } from "./friends-view";
 import { socialCopy } from "../../lib/copy/social";
 
-const SOKKA = { oracleId: "o-sokka", name: "Sokka, Tenacious Tactician", artCropUri: "https://x/sokka.jpg" };
+const SOKKA = { oracleId: "o-sokka", name: "Sokka, Tenacious Tactician", artCropUri: "https://x/sokka.jpg", colorIdentity: ["W", "U"] };
 
 function draw(over: Partial<Parameters<typeof FriendsView>[0]> = {}) {
   return render(
@@ -95,5 +95,51 @@ describe("the head", () => {
     expect(a.setCommanderAction).toHaveBeenCalledWith(SOKKA.oracleId);
     expect(alert().textContent).toContain(socialCopy.commander.failed);
     expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
+  });
+
+  it("cancels the name on a browser that focuses no clicked button (Safari), without a write", () => {
+    draw();
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    const field = screen.getByLabelText(socialCopy.page.nameField.label);
+    fireEvent.change(field, { target: { value: "Someone" } });
+    const cancel = screen.getByRole("button", { name: socialCopy.page.nameField.cancel });
+    // Safari: the press focuses nothing, so the field blurs with no relatedTarget unless the mousedown is held.
+    if (fireEvent.mouseDown(cancel)) fireEvent.blur(field, { relatedTarget: null });
+    fireEvent.click(cancel);
+    expect(a.setDisplayNameAction).not.toHaveBeenCalled();
+    expect(screen.getByText("Hugh").tagName).toBe("B");
+  });
+
+  it("rings the face while the picker is open, and puts focus on it once a pick removes the opener", async () => {
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA] });
+    a.setCommanderAction.mockResolvedValue({ ok: true });
+    draw();
+    const chooses = screen.getAllByRole("button", { name: socialCopy.commander.choose });
+    const face = chooses[0];
+    // The line's press under the head: it is gone once a commander is set.
+    fireEvent.click(chooses[2]);
+    expect(face.hasAttribute("data-picking")).toBe(true);
+    const tile = await screen.findByRole("button", { name: SOKKA.name });
+    await act(async () => fireEvent.click(tile));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(face.hasAttribute("data-picking")).toBe(false);
+    expect(face.getAttribute("aria-label")).toBe(socialCopy.commander.changeAria(SOKKA.name));
+    expect(document.activeElement).toBe(face);
+  });
+
+  it("follows the server's redraw of the name and the face, keeping a pending name only until it lands", async () => {
+    a.setDisplayNameAction.mockReturnValue(new Promise(() => {}));
+    const { rerender } = draw();
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    fireEvent.change(screen.getByLabelText(socialCopy.page.nameField.label), { target: { value: "New" } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.nameField.save })));
+    expect(screen.getByText("New").tagName).toBe("B");
+    // The same profile drawn again changes nothing: the pending name stands.
+    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Hugh", commander: null }} />);
+    expect(screen.getByText("New").tagName).toBe("B");
+    // The redraw lands, from this write or another tab's: the head takes it.
+    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Hugh H.", commander: SOKKA }} />);
+    expect(screen.getByText("Hugh H.").tagName).toBe("B");
+    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeTruthy();
   });
 });

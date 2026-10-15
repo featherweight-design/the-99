@@ -273,7 +273,7 @@ describe("friends and pods", () => {
 
 describe("the picker's reads (E2)", () => {
   it("reads the reader's own decks' commanders, by the session's id, and revalidates nothing", async () => {
-    const tiles = [{ oracleId: "o1", name: "Krenko, Mob Boss", artCropUri: null }];
+    const tiles = [{ oracleId: "o1", name: "Krenko, Mob Boss", artCropUri: null, colorIdentity: ["R"] }];
     m.listOwnDeckCommanders.mockResolvedValue(tiles);
     expect(await actions.listDeckCommandersAction()).toEqual({ ok: true, tiles });
     expect(m.listOwnDeckCommanders).toHaveBeenCalledWith("user_1");

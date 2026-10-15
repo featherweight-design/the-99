@@ -1,7 +1,7 @@
 // Social R1 (friends and pods): copy. Taken from the handoff's `social-r1 · copy strings.ts` (R2), after
-// /copy-review (C2: opening a link does not spend it, so the dialog's sub says who becomes your friend). PR B
-// brought the menu row, the title and the signed-out card; PR C the head, the friends list, the open links,
-// the Add a friend dialog and the picker. The pods (PR E) and the request card (PR D) arrive with theirs.
+// /copy-review. PR B brought the menu row, the title and the signed-out card; PR C1 the head (the name line and
+// its field), the modals' Close and the commander picker. The friends list, the open links and the Add a friend
+// dialog arrive with PR C2, the request card with PR D and the pods with PR E.
 
 export const socialCopy = {
   // The account menu row (popover and sheet), second, under About. Absent with the switch off.
@@ -34,6 +34,8 @@ export const socialCopy = {
     anyNote: "Any commander in the catalog, owned or not.",
     clear: "Use initials instead",
     noResults: (q: string) => `No commander matches “${q}”.`,
+    // Not drawn by the boards (E15): a search that failed, in the list's place, role alert. Typing asks again.
+    searchFailed: "We couldn’t search commanders. Try again.",
     failed: "We couldn’t save your commander. Try again.", // toast, role alert
   },
 
