@@ -33,9 +33,12 @@ export function followUpShown(base: SyncChoiceRead): boolean {
 /**
  * The pick a Sync of this file runs under. A file that does not look older is the plain Sync. An older
  * one takes the follow-up's pick, and one that adds no card takes only its tokens: Everything would only
- * add removals the file can't justify, and the note says it records only the tokens (README call 4).
+ * add removals the file can't justify, and the note says it records only the tokens (README call 4). A file
+ * with no card at all is synced for its tokens alone, whatever it looks like.
  */
 export function effectivePick(base: SyncChoiceRead, followPick: SyncPick): SyncPick {
+  // A file with no matched card was read under Only its tokens (`plainSyncPick`), the one pick it can be synced under.
+  if (base.sync.pick === "tokens") return "tokens";
   if (base.sync.stale !== "older") return "everything";
   return fileAddsCards(base) ? followPick : "tokens";
 }

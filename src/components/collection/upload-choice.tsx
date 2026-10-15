@@ -282,6 +282,7 @@ export function UploadChoice({
   addAfter,
   facts,
   overlap,
+  noCards = false,
   sync,
   picked,
   onPick,
@@ -299,6 +300,11 @@ export function UploadChoice({
   addAfter: number;
   facts: ReplaceFacts;
   overlap: { held: number; of: number };
+  /**
+   * The file has no matched card (tokens alone): Replace and Add refuse it, so both cards are drawn unavailable
+   * with the reason in place of the figure, and only Sync can be picked. Their figures are then not drawn.
+   */
+  noCards?: boolean;
   /** The Sync card, drawn only with its switch on for the reader. Absent, the step is the shipped two-card one. */
   sync?: SyncChoice;
   picked: UploadMode | null;
@@ -311,6 +317,8 @@ export function UploadChoice({
   const pct = overlap.of > 0 ? Math.round((overlap.held / overlap.of) * 100) : 0;
   const showOverlap = overlap.of > 0 && overlap.held / overlap.of >= ADD_OVERLAP_NOTE_AT;
   const syncOff = sync?.unavailable ? unavailableReason(sync.unavailable) : undefined;
+  const cardsOff = noCards ? c.choiceNoCards : undefined;
+  const off = (mode: UploadMode) => (mode === "sync" ? syncOff : cardsOff) !== undefined;
   const since = sync?.anchorAt ? day(sync.anchorAt) : null;
   // The cards in their drawn order. Sync is third (call 2).
   const order: UploadMode[] = sync ? ["replace", "add", "sync"] : ["replace", "add"];
@@ -327,10 +335,12 @@ export function UploadChoice({
     else return;
     e.preventDefault();
     const to = order[(at + step + order.length) % order.length];
-    if (!(to === "sync" && syncOff !== undefined)) onPick(to);
+    if (!off(to)) onPick(to);
     e.currentTarget.querySelector<HTMLElement>(`[data-choice="${to}"]`)?.focus();
   };
   const staleShown = Boolean(sync?.stale && since);
+  // The mode the foot names: the pick, or Sync before one when it is the only card that can be picked.
+  const lead: UploadMode | null = picked ?? (noCards && sync && !syncOff ? "sync" : null);
   const syncNoteLine = sync && !syncOff && sync.note ? syncNoteText(sync.note, since) : null;
   const syncFigure =
     sync?.figure === "failed" ? c.prepareFailed : sync?.figure ? c.after(sync.figure.before, sync.figure.after) : c.preparing;
@@ -367,9 +377,10 @@ export function UploadChoice({
             title={c.replaceTitle}
             body={c.replaceBody}
             figure={c.after(replaceBefore, replaceAfter)}
+            unavailable={cardsOff}
             onPick={() => onPick("replace")}
           >
-            <Warning facts={facts} />
+            {cardsOff ? null : <Warning facts={facts} />}
           </Card>
           <Card
             mode="add"
@@ -378,9 +389,10 @@ export function UploadChoice({
             title={c.addTitle}
             body={c.addBody}
             figure={c.after(addBefore, addAfter)}
+            unavailable={cardsOff}
             onPick={() => onPick("add")}
           >
-            {showOverlap ? <Note text={c.overlapNote(pct)} /> : null}
+            {showOverlap && !cardsOff ? <Note text={c.overlapNote(pct)} /> : null}
           </Card>
           {sync ? (
             <Card
@@ -411,7 +423,7 @@ export function UploadChoice({
       </div>
       <div className="flex flex-col gap-[10px] border-t border-t-[color:var(--border-strong)] bg-[color:var(--surface-rail)] p-[14px_18px] md:flex-row md:items-center md:gap-[20px] md:p-[16px_56px]">
         <span className="hidden text-[13.5px] text-[color:var(--fg-body)] md:inline">
-          {picked === "add" ? c.nextAdd : picked === "sync" && sync ? syncNextText(sync.next) : c.nextReplace}
+          {lead === "add" ? c.nextAdd : lead === "sync" && sync ? syncNextText(sync.next) : c.nextReplace}
         </span>
         <div className="flex flex-col-reverse gap-[10px] md:ml-auto md:flex-row md:gap-[12px]">
           <GhostButton type="button" onClick={onCancel} className="h-[44px] px-[20px] text-[14px]">
@@ -424,7 +436,7 @@ export function UploadChoice({
             disabled={picked === null || (picked === "sync" && (sync?.figure == null || sync.figure === "failed"))}
             className="h-[44px] px-[24px] text-[14px] font-semibold disabled:opacity-40"
           >
-            {picked === "add" ? c.continueAdd : picked === "sync" ? c.continueSync : c.continueReplace}
+            {lead === "add" ? c.continueAdd : lead === "sync" ? c.continueSync : c.continueReplace}
           </PrimaryButton>
         </div>
       </div>

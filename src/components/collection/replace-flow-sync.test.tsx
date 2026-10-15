@@ -282,3 +282,100 @@ describe("ReplaceFlow · the Sync choice", () => {
     });
   });
 });
+
+// The two entries PR 2 deferred: a file of tokens alone against a collection, and an emptied collection that still
+// has an anchor. Neither may reach a write Replace or Add would refuse.
+describe("ReplaceFlow · Sync's other ways in", () => {
+  beforeEach(() => {
+    previewPaste.mockReset();
+    previewChange.mockReset();
+    confirmUpload.mockReset();
+  });
+
+  async function reachWith(p: UploadPreview, props: { sync: boolean; syncAnchored?: boolean }) {
+    previewPaste.mockResolvedValueOnce(p);
+    render(<ReplaceFlow currentCardCount={p.currentCollectionCount} deckCheck {...props} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Soldier" } });
+    fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
+  }
+  // A tokens-only read: no card moves, 114 tokens change.
+  const tokensRead = () => {
+    const r = syncData(4616, { before: 4616 }, { changed: 114 }, "d-tokens");
+    return { ...r, sync: { ...r.sync, pick: "tokens" } };
+  };
+
+  it("a file of tokens alone reads Sync under Only its tokens, never Replace or Add, and draws their cards unavailable", async () => {
+    previewChange.mockImplementation(async (_id: string, mode: string, opts?: { pick?: string }) => {
+      if (mode === "sync" && opts?.pick === "tokens") return tokensRead();
+      throw new Error("Upload has no matched cards; refusing to replace collection");
+    });
+    await reachWith({ ...preview, matchedCardCount: 0 }, { sync: true });
+    await screen.findByRole("radiogroup");
+    expect(previewChange.mock.calls.map((c) => [c[1], c[2]])).toEqual([["sync", { pick: "tokens" }]]);
+    const reason = "No card in this file matched, only tokens. There’s nothing here to replace or add.";
+    for (const name of [/Replace my collection/, /Add these cards/]) {
+      const card = screen.getByRole("radio", { name });
+      expect(card.getAttribute("aria-disabled")).toBe("true");
+      expect(within(card).getByText(reason)).toBeTruthy();
+      fireEvent.click(card);
+      expect(card.getAttribute("aria-checked")).toBe("false");
+    }
+    // No stale banner: a file with no card says nothing about its age.
+    expect(screen.queryByText(/looks older|looks no newer/)).toBeNull();
+    const sync = screen.getByRole("radio", { name: /Sync my collection/ });
+    expect(sync.getAttribute("aria-disabled")).toBeNull();
+    expect(within(sync).getByText("4,616 → 4,616 cards")).toBeTruthy();
+    fireEvent.click(sync);
+    fireEvent.click(screen.getByRole("button", { name: "Review the sync →" }));
+    await screen.findByRole("heading", { name: "Review before you sync" });
+    // No second tokens read: the plain read IS the pick's.
+    expect(previewChange).toHaveBeenCalledTimes(1);
+    confirmUpload.mockResolvedValueOnce(undefined);
+    fireEvent.click(screen.getByRole("button", { name: "Sync 114 token changes" }));
+    await waitFor(() => expect(confirmUpload).toHaveBeenCalled());
+    expect(confirmUpload.mock.calls[0][1]).toMatchObject({ mode: "sync", pick: "tokens", planDigest: "d-tokens" });
+  });
+
+  it("with the switch off, a file of tokens alone still fails to prepare, as it always has", async () => {
+    previewChange.mockRejectedValue(new Error("Upload has no matched cards; refusing to replace collection"));
+    await reachWith({ ...preview, matchedCardCount: 0 }, { sync: false });
+    expect(await screen.findByText("We couldn’t read how this file compares to your collection. Nothing was changed.")).toBeTruthy();
+    expect(previewChange.mock.calls.map((c) => c[1])).toEqual(["replace", "add"]);
+  });
+
+  it("a file of tokens alone whose token read fails too has nothing to offer: the prepare error", async () => {
+    previewChange.mockRejectedValue(new Error("boom"));
+    await reachWith({ ...preview, matchedCardCount: 0 }, { sync: true });
+    expect(await screen.findByText("We couldn’t read how this file compares to your collection. Nothing was changed.")).toBeTruthy();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+  });
+
+  it.each(["noRecord", "neverUploaded"] as const)("a file of tokens alone with no base to sync against (%s) gets the prepare error, not a choice with nothing to pick", async (why) => {
+    previewChange.mockImplementation(async (_id: string, mode: string) =>
+      mode === "sync" ? syncData(4616, {}, { unavailable: why }, "") : plain(4616));
+    await reachWith({ ...preview, matchedCardCount: 0 }, { sync: true });
+    expect(await screen.findByText("We couldn’t read how this file compares to your collection. Nothing was changed.")).toBeTruthy();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Review the sync →" })).toBeNull();
+  });
+
+  it("an emptied collection with an anchor gets the choice, so Sync is reachable", async () => {
+    previewChange.mockImplementation(async (_id: string, mode: string) =>
+      mode === "sync" ? syncData(3, { up: 3, before: 0 }, { taken: 3 }, "d-all") : plain(3));
+    await reachWith({ ...preview, currentCollectionCount: 0 }, { sync: true, syncAnchored: true });
+    await screen.findByRole("radiogroup");
+    expect(previewChange.mock.calls.map((c) => c[1])).toEqual(["replace", "add", "sync"]);
+    expect(screen.getByRole("radio", { name: /Sync my collection/ }).getAttribute("aria-disabled")).toBeNull();
+  });
+
+  it.each([
+    ["no anchor", { sync: true, syncAnchored: false }],
+    ["the switch off", { sync: false, syncAnchored: true }],
+  ])("an empty collection with %s keeps the first-import shortcut: no choice, no reads", async (_name, props) => {
+    await reachWith({ ...preview, currentCollectionCount: 0 }, props);
+    await screen.findByRole("button", { name: /^Continue to import/ });
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(previewChange).not.toHaveBeenCalled();
+  });
+});

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  answerFor, holdingDistance, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, readSyncSummary, storedSyncSummary, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
+  answerFor, holdingDistance, isFirstImport, plainSyncPick, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, readSyncSummary, storedSyncSummary, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
   type SyncAnswers, type SyncHolding, type SyncPick,
 } from "./sync";
 import { planTokenWrite } from "../tokens/ownership";
@@ -230,6 +230,12 @@ describe("staleness", () => {
 
   it("pins its threshold", () => expect(STALE_REVERSAL_SHARE).toBe(0.5));
 
+  it("never stale for a file of no card, however near an earlier upload it is", () => {
+    // An empty earlier upload would otherwise make an empty file read as older than the anchor.
+    expect(staleness(m(), m([1, 2]), [m()])).toBeNull();
+    expect(staleness(m(), m(), [])).toBeNull();
+  });
+
   it("noNewer when the file's cards equal the anchor's (S1)", () => {
     expect(staleness(m([1, 2], [2, 1]), m([2, 1], [1, 2]), [])).toBe("noNewer");
   });
@@ -397,5 +403,21 @@ describe("storedSyncSummary", () => {
   it("reads back the cards it changed, and a summary stored before it existed has none", () => {
     expect(readSyncSummary({ pick: "everything", kept: 0, decided: 0, answeredFile: 0, tokens: 2, cards: 0 })).toEqual({ kept: 0, decided: 0, tokens: 2, cards: 0 });
     expect(readSyncSummary({ pick: "everything", kept: 0, decided: 0, answeredFile: 0, tokens: 2 })).not.toHaveProperty("cards");
+  });
+});
+
+describe("isFirstImport", () => {
+  it("skips the choice only for an empty collection with no Sync anchor", () => {
+    expect(isFirstImport(0, false)).toBe(true);
+    expect(isFirstImport(0, true)).toBe(false);
+    expect(isFirstImport(5, false)).toBe(false);
+    expect(isFirstImport(5, true)).toBe(false);
+  });
+});
+
+describe("plainSyncPick", () => {
+  it("reads a file of no matched card under Only its tokens, and every other file under Everything", () => {
+    expect(plainSyncPick(0)).toBe("tokens");
+    expect(plainSyncPick(1)).toBe("everything");
   });
 });
