@@ -19,6 +19,10 @@ import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { warmCommanderScores } from "../../lib/recs/warm";
 import { isUuid } from "../../lib/uuid";
+import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
+import { addPreconForUser } from "../../lib/precons/add";
+import { readPickCatalog } from "../../lib/precons/list-read";
+import { resolvePick, runPickAdds, type PickOutcome } from "../../lib/precons/pick";
 import { after } from "next/server";
 
 export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
@@ -58,4 +62,29 @@ export async function startPreconOwned(fileName: string, rawName: string, action
     await warmCommanderScores(userId, env);
   });
   redirect(`/decks/${result.deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}&${PRECON_ADDED_PARAM}=${result.entryId}`);
+}
+
+/**
+ * Precons I own (no-collection entry S4 to S7): adds each ticked box with `addPreconForUser`, once per box and each
+ * with its own id, so each is its own History entry with its tokens marked. The request is checked against the
+ * catalog as a closed set (`resolvePick`). A box that refuses does not stop the others, and nothing is retried here:
+ * the outcomes say which landed, and a retry with the same ids is answered from the committed entries.
+ */
+export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!preconsEnabled(env)) throw new Error("precons are off");
+  // `noCollectionEntryEnabled` needs collection editing, the rollout boundary every collection write keeps.
+  if (!noCollectionEntryEnabled(env)) throw new Error("the precon pick is off");
+  const boxes = resolvePick(requests, await readPickCatalog());
+  if (boxes === null) throw new Error("bad pick");
+  const placements = addedCopyEnabled(env);
+  const outcomes = await runPickAdds(boxes, (fileName, actionId) => addPreconForUser(userId, fileName, actionId, env, placements));
+  if (outcomes.some((o) => o.ok)) {
+    // A pick that stays on the page (S7) must see the nav unlock now, so the readers are retired in the response;
+    // the scores warm after it, as every collection write does.
+    invalidateCollectionReaders(userId);
+    after(() => warmCommanderScores(userId, env));
+  }
+  return outcomes;
 }

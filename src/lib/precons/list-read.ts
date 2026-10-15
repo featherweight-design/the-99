@@ -5,7 +5,7 @@
  */
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, decks, preconCards, precons, printings } from "../../db/schema";
+import { cards, collectionItems, deckCards, decks, preconCards, precons, preconTokens, printings, tokenPrintings, tokens } from "../../db/schema";
 import { summarisePrecons, type PreconRow, type PreconSource, type ReaderDeck } from "./list";
 
 export type PreconList = {
@@ -47,9 +47,25 @@ export function preconCardFacts(q: Reader = db) {
     .orderBy(preconCards.fileName, preconCards.position);
 }
 
-export async function readPreconSources(q: Reader = db): Promise<PreconSource[]> {
+/**
+ * Each box's copies and tokens, for the pick's foot. Tokens join as `readPreconForAddIn` joins them, so the foot
+ * counts exactly what the add marks.
+ */
+export async function readBoxTotals(q: Reader = db): Promise<{ copies: Map<string, number>; tokens: Map<string, number> }> {
+  const copies = await q.select({ fileName: preconCards.fileName, n: sql<number>`sum(${preconCards.quantity})::int` })
+    .from(preconCards).groupBy(preconCards.fileName);
+  const toks = await q.select({ fileName: preconTokens.fileName, n: sql<number>`sum(${preconTokens.quantity})::int` })
+    .from(preconTokens)
+    .innerJoin(tokenPrintings, eq(tokenPrintings.scryfallId, preconTokens.tokenPrintingId))
+    .innerJoin(tokens, eq(tokens.oracleId, tokenPrintings.tokenOracleId))
+    .groupBy(preconTokens.fileName);
+  return { copies: new Map(copies.map((r) => [r.fileName, r.n])), tokens: new Map(toks.map((r) => [r.fileName, r.n])) };
+}
+
+export async function readPreconSources(q: Reader = db, opts: { boxes?: boolean } = {}): Promise<PreconSource[]> {
   const heads = await q.select().from(precons);
   const facts = await preconCardFacts(q);
+  const totals = opts.boxes ? await readBoxTotals(q) : null;
   const byDeck = new Map<string, PreconSource["cards"]>();
   for (const f of facts) {
     const list = byDeck.get(f.fileName) ?? [];
@@ -72,6 +88,7 @@ export async function readPreconSources(q: Reader = db): Promise<PreconSource[]>
     twinOf: h.twinOf,
     unmappedCount: h.unmappedCount,
     cards: byDeck.get(h.fileName) ?? [],
+    ...(totals ? { copies: totals.copies.get(h.fileName) ?? 0, tokens: totals.tokens.get(h.fileName) ?? 0 } : {}),
   }));
 }
 
@@ -104,6 +121,11 @@ export async function readReaderDecks(userId: string, q: Reader = db): Promise<R
   });
 }
 
+/** Every box and the plain edition it is a twin of: what the pick's add validates its request against. */
+export function readPickCatalog(q: Reader = db) {
+  return q.select({ fileName: precons.fileName, twinOf: precons.twinOf }).from(precons);
+}
+
 /** The precon cards the reader owns, any printing (brief lock 6). One query, never a list of ids. */
 export function ownedPreconCards(userId: string, q: Reader = db) {
   return q
@@ -115,17 +137,18 @@ export function ownedPreconCards(userId: string, q: Reader = db) {
     ));
 }
 
-export async function loadPreconList(userId: string): Promise<PreconList> {
+/** `boxes`: the pick's read (`?pick=own`), which adds each box's copies and tokens to its row. */
+export async function loadPreconList(userId: string, opts: { boxes?: boolean } = {}): Promise<PreconList> {
   // One snapshot: an ingest or a deck edit committing between two of these reads would otherwise
   // summarise a state that never existed, and the page caches what this returns.
   return db.transaction(async (tx) => {
-    const sources = await readPreconSources(tx);
+    const sources = await readPreconSources(tx, opts);
     const ownedRows = await ownedPreconCards(userId, tx);
     const any = await tx.select({ one: sql<number>`1` }).from(collectionItems).where(eq(collectionItems.userId, userId)).limit(1);
     // L2 draws no built lines: with no collection the page is a band and a column of zeros, and a
     // reader who cleared their collection still holds decks.
     const readerDecks = any.length > 0 ? await readReaderDecks(userId, tx) : [];
-    const rows = summarisePrecons(sources, new Set(ownedRows.map((r) => r.oracleId)), readerDecks);
+    const rows = summarisePrecons(sources, new Set(ownedRows.map((r) => r.oracleId)), readerDecks, opts);
     const newest = rows.reduce<string | null>((m, r) => (m === null || r.releaseDate > m ? r.releaseDate : m), null);
     return { rows, listed: sources.length, hasCollection: any.length > 0, newest };
     // No `accessMode: "read only"`: on the pooled connection it leaks into the next transaction

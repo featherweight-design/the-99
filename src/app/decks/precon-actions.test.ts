@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
   enabled: true, collectionEdit: true, addedCopy: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
   invalidated: [] as string[], warmed: [] as string[], committed: [] as unknown[],
+  line: true, picks: [] as unknown[][], pickResult: ((): unknown => ({ ok: true, entryId: "e" })) as (f: string) => unknown,
 }));
 
 vi.mock("../../db", () => {
@@ -32,7 +33,12 @@ vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => state.enabled }
 vi.mock("../../lib/precons/start-owned", () => ({
   startPreconOwned: async (...args: unknown[]) => { state.addCalls.push(args); return state.addResult; },
 }));
-vi.mock("../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => state.collectionEdit }));
+vi.mock("../../lib/collection/edit-flag", () => ({
+  collectionEditEnabled: () => state.collectionEdit, noCollectionEntryEnabled: () => state.line && state.collectionEdit,
+}));
+vi.mock("../../lib/precons/add", () => ({
+  addPreconForUser: async (...args: unknown[]) => { state.picks.push(args); return state.pickResult(args[1] as string); },
+}));
 vi.mock("../../lib/collection/added-copy-flag", () => ({ addedCopyEnabled: () => state.addedCopy }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: (id: string) => state.invalidated.push(id) }));
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async (id: string) => { state.warmed.push(id); } }));
@@ -52,7 +58,7 @@ vi.mock("next/navigation", () => ({ redirect: (u: string) => { throw new Error(`
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { preconCards } from "../../db/schema";
-import { createDeckFromPrecon, startPreconOwned } from "./precon-actions";
+import { addPrecons, createDeckFromPrecon, startPreconOwned } from "./precon-actions";
 
 const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}) => ({
   oracleId, name, typeLine: "Legendary Creature — Eldrazi", oracleText: "", manaCost: "{5}", layout: "normal", commanderLegal: true, ...over,
@@ -60,6 +66,7 @@ const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}
 
 beforeEach(() => {
   state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; state.committed = [];
+  state.line = true; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}` });
   state.enabled = true; state.collectionEdit = true; state.addedCopy = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
@@ -176,5 +183,46 @@ describe("startPreconOwned", () => {
     expect(await startPreconOwned("MultiverseReforged_FRC", "M", ACTION)).toEqual({ ok: false, reason: "failed" });
     expect(state.after).toEqual([]);
     expect(state.revalidated).toEqual([]);
+  });
+});
+
+describe("addPrecons (no-collection entry S4 to S7)", () => {
+  const ID = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
+  const CATALOG = [{ fileName: "Abzan", twinOf: null }, { fileName: "Revival", twinOf: null }, { fileName: "Revival_CE", twinOf: "Revival" }];
+
+  it("adds each box for the signed-in reader with its own id, the twin at its chosen edition, and retires the readers", async () => {
+    state.selects = [CATALOG];
+    const out = await addPrecons([
+      { fileName: "Abzan", edition: "regular", actionId: ID(1) }, { fileName: "Revival", edition: "collector", actionId: ID(2) },
+    ]);
+    expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Abzan", ID(1)], ["user_1", "Revival_CE", ID(2)]]);
+    expect(out).toEqual([{ rowFile: "Abzan", ok: true, entryId: "entry-Abzan" }, { rowFile: "Revival", ok: true, entryId: "entry-Revival_CE" }]);
+    expect(state.invalidated).toEqual(["user_1"]);
+    await Promise.all(state.after.map((f) => f()));
+    expect(state.warmed).toEqual(["user_1"]);
+  });
+
+  it("refuses with the line's switch, collection editing or precons off, and writes nothing", async () => {
+    const one = [{ fileName: "Abzan", edition: "regular", actionId: ID(1) }];
+    state.line = false;
+    await expect(addPrecons(one)).rejects.toThrow("the precon pick is off");
+    state.line = true; state.collectionEdit = false;
+    await expect(addPrecons(one)).rejects.toThrow("the precon pick is off");
+    state.collectionEdit = true; state.enabled = false;
+    await expect(addPrecons(one)).rejects.toThrow("precons are off");
+    expect(state.picks).toEqual([]);
+  });
+
+  it("refuses a request outside the catalog's closed set before any add", async () => {
+    state.selects = [CATALOG];
+    await expect(addPrecons([{ fileName: "Revival_CE", edition: "regular", actionId: ID(1) }])).rejects.toThrow("bad pick");
+    expect(state.picks).toEqual([]);
+  });
+
+  it("retires nothing when no box landed", async () => {
+    state.selects = [CATALOG];
+    state.pickResult = () => ({ ok: false, reason: "failed" });
+    expect(await addPrecons([{ fileName: "Abzan", edition: "regular", actionId: ID(1) }])).toEqual([{ rowFile: "Abzan", ok: false }]);
+    expect(state.invalidated).toEqual([]);
   });
 });

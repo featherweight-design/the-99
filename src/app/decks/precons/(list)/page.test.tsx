@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   allSeen: false,
   marked: [] as string[][],
   cookies: {} as Record<string, string>,
+  listOpts: [] as unknown[],
 }));
 
 vi.mock("next/headers", () => ({
@@ -30,7 +31,8 @@ vi.mock("../../../../lib/cache/page-cache", () => ({
   },
 }));
 vi.mock("../../../../lib/precons/list-read", () => ({
-  loadPreconList: async () => {
+  loadPreconList: async (_u: string, opts?: unknown) => {
+    h.listOpts.push(opts);
     if (h.listFails) throw new Error("list down");
     return {
     rows: [{ fileName: "TRC_A", name: "A", setCode: "TRC", releaseDate: "2026-11-13", twinName: null, commanders: [], identity: [], owned: 0, of: 1, unmapped: 0, built: [] }],
@@ -59,6 +61,8 @@ vi.mock("../../../../lib/precons/upcoming", async (orig) => ({
 
 import PreconsPage from "./page";
 import { PreconsDown } from "../../../../components/decks/precons/precons-down";
+import { PreconListView } from "../../../../components/decks/precons/precon-list-view";
+import { PreconPickView } from "../../../../components/decks/precons/precon-pick-view";
 
 const visit = async (query: Record<string, string> = {}) =>
   (await PreconsPage({ searchParams: Promise.resolve(query) })) as ReactElement<Record<string, unknown>>;
@@ -140,5 +144,42 @@ describe("/decks/precons, upcoming precons", () => {
     expect(el.type).toBe(PreconsDown);
     expect(el.props.acknowledgesArrivals).toBeUndefined();
     expect(h.marked).toEqual([]);
+  });
+});
+
+describe("/decks/precons?pick=own (no-collection entry S2)", () => {
+  const LINE = { PRECONS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
+  beforeEach(() => { h.keys = []; h.listOpts = []; h.listFails = false; h.cookies = {}; h.afters = []; });
+
+  it("is exactly the shipped list with the line's switch off: its key, its read, its view", async () => {
+    h.env = { PRECONS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" };
+    const el = await visit({ pick: "own" });
+    expect(el.type).toBe(PreconListView);
+    expect(h.keys).toEqual([[]]);
+    expect(h.listOpts).toEqual([undefined]);
+  });
+
+  it("draws the shipped list for any other pick, with the switch on", async () => {
+    h.env = LINE;
+    expect((await visit({ pick: "all" })).type).toBe(PreconListView);
+    expect(h.keys).toEqual([[]]);
+  });
+
+  it("reads the boxes' figures under a key of its own, and takes its way back from a closed set", async () => {
+    h.env = LINE;
+    const el = await visit({ pick: "own", from: "collection", q: "abz" });
+    expect(el.type).toBe(PreconPickView);
+    expect(h.keys).toEqual([["pick"]]);
+    expect(h.listOpts).toEqual([{ boxes: true }]);
+    expect(el.props.entry).toBe("collection");
+    expect((el.props.initial as { q: string }).q).toBe("abz");
+    expect((await visit({ pick: "own", from: "/elsewhere" })).props.entry).toBe("home");
+  });
+
+  it("draws the shipped down state when the pick cannot be read", async () => {
+    h.env = LINE;
+    h.listFails = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await visit({ pick: "own" })).type).toBe(PreconsDown);
   });
 });

@@ -21,6 +21,13 @@ export const preconDay = (isoDate: string) =>
 export const preconAddedDate = (isoTimestamp: string) =>
   new Date(isoTimestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
+/** `A`, `A and B`, `A, B and C`, then `A, B and 4 others`. */
+function names(xs: readonly string[]): string {
+  if (xs.length <= 1) return xs[0] ?? "";
+  if (xs.length <= 3) return `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
+  return `${xs.slice(0, 2).join(", ")} and ${n(xs.length - 2)} others`;
+}
+
 /** The catalog gap the arrival band still owes: a leading space and a sentence, or nothing when every card mapped. */
 function catalogGap(unmapped: number): string {
   return unmapped === 0 ? "" : ` ${unmapped === 1 ? "1 card isn’t" : `${n(unmapped)} cards aren’t`} in our catalog yet.`;
@@ -325,6 +332,46 @@ export const preconsCopy = {
     cardAria: (name: string, colors: string) => `${name}, ${colors}. Revealed commander.`,
     /** The same card as the control that opens its details: the press's whole name, so nothing beside it is spoken. */
     pressAria: (name: string, colors: string) => `View details for ${name}, ${colors}. Revealed commander.`,
+  },
+  /**
+   * Precons I own (`/decks/precons?pick=own`, no-collection entry S2 to S7): a pick of the boxes a player owns, added
+   * to the collection one History entry per box. Cards are copies, the precon arrival's unit.
+   */
+  pick: {
+    title: "Precons I own",
+    sub: "Tick every box you own. Its cards go into your collection at the box’s own printings, foils as foils, with its tokens. No deck is started.",
+    subPhone: "Tick every box you own. Its cards and tokens go into your collection. No deck is started.",
+    backHome: "‹ Home",
+    backCollection: "‹ Collection",
+    /** The row's figure: `100 cards` on desktop, `100` at 390. */
+    cards: (c: number) => plural(c, "card", "cards"),
+    cardsShort: (c: number) => n(c),
+    edition: "Edition",
+    regular: "Regular",
+    collector: "Collector’s Edition",
+    collectorNote: "every card foil",
+    landed: "✓ added just now",
+    leadNone: "Tick the boxes you own.",
+    lead: (b: number, c: number, t: number) =>
+      `${plural(b, "box", "boxes")} · ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}`,
+    addHeld: "Add boxes",
+    add: (b: number, c: number) => `Add ${plural(b, "box", "boxes")} · ${plural(c, "card", "cards")}`,
+    adding: "Adding…",
+    addingLead: (b: number) => `Adding ${plural(b, "box", "boxes")} to your collection…`,
+    cancel: "Cancel",
+    /** Replaces Cancel once any box has landed (S7). */
+    done: "Done",
+    /** Part-failure (S7): the boxes that landed and the ones that didn't. Every refusal otherwise reads `start.owned`'s. */
+    partFailed: (landed: string[], failed: string[]) => `Added ${names(landed)}. We couldn’t add ${names(failed)}.`,
+    tryAgain: "Try again",
+    /** The receipt strip on the destination (S5). */
+    receipt: {
+      head: (b: number) => `${plural(b, "precon", "precons")} added to your collection:`,
+      body: (boxNames: string[], c: number, t: number) =>
+        `${names(boxNames)}. ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}.`,
+      phone: (b: number, c: number) => `${plural(b, "precon", "precons")} added · ${plural(c, "card", "cards")}`,
+      history: "History",
+    },
   },
   down: {
     head: "The precons couldn’t be read just now",

@@ -21,6 +21,9 @@ import { markUpcomingSeen, utcDay } from "../../../../lib/precons/upcoming";
 import { recordSoftFailure } from "../../../../lib/cache/soft-failure";
 import { PreconListView } from "../../../../components/decks/precons/precon-list-view";
 import { PreconsDown } from "../../../../components/decks/precons/precons-down";
+import { PreconPickView } from "../../../../components/decks/precons/precon-pick-view";
+import { noCollectionEntryEnabled } from "../../../../lib/collection/edit-flag";
+import { PICK_PARAM, PICK_VALUE, pickEntry } from "../../../../lib/precons/pick";
 import {
   parsePreconsAnnouncedCookie, parsePreconsViewCookie, PRECONS_ANNOUNCED_COOKIE, PRECONS_VIEW_COOKIE,
 } from "../../../../components/ui/view-cookie";
@@ -35,6 +38,24 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
   const raw = await searchParams;
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(raw)) if (typeof v === "string") params.set(k, v);
+
+  // Precons I own (no-collection entry S2 to S7): a pick mode of this list, behind the line's switch. Its payload
+  // carries each box's copies and tokens, so it has its own key and is never the plain list's entry. Off, or with
+  // no `pick=own`, the page below is exactly as shipped.
+  if (params.get(PICK_PARAM) === PICK_VALUE && noCollectionEntryEnabled(env)) {
+    let picked: PreconList | null = null;
+    try {
+      picked = await cachePageForUser(userId, "precons", [PICK_PARAM], async () => {
+        const list = await loadPreconList(userId, { boxes: true });
+        return { value: list, store: list.rows.length > 0 };
+      }, env);
+    } catch (error) {
+      // not a fallback: a load that throws is never stored, and this renders L4, not a list.
+      console.error("precons: the pick could not be read", error);
+    }
+    if (!picked || picked.rows.length === 0) return <PreconsDown />;
+    return <PreconPickView rows={picked.rows} entry={pickEntry(params.get("from"))} initial={parsePreconParams(params)} />;
+  }
 
   // Upcoming precons (plan PR 2): the Announced group, the `new ·` tags and the visit's seen write, all behind
   // the switch. The UTC day enters the key, because the reads' windows (an upcoming set, a listed precon) are
