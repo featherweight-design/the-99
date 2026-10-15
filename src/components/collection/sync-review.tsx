@@ -78,13 +78,14 @@ export function syncFigures(sync: UploadSyncPreview, decks: readonly ShortDeck[]
 /** The confirm bar on a Sync: its sentence, whether it is held, and what its one press is. */
 export type SyncBar =
   | { kind: "held"; line: string }
-  | { kind: "nothing"; line: string }
+  // No sentence: the review's note above says it, and the bar is only the way back.
+  | { kind: "nothing"; line?: undefined }
   | { kind: "confirm"; line: string; label: string };
 
 export function syncBar(f: SyncFigures): SyncBar {
   const b = s.bar;
   if (f.decide > 0) return { kind: "held", line: b.undecided(f.decide) };
-  if (f.nothingToSync) return { kind: "nothing", line: b.nothing };
+  if (f.nothingToSync) return { kind: "nothing" };
   // A count is named only when one moves: a write that only records the file's tokens is the plain confirm.
   // Every conflict answered App takes nothing from the file and still decided something: the bar says so, as
   // the receipt does.

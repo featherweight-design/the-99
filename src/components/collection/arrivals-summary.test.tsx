@@ -464,3 +464,41 @@ describe("ArrivalsSummary — where an added copy goes", () => {
     expect(screen.getByText(copy.summary.sectionCleared(3))).toBeTruthy();
   });
 });
+
+// An Add put the file's cards into the collection and kept what was there, so its receipt never says the
+// collection was replaced or that it is the new file. Only the words differ from a Replace's.
+describe("ArrivalsSummary for an Add", () => {
+  const added = (s: Summary | null) => (
+    <ArrivalsSummary summary={s} contested={[]} preview={null} filename="f.csv" stampDate="Oct 15, 2026" mode="add" />
+  );
+
+  it("says cards were added, not that the collection was replaced", () => {
+    render(added(summary()));
+    expect(screen.getByText(copy.summary.eyebrowAdd)).toBeTruthy();
+    expect(screen.queryByText(copy.summary.eyebrow)).toBeNull();
+    // The figure stays: it is the collection's count after, true of an Add too.
+    expect(screen.getByText(copy.summary.heading(102))).toBeTruthy();
+  });
+
+  it("ends the nothing-to-report lede without a new file", () => {
+    render(added(summary()));
+    expect(screen.getByText(copy.summary.ledeNothingToReportAdd)).toBeTruthy();
+    expect(screen.queryByText(copy.summary.ledeNothingToReport)).toBeNull();
+    expect(copy.summary.ledeNothingToReportAdd).not.toMatch(/new file/);
+    // The sentences it shares with a Replace's are the same ones.
+    expect(copy.summary.ledeNothingToReport.startsWith(copy.summary.ledeNothingToReportAdd)).toBe(true);
+  });
+
+  it("names the lost receipt by what an Add did", () => {
+    render(added(null));
+    expect(screen.getByText(copy.summary.headingNoReceiptAdd)).toBeTruthy();
+    expect(screen.getByText(copy.summary.ledeNoReceipt)).toBeTruthy();
+    expect(screen.queryByText(copy.summary.headingNoReceipt)).toBeNull();
+  });
+
+  it("leaves a Replace's words alone", () => {
+    render(view(summary()));
+    expect(screen.getByText(copy.summary.eyebrow)).toBeTruthy();
+    expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
+  });
+});

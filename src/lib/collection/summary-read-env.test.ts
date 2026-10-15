@@ -15,7 +15,7 @@ vi.mock("../../db", () => ({
 }));
 vi.mock("../decks/availability-query", () => ({ loadAvailability: stub.loadAvailability }));
 
-const { countContestedCards, loadChooserCards, loadContestedCard, loadContestedCards, loadSummaryView } = await import("./summary-read");
+const { countContestedCards, loadChooserCards, loadContestedCard, loadContestedCards, loadSummaryView, uploadIsAdd } = await import("./summary-read");
 
 const ENV = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
 const envOf = (i: number) => (stub.loadAvailability.mock.calls[i] as unknown as [string, { env?: unknown }])[1].env;
@@ -54,5 +54,31 @@ describe("summary-read's claim reads", () => {
     expect((stub.loadAvailability.mock.calls[1] as unknown as [string, { oracleIds: string[] }])[1].oracleIds).toEqual(["g1"]);
     expect(envOf(0) === ENV).toBe(true);
     expect(envOf(1) === ENV).toBe(true);
+  });
+});
+
+// The receipt's words follow what the upload did to the collection, read from its ledger entry.
+describe("loadSummaryView's mode", () => {
+  const upload = (isAdd: boolean) => ({
+    id: "up1", filename: "f.csv", createdAt: new Date(0), confirmedAt: new Date(0), summaryPayload: null, isAdd,
+  });
+
+  it("is add for an upload whose ledger entry is an upload_add, replace otherwise", async () => {
+    stub.upload = upload(true);
+    expect((await loadSummaryView("up1", "u1", { env: ENV }))?.mode).toBe("add");
+    stub.upload = upload(false);
+    expect((await loadSummaryView("up1", "u1", { env: ENV }))?.mode).toBe("replace");
+  });
+
+  // Drizzle leaves a column in a single-table projection unqualified, and `user_id` and `id` exist on both
+  // tables: unqualified, the exists compares the ledger row's columns with themselves and is true for any
+  // upload of any account that has any entry at all.
+  it("asks the ledger about THIS upload, qualifying both tables", async () => {
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const { sql } = await import("drizzle-orm");
+    const q = new PgDialect().sqlToQuery(sql`${uploadIsAdd}`).sql;
+    expect(q).toContain('h.user_id = "csv_uploads".user_id');
+    expect(q).toContain(`h.source = 'csv_uploads:' || "csv_uploads".id::text`);
+    expect(q).toContain("h.kind = 'upload_add'");
   });
 });

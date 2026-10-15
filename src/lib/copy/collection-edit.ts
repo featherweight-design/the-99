@@ -81,7 +81,7 @@ export const collectionEditCopy = {
      * (new, for /copy-review) No unreverted Replace or full Sync to compare against, or its file is too old to
      * read. No date: the ledger-base wording this replaced named the newest upload.
      */
-    syncUnavailableNoRecord: "Sync compares against your last full upload, and there isn’t one it can read. Replace or Add will work.",
+    syncUnavailableNoRecord: "Sync compares against your last Replace or Sync, and there isn’t one it can read. Replace or Add will work.",
     syncUnavailableNoUpload: "Sync compares a file with your last upload, and your collection was built in the app without one. Replace or Add will work.",
     continueSync: "Review the sync →",
     nextSync: "Next: what this sync takes from the file, what it keeps, and anything it needs you to decide.",
@@ -218,7 +218,6 @@ export const collectionEditCopy = {
           `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. The file’s tokens are recorded, and no count changes.` +
           (decided ? ` You decided ${n(decided)}.` : ""),
         undecided: (k: number) => `${cards(k)} still to decide.`,
-        nothing: "Nothing will change.",
         confirm: "Sync collection",
         confirmTokens: (t: number) => `Sync ${t === 1 ? "1 token change" : `${n(t)} token changes`}`,
         pending: "Syncing…",

@@ -75,9 +75,16 @@ const syncTail = (sync?: SyncLede) =>
     (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : "") +
     tokensChanged(sync.tokens);
 
+/** The receipt's nothing-to-report sentences, without a Replace's ending. */
+const NOTHING_MOVED =
+  "Nothing your decks care about moved. No purchase cleared, nothing went back on the " +
+  "buy list, and no copy is contested.";
+
 export const cardAssignmentsCopy = {
   summary: {
     eyebrow: "Collection replaced",
+    /** (new, for /copy-review) An Add's receipt: it kept the collection and put cards into it, so it does not say replaced. */
+    eyebrowAdd: "Cards added",
     /** (new) A Sync's receipt: it did not replace the collection, so it does not say so. */
     eyebrowSync: "Collection synced",
     heading: (total: number) => `${fmt(total)} cards in your collection`,
@@ -87,6 +94,8 @@ export const cardAssignmentsCopy = {
      * collection that they have none is worse than telling them nothing.
      */
     headingNoReceipt: "Your collection was replaced",
+    /** (new) The same, for an Add. */
+    headingNoReceiptAdd: "Cards were added to your collection",
     /** (new) The same, for a Sync. */
     headingNoReceiptSync: "Your collection was synced",
 
@@ -119,9 +128,12 @@ export const cardAssignmentsCopy = {
      * replace commits, so a failure in between leaves a confirmed upload with no payload. The
      * design anticipated that and it needs no second screen.
      */
-    ledeNothingToReport:
-      "Nothing your decks care about moved. No purchase cleared, nothing went back on the " +
-      "buy list, and no copy is contested. Your collection is the new file.",
+    ledeNothingToReport: `${NOTHING_MOVED} Your collection is the new file.`,
+    /**
+     * (new, for /copy-review) An Add that moved nothing the decks care about. The shipped ending (`Your
+     * collection is the new file.`) is false after an Add, which kept every card already there; it takes none.
+     */
+    ledeNothingToReportAdd: NOTHING_MOVED,
     /**
      * (new, for /copy-review) A Replace or an Add whose receipt did not survive its write (`summary_payload` is
      * written after the upload commits). It used to take `ledeNothingToReport`, whose "no purchase cleared,
