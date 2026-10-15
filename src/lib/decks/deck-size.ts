@@ -4,7 +4,7 @@ import type { ProfileSkeleton } from "../profile/types";
 // 100 minus however many commanders the deck has. 99 is not a rule of the
 // format; 100 is.
 
-const DECK_TOTAL = 100;
+export const DECK_TOTAL = 100;
 
 /** The asserted land count, for a deck with no measured composition. `FLAT_TARGETS` in
  *  `mix.ts` reads it too, and so does About's Roles row, so the three can never disagree. Kept

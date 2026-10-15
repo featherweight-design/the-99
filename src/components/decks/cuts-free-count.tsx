@@ -9,6 +9,7 @@ import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
 import { cutsAsk } from "../../lib/tuning/cuts-ask";
 import type { CountRow } from "../../lib/tuning/cuts-count";
 import type { CutsPanel } from "../../lib/tuning/cuts-state";
+import { DECK_TOTAL } from "../../lib/decks/deck-size";
 import { CreditButton } from "../ui/credit-button";
 import { CreditsText } from "../ui/credits-text";
 import { useAiSweepRef } from "../ui/use-ai-sweep";
@@ -85,7 +86,13 @@ export function CutsFreeCount({
           className="mt-[14px] flex flex-col gap-[4px] rounded-[10px] px-[14px] py-[12px]"
           style={{ background: "var(--surface)", border: "1px solid var(--success)" }}
         >
-          <span className="text-[13.5px] font-semibold" style={{ color: "var(--fg)" }}>{copy.done.head(panel.bodySize, cutCount)}</span>
+          {/* `over` is clamped at zero, so a deck trimmed BELOW its size elsewhere while the tool was
+              open also lands here (Copilot, PR #1809 round 2). The head claims the line, `Back to
+              99 / 99.`, so it is drawn only for a deck exactly at it; under it, the body line alone,
+              which is true of either. */}
+          {panel.total >= DECK_TOTAL ? (
+            <span className="text-[13.5px] font-semibold" style={{ color: "var(--fg)" }}>{copy.done.head(panel.bodySize, cutCount)}</span>
+          ) : null}
           <span className="text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>{copy.done.body}</span>
         </div>
       ) : (

@@ -726,7 +726,7 @@ describe("the tab row and its panel", () => {
   });
 
   it("keeps Proposed cuts drawn under its tab once a re-read at the line finds the result gone", async () => {
-    const cutsRead = vi.fn<CutsDeps["read"]>().mockResolvedValueOnce(countAt(3)).mockResolvedValue(countAt(0, { total: 99 }));
+    const cutsRead = vi.fn<CutsDeps["read"]>().mockResolvedValueOnce(countAt(3)).mockResolvedValue(countAt(0, { total: 100 }));
     const d = deps(cutsRead);
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(false), realCuts(d, 3, "a"), { tool: "history" }]} />);
     await waitFor(() => expect(read).toHaveBeenCalledWith("d"));
@@ -747,7 +747,7 @@ describe("the tab row and its panel", () => {
   });
 
   it("never draws the tab row over an empty panel, for every tool, once its read has landed", async () => {
-    const d = deps(vi.fn(async () => countAt(0, { total: 99 })));
+    const d = deps(vi.fn(async () => countAt(0, { total: 100 })));
     for (const tool of ["cuts", "history"] as const) {
       const { unmount } = render(
         <TuningHub deckId="d" drawn request={{ tool, nonce: 1 }} tools={[suggested(false), realCuts(d, 0, "a"), { tool: "history" }]} />,

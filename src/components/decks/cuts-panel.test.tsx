@@ -252,7 +252,7 @@ describe("CutsPanelView", () => {
   });
 
   it("C8: the last cut finishes the tool in place", async () => {
-    const p = withResult(1, 1, { over: 0, total: 99 });
+    const p = withResult(1, 1, { over: 0, total: 100 });
     p.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
     await mount(deps(p));
     expect(screen.getByText(copy.done.head(99, 1))).toBeTruthy();
@@ -314,7 +314,7 @@ describe("CutsPanelView", () => {
   // it finishes in place (C8) even once the result has stopped being current (the first analysis
   // writes the overview's Key cards into the fingerprint), never an empty panel under the tabs.
   it("in the hub, finishes in place at the line over a result that is no longer current", async () => {
-    const atTheLine = withResult(1, 1, { over: 0, total: 99, resultCurrent: false });
+    const atTheLine = withResult(1, 1, { over: 0, total: 100, resultCurrent: false });
     atTheLine.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
     render(<CutsPanelView deckId="d1" deps={deps(atTheLine)} finishInPlace />);
     expect(await screen.findByText("Back to 99 / 99. You cut 1.")).toBeTruthy();
@@ -323,7 +323,7 @@ describe("CutsPanelView", () => {
   });
 
   it("in the hub, finishes in place at the line with no result at all, and counts no cuts", async () => {
-    render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 99 }))} finishInPlace />);
+    render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 100 }))} finishInPlace />);
     const done = await screen.findByTestId("cuts-done");
     expect(done.children[0].textContent).toBe("Back to 99 / 99.");
     expect(done.children[1].textContent).toBe(copy.done.body);
@@ -331,29 +331,40 @@ describe("CutsPanelView", () => {
 
   it("in the hub, a deck that reached the line by another edit says the neutral form", async () => {
     // One row never answered, and one cut whose card was put back by hand: the tool cut nothing that stands.
-    const p = withResult(2, 2, { over: 0, total: 99, resultCurrent: false });
+    const p = withResult(2, 2, { over: 0, total: 100, resultCurrent: false });
     p.items = [item(1), item(2, { verdict: "accepted", inDeck: true, quantityBefore: 1, quantityNow: 1 })];
     render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
     expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99.");
   });
 
+  // Copilot, PR #1809 round 2: `over` is clamped at zero, so a deck trimmed below its size elsewhere
+  // while the tool is open reads like one at the line. It must not claim `Back to 99 / 99.`
+  it("in the hub, a deck trimmed below its size says only that the tool closes, never the line", async () => {
+    const p = withResult(1, 1, { over: 0, total: 99, resultCurrent: false });
+    p.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
+    render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
+    const done = await screen.findByTestId("cuts-done");
+    expect(done.textContent).toBe(copy.done.body);
+    expect(done.textContent).not.toMatch(/Back to/);
+  });
+
   // A Cut removes ONE copy (`cutItem`), so a card held twice is still in the deck after its cut.
   it("counts a cut of one copy of a card the deck still holds", async () => {
-    const p = withResult(1, 1, { over: 0, total: 99, resultCurrent: false });
+    const p = withResult(1, 1, { over: 0, total: 100, resultCurrent: false });
     p.items = [item(1, { cutName: "Forest", verdict: "accepted", inDeck: true, quantityBefore: 2, quantityNow: 1 })];
     render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
     expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99. You cut 1.");
   });
 
   it("does not count a multi-copy cut whose copy was put back by hand", async () => {
-    const p = withResult(1, 1, { over: 0, total: 99, resultCurrent: false });
+    const p = withResult(1, 1, { over: 0, total: 100, resultCurrent: false });
     p.items = [item(1, { cutName: "Forest", verdict: "accepted", inDeck: true, quantityBefore: 2, quantityNow: 2 })];
     render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
     expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99.");
   });
 
   it("C8 is the drawn box: surface, a success border, radius 10, head and body on their own lines", async () => {
-    const p = withResult(1, 1, { over: 0, total: 99 });
+    const p = withResult(1, 1, { over: 0, total: 100 });
     p.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
     render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
     const done = await screen.findByTestId("cuts-done");
@@ -373,7 +384,7 @@ describe("CutsPanelView", () => {
   });
 
   it("draws nothing for a deck that is not over", async () => {
-    const { container } = render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 99 }))} />);
+    const { container } = render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 100 }))} />);
     await waitFor(() => expect(container.querySelector("section")).toBeNull());
   });
 });
@@ -399,7 +410,7 @@ describe("CutsPanelView: a visit to the deck", () => {
   });
 
   it("at the line, a previous visit's cuts are not counted as this tool's", async () => {
-    const p = withResult(1, 1, { over: 0, total: 99 });
+    const p = withResult(1, 1, { over: 0, total: 100 });
     p.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
     render(<CutsPanelView deckId={D1} deps={deps(p)} freshEachVisit finishInPlace />);
     expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99.");
