@@ -215,7 +215,7 @@ export function planTokenWrite(mode: TokenWriteMode, state: TokenState, holdings
  * follow the same rule through the base file's own token list (`baseTokens`, the anchor upload's payload):
  * a hand-marked token the file did not change since the base keeps the hand count, and one the file did
  * change is never LOWERED, so it is taken only when the file reads more than the hand mark. A token with no
- * hand mark, and every token when `baseTokens` is unknown, follows Replace's rule as before. Applied to both
+ * hand mark follows Replace's rule as before. When `baseTokens` is unknown only the unchanged-file test is skipped: a hand count at or above the file's still stays. Applied to both
  * the plan and the write, so the review's count is what the confirm writes. The file's PRINTINGS for a kept
  * token are still recorded (callers pass the whole list as `printingsOf`): they say which printings the file
  * held, whoever owns the count. Asks nothing: a hand mark is a
