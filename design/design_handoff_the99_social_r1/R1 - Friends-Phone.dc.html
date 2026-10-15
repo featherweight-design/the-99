@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Friends page, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.ph{width:390px;height:844px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.mh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #181C26}
+.wm{display:flex;align-items:flex-end;gap:3px}
+.wm span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A;padding-bottom:4px}
+.wm b{font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0;line-height:1}
+.mav{width:38px;height:38px;border-radius:12px;border:1px solid #FF4D9A;color:#FF4D9A;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;background:#0E0F14;padding:0}
+.scroll{flex:1;overflow:hidden;position:relative}
+.tb{flex:none;height:74px;display:flex;align-items:center;padding:8px 8px 14px;box-sizing:border-box;background:#12141B;border-top:1px solid #181C26}
+.ts{flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#6F7486;font:9px 'IBM Plex Mono',monospace;letter-spacing:.06em;text-decoration:none}
+.band{display:flex;align-items:center;gap:10px;padding:0 6px 0 16px;background:#12141B;border-bottom:1px solid #181C26;font-size:13px;color:#E6E8F0}
+.band .ok{color:#6FA368}
+.x{width:44px;height:44px;margin-left:auto;border:0;background:transparent;color:#959AAD;font-size:15px;padding:0;flex:none}
+.pg{padding:18px 16px 30px}
+.h1{margin:0;font:700 22px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.me{display:flex;align-items:center;gap:6px;margin:2px 0 0;font-size:13.5px;color:#959AAD}
+.me b{color:#E6E8F0;font-weight:600}
+.tl{min-height:44px;padding:0 4px;border:0;background:transparent;color:#FF4D9A;font:500 13.5px 'IBM Plex Sans',sans-serif}
+.bp{width:100%;height:48px;margin-top:10px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 15px 'IBM Plex Sans',sans-serif}
+.bp.held{background:#20222A;color:#606476}
+.hint{margin:8px 0 0;font:11px 'IBM Plex Mono',monospace;color:#959AAD;line-height:1.5}
+.nf{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.nf label{font-size:13px;font-weight:600;color:#E6E8F0}
+.tf{height:46px;border-radius:8px;padding:0 12px;display:flex;align-items:center;box-sizing:border-box;background:#101219;border:1px solid #FF4D9A;font-size:16px;color:#E6E8F0}
+.btns{display:flex;gap:8px}
+.bo{height:44px;flex:1;border-radius:8px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font:14px 'IBM Plex Sans',sans-serif}
+.bf{height:44px;flex:1;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif}
+.sec{margin-top:26px}
+.sh{display:flex;align-items:center;justify-content:space-between;min-height:44px;border-bottom:1px solid #181C26}
+.fr{display:flex;align-items:center;gap:12px;height:56px;border-bottom:1px solid #181C26;position:relative}
+.fav{width:32px;height:32px;border-radius:9px;border:1px solid #262A35;background:#16181F;color:#B1B6C7;font:500 11px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;flex:none}
+.fn{font-size:15px;font-weight:500;color:#E6E8F0}
+.fs{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486;margin-left:auto}
+.fs.nw{color:#6FA368}
+.more{width:44px;height:44px;border:0;border-radius:8px;background:transparent;color:#959AAD;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.more.on{background:#20222A;color:#E6E8F0}
+.mp{position:absolute;right:0;top:50px;z-index:5;width:248px;border-radius:10px;border:1px solid #262A35;background:#16181F;box-shadow:0 22px 50px rgba(0,0,0,.6);overflow:hidden}
+.cf{display:flex;flex-direction:column;gap:10px;padding:12px}
+.cf p{margin:0}
+.cfh{font:600 14px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.cfb{font-size:12.5px;line-height:1.5;color:#B1B6C7}
+.cfr{display:flex;gap:8px}
+.kp{height:44px;flex:1;border-radius:6px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font:13px 'IBM Plex Sans',sans-serif}
+.dl{height:44px;flex:1;border-radius:6px;border:0;background:#C6533F;color:#0E0F14;font:600 13px 'IBM Plex Sans',sans-serif}
+.empty{margin-top:12px;border:1px dashed #343843;border-radius:12px;padding:20px 18px;display:flex;flex-direction:column;gap:6px}
+.empty b{font:700 16px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.empty span{font-size:13px;line-height:1.55;color:#959AAD}
+.pod{margin-top:12px;border:1px solid #262A35;border-radius:12px;background:#12141B;padding:4px 4px 12px 14px}
+.podh{display:flex;align-items:center;gap:8px}
+.podh div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.podh b{font-size:15px;font-weight:600;color:#E6E8F0}
+.pm{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 10px 0 0}
+.chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:1px solid #262A35;background:#16181F;font-size:13.5px;color:#E6E8F0;box-sizing:border-box}
+.chip small{font:10px 'IBM Plex Mono',monospace;color:#6F7486}
+.chip.hx{padding-right:0}
+.cx{width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:#959AAD;font-size:12px;padding:0}
+.chip.add{border-style:dashed;border-color:#343843;background:transparent;color:#B1B6C7;font-family:'IBM Plex Sans',sans-serif}
+.own{display:flex;align-items:center;gap:10px;margin-top:8px;min-height:44px;font-size:13.5px;color:#B1B6C7}
+.box{width:20px;height:20px;flex:none;border-radius:4px;border:1.5px solid #6F7486;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0E0F14}
+.box.on{background:#FF4D9A;border-color:#FF4D9A}
+.iv{display:flex;align-items:center;gap:10px;min-height:60px;border-bottom:1px solid #181C26}
+.ivt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.ivn{font-size:14px;color:#E6E8F0}
+.ivm{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.ivm .soon{color:#E0913C}
+.ivb{height:44px;padding:0 14px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font:13px 'IBM Plex Sans',sans-serif;flex:none}
+</style>
+</helmet>
+<div style="width:1800px;min-height:2260px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">/friends · phone 390 · the same page in the shipped mobile shell</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">The same eight states at phone width</h2>
+    <p class="cap" style="max-width:1660px">Invite a friend goes full width under the name line, the one place the phone differs in order. Every press is 44px: the row’s …, a chip’s ✕, Change, Show and Revoke. An open link folds its made and time-left onto one second line. No tab is current, as on /about.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,390px);gap:40px 40px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="8">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="ph">
+          <header class="mh"><span class="wm"><span>THE</span><b>99</b></span><button class="mav" type="button" aria-label="Account">HH</button></header>
+          <div class="scroll">
+            <sc-if value="{{f.strip}}" hint-placeholder-val="{{false}}">
+              <div class="band" role="status"><span class="ok" aria-hidden="true">✓</span><span>{{f.stripText}}</span><button class="x" type="button" aria-label="Close">✕</button></div>
+            </sc-if>
+            <div class="pg">
+              <h1 class="h1">Friends</h1>
+              <sc-if value="{{f.nameLine}}" hint-placeholder-val="{{true}}">
+                <p class="me">Friends see you as <b>Hugh</b><span aria-hidden="true">·</span><button class="tl" type="button">Change</button></p>
+              </sc-if>
+              <sc-if value="{{f.editName}}" hint-placeholder-val="{{false}}">
+                <div class="nf">
+                  <label>Your name, as friends see it</label>
+                  <div class="tf" role="textbox" aria-label="Your name, as friends see it">Hugh H.|</div>
+                  <span class="ivm">Up to 30 characters. Friends see only this.</span>
+                  <div class="btns"><button class="bo" type="button">Cancel</button><button class="bf" type="button">Save</button></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{f.held}}" hint-placeholder-val="{{false}}">
+                <button class="bp held" type="button" aria-disabled="true">Invite a friend</button>
+                <p class="hint">10 links open, the most at once. Revoke one, or wait for one to be used.</p>
+              </sc-if>
+              <sc-if value="{{f.open}}" hint-placeholder-val="{{true}}">
+                <button class="bp" type="button">Invite a friend</button>
+              </sc-if>
+
+              <section class="sec" aria-label="Friends">
+                <div class="sh"><span class="k">{{f.friendsHead}}</span></div>
+                <sc-if value="{{f.friendsEmpty}}" hint-placeholder-val="{{true}}">
+                  <div class="empty"><b>No friends yet</b><span>Friends are added by invite only: send a link, or show its QR code at the table. Nobody can find you by name.</span></div>
+                </sc-if>
+                <sc-for list="{{f.friends}}" as="p" hint-placeholder-count="3">
+                  <div class="fr">
+                    <span class="fav" aria-hidden="true">{{p.ini}}</span>
+                    <span class="fn">{{p.name}}</span>
+                    <span class="{{p.sinceCls}}">{{p.since}}</span>
+                    <button class="{{p.moreCls}}" type="button" aria-label="{{p.name}} actions" aria-haspopup="menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>
+                    <sc-if value="{{p.confirm}}" hint-placeholder-val="{{false}}">
+                      <div class="mp" role="dialog" aria-label="Remove {{p.name}}?">
+                        <div class="cf">
+                          <p class="cfh">Remove {{p.name}}?</p>
+                          <p class="cfb">{{p.name}} leaves the pods you own, and you leave {{p.name}}’s. {{p.name}} isn’t told.</p>
+                          <div class="cfr"><button class="kp" type="button">Keep it</button><button class="dl" type="button">Remove friend</button></div>
+                        </div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </section>
+
+              <sc-if value="{{f.showPods}}" hint-placeholder-val="{{false}}">
+                <section class="sec" aria-label="Pods">
+                  <div class="sh"><span class="k">{{f.podsHead}}</span><button class="tl" type="button">New pod</button></div>
+                  <sc-if value="{{f.podsEmpty}}" hint-placeholder-val="{{false}}">
+                    <div class="empty"><b>No pods yet</b><span>A pod is a group of friends you play with. You choose which pods can see your spare cards.</span></div>
+                  </sc-if>
+                  <sc-for list="{{f.pods}}" as="d" hint-placeholder-count="2">
+                    <div class="pod">
+                      <div class="podh"><div><b>{{d.name}}</b><span class="pm">{{d.meta}}</span></div><button class="more" type="button" style="margin-left:auto" aria-label="{{d.name}} actions" aria-haspopup="menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button></div>
+                      <div class="chips">
+                        <sc-for list="{{d.chips}}" as="c" hint-placeholder-count="3">
+                          <span class="{{c.cls}}">{{c.name}}<sc-if value="{{c.tag}}" hint-placeholder-val="{{false}}"><small>{{c.tag}}</small></sc-if><sc-if value="{{c.x}}" hint-placeholder-val="{{false}}"><button class="cx" type="button" aria-label="Remove {{c.name}} from {{d.name}}">✕</button></sc-if></span>
+                        </sc-for>
+                        <sc-if value="{{d.owner}}" hint-placeholder-val="{{true}}"><button class="chip add" type="button">+ Add friends</button></sc-if>
+                      </div>
+                      <label class="own"><span class="{{d.boxCls}}" role="checkbox" aria-checked="{{d.share}}">{{d.tick}}</span><span>Share my spares with this pod</span></label>
+                    </div>
+                  </sc-for>
+                </section>
+              </sc-if>
+
+              <sc-if value="{{f.showInvites}}" hint-placeholder-val="{{false}}">
+                <section class="sec" aria-label="Open links">
+                  <div class="sh"><span class="k">{{f.invitesHead}}</span></div>
+                  <sc-for list="{{f.invites}}" as="v" hint-placeholder-count="2">
+                    <div class="iv">
+                      <div class="ivt"><span class="ivn">Invite link</span><span class="ivm">made {{v.made}} · <span class="{{v.leftCls}}">{{v.left}}</span></span></div>
+                      <button class="ivb" type="button" aria-label="Show the link made {{v.made}}">Show</button>
+                      <button class="tl" type="button" aria-label="Revoke the link made {{v.made}}">Revoke</button>
+                    </div>
+                  </sc-for>
+                </section>
+              </sc-if>
+            </div>
+          </div>
+          <nav class="tb" aria-label="Primary">
+            <a class="ts" href="#"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>Home</a>
+            <a class="ts" href="#"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>Collection</a>
+            <a class="ts" href="#"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg>Commanders</a>
+            <a class="ts" href="#"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg>Discover</a>
+            <a class="ts" href="#"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg>Decks</a>
+          </nav>
+        </div>
+        <p class="cap" style="max-width:390px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2260}}'>
+class Component extends DCLogic {
+renderVals() {
+const F = (name, since, extra) => Object.assign({ name, ini: name.slice(0, 2).toUpperCase(), since: 'since ' + since, sinceCls: 'fs', moreCls: 'more', confirm: false }, extra || {});
+const six = [F('Alex', 'Aug 30'), F('Dave', 'Oct 2'), F('Jo', 'Sep 14'), F('Marcus', 'Sep 20'), F('Priya', 'Sep 28'), F('Sam', 'Sep 28')];
+const chip = (name, tag, x) => ({ name, tag: tag || '', x: !!x, cls: x ? 'chip hx' : 'chip' });
+const pods = [
+{ name: 'Thursday night', meta: '4 members · yours', owner: true, share: true, boxCls: 'box on', tick: '✓', chips: [chip('You'), chip('Dave', '', true), chip('Priya', '', true), chip('Sam', '', true)] },
+{ name: 'Store league', meta: '5 members · Marcus owns it', owner: false, share: false, boxCls: 'box', tick: '', chips: [chip('Marcus', 'owner'), chip('You'), chip('Alex'), chip('Jo'), chip('Rin', 'not a friend')] }
+];
+const inv = (made, left, soon) => ({ made, left, leftCls: soon ? 'soon' : '' });
+const ten = [inv('today, 9:41 PM', '7 days left'), inv('today, 9:12 PM', '7 days left'), inv('Oct 14', '6 days left'), inv('Oct 14', '6 days left'), inv('Oct 13', '5 days left'), inv('Oct 12', '4 days left'), inv('Oct 12', '4 days left'), inv('Oct 11', '3 days left'), inv('Oct 10', '2 days left'), inv('Oct 9', 'Under a day left', true)];
+const base = { strip: false, stripText: '', nameLine: true, editName: false, held: false, open: true, friendsEmpty: false, friends: [], showPods: false, podsEmpty: false, pods: [], showInvites: false, invites: [] };
+const fr = (o) => Object.assign({}, base, o, { friendsHead: 'Friends · ' + (o.friends ? o.friends.length : 0), podsHead: 'Pods · ' + (o.pods ? o.pods.length : 0), invitesHead: 'Open links · ' + (o.invites ? o.invites.length : 0) });
+const frames = [
+fr({ label: 'F1 · empty', friendsEmpty: true, note: 'The first screen. One button, one sentence.' }),
+fr({ label: 'F2 · empty, one link sent', friendsEmpty: true, showInvites: true, invites: [inv('today, 9:41 PM', '7 days left')], note: 'The link waits with its time left. Show and Revoke are 44px.' }),
+fr({ label: 'F3 · one friend · from Accept', strip: true, stripText: 'You and Dave are friends.', friends: [F('Dave', 'today', { sinceCls: 'fs nw' })], showPods: true, podsEmpty: true, note: 'The receipt sits under the header, above the title, with a bare ✕.' }),
+fr({ label: 'F4 · many friends, pods (scrolled)', friends: six.slice(4), showPods: true, pods: pods, note: 'Scrolled to the pods. Chips wrap; ✕ is a 36px circle inside a 36px chip, and the chip row gives it 44px of row.' }),
+fr({ label: 'F5 · changing the name', nameLine: false, editName: true, open: false, friends: six, note: 'The field takes the line’s place; the button waits until it closes. 16px text, so iOS does not zoom.' }),
+fr({ label: 'F6 · removing a friend', friends: [F('Alex', 'Aug 30'), F('Dave', 'Oct 2', { moreCls: 'more on', confirm: true }), F('Jo', 'Sep 14'), F('Marcus', 'Sep 20'), F('Priya', 'Sep 28'), F('Sam', 'Sep 28')], note: 'The same 248px pane, anchored to the row’s …, with 44px buttons at this width.' }),
+fr({ label: 'F7 · after removing Dave', friends: [F('Alex', 'Aug 30'), F('Jo', 'Sep 14'), F('Marcus', 'Sep 20'), F('Priya', 'Sep 28'), F('Sam', 'Sep 28')], showPods: true, pods: [{ name: 'Thursday night', meta: '3 members · yours', owner: true, share: true, boxCls: 'box on', tick: '✓', chips: [chip('You'), chip('Priya', '', true), chip('Sam', '', true)] }], note: 'Gone from the list and from Thursday night. No toast.' }),
+fr({ label: 'F8 · ten links open', held: true, open: false, friends: [F('Dave', 'Oct 2')], showPods: true, podsEmpty: true, showInvites: true, invites: ten, note: 'Held, with the reason under it. The list runs on below the fold.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>
