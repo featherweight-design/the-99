@@ -384,6 +384,12 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
 - Probes never touch production.
 - `probe:arrivals` deletes the given user's whole collection via `replaceCollection`; mutate on
   `local-dev` or a scratch branch, never anywhere else, and measure comparisons on staging.
+- A probe that DELETES or RESEEDS a whole account's collection, history, uploads or decks (the signed-in
+  headless account's) calls `assertScratchBranch` (`scripts/lib/scratch-branch.mjs`) before its first write. It
+  refuses production, staging AND `local-dev` by `neon.branch_id`: local-dev holds the headless account's real
+  snapshot, which other lanes' probes read, and a probe whose guard refused only production and staging wiped
+  its collection's printings on 2026-10-15. Run it on a scratch branch made from local-dev. A probe that writes
+  only rows of its own per-run user id, or deletes only its own marker rows, may still run on local-dev.
 - Never `pkill` or `killall` by pattern. Stop a dev server only by the exact PID you started,
   checked first with `ps -o pid=,comm= -p <pid>`.
 

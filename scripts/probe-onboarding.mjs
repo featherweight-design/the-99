@@ -30,7 +30,7 @@
 // CSV is staging-shaped: about 3,100 real catalog names, 110 names no card carries (staging's
 // uploads skip 0 to 133), and 3 malformed rows so both headings draw. Every run deletes the
 // account's `csv_uploads` and `collection_items` in a `finally`, which returns it to first run.
-// Point it at `local-dev`, NEVER production.
+// Point it at a scratch branch made from local-dev: it wipes the account's collection, and `assertScratchBranch` refuses local-dev, staging and production.
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:onboarding
 import { writeFileSync } from "node:fs";
@@ -40,6 +40,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 
@@ -50,8 +51,6 @@ const sql = neon(DATABASE_URL);
 // The two branches this must never run against. `cleanup` deletes the signed-in account's whole
 // collection and every upload it made, so the target is checked, and refused when it cannot be
 // read, before any write (the rule `probe:overview-hold` follows).
-const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
-const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 
 const VIEWPORTS = [
   { label: "phone 390x844", width: 390, height: 844, phone: true },
@@ -573,9 +572,7 @@ async function zeroDecks(browser, vp) {
 
 async function main() {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
-  if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
-    throw new Error(`probe:onboarding refuses branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch.`);
-  }
+  assertScratchBranch(branch, "probe:onboarding");
   const names = (await sql`select name from cards where name not like '%//%' order by name limit 3100`).map((r) => r.name);
   if (names.length < 3000) throw new Error(`catalog too small for a staging-shaped CSV: ${names.length} names`);
   const csvPath = csvFixture(names);

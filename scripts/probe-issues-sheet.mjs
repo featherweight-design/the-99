@@ -30,7 +30,7 @@
 //   - SHORT: 200 catalog names, 2 names no card carries and 6 malformed rows (5 unmatched
 //     against 6 parse errors on local-dev), small enough together to fit under 86vh.
 // Every run deletes the account's `csv_uploads` and `collection_items` in a `finally`, which
-// returns it to first run. Point it at `local-dev`, NEVER production; staging and production
+// returns it to first run. Point it at a scratch branch made from local-dev (`assertScratchBranch` refuses local-dev, staging and production); staging and production
 // are refused by branch id.
 //
 //   PROBE_BASE=http://localhost:3314 pnpm probe:issues-sheet
@@ -42,6 +42,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 
@@ -51,8 +52,6 @@ const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const sql = neon(DATABASE_URL);
 // `cleanup` deletes the signed-in account's whole collection and every upload it made, so the
 // target is checked, and refused when it cannot be read, before any write.
-const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
-const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 
 const VIEWPORTS = [
   { label: "phone 390x844", width: 390, height: 844, phone: true },
@@ -408,9 +407,7 @@ async function walk(browser, vp, csvPath) {
 
 async function main() {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
-  if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
-    throw new Error(`probe:issues-sheet refuses branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch.`);
-  }
+  assertScratchBranch(branch, "probe:issues-sheet");
   const names = (await sql`select name from cards where name not like '%//%' order by name limit 3100`).map((r) => r.name);
   if (names.length < 3000) throw new Error(`catalog too small for a staging-shaped CSV: ${names.length} names`);
   // Long: past the 150-row virtualisation threshold, as staging's worst uploads are.
