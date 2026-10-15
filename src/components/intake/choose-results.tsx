@@ -33,6 +33,8 @@ export function ChooseResults({
   queryString,
   changeHref,
   deckNames,
+  pastRun = false,
+  gone = null,
 }: {
   page: ResultsPage;
   params: ChooseParams;
@@ -46,6 +48,10 @@ export function ChooseResults({
   changeHref: string;
   /** A deck commander's oracle id to its short name, for the read's reasons. */
   deckNames?: Readonly<Record<string, string>>;
+  /** A run opened from History: lines naming a deleted deck say so. */
+  pastRun?: boolean;
+  /** A past run's picks the search no longer lists, drawn as one group after the open picks. */
+  gone?: React.ReactNode;
 }) {
   const labels: Labels = useMemo(
     () => ({ theme: (slug: string) => themeLabels[slug] ?? slug, card: cardName }),
@@ -139,6 +145,7 @@ export function ChooseResults({
       trial={trials[r.oracleId] ?? { state: "pending" }}
       retry={() => retry(r.oracleId)}
       deckNames={deckNames}
+      pastRun={pastRun}
     />
   );
   // After the read's picks, the divider: the first row of the rest with no reason, once any row
@@ -190,8 +197,11 @@ export function ChooseResults({
         </section>
       )}
 
+      {/* A past run whose picks all went: the group heads the page, before the rest of the results. */}
+      {gone && !picked ? gone : null}
       <ol data-dim={dim || undefined} className={`m-0 p-0 list-none flex flex-col gap-[10px] ${dim ? "opacity-[0.45]" : ""}`}>
-        {rest.map((r, i) => (i === restAt ? [<RestDivider key="rest-divider" owned={owned} />, row(r)] : row(r)))}
+        {rest.map((r, i) => (i === restAt ? [gone ? <li key="gone-picks" className="list-none">{gone}</li> : null, <RestDivider key="rest-divider" owned={owned} />, row(r)] : row(r)))}
+        {gone && picked && restAt === -1 ? <li key="gone-picks" className="list-none">{gone}</li> : null}
       </ol>
       </ArrivalOrder>
 

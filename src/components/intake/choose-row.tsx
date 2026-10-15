@@ -16,6 +16,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { helpMeChooseHistoryCopy as historyCopy } from "../../lib/copy/help-me-choose-history";
 import { IdentityPips } from "../commanders/commander-art";
 import { BuyTag } from "../decks/buy-tag";
 import { AvailabilityGlyph } from "../ui/availability-marker";
@@ -69,6 +70,7 @@ export function ChooseRow({
   trial,
   retry,
   deckNames = {},
+  pastRun = false,
 }: {
   row: ResultRow;
   figures: readonly Figure[];
@@ -85,9 +87,19 @@ export function ChooseRow({
   retry: () => void;
   /** A deck commander's oracle id to the short name a reason draws it by (`shortName`). */
   deckNames?: Readonly<Record<string, string>>;
+  /**
+   * A run opened from History: a line that named a deck since deleted says so, in its place, rather
+   * than leaving a silent gap (a fresh read draws no line, as it always has).
+   */
+  pastRun?: boolean;
 }) {
   const href = handOffHref(row.oracleId, params);
-  const reason = row.reason && reasonDrawable(row.reason, deckNames) ? <Reason parts={row.reason} deckNames={deckNames} /> : null;
+  const drawable = !!row.reason && reasonDrawable(row.reason, deckNames);
+  const reason = drawable
+    ? <Reason parts={row.reason!} deckNames={deckNames} />
+    : pastRun && row.reason
+      ? <p data-testid="row-reason-gone" className="m-0 text-[12.5px] md:text-[13px] leading-[1.5] text-[color:var(--fg-faint)]">{historyCopy.past.reasonGone}</p>
+      : null;
   const own = (
     <OwnershipLine
       mark={row.mark}
