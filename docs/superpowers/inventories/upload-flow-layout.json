@@ -1,0 +1,128 @@
+{
+  "feature": "Upload flow layout fixes: the comparison step fills the area with Cancel in the foot, long review buckets scroll in a capped box, the phone's scroll ends above the foot",
+  "clearAbout": true,
+  "note": "Needs COLLECTION_EDIT_ENABLED=true, a scratch branch, and UPLOAD_PASTE (a pasted list of card lines). The paste rows leave unconfirmed uploads behind.",
+  "rows": [
+    {
+      "id": "loading",
+      "label": "/collection/replace: step 2 loading (Slow 4G), Cancel in the foot",
+      "view": "src/components/collection/replace-flow.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "${UPLOAD_PASTE}",
+          "settle": 300
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "settle": 900
+        },
+        {
+          "wait": "[role=status]",
+          "settle": 200
+        }
+      ]
+    },
+    {
+      "id": "choice",
+      "label": "/collection/replace: step 2 choosing, same foot",
+      "view": "src/components/collection/upload-choice.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "${UPLOAD_PASTE}",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "settle": 20000
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "review-long-bucket",
+      "label": "/collection/replace: the review, a long bucket expanded (Show all)",
+      "view": "src/components/collection/review-parts.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "${UPLOAD_PASTE}",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "settle": 20000
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "radio",
+          "name": "Replace my collection",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Review the replace",
+          "settle": 20000
+        },
+        {
+          "wait": "h2:has-text('Leaving your collection')",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show all",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[role=region]"
+        }
+      ]
+    }
+  ]
+}

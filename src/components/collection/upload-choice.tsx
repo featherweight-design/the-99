@@ -13,6 +13,7 @@ import type { SyncPick } from "../../lib/collection/sync";
 import type { SyncNext, SyncNote } from "./sync-choice-view";
 import type { BuiltLeaving } from "../../lib/collection/built-leaving";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { STEP_BODY, STEP_FOOT, STEP_FRAME } from "./review-parts";
 
 export type ReplaceFacts = {
   editsSinceUpload: number;
@@ -354,8 +355,8 @@ export function UploadChoice({
     sync?.figure === "failed" ? c.prepareFailed : sync?.figure ? c.after(sync.figure.before, sync.figure.after) : c.preparing;
 
   return (
-    <section className="flex flex-1 flex-col">
-      <div className="flex-1 p-[20px_18px] md:max-w-[1280px] md:p-[36px_56px_20px]">
+    <section className={STEP_FRAME}>
+      <div className={`flex-1 p-[20px_18px] md:max-w-[1280px] md:p-[36px_56px_20px] ${STEP_BODY}`}>
         <p className="m-0 font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">
           {c.step(2, 4)} · {filename} · {rows.toLocaleString("en-US")} rows
         </p>
@@ -429,25 +430,51 @@ export function UploadChoice({
         ) : null}
         {picked === "sync" && sync?.followUp && !syncOff ? <FollowUp followUp={sync.followUp} /> : null}
       </div>
-      <div className="flex flex-col gap-[10px] border-t border-t-[color:var(--border-strong)] bg-[color:var(--surface-rail)] p-[14px_18px] md:flex-row md:items-center md:gap-[20px] md:p-[16px_56px]">
-        <span className="hidden text-[13.5px] text-[color:var(--fg-body)] md:inline">
-          {lead === "add" ? c.nextAdd : lead === "sync" && sync ? syncNextText(sync.next) : c.nextReplace}
-        </span>
-        <div className="flex flex-col-reverse gap-[10px] md:ml-auto md:flex-row md:gap-[12px]">
-          <GhostButton type="button" onClick={onCancel} className="h-[44px] px-[20px] text-[14px]">
-            {c.cancel}
-          </GhostButton>
-          <PrimaryButton
-            type="button"
-            onClick={onContinue}
-            // A picked Sync continues once the pick's own dry run is in: its review is drawn from that read.
-            disabled={picked === null || (picked === "sync" && (sync?.figure == null || sync.figure === "failed"))}
-            className="h-[44px] px-[24px] text-[14px] font-semibold disabled:opacity-40"
-          >
-            {lead === "add" ? c.continueAdd : lead === "sync" ? c.continueSync : c.continueReplace}
-          </PrimaryButton>
-        </div>
-      </div>
+      <ChoiceFoot
+        next={lead === "add" ? c.nextAdd : lead === "sync" && sync ? syncNextText(sync.next) : c.nextReplace}
+        continueLabel={lead === "add" ? c.continueAdd : lead === "sync" ? c.continueSync : c.continueReplace}
+        // A picked Sync continues once the pick's own dry run is in: its review is drawn from that read.
+        continueDisabled={picked === null || (picked === "sync" && (sync?.figure == null || sync.figure === "failed"))}
+        onContinue={onContinue}
+        onCancel={onCancel}
+      />
     </section>
+  );
+}
+
+/**
+ * The step's foot: the sentence naming what Continue does, then Cancel and Continue. The comparison step draws the
+ * same bar with Continue held, so the foot does not move when the choice replaces it.
+ */
+export function ChoiceFoot({
+  next,
+  continueLabel,
+  continueDisabled,
+  onContinue,
+  onCancel,
+}: {
+  next: string;
+  continueLabel: string;
+  continueDisabled: boolean;
+  onContinue: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className={`${STEP_FOOT} flex flex-col gap-[10px] border-t border-t-[color:var(--border-strong)] bg-[color:var(--surface-rail)] p-[14px_18px] md:flex-row md:items-center md:gap-[20px] md:p-[16px_56px]`}>
+      <span className="hidden text-[13.5px] text-[color:var(--fg-body)] md:inline">{next}</span>
+      <div className="flex flex-col-reverse gap-[10px] md:ml-auto md:flex-row md:gap-[12px]">
+        <GhostButton type="button" onClick={onCancel} className="h-[44px] px-[20px] text-[14px]">
+          {collectionEditCopy.upload.cancel}
+        </GhostButton>
+        <PrimaryButton
+          type="button"
+          onClick={onContinue}
+          disabled={continueDisabled}
+          className="h-[44px] px-[24px] text-[14px] font-semibold disabled:opacity-40"
+        >
+          {continueLabel}
+        </PrimaryButton>
+      </div>
+    </div>
   );
 }

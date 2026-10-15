@@ -18,7 +18,8 @@ import { UploadEntry } from "./upload-entry";
 import { importReviewCopy } from "../../lib/copy/import-review";
 import { ReviewScreen } from "./review-screen";
 import type { ReviewChange } from "./replace-review-detail";
-import { UploadChoice, type SyncChoice } from "./upload-choice";
+import { ChoiceFoot, UploadChoice, type SyncChoice } from "./upload-choice";
+import { STEP_BODY, STEP_FRAME } from "./review-parts";
 import { effectivePick, followUpShown, syncNext, syncNote } from "./sync-choice-view";
 import { syncBar, syncFigures, type SyncConflictsHandle, type SyncReviewControls } from "./sync-review";
 import { isFirstImport, plainSyncPick, type SyncAnswers, type SyncPick } from "../../lib/collection/sync";
@@ -573,37 +574,42 @@ export function ReplaceFlow({
     };
     if (!datas) {
       return (
-        <section className="flex flex-col gap-[14px] p-[20px_18px] md:max-w-[1280px] md:p-[36px_56px]">
-          {prepareError ? null : (
-            // The comparison is still being read: the app's own loading screen (the crown, a heading, one status
-            // line), carrying the step and the file in its status. Not a navigation, so it reports no stall.
-            <LoadingScreen
-              copy={{ heading: collectionEditCopy.upload.preparing, status: `${collectionEditCopy.upload.step(2, 4)} · ${preview.filename}` }}
-              watch={false}
-            />
-          )}
-          {prepareError ? (
-            <p className="m-0 font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">
-              {collectionEditCopy.upload.step(2, 4)} · {preview.filename}
-            </p>
-          ) : null}
-          {prepareError ? (
-            <div role="alert" className="rounded-[10px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--danger)] bg-[color:var(--surface)] p-[12px_14px]">
-              <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{prepareError}</p>
-              <button
-                type="button"
-                onClick={() => setAttempt((a) => a + 1)}
-                className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
-              >
-                {collectionEditCopy.upload.retry}
-              </button>
-            </div>
-          ) : null}
-          <div>
-            <GhostButton type="button" onClick={cancel} className="h-[44px] px-[20px] text-[14px]">
-              {collectionEditCopy.upload.cancel}
-            </GhostButton>
+        <section className={STEP_FRAME}>
+          <div className={`flex flex-1 flex-col gap-[14px] ${prepareError ? "p-[20px_18px] md:max-w-[1280px] md:p-[36px_56px]" : ""} ${STEP_BODY}`}>
+            {prepareError ? null : (
+              // The comparison is still being read: the app's own loading screen (the crown, a heading, one status
+              // line), carrying the step and the file in its status, filling the step. Not a navigation, so it reports no stall.
+              <LoadingScreen
+                copy={{ heading: collectionEditCopy.upload.preparing, status: `${collectionEditCopy.upload.step(2, 4)} · ${preview.filename}` }}
+                watch={false}
+              />
+            )}
+            {prepareError ? (
+              <p className="m-0 font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">
+                {collectionEditCopy.upload.step(2, 4)} · {preview.filename}
+              </p>
+            ) : null}
+            {prepareError ? (
+              <div role="alert" className="rounded-[10px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--danger)] bg-[color:var(--surface)] p-[12px_14px]">
+                <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{prepareError}</p>
+                <button
+                  type="button"
+                  onClick={() => setAttempt((a) => a + 1)}
+                  className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
+                >
+                  {collectionEditCopy.upload.retry}
+                </button>
+              </div>
+            ) : null}
           </div>
+          {/* The choice's own foot with Continue held, so Cancel stays where the next step puts it. */}
+          <ChoiceFoot
+            next={collectionEditCopy.upload.nextReplace}
+            continueLabel={collectionEditCopy.upload.continueReplace}
+            continueDisabled
+            onContinue={() => {}}
+            onCancel={cancel}
+          />
         </section>
       );
     }

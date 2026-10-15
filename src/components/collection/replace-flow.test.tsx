@@ -389,6 +389,19 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(screen.getByText("Showing the first 12 of 507.")).toBeTruthy();
   });
 
+  // A long bucket grows inside its own capped box, so Show all never pushes what is below it down.
+  it("Show all draws the rows in a named, focusable scroll box with a capped height", async () => {
+    const many = Array.from({ length: 12 }, (_, i) => `Card ${String(i).padStart(2, "0")}`);
+    serve({ ...data(), detail: { ...detail, lists: { ...detail.lists, leaving: { total: 12, rows: list(many, 3, 0).rows } } } });
+    await reachReview();
+    expect(screen.queryByRole("region", { name: /Leaving/i })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show all 12" }));
+    const box = screen.getByText("Card 08").closest("[role=region]") as HTMLElement;
+    expect(box.getAttribute("tabindex")).toBe("0");
+    expect(box.className).toMatch(/max-h-\[/);
+    expect(box.className).toMatch(/overflow-y-auto/);
+  });
+
   it("names a card the catalog dropped in the failure, and writes nothing", async () => {
     serve(data());
     confirmUpload.mockResolvedValueOnce({ missingCard: ["Sol Ring"] });
@@ -413,6 +426,10 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(status.querySelector("svg")).not.toBeNull();
     expect(status.textContent).toMatch(/STEP 2 OF 4/);
     expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
+    // Cancel sits in the choice's own foot, beside a held Continue, so the foot does not move when the choice lands.
+    const foot = screen.getByRole("button", { name: "Cancel" }).closest("div[class*='border-t']") as HTMLElement;
+    expect(foot).not.toBeNull();
+    expect(within(foot).getByRole("button", { name: /^Review the/ }).hasAttribute("disabled")).toBe(true);
     expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -436,7 +453,14 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
   // the chain is `src/app/collection/replace/page.test.tsx`.
   const stretches = (el: Element | null) => {
     const cls = (el?.className ?? "").toString().split(/\s+/);
-    return cls.includes("flex-1") && cls.includes("flex-col") && !cls.some((c) => c.includes("100vh"));
+    // From `md` it grows into the column; on the phone it is a frame sized to the screen between the header and
+    // the tab bar, so the page itself does not scroll beside the foot.
+    return (
+      cls.includes("md:flex-1") &&
+      cls.includes("flex-col") &&
+      cls.some((c) => c.startsWith("max-md:h-[calc(100dvh-var(--tabbar-h)-var(--mobile-header-h))]")) &&
+      !cls.some((c) => c.includes("100vh"))
+    );
   };
 
   it("draws the choice as a section that grows into the route's column", async () => {

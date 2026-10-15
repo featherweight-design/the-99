@@ -8,6 +8,17 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 /** Rows a list shows before its Show all. */
 export const SHOWN = 8;
+
+/**
+ * The upload flow's steps on the phone: a frame exactly as tall as the screen between the header and the tab bar
+ * (`ShellMain` reserves the tab bar below it), so the page itself never scrolls. The body scrolls inside the frame
+ * and the action bar is its foot, which means the scroll bar sits beside the content and never beside the
+ * controls. From `md` the page scrolls as it always has and the bar is sticky.
+ */
+// `flex-none` below `md`: `flex-1` sets a zero flex basis in the page's column, which would override the height.
+export const STEP_FRAME = "flex flex-col md:flex-1 max-md:h-[calc(100dvh-var(--tabbar-h)-var(--mobile-header-h))] max-md:flex-none max-md:min-h-0";
+export const STEP_BODY = "max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:overscroll-contain";
+export const STEP_FOOT = "max-md:flex-none md:sticky md:bottom-0";
 const c = collectionEditCopy.upload;
 
 /** One figure. `border` colours the edge (Sync's `to decide` while it is above 0); absent, the shipped hairline. */
@@ -42,6 +53,14 @@ export function Rows({ heading, list, tone }: { heading: string; list: PreviewLi
       <h2 className="m-0 mb-[8px] font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">
         {heading}
       </h2>
+      {/* Shown in full, a long list scrolls inside its own capped box, so Show all reveals rows without pushing
+          what is below them down. Focusable and named, so a keyboard reader can scroll it. */}
+      <div
+        role={all ? "region" : undefined}
+        aria-label={all ? heading : undefined}
+        tabIndex={all ? 0 : undefined}
+        className={all ? "max-h-[min(60dvh,420px)] overflow-y-auto overscroll-contain rounded-[8px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--accent)]" : undefined}
+      >
       <ul className="m-0 flex list-none flex-col gap-[6px] p-0">
         {shown.map((r: PreviewListRow, i) => (
           <li
@@ -65,6 +84,7 @@ export function Rows({ heading, list, tone }: { heading: string; list: PreviewLi
           </li>
         ))}
       </ul>
+      </div>
       {all && list.total > list.rows.length ? (
         <p className="m-0 mt-[8px] text-[12.5px] text-[color:var(--fg-muted)]">{c.capNote(list.rows.length, list.total)}</p>
       ) : null}
