@@ -7,7 +7,7 @@
 // which opens the revert confirmation.
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { loadCollectionHistory, loadCollectionHistoryEntry } from "../../app/collection/history-actions";
 import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
 import { historyKindOf, type HistoryKind } from "../../lib/collection/history-kind";
@@ -22,6 +22,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { ReplaceIcon } from "./replace-icon";
 import { RevertConfirm } from "./revert-confirm";
 import { Chevron } from "../ui/chevron";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 import { reveal } from "../../lib/ui/reveal";
 
 const c = collectionEditCopy.history;
@@ -159,6 +160,7 @@ function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<
   const groups = useMemo(() => groupRows(rows), [rows]);
   const [picked, setPicked] = useState<RowGroup | null>(null);
   const [shown, setShown] = useState(GROUP_FIRST);
+  const groupIds = useId();
   if (rows.length === 0) return <p className="m-0 py-[6px] text-[13px] text-[color:var(--fg-muted)]">{c.noRows}</p>;
   if (rows.length <= SHORT_ENTRY_ROWS) {
     return <ul className="m-0 list-none p-0">{rows.map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} />)}</ul>;
@@ -167,34 +169,38 @@ function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<
   if (!active) return null;
   return (
     <div>
-      <div role="group" aria-label={c.heading} className="mb-[8px] flex flex-wrap gap-[6px]">
-        {groups.map((g) => (
-          <button
-            key={g.group}
-            type="button"
-            aria-pressed={g.group === active.group}
-            onClick={() => {
-              setPicked(g.group);
-              setShown(GROUP_FIRST);
-            }}
-            className={`min-h-[32px] cursor-pointer rounded-full border-0 px-[12px] font-mono text-[12px] ${
-              g.group === active.group ? "bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-[color:var(--elevated)] text-[color:var(--fg)]"
-            }`}
-          >
-            {c.groups[g.group]} · {g.rows.length.toLocaleString("en-US")}
-          </button>
-        ))}
+      <div className="mb-[8px]">
+        <SegmentedSwitch
+          kind="tabs"
+          tone="neutral"
+          size="compact"
+          scroll
+          ariaLabel={c.heading}
+          ids={{ tab: (g) => `${groupIds}-tab-${g}`, panel: (g) => `${groupIds}-panel-${g}` }}
+          segments={groups.map((g) => ({
+            value: g.group,
+            label: `${c.groups[g.group]} ·`,
+            count: g.rows.length.toLocaleString("en-US"),
+          }))}
+          value={active.group}
+          onChange={(g) => {
+            setPicked(g);
+            setShown(GROUP_FIRST);
+          }}
+        />
       </div>
-      <ul className="m-0 list-none p-0">{active.rows.slice(0, shown).map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} />)}</ul>
-      {shown < active.rows.length ? (
-        <button
-          type="button"
-          onClick={() => setShown((s) => s + GROUP_STEP)}
-          className="mt-[6px] min-h-[44px] cursor-pointer text-[13px] text-[color:var(--accent)] underline underline-offset-2"
-        >
-          {c.showMore(Math.min(GROUP_STEP, active.rows.length - shown), active.rows.length - shown)}
-        </button>
-      ) : null}
+      <div role="tabpanel" id={`${groupIds}-panel-${active.group}`} aria-labelledby={`${groupIds}-tab-${active.group}`}>
+        <ul className="m-0 list-none p-0">{active.rows.slice(0, shown).map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} />)}</ul>
+        {shown < active.rows.length ? (
+          <button
+            type="button"
+            onClick={() => setShown((s) => s + GROUP_STEP)}
+            className="mt-[6px] min-h-[44px] cursor-pointer text-[13px] text-[color:var(--accent)] underline underline-offset-2"
+          >
+            {c.showMore(Math.min(GROUP_STEP, active.rows.length - shown), active.rows.length - shown)}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

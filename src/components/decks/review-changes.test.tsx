@@ -504,7 +504,7 @@ describe("ReviewChanges", () => {
     const { unmount } = render(
       <ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [row()], out: [] }} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
     );
-    expect(screen.queryByRole("button", { name: segment })).toBeNull();
+    expect(screen.queryByRole("tab", { name: segment })).toBeNull();
     unmount();
     render(
       <ReviewChanges mix={TEST_MIX}
@@ -514,7 +514,7 @@ describe("ReviewChanges", () => {
         {...SHAPE} state={STATE} cardCount={CARD_COUNT}
       />,
     );
-    expect(screen.getByRole("button", { name: segment })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: segment })).toBeTruthy();
   });
 
   // The one way off this page that is neither a commit nor a discard, and it
@@ -1115,11 +1115,16 @@ describe("ReviewChanges", () => {
     it("stands the reader back on Coming in when the last cut goes", async () => {
       const held = hold();
       mount({ in: [row()], out: [cut()] });
-      const outTab = screen.getByRole("button", { name: deckVersioningCopy.review.groupOut(1) });
+      // A tablist with no panels (d9's ruling 2): from md both columns show, so no tab names one.
+      const pair = screen.getByRole("tablist", { name: deckVersioningCopy.review.groupSwitch });
+      expect(pair.querySelector("[aria-pressed]")).toBeNull();
+      const outTab = screen.getByRole("tab", { name: deckVersioningCopy.review.groupOut(1) });
+      expect(outTab).toHaveAttribute("aria-selected", "false");
       await act(async () => {
         fireEvent.click(outTab);
       });
-      expect(outTab).toHaveAttribute("aria-pressed", "true");
+      expect(outTab).toHaveAttribute("aria-selected", "true");
+      expect(outTab).not.toHaveAttribute("aria-controls");
 
       await act(async () => {
         fireEvent.click(putBack());
@@ -1127,7 +1132,7 @@ describe("ReviewChanges", () => {
 
       // The pair is gone with the column, and the add is what is on screen.
       expect(
-        screen.queryByRole("button", { name: deckVersioningCopy.review.groupOut(1) }),
+        screen.queryByRole("tab", { name: deckVersioningCopy.review.groupOut(1) }),
       ).toBeNull();
       expect(screen.getByText("Sol Ring")).toBeInTheDocument();
       // And the restored card is in NEITHER list: appending it to `Coming in`

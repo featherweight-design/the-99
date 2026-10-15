@@ -31,6 +31,7 @@ import type { ReleaseSource } from "../../lib/decks/pull-release";
 import { groupByCardType } from "../../lib/decks/grouping";
 import { CardDetailProvider, type Sibling } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 import { CommanderSection, ZoneHint } from "./change-commander-review";
 import { commanderZoneHint } from "./change-commander-banner";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
@@ -552,6 +553,7 @@ export function ReviewChanges({
   // width would put every card name, every buy tag and every card-modal trigger
   // in the DOM twice.
   const [shown, setShown] = useState<"in" | "out">("in");
+  const columnTabs = useId();
 
   // The first optimistic write on this surface. `PullControl` beside it is
   // deliberately NOT optimistic, and the difference is the whole reason: a
@@ -966,33 +968,22 @@ export function ReviewChanges({
           )}
 
           {segmented && (
-            <div className="md:hidden flex gap-[6px] mb-[13px]">
-              {([
-                ["in", copy.groupIn(inCount)],
-                ["out", copy.groupOut(outCount)],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setShown(value)}
-                  aria-pressed={shownColumn === value}
-                  // Verbatim the builder bar's filter pill: selection is bone on
-                  // `--elevated`, never an accent fill, and it drops the ring the
-                  // unselected segment carries. `ViewToggle` is the app's other
-                  // segmented control and is not this one — it is two 44px glyph
-                  // squares in a sunken well, and these segments carry a figure
-                  // and a word.
-                  className={[
-                    "font-sans transition-[filter] hover:brightness-125 text-[12.5px]",
-                    "flex-1 rounded-full px-[11px] py-[6px] min-h-[38px]",
-                    shownColumn === value
-                      ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]"
-                      : "font-medium text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
-                  ].join(" ")}
-                >
-                  {label}
-                </button>
-              ))}
+            // A tablist without panels: from `md:` the switch is gone and both columns show, so a
+            // tab cannot label a column that is also drawn beside it.
+            <div className="md:hidden mb-[13px]">
+              <SegmentedSwitch
+                kind="tabs"
+                tone="neutral"
+                fill
+                ariaLabel={copy.groupSwitch}
+                ids={{ tab: (v) => `${columnTabs}-${v}` }}
+                segments={[
+                  { value: "in", label: copy.groupIn(inCount) },
+                  { value: "out", label: copy.groupOut(outCount) },
+                ]}
+                value={shownColumn}
+                onChange={setShown}
+              />
             </div>
           )}
 

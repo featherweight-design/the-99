@@ -184,7 +184,7 @@ async function phone(page, changes) {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${BASE}${changes}`, { waitUntil: "networkidle" });
   const inTop = (await readColumns(page))[0]?.rowTop ?? null;
-  await onPage(page, "button[aria-pressed]").filter({ hasText: /going out/i }).click();
+  await onPage(page, "[role=tab]").filter({ hasText: /going out/i }).click();
   const shown = await readColumns(page);
   const outTop = shown[0]?.rowTop ?? null;
   report(

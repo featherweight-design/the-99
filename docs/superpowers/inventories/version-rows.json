@@ -104,7 +104,7 @@
           "settle": 600
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Out \u00b7 ",
           "settle": 600
         },

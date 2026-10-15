@@ -181,7 +181,7 @@ try {
     await page.goto(`${BASE}/decks/${deckId}/changes`, { waitUntil: "networkidle" });
     // The phone puts the two directions behind a segmented pair; the column is
     // only on screen once its segment is.
-    const outTab = onPage(page, "button").filter({ hasText: /^Going out · \d+$/ }).first();
+    const outTab = onPage(page, "[role=tab]").filter({ hasText: /^Going out · \d+$/ }).first();
     if (vp.phone && (await outTab.count()) > 0) await outTab.click();
     await onPage(page, "button[aria-label^='Put ']").first().waitFor({ timeout: 15_000 });
 

@@ -9,6 +9,24 @@ const SEGMENTS = [
 ] as const;
 
 describe("SegmentedSwitch", () => {
+  it("scrolls sideways under `scroll`, its segments keeping their width, and does not otherwise", () => {
+    const { rerender } = render(
+      <SegmentedSwitch kind="tabs" ariaLabel="P" size="compact" fill scroll segments={SEGMENTS} value="a" onChange={() => {}} />,
+    );
+    const well = screen.getByRole("tablist");
+    expect(well.className).toContain("overflow-x-auto");
+    expect(well.className).toContain("[scrollbar-width:none]");
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab.className.split(" ")).toContain("flex-none");
+      expect(tab.className.split(" ")).not.toContain("flex-1");
+    }
+    rerender(<SegmentedSwitch kind="tabs" ariaLabel="P" scroll segments={SEGMENTS} value="a" onChange={() => {}} />);
+    for (const tab of screen.getAllByRole("tab")) expect(tab.className.split(" ")).not.toContain("flex-1");
+    rerender(<SegmentedSwitch kind="tabs" ariaLabel="P" segments={SEGMENTS} value="a" onChange={() => {}} />);
+    expect(screen.getByRole("tablist").className).not.toContain("overflow-x-auto");
+    expect(screen.getAllByRole("tab")[0].className.split(" ")).toContain("flex-1");
+  });
+
   it("is a tablist of tabs for a switch that swaps a panel, marking the chosen one selected", () => {
     render(<SegmentedSwitch kind="tabs" ariaLabel="Panels" segments={SEGMENTS} value="b" onChange={() => {}} />);
     expect(screen.getByRole("tablist", { name: "Panels" })).toBeInTheDocument();

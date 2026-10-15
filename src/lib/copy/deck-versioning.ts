@@ -206,6 +206,8 @@ export const deckVersioningCopy = {
      */
     chipShort: "still short",
 
+    // The phone's Coming in / Going out tablist, named for a screen reader.
+    groupSwitch: "Cards coming in or going out",
     groupIn: (n: number) => `Coming in · ${n}`,
     groupOut: (n: number) => `Going out · ${n}`,
     // The fourth term is absent at zero, which is every deck that prints
@@ -492,6 +494,8 @@ export const deckVersioningCopy = {
     heldLabel: "Held",
     heldValue: (n: number) => plural(n, "game"),
 
+    // The phone's In / Out tablist, named for a screen reader; the segments carry the words.
+    diffSwitch: "Cards in or out",
     diffIn: (n: number) => `In · ${n}`,
     diffOut: (n: number) => `Out · ${n}`,
     // H31: the rows draw today's ownership and price, so the line above them says the figures

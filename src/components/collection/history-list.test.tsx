@@ -90,14 +90,25 @@ describe("HistoryList", () => {
     loadEntry.mockResolvedValue(detail(e, rows));
     draw([e]);
     await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
-    expect(await screen.findByRole("button", { name: "Left · 40" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "New · 10" })).toBeTruthy();
+    expect(await screen.findByRole("tab", { name: "Left · 40" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "New · 10" })).toBeTruthy();
+    // The groups swap the row list, so they are a tablist (d9's ruling 2), in a well that scrolls sideways at
+    // a phone's width rather than overflowing it, each tab naming the list it shows.
+    const groups = screen.getByRole("tablist", { name: "Changes to your collection" });
+    expect(groups.querySelector("[aria-pressed]")).toBeNull();
+    expect(groups.className).toContain("overflow-x-auto");
+    const left = screen.getByRole("tab", { name: "Left · 40" });
+    expect(left).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel").id).toBe(left.getAttribute("aria-controls"));
+    expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe(left.id);
+    expect(screen.getByRole("tabpanel").querySelectorAll("li")).toHaveLength(8);
     expect(screen.getAllByText(/^Gone /)).toHaveLength(8);
     expect(screen.queryByText("Fresh 0")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Show 30 more of 32" }));
     expect(screen.getAllByText(/^Gone /)).toHaveLength(38);
-    fireEvent.click(screen.getByRole("button", { name: "New · 10" }));
+    fireEvent.click(screen.getByRole("tab", { name: "New · 10" }));
     expect(screen.getAllByText(/^Fresh /)).toHaveLength(8);
+    expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe(screen.getByRole("tab", { name: "New · 10" }).id);
   });
 
   it("lists a row whose printing changed at the same quantity, instead of dropping it", async () => {

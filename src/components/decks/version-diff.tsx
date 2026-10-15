@@ -32,6 +32,7 @@ import type { DeckOrigin } from "../../lib/precons/origin";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CostTrack } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 import { useMinWidth } from "../ui/use-min-width";
 import { BuyTag } from "./buy-tag";
 import { DecklistGroupHeader } from "./decklist-group-header";
@@ -338,6 +339,7 @@ export function VersionDiff({
   // Phone only, and it decides which column is on screen rather than which one is
   // drawn twice.
   const [shown, setShown] = useState<"in" | "out">("in");
+  const diffTabs = useId();
 
   useEffect(() => {
     // A diff already in hand is either the rail's cached copy — read out of the
@@ -518,31 +520,22 @@ export function VersionDiff({
             </div>
           )}
           {segmented && (
-            <div className="md:hidden flex gap-[6px] mb-[12px]">
-              {(
-                [
-                  ["in", copy.diffIn(inCount)],
-                  ["out", copy.diffOut(outCount)],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setShown(value)}
-                  aria-pressed={shown === value}
-                  className={[
-                    "font-sans text-[12.5px]",
-                    // 44px, not the canvas's 38px: the phone tap floor governs a
-                    // real control, and the canvas draws this pair as a span.
-                    "flex-1 rounded-full px-[11px] py-[6px] min-h-[44px]",
-                    shown === value
-                      ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]"
-                      : "font-medium text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
-                  ].join(" ")}
-                >
-                  {label}
-                </button>
-              ))}
+            // A tablist without panels: a tab cannot label a column that is also drawn beside it
+            // from `md:`, where the switch is gone and both columns show.
+            <div className="md:hidden mb-[12px]">
+              <SegmentedSwitch
+                kind="tabs"
+                tone="neutral"
+                fill
+                ariaLabel={copy.diffSwitch}
+                ids={{ tab: (v) => `${diffTabs}-${v}` }}
+                segments={[
+                  { value: "in", label: copy.diffIn(inCount) },
+                  { value: "out", label: copy.diffOut(outCount) },
+                ]}
+                value={shown}
+                onChange={setShown}
+              />
             </div>
           )}
           {inCount > 0 && (

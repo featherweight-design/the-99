@@ -1,0 +1,123 @@
+{
+  "feature": "Segmented switch, PR 3a",
+  "note": "PR 3a: the tablists converge on SegmentedSwitch (kind tabs, tone neutral). The version diff's In / Out and the review screen's Coming in / Going out are phone only (md:hidden) and name no panel, since both columns show from md. The import and update Paste / File switches link each tab to its panel; their accent fill is gone. Collection history's row groups are size compact in a well that scrolls sideways (the new scroll prop). VERSION_ROWS_DECK is the version-rows fixture (two versions, the newest moving cards both ways); LOCKED_DECK is the never-cut fixture, whose draft holds an In and an Out column; SWITCH_DECK is any deck the account owns (local-dev: d0000000-0000-4000-8000-00000000cafe). The history row needs an account with a Replace upload long enough to open on its groups.",
+  "clearAbout": true,
+  "shares": {
+    "module": "src/components/ui/segmented-switch.tsx",
+    "binding": "SegmentedSwitch"
+  },
+  "rows": [
+    {
+      "id": "version-diff",
+      "label": "/decks/[id] Versions: an opened version's In / Out tabs, Out chosen (phone only)",
+      "view": "src/components/decks/version-diff.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${VERSION_ROWS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Versions",
+          "settle": 800
+        },
+        {
+          "click": "button[aria-expanded='false']",
+          "settle": 800
+        },
+        {
+          "wait": "[data-version-diff-row]",
+          "settle": 600
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Out · ",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "review-changes",
+      "label": "/decks/[id]/changes: Coming in / Going out tabs, Going out chosen (phone only)",
+      "view": "src/components/decks/review-changes.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_DECK}/changes",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Going out",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "import-paste",
+      "label": "/decks/import: Paste / File tabs, Paste chosen, its panel below",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "[role=tabpanel]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "import-file",
+      "label": "/decks/import: File chosen, the drop zone below",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "[role=tablist]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "tab",
+          "name": "Upload a file",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "update-entry",
+      "label": "/decks/[id]/import: Paste / File tabs, Paste chosen",
+      "view": "src/components/decks/update-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SWITCH_DECK}/import",
+          "wait": "[role=tabpanel]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "collection-history",
+      "label": "/collection/history: a long Replace opened on its row groups (compact, scrolling at phone)",
+      "view": "src/components/collection/history-list.tsx",
+      "steps": [
+        {
+          "goto": "/collection/history",
+          "wait": "h2",
+          "settle": 4000
+        },
+        {
+          "clickRole": "button",
+          "name": "Replace upload",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

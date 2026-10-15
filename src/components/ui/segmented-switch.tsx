@@ -60,6 +60,7 @@ export function SegmentedSwitch<T extends string>({
   size = "default",
   drawn,
   pressFill = false,
+  scroll = false,
 }: {
   /** `tabs` for a switch that swaps a visible panel or view; `radio` for one that changes a setting. */
   kind: "tabs" | "radio";
@@ -86,8 +87,16 @@ export function SegmentedSwitch<T extends string>({
   drawn?: T;
   /** An unchosen segment takes the chosen fill under the finger (`active:`), so a press shows in the frame it lands. */
   pressFill?: boolean;
+  /**
+   * The well scrolls sideways, its scrollbar hidden, rather than overflowing its row: for a switch with more
+   * segments than a phone's width holds. Every segment keeps its content width (`flex-none`), so `fill` is ignored.
+   */
+  scroll?: boolean;
 }) {
   const sized = SIZES[size];
+  // Under `scroll` a segment never shares or shrinks: the well scrolls instead.
+  const segment = scroll ? `${sized.segment.replace(/(^| )flex-1( |$)/, "$1$2")} flex-none` : sized.segment;
+  const share = fill && !scroll ? sized.fill : "";
   const base = useId();
   const idOf = (v: T) => (ids ? ids.tab(v) : `${base}-${v}`);
   const values = segments.map((s) => s.value);
@@ -103,7 +112,7 @@ export function SegmentedSwitch<T extends string>({
       {...data}
       className={`flex items-stretch gap-[2px] rounded-[9px] border border-solid border-[color:var(--border-strong)] ${sized.well} ${
         fill ? "w-full md:inline-flex md:w-auto" : "inline-flex w-auto"
-      }`}
+      }${scroll ? " max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : ""}`}
     >
       {segments.map((s) => {
         const chosen = s.value === value;
@@ -136,7 +145,7 @@ export function SegmentedSwitch<T extends string>({
             onClick={() => pick(s.value)}
             {...s.data}
             style={own ? ({ "--seg-ink": own } as CSSProperties) : undefined}
-            className={`${sized.segment} ${fill ? sized.fill : ""} ${ink} ${filled ? "font-semibold bg-[color:var(--elevated)]" : rest}`}
+            className={`${segment} ${share} ${ink} ${filled ? "font-semibold bg-[color:var(--elevated)]" : rest}`}
           >
             {s.label}
             {s.count !== undefined && s.count !== null ? <>{" "}{s.count}</> : null}
