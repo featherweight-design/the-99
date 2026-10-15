@@ -38,7 +38,8 @@ const POD: Pod = {
  * The shipped components switch to their wide layout on the VIEWPORT (`md`, `lg`), but a figure sits in the page's
  * article, which at a signed-in 1024px is 566px wide: the wide layout then clips a seat or collapses a name column.
  * Where the wide layout needs more than the figure has, the figure keeps its natural width and is scaled down to the
- * space it has; where the compact layout is drawn it already fits and the scale stays 1.
+ * space it has; where the compact layout is drawn it already fits and the scale stays 1. The scaled box is a flow root,
+ * so the figure's own top margin is inside the height measured for it rather than collapsing out through it.
  */
 function FitFigure({ wideAt, children }: { wideAt: string; children: ReactNode }) {
   const [fit, setFit] = useState({ scale: 1, height: null as number | null });
@@ -58,7 +59,7 @@ function FitFigure({ wideAt, children }: { wideAt: string; children: ReactNode }
   }, []);
   return (
     <div ref={outer} style={{ height: fit.height ?? undefined, overflow: "hidden" }}>
-      <div ref={inner} className={wideAt} style={{ transform: fit.scale < 1 ? `scale(${fit.scale})` : undefined, transformOrigin: "top left" }}>
+      <div ref={inner} className={"flow-root " + wideAt} style={{ transform: fit.scale < 1 ? `scale(${fit.scale})` : undefined, transformOrigin: "top left" }}>
         {children}
       </div>
     </div>
