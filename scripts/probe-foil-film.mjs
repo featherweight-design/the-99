@@ -20,7 +20,7 @@ const img = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w
 const tile = (id, attrs, foil = "foil") =>
   `<button id="${id}" style="display:block;width:180px;padding:0;border:0;background:none"><div class="relative overflow-hidden" style="position:relative;overflow:hidden;aspect-ratio:63/88;border-radius:10px;background:#222">` +
   `<img alt="" ${attrs} style="position:absolute;inset:0;width:100%;height:100%">` +
-  `<span aria-hidden="true" data-foil="${foil}" style="pointer-events:none;position:absolute;inset:0;border-radius:inherit"></span></div></button>`;
+  `<span aria-hidden="true" data-foil="${foil}" class="shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]" style="pointer-events:none;position:absolute;inset:0;border-radius:inherit"></span></div></button>`;
 const html = `<!doctype html><html><head><link rel="stylesheet" href="app.css"></head><body style="display:flex;gap:12px;padding:20px;background:#111">
 ${tile("nosrc", "")}${tile("pending", `src="${img}" data-arrival="pending"`)}${tile("failed", `src="${img}" data-arrival="failed"`)}
 ${tile("done", `src="${img}" data-arrival="done"`)}${tile("etched", `src="${img}"`, "etched")}</body></html>`;
@@ -38,7 +38,7 @@ for (const motion of ["no-preference", "reduce"]) {
   await page.goto(url);
   check(`${motion}: no src holds the film`, (await op(page, "nosrc")) === "0", await op(page, "nosrc"));
   const pend = await op(page, "pending");
-  check(`${motion}: pending ${motion === "reduce" ? "draws" : "holds"} the film`, motion === "reduce" ? pend === "1" : pend === "0", pend);
+  check(`${motion}: pending holds the film`, pend === "0", pend);
   check(`${motion}: failed holds the film`, (await op(page, "failed")) === "0", await op(page, "failed"));
   check(`${motion}: done draws the film`, (await op(page, "done")) === "1", await op(page, "done"));
   const bg = await pseudo(page, "done", "::before", "backgroundImage");

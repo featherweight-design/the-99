@@ -233,8 +233,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm probe:foil-film` proves what the foil film draws (foil handoff R1), against the BUILT stylesheet: run
   `pnpm build` first (the stub-DB build will do). It loads the compiled CSS into a static page of five tiles in the
   shipped markup and reads computed styles, with no server, no database and no sign-in: the film holds while the art
-  has no source, is `pending` (only under `prefers-reduced-motion: no-preference`; with reduced motion it draws as the
-  art does) or `failed`; it draws a 115° gradient once the art is in, foil and etched differ; the band sweeps only on
+  has no source, is `pending` (under either motion preference: art still on its way shows nothing to lie over) or
+  `failed`; it draws a 115° gradient once the art is in, foil and etched differ; the band sweeps only on
   the hovered tile, never under reduced motion, and a phone (coarse pointer, no hover) never creates `::after`;
   reduced transparency swaps the gradient for a 2px inset ring and forced colors drops it. Which tiles carry
   `data-foil` is the component tests' half.

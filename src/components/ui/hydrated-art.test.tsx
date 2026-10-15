@@ -125,7 +125,7 @@ describe("deferred art's arrival", () => {
     expect(container.querySelector("img")!.dataset.arrival).toBe("failed");
   });
 
-  it("draws art that has already settled (cached, or already broken) at once, with no fade", () => {
+  it("draws art that has already loaded (cached, or painted before hydration) at once, with no fade", () => {
     settled(true);
     const { container } = render(<HydratedImg src={SRC} alt="" />);
     bringIntoView();

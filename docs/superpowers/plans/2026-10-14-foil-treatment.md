@@ -16,8 +16,9 @@ read, about 20 files with tests. Phone and desktop ship together (the same compo
 2. **A `failed` arrival** (audit ruling G2). `armArtArrival` marks an image that errors `failed` instead of `in`, and
    one already complete with no width (broken before it was armed) `failed` instead of `done`. The CSS keeps the film
    off a `failed` image. In a list the release still waits its turn in the arrival queue.
-3. **The pending rule under no-preference** (audit's reduced-motion edge). With reduced motion the art draws as it
-   lands, so the film does too; a tile whose art has no source holds the film under either preference.
+3. **The pending hold stays unconditional** (the audit's reduced-motion edge, reversed at build: see the audit). Scoped
+   to no-preference, a reduced-motion reader saw the film over the bare ground before the art landed; only the fade is
+   motion's.
 4. **Collection grid** (`collection/grid-view.tsx`). `BrowseCard.foil` is the drawn printing's finish when every
    copy held of it is foil (or etched), set in `cardArt` beside the art so a pick moves both; absent otherwise, so the
    wire carries nothing for a plain card. The fields batch's `art` carries it with the caption.

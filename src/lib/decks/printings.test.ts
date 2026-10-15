@@ -116,6 +116,12 @@ describe("readDeckPrintings", () => {
     expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBeUndefined();
   });
 
+  it("draws no film when the drawn printing has no art of its own, since the tile falls back to the catalog's", async () => {
+    state.cards = [ownedCard([printing("C21", "263", { finishes: { foil: 1 }, imageUri: null })])];
+    state.picks = [];
+    expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBeUndefined();
+  });
+
   it("skips the deck's step entirely with picks off", async () => {
     state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];

@@ -25,7 +25,7 @@ const SOURCE: FieldsSource<CollectionRow> = {
     return (
       art !== undefined &&
       !Object.hasOwn(row, "imageUri") &&
-      (art.printedName !== row.printedName || art.primarySetCode !== row.primarySetCode)
+      (art.printedName !== row.printedName || art.primarySetCode !== row.primarySetCode || art.foil !== row.foil)
     );
   },
 };

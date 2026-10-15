@@ -1079,13 +1079,13 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 }
 
 /* The film waits for the art: never over the sunken ground of a tile whose art has not been asked
-   for, and never over art that broke (`failed`, audit ruling G2). While art is `pending` it holds
-   only where the art itself is held, under no-preference; with reduced motion the art draws as it
-   lands, and so does the film. */
+   for or is still on its way, and never over art that broke (`failed`, audit ruling G2). The hold
+   applies under either motion preference, since art that has not landed shows nothing to lie over;
+   only the fade it lands with is motion's, so with reduced motion the film appears with the art. */
 img:not([src]) ~ [data-foil],
+img[data-arrival="pending"] ~ [data-foil],
 img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
-  img[data-arrival="pending"] ~ [data-foil] { opacity: 0; }
   img[data-arrival="in"] ~ [data-foil] { animation: art-in var(--motion-fade) var(--motion-ease); }
 }
 
