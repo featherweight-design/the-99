@@ -454,7 +454,7 @@ function SourcePicker({
         }}
       >
         {copy.pull}
-        <Chevron />
+        <Chevron open={open} />
       </button>
       {open && isDesktop && (
         <Popover ref={panelRef} at={at} titleId={titleId} onDismiss={close} returnFocusRef={returnFocusAfterPull}>

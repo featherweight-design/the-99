@@ -16,11 +16,35 @@ export const CHEVRON_CLASS = "text-[13px] leading-none";
 /** The gap a text label keeps from its trailing chevron: the filter chassis trigger's. */
 export const CHEVRON_GAP_CLASS = "gap-[8px]";
 
-/** `▾` closed, `▴` open. Decorative: the control carrying it states its own expanded state. */
-export function Chevron({ open = false, className, style }: { open?: boolean; className?: string; style?: CSSProperties }) {
+/**
+ * The app's one chevron (Hugh, 2026-10-15). Two kinds, both turning on the shared quick motion:
+ *
+ *  - `menu` (a menu or select: it opens a list): ▾ closed, turned 180° to ▴ when open.
+ *  - `disclosure` (content that unfolds in place): ▸ closed, turned 90° to ▾ when open.
+ *
+ * One drawn glyph per kind, turned by `transform` rather than swapped for another character, so the change
+ * animates (`transition-transform` takes `--motion-quick` and `--motion-ease` from the theme, and
+ * `motion-reduce` snaps it). Decorative: the trigger carries `aria-expanded`, never the icon. `open` is the
+ * trigger's own `aria-expanded`.
+ */
+export type ChevronKind = "menu" | "disclosure";
+
+export function Chevron({
+  kind = "menu",
+  open = false,
+  className,
+  style,
+}: {
+  kind?: ChevronKind;
+  open?: boolean;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const turned = open ? (kind === "menu" ? "rotate-180" : "rotate-90") : "";
+  const base = `${CHEVRON_CLASS} inline-block flex-none transition-transform motion-reduce:transition-none ${turned}`;
   return (
-    <span aria-hidden="true" className={className ? `${CHEVRON_CLASS} ${className}` : CHEVRON_CLASS} style={style}>
-      {open ? "▴" : "▾"}
+    <span aria-hidden="true" data-chevron={kind} data-open={open ? "true" : "false"} className={className ? `${base} ${className}` : base} style={style}>
+      {kind === "menu" ? "▾" : "▸"}
     </span>
   );
 }

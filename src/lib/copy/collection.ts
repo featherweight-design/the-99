@@ -505,7 +505,6 @@ export const printingPickerCopy = {
     triggerCollapseAria: "Hide the printings you own",
     /** The field label the trigger replaces — the same word the plain meta field uses. */
     triggerLabel: "Set",
-    triggerChevron: (expanded: boolean) => (expanded ? "▴" : "▾"),
 
     // ---- Region -----------------------------------------------------------
     regionLabel: "Printings you own",

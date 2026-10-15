@@ -52,7 +52,7 @@ import { TokenCardLine } from "../decks/token-card-line";
 import { TokenDeckBox } from "../decks/token-deck-box";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
-import { Chevron, CHEVRON_CLASS } from "../ui/chevron";
+import { Chevron } from "../ui/chevron";
 import { RECEIPT_LINK_CLASS, STACK_DROP_EASE, STACK_DROP_MS } from "./card-modal-shared";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
@@ -2557,6 +2557,8 @@ export function CardModal({
                         className="flex cursor-pointer items-center justify-center gap-[8px] border-0 border-r border-r-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
                       >
                         {cardSheetCopy.expand}
+                        {/* Outside the chevron rule (Hugh, 2026-10-15): this lifts the sheet to full height, which neither
+                            opens a list nor unfolds content in place, so it stays pointing up. */}
                         <Chevron open style={{ color: "var(--fg-faint)" }} />
                       </button>
                       <div data-testid="teaser-footer-action" className="flex items-center justify-center px-[12px]">{footer("teaserAction")}</div>
@@ -2569,6 +2571,7 @@ export function CardModal({
                     className="-mx-[20px] mt-auto flex min-h-[44px] flex-none cursor-pointer items-center justify-center gap-[8px] border-t border-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
                   >
                     {cardSheetCopy.expand}
+                    {/* Outside the chevron rule, like the teaser's button above: it lifts the sheet. */}
                     <Chevron open style={{ color: "var(--fg-faint)" }} />
                   </button>
                 )}
@@ -3183,11 +3186,11 @@ function MetaField({
  * diamond + `Your pick · of N ▾` after one.
  */
 function TriggerHint({ count, picked, expanded }: { count: number; picked: string | null; expanded: boolean }) {
-  const chevron = pickerCopy.triggerChevron(expanded);
+  const chevron = <Chevron open={expanded} />;
   if (picked === null) {
     return (
       <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--accent)" }}>
-        {pickerCopy.triggerCount(count)} <span className={CHEVRON_CLASS}>{chevron}</span>
+        {pickerCopy.triggerCount(count)} {chevron}
       </div>
     );
   }
@@ -3201,7 +3204,7 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: strin
         {picked}
       </span>
       <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-        {pickerCopy.triggerPickedOf(count)} <span className={CHEVRON_CLASS}>{chevron}</span>
+        {pickerCopy.triggerPickedOf(count)} {chevron}
       </span>
     </div>
   );

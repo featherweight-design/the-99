@@ -1,0 +1,13 @@
+{
+  "feature": "Chevrons, PR 1: menus and selects (down closed, up open, turning on the quick motion)",
+  "note": "Any signed-in account with a collection, a deck (DECK_ID) and commanders. Each menu is photographed closed and open: the chevron must point down closed and up open, with no other change to the trigger.",
+  "out": "contact-sheets/chevrons-menus",
+  "rows": [
+    { "id": "collection-closed", "label": "/collection — filter triggers, closed", "view": "src/components/ui/filter-panel.tsx", "steps": [ { "goto": "/collection", "wait": "button[aria-expanded]", "settle": 800 } ] },
+    { "id": "collection-open", "label": "/collection — first filter trigger, open", "view": "src/components/ui/filter-panel.tsx", "steps": [ { "goto": "/collection", "wait": "button[aria-expanded]", "settle": 800 }, { "click": "button[aria-expanded]", "settle": 500 } ] },
+    { "id": "commanders-closed", "label": "/commanders — rack selects, closed", "view": "src/components/commanders/rack/select.tsx", "steps": [ { "goto": "/commanders", "wait": "button[aria-haspopup]", "settle": 800 } ] },
+    { "id": "commanders-open", "label": "/commanders — first select, open", "view": "src/components/commanders/rack/select.tsx", "steps": [ { "goto": "/commanders", "wait": "button[aria-haspopup]", "settle": 800 }, { "click": "button[aria-haspopup]", "settle": 500 } ] },
+    { "id": "deck-closed", "label": "/decks/[id] — sort and Pull menus, closed", "view": "src/components/decks/pull-control.tsx", "steps": [ { "goto": "/decks/${DECK_ID}", "wait": "button[aria-haspopup]", "settle": 1200 } ] },
+    { "id": "deck-open", "label": "/decks/[id] — first menu, open", "view": "src/components/decks/pull-control.tsx", "steps": [ { "goto": "/decks/${DECK_ID}", "wait": "button[aria-haspopup]", "settle": 1200 }, { "click": "button[aria-haspopup]", "settle": 500 } ] }
+  ]
+}

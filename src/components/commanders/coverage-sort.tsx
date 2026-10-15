@@ -174,7 +174,7 @@ export function CoverageSortMenu({
         {COVERAGE_SORT_LABELS[sort]}
         {/* Desktop sits the caret against the label; at phone width the trigger
             is full-width, so it goes to the far edge instead. */}
-        <Chevron className={isDesktop ? "text-[color:var(--accent)]" : "ml-auto text-[color:var(--accent)]"} />
+        <Chevron open={open} className={isDesktop ? "text-[color:var(--accent)]" : "ml-auto text-[color:var(--accent)]"} />
       </button>
 
       {open && (

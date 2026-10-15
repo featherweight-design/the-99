@@ -27,7 +27,7 @@ describe("SheetGroupHeading", () => {
 });
 
 describe("SheetGroupToggle", () => {
-  it("is 44px on a phone and 34px from md, with the label and a ▾ while folded", () => {
+  it("is 44px on a phone and 34px from md, with the label and a ▸ while folded", () => {
     const onToggle = vi.fn();
     render(<SheetGroupToggle all={false} onToggle={onToggle} label="Show all 12 cards" fewer="Show fewer" />);
     const b = screen.getByRole("button", { name: /Show all 12 cards/ });
@@ -35,16 +35,17 @@ describe("SheetGroupToggle", () => {
     expect(b.className).toContain("min-h-[44px] md:min-h-[34px]");
     expect(b.className).toContain("pl-[43px]");
     expect(b.className).toContain("text-[12.5px] font-medium text-[color:var(--accent)]");
-    expect(b.textContent).toBe("Show all 12 cards▾");
+    expect(b.textContent).toBe("Show all 12 cards▸");
     fireEvent.click(b);
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
-  it("reads Show fewer and ▴ while expanded, and lets the caller move the indent", () => {
+  it("reads Show fewer and a ▸ turned down while expanded, and lets the caller move the indent", () => {
     render(<SheetGroupToggle all onToggle={() => {}} label="Show all 12" fewer="Show fewer" className="pl-[68px]" />);
     const b = screen.getByRole("button", { name: /Show fewer/ });
     expect(b.getAttribute("aria-expanded")).toBe("true");
-    expect(b.textContent).toBe("Show fewer▴");
+    expect(b.textContent).toBe("Show fewer▸");
+    expect(b.querySelector("[data-chevron]")?.className).toContain("rotate-90");
     expect(b.className).toContain("pl-[68px]");
     expect(b.className).not.toContain("pl-[43px]");
   });
