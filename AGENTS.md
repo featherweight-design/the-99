@@ -799,7 +799,11 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   returns a `planDigest` over every planned row and the token plan, and the confirm REQUIRES it back and refuses as
   `stale` when the plan under the lock differs. A Sync that would change no card and no token writes nothing, the
   upload stamp included (`nothingToSync`). Tokens follow Replace's rule, except under Only what it adds, which is
-  idempotent (`greatest(held, file)`, nothing deleted). `pnpm probe:collection-sync` proves it on a scratch branch;
+  idempotent (`greatest(held, file)`, nothing deleted), and except for a HAND-MARKED token (source `manual`): under
+  Everything or Only its tokens `keepHandMarks` drops the file's holding for it when the file did not change it since the
+  base file's own token list (the anchor upload's `preview_payload.tokens`) or when the hand count is at least the file's,
+  so a Sync never lowers a hand mark and asks nothing; with no base token list only the second test applies. The same
+  filtered list feeds the plan, the digest and the write. `pnpm probe:collection-sync` proves it on a scratch branch;
   `pnpm measure:sync` prints the buckets for one account inside a read-only, repeatable-read transaction, and is the
   acceptance check for Hugh's production account before the flip.
 

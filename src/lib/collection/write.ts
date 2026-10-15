@@ -17,7 +17,7 @@ import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
 import {
-  planTokenWrite, readTokenState, recordUploadTokens, syncPreconTokens, tokenFinalEntries, tokenOwnershipTablesExist,
+  keepHandMarks, planTokenWrite, readTokenState, recordUploadTokens, syncPreconTokens, tokenFinalEntries, tokenOwnershipTablesExist,
   type TokenChange, type TokenFinal, type TokenHolding, type TokenWriteMode,
 } from "../tokens/ownership";
 import { missingFromAnchor, nothingToSync, planSync, quantitiesOf, staleness, storedSyncSummary, type StoredSyncSummary, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
@@ -864,6 +864,8 @@ export async function applyCollectionChange(
         : items;
       const current = await readHeld(tx, userId, change.kind === "replace" || change.kind === "sync" ? null : named);
       let syncPreview: SyncPreview | undefined;
+      /** A sync's file tokens after its hand marks are kept: what the plan and the write both take. */
+      let syncTokens: TokenHolding[] | undefined;
 
       let plan: (Planned & { name?: string })[];
       switch (change.kind) {
@@ -890,7 +892,10 @@ export async function applyCollectionChange(
           const merged = planSync({ base: base.anchor.items, app: current, file: items, pick: change.pick, answers: change.answers });
           plan = merged.rows;
           const tokenState = change.tokens ? await readTokenState(tx, userId) : null;
-          const tokenPlan = tokenState && change.tokens ? planTokenWrite(syncTokenMode(change.pick), tokenState, change.tokens) : null;
+          const mode = syncTokenMode(change.pick);
+          syncTokens = tokenState && change.tokens && mode === "replace"
+            ? keepHandMarks(tokenState, change.tokens, base.anchor.tokens) : change.tokens;
+          const tokenPlan = tokenState && syncTokens ? planTokenWrite(mode, tokenState, syncTokens) : null;
           const tokenChanges = tokenPlan?.changes ?? [];
           const digest = planDigest(plan, tokenChanges, tokenPlan?.final ?? null);
           // The file folded per holding key as the anchor's items are, so a key on two rows counts once, summed.
@@ -1032,7 +1037,7 @@ export async function applyCollectionChange(
       if (change.kind === "replace" || change.kind === "add") {
         await recordUploadTokens(tx, userId, uploadId, change.kind, change.tokens);
       } else if (change.kind === "sync") {
-        await recordUploadTokens(tx, userId, uploadId, syncTokenMode(change.pick), change.tokens);
+        await recordUploadTokens(tx, userId, uploadId, syncTokenMode(change.pick), syncTokens);
       }
       const tokensMarked = preconTokens
         ? await syncPreconTokens(tx, userId, opts.id)

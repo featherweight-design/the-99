@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
+import type { TokenHolding } from "../tokens/ownership";
 import type { PendingItem } from "./pending";
 import { quantitiesOf } from "./sync";
 
@@ -29,7 +30,7 @@ type Runner = Pick<typeof db, "execute">;
 export type UploadSummary = { uploadId: string; confirmedAt: Date; items: Map<string, number> };
 
 export type SyncBase =
-  | { anchor: UploadSummary & { pendingItems: PendingItem[] }; earlier: UploadSummary[] }
+  | { anchor: UploadSummary & { pendingItems: PendingItem[]; tokens?: TokenHolding[] }; earlier: UploadSummary[] }
   | { unavailable: "neverUploaded" | "noRecord" };
 
 /** How many earlier uploads staleness compares the file with. */
@@ -68,10 +69,10 @@ export const anchorQuery = (userId: string, excludeUploadId?: string) => sql`
       select 1 from csv_uploads c where c.user_id = ${userId} and c.confirmed_at is not null${
         excludeUploadId ? sql` and c.id <> ${excludeUploadId}::uuid` : sql``}
     ) as uploaded,
-    a.id, a.confirmed_at, a.items
+    a.id, a.confirmed_at, a.items, a.tokens
   from (select 1) one
   left join lateral (
-    select u.id, u.confirmed_at, u.preview_payload -> 'pendingItems' as items
+    select u.id, u.confirmed_at, u.preview_payload -> 'pendingItems' as items, u.preview_payload -> 'tokens' as tokens
     from csv_uploads u
     left join collection_history h
       on h.user_id = u.user_id and h.source = 'csv_uploads:' || u.id::text
@@ -123,7 +124,7 @@ export async function readSyncBase(
   opts: { excludeUploadId?: string } = {},
 ): Promise<SyncBase> {
   const { rows: [head] } = await q.execute<{
-    uploaded: boolean; id: string | null; confirmed_at: Date | string | null; items: PendingItem[] | null;
+    uploaded: boolean; id: string | null; confirmed_at: Date | string | null; items: PendingItem[] | null; tokens: TokenHolding[] | null;
   }>(anchorQuery(userId, opts.excludeUploadId));
   if (!head?.uploaded) return { unavailable: "neverUploaded" };
   if (!head.id || !head.confirmed_at || !Array.isArray(head.items) || !hasFullKeys(head.items)) {
@@ -135,6 +136,7 @@ export async function readSyncBase(
   return {
     anchor: {
       uploadId: head.id, confirmedAt: asDate(head.confirmed_at), items: quantitiesOf(head.items), pendingItems: head.items,
+      ...(Array.isArray(head.tokens) ? { tokens: head.tokens } : {}),
     },
     // An earlier file stored before 0008 cannot be keyed the way the anchor is: left out rather than guessed.
     earlier: rows

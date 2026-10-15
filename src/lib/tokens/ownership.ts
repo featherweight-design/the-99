@@ -209,6 +209,32 @@ export function planTokenWrite(mode: TokenWriteMode, state: TokenState, holdings
   return { final: { owned, uploadPrintings, preconPrintings }, changes };
 }
 
+/**
+ * The file's holdings a Sync under Everything or Only its tokens may WRITE over the player's hand marks
+ * (`I have one`, the Shopping buy tag: source `manual`). Cards merge three ways against the base; tokens
+ * follow the same rule through the base file's own token list (`baseTokens`, the anchor upload's payload):
+ * a hand-marked token the file did not change since the base keeps the hand count, and one the file did
+ * change is never LOWERED, so it is taken only when the file reads more than the hand mark. A token with no
+ * hand mark, and every token when `baseTokens` is unknown, follows Replace's rule as before. Applied to both
+ * the plan and the write, so the review's count is what the confirm writes. Asks nothing: a hand mark is a
+ * count of copies, so the greater of the two is the only answer that never loses a copy.
+ */
+export function keepHandMarks(
+  state: Pick<TokenState, "owned">,
+  holdings: readonly TokenHolding[],
+  baseTokens?: readonly TokenHolding[],
+): TokenHolding[] {
+  const hand = new Map(state.owned.filter((o) => o.source === "manual").map((o) => [o.tokenOracleId, o.quantity]));
+  if (hand.size === 0) return [...holdings];
+  const was = baseTokens ? new Map(baseTokens.map((b) => [b.tokenOracleId, b.quantity])) : null;
+  return holdings.filter((h) => {
+    const held = hand.get(h.tokenOracleId);
+    if (held === undefined) return true;
+    const unchanged = was !== null && (was.get(h.tokenOracleId) ?? 0) === h.quantity;
+    return !(unchanged || held >= h.quantity);
+  });
+}
+
 /** `planTokenWrite`'s changes alone. */
 export function tokenWritePlan(mode: TokenWriteMode, state: TokenState, holdings: readonly TokenHolding[]): TokenChange[] {
   return planTokenWrite(mode, state, holdings).changes;

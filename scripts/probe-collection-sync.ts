@@ -24,6 +24,8 @@
 //      edit, then a Sync: the base is the restored upload and the edit is a conflict, not a removal taken.
 //   i  Only what it adds never lowers a token row of any source: a precon row of 5 against a file of 2 stays 5,
 //      a repeat writes nothing, and a file above it takes it as an upload row.
+//   k  A hand mark is never lowered by a Sync: held at 2, the file lists it at 1 beside another token it raises;
+//      the preview counts only the raised one and the confirm leaves the hand mark at 2.
 //   j  A precon add reverted between a tokens-only Sync's preview and its confirm: the preview planned the
 //      precon's claim restored, the confirm refuses as stale and writes nothing, and a fresh preview applies.
 //
@@ -351,6 +353,20 @@ async function run() {
   check("j · previewed again, it plans T1 removed", pj2.sync!.tokenChanges.filter((t) => t.kind === "token").map((t) => [T.indexOf(t.id), t.to]), [[1, null]]);
   check("j · and that confirm applies it", [(await confirm(jChange, pj2.sync!.planDigest)).status, await tokenRows()],
     ["applied", ["0:upload=7", "2:upload=3"]]);
+
+  // k · a hand mark is never lowered by a Sync: T1 held by hand at 2, the file lists it at 1.
+  await pool.query(
+    "insert into token_ownership (user_id, token_oracle_id, quantity, source) values ($1, $2, 2, 'manual')", [USER, T[1]],
+  );
+  const kTokens = [tok(0, 8), tok(1, 1), tok(2, 3)];
+  const kUpload = await newUpload([], kTokens);
+  const kChange = syncChange(kUpload, [], { pick: "tokens", tokens: kTokens });
+  const pk = await preview(kChange);
+  check("k · the preview counts the file's raised token and not the hand mark",
+    pk.sync!.tokenChanges.filter((t) => t.kind === "token").map((t) => [T.indexOf(t.id), t.to]), [[0, 8]]);
+  check("k · and the confirm writes none: the hand mark stays at 2",
+    [(await confirm(kChange, pk.sync!.planDigest)).status, await tokenRows()],
+    ["applied", ["0:upload=8", "1:manual=2", "2:upload=3"]]);
 }
 
 run()
