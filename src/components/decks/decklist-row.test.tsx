@@ -1709,6 +1709,29 @@ describe("DecklistRow, phone Shopping row option B", () => {
     expect(screen.queryByText("Delver of Secrets", { selector: "span.lg\\:hidden" })).toBeNull();
   });
 
+  it("keeps the 44px slots through the md-to-lg band, where the shipped md sizes would shrink them", () => {
+    inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />, true);
+    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
+    const swap = screen.getByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") });
+    for (const el of [remove, swap]) {
+      expect(el.className).toContain("w-[44px] h-[44px]");
+      expect(el.className).not.toMatch(/(^|\s)md:(w|h)-/);
+    }
+    expect(remove.className).toContain("lg:w-auto");
+    expect(swap.className).toContain("lg:w-[22px]");
+  });
+
+  it("leaves a receipt and a held slot as tall as the row they replace below lg", () => {
+    for (const slot of [{ spent: true }, { held: true }]) {
+      inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} {...slot} />, true);
+      expect(row().className).toContain("max-lg:min-h-[96px]");
+      cleanup();
+      inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} {...slot} />, false);
+      expect(row().className).not.toContain("min-h-[96px]");
+      cleanup();
+    }
+  });
+
   it("changes nothing outside Shopping", () => {
     inB(<DecklistRow deckId="d1" card={priced(1500)} newestAsOf={asOf} />, true);
     expect(row().className).not.toContain("max-lg:");

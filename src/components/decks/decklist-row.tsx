@@ -484,8 +484,11 @@ export function DecklistRow({
   // live (H29: a receipt that is always 44px shrinks the slot of any card
   // that would have shown a meta line, and several stacked compound the
   // drift) — the one thing a bare `<UndoRow>` cannot know on its own.
-  if (spent) return <UndoRow deckId={deckId} card={card} rowShell={rowShell} />;
-  if (held) return <HeldSlot card={card} rowShell={rowShell} />;
+  // The receipts keep the live row's height: option B's row is 96px below `lg` (two 44px lines), and a one-line
+  // receipt at 52px would shift every row under it, and shift them back on Undo.
+  const slotShell = rowB ? `${rowShell} max-lg:min-h-[96px]` : rowShell;
+  if (spent) return <UndoRow deckId={deckId} card={card} rowShell={slotShell} />;
+  if (held) return <HeldSlot card={card} rowShell={slotShell} />;
 
   /**
    * The whole row opens the card, not only its name — which is how `/collection`'s rows have
@@ -559,7 +562,7 @@ export function DecklistRow({
       type="button"
       onClick={handleRemove}
       disabled={isPending}
-      className={`flex-none flex items-center justify-center w-[44px] h-[44px] ${stepperOn ? "md:w-[22px] md:h-[20px]" : "md:w-auto md:h-auto"}${rowB ? ` ${B_REMOVE}` : ""}
+      className={`flex-none flex items-center justify-center w-[44px] h-[44px] ${stepperOn ? "md:w-[22px] md:h-[20px]" : rowB ? "lg:w-auto lg:h-auto" : "md:w-auto md:h-auto"}${rowB ? ` ${B_REMOVE}` : ""}
         rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
         active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
         md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors`}
@@ -895,7 +898,7 @@ export function DecklistRow({
               type="button"
               aria-label={swapToolsCopy.row.swapOverAria(displayName, formatLimit(swapTools.limitCents))}
               onClick={() => swapTools.openStandIns(card)}
-              className={`flex flex-none items-center justify-center w-[44px] h-[44px] -mr-[9px] md:mr-0 md:w-[22px] md:h-[20px] rounded-[6px] font-mono text-[13px] leading-none bg-transparent border-0 p-0 cursor-pointer text-[color:var(--warning)]${rowB ? ` max-lg:mr-0 ${B_SWAP}` : ""}`}
+              className={`flex flex-none items-center justify-center w-[44px] h-[44px] -mr-[9px] md:mr-0 ${rowB ? "lg:w-[22px] lg:h-[20px]" : "md:w-[22px] md:h-[20px]"} rounded-[6px] font-mono text-[13px] leading-none bg-transparent border-0 p-0 cursor-pointer text-[color:var(--warning)]${rowB ? ` max-lg:mr-0 ${B_SWAP}` : ""}`}
             >
               {/* Option B draws it as an outlined 40x36 press inside its 44px hit (the phone's marker size). */}
               {rowB ? (
@@ -933,7 +936,7 @@ export function DecklistRow({
             // `md:-my-[1px]`: the drawn box stays 26×22, but a desktop row's content box is 20px
             // tall, so without it every row grew 2px the moment the mode began (Hugh, 2026-09-26).
             // The phone's 44px hit is the row's own 44, and needs nothing.
-            className={`flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[26px] md:h-[22px] md:-my-[1px] bg-transparent border-0 p-0 cursor-pointer${rowB ? ` ${B_REMOVE}` : ""}`}
+            className={`flex-none flex items-center justify-center w-[44px] h-[44px] ${rowB ? "lg:w-[26px] lg:h-[22px] lg:-my-[1px]" : "md:w-[26px] md:h-[22px] md:-my-[1px]"} bg-transparent border-0 p-0 cursor-pointer${rowB ? ` ${B_REMOVE}` : ""}`}
           >
             <span
               className={`flex items-center justify-center w-[36px] h-[36px] md:w-[26px] md:h-[22px] rounded-[6px] border ${
@@ -951,7 +954,7 @@ export function DecklistRow({
             so the buy tag stays in the column every other row's ✕ holds it in. */
         <span
           aria-hidden="true"
-          className={`invisible flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto text-[13px] leading-none${rowB ? ` ${B_REMOVE}` : ""}`}
+          className={`invisible flex-none flex items-center justify-center w-[44px] h-[44px] ${rowB ? "lg:w-auto lg:h-auto" : "md:w-auto md:h-auto"} text-[13px] leading-none${rowB ? ` ${B_REMOVE}` : ""}`}
         >
           {addPanelCopy.row.remove}
         </span>
