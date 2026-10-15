@@ -499,3 +499,125 @@ describe("AnnouncedGroup", () => {
     });
   });
 });
+
+// Addendum A1: a large reveal folds to its first row.
+describe("Announced collapse (A1)", () => {
+  const actualComputed = window.getComputedStyle.bind(window);
+  /** jsdom lays nothing out: the grid reports `n` columns, as a browser would. */
+  const withColumns = (n: number) =>
+    vi.spyOn(window, "getComputedStyle").mockImplementation((el: Element, pseudo?: string | null) => {
+      const real = actualComputed(el, pseudo);
+      if (!(el as HTMLElement).matches?.("[data-testid=revealed-tiles]")) return real;
+      return new Proxy(real, { get: (t, k) => (k === "gridTemplateColumns" ? Array(n).fill("100px").join(" ") : Reflect.get(t, k)) });
+    });
+  const cards = (n: number) => Array.from({ length: n }, (_, i) => commander(200 + i, `Card ${i}`));
+  const group = (n: number) => match(set("trc", "Star Trek Commander", "2026-11-13"), cards(n));
+  const open = (n: number, over: Partial<Omit<AnnouncedGroupProps, "visit">> = {}) => draw({ matches: [group(n)], opensByItself: true, ...over });
+  const shown = () => screen.getAllByTestId("revealed-tile").filter((t) => t.style.display !== "none");
+  const toggle = () => screen.getByRole("button", { name: /^Show (all|fewer)/ });
+
+  afterEach(() => vi.restoreAllMocks());
+  beforeEach(() => { window.localStorage.clear(); document.cookie = "precons_announced=; Max-Age=0; Path=/"; });
+
+  it("folds fifteen to one row at two columns, with the shared toggle naming the set", () => {
+    withColumns(2);
+    open(15);
+    expect(shown()).toHaveLength(2);
+    expect(toggle()).toHaveTextContent("Show all 15");
+    expect(toggle()).toHaveAccessibleName("Show all 15 commanders revealed for Star Trek Commander");
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+    expect(toggle()).toHaveAttribute("aria-controls", screen.getByTestId("revealed-tiles").id);
+  });
+
+  it("holds the threshold at its edges: 4 stay whole at two columns, 5 fold", () => {
+    withColumns(2);
+    const four = open(4);
+    expect(shown()).toHaveLength(4);
+    expect(screen.queryByRole("button", { name: /^Show (all|fewer)/ })).toBeNull();
+    four.unmount();
+    open(5);
+    expect(shown()).toHaveLength(2);
+    expect(toggle()).toHaveTextContent("Show all 5");
+  });
+
+  it("opens in place, keeps focus on the toggle, and folds back with Show fewer", () => {
+    withColumns(2);
+    open(15);
+    toggle().focus();
+    fireEvent.click(toggle());
+    expect(shown()).toHaveLength(15);
+    expect(toggle()).toHaveTextContent("Show fewer");
+    expect(toggle()).toHaveAccessibleName("Show fewer commanders revealed for Star Trek Commander");
+    expect(toggle()).toHaveAttribute("aria-expanded", "true");
+    expect(document.activeElement).toBe(toggle());
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    fireEvent.click(toggle());
+    expect(shown()).toHaveLength(2);
+    expect(document.activeElement).toBe(toggle());
+    // Show fewer brings the toggle back into the window if the fold lifted it out; opening does not scroll.
+    expect(scrolled).toHaveBeenCalledTimes(1);
+    expect(scrolled).toHaveBeenCalledWith({ block: "nearest" });
+  });
+
+  it("folds nothing while a filter is on", () => {
+    withColumns(2);
+    open(15, { filtering: true });
+    expect(shown()).toHaveLength(15);
+    expect(screen.queryByRole("button", { name: /^Show (all|fewer)/ })).toBeNull();
+  });
+
+  it("keeps the press across a view switch for the visit, and pages every commander, hidden or not", () => {
+    withColumns(2);
+    const view = render(<G matches={[group(15)]} today="2026-10-14" newCodes={[]} opensByItself view="tiles" listed={{}} />);
+    fireEvent.click(toggle());
+    expect(shown()).toHaveLength(15);
+    view.rerender(<G matches={[group(15)]} today="2026-10-14" newCodes={[]} opensByItself view="rows" listed={{}} />);
+    view.rerender(<G matches={[group(15)]} today="2026-10-14" newCodes={[]} opensByItself view="tiles" listed={{}} />);
+    expect(shown()).toHaveLength(15);
+    const last = shared.triggers.at(-1) as { siblings: string[] };
+    expect(last.siblings).toHaveLength(15);
+  });
+
+  it("hands card details' focus to Show all when the reader folds the set before an opened tile's read lands", async () => {
+    const { warmCardModal } = await import("../../cards/card-detail-provider");
+    await warmCardModal();
+    withColumns(2);
+    open(15);
+    fireEvent.click(toggle());
+    const later = screen.getByRole("button", { name: /View details for Card 5, White\. Revealed commander\./ });
+    later.focus();
+    await act(async () => { fireEvent.click(later); });
+    // Show fewer folds the opener away while its details are still in flight.
+    fireEvent.click(toggle());
+    expect(later.closest("li")).toHaveAttribute("hidden");
+    await act(async () => {
+      details.resolve!({
+        oracleId: "o205", name: "Card 5", typeLine: "Legendary Creature", manaCost: "{W}", cmc: 1, oracleText: null, keywords: [],
+        rarity: "rare", colorIdentity: ["W"], imageUri: null, printedName: null, quantity: 0, printings: [], setCodes: [],
+        primarySetCode: "", preferredPrinting: null,
+      });
+    });
+    const dialog = await screen.findByRole("dialog", { name: /Card 5/ });
+    await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Card 5/ })).toBeNull());
+    expect(document.activeElement).toBe(toggle());
+  });
+
+  it("leaves the hidden tiles out of the tab order", () => {
+    withColumns(2);
+    open(15);
+    const hidden = screen.getAllByTestId("revealed-tile").filter((t) => t.style.display === "none");
+    expect(hidden).toHaveLength(13);
+    // display: none removes them from focus and reading order; the press inside each is not reachable.
+    expect(hidden.every((t) => t.querySelector("button") !== null)).toBe(true);
+  });
+
+  it("draws the first-paint CSS on the server, with no toggle, until the columns are measured", () => {
+    const html = renderToString(<G matches={[group(15)]} today="2026-10-14" newCodes={[]} opensByItself view="tiles" listed={{}} />);
+    expect(html).toContain('data-collapse="trc"');
+    expect(html).toContain("li:nth-child(n+3)");
+    expect(html).not.toContain("Show all");
+  });
+});
+

@@ -44,14 +44,29 @@ const subscribeHash = (onChange: () => void) => {
  * list view, which stays mounted, because the group itself unmounts while a filter leaves no set or Most owned
  * hides it, and coming back must not forget either.
  */
-export type AnnouncedVisit = { arrivedByLink: boolean; pressed: boolean | null; press: (open: boolean) => void };
+export type AnnouncedVisit = {
+  arrivedByLink: boolean;
+  pressed: boolean | null;
+  press: (open: boolean) => void;
+  /** The set codes a reader pressed Show all on this visit (addendum A1): held here for the same reason, and never stored. */
+  openSets: ReadonlySet<string>;
+  toggleSet: (code: string) => void;
+};
 
 export function useAnnouncedVisit(): AnnouncedVisit {
   const onLink = useSyncExternalStore(subscribeHash, () => window.location.hash === ANNOUNCED_HASH, () => false);
   const [arrivedByLink, setArrivedByLink] = useState(false);
   if (onLink && !arrivedByLink) setArrivedByLink(true);
   const [pressed, setPressed] = useState<boolean | null>(null);
-  return { arrivedByLink: arrivedByLink || onLink, pressed, press: setPressed };
+  const [openSets, setOpenSets] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleSet = useCallback((code: string) => {
+    setOpenSets((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(code)) next.add(code);
+      return next;
+    });
+  }, []);
+  return { arrivedByLink: arrivedByLink || onLink, pressed, press: setPressed, openSets, toggleSet };
 }
 
 export type AnnouncedGroupProps = {
@@ -157,7 +172,16 @@ export function AnnouncedGroup({
           {view === "tiles" ? (
             <ul className="m-0 flex list-none flex-col gap-[10px] p-0 pt-[10px]">
               {matches.map((m) => (
-                <AnnouncedSet key={m.set.code} match={m} today={today} isNew={newCodes.includes(m.set.code)} listed={listed[m.set.code] ?? null} />
+                <AnnouncedSet
+                  key={m.set.code}
+                  match={m}
+                  today={today}
+                  isNew={newCodes.includes(m.set.code)}
+                  listed={listed[m.set.code] ?? null}
+                  filtering={filtering}
+                  expanded={visit.openSets.has(m.set.code)}
+                  onToggleExpanded={() => visit.toggleSet(m.set.code)}
+                />
               ))}
             </ul>
           ) : (

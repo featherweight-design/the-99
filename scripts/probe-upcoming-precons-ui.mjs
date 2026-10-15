@@ -18,8 +18,10 @@
 //  - in rows, an opened row's strip keeps its small cards (76x106 at 390, 84x117 at 1300) and the row's lead thumb
 //    its 34x48; at 390 the six-card strip scrolls sideways and is a named region whose CARDS are the keyboard stops
 //    (Tab reaches one and scrolls it into view); at 1300 it wraps and is no region;
-//  - the catalog's own many-commander set, when local-dev holds one upcoming (Star Trek Commander, ~15), draws every
-//    commander as a tile that wraps in the grid, and at no point does the page scroll sideways at 390.
+//  - the catalog's own many-commander set, when local-dev holds one upcoming (Star Trek Commander, ~15), folds to one
+//    row behind the shared toggle when it holds more than twice the grid's columns (addendum A1): Show all opens every
+//    tile in place with focus kept on the toggle, card details page all of them hidden or not, Show fewer folds back
+//    with the toggle in the window; and at no point does the page scroll sideways at 390.
 //
 // FIXTURES, on local-dev only: two upcoming Commander sets (`zqa` with six revealed legendary creatures, printed from
 // cards the catalog already holds; `zqb` with none), `zqa`'s non-baseline `catalog_first_seen` stamp (an arrival), and
@@ -243,6 +245,10 @@ async function walk(browser, vp, userIdHolder) {
     const a = setBlock(page, NAME_A);
     report("the arrived set is tagged new", (await a.getByText("new", { exact: true }).count()) === 1);
     report("its six revealed commanders are drawn as tiles", (await a.locator("[data-testid=revealed-tile]").count()) === 6);
+    // Six fold at two columns (390), behind the shared toggle (addendum A1): press it open so the measurements below
+    // read the whole grid, as they did before the fold existed.
+    const foldToggle = a.getByRole("button", { name: /^Show all 6/ });
+    if ((await foldToggle.count()) > 0) await foldToggle.click();
     const pressNames = await a.locator("[data-testid=revealed-press]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
     report("each tile is a button named by its card, its colors and what it is",
       pressNames.length === 6 && pressNames.every((n, i) => n === null ? false : n.startsWith(`View details for ${holder.picks[i].name}, `) && n.endsWith(". Revealed commander.")),
@@ -337,15 +343,82 @@ async function walk(browser, vp, userIdHolder) {
     // The catalog's own many-commander set, if local-dev holds one upcoming.
     if (holder.many) {
       const m = setBlock(page, holder.many.name);
+      const nm = holder.many.n;
       const tiles = m.locator("[data-testid=revealed-tile]");
-      const n = await tiles.count();
-      const boxes = await tiles.evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, right: r.right }; }));
-      const rows = new Set(boxes.map((b) => Math.round(b.y))).size;
-      report(`${holder.many.name}: every revealed commander is a tile`, n === holder.many.n, `${n} of ${holder.many.n}`);
-      report(`${holder.many.name}: the tiles wrap in the grid, inside the viewport`,
-        rows > 1 && boxes.every((b) => b.right <= vp.width + 0.5), `${rows} rows, widest right ${Math.max(...boxes.map((b) => b.right)).toFixed(1)}`);
-      report(`${holder.many.name}: no sideways page scroll`, !(await overflowsX(page)));
-      if (SHOTS) await m.screenshot({ path: `${SHOTS}/${vp.width}-tiles-many.png` });
+      const grid = m.locator("[data-testid=revealed-tiles]");
+      const visible = () => tiles.evaluateAll((els) => els.filter((e) => getComputedStyle(e).display !== "none").length);
+      const columns = await grid.evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(/\s+/).length);
+      const folds = nm > 2 * columns;
+      report(`${holder.many.name}: every revealed commander is in the page, hidden or not`, (await tiles.count()) === nm, `${await tiles.count()} of ${nm}`);
+      // Addendum A1: more than twice the columns folds to one row, behind the shared toggle.
+      const toggle = m.getByRole("button", { name: /^Show (all|fewer)/ });
+      report(`${holder.many.name}: ${nm} tiles at ${columns} columns ${folds ? "fold to one row" : "stay whole"}`,
+        (await visible()) === (folds ? columns : nm), `${await visible()} visible`);
+      if (folds) {
+        report(`${holder.many.name}: Show all ${nm}, collapsed, controlling the grid`,
+          (await toggle.textContent())?.includes(`Show all ${nm}`) === true && (await toggle.getAttribute("aria-expanded")) === "false"
+            && (await toggle.getAttribute("aria-controls")) === (await grid.getAttribute("id")));
+        // The SERVER's paint: the real page with the app's own scripts blocked, so React never hydrates and only the HTML
+        // and the stylesheet decide what is drawn. (Not `javaScriptEnabled: false`: Next streams a page's suspended
+        // content into a hidden container and moves it into place with an inline script, so with every script off the
+        // page is never laid out and nothing measures.) It already shows one row, so hydration measuring the columns
+        // moves nothing.
+        const bare = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, storageState: await page.context().storageState() });
+        try {
+          const bp = await bare.newPage();
+          await bp.route("**/_next/static/**/*.js", (route) => route.abort());
+          await bp.goto(`${BASE}/decks/precons#announced`, { waitUntil: "load" });
+          await bp.waitForSelector("[data-testid=announced-set]", { state: "attached", timeout: 15_000 });
+          await bp.waitForTimeout(500);
+          const seen = await bp.evaluate((name) => {
+            const block = [...document.querySelectorAll("[data-testid=announced-set]")].find((b) => b.textContent.includes(name));
+            const ul = block?.querySelector("[data-testid=revealed-tiles]");
+            if (!ul) return null;
+            return {
+              hydrated: Object.keys(ul).some((k) => k.startsWith("__react")),
+              shown: [...ul.children].filter((li) => getComputedStyle(li).display !== "none").length,
+              toggle: block.textContent.includes("Show all"),
+              containerWidth: Math.round(ul.parentElement.getBoundingClientRect().width),
+            };
+          }, holder.many.name);
+          report(`${holder.many.name}: the server's paint already shows one row (${columns})`, seen !== null && !seen.hydrated && seen.shown === columns && !seen.toggle, JSON.stringify(seen));
+        } finally {
+          await bare.close();
+        }
+        const hiddenReachable = await tiles.evaluateAll((els) => els.filter((e) => getComputedStyle(e).display === "none").some((e) => e.querySelector("button")?.offsetParent !== null));
+        report(`${holder.many.name}: hidden tiles are out of the tab order`, !hiddenReachable);
+        await toggle.click();
+        const open = await visible();
+        const boxes = await tiles.evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { y: r.y, right: r.right }; }));
+        const rows = new Set(boxes.map((b) => Math.round(b.y))).size;
+        report(`${holder.many.name}: Show all opens every tile in place`, open === nm && rows > 1 && boxes.every((b) => b.right <= vp.width + 0.5), `${open} visible, ${rows} rows`);
+        report(`${holder.many.name}: focus stays on the toggle after Show all`, await toggle.evaluate((el) => el === document.activeElement));
+        report(`${holder.many.name}: no sideways page scroll`, !(await overflowsX(page)));
+        if (SHOTS) await m.screenshot({ path: `${SHOTS}/${vp.width}-tiles-many.png` });
+        // Card details page every commander of the set, hidden or not: open the first tile, press Next to the end.
+        await tiles.first().locator("[data-testid=revealed-press]").click();
+        const dialog = page.getByRole("dialog");
+        await dialog.waitFor({ timeout: 15_000 });
+        // Each press waits for its own landing (`i + 1 of n`): a read in flight swallows a press made before it arrives.
+        let landed = true;
+        for (let i = 1; i < nm && landed; i++) {
+          await page.getByRole("button", { name: "Next card" }).first().click();
+          landed = await page.getByText(`${i + 1} of ${nm}`).first().waitFor({ timeout: 15_000 }).then(() => true, () => false);
+        }
+        report(`${holder.many.name}: card details page through all ${nm}`, landed);
+        await page.keyboard.press("Escape");
+        await dialog.waitFor({ state: "detached", timeout: 15_000 }).catch(() => {});
+        // Show fewer folds back, keeps the toggle in the window, and focus stays on it.
+        await toggle.scrollIntoViewIfNeeded();
+        await toggle.click();
+        const back = await visible();
+        const rect = await toggle.evaluate((el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; });
+        report(`${holder.many.name}: Show fewer folds back to one row`, back === columns, `${back} visible`);
+        report(`${holder.many.name}: the toggle is in the window after Show fewer`, rect.top >= 0 && rect.bottom <= vp.height, `top ${rect.top.toFixed(0)}, bottom ${rect.bottom.toFixed(0)}`);
+        report(`${holder.many.name}: focus stays on the toggle after Show fewer`, await toggle.evaluate((el) => el === document.activeElement));
+      } else {
+        report(`${holder.many.name}: no toggle for a set that stays whole`, (await toggle.count()) === 0);
+      }
     }
     const keys = await poll(async () => ((await seenKeys(userId)).includes("zqa") ? await seenKeys(userId) : null));
     report("the visit wrote the seen key", Array.isArray(keys) && keys.includes("zqa"), JSON.stringify(keys));
