@@ -121,6 +121,8 @@ const PHONE_B: LineSlots = {
   remove: "max-md:order-2",
   brk: "hidden max-md:block max-md:order-3 max-md:h-0 max-md:basis-full",
   meta: "max-md:order-5 max-md:flex-1 max-md:min-h-[44px] max-md:pl-[16px] max-md:overflow-hidden",
+  // The glint sits in the meta line's left indent; its end margin and the line's 5px gap balance so the pips land at the
+  // indent's far edge, the name's x (12 - 1 + 5 = 16, and 12 + 1 + 5 = 18 from md).
   glint: "max-md:-ml-[16px] max-md:-mr-[1px]",
   mark: "max-md:order-6",
   swap: "max-md:order-7",
@@ -885,7 +887,7 @@ export function DecklistRow({
           twoLine ? <span className={at("buy")}>{buyTag}</span> : buyTag
         ) : overText ? (
           <span className={`flex flex-none flex-col items-end gap-[2px]${withAt("buyStack")}`}>
-            <span className={`${rowB ? "max-md:sr-only " : ""}block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
+            <span className={`${rowB ? "sr-only" : "block lg:hidden"} font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
               {overText}
             </span>
             {tag === "buy" ? buyTag : null}
@@ -894,7 +896,13 @@ export function DecklistRow({
 
         {/* Auto tag — one per stack. Not in Shopping (Hugh, 2026-09-28): where a card came from is
             nothing a buying trip needs, and that row is the busiest in the app. */}
-        {card.auto && !inShopping && !readOnly && <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />}
+        {card.auto && !inShopping && !readOnly && (
+          // From md the row is wrapped by `order`, and an unordered item would jump ahead of the name: the tag takes the
+          // name's own order, after it in the DOM, so it sits between the name and the ✕ as it always did.
+          <span className={`contents${twoMd ? " md:order-1 md:flex md:items-center" : ""}`}>
+            <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />
+          </span>
+        )}
 
         {/* The ledger is marking this pass. Additive to the card's own button
             name rather than a replacement for it: the row has no aria-label to
