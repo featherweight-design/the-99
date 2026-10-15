@@ -4,7 +4,7 @@
 
 **What is built.** The whole data layer, behind three switches, with **no UI at all**: friends, pods, view-only spares, the wishlist (your own and a friend's), and opponent seats in the game log. Sources:
 - `AGENTS.md`, under "Social foundation", "The wishlist" and "Opponents in the game log";
-- the scope and the plan: `boards/scope-social-2026-10-12.md` and `boards/plan-social-foundation-2026-10-12.md`, in the orchestrator's boards folder, not in the repo;
+- Hugh's rulings of 2026-10-12 and the scope facts they rest on, quoted in full under "Rulings" below;
 - the code in `src/lib/social/`, `src/lib/wishlist/` and `src/lib/decks/game-opponents.ts` / `matchups.ts`.
 
 **What this brief asks.** Where these live, every state each one has, and how they read on phone and desktop. It proposes three Design rounds.
@@ -89,15 +89,48 @@ The registry (`src/lib/switches/registry.ts`) holds three. All three are `'true'
 
 | Switch | Needs | Gates |
 |---|---|---|
-| `SOCIAL_FRIENDS_ENABLED` | none | friends, invites, pods **and spares** (no separate pods or spares switch was built, unlike the scope's draft list) |
+| `SOCIAL_FRIENDS_ENABLED` | none | friends, invites, pods **and spares** (no separate pods or spares switch was built, though an early draft proposed them) |
 | `SOCIAL_WISHLIST_ENABLED` | none (stands alone) | your wishlist; a friend's wishlist also needs friends on |
 | `SOCIAL_GAMES_ENABLED` | `SOCIAL_FRIENDS_ENABLED` | opponent seats and matchups |
 
 So **the wishlist must also work for a player with no friends at all.** It is useful alone, as a want list beside Shopping.
 
+## Rulings (Hugh, 2026-10-12, quoted so this brief stands alone)
+
+Hugh answered sixteen questions on 2026-10-12. Each is given here as it was asked, then as he ruled. Several rulings changed the earlier scope, and each change is noted.
+
+- **Q1. Is a link (texted, or a QR code at the table) enough to add a friend, or do you also want a short code you can read out loud?** Link and QR only. There is no short code and no attempt limit to go with one.
+- **Q2. Should an invite work for one person, or for anyone holding the link until it expires?** One person: single-use, expiring after 7 days.
+- **Q3. When you share your spares, is it with all your friends, or "only my pod"?** Per pod. You choose which of your pods see your spares. This replaced an earlier plan of one "Friends can see my spare copies" toggle.
+- **Q4. Can a pod include someone who is not your friend (a friend of a friend at game night)?** No. Pods are friends-only, and an owner adds members from their own friends list. A pod is not a second invite system and has no join code.
+- **Q5. If a pod's owner leaves, does the pod pass to someone else or end?** It passes to the longest-standing member. A member can always leave, and the last one leaving ends it.
+- **Q6. When a friend shows you a deck, should they ever be able to show the full list, or only its name and commander?** Name and commander by default. The full list is opt-in, per deck, chosen by its owner. The earlier worry was that full lists invite "what's in your deck" browsing, which is a different feature.
+- **Q7. Should friends be able to see your wishlist ("what Hugh wants for his birthday")?** Yes, the wishlist is visible to friends.
+- **Q8. When someone deletes their account, should the app delete all their decks and collection too, or only their friendships?** Everything: decks, collection and every social row.
+- **Q9. Does a wishlist want a specific printing, or is any copy fine? When you get the card, should the line disappear or show as got?** Any copy of the card. Once you own it, the line shows as got until you clear it.
+- **Q10. Do you want a saved-commanders shortlist ("favoriting commanders") in this line?** Later, in its own line. It feeds neither spares nor the game log.
+- **Q11. While you are borrowing a card, should your deck count it as having the card?** Card borrowing is NOT in scope. It is an edge case, handled if it ever comes up. **Q13** (a short message on a borrow request) and **Q14** (trading for something in return) were dropped with it.
+- **Spares are view-only** (Hugh's addition to the borrowing answer). You see that a friend has a spare and sort it out in person. An "ask" tap would be nice later. There is no cart change.
+- **Q12. Should a copy that is only in a friend's unfinished draft count as spare, or show as "maybe"?** It is not spare.
+- **Q15. When you lose, is recording which opponent won worth one more tap in the log form?** Yes, as an optional "who won" tap on a loss.
+- **Q16. When you log a game with a friend's deck, should that friend be offered the same game to log for their own deck?** A later phase.
+- **Deck swaps** (Hugh's addition). When you play a friend's deck, the game is logged on that deck, counts in its owner's stats, and is marked "piloted by X". MVP+, built LAST, because it is rare in his pod.
+
+**The scope facts these rest on:**
+
+- **Friendship is mutual and explicit.** It forms only when someone redeems an invite they were handed. There is no search, no directory and no "people you may know". Removing a friend, from either side, is silent: the other person gets no notice.
+- **Privacy defaults to the minimum.** A new friendship shows each side only the other's display name. Everything else is the owner's to share:
+  - **spares**, per pod (Q3). The friend sees only spares matching cards they asked about: the card and how many, nothing else of the collection.
+  - **decks**: name and commander (Q6).
+  - **the wishlist**: visible (Q7).
+- **Who sees what with spares.** I see "Dave has 1 spare" on a card I need. I never see Dave's collection, his other spares, or why a copy is spare. Dave sees nothing about what I need.
+- **"Spare" reuses the app's own claim model**, the one every deck's availability is drawn from. A spare is a copy no deck of the friend's asks for: committed decks and drafts both count, so a copy only a draft wants is not spare (Q12). Nothing restates it.
+- **A pod is a quick-pick for game night** (who you play with) and the scope spares are shared with. It grants no visibility beyond friendship. A member who is not your friend, which can happen after an ownership hand-on, shows by display name only.
+- **Opponent seats snapshot the friend's name and deck at log time.** History reads the same even after a rename, an unfriending or an account deletion.
+
 ## Locked (do not reopen)
 
-**Hugh's rulings, 2026-10-12.**
+**The rulings above, in short.**
 - **Q1.** Link and QR only. No short code, no search. Nobody can be found by name.
 - **Q2.** Single-use invites, expiring after 7 days.
 - **Q3.** Spares are shared per pod. You choose which pods see your spares; there is no all-friends toggle.
@@ -227,7 +260,7 @@ So **the wishlist must also work for a player with no friends at all.** It is us
 
 ## About entries (decided: new entries, batched at launch, behind the switches)
 
-This is a multi-round line, so its entries are **batched at the end of the launch**. That is one bump, or no bump if every entry is switched. Each entry is drawn on the per-entry artboard (`design/design_handoff_the99_about`, §8; `STATES-about-r3.md` §G) in the round that designs its surface. The scope proposes four entries:
+This is a multi-round line, so its entries are **batched at the end of the launch**. That is one bump, or no bump if every entry is switched. Each entry is drawn on the per-entry artboard (`design/design_handoff_the99_about`, §8; `STATES-about-r3.md` §G) in the round that designs its surface. Four entries are proposed:
 
 1. **Friends and pods.** Invite by link or QR, what a friend can see, sharing spares per pod, removing a friend. It follows `SOCIAL_FRIENDS_ENABLED`.
 2. **Wishlist.** What it is for, GOT, and that friends can see it. It follows `SOCIAL_WISHLIST_ENABLED`; its friends line is gated on `SOCIAL_FRIENDS_ENABLED`.
