@@ -67,6 +67,12 @@ describe("addMembers", () => {
     await expect(addMembers(VIEWER, POD, [F1, F1])).resolves.toEqual({ ok: true, added: 1 });
   });
 
+  it("counts one friend named in two cases once", async () => {
+    const LETTERS = "abcdef12-3456-4789-8abc-def012345678";
+    results.push([{ id: POD }], [{ friendUserId: "u1" }], [{ userId: "u1" }]);
+    await expect(addMembers(VIEWER, POD, [LETTERS, LETTERS.toUpperCase()])).resolves.toEqual({ ok: true, added: 1 });
+  });
+
   it("refuses a viewer who does not own the pod, before reading any friendship", async () => {
     results.push([]);
     await expect(addMembers(VIEWER, POD, [F1])).resolves.toEqual({ ok: false, reason: "notOwner" });

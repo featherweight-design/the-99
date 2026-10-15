@@ -95,8 +95,11 @@ export type AddMembersResult =
  */
 export async function addMembers(viewerId: string, podId: unknown, friendPublicIds: unknown): Promise<AddMembersResult> {
   if (!isId(podId) || !Array.isArray(friendPublicIds)) return { ok: false, reason: "invalid" };
-  const ids = [...new Set(friendPublicIds)];
-  if (ids.length === 0 || ids.length > ADD_MEMBERS_MAX || !ids.every(isId)) return { ok: false, reason: "invalid" };
+  if (!friendPublicIds.every(isId)) return { ok: false, reason: "invalid" };
+  // Lowercased before the dedupe: Postgres reads either case as the same uuid, so two spellings of one friend
+  // would otherwise count twice against the one friendship row that comes back.
+  const ids = [...new Set(friendPublicIds.map((id) => id.toLowerCase()))];
+  if (ids.length === 0 || ids.length > ADD_MEMBERS_MAX) return { ok: false, reason: "invalid" };
   return db.transaction(async (tx) => {
     const [pod] = await tx
       .select({ id: pods.id })
