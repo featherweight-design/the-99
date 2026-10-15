@@ -22,7 +22,7 @@ describe("PriceStrip provenance line", () => {
         shoppingCards={list}
       />,
     );
-    expect(screen.getByText(/cheapest single copies on Mana Pool/)).toHaveTextContent(
+    expect(screen.getByText(/single-copy prices on Mana Pool/)).toHaveTextContent(
       `${priceCopy.strip.provenance} · ${priceCopy.strip.lastChecked("Monday")} · ${priceCopy.strip.cartNote}`,
     );
     // A substring, not a `RegExp` built from the copy: the clause carries
@@ -38,7 +38,7 @@ describe("PriceStrip provenance line", () => {
         shoppingCards={list}
       />,
     );
-    expect(screen.getByText(/cheapest single copies on Mana Pool/)).toHaveTextContent(
+    expect(screen.getByText(/single-copy prices on Mana Pool/)).toHaveTextContent(
       `${priceCopy.strip.provenance} · ${priceCopy.strip.lastChecked("12 August")} · ${priceCopy.strip.behind} · ${priceCopy.strip.cartNote}`,
     );
   });
@@ -72,7 +72,7 @@ describe("PriceStrip responsive arrangement", () => {
       />,
     );
     expect(screen.getAllByText("$12.40")).toHaveLength(1);
-    expect(screen.getAllByText(/cheapest single copies on Mana Pool/)).toHaveLength(1);
+    expect(screen.getAllByText(/single-copy prices on Mana Pool/)).toHaveLength(1);
     expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 

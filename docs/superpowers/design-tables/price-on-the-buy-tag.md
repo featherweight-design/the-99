@@ -114,8 +114,8 @@ R3's structural correction: the price facts belong to the **Shopping filter**, w
 
 | # | Property | Value | Source |
 |---|---|---|---|
-| 2.19 | Fresh form | `cheapest single copies on Mana Pool · last checked Monday · a cart with shipping or fewer packages can cost more` | R3C:63; copy edit 2026-10-15 |
-| 2.20 | Behind form | `cheapest single copies on Mana Pool · last checked 12 August · these are behind · a cart with shipping or fewer packages can cost more` | R3C:137; copy edit 2026-10-15 |
+| 2.19 | Fresh form | `single-copy prices on Mana Pool · last checked Monday · a cart with shipping or fewer packages can cost more` | R3C:63; copy edit 2026-10-15 |
+| 2.20 | Behind form | `single-copy prices on Mana Pool · last checked 12 August · these are behind · a cart with shipping or fewer packages can cost more` | R3C:137; copy edit 2026-10-15 |
 | 2.21 | Behind clause position | Third, and last unless a figure adds the cart note after it | R3RM:70–71; copy edit 2026-10-15 |
 | 2.22 | Ink, both forms | `--fg-locked` | R2RM:105, R3C:139 |
 | 2.23 | Not a warning | No banner, no amber. Old prices are our operational problem, not the player's error | R2RM:72–74 |

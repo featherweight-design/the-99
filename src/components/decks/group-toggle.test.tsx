@@ -69,7 +69,7 @@ describe("GroupToggle price strip", () => {
     render(
       <GroupToggle {...props} filter="shopping" priceSummary={null} provenance={provenance} />,
     );
-    expect(screen.queryByText(/cheapest single copies on Mana Pool/)).toBeNull();
+    expect(screen.queryByText(/single-copy prices on Mana Pool/)).toBeNull();
   });
 
   // The pills and the strip are one flex column, so the pill row keeps its own

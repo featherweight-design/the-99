@@ -43,9 +43,10 @@ export const priceCopy = {
     // Line 2, joined by the component with ' · '. `provenance` and
     // `provenanceUnpriced` are alternatives for the FIRST clause only —
     // `lastChecked` and `behind` follow either one unchanged.
-    // What the figure IS: each card's one priced printing (in stock, non-foil, then cheapest; How it works says
-    // so), one copy at a time. A Mana Pool cart can come to more (a friend's read $46 against our $40, 2026-10-15).
-    provenance: "cheapest single copies on Mana Pool",
+    // What the figure IS: one copy per card at the printing the price read picks (a deck's in-stock pick first,
+    // then non-foil stock), never a promise of the cheapest. A Mana Pool cart can come to more (a friend's read $46
+    // against our $40, 2026-10-15).
+    provenance: "single-copy prices on Mana Pool",
     // Replaces `provenance` when no row on the list has a price. States the
     // absence rather than a check we cannot evidence, and keeps the same ink:
     // the feed has never stocked these, which is our gap and not the player's
