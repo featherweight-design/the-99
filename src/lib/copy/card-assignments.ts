@@ -114,7 +114,7 @@ export const cardAssignmentsCopy = {
      */
     ledeTokensOnly: (t: number) =>
       "Nothing your decks care about moved. Your cards are as you left them" +
-      (t > 0 ? `, and ${tokens(t)} from the file are recorded.` : "."),
+      (t > 0 ? `, and ${tokens(t)} from the file ${t === 1 ? "is" : "are"} recorded.` : "."),
     /**
      * (new) A Sync that moved cards none of the decks care about. The shipped ending (`Your collection
      * is the new file.`) is false after a Sync, which kept the player's own changes; this says so.

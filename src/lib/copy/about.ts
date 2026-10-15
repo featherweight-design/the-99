@@ -319,7 +319,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       keys: [
         'Replace: anything not in the file leaves your Collection.',
         'Add: quantities go up, nothing leaves, and your art picks stay.',
-        'Sync: keeps what you changed in the app and takes what’s new in the file. If you both changed a card, it asks.',
+        'Sync: takes the file’s changes, removals included, and keeps yours. If you both changed a card, it asks.',
         'Your very first upload skips the question, since there’s nothing to replace.',
       ],
     },

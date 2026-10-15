@@ -322,7 +322,7 @@ export const collectionEditCopy = {
      * not rows of the entry, since the Sync never wrote them, so a revert cannot touch them either.
      */
     syncNote: (kept: number, decided: number, t: number) =>
-      [`Kept the ${cards(kept)} you’d changed in the app.`, decided ? `You decided ${n(decided)}.` : "", t ? `Recorded ${tokens(t)}.` : ""]
+      [kept ? `Kept the ${cards(kept)} you’d changed in the app.` : "", decided ? `You decided ${n(decided)}.` : "", t ? `Recorded ${tokens(t)}.` : ""]
         .filter(Boolean).join(" "),
     figures: (up: number, down: number, cards: number) =>
       // A change that moved no copies (a printing or condition swap, or a Replace that matched the

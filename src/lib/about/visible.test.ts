@@ -276,7 +276,7 @@ describe("an entry's variant: `upload-choice`'s Sync form (collection sync rulin
   const post = aboutEntries.find((e) => e.id === "post-import")!;
   const EDIT = { COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const SYNC = { COLLECTION_EDIT_ENABLED: "true", COLLECTION_SYNC_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const SYNC_KEY = "Sync: keeps what you changed in the app and takes what’s new in the file. If you both changed a card, it asks.";
+  const SYNC_KEY = "Sync: takes the file’s changes, removals included, and keeps yours. If you both changed a card, it asks.";
   const HALF = "After a sync it also says how many of your own changes stayed.";
   const drawn = (env: NodeJS.ProcessEnv) => visibleEntries(env).find((e) => e.id === "upload-choice");
 
