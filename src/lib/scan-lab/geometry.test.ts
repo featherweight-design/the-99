@@ -23,6 +23,13 @@ describe("scan-lab geometry", () => {
     expect(sortCorners([bl, tl, tr, br])).toEqual([tl, tr, br, bl]);
   });
 
+  it("sorts a tilted card's corners without picking one point twice", () => {
+    const [tl, tr, br, bl] = [{ x: 100, y: 20 }, { x: 160, y: 90 }, { x: 80, y: 180 }, { x: 30, y: 100 }];
+    expect(sortCorners([br, bl, tr, tl])).toEqual([tl, tr, br, bl]);
+    const dst = [{ x: 0, y: 0 }, { x: 320, y: 0 }, { x: 320, y: 448 }, { x: 0, y: 448 }];
+    expect(homography(dst, sortCorners([bl, br, tl, tr]))).not.toBeNull();
+  });
+
   it("maps the detector's letterboxed output back to frame pixels", () => {
     const { scale, dx, dy } = letterbox(1280, 720);
     expect(dx).toBe(0);

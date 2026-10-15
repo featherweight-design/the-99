@@ -10,7 +10,8 @@ import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import {
   DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor,
 } from "../../lib/scan-lab/geometry";
-import { agreement, normalise, parseIndex, topOracles, type Guess, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
+import { agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
+import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan-lab/reading";
 import {
   AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
 } from "../../lib/scan-lab/models";
@@ -22,17 +23,6 @@ type Ort = {
   env: { wasm: { wasmPaths: string; numThreads: number } };
   Tensor: new (type: "float32", data: Float32Array, dims: number[]) => unknown;
   InferenceSession: { create(url: string, opts?: Record<string, unknown>): Promise<OrtSession> };
-};
-
-type Reading = {
-  guesses: Guess[];
-  margin: number;
-  agreed: number;
-  committed: boolean;
-  detMs: number;
-  embMs: number;
-  matchMs: number;
-  totalMs: number;
 };
 
 const MAX_FRAME_EDGE = 1280;
@@ -71,7 +61,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const previewRef = useRef<HTMLCanvasElement>(null);
   const running = useRef(false);
   const history = useRef<{ oracleId: string; margin: number }[]>([]);
-  const lastCrop = useRef<Float32Array | null>(null);
+  const stream = useRef(streamHolder<MediaStream>());
   const [status, setStatus] = useState<"idle" | "loading" | "running" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState<Reading | null>(null);
@@ -80,10 +70,13 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const [taps, setTaps] = useState({ n: 0, right: 0 });
   const indexVersion = useRef("unknown");
 
-  useEffect(() => () => {
-    running.current = false;
-    const stream = videoRef.current?.srcObject as MediaStream | null;
-    stream?.getTracks().forEach((t) => t.stop());
+  useEffect(() => {
+    const held = stream.current;
+    held.open();
+    return () => {
+      running.current = false;
+      held.close();
+    };
   }, []);
 
   const start = useCallback(async () => {
@@ -99,12 +92,16 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     }
     setStatus("loading");
     try {
-      const [ort, index, stream] = await Promise.all([
+      const [ort, index, media] = await Promise.all([
         loadOrt(),
         loadIndex(indexBase),
         navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false,
+        }).then((m) => {
+          // held from the moment it exists, so a failure elsewhere, or leaving the page, stops it
+          if (!stream.current.accept(m)) throw new Error("left the page");
+          return m;
         }),
       ]);
       indexVersion.current = index.meta.version;
@@ -113,9 +110,13 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
         ort.InferenceSession.create(EMBEDDER_URL, { executionProviders: ["wasm"] }),
       ]);
       const video = videoRef.current;
-      if (!video) return;
-      video.srcObject = stream;
+      if (!video) {
+        stream.current.close();
+        return;
+      }
+      video.srcObject = media;
       await video.play();
+      if (!stream.current.holds(media)) return; // the page was left while the camera started
       setStatus("running");
       running.current = true;
       const frame = document.createElement("canvas");
@@ -124,6 +125,12 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       const fctx = frame.getContext("2d", { willReadFrequently: true });
       const sctx = square.getContext("2d", { willReadFrequently: true });
       if (!fctx || !sctx) throw new Error("no 2d canvas");
+      // No card: nothing a tap records may describe an earlier one, the kept frame included, but
+      // the detector did run, so its timing is this frame's.
+      const noCard = (t0: number, t1: number) => {
+        history.current = [];
+        setReading({ kind: "none", detMs: Math.round(t1 - t0), totalMs: Math.round(performance.now() - t0) });
+      };
       const loop = async () => {
         if (!running.current) return;
         const t0 = performance.now();
@@ -148,7 +155,6 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
             const px = fctx.getImageData(0, 0, frame.width, frame.height).data;
             const crop = warpToTensor(px, frame.width, frame.height, corners);
             if (crop) {
-              lastCrop.current = crop;
               const out = await embedder.run({ [embedder.inputNames[0]]: new ort.Tensor("float32", crop, [1, 3, EMBED_H, EMBED_W]) });
               const t2 = performance.now();
               const q = normalise(Object.values(out)[0].data);
@@ -159,18 +165,18 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
               let agreed = 0;
               for (let i = history.current.length - 1; i >= 0 && history.current[i].oracleId === guesses[0].oracleId; i--) agreed++;
               const committed = agreement(history.current, AGREE_FRAMES, AGREE_MARGIN) !== null;
+              // the crop and the verdict it produced are published together, as one reading
               setReading({
-                guesses, margin, agreed, committed,
+                kind: "card", crop, guesses, margin, agreed, committed,
                 detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: Math.round(t3 - t2), totalMs: Math.round(t3 - t0),
               });
               const pctx = previewRef.current?.getContext("2d");
               pctx?.putImageData(tensorToImage(crop, EMBED_W, EMBED_H), 0, 0);
+            } else {
+              noCard(t0, t1);
             }
           } else {
-            // No card: nothing a tap records may describe an earlier one, the kept frame included.
-            history.current = [];
-            lastCrop.current = null;
-            setReading(null);
+            noCard(t0, t1);
           }
         }
         setTimeout(loop, 60);
@@ -178,37 +184,28 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       void loop();
     } catch (e) {
       running.current = false;
+      stream.current.close();
       setStatus("error");
       setError(`${copy.failed} ${e instanceof Error ? e.message : ""}`);
     }
   }, [indexBase]);
 
   const record = useCallback(async (correct: boolean) => {
+    // one reading, the one on screen: its verdict, its timings and its own crop
     const r = reading;
+    const crop = readingCrop(r);
     let frame: string | null = null;
-    if (keepFrame && lastCrop.current) {
+    if (keepFrame && crop) {
       const c = document.createElement("canvas");
       c.width = EMBED_W;
       c.height = EMBED_H;
-      c.getContext("2d")?.putImageData(tensorToImage(lastCrop.current, EMBED_W, EMBED_H), 0, 0);
+      c.getContext("2d")?.putImageData(tensorToImage(crop, EMBED_W, EMBED_H), 0, 0);
       frame = c.toDataURL("image/jpeg", 0.85).split(",")[1] ?? null;
     }
     const res = await fetch("/api/scan-lab/result", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        guessOracleId: r?.guesses[0]?.oracleId ?? null,
-        correct,
-        score: r?.guesses[0]?.score ?? null,
-        margin: r ? Math.min(r.margin, 1) : null,
-        latencyMs: r?.totalMs ?? 0,
-        detectorMs: r?.detMs ?? null,
-        embedMs: r?.embMs ?? null,
-        matchMs: r?.matchMs ?? null,
-        agreedFrames: Math.min(r?.agreed ?? 0, 100),
-        indexVersion: indexVersion.current,
-        frame,
-      }),
+      body: JSON.stringify(tapBody(r, correct, indexVersion.current, frame)),
     }).catch(() => null);
     if (res?.ok) {
       setTaps((t) => ({ n: t.n + 1, right: t.right + (correct ? 1 : 0) }));
@@ -236,7 +233,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
           <div className="flex gap-[12px]">
             <canvas ref={previewRef} width={EMBED_W} height={EMBED_H} className="h-[168px] w-[120px] rounded-[6px]" />
             <div className="flex min-w-0 flex-col gap-[4px] text-[14px]">
-              {reading ? (
+              {reading?.kind === "card" ? (
                 <>
                   <span className="text-[12px] text-[color:var(--fg-muted)]">{copy.guessing}</span>
                   <strong className="text-[18px]">{reading.guesses[0]?.name}</strong>

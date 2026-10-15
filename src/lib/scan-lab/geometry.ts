@@ -31,11 +31,19 @@ export function cornersFromDetector(out: ArrayLike<number>, w: number, h: number
   return pts;
 }
 
-/** TL, TR, BR, BL whatever order the points arrive in (TL has the least x+y). */
+/**
+ * TL, TR, BR, BL whatever order the points arrive in. The four are put in cyclic order by their
+ * angle around the centroid (clockwise on screen, y pointing down), then rotated to start at the
+ * one with the least x+y. Picking each corner by its own extremum instead can choose one point
+ * twice on a tilted card, which leaves the homography degenerate.
+ */
 export function sortCorners(pts: Pt[]): Pt[] {
-  const by = (f: (p: Pt) => number, max: boolean) =>
-    pts.reduce((best, p) => ((max ? f(p) > f(best) : f(p) < f(best)) ? p : best));
-  return [by((p) => p.x + p.y, false), by((p) => p.y - p.x, false), by((p) => p.x + p.y, true), by((p) => p.y - p.x, true)];
+  const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
+  const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+  const ring = [...pts].sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
+  let start = 0;
+  for (let i = 1; i < ring.length; i++) if (ring[i].x + ring[i].y < ring[start].x + ring[start].y) start = i;
+  return [...ring.slice(start), ...ring.slice(0, start)];
 }
 
 /**
