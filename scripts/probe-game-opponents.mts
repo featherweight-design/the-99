@@ -137,6 +137,15 @@ async function main() {
       (await searchOpponentCommanders("a")).length === 0 && (await searchOpponentCommanders(42)).length === 0
       && (await searchOpponentCommanders("%%")).length === 0);
     check("the page is capped", (await searchOpponentCommanders("ar")).length <= 8);
+    // A broad query matches thousands of cards, nearly all of them not commanders: the window must be filled with
+    // commanders, not arbitrary matches, and be the same on every call.
+    // "goblin" matches hundreds of non-legendary cards and read 0 commanders when the window was cut before the narrowing.
+    const broad = await searchOpponentCommanders("goblin");
+    check("a broad query still offers commanders, the same ones every call", broad.length === 8
+      && JSON.stringify(broad.map((h) => h.oracleId)) === JSON.stringify((await searchOpponentCommanders("goblin")).map((h) => h.oracleId)),
+      String(broad.length));
+    const lead = await searchOpponentCommanders("nissa");
+    check("a name that starts with the query leads", lead.length > 0 && lead[0].name.toLowerCase().startsWith("nissa"), lead[0]?.name);
 
     // The write path.
     const g1 = await log(V, mine, "loss", [{ friend: f.publicId, deck: fay1, won: true }, { commander: C3, label: "Sam" }]);

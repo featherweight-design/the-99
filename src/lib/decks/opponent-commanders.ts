@@ -8,7 +8,7 @@
  * `isCommanderCandidate`. The partner ability rides each hit so the client can offer only the pairs
  * `canPair` allows; the server re-checks the pair at save, and that check is the one that counts.
  */
-import { and, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { loadOpeningArt } from "../cards/opening-printing";
@@ -33,7 +33,12 @@ export type OpponentCommanderHit = {
 
 export const OPPONENT_COMMANDER_HITS = 8;
 
-/** Wide enough that cards refused by `isCommanderCandidate` (a legal Saga, a melded card) do not starve the page. */
+/**
+ * Rows read before `isCommanderCandidate` has the last word. The SQL narrows to a SUPERSET of its rule (a
+ * legendary front or back, or "can be your commander" text), so the window holds commanders and the few the
+ * rule then refuses (a legendary land, a melded card), never the arbitrary name matches a broad query like
+ * "the" would otherwise fill it with.
+ */
 const SCAN = 40;
 
 const WUBRG = ["W", "U", "B", "R", "G"];
@@ -57,7 +62,14 @@ export async function searchOpponentCommanders(query: unknown): Promise<Opponent
     })
     .from(cards)
     .leftJoin(flavorHits, eq(flavorHits.oracleId, cards.oracleId))
-    .where(and(match.where, eq(cards.commanderLegal, true), isGameCardWhere()))
+    .where(and(
+      match.where,
+      eq(cards.commanderLegal, true),
+      isGameCardWhere(),
+      or(ilike(cards.typeLine, "%legendary%"), ilike(cards.oracleText, "%can be your commander%")),
+    ))
+    // A name that starts with what was typed leads, then name: a window cut at SCAN is the same one every call.
+    .orderBy(desc(sql`${cards.name} ilike ${`${query.trim().replace(/[\\%_]/g, (m) => `\\${m}`)}%`}`), asc(cards.name))
     .limit(SCAN);
   const leads = rows.filter(isCommanderCandidate).slice(0, OPPONENT_COMMANDER_HITS);
   if (leads.length === 0) return [];
