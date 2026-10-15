@@ -9,6 +9,7 @@ import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { formatCents } from "../../../lib/decks/price";
 import type { CartDeck } from "../../../lib/decks/cart";
 import { Chevron } from "../../ui/chevron";
+import { Checkbox } from "../../ui/checkbox";
 
 export function DeckSelect({
   decks,
@@ -85,22 +86,7 @@ export function DeckSelect({
             return (
               <li key={d.id}>
                 <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] border-t border-[color:var(--border)] pt-[11px] pb-[10px]">
-                  <input
-                    type="checkbox"
-                    checked={isOn}
-                    onChange={() => onToggle(d.id)}
-                    aria-label={copy.selections.aria(d.name, isOn)}
-                    className="peer sr-only"
-                  />
-                  <span
-                    aria-hidden
-                    className="mt-[1px] flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[4px] text-[12px] font-bold peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[color:var(--accent)]"
-                    style={isOn
-                      ? { background: "var(--accent)", color: "var(--bg)" }
-                      : { border: "1.5px solid var(--border-strong)" }}
-                  >
-                    {isOn ? "✓" : null}
-                  </span>
+                  <Checkbox checked={isOn} onChange={() => onToggle(d.id)} ariaLabel={copy.selections.aria(d.name, isOn)} className="mt-[1px]" />
                   <span
                     className="min-w-0 flex-1 text-[13px] leading-[1.4] [text-wrap:pretty]"
                     style={{ color: isOn ? "var(--fg)" : "var(--fg-muted)" }}

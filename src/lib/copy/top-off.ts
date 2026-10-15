@@ -159,10 +159,10 @@ export const topOffCopy = {
       `${plural(cand, 'candidate', 'candidates')} for the last ${plural(n, 'slot', 'slots')}`,
 
     head: (ticked: string, n: string, cand: string, untouched: string) =>
-      `${ticked} of ${plural(n, 'slot', 'slots')} ticked · ${plural(cand, 'candidate', 'candidates')}, ${untouched} untouched`,
-    headMobile: (ticked: string, n: string) => `${ticked} of ${n} ticked`,
+      `${ticked} of ${plural(n, 'slot', 'slots')} selected · ${plural(cand, 'candidate', 'candidates')}, ${untouched} untouched`,
+    headMobile: (ticked: string, n: string) => `${ticked} of ${n} selected`,
 
-    clearTicks: 'Clear all ticks',
+    clearTicks: 'Clear all selections',
 
     /** Column headers. The two figures sit under them at both widths on
      *  desktop; at phone they are labelled by the aria name instead. */
@@ -183,7 +183,7 @@ export const topOffCopy = {
      *  ticked", which is `head` word for word at desktop and `headMobile` word
      *  for word in the bar directly under it, so the one thing the line was for
      *  arrived third, behind a figure already on screen twice. */
-    cap: 'Untick one to swap another in',
+    cap: 'Deselect one to swap another in',
 
     /** The row's accessible name. All four visual atoms are aria-hidden, so
      *  this is the only place the marks are spoken. */
@@ -217,7 +217,7 @@ export const topOffCopy = {
      *  itself, keeps its slot, and says which rule caught it. */
     illegalInDeck: 'already in the deck',
     illegalColour: 'not in these colors',
-    illegalUntickable: 'untickable',
+    illegalUntickable: 'can’t be selected',
 
     /** A decline. Lifted from the tuning card's dismissed row, deliberately:
      *  same act, same shape, same words, and no question asked. */
@@ -344,9 +344,9 @@ export const topOffCopy = {
         : `${n} slots stay open: you can come back to them`,
 
     /** Zero ticks, and the zero-owned case, which is the same state. */
-    nothingTicked: 'nothing ticked: the list arrives with what you own already ticked',
+    nothingTicked: 'nothing selected: the list arrives with what you own already selected',
     nothingTickedUnowned: (cand: string) =>
-      `nothing ticked: you own none of these ${cand}, so every tick is one to buy`,
+      `nothing selected: you own none of these ${cand}, so every card you select is one to buy`,
     /** Zero ticks because every candidate was declined. The other two variants
      *  both explain a list that is there to be ticked; this one is the only
      *  state where the rows are gone, so it names the way back instead. */
@@ -493,22 +493,22 @@ export const topOffCopy = {
   // selection surface.
   announce: {
     opened: (cand: string, n: string, ticked: string) =>
-      `${plural(cand, 'candidate', 'candidates')} for ${plural(n, 'slot', 'slots')}. ${ticked} already ticked.`,
+      `${plural(cand, 'candidate', 'candidates')} for ${plural(n, 'slot', 'slots')}. ${ticked} already selected.`,
     ticked: (ticked: string, n: string, buy: string) =>
-      `${ticked} of ${n} ticked, ${buy} to buy.`,
-    tickedNoBuy: (ticked: string, n: string) => `${ticked} of ${n} ticked.`,
-    capped: (n: string) => `${n} of ${plural(n, 'slot', 'slots')} ticked.`,
+      `${ticked} of ${n} selected, ${buy} to buy.`,
+    tickedNoBuy: (ticked: string, n: string) => `${ticked} of ${n} selected.`,
+    capped: (n: string) => `${n} of ${plural(n, 'slot', 'slots')} selected.`,
     added: (added: string, total: string, buy: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} added. ${total} of ${bodySize}, ${buy} to buy.`,
     addedNoBuy: (added: string, total: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} added. ${total} of ${bodySize}.`,
     declined: (name: string, ticked: string, n: string) =>
-      `${name} set aside. ${ticked} of ${n} ticked.`,
+      `${name} set aside. ${ticked} of ${n} selected.`,
     /** The bulk restore. It states the tick count after the restore as well as
      *  the number of rows returned, because a restored row comes back unticked
      *  and a reader who is told only 'back on the list' would expect otherwise. */
     restoredAll: (declined: string, ticked: string, n: string) =>
-      `${plural(declined, 'candidate', 'candidates')} back on the list. ${ticked} of ${n} ticked.`,
+      `${plural(declined, 'candidate', 'candidates')} back on the list. ${ticked} of ${n} selected.`,
     undone: (added: string, total: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} put back. ${total} of ${bodySize}.`,
     /** The mark is a visual grouping, so it is the one thing on this surface a

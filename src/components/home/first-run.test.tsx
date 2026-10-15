@@ -210,3 +210,13 @@ describe("FirstRunChecklist", () => {
     expect(screen.getByRole("button", { name: "Upload a CSV" })).toHaveAttribute("data-step1-upload");
   });
 });
+
+describe("FirstRunChecklist · the foot of the steps", () => {
+  it("keeps 20px under the last step on a phone, clear of the tab bar's lock-note row, and the desktop's own 26px", () => {
+    // jsdom computes no layout, so the pin is the class that draws it: the steps' column, found by its first child.
+    const { container } = render(<FirstRunChecklist />);
+    const holder = [...container.querySelectorAll("div")].find((d) => d.className.includes("gap-[11px]") && d.className.includes("p-[16px_16px_20px]"));
+    expect(holder).toBeTruthy();
+    expect(holder?.className).toContain("sm:p-[20px_28px_26px]");
+  });
+});

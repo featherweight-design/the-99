@@ -25,10 +25,10 @@ named; — not built here, with where it is.
 | 6 | Header | back, `Precons I own` (display 26 desktop, 22 phone), one sentence | as drawn; `pick.sub` desktop, `pick.subPhone` at 390 | ✓ |
 | 7 | Kept controls | search, colour pips, result line, year groups (Newest) | `DeckSearchField`, `ColourPips`, `list.result(…, "newest")`, `groupByYear`; the shipped year head (display 17 + mono count) | ≈ the board draws the year head mono; the shipped head is kept, as the call says "kept" |
 | 8 | Phone pips | the board draws the search alone | the pips under the search | ≈ the plan keeps pips; the phone board omits them |
-| 9 | Row | whole row the label, checkbox first; 56px / checkbox 22 phone, 52px / checkbox 20 desktop | `<label>` with the native box first, `min-h-[56px] md:min-h-[52px]`, 22/20px | ✓ |
+| 9 | Row | whole row the label, checkbox first; 56px / checkbox 22 phone, 52px / checkbox 20 desktop | `<label>` with the shared `Checkbox` first (18px at both widths, then the commander thumb at the precon list's size), `min-h-[56px] md:min-h-[52px]` | ruled: one checkbox size app-wide (Hugh, 2026-10-15), so the 22/20 is not drawn |
 | 10 | Row content | pips, name 14/600, mono `SET · Mon YYYY`, then `100 cards` (`100` at 390) | as drawn; the ownership figure dropped | ✓ |
 | 11 | Desktop meta, twin | `· also sold as a Collector's Edition` | the shipped `row.twin` clause, desktop only | ✓ |
-| 12 | Foot lead | `Tick the boxes you own.` | `pick.leadNone` | ✓ |
+| 12 | Foot lead | `Select the decks you own.` | `pick.leadNone` | ✓ |
 | 13 | Add held | `Add boxes`, `aria-disabled`, .4, never removed; the press moves focus to the search | `aria-disabled`, `opacity-40`; the press focuses the search input | ✓ |
 
 ### S3 · some picked

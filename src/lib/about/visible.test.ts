@@ -488,7 +488,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
   it("follows PRECONS_ENABLED line by line: the precon sentence and key go, and the rest reads whole", () => {
     const off = drawn(LINE, "start-without-a-collection")!;
     expect(off.caption).not.toContain(PRECON_LINE);
-    expect(off.caption).toBe("No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nImport a deck you play and tick that you own its cards. Or add cards one at a time. A file can come later.");
+    expect(off.caption).toBe("No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nImport a deck you play and select that you own its cards. Or add cards one at a time. A file can come later.");
     expect(off.keys).not.toContain(PRECON_KEY);
     expect(off.keys).toHaveLength(3);
     const on = drawn({ ...LINE, PRECONS_ENABLED: "true" }, "start-without-a-collection")!;
@@ -497,7 +497,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
   });
 
   it("gives deck-import its fourth key and precons R3's sentence only with the line's switch", () => {
-    const tick = "Own the deck you’re importing? Tick the box and its cards go into your Collection too.";
+    const tick = "Own the deck you’re importing? Select “I own these cards” and its cards go into your Collection too.";
     const r3 = "Own a few boxes and don’t want decks from them yet? Press Add cards in your Collection, then Pick them, and they’re added without starting anything.";
     expect(drawn({ COLLECTION_EDIT_ENABLED: "true" }, "deck-import")!.keys).toHaveLength(3);
     expect(drawn(LINE, "deck-import")!.keys).toEqual(expect.arrayContaining([tick]));

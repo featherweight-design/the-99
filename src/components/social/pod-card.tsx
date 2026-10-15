@@ -16,6 +16,7 @@ import { FadingImg } from "../ui/hydrated-art";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { faceInitials } from "./face";
 import { PodMenu } from "./pod-menu";
+import { Checkbox } from "../ui/checkbox";
 
 const copy = socialCopy.pods;
 
@@ -239,19 +240,7 @@ export function PodCard({
       </ul>
       {n === 1 ? <p className="relative m-0 mr-[10px] mt-[8px] text-[12.5px] text-[color:var(--fg-muted)] md:mr-0">{copy.solo}</p> : null}
       <label className="relative mt-[10px] flex min-h-[44px] cursor-pointer items-center gap-[10px] font-sans text-[13px] text-[color:var(--fg-body)] md:min-h-[40px]">
-        <input
-          type="checkbox"
-          checked={shared}
-          aria-busy={sharePending || undefined}
-          onChange={(e) => onShare(e.target.checked)}
-          className="peer sr-only"
-        />
-        <span
-          aria-hidden
-          className="flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[4px] text-[12px] font-bold text-[color:var(--bg)] [border:1.5px_solid_var(--fg-faint)] peer-checked:bg-[color:var(--accent)] peer-checked:[border-color:var(--accent)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[color:var(--accent)]"
-        >
-          {shared ? "✓" : ""}
-        </span>
+        <Checkbox checked={shared} busy={sharePending} onChange={onShare} />
         <span>{copy.share}</span>
       </label>
     </div>

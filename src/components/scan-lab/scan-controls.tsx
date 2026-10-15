@@ -12,6 +12,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import { EMBED_H, EMBED_W } from "../../lib/scan-lab/geometry";
 import { readingCrop } from "../../lib/scan-lab/reading";
+import { Checkbox } from "../ui/checkbox";
 import { sameAnswer, tapTarget, type Display } from "../../lib/scan-lab/steady";
 
 /** A verdict's target: the reading it is recorded against, what was on screen at the press, and how long before. */
@@ -199,7 +200,7 @@ export function ScanControls({
         onPointerDownCapture={grab}
       >
         <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
-          <input type="checkbox" checked={keepFrame} onChange={(e) => onKeepFrame(e.target.checked)} />
+          <Checkbox checked={keepFrame} onChange={onKeepFrame} />
           {copy.keepFrame}
         </label>
         <div className="flex gap-[8px]">

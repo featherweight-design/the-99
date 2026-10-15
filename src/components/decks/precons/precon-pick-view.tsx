@@ -23,6 +23,8 @@ import { ColourPips } from "../../ui/colour-pips";
 import { DeckSearchField } from "../deck-filter-column";
 import { ToastFrame, useToastClock } from "../../collection/edit-toast";
 import { PendingReporter } from "../../shell/pending-reporter";
+import { CommanderThumb } from "../../ui/commander-thumb";
+import { Checkbox } from "../../ui/checkbox";
 
 const copy = preconsCopy.pick;
 const NO_BOX: PreconBox = { copies: 0, tokens: 0, twin: null };
@@ -349,15 +351,12 @@ function PickRow({ row, edition, landed, owned, addedAt, onTick }: {
       {copy.added(addedDay)}
     </span>
   ) : null;
+  const lead = row.commanders[0];
   return (
     <li className="flex flex-col border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)]">
       <label className={`flex min-h-[56px] cursor-pointer items-center gap-[12px] px-[4px] md:min-h-[52px] md:gap-[14px] md:px-[10px] ${on ? "bg-[color:var(--surface-sunken)]" : ""}`}>
-        <input
-          type="checkbox"
-          checked={on}
-          onChange={(e) => onTick(e.target.checked ? "regular" : null)}
-          className="h-[22px] w-[22px] flex-none cursor-pointer accent-[color:var(--accent)] md:h-[20px] md:w-[20px]"
-        />
+        <Checkbox checked={on} onChange={(next) => onTick(next ? "regular" : null)} />
+        <CommanderThumb imageUri={lead?.imageUriSmall ?? lead?.imageUri ?? null} colorIdentity={row.identity} size="list" lazy />
         <span className="sr-only">{row.identity.length > 0 ? colorNames(row.identity).join(", ") : preconsCopy.row.colorless}</span>
         <span aria-hidden className="flex w-[52px] flex-none gap-[3px] md:w-[57px]">
           {(row.identity.length > 0 ? row.identity : ["C"]).map((c) => (

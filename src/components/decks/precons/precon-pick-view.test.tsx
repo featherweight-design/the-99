@@ -37,7 +37,7 @@ beforeEach(() => {
 describe("Precons I own: the foot", () => {
   it("holds the add at zero, and the press moves focus to the search", () => {
     draw();
-    expect(foot()).toContain("Tick the boxes you own.");
+    expect(foot()).toContain("Select the decks you own.");
     expect(addButton()).toHaveTextContent("Add boxes");
     expect(addButton()).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(addButton());
@@ -259,5 +259,19 @@ describe("Precons I own, with cards", () => {
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(push).toHaveBeenCalledWith("/collection?precons=e1");
     expect(screen.getByRole("link", { name: "‹ Collection" })).toHaveAttribute("href", "/collection?precons=e1");
+  });
+});
+
+describe("Precons I own: the rows", () => {
+  it("draw the box's lead commander as the list's thumb, as the precon list's rows do, and the shared checkbox", () => {
+    const withCommander: PreconRow = {
+      ...row("Abzan", "Abzan Armor", 10),
+      commanders: [{ oracleId: "o-1", name: "Anafenza, Unyielding Lineage", imageUri: "https://img.test/big.jpg", imageUriSmall: "https://img.test/small.jpg", colorIdentity: ["W"] }],
+    };
+    const { container } = render(<PreconPickView rows={[withCommander, row("Sultai", "Sultai Arisen", 11)]} entry="home" initial={{ q: "", colours: [] }} />);
+    const thumbs = container.querySelectorAll('[data-commander-thumb="list"]');
+    expect(thumbs).toHaveLength(2);
+    expect(container.querySelector("img[src*='small.jpg']")).not.toBeNull();
+    expect(container.querySelectorAll("li input[type=checkbox].peer")).toHaveLength(2);
   });
 });

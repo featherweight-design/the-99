@@ -1,0 +1,47 @@
+{
+  "feature": "Start without a collection, polish: first-run spacing at 390, `select` not `tick`, a commander thumb on the precon pick rows, one shared checkbox",
+  "note": "Signed in as the empty onboard-probe account on a SCRATCH branch of local-dev (emptied: no decks, no collection), with COLLECTION_EDIT_ENABLED, NO_COLLECTION_ENTRY_ENABLED and PRECONS_ENABLED on. The rows write nothing: the pick rows select boxes (a press of the row's label) without pressing the add, and the import row fills a form it never submits. The checkboxes on the surfaces that need other fixtures (the cart's deck select and group rows, the pod's spares share and add-friends rows, the scan lab's Keep this frame) are the same `Checkbox` component, held by `checkbox-usage.test.ts`, and are photographed by their own inventories.",
+  "rows": [
+    {
+      "id": "first-run-foot",
+      "label": "/ first run, scrolled to the foot: the Build the 99 step clears the tab bar's lock-note row",
+      "view": "src/components/home/first-run.tsx",
+      "widths": ["phone"],
+      "steps": [{ "goto": "/", "wait": "[data-step1-card]", "settle": 2500, "scroll": "bottom" }]
+    },
+    {
+      "id": "pick-open",
+      "label": "/decks/precons?pick=own, nothing selected: a commander thumb and the shared checkbox on each row, `Select the decks you own.`",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [{ "goto": "/decks/precons?pick=own", "wait": "input[type=checkbox]", "settle": 1500 }]
+    },
+    {
+      "id": "pick-three",
+      "label": "/decks/precons?pick=own, three boxes selected",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        { "goto": "/decks/precons?pick=own", "wait": "input[type=checkbox]", "settle": 1000 },
+        { "click": "section:first-of-type li:nth-of-type(1) label" },
+        { "click": "section:first-of-type li:nth-of-type(2) label" },
+        { "click": "section:first-of-type li:nth-of-type(3) label", "settle": 800 }
+      ]
+    },
+    {
+      "id": "import-unselected",
+      "label": "/decks/import: the `I own these cards` checkbox, unselected",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [{ "goto": "/decks/import", "wait": "input[type=checkbox]", "settle": 1200 }]
+    },
+    {
+      "id": "import-selected",
+      "label": "/decks/import: the `I own these cards` checkbox, selected",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [
+        { "goto": "/decks/import", "wait": "input[type=checkbox]", "settle": 1000 },
+        { "fill": "#import-paste", "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise" },
+        { "fill": "#import-deck-name", "text": "Kinnan Ramp" },
+        { "click": "label:has(input[type=checkbox])", "settle": 600 }
+      ]
+    }
+  ]
+}

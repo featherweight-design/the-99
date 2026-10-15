@@ -351,8 +351,8 @@ export const preconsCopy = {
    */
   pick: {
     title: "Precons I own",
-    sub: "Tick every box you own. Its cards and tokens go into your collection at the box’s own printings, foils as foils, and no deck is started.",
-    subPhone: "Tick every box you own. Its cards and tokens go into your collection, and no deck is started.",
+    sub: "Select every deck you own. Its cards and tokens go into your collection at the box’s own printings, foils as foils, and no deck is started.",
+    subPhone: "Select every deck you own. Its cards and tokens go into your collection, and no deck is started.",
     backHome: "‹ Home",
     backCollection: "‹ Collection",
     /** The row's figure: `100 cards` on desktop, `100` at 390. */
@@ -367,7 +367,7 @@ export const preconsCopy = {
     added: (date: string) => `✓ added ${date}`,
     /** S17: the plain note under such a box once ticked. */
     addedAgain: (date: string) => `You added this box on ${date}. Adding it again gives you a second copy of each card.`,
-    leadNone: "Tick the boxes you own.",
+    leadNone: "Select the decks you own.",
     lead: (b: number, c: number, t: number) =>
       `${plural(b, "box", "boxes")} · ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}`,
     addHeld: "Add boxes",
