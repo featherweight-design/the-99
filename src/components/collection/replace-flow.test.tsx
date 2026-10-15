@@ -396,7 +396,8 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     await reachReview();
     expect(screen.queryByRole("region", { name: /Leaving/i })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Show all 12" }));
-    const box = screen.getByText("Card 08").closest("[role=region]") as HTMLElement;
+    const box = screen.getByRole("region", { name: /Leaving your collection/ });
+    expect(within(box).getByText("Card 08")).toBeTruthy();
     expect(box.getAttribute("tabindex")).toBe("0");
     expect(box.className).toMatch(/max-h-\[/);
     expect(box.className).toMatch(/overflow-y-auto/);
