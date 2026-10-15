@@ -25,6 +25,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertDisposableAccount } from "./lib/probe-account.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { onPageRole } from "./lib/surface.mjs";
 
@@ -71,6 +72,7 @@ async function signIn(page) {
 
 async function cleanup(userId) {
   if (!userId) return;
+  await assertDisposableAccount(sql, { email: EMAIL, userId, what: "probe:locked-nav" });
   await sql`delete from collection_items where user_id = ${userId}`;
   await sql`delete from csv_uploads where user_id = ${userId}`;
 }

@@ -21,8 +21,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `DATABASE_URL` at it (`env.mjs` reads `.env` over the shell), run the probe, then delete the branch. Never
   cut one from staging or production, and never `restore_snapshot` or `reset_from_parent` anything to make one.
   `probe:onboarding`, `probe:locked-nav` and `probe:issues-sheet` also clear a collection, but only the dedicated
-  empty `onboard-probe` account they sign in as, so they may run on local-dev (unless `PROBE_EMAIL` names the
-  headless account).
+  empty `onboard-probe` account they sign in as, so they may run on local-dev. Each wipe goes through
+  `assertDisposableAccount` (`scripts/lib/probe-account.mjs`): it refuses any email but that account's and any
+  account that owns a deck, so a `PROBE_EMAIL` pointed at a fixture account cannot be wiped.
 - Never `pkill` or `killall` by pattern. Stop a dev server only by the exact PID you
   started, checked first with `ps -o pid=,comm= -p <pid>`.
 - **A probe that presses anything model-backed calls `assertModelStandIn` before it can
