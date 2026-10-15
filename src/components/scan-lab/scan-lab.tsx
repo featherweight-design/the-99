@@ -167,7 +167,9 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
               pctx?.putImageData(tensorToImage(crop, EMBED_W, EMBED_H), 0, 0);
             }
           } else {
+            // No card: nothing a tap records may describe an earlier one, the kept frame included.
             history.current = [];
+            lastCrop.current = null;
             setReading(null);
           }
         }

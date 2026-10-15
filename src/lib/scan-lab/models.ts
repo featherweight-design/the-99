@@ -7,7 +7,8 @@
  * - HanClinto/ccgdetector-fastweb-single 1.39 (MIT, 3.2MB): the four corners.
  * - dhvazquez/mtg_card_identification_embeddings, fp32 (MIT, 14.8MB; its `.onnx.data` sidecar is
  *   unused, every weight is inline): the 256-d embedding. fp32, not the 3.8MB int8 build, because
- *   onnxruntime-web's WASM runs int8 slower (spike, single thread: 168ms median against 313ms).
+ *   onnxruntime-web's WASM runs int8 slower (feasibility report, single thread: 150.7ms median
+ *   against fp32's 88.6ms).
  *   The index must be built by the same build (`export_index.py`, fp32 by default).
  */
 export const ORT_VERSION = "1.27.0";

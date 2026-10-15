@@ -113,7 +113,7 @@ export function rgbaToTensor(rgba: ArrayLike<number>, w: number, h: number): Flo
   return out;
 }
 
-/** Twice the signed area: positive for a quad wound clockwise in screen coordinates. */
+/** The quad's area in square pixels, unsigned: the same for either winding (shoelace formula). */
 export function quadArea(p: Pt[]): number {
   let a = 0;
   for (let i = 0; i < p.length; i++) {
