@@ -99,6 +99,14 @@ describe("Home's precon pick receipt (no-collection entry S5)", () => {
     expect(page.props.children[1].type).toBe(Dashboard);
   });
 
+  it("reads no receipt with precons off, the line's switch on", async () => {
+    stub.env = { ...LINE, PRECONS_ENABLED: "" };
+    stub.receipt.mockResolvedValue(RECEIPT);
+    const page = await visit({ precons: "e1" });
+    expect(page.type).toBe(Dashboard);
+    expect(stub.receipt).not.toHaveBeenCalled();
+  });
+
   it("is exactly the shipped dashboard with the switch off, a claim or not", async () => {
     stub.receipt.mockResolvedValue(RECEIPT);
     const page = await visit({ precons: "e1" });

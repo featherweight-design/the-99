@@ -258,9 +258,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   }
 
   // A precon pick's receipt (no-collection entry S5): read per request from the ledger, outside the cached payload,
-  // and only when the address claims one. A failed read draws no strip.
+  // and only when the address claims one, with the pick's switches on (the line's and precons'). A failed read draws
+  // no strip.
   let receipt: PickReceipt | null = null;
-  const claim = noCollectionEntry ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
+  const claim = noCollectionEntry && preconsEnabled(env) ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
   if (claim !== undefined) {
     try {
       receipt = await readPickReceipt(userId, claim);

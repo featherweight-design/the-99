@@ -94,6 +94,7 @@ describe("/collection, after a precon pick", () => {
   const LINE = () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
     vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
+    vi.stubEnv("PRECONS_ENABLED", "true");
   };
   const visit = async (query: Record<string, string>) => render(await CollectionPage({ searchParams: Promise.resolve(query) }));
   afterEach(() => { vi.unstubAllEnvs(); h.unique = 0; h.receiptReads = []; h.receiptFails = false; });
@@ -114,6 +115,15 @@ describe("/collection, after a precon pick", () => {
     h.unique = 40;
     await visit({});
     vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "");
+    await visit({ precons: "e1" });
+    expect(h.receiptReads).toEqual([]);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("reads nothing and draws nothing with precons off, the line's switch on", async () => {
+    LINE();
+    vi.stubEnv("PRECONS_ENABLED", "");
+    h.unique = 40;
     await visit({ precons: "e1" });
     expect(h.receiptReads).toEqual([]);
     expect(screen.queryByRole("status")).toBeNull();

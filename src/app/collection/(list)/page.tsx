@@ -99,9 +99,10 @@ export default async function CollectionPage({
   const query = searchParamsToQuery(params);
 
   // A precon pick opened from Collection lands here (no-collection entry S19) with the receipt under the tabs: Home's
-  // own strip and dismiss key, read per request from the ledger and only when the address claims one. Off, nothing.
+  // own strip and dismiss key, read per request from the ledger and only when the address claims one. With the line's
+  // switch or precons off, nothing: the pick itself is off then.
   let receipt: PickReceipt | null = null;
-  const claim = noCollectionEntryEnabled(env) ? params[PICK_RECEIPT_PARAM] : undefined;
+  const claim = noCollectionEntryEnabled(env) && preconsEnabled(env) ? params[PICK_RECEIPT_PARAM] : undefined;
   if (claim !== undefined) {
     try {
       receipt = await readPickReceipt(userId, claim);
