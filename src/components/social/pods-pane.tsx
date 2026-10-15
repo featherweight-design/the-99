@@ -41,6 +41,9 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
     setSharing({});
   }
   const [creating, setCreating] = useState(false);
+  // Which opening of the create field is on screen: a create that answers after the reader cancelled and opened
+  // it again leaves that new draft alone.
+  const createOpening = useRef(0);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   // The open Add dialog, with the opening it belongs to: a request that finishes closes only its own opening.
@@ -66,12 +69,15 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
   async function create() {
     const clean = name.trim();
     if (!clean || busy) return;
+    const opening = createOpening.current;
     setBusy(true);
     try {
       const r = await createPodAction(clean);
       if (r.ok) {
-        setCreating(false);
-        setName("");
+        if (createOpening.current === opening) {
+          setCreating(false);
+          setName("");
+        }
       } else if (off(r)) router.refresh();
       else fail();
     } catch {
@@ -146,7 +152,10 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
         <h2 id="pods-head" className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)]">{copy.head(pods.length)}</h2>
         <button
           type="button"
-          onClick={() => setCreating(true)}
+          onClick={() => {
+            if (!creating) createOpening.current += 1;
+            setCreating(true);
+          }}
           className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent)] md:min-h-[32px]"
         >
           {copy.newPod}

@@ -309,6 +309,20 @@ describe("round 1: races and edges", () => {
     expect(m.add).not.toHaveBeenCalled();
   });
 
+  it("leaves a reopened create field and its new draft alone when an earlier create answers", async () => {
+    let done: (v: unknown) => void = () => {};
+    m.create.mockReturnValueOnce(new Promise((res) => { done = res; }));
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    await press(screen.getByRole("button", { name: P.newPod }));
+    fireEvent.change(screen.getByLabelText(P.nameLabel), { target: { value: "Thursday" } });
+    await press(screen.getByRole("button", { name: P.create }));
+    fireEvent.keyDown(screen.getByLabelText(P.nameLabel), { key: "Escape" });
+    await press(screen.getByRole("button", { name: P.newPod }));
+    fireEvent.change(screen.getByLabelText(P.nameLabel), { target: { value: "Friday" } });
+    await act(async () => done({ ok: true, podId: "new" }));
+    expect((screen.getByLabelText(P.nameLabel) as HTMLInputElement).value).toBe("Friday");
+  });
+
   it("lets Escape cancel a composition without closing the name field", async () => {
     render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
     await press(screen.getByRole("button", { name: P.newPod }));
