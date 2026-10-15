@@ -956,8 +956,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   **It also walks the tab around the box** (Analysis tab handoff §2). Before a reading the tab
   is one empty state: a 150px ring of five 44px marks, 1 at twelve o'clock and running
   clockwise on a 50px radius, then the heading in the display face, then Analyze with the
-  provenance opener beside it at 1300 and under it at 390. With a reading, the climb and the box
-  share a row at 1300, 2fr to 1fr, and stack box-first at 390. The gutters are 16px and 30px.
+  provenance opener beside it at 1300 and under it at 390, except in a credit note's row, where it
+  takes its own line under the pair at 1300 too (frame 7a, #916). Since #1844 the note's frame is
+  drawn from the first paint while its read is out, so a freshly opened tab is in that layout. With
+  a reading the overview slot is drawn too (#912), and its grid places the three: at 1300 the
+  overview tops the left column (2fr) with the climb 26px under it, and the box spans both rows on
+  the right (1fr) from the overview's top; at 390 they stack overview, box, climb. With the gap
+  expected at 0, the box expected before the overview, or the note's frame unseen, each of those
+  checks fails. The gutters are 16px and 30px.
   The Recommended mix is NOT in the tab: since #1310 the strip has one mount, at Your deck on the
   spine above the tab row, Analysis on or off, so the probe asserts the panel holds no strip and
   the spine holds one above the tabs (with either read pointed at the wrong place, both fail at
@@ -997,8 +1003,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
 - `pnpm probe:analysis-tab` walks the Analysis tab at 1300x900 and 390x844 against a STATED
   expectation, `PROBE_ANALYSIS_EXPECT=on|off`, never against what it finds: the tab second in the
-  row, the row inside the viewport, the action calls the tab and its Analyze press make, and the
-  Recommended mix strip. Since #1310 the strip has ONE mount, at Your deck on the spine above the
+  row, the row inside the viewport, the action calls the tab and its Analyze press make, the
+  overview slot, and the Recommended mix strip. **Each action call is NAMED** from the dev server's
+  own manifest (`.next/dev/server/server-reference-manifest.json`, id to export), so PROBE_BASE must
+  be a `next dev` started in this worktree, with the Tuning switches off. What ships: opening the tab
+  calls `fetchStoredDeckProfile` (#874) and `fetchSynopsis` (#912); the Analyze press calls
+  `fetchDeckProfile` once and `fetchSynopsis` again, because the overview's read is keyed on the
+  reading's `analyzedAt` and freshness (#912; its `wouldSpend` reads false before the reading and true
+  after); leaving the tab and returning calls `fetchSynopsis` alone (a new visit reads afresh), never
+  the profile. Over a reading the overview slot is drawn in the panel (#912) and offers View full
+  overview or, with none written, the absent line and Write one, by the deck's stored overview. With
+  each window widened or narrowed by one call, or the slot read in the wrong place, every one of
+  those checks fails. Since #1310 the strip has ONE mount, at Your deck on the spine above the
   tab row, Analysis on or off: the probe asserts exactly one strip, above the tabs, before and after
   the tab is opened, and none inside `#panel-analysis` (pointed at the whole page instead, the panel
   check reads 1; expecting the strip below the tabs, the spine check fails). It clears the walked

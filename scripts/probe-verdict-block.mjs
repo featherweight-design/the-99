@@ -29,9 +29,10 @@
 // THE TAB AROUND THE BLOCK (Analysis tab handoff §2, PR B). Before a first reading the tab is one
 // empty state: a 150px ring of the five marks at 44px, 1 at twelve o'clock and on clockwise, the
 // heading in the display face, and Analyze with the provenance opener beside it at 1300 and under
-// it at 390. With a reading, the bracket box and the climb share a row at 1300 (2fr / 1fr, the
-// climb on the left) and stack box-first at 390; there is no Overview; the tab's own gutters are
-// 16 / 30. The Recommended mix is NOT in the tab: #1310 gave it one mount, at "Your deck", on the
+// it at 390. With a reading, the overview slot is drawn too (#912), and the grid places it: at 1300
+// the overview tops the left column (2fr) with the climb 26px under it, and the box spans both rows
+// on the right (1fr) from the overview's top; at 390 they stack overview, box, climb. The tab's own
+// gutters are 16 / 30. The Recommended mix is NOT in the tab: #1310 gave it one mount, at "Your deck", on the
 // spine above the tab row, Analysis on or off, so it is read there and asserted absent from the
 // panel. To reach the empty state the run CLEARS the
 // deck's stored reading before each width, and puts the row back as it was in a `finally`.
@@ -410,6 +411,8 @@ async function walkEmpty(page, label, width) {
       cta: { text: cta.textContent, h: Math.round(cb.height) },
       besides: Math.abs(cb.top + cb.height / 2 - (ob.top + ob.height / 2)) < 4 && ob.left > cb.right,
       below: ob.top >= cb.bottom - 1,
+      // The credit note, or its reserved frame while the note's read is out (#1844).
+      noteFrame: Boolean(empty.querySelector('[data-testid="press-note"], [data-testid="press-note-slot"]')),
       grid: !!root.querySelector('section[aria-label="Your bracket"]'),
     };
   }, PAGE);
@@ -426,12 +429,20 @@ async function walkEmpty(page, label, width) {
     `${e.marks.length} marks at ${e.marks.map((m) => m.w).join("/")}px, first ${e.marks[0]?.n}`);
   report(`${label}px · the heading is the display face at ${phone ? 21 : 26}px`,
     e.h2.size === `${phone ? 21 : 26}px` && e.h2.family === e.h2.display, `${e.h2.size}, ${e.h2.family.split(",")[0]}`);
-  report(`${label}px · Analyze is a 44px press with the opener ${phone ? "under" : "beside"} it`,
-    e.cta.text === "Analyze" && e.cta.h >= 44 && (phone ? e.below : e.besides),
+  // At 1300 the opener sits beside Analyze only in the no-note layout: with a credit note in the row it takes its
+  // own line under the pair (frame 7a, #916), and since #1844 the note's frame is drawn from the first paint while
+  // its read is out, so a fresh tab opens in the with-note layout.
+  report(`${label}px · Analyze is a 44px press with the opener ${phone || e.noteFrame ? "under" : "beside"} it${!phone && e.noteFrame ? " (a credit note's row, 7a)" : ""}`,
+    e.cta.text === "Analyze" && e.cta.h >= 44 && (phone || e.noteFrame ? e.below : e.besides),
     `"${e.cta.text}", ${e.cta.h}px, opener ${e.besides ? "beside" : e.below ? "under" : "elsewhere"}`);
 }
 
-/** With a reading: the grid, the gutters, no Overview, and the mix at Your deck rather than in the tab (#1310). */
+/**
+ * With a reading: the grid, the gutters, the overview, and the mix at Your deck rather than in the tab (#1310).
+ * Since #912 the overview slot is drawn over a reading, and the grid places it: at 1300 the overview sits over
+ * the climb in the left column (2fr) and the box spans both rows on the right (1fr), so the climb starts under
+ * the overview, 26px below it, and the box's top is the overview's; at 390 the order is overview, box, climb.
+ */
 async function walkLayout(page, label, width) {
   const phone = width < 768;
   const l = await page.evaluate((scope) => {
@@ -446,31 +457,39 @@ async function walkLayout(page, label, width) {
     const spineMix = tabTop === null ? null : [...(root?.querySelectorAll('section[aria-label="Recommended mix"]') ?? [])]
       .filter((m) => !panel?.contains(m) && m.getBoundingClientRect().bottom <= tabTop + 0.5).length;
     const pb = panel?.getBoundingClientRect();
+    const ov = panel?.querySelector('[data-testid="synopsis-overview"]')?.getBoundingClientRect() ?? null;
     const name = panel?.querySelector('[data-testid="verdict-name"]');
     return box && climb && findings && pb ? {
       box: { l: box.left, r: box.right, t: box.top, b: box.bottom, w: box.width },
       climb: { l: climb.left, r: climb.right, t: climb.top, w: climb.width },
+      ov: ov ? { l: ov.left, t: ov.top, b: ov.bottom } : null,
       gutter: Math.round(findings.left - pb.left),
       panelMix,
       spineMix,
-      overview: /\bOverview\b/.test(panel.textContent ?? ""),
       nameSize: name ? getComputedStyle(name).fontSize : null,
       analyzed: panel.querySelector('[data-testid="verdict-analyzed"]')?.textContent ?? null,
     } : null;
   }, PAGE);
   if (!report(`${label}px · the reading draws its box, climb and findings`, l !== null, l ? "all three" : "one is missing")) return;
+  report(`${label}px · the overview slot is drawn on a reading (#912)`, l.ov !== null, l.ov ? "drawn" : "absent");
   if (phone) {
-    report(`${label}px · the box comes first, then the climb`, l.box.b <= l.climb.t + 1, `box ends ${Math.round(l.box.b)}, climb from ${Math.round(l.climb.t)}`);
+    report(`${label}px · the overview first, then the box, then the climb`,
+      l.ov !== null && l.ov.b <= l.box.t + 1 && l.box.b <= l.climb.t + 1,
+      `overview ends ${l.ov ? Math.round(l.ov.b) : "-"}, box ${Math.round(l.box.t)} to ${Math.round(l.box.b)}, climb from ${Math.round(l.climb.t)}`);
   } else {
     const ratio = l.climb.w / l.box.w;
-    report(`${label}px · the climb and the box share a row, 2fr / 1fr, climb on the left`,
-      l.climb.r <= l.box.l && Math.abs(l.climb.t - l.box.t) <= 2 && ratio > 1.8 && ratio < 2.2,
+    report(`${label}px · the climb and the box share the columns, 2fr / 1fr, climb on the left`,
+      l.climb.r <= l.box.l && ratio > 1.8 && ratio < 2.2,
       `climb ${Math.round(l.climb.w)}px, box ${Math.round(l.box.w)}px, ratio ${ratio.toFixed(2)}`);
+    // #912's grid: the overview over the climb on the left, the box spanning both rows from the overview's top.
+    report(`${label}px · the overview tops the left column, level with the box, and the climb starts 26px under it`,
+      l.ov !== null && Math.abs(l.ov.t - l.box.t) <= 2 && Math.abs(l.ov.l - l.climb.l) <= 1
+        && Math.abs(l.climb.t - l.ov.b - 26) <= 1,
+      l.ov ? `overview ${Math.round(l.ov.t)} to ${Math.round(l.ov.b)}, box from ${Math.round(l.box.t)}, climb from ${Math.round(l.climb.t)}` : "no overview");
   }
   report(`${label}px · the tab's gutter is ${phone ? 16 : 30}px`, l.gutter === (phone ? 16 : 30), `${l.gutter}px`);
   report(`${label}px · the Analysis tab draws no mix strip`, l.panelMix === 0, `${l.panelMix} in the panel`);
   report(`${label}px · the mix strip is at Your deck, above the tab row`, l.spineMix === 1, `${l.spineMix} above the tabs`);
-  report(`${label}px · no Overview section on a reading`, !l.overview, l.overview ? "drawn" : "absent");
   report(`${label}px · the name is ${phone ? 19 : 21}px, dated under it`,
     l.nameSize === `${phone ? 19 : 21}px` && /^analyzed /.test(l.analyzed ?? ""), `${l.nameSize}, "${l.analyzed}"`);
 }

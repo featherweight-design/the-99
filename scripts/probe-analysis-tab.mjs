@@ -27,13 +27,17 @@
 //   ANALYSIS_TAB_ENABLED=true  pnpm dev          → PROBE_ANALYSIS_EXPECT=on   (the drawn layout)
 //   pnpm dev                                      → PROBE_ANALYSIS_EXPECT=off  (today's layout)
 //
+// The action counts are for a server with the Tuning switches off, as above: with Suggested changes on,
+// its own reads land in the same windows and the counts name them as extra calls.
+//
 // IT CLEARS THE WALKED DECK'S STORED READING before each width, and puts the row back as captured
 // in a `finally`. Since #874 a deck with a stored reading draws it on open, with no invitation,
-// and opening the tab calls one action — the stored peek — which answers `none` here. So the
-// counts below allow exactly that peek before the press. It writes nothing else. Signs in through Clerk's dev instance — see the local-auth note in memory.
+// and opening the tab asks for the stored peek, which answers `none` here; since #912 it also reads
+// the overview. The counts below NAME each call (see `actionName`) and hold each window to what ships. It writes nothing else. Signs in through Clerk's dev instance — see the local-auth note in memory.
 // Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-analysis-tab.mjs
+import { readFileSync } from "node:fs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
@@ -189,6 +193,28 @@ const readStrip = (page) =>
     };
   }, PAGE);
 
+// THE ACTIONS' NAMES. Next sends a server action as a POST whose `next-action` header is a hashed id, and
+// the dev server's own manifest maps each id to its file and export. So the counts below name the action
+// they count rather than counting opaque ids. Read from THIS worktree's `next dev` build, so PROBE_BASE must
+// be a `next dev` server started here; an id the manifest does not hold is named `unknown:<id>` and fails
+// every count it lands in.
+const ACTION_MANIFEST = new URL("../.next/dev/server/server-reference-manifest.json", import.meta.url);
+function actionName(id) {
+  try {
+    const entry = JSON.parse(readFileSync(ACTION_MANIFEST, "utf8")).node?.[id];
+    if (entry?.exportedName) return entry.exportedName;
+  } catch {
+    // No manifest: the server is not this worktree's `next dev`.
+  }
+  return `unknown:${id.slice(0, 10)}`;
+}
+/** The calls in `ids`, as a sorted `name×n` list, for comparing against what ships. */
+const tally = (ids) => {
+  const n = {};
+  for (const id of ids) { const name = actionName(id); n[name] = (n[name] ?? 0) + 1; }
+  return Object.entries(n).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}×${v}`).join(", ") || "none";
+};
+
 async function run() {
   // Global setup, once, before any page gets a testing token — the bot-protection bypass
   // needs the frontend API URL and throws without it.
@@ -306,9 +332,8 @@ async function run() {
       // on "fetchDeckProfile" would never fire and the count would read 0 forever: a silent
       // pass on "fetched nothing" and a failure on a working build.
       //
-      // Collecting the distinct ids is what makes the count mean WHICH action rather than just
-      // how many. Only one action is reachable here while the reader presses tabs and the
-      // invitation, so exactly one distinct id is the assertion.
+      // Each id is then NAMED from the dev server's manifest (`actionName`), so a window's count says
+      // which actions ran, not only how many.
       const actions = [];
       p.on("request", (r) => {
         if (r.method() !== "POST") return;
@@ -323,10 +348,13 @@ async function run() {
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
       await p.waitForTimeout(600);
 
-      // The one call opening the tab may make is the stored peek, which computes nothing.
+      // Opening the tab makes exactly two reads, neither of which computes a profile: the stored peek
+      // (`fetchStoredDeckProfile`, #874: a stored reading draws on open) and the overview's read
+      // (`fetchSynopsis`, #912: the overview's state and what a write would cost, read while the tab is open).
       const peeked = posts();
-      report(`${label}px · opening the tab only asks for a stored reading`, peeked <= 1,
-        `${peeked} action call(s) after opening the tab`);
+      const opened = tally(actions.slice(0, peeked));
+      report(`${label}px · opening the tab asks for the stored reading and the overview, nothing else`,
+        opened === "fetchStoredDeckProfile×1, fetchSynopsis×1", opened);
 
       // ROUND 4 RULING 7: the verdict fires on analyse or commit and nowhere else. The tab draws
       // the invitation instead, and pressing THAT is what costs 630ms.
@@ -345,12 +373,17 @@ async function run() {
         .first()
         .waitFor({ state: "visible", timeout: 15_000 })
         .catch(() => {});
+      // The overview's read follows the reading it is keyed on (below), so it is given time to be asked.
+      await p.waitForTimeout(1_500);
       const afterPress = posts();
-      report(`${label}px · pressing it fetches the profile once`, afterPress - peeked === 1,
-        `${afterPress - peeked} action call(s) after the press`);
-      report(`${label}px · and it was ONE action, not two different ones`,
-        new Set(actions.slice(peeked)).size === 1,
-        `${new Set(actions.slice(peeked)).size} distinct action id(s) after the press`);
+      // The press computes the profile ONCE (`fetchDeckProfile`), and the overview is read again
+      // (`fetchSynopsis`): its key carries the reading's `analyzedAt` and freshness (#912, `useDeckSynopsis`
+      // in builder-shell), so a reading settling re-asks whether a write is due and what it would cost.
+      // Designed, not a duplicate: measured 2026-10-15, its `wouldSpend` reads false before the reading and
+      // true after it.
+      const pressed = tally(actions.slice(peeked, afterPress));
+      report(`${label}px · pressing it computes the profile once and re-reads the overview`,
+        pressed === "fetchDeckProfile×1, fetchSynopsis×1", pressed);
 
       // AND THE ACTION WAS THE PROFILE FETCH, proved by its OUTCOME rather than by its id.
       //
@@ -374,25 +407,34 @@ async function run() {
       await onPage(p, '[role="tab"]').nth(otherTab).click();
       await p.waitForTimeout(300);
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
-      await p.waitForTimeout(600);
-      report(`${label}px · leaving the tab and returning does not re-fetch`,
-        posts() === afterPress,
-        `${posts()} call(s) total, ${posts() - afterPress} on the return`);
+      await p.waitForTimeout(1_500);
+      // The profile is NOT fetched again: its hook lives in the shell. The overview's read runs while the tab
+      // is open and so asks again on a new visit (#912: `useDeckSynopsis` is active only on the Analysis view,
+      // and a new visit opens afresh), which reads its state and computes nothing.
+      const returned = tally(actions.slice(afterPress));
+      report(`${label}px · leaving the tab and returning re-reads only the overview, never the profile`,
+        returned === "fetchSynopsis×1", returned);
 
-      // NO SYNOPSIS SLOT at all until sub-project 6 (readiness finding 6): no placeholder line and
-      // no control that cannot write.
+      // THE OVERVIEW SLOT ships (#912, the deck overview on the Analysis tab; sub-project 6). Over a reading
+      // it is drawn in the panel, and what it offers follows the deck's stored overview: a written one opens
+      // through View full overview; none written draws the absent line and Write one.
+      const [{ written }] = await sql`
+        select exists(select 1 from deck_synopses where deck_id = ${deckId} and status = 'done') as written`;
       const synopsis = await p.evaluate((scope) => {
-        const panel = document.querySelector(scope)?.querySelector("#panel-analysis");
-        const text = panel?.textContent ?? "";
+        const slot = document.querySelector(scope)?.querySelector("#panel-analysis [data-testid='synopsis-overview']");
+        const buttons = [...(slot?.querySelectorAll("button") ?? [])].map((b) => b.textContent.trim());
         return {
-          placeholder: /No summary has been written|Overview/.test(text),
-          write: text.includes("Write one"),
+          slot: Boolean(slot),
+          absent: (slot?.textContent ?? "").includes("No overview has been written for this deck yet."),
+          write: buttons.includes("Write one"),
+          view: buttons.some((t) => t.includes("View full overview")),
         };
       }, PAGE);
-      report(`${label}px · no synopsis slot and no placeholder for one`, !synopsis.placeholder,
-        synopsis.placeholder ? "a placeholder is drawn" : "none drawn");
-      report(`${label}px · and no control that cannot work`, !synopsis.write,
-        synopsis.write ? "a Write one control is drawn" : "no write control");
+      report(`${label}px · the overview slot is drawn in the panel`, synopsis.slot,
+        synopsis.slot ? "drawn" : "no synopsis-overview in #panel-analysis");
+      report(`${label}px · and offers ${written ? "View full overview" : "Write one, under the absent line"}, as the deck's overview stands`,
+        written ? synopsis.view && !synopsis.write : synopsis.absent && synopsis.write && !synopsis.view,
+        JSON.stringify({ written, ...synopsis }));
 
       const panel = await p.evaluate((scope) =>
         Boolean(document.querySelector(scope)?.querySelector("#panel-analysis")), PAGE);
