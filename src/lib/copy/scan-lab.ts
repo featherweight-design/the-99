@@ -20,4 +20,13 @@ export const scanLabCopy = {
   timings: (det: number, emb: number, match: number) => `corners ${det} ms · embed ${emb} ms · match ${match} ms`,
   runnersUp: "Next guesses",
   taps: (n: number, right: number) => `${n} ${n === 1 ? "tap" : "taps"} this session, ${right} right`,
+  whatCard: "What card was it?",
+  whatCardHint: "Optional. Pick it and the miss is saved with the right card.",
+  whatCardField: "Card name",
+  skip: "Skip",
+  searching: "Searching…",
+  noMatch: "No card by that name.",
+  searchFailed: "The search didn’t load. Type again to retry.",
+  labelled: (name: string) => `Saved as ${name}`,
+  labelFailed: "That didn’t save. Pick it again or skip.",
 } as const;

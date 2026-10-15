@@ -1,7 +1,7 @@
 // The card-scan lab's ✓/✗ tap (`/lab/scan`, behind the plumbing switch `SCAN_LAB_ENABLED`). Signed
 // in only: the proxy protects it like every other route, and the reader comes from the Clerk session.
 // It stores what `parseResult` has checked field by field: the guess, right or wrong, the timings,
-// and a frame only when the player pressed "keep this frame".
+// and a frame only when the player pressed "keep this frame". It answers with the new row's id.
 import { auth } from "@clerk/nextjs/server";
 import type { NextRequest } from "next/server";
 import { db } from "../../../../db";
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
   }
   const result = parseResult(raw);
   if (!result) return new Response(null, { status: 400 });
-  await db.insert(scanLabResults).values({ userId, ...result });
-  return new Response(null, { status: 204 });
+  // The row's id goes back so a ✗ tap can name the card it really was (`labelScanLabResult`).
+  const [row] = await db.insert(scanLabResults).values({ userId, ...result }).returning({ id: scanLabResults.id });
+  return Response.json({ id: row.id });
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "scan_lab_results" ADD COLUMN "true_oracle_id" uuid;
