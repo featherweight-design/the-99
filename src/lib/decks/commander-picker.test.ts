@@ -36,10 +36,11 @@ describe("deckTiles", () => {
   });
 
   it("stops at eight tiles, even mid-pair", () => {
-    const rows = Array.from({ length: 5 }, (_, i) => deck(`l${i}`, `p${i}`));
+    // One solo deck first, so the eighth tile is the LEAD of the fourth pair and its partner is cut.
+    const rows = [deck("solo"), ...Array.from({ length: 5 }, (_, i) => deck(`l${i}`, `p${i}`))];
     const tiles = deckTiles(rows);
     expect(tiles).toHaveLength(DECK_COMMANDER_TILES);
-    expect(tiles.at(-1)?.oracleId).toBe("p3");
+    expect(tiles.at(-1)?.oracleId).toBe("l3");
   });
 
   it("carries the name and the art crop", () => {

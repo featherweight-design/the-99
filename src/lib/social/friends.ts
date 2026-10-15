@@ -18,13 +18,13 @@ import {
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+export type OwnProfile = { publicId: string; displayName: string; commander: ProfileCommander | null };
+
 /**
  * The viewer's profile, created on first use with the name the caller offers (the Clerk first name,
  * which the player can edit). A name that does not pass `cleanDisplayName` falls back to "Player", so a
  * first visit never fails on what Clerk holds.
  */
-export type OwnProfile = { publicId: string; displayName: string; commander: ProfileCommander | null };
-
 export async function ensureProfile(viewerId: string, offeredName: unknown): Promise<OwnProfile> {
   const displayName = cleanDisplayName(offeredName) ?? "Player";
   await db.insert(socialProfiles).values({ userId: viewerId, displayName }).onConflictDoNothing();
