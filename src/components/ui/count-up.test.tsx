@@ -117,4 +117,14 @@ describe("CountUp around its words", () => {
     expect(whole(container)?.endsWith(" of 5,000 · $94.80")).toBe(true);
     expect(container.querySelector(".invisible")?.textContent).toBe("1,284");
   });
+
+  it("keeps the box as wide as the start while a count falls across a digit boundary", () => {
+    const { container, rerender } = render(<CountUp value={1000} after=" cards" />);
+    act(() => void vi.advanceTimersByTime(2000));
+    rerender(<CountUp value={900} after=" cards" />);
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + COUNT_UP_MS / 2));
+    expect(container.querySelector(".invisible")?.textContent).toBe("1,000");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_MS));
+    expect(visible(container)).toBe("900");
+  });
 });

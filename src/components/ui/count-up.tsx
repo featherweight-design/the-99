@@ -45,6 +45,9 @@ const reduced = () => typeof window !== "undefined" && typeof window.matchMedia 
 
 export function CountUp({ value, before = "", after = "", grouped = true }: { value: number; before?: string; after?: string; grouped?: boolean }) {
   const [shown, setShown] = useState(value);
+  // The widest figure of the run in hand (where it started, or where it ends): the box is sized from it, not from the
+  // figure as it counts, so a falling count (1,000 to 900) does not narrow the box as it crosses a digit boundary.
+  const [widest, setWidest] = useState(value);
   // What the digits showed last, so a change counts from it (and a first draw from 0).
   const last = useRef<number | null>(null);
   const motion = useRef<{ timer: ReturnType<typeof setTimeout> | null; frame: number | null }>({ timer: null, frame: null });
@@ -61,10 +64,12 @@ export function CountUp({ value, before = "", after = "", grouped = true }: { va
     if (value < COUNT_UP_MIN || reduced() || from === value) {
       last.current = value;
       setShown(value);
+      setWidest(value);
       return stop;
     }
     // Drop to the start before paint, then wait the beat and run.
     setShown(from);
+    setWidest(Math.max(from, value));
     motion.current.timer = setTimeout(() => {
       const t0 = performance.now();
       const tick = (now: number) => {
@@ -103,7 +108,7 @@ export function CountUp({ value, before = "", after = "", grouped = true }: { va
         {/* One grid cell holds both the final figure (unseen) and the moving one, so the box is the wider of the two in
             the text's own font and letter-spacing, and a count that falls (100 to 99) starts no narrower than it ends. */}
         <span className="inline-grid text-end">
-          <span className="invisible col-start-1 row-start-1">{format(value, grouped)}</span>
+          <span className="invisible col-start-1 row-start-1">{format(Math.max(widest, value), grouped)}</span>
           <span className="col-start-1 row-start-1" data-count-up>{format(shown, grouped)}</span>
         </span>
         {after}
