@@ -135,7 +135,9 @@ describe("the search", () => {
     const list = await search("sol");
     expect(m.search).toHaveBeenCalledWith("sol");
     expect(within(list).getByText(wishlistCopy.page.search.have(1))).toBeInTheDocument();
-    await act(async () => fireEvent.click(within(list).getByRole("button", { name: wishlistCopy.page.search.add })));
+    const press = within(list).getByRole("button", { name: wishlistCopy.page.search.add });
+    press.focus();
+    await act(async () => fireEvent.click(press));
     expect(m.add).toHaveBeenCalledWith(SOL);
     const stepper = within(list).getByTestId("want-stepper");
     expect(within(stepper).getByLabelText(wishlistCopy.details.want)).toHaveTextContent("2");
@@ -159,6 +161,23 @@ describe("the search", () => {
     await act(async () => fireEvent.click(fewer));
     expect(within(list).getByRole("button", { name: wishlistCopy.page.search.add })).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: /search/i })).toHaveFocus();
+  });
+
+  it("leaves focus in the field when the reader typed on before a slow Add landed", async () => {
+    m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: null }] });
+    let land: (v: unknown) => void = () => {};
+    m.add.mockImplementation(() => new Promise((resolve) => (land = resolve)));
+    view();
+    const list = await search("sol");
+    const press = within(list).getByRole("button", { name: wishlistCopy.page.search.add });
+    press.focus();
+    fireEvent.click(press);
+    const field = screen.getByRole("searchbox", { name: /search/i });
+    field.focus();
+    fireEvent.change(field, { target: { value: "sol r" } });
+    await act(async () => land({ ok: true, status: "wanted", want: 2, have: 1 }));
+    await screen.findByTestId("want-stepper");
+    expect(field).toHaveFocus();
   });
 
   it("does not let a stepper from an earlier Add take focus when the search opens again", async () => {

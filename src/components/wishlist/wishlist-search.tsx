@@ -108,7 +108,9 @@ export function WishlistSearch({
     pending.get(r.oracleId)?.want ?? (confirmed.has(r.oracleId) ? confirmed.get(r.oracleId)! : r.want);
   const confirm = (oracleId: string, want: number | null) => setConfirmed((prev) => new Map(prev).set(oracleId, want));
 
-  async function add(r: WishlistSearchResult) {
+  // The press that started an Add hands focus to the stepper that replaces it, and only while it still holds focus when
+  // the write lands: a reader who typed on, closed the panel or moved anywhere else keeps their focus.
+  async function add(r: WishlistSearchResult, press: HTMLButtonElement) {
     if (adding === r.oracleId || wantOf(r) !== null) return;
     setAdding(r.oracleId);
     try {
@@ -116,7 +118,7 @@ export function WishlistSearch({
       if (!out.ok) throw new Error(out.reason);
       // `held`: the collection already reaches the want, so no line stands and the press stays as it was.
       if (out.status === "wanted") {
-        setFresh((prev) => new Set(prev).add(r.oracleId));
+        if (document.activeElement === press) setFresh((prev) => new Set(prev).add(r.oracleId));
         confirm(r.oracleId, out.want);
         onWant({ card: r, want: out.want, have: out.have });
       }
@@ -229,7 +231,7 @@ export function WishlistSearch({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => void add(r)}
+                        onClick={(e) => void add(r, e.currentTarget)}
                         aria-label={copy.page.search.add}
                         aria-describedby={`${listId}-${i}`}
                         aria-busy={adding === r.oracleId || undefined}
