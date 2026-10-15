@@ -101,7 +101,7 @@ async function main() {
     let current = "";
     const press = (fingerprint: string, d: ReturnType<typeof deps>) => {
       current = randomUUID();
-      return runTheRead(USER, { readId: current, words: "scary horrors", filters, env: process.env }, d, inputs(fingerprint));
+      return runTheRead(USER, { readId: current, words: "scary horrors", filters, env: process.env, ask: "w=scary+horrors&v=results" }, d, inputs(fingerprint));
     };
     const pick = async (): Promise<ModelOutcome<JudgeReply>> => ({ ok: true, value: { picks: [{ key: 2, reason: "Its horrors drain every opponent." }] }, usage: judgeUsage });
 
@@ -116,6 +116,7 @@ async function main() {
     check("the read is ok, its phase cleared", [row.status, row.phase], ["ok", null]);
     check("its picks are stored, by oracle id, with the reason's parts", stored.map((p) => [p.oracleId, p.reason]), [[list.idOf.get(2), [{ text: "Its horrors drain every opponent." }]]]);
     check("its unit is spent", row.unit, "spent");
+    check("the ask it was made from is stored on the row", ((await fixture.execute(sql`select ask from intake_reads where id = ${current}`)).rows[0] as { ask: string | null }).ask, "w=scary+horrors&v=results");
     const both = joinBilled([{ model: READ_SHORTLIST_MODEL, usage: shortUsage }, { model: READ_JUDGE_MODEL, usage: judgeUsage }]);
     // `cost_micro_usd` is a bigint, which the driver returns as a string.
     check("both calls' bills are on the one row, each priced on its own model", [row.model, Number(row.cost)], [both.model, both.costMicroUsd]);
@@ -215,6 +216,41 @@ async function main() {
     const strandedPress = await begin(STRANDED, strandedLoader);
     check("the abandoned read is reaped and the press is admitted, reading the pool once", [strandedPress.kind, strandedLoader.calls], ["started", 1]);
     check("the abandoned read failed as interrupted, its credit refunded", (await fixture.execute(sql`select r.status, r.error_class, m.status as unit from intake_reads r join model_calls m on m.id = r.model_call_id where r.words_hash = 'stranded' and r.user_id = ${STRANDED}`)).rows[0], { status: "failed", error_class: "interrupted", unit: "refunded" });
+
+    console.log("\n8. History lists the player's own runs from the stored ask, and no one else's");
+    const { loadChooseHistory, hasListableRun } = await import("../src/lib/intake/history-read");
+    const HIST = `${USER}-history`;
+    const OTHER = `${USER}-history-other`;
+    const unit = async (user: string, status: string) => ((await fixture.execute(sql`insert into model_calls (user_id, feature, model, origin, status) values (${user}, 'intake', 'stub', 'player', ${status}) returning id`)).rows[0] as { id: string }).id;
+    const result = JSON.stringify({ picks: [1, 2, 3, 4].map((n) => ({ oracleId: randomUUID(), reason: [{ text: `Reason ${n}` }] })), pool: 164, weighed: 9 });
+    const at = (minutesAgo: number) => sql`now() - ${`${minutesAgo} minutes`}::interval`;
+    const insertRun = async (user: string, o: { status: string; error?: string; ask: string | null; res?: string | null; ago: number }) => {
+      const id = randomUUID();
+      await fixture.execute(sql`insert into intake_reads (id, user_id, words_hash, model, model_call_id, status, error_class, ask, result, created_at)
+        values (${id}, ${user}, ${`h-${id}`}, 'stub', ${await unit(user, o.status === "ok" ? "spent" : o.status === "pending" ? "reserved" : "refunded")}, ${o.status}, ${o.error ?? null}, ${o.ask}, ${o.res ?? null}::jsonb, ${at(o.ago)})`);
+      return id;
+    };
+    const ok1 = await insertRun(HIST, { status: "ok", ask: "w=scary+horrors&v=results", res: result, ago: 60 });
+    const none = await insertRun(HIST, { status: "failed", error: "nothing_valid", ask: "w=a+deck+of+nothing&v=results", res: JSON.stringify({ picks: [], pool: 3445, weighed: 0 }), ago: 50 });
+    await insertRun(HIST, { status: "ok", ask: null, res: result, ago: 40 });
+    await insertRun(HIST, { status: "failed", error: "timeout", ask: "w=timed+out&v=results", ago: 30 });
+    const ok2 = await insertRun(HIST, { status: "ok", ask: "w=third&v=results", res: result, ago: 20 });
+    await insertRun(OTHER, { status: "ok", ask: "w=someone+else&v=results", res: result, ago: 10 });
+    const all = await loadChooseHistory(HIST);
+    check("it lists the answered runs and the one that found nothing, newest first", all.rows.map((r) => [r.id, r.state]), [[ok2, "ok"], [none, "nothing"], [ok1, "ok"]]);
+    check("a run with no stored ask, a failed read and another player's run are not listed", all.rows.map((r) => r.words), ["third", "a deck of nothing", "scary horrors"]);
+    check("a row carries its pick count, its first three picks and its stored pool", [all.rows[0].picks, all.rows[0].thumbs.length, all.rows[0].pool], [4, 3, 164]);
+    check("a run that found nothing keeps its stored pool and shows no picks", [all.rows[1].picks, all.rows[1].pool], [0, 3445]);
+    check("its link is the ask, the run's id and the past-run mark", all.rows[2].href, `/decks/new/choose?w=scary+horrors&v=results&r=${ok1}&h=1`);
+    const p1 = await loadChooseHistory(HIST, { limit: 2 });
+    const p2 = await loadChooseHistory(HIST, { limit: 2, cursor: p1.nextCursor });
+    check("the keyset pages with no row twice and none dropped", [p1.rows.length, p1.nextCursor !== null, p2.rows.length, p2.nextCursor], [2, true, 1, null]);
+    check("the door's question is yes for a player with a run and no for one with none", [await hasListableRun(HIST), await hasListableRun(`${USER}-nobody`)], [true, false]);
+    const stale = await insertRun(HIST, { status: "pending", ask: "w=abandoned&v=results", ago: 7 });
+    const afterReap = await loadChooseHistory(HIST);
+    check("a run abandoned past the reaper's cutoff is reaped, its credit returned, and never listed as reading", [afterReap.rows.some((r) => r.id === stale), (await readRow(stale)).unit], [false, "refunded"]);
+    const live = await insertRun(HIST, { status: "pending", ask: "w=in+flight&v=results", ago: 1 });
+    check("a run in flight is listed on top as reading", [(await loadChooseHistory(HIST)).rows[0]].map((r) => [r.id, r.state, r.picks]), [[live, "reading", 0]]);
   } finally {
     await fixture.execute(sql`delete from intake_reads where user_id like ${`${USER}%`}`);
     await fixture.execute(sql`delete from model_calls where user_id like ${`${USER}%`}`);

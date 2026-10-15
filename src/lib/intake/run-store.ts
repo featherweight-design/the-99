@@ -239,8 +239,8 @@ export async function startRead(
   hash: string,
   /** The model this read is made with: the real one, or the stub every non-live process uses. */
   model: string,
-  /** `readId` is the id the panel chose for this press, so the results page can name this read. */
-  opts: { readId?: string; now?: Date } = {},
+  /** `readId` is the id the panel chose for this press, so the results page can name this read. `ask` is stored with the row (`askOf`). */
+  opts: { readId?: string; now?: Date; ask?: string } = {},
 ): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; readId: string; useful: boolean; result: TheReadResult | null } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" }> {
   const now = opts.now ?? new Date();
   // The reap commits on its own, first: inside the reservation's transaction a refusal would roll
@@ -256,7 +256,7 @@ export async function startRead(
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(intakeReads).values({
         ...(opts.readId ? { id: opts.readId } : {}),
-        userId, wordsHash: hash, model, modelCallId: unit.id, status: "pending", createdAt: now,
+        userId, wordsHash: hash, model, modelCallId: unit.id, status: "pending", createdAt: now, ask: opts.ask ?? null,
       }).returning({ id: intakeReads.id });
       return { readId: row.id, callId: unit.id };
     });

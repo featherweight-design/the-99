@@ -2622,6 +2622,14 @@ export const intakeReads = pgTable("intake_reads", {
   /** The read's settled answer (F9e): the picks and their reasons. Null on a row from the retired
    *  one-call read, whose answer is `chips`. */
   result: jsonb("result"),
+  /**
+   * The ask this read was made from (History): the results address's query, without its `?` and
+   * without the read's id, built on the server from the press's parsed, tag-resolved and capped
+   * params (`askOf`). It lets a past run be named and reopened, which the one-way `words_hash`
+   * cannot. Player-typed words live in it, so it is read back only to draw: it reaches no prompt.
+   * Null on every row from before it, and on a retired-engine row; such a row is never listed.
+   */
+  ask: text("ask"),
 }, (t) => [
   check("intake_reads_status_check", sql`${t.status} in ('pending', 'ok', 'failed', 'cancelled')`),
   check("intake_reads_phase_check", sql`${t.phase} is null or ${t.phase} in ('shortlist', 'judge')`),

@@ -302,7 +302,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   exactly the limit. A press that fails in the pool read does not keep the admission (the next press
   is admitted), and a credit held by a read the process died under (pending, seven minutes old: past
   the reaper's cutoff, inside the reservation's ten) is reaped by `startRead` before it reserves, not
-  held against the press. Needs migration 0090 on the target; refuses staging and production by
+  held against the press. **History (case 8, migration 0124):** a read stores the ask it was made
+  from (`intake_reads.ask`); `loadChooseHistory` lists the player's own answered and nothing-found
+  runs newest first with their words, pick count, first three picks and stored pool, and the run in
+  flight on top as `reading`; a row with no ask, a failed read and another player's run are never
+  listed; the keyset pages with no row twice and none dropped; a read abandoned past the reaper's
+  cutoff is reaped (its credit returned) and not listed; `hasListableRun` answers the New deck door.
+  Needs migration 0124 on the target; refuses staging and production by
   `neon.branch_id`. Its failure paths were run: a settle that spent on an empty result fails it; with
   the admission removed the burst reads the pool 8 times; and with the old allowance gate restored
   (main before 2026-10-14) the spent player's repeat is refused `allowance` and fails case 5.
