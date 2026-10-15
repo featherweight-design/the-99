@@ -40,6 +40,8 @@ export const tokensCopy = {
     noMaker: "from no card in this deck",
     /** A press that did not land (the switch went off, or the deck stopped making the token). */
     refused: "We couldn’t save that. The token is unchanged.",
+    /** The refusal toast's detail line: which token (placeholder for /copy-review). */
+    refusedDetail: (name: string) => `${name} token`,
   },
 
   makers: {
@@ -68,6 +70,8 @@ export const tokensCopy = {
       names.length === 1
         ? `Makes ${/^[aeiou]/i.test(names[0]) ? "an" : "a"} ${names[0]} token`
         : `Makes ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]} tokens`,
+    /** The `In this deck` box a token's details draw when opened from a deck. */
+    boxHeading: "In this deck",
     inShopping: "In Shopping",
     owned: "in your collection",
     link: "Tokens ›",

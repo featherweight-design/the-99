@@ -49,6 +49,7 @@ import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
 import { TokenCardLine } from "../decks/token-card-line";
+import { TokenDeckBox } from "../decks/token-deck-box";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { Chevron, CHEVRON_CLASS } from "../ui/chevron";
@@ -2616,6 +2617,9 @@ export function CardModal({
                   footer={<TokenCardLine oracleId={card.oracleId} onShowTokens={onShowTokens} />}
                 />
               )}
+
+              {/* A token's own deck box: its hand mark, the cards that make it and its printing line. */}
+              {deckId && isToken && <TokenDeckBox oracleId={card.oracleId} onSelectCard={onSelectCard} />}
 
               {/* MOBILE meta grid — §Mobile: Meta 2×2 Grid. At 2+ printings the Set cell is
                   promoted out of the grid into a full-width row below Rarity and Identity, so

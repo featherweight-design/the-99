@@ -198,7 +198,8 @@ async function leg(browser, size, deckA, deckB, makerName) {
     else report(`${tag}: the deck's 178px floor from md`, geo.w >= 178, `${geo.w}px`);
     await shot(page, size.width, "card-open");
     const controls = await page.locator("main [data-token-tile]").filter({ hasText: PROBE_TOKEN }).first().getByRole("button").count();
-    report(`${tag}: a tile keeps its presses and makers fold`, controls >= 3, `${controls} buttons`);
+    // One foot line in the frame (small-polish §5): the art and the Shopping press. The hand mark and the makers are in the details.
+    report(`${tag}: a tile is its art and one foot press, with no makers fold`, controls === 2, `${controls} buttons`);
 
     // `Tokens ›` on a folded group.
     await page.locator(HEADING).first().click();
