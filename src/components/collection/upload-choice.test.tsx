@@ -97,7 +97,7 @@ describe("UploadChoice with Sync", () => {
     expect(card.getAttribute("aria-disabled")).toBe("true");
     const reason = document.getElementById(card.getAttribute("aria-describedby") ?? "");
     expect(reason?.textContent).toBe(
-      "Sync compares against your last Replace or Sync, and there isn’t one it can read. Replace or Add will work.",
+      "Sync compares against your last Replace, or a Sync of everything, and there isn’t one it can read. Replace or Add will work.",
     );
     expect(reason?.className).toContain("border-dashed");
     expect(reason?.className).toContain("mt-[6px]");
