@@ -1,0 +1,85 @@
+{
+  "feature": "Foil treatment (R1)",
+  "note": "The three ring spans that carry `data-foil` (foil handoff R1), each scrolled to a tile with the film, at both widths. On local-dev as the headless account (user_3Hdjdoc\u2026): FOIL_SEARCH is a card it holds in one printing, all foil (e.g. Ambush Viper; 67 such cards on 2026-10-14), FOIL_DECK a deck holding one (d0000000-0000-4000-8000-00000000cafe holds Jeska's Will, all foil), and the precon row needs seeded precons (Avengers Assemble, MSC, is 100 of 100 foil). The film is static at rest; the hover band is not photographed (pnpm probe:foil-film proves it). Tokens, suggestions and precon box tiles never carry it.",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "collection-grid-foil",
+      "label": "/collection grid: a card held all foil",
+      "view": "src/components/collection/grid-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=grid&q=${FOIL_SEARCH}",
+          "wait": "[data-foil]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-foil]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "collection-grid-window",
+      "label": "/collection grid: the first window, the common case (most tiles plain)",
+      "view": "src/components/collection/grid-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=grid",
+          "wait": "button[aria-busy]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "deck-card-view-foil",
+      "label": "/decks/[id] card view: a card held all foil",
+      "view": "src/components/decks/deck-card-tile.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FOIL_DECK}",
+          "wait": "button[aria-label=\"Card view\"]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Card view",
+          "settle": 500
+        },
+        {
+          "wait": "[data-foil]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-foil]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "precon-open-foil",
+      "label": "/decks/precons/[fileName]?edition=collector card view: a Collector's Edition, every card foil",
+      "view": "src/components/decks/read-only-card-tile.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/AvengersAssemble_MSC?edition=collector",
+          "wait": "button[aria-label=\"Card view\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "Card view",
+          "settle": 500
+        },
+        {
+          "wait": "[data-foil]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-foil]",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}
