@@ -2550,3 +2550,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `finally` with every row the user wrote. `PROBE_BASE` must be loopback with a port. Needs a `next start` on
   `PROBE_BASE` over the same database with `PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true
   ABOUT_SHEET_ENABLED=true`; stop it by its own PID.
+
+## probe:lock-shift
+
+Locking the first card, and unlocking the last, move nothing on the deck page. With Lock cards on it presses the first
+lock and then the unlock on a real deck at 1300x900 and 390x844 and asserts the key line, the group headings, the first
+rows and the document's own size (so a scrollbar appearing) are where they were, to half a pixel. The first version found
+the cause of Hugh's 2026-10-15 report: the first lock adds a `locked` entry to the mark key, and its 14px inline-flex
+sample sat on an inline wrapper's baseline, so the key's (hidden) slot grew 2.8px and pushed the list down. Fixed by
+making the wrapper a flex box and holding the room for the `locked` entry in the slot. Needs `NEVER_CUT_ENABLED=true` on
+the server and a deck with no locked card (`PROBE_DECK`); it locks one card and unlocks it. Writes to `local-dev` or a
+scratch branch only, and refuses staging and production by `neon.branch_id`.

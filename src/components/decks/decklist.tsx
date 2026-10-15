@@ -561,6 +561,14 @@ export function Decklist({
       <div className={`[grid-area:1/1] ${lockMode ? "invisible" : ""}`}>
         <MarkKey marks={markKey} regionAria={markKeyRegion} />
       </div>
+      {/* The key as it will read once a card is locked, held in the cell and never seen: the first
+          lock adds an entry to the key, and at 390 that can wrap it to a second line. Reserving the
+          room means the slot is the same before and after any lock, so locking moves nothing. */}
+      {!markKey.some((m) => m.id === "locked") && (
+        <div aria-hidden="true" className="[grid-area:1/1] invisible">
+          <MarkKey marks={[...markKey, { id: "locked", sample: <LockMark />, word: lockedCardsCopy.mark.key }]} regionAria={markKeyRegion} />
+        </div>
+      )}
       <div className={`[grid-area:1/1] ${lockMode ? "" : "invisible"}`}>
         <LockModeLine count={lockedCardCount} />
       </div>
