@@ -1,0 +1,49 @@
+{
+  "feature": "The Shopping key, one grid (foil addendum R3)",
+  "note": "Cheaper stand-ins, the friend-spare item's position (empty until a4's PR A), `press to add` and the outlined `over $N`, at every width. It has no `shares` block: the key is one component, drawn once, and `shopping-key.tsx` is the file each row names. Same preconditions as `foil-row.json`. The first cell of a run lands on the Welcome page (the About gate marks itself seen on that visit), so the row opens with a throwaway visit.",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "md-900",
+      "width": 900,
+      "height": 1000
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "shopping-key",
+      "label": "/decks/[id] Shopping: the key (cheaper stand-ins, press to add, over $N; the spare item's position empty)",
+      "view": "src/components/decks/shopping-key.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FOIL_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${FOIL_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 800
+        },
+        {
+          "wait": "[data-testid=shopping-key]",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

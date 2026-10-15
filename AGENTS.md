@@ -783,16 +783,19 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
 
-- **The phone Shopping row's option B** (Social R2 PR 7, plan `2026-10-15-social-r2.md`), behind
-  `PHONE_SHOPPING_ROW_B_ENABLED` (a feature switch of its own, staging `'true'`, production unset until Hugh decides whether B
-  ships to everyone; it changes the row for every reader, social switches off too). `DeckPageSwitches` carries it to
-  `DecklistRow`, which on a Shopping row below `md` (768px: the phone; the md-to-lg band keeps the shipped row) wraps its shell in two lines by `order` (`B_SHELL` and the `B_*` classes, all
-  `max-md:`): the dot, the name (front face alone for a two-face card) and the ✕ are line 1, a zero-height break ends it, and the
-  meta line, the availability marker, ⇄ and the buy tag are line 2, each in its own 44px line so no two hit areas overlap. `over $N`
-  is no longer drawn under the tag: the plate is outlined (`BuyTag`'s `foldOver`: the ring stays, the wash goes), the words stay in
-  its description, and `ShoppingKeyOver` draws the key item `[buy] over $N`. From `md`, and with the switch off, the row is the
-  shipped one (the desktop contact-sheet photograph is byte-identical on and off). `docs/superpowers/inventories/social-r2.json`
-  holds the rows: run it twice against one database, once per switch value.
+- **The two-line card row** (foil mark PR 2, plan `2026-10-15-foil-mark.md`; Hugh's rulings 2026-10-15). `DecklistRow` wraps its
+  shell in two lines by CSS `order`, in three forms with one slot table each (`PHONE_B`, `TWO_MD`, `TWO_LG`, every class spelled
+  whole and prefixed, so a width a table does not cover is the row it was): **below `md` a Shopping row** is option B (Social R2
+  PR 7, no switch since `PHONE_SHOPPING_ROW_B_ENABLED` was retired by migration 0134), **from `md` an All row**, and **from `lg` a
+  Shopping row**. Line 1 is the dot, the name with its fact marks, and the ✕; a zero-height break ends it; line 2 is the glint (under
+  the dot, in the indent that puts the pips at the name's x, so the name keeps its x), the pips, the availability marker, ⇄ and the
+  buy tag. The phone All row and a Shopping row from `md` to `lg` are the shipped rows. A basic land's stepper row and a read-only
+  precon row stay one line. `over $N` is the buy tag's outline and the key's item, never beside the pips; a Shopping row draws no EDHREC
+  figure at any width. The glint is the foil mark (`FoilGlint`): drawn by the film's rule (`imageUri ? foil : undefined`), spoken in the row's
+  description (`foilMarkCopy.name`), and on a precon's read-only list row it replaces the printed `· foil` (`printedFoil`, art not required).
+  `ShoppingKey` is one grid (`cheaper stand-ins`, the friend-spare item's position, `press to add`, the outlined `over $N`); the spare
+  position is EMPTY until the Social R2 spare press fills it. The deck's mark key names `foil` in every view when a row or tile in view
+  draws the glint (a foil basic land is a tile only). `docs/superpowers/inventories/foil-row.json` holds the rows, at 390, 900 and 1300.
 
 - **Collection Sync** (plan `2026-10-15-collection-sync.md`), behind `COLLECTION_SYNC_ENABLED`, which needs
   `COLLECTION_EDIT_ENABLED` (staging `'true'` from the plan's PR 2, production unset until Hugh flips it; off, the upload

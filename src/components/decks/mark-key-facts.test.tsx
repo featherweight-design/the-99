@@ -105,9 +105,17 @@ describe("the key's foil entry", () => {
     // No art, so no film and no glint: the key does not claim a mark nothing draws.
     expect(ids(buildMarkKeyEntries({ cards: [card({ foil: "foil", imageUri: null })], filter: "all", inCardView: true }))).not.toContain("foil");
   });
-  it("is not named in List view or under Shopping until the row draws the glint (the two-line row's PR)", () => {
+  it("is named in List view and under Shopping too, now the two-line row draws the glint", () => {
     const foil = card({ foil: "foil", imageUri: "https://cards.example/a.jpg" });
-    expect(ids(buildMarkKeyEntries({ cards: [foil], filter: "all", inCardView: false }))).not.toContain("foil");
+    expect(ids(buildMarkKeyEntries({ cards: [foil], filter: "all", inCardView: false }))).toContain("foil");
+    // An owned card is on Shopping when its copies are all spoken for elsewhere.
+    const listed = { ...foil, availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: [] } } as DeckDetailCard;
+    expect(ids(buildMarkKeyEntries({ cards: [listed], filter: "shopping", inCardView: false }))).toContain("foil");
+  });
+  it("leaves a foil basic land out of the List view's key (its stepper row has no glint), and keeps it in Card view", () => {
+    const basic = card({ foil: "foil", imageUri: "https://cards.example/a.jpg", typeLine: "Basic Land — Forest" });
+    expect(ids(buildMarkKeyEntries({ cards: [basic], filter: "all", inCardView: false }))).not.toContain("foil");
+    expect(ids(buildMarkKeyEntries({ cards: [basic], filter: "all", inCardView: true }))).toContain("foil");
   });
   it("is one entry for etched as for foil", () => {
     const entries = buildMarkKeyEntries({

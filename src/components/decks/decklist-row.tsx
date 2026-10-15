@@ -52,7 +52,8 @@ import { gotItCopy } from "../../lib/copy/i-got-it";
 import { useSwapTools } from "../../lib/swaps/context";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { preconsCopy } from "../../lib/copy/precons";
+import { foilMarkCopy } from "../../lib/copy/foil-mark";
+import { FoilGlint } from "../cards/foil-mark";
 import { useLockCards } from "./lock-cards";
 import { useGotIt } from "./got-it";
 import { LockMark } from "./lock-mark";
@@ -73,23 +74,85 @@ const ROW_SHELL_META = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] md:min-h
 
 const ROW_SHELL_SHOPPING = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] lg:min-h-[34px]`;
 
+// The two-line row's shells (foil addendum R3): an All row from `md`, a Shopping row from `lg` (and option B below `md`).
+// Two 26px lines, a 2px gap and 3px of padding make the row about 60px; a receipt or a held slot keeps that height
+// (`SLOT_*`), or the rows under it would move when it arrives and again on Undo. Built whole rather than layered on
+// the shells above, because a second `min-h` or `py` at the same variant has no defined winner.
+const TWO_PAD_MD = "pl-[8px] pr-[4px] md:px-[9px] md:py-[3px]";
+const TWO_PAD_LG = "pl-[8px] pr-[4px] md:px-[9px] md:py-[7px] lg:py-[3px]";
+// A row with no meta line on the phone (a land) keeps its 44px there, and a Shopping land its 34px from `md`.
+const TWO_SHELLS = {
+  md: {
+    meta: { live: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[52px] md:min-h-0`, slot: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[52px] md:min-h-[58px]` },
+    land: { live: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[44px] md:min-h-0`, slot: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[44px] md:min-h-[58px]` },
+  },
+  lg: {
+    meta: { live: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[52px] lg:min-h-0`, slot: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[52px] lg:min-h-[58px]` },
+    land: { live: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[44px] md:min-h-[34px] lg:min-h-0`, slot: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[44px] md:min-h-[34px] lg:min-h-[58px]` },
+  },
+};
+
 /**
- * Option B of the phone Shopping row (Social R2 PR 7). Below `md` the shell
- * wraps in two lines by `order`: the dot, the name and the ✕ are line 1 (the name takes the width, the ✕ keeps
- * its 44px hit), a zero-height full-width break ends it (its own flex line, so `gap-y` falls on both sides: 4px between the lines, a 96px row), and line 2 is the meta line (which takes the width),
- * the availability marker, ⇄ and the buy tag, each in a 44px line so no two hit areas overlap. The classes are
- * spelled whole so Tailwind sees them, and every one is `max-md:`, so from `md` up the row is the one it was.
+ * The two-line card row. Below `md` a Shopping row is option B (Social R2 PR 7; Hugh made it the row for everyone,
+ * 2026-10-15), and from `md` an All row and from `lg` a Shopping row take the same form (the foil addendum's R3): line 1
+ * is the dot, the name with its marks, and the ✕; line 2 is the pips, then the availability marker, ⇄ and the buy tag.
+ * The shell wraps by `order`: a zero-height full-width break ends line 1 (its own flex line, so `gap-y` falls on both
+ * sides of it). One slot table per breakpoint, every class spelled whole so Tailwind sees it, and each class carries
+ * its own prefix, so a width a table does not cover is the row it was (phone All, and Shopping from `md` to `lg`).
+ * `glint` is the foil mark's own margin: it sits in the indent that keeps the pips at the name's x.
  */
-const B_SHELL = "max-md:flex-wrap max-md:min-h-0 max-md:gap-y-[2px] max-md:py-[2px]";
-const B_NAME_BLOCK = "max-md:contents";
-const B_NAME = "max-md:order-1 max-md:flex-1";
-const B_REMOVE = "max-md:order-2";
-const B_BREAK = "hidden max-md:block max-md:order-3 max-md:h-0 max-md:basis-full";
-const B_META = "max-md:order-5 max-md:flex-1 max-md:min-h-[44px] max-md:pl-[16px] max-md:overflow-hidden";
-const B_MARK = "max-md:order-6";
-const B_SWAP = "max-md:order-7";
-const B_BUY_STACK = "max-md:order-8 max-md:min-h-[44px] max-md:justify-center";
-const B_BUY = "max-md:flex max-md:order-8 max-md:min-h-[44px] max-md:items-center md:contents";
+type LineSlots = {
+  shell: string;
+  nameBlock: string;
+  name: string;
+  remove: string;
+  brk: string;
+  meta: string;
+  glint: string;
+  mark: string;
+  swap: string;
+  buyStack: string;
+  buy: string;
+};
+const PHONE_B: LineSlots = {
+  shell: "max-md:flex-wrap max-md:min-h-0 max-md:gap-y-[2px] max-md:py-[2px]",
+  nameBlock: "max-md:contents",
+  name: "max-md:order-1 max-md:flex-1",
+  remove: "max-md:order-2",
+  brk: "hidden max-md:block max-md:order-3 max-md:h-0 max-md:basis-full",
+  meta: "max-md:order-5 max-md:flex-1 max-md:min-h-[44px] max-md:pl-[16px] max-md:overflow-hidden",
+  glint: "max-md:-ml-[16px] max-md:-mr-[1px]",
+  mark: "max-md:order-6",
+  swap: "max-md:order-7",
+  buyStack: "max-md:order-8 max-md:min-h-[44px] max-md:justify-center",
+  buy: "max-md:flex max-md:order-8 max-md:min-h-[44px] max-md:items-center md:contents",
+};
+const TWO_MD: LineSlots = {
+  shell: "md:flex-wrap md:gap-y-[2px]",
+  nameBlock: "md:contents",
+  name: "md:order-1 md:flex-1",
+  remove: "md:order-2",
+  brk: "hidden md:block md:order-3 md:h-0 md:basis-full",
+  meta: "md:order-5 md:flex-1 md:min-h-[26px] md:pl-[18px] md:overflow-hidden",
+  glint: "md:-ml-[18px] md:mr-[1px]",
+  mark: "md:order-6",
+  swap: "md:order-7",
+  buyStack: "md:order-8 md:justify-center",
+  buy: "contents md:flex md:order-8 md:min-h-[26px] md:items-center",
+};
+const TWO_LG: LineSlots = {
+  shell: "lg:flex-wrap lg:gap-y-[2px]",
+  nameBlock: "lg:contents",
+  name: "lg:order-1 lg:flex-1",
+  remove: "lg:order-2",
+  brk: "hidden lg:block lg:order-3 lg:h-0 lg:basis-full",
+  meta: "lg:order-5 lg:flex-1 lg:min-h-[26px] lg:pl-[18px] lg:overflow-hidden",
+  glint: "lg:-ml-[18px] lg:mr-[1px]",
+  mark: "lg:order-6",
+  swap: "lg:order-7",
+  buyStack: "lg:order-8 lg:justify-center",
+  buy: "lg:flex lg:order-8 lg:min-h-[26px] lg:items-center",
+};
 
 /** Phone pips ride the meta line at their own size, plain and uncapped — there
  *  the line is theirs alone and has the width to spend. Desktop takes the shared
@@ -303,6 +366,17 @@ export function DecklistRow({
   // the name and the ✕ take line 1; pips, the marker, ⇄ and the buy tag take line 2; `over $N` folds into an outlined
   // tag. Outside Shopping none of the `max-md:` classes below is spelled and the row is as shipped.
   const rowB = inShopping && !readOnly;
+  // The two-line form from `md` (All) or `lg` (Shopping): every card row but a basic land's stepper row and the read-only list.
+  const twoMd = !readOnly && !basicRow && !inShopping;
+  const twoLg = !readOnly && !basicRow && inShopping;
+  const twoLine = rowB || twoMd || twoLg;
+  const slots = [rowB ? PHONE_B : null, twoMd ? TWO_MD : null, twoLg ? TWO_LG : null].filter((t): t is LineSlots => t !== null);
+  // One slot's classes for this row, with the leading space, or nothing when the row is none of the two-line forms.
+  const at = (k: keyof LineSlots) => slots.map((t) => t[k]).join(" ");
+  const withAt = (k: keyof LineSlots) => (slots.length > 0 ? ` ${at(k)}` : "");
+  // The finish the glint says, by the film's own rule (only over art). Said in words in the row's description, never twice.
+  const foilFinish = card.imageUri ? card.foil : undefined;
+  const foilDescriptionId = useId();
   const overLimit = swapTools !== null && inShopping && !commanderRow && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
   const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
   // I got it (both switches on, mounted by the deck page): a Shopping row's tag is the button that
@@ -317,19 +391,12 @@ export function DecklistRow({
   // Option B draws the two-line layout on every Shopping row, a land with no EDHREC figure included (the figure
   // stays conditional, and the second line is then cost and nothing, which still carries the row's width).
   const shellHasMeta = hasShoppingMeta || !inLandsGroup;
-  const hasMetaLine = shellHasMeta || rowB;
+  const hasMetaLine = shellHasMeta || twoLine;
   // The SHELL keeps the original condition (a land with no figure is 34px from md), and `rowB` forces only the markup.
-  const rowShell = shellHasMeta ? (inShopping ? ROW_SHELL_SHOPPING : ROW_SHELL_META) : ROW_SHELL;
-  // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
-  // line and needs context. Desktop: bare "24%" because it is inline with the
-  // name. Absence: phone gets the full sentence; desktop gets "—" which reads
-  // fine beside the name but would be cryptic alone on a dedicated line.
-  const figureTextPhone = Number.isFinite(shoppingFigure)
-    ? recommendationsCopy.shopping.rowFigure(String(shoppingFigure as number))
-    : recommendationsCopy.shopping.rowNoFigure;
-  const figureTextDesktop = Number.isFinite(shoppingFigure)
-    ? recommendationsCopy.shopping.rowFigureDesktop(String(shoppingFigure as number))
-    : recommendationsCopy.shopping.rowNoFigureDesktop;
+  const legacyShell = shellHasMeta ? (inShopping ? ROW_SHELL_SHOPPING : ROW_SHELL_META) : ROW_SHELL;
+  const twoShell = twoMd ? TWO_SHELLS.md : twoLg ? TWO_SHELLS.lg : null;
+  const twoShellRow = twoShell ? (shellHasMeta ? twoShell.meta : twoShell.land) : null;
+  const rowShell = twoShellRow ? twoShellRow.live : legacyShell;
   // The whole row is the preview's trigger (#351), so the handlers go on the
   // shell rather than on the name — the name is the modal's trigger, and a
   // preview that only opened over it would be a second, smaller target for a
@@ -426,6 +493,7 @@ export function DecklistRow({
   const describedBy =
     [
       availabilityDescriptionId,
+      foilFinish ? foilDescriptionId : null,
       speaksQuantity ? quantityDescriptionId : null,
       // Right after the availability word (handoff copy, `mark.a11y`): which card, whether it is
       // owned, that it is locked, then what the deck has done with it.
@@ -489,7 +557,7 @@ export function DecklistRow({
   // drift) — the one thing a bare `<UndoRow>` cannot know on its own.
   // The receipts keep the live row's height: option B's row is 96px below `md` (two 44px lines), and a one-line
   // receipt at 52px would shift every row under it, and shift them back on Undo.
-  const slotShell = rowB ? `${rowShell} max-md:min-h-[96px]` : rowShell;
+  const slotShell = `${twoShellRow ? twoShellRow.slot : legacyShell}${rowB ? " max-md:min-h-[96px]" : ""}`;
   if (spent) return <UndoRow deckId={deckId} card={card} rowShell={slotShell} />;
   if (held) return <HeldSlot card={card} rowShell={slotShell} />;
 
@@ -565,7 +633,7 @@ export function DecklistRow({
       type="button"
       onClick={handleRemove}
       disabled={isPending}
-      className={`flex-none flex items-center justify-center w-[44px] h-[44px] ${stepperOn ? "md:w-[22px] md:h-[20px]" : "md:w-auto md:h-auto"}${rowB ? ` ${B_REMOVE}` : ""}
+      className={`flex-none flex items-center justify-center w-[44px] h-[44px] ${stepperOn ? "md:w-[22px] md:h-[20px]" : "md:w-auto md:h-auto"}${withAt("remove")}
         rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
         active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
         md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors`}
@@ -595,7 +663,7 @@ export function DecklistRow({
         // composed class list, which is the caller's and changes with it.
         data-decklist-row
         onClick={openFromRow}
-        className={`group ${rowShell}${rowB ? ` ${B_SHELL}` : ""} cursor-pointer ${confirmOpen
+        className={`group ${rowShell}${withAt("shell")} cursor-pointer ${confirmOpen
           // The row keeps its hover ground while its confirm is up (A7).
           ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
           : `bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
@@ -613,8 +681,11 @@ export function DecklistRow({
           owned={card.owned && !proxied}
           className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
         />
+        {/* A precon's printed list row: the glint in place of the printed `· foil`, right after the dot (foil addendum
+            M4): `● ✦ … MSC 4`. These rows stay one line, and the box's copies need no art to be foil here. */}
+        {readOnly && card.printedFoil ? <FoilGlint finish="foil" precon={{ quantity: card.quantity }} /> : null}
         {/* Option B's line break: ends line 1 (dot, name, ✕) so line 2 starts on its own row. */}
-        {rowB ? <span aria-hidden="true" className={B_BREAK} /> : null}
+        {twoLine ? <span aria-hidden="true" className={at("brk")} /> : null}
 
         {/* The word the dot used to carry. Ahead of the pass mark and the draft
             mark in `describedBy`, so a reader hears the card, then whether they
@@ -622,6 +693,11 @@ export function DecklistRow({
         <span id={availabilityDescriptionId} className="sr-only">
           {availabilityWord}
         </span>
+        {foilFinish && (
+          <span id={foilDescriptionId} className="sr-only">
+            {foilMarkCopy.name[foilFinish]}
+          </span>
+        )}
         {locked && (
           <span id={lockDescriptionId} className="sr-only">
             {lockedCardsCopy.mark.a11y}
@@ -647,13 +723,13 @@ export function DecklistRow({
           // phone, so the name has the row's width. Tailwind reads whole class strings, so the two
           // breakpoints are spelled out rather than built.
           <div className={inShopping
-            ? `flex-auto min-w-0 flex flex-col justify-center lg:flex-row lg:justify-start lg:items-center lg:gap-x-[6px] lg:gap-y-0${rowB ? ` ${B_NAME_BLOCK}` : ""}`
-            : "flex-auto min-w-0 flex flex-col justify-center md:flex-row md:justify-start md:items-center md:gap-x-[6px] md:gap-y-0"}>
+            ? `flex-auto min-w-0 flex flex-col justify-center lg:flex-row lg:justify-start lg:items-center lg:gap-x-[6px] lg:gap-y-0${withAt("nameBlock")}`
+            : `flex-auto min-w-0 flex flex-col justify-center md:flex-row md:justify-start md:items-center md:gap-x-[6px] md:gap-y-0${withAt("nameBlock")}`}>
             {/* Name and count share a line so the count stays inline after the
                 name at both widths — on phone the meta line below is its own
                 line, and a count that flowed down with it would read as part
                 of it. */}
-            <div className={`min-w-0 flex items-center gap-[6px]${rowB ? ` ${B_NAME}` : ""}`}>
+            <div className={`min-w-0 flex items-center gap-[6px]${withAt("name")}`}>
               <CardDetailTrigger
                 oracleId={card.oracleId}
                 name={fullName}
@@ -686,46 +762,17 @@ export function DecklistRow({
             {/* The phone meta line, and the only things that ever ride it: the
                 cost, then the EDHREC figure. Nothing else joins it; `over $X`
                 stacks on the buy tag instead. */}
-            <span className={`${inShopping ? "lg:hidden" : "md:hidden"} flex items-center gap-[5px] min-w-0${rowB ? ` ${B_META}` : ""}`}>
-              {cost ? <CostPips cost={cost} size={PIP_SIZE_PHONE} spoken /> : null}
-              {cost && hasShoppingMeta ? (
-                <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span>
-              ) : null}
-              {hasShoppingMeta ? (
-                <span
-                  className="font-mono text-[10px] tabular-nums truncate"
-                  style={{
-                    color: Number.isFinite(shoppingFigure)
-                      ? "var(--fg-faint)"
-                      : "var(--fg-locked)",
-                  }}
-                >
-                  {figureTextPhone}
+            <span className={`${twoLine ? "" : inShopping ? "lg:hidden " : "md:hidden "}flex items-center gap-[5px] min-w-0${withAt("meta")}`}>
+              {/* The foil glint, first on line 2 and under the dot (foil addendum R4), so the name keeps its x: in the
+                  two-line forms it sits in the indent that puts the pips at the name's x. Silent: the row's description
+                  says the finish. */}
+              {foilFinish ? (
+                <span className={`flex flex-none${withAt("glint")}`}>
+                  <FoilGlint finish={foilFinish} />
                 </span>
               ) : null}
+              {cost ? <CostPips cost={cost} size={PIP_SIZE_PHONE} spoken /> : null}
             </span>
-            {hasShoppingMeta ? (
-              <span
-                // `hasShoppingMeta` is Shopping only, so this reads the Shopping row's breakpoint.
-                className="hidden lg:inline flex-none font-mono text-[10px] tabular-nums"
-                style={{
-                  color: Number.isFinite(shoppingFigure)
-                    ? "var(--fg-faint)"
-                    : "var(--fg-locked)",
-                }}
-              >
-                {figureTextDesktop}
-              </span>
-            ) : null}
-            {overText ? (
-              // The block's 6px gap sits before this item; the design's figure-to-`·` gap is 5px, the
-              // one-pixel pull that makes the two read as one group. With no figure there is no `·`,
-              // and the name keeps the block's own gap.
-              <span className={`hidden lg:inline-flex flex-none items-center gap-[5px] ${hasShoppingMeta ? "lg:-ml-px" : ""} font-mono text-[10px] whitespace-nowrap`}>
-                {hasShoppingMeta ? <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span> : null}
-                <span style={{ color: "var(--warning)" }}>{overText}</span>
-              </span>
-            ) : null}
           </div>
         ) : (
           <div className={nameBlockClass}>
@@ -746,13 +793,6 @@ export function DecklistRow({
             {fromGlyph}
             {quantitySpoken}
             {factMarks}
-            {overText ? (
-              // A row with no meta line (a land with no EDHREC figure) still owes its `over $X` from
-              // `lg`, where the stack on the buy tag is hidden. No figure, so no `·`.
-              <span className="hidden lg:inline flex-none font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>
-                {overText}
-              </span>
-            ) : null}
           </div>
         )}
 
@@ -763,7 +803,7 @@ export function DecklistRow({
             vertical line the fixed track exists to hold.
             `hidden` is display:none, so exactly one of the two runs is in the
             accessibility tree at any width and the cost is spoken once. */}
-        {cost ? (
+        {cost && !twoLine ? (
           <span className={`hidden ${inShopping ? "lg:flex" : "md:flex"} flex-none items-center`}>
             <CostPips
               cost={cost}
@@ -816,7 +856,7 @@ export function DecklistRow({
             // absorb would overflow the box rather than clip inside it. The
             // ruling cost almost nothing to give up: what the marker used to
             // yield was the deck name, and there is no deck name left to yield.
-            className={`shrink-0 font-mono text-[11px] md:text-[11.5px]${rowB ? ` ${B_MARK}` : ""}`}
+            className={`shrink-0 font-mono text-[11px] md:text-[11.5px]${withAt("mark")}`}
           />
         )}
 
@@ -828,7 +868,7 @@ export function DecklistRow({
             the two can never co-occur: a row saying at once that the player is
             printing this card and that they must buy it is the one state in this
             feature nobody has drawn. */}
-        {tag === "proxy" && (rowB ? <span className={B_BUY}><ProxyTag variant="row" /></span> : <ProxyTag variant="row" />)}
+        {tag === "proxy" && (twoLine ? <span className={at("buy")}><ProxyTag variant="row" /></span> : <ProxyTag variant="row" />)}
         {/* Below lg, `over $X` and the buy tag are ONE group, the limit stacked above the tag
             (Hugh, 2026-09-26, from md; extended to the phone 2026-09-28, "particularly on mobile"):
             the name keeps the row's width, and the limit stays beside the price it is about. From
@@ -836,21 +876,21 @@ export function DecklistRow({
         {readOnly ? (
           card.printedSetCode && card.printedCollectorNumber ? (
             <span className="flex-none whitespace-nowrap font-mono text-[10px] text-[color:var(--fg-faint)]">
-              {card.printedSetCode.toUpperCase()} {card.printedCollectorNumber}{card.printedFoil ? ` · ${preconsCopy.open.edition.foil}` : ""}
+              {card.printedSetCode.toUpperCase()} {card.printedCollectorNumber}
             </span>
           ) : null
         ) : pressable ? (
           // Option B: below `md`, `over $N` is not drawn under the tag; it folds into the outlined tag (the key says
           // so), and the words stay in the tag's description for a reader who cannot see the outline.
-          rowB ? <span className={B_BUY}>{buyTag}</span> : buyTag
+          twoLine ? <span className={at("buy")}>{buyTag}</span> : buyTag
         ) : overText ? (
-          <span className={`flex flex-none flex-col items-end gap-[2px]${rowB ? ` ${B_BUY_STACK}` : ""}`}>
+          <span className={`flex flex-none flex-col items-end gap-[2px]${withAt("buyStack")}`}>
             <span className={`${rowB ? "max-md:sr-only " : ""}block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
               {overText}
             </span>
             {tag === "buy" ? buyTag : null}
           </span>
-        ) : tag === "buy" ? (rowB ? <span className={B_BUY}>{buyTag}</span> : buyTag) : null}
+        ) : tag === "buy" ? (twoLine ? <span className={at("buy")}>{buyTag}</span> : buyTag) : null}
 
         {/* Auto tag — one per stack. Not in Shopping (Hugh, 2026-09-28): where a card came from is
             nothing a buying trip needs, and that row is the busiest in the app. */}
@@ -902,7 +942,7 @@ export function DecklistRow({
               type="button"
               aria-label={swapToolsCopy.row.swapOverAria(displayName, formatLimit(swapTools.limitCents))}
               onClick={() => swapTools.openStandIns(card)}
-              className={`flex flex-none items-center justify-center w-[44px] h-[44px] -mr-[9px] md:mr-0 md:w-[22px] md:h-[20px] rounded-[6px] font-mono text-[13px] leading-none bg-transparent border-0 p-0 cursor-pointer text-[color:var(--warning)]${rowB ? ` max-md:mr-0 ${B_SWAP}` : ""}`}
+              className={`flex flex-none items-center justify-center w-[44px] h-[44px] -mr-[9px] md:mr-0 md:w-[22px] md:h-[20px] rounded-[6px] font-mono text-[13px] leading-none bg-transparent border-0 p-0 cursor-pointer text-[color:var(--warning)]${rowB ? " max-md:mr-0" : ""}${withAt("swap")}`}
             >
               {/* Option B draws it as an outlined 40x36 press inside its 44px hit (the phone's marker size). */}
               {rowB ? (
@@ -910,7 +950,7 @@ export function DecklistRow({
               ) : "⇄"}
             </button>
           ) : (
-            <span aria-hidden="true" className={`hidden md:block flex-none w-[22px]`} />
+            <span aria-hidden="true" className={`hidden md:block flex-none w-[22px]${withAt("swap")}`} />
           )
         ) : null}
 
@@ -920,7 +960,7 @@ export function DecklistRow({
             reserved on every row). An unlocked row reserves nothing at either width. That slot also
             widened every row's min-content, which is what pushed Shopping past the frame. */}
         {locked && !lockMode && (
-          <span className={`flex flex-none w-[14px] items-center justify-center${rowB ? ` ${B_MARK}` : ""}`} data-testid="row-lock-mark">
+          <span className={`flex flex-none w-[14px] items-center justify-center${withAt("mark")}`} data-testid="row-lock-mark">
             <LockMark title={lockedCardsCopy.mark.title} />
           </span>
         )}
@@ -940,7 +980,7 @@ export function DecklistRow({
             // `md:-my-[1px]`: the drawn box stays 26×22, but a desktop row's content box is 20px
             // tall, so without it every row grew 2px the moment the mode began (Hugh, 2026-09-26).
             // The phone's 44px hit is the row's own 44, and needs nothing.
-            className={`flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[26px] md:h-[22px] md:-my-[1px] bg-transparent border-0 p-0 cursor-pointer${rowB ? ` ${B_REMOVE}` : ""}`}
+            className={`flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[26px] md:h-[22px] md:-my-[1px] bg-transparent border-0 p-0 cursor-pointer${withAt("remove")}`}
           >
             <span
               className={`flex items-center justify-center w-[36px] h-[36px] md:w-[26px] md:h-[22px] rounded-[6px] border ${
@@ -958,7 +998,7 @@ export function DecklistRow({
             so the buy tag stays in the column every other row's ✕ holds it in. */
         <span
           aria-hidden="true"
-          className={`invisible flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto text-[13px] leading-none${rowB ? ` ${B_REMOVE}` : ""}`}
+          className={`invisible flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto text-[13px] leading-none${withAt("remove")}`}
         >
           {addPanelCopy.row.remove}
         </span>

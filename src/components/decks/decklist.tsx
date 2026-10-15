@@ -22,7 +22,7 @@ import { manaSupply } from "../../lib/mana/supply";
 import { manaSupplyRows } from "../../lib/mana/supply-rows";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
-import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
+import { cardCopies, groupByCardType, groupByRole, isBasicLand } from "../../lib/decks/grouping";
 import { printedNameOf } from "../../lib/collection/browse";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { labelRolesOf } from "../../lib/decks/label-role-counts";
@@ -313,9 +313,9 @@ export function buildMarkKeyEntries({
     // shows cards, so the fix was to draw the mark on the tile rather than to remove the
     // words. Suppressing the key made Card view the one place a reader met neither.
     // THE FOIL GLINT, one entry for foil and etched (foil mark addendum, R4), by the same rule the cards in view
-    // follow: a deck is a closed set, so the entry says what a tile below draws, and is absent when none does. In Card
-    // view only until the two-line row draws it under the dot (the next PR); a list row draws `· foil` nowhere today.
-    if (inCardView && shown.some((c) => c.imageUri && c.foil)) {
+    // follow: a deck is a closed set, so the entry says what a tile or row below draws, and is absent when none does. A
+    // list row draws it under the dot (the two-line row) except a basic land's stepper row, which has no second line.
+    if (shown.some((c) => c.imageUri && c.foil && (inCardView || !isBasicLand(c.typeLine)))) {
       entries.push({ id: "foil", sample: <FoilMark finish="foil" silent />, word: foilMarkCopy.key });
     }
     for (const fact of CARD_FACTS) {

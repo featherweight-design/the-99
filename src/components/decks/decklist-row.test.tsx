@@ -904,13 +904,18 @@ describe("DecklistRow cost pips (#350)", () => {
   const withCost = { ...card, manaCost: "{2}{U}{B}" } as DeckDetailCard;
   const rowShell = () => document.querySelector(".group")!;
 
-  it("draws the cost in two runs, one per width, so it is spoken once", () => {
+  it("draws the cost once on a two-line row, on its meta line at every width, so it is spoken once", () => {
     renderRow(<DecklistRow deckId="d1" card={withCost}  newestAsOf={null}/>);
     const spoken = screen.getAllByText(spokenManaCost("{2}{U}{B}"));
+    expect(spoken).toHaveLength(1);
+    // No `hidden` run: the line is visible below md too, where the name block keeps it under the name.
+    expect(spoken[0].closest("span.flex")!.className.split(/\s+/)).not.toContain("hidden");
+  });
+
+  it("keeps the two runs, one per width, on a row that is not two-line (a read-only precon row)", () => {
+    renderRow(<DecklistRow deckId="" card={withCost} readOnly newestAsOf={null}/>);
+    const spoken = screen.getAllByText(spokenManaCost("{2}{U}{B}"));
     expect(spoken).toHaveLength(2);
-    // `hidden` is display:none, so the run that is not drawn is not in the
-    // accessibility tree either — which is the whole reason two runs is one
-    // utterance rather than two.
     const wrappers = spoken.map((el) => el.parentElement!.className);
     expect(wrappers.some((c) => c.includes("hidden") && c.includes("md:flex"))).toBe(true);
     expect(wrappers.some((c) => c.includes("md:hidden"))).toBe(true);
@@ -946,23 +951,22 @@ describe("DecklistRow cost pips (#350)", () => {
     expect(screen.queryByText(spokenManaCost("{1}"))).toBeNull();
   });
 
-  it("holds the desktop track at a fixed width whatever the cost costs", () => {
-    renderRow(<DecklistRow deckId="d1" card={withCost}  newestAsOf={null}/>);
+  it("holds the desktop track at a fixed width whatever the cost costs (a read-only row keeps its track)", () => {
+    renderRow(<DecklistRow deckId="" card={withCost} readOnly newestAsOf={null}/>);
     const track = document.querySelector(".hidden.md\\:flex > span")!;
     expect(track).toHaveStyle({ width: `${COST_TRACK}px` });
   });
 
-  it("puts the cost alone on the All tab's meta line, and before the figure in Shopping", () => {
+  it("puts the cost alone on the meta line, in All and in Shopping: no EDHREC figure is drawn (foil addendum R4)", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...withCost, owned: false }}  newestAsOf={null}/>);
     expect(screen.queryByText(/edhrec/)).toBeNull();
     cleanup();
     renderRow(
       <DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping  newestAsOf={null}/>,
     );
-    // A Shopping row keeps the meta line up to lg, not md (Hugh, 2026-09-26).
-    const line = screen.getByText(/edhrec/).closest("span.lg\\:hidden")!;
-    expect(line.textContent).toContain("edhrec");
-    expect(line.querySelector("span[aria-hidden]")).not.toBeNull();
+    expect(screen.queryByText(/edhrec/)).toBeNull();
+    expect(screen.queryByText("24%")).toBeNull();
+    expect(screen.getByText(spokenManaCost("{2}{U}{B}"))).toBeInTheDocument();
   });
 });
 
@@ -973,22 +977,29 @@ describe("DecklistRow in Shopping, md to lg", () => {
   const withCost = { ...card, manaCost: "{2}{U}{B}" } as DeckDetailCard;
   const rowShell = () => document.querySelector(".group")!;
 
-  it("keeps the pips on the meta line under the name until lg, where the track takes them", () => {
+  it("keeps the pips on the meta line under the name until lg, where the row is two lines", () => {
     renderRow(
       <DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping newestAsOf={null} />,
     );
-    const meta = screen.getByText(/edhrec/).closest("span.lg\\:hidden")!;
-    expect(meta.textContent).toContain(spokenManaCost("{2}{U}{B}"));
-    expect(document.querySelector(".hidden.lg\\:flex > span")).not.toBeNull();
-    expect(document.querySelector(".hidden.md\\:flex > span")).toBeNull();
-    expect(rowShell().className).toContain("lg:min-h-[34px]");
-    expect(rowShell().className).not.toContain("md:min-h-[34px]");
+    const meta = screen.getByText(spokenManaCost("{2}{U}{B}")).closest("span.flex")!;
+    // Visible at every width, and from lg line 2 of the row (`lg:order-5`), with no pip track beside the name.
+    expect(meta.className).not.toContain("lg:hidden");
+    expect(meta.className).toContain("lg:order-5");
+    expect(document.querySelector(".hidden.lg\\:flex > span")).toBeNull();
+    // md to lg is the shipped shell, and lg takes the two-line one.
+    expect(rowShell().className).toContain("lg:min-h-0");
+    expect(rowShell().className.split(/\s+/)).not.toContain("md:flex-wrap");
+    expect(rowShell().className.split(/\s+/)).toContain("lg:flex-wrap");
   });
 
-  it("leaves the All tab's row on md", () => {
+  it("makes the All tab's row two lines from md", () => {
     renderRow(<DecklistRow deckId="d1" card={withCost} newestAsOf={null} />);
-    expect(document.querySelector(".hidden.md\\:flex > span")).not.toBeNull();
-    expect(rowShell().className).toContain("md:min-h-[34px]");
+    expect(document.querySelector(".hidden.md\\:flex > span")).toBeNull();
+    expect(rowShell().className).toContain("md:min-h-0");
+    expect(rowShell().className.split(/\s+/)).toContain("md:flex-wrap");
+    expect(rowShell().className.split(/\s+/)).not.toContain("lg:flex-wrap");
+    // The phone is the shipped row: no max-md line classes on an All row.
+    expect(rowShell().className).not.toContain("max-md:");
   });
 });
 
@@ -1395,21 +1406,16 @@ describe("DecklistRow over the Shopping limit (swap tools)", () => {
   it("rings the tag and says over $10 for a card above the default", () => {
     inTools(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
     expect(ring()).toHaveLength(1);
-    // Two copies, one per width: stacked on the tag below lg, beside it from lg. The phone's meta
-    // line no longer carries a third (Hugh, 2026-09-28).
-    expect(screen.getAllByText(swapToolsCopy.row.over("$10"))).toHaveLength(2);
+    // One copy, stacked on the tag below lg. From lg the limit is the tag's outline and the key's `over $N` (the two-line
+    // row), so no inline copy is drawn beside the pips.
+    expect(screen.getAllByText(swapToolsCopy.row.over("$10"))).toHaveLength(1);
   });
 
-  it("keeps the desktop over $10 on a land row with no EDHREC figure", () => {
-    // No figure (EDHREC unreachable) and in the Lands group: the row draws no meta line, and the
-    // desktop copy has to live in the plain name block instead, or it vanishes from lg up.
+  it("says over $10 once on a land row too: the two-line row folds the limit into the tag from lg", () => {
     const land = { ...priced(1500), cardTypeGroup: "Lands" as const, typeLine: "Land", manaCost: null };
     inTools(<DecklistRow deckId="d1" card={land} shoppingFigure={undefined} inShopping newestAsOf={asOf} />);
-    const overs = screen.getAllByText(swapToolsCopy.row.over("$10"));
-    expect(overs).toHaveLength(2);
-    // Option B forces the two-line markup on every Shopping row (a land with no figure included), so the desktop copy is
-    // the meta block's own `lg:inline-flex` item, its text one span in.
-    expect(overs.some((el) => (el.closest(".hidden") as HTMLElement | null)?.className.includes("lg:inline") === true)).toBe(true);
+    expect(screen.getAllByText(swapToolsCopy.row.over("$10"))).toHaveLength(1);
+    expect(ring()).toHaveLength(1);
   });
 
   it("does not mark a card at the limit exactly, or one under a raised limit", () => {
@@ -1599,9 +1605,16 @@ describe("DecklistRow readOnly", () => {
     expect(document.body.textContent).not.toMatch(/buy/i);
   });
 
-  it("says foil beside the printing when the box's copies are foil", () => {
+  it("draws the glint in place of the printed `· foil`, right after the dot, when the box's copies are foil", () => {
     renderRow(<DecklistRow deckId="" card={{ ...precon, printedFoil: true }} readOnly newestAsOf={null} />);
-    expect(screen.getByText("CMM 712 · foil")).toBeInTheDocument();
+    expect(screen.getByText("CMM 712")).toBeInTheDocument();
+    expect(screen.queryByText(/· foil/)).toBeNull();
+    const glint = screen.getByTestId("foil-mark");
+    const row = document.querySelector("[data-decklist-row]")!;
+    expect(row.firstElementChild!.nextElementSibling!.contains(glint)).toBe(true);
+    cleanup();
+    renderRow(<DecklistRow deckId="" card={precon} readOnly newestAsOf={null} />);
+    expect(screen.queryByTestId("foil-mark")).toBeNull();
   });
 
   it("is what removes them: the same card in a deck has all three", () => {
@@ -1767,5 +1780,72 @@ describe("DecklistRow, phone Shopping row option B", () => {
   it("changes nothing outside Shopping", () => {
     inB(<DecklistRow deckId="d1" card={priced(1500)} newestAsOf={asOf} />);
     expect(row().className).not.toContain("max-md:");
+  });
+});
+
+// Foil mark PR 2: the two-line card row for everyone (foil addendum R3), and the glint under the dot at the head of line 2.
+describe("DecklistRow, the two-line row and the foil glint", () => {
+  const foiled = (over: Partial<DeckDetailCard> = {}) =>
+    ({ ...(card as DeckDetailCard), imageUri: "https://cards.example/c.jpg", foil: "foil", manaCost: "{2}{U}", ...over }) as DeckDetailCard;
+  const row = () => document.querySelector<HTMLElement>("[data-decklist-row]")!;
+  const tokens = (el: Element) => el.className.split(/\s+/);
+
+  it("lays an All row out in two lines from md: name and ✕ first, a break, then the pips, marker and tag", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...foiled(), owned: false }} newestAsOf={null} />);
+    expect(tokens(row())).toContain("md:flex-wrap");
+    const br = row().querySelector<HTMLElement>("[aria-hidden='true'].md\\:basis-full")!;
+    expect(br).not.toBeNull();
+    expect(tokens(br)).toContain("md:order-3");
+    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria(card.name) });
+    expect(tokens(remove)).toContain("md:order-2");
+    // The buy tag is wrapped so it can take its own line-2 order from md, and the phone keeps it `contents`.
+    const wrap = row().querySelector<HTMLElement>(".md\\:order-8")!;
+    expect(tokens(wrap)).toContain("contents");
+  });
+
+  it("draws the glint first on line 2, in the indent under the dot, so the name keeps its x", () => {
+    renderRow(<DecklistRow deckId="d1" card={foiled()} newestAsOf={null} />);
+    const glint = screen.getByTestId("foil-mark");
+    const slot = glint.closest("span.flex-none")!;
+    const meta = slot.parentElement!;
+    // First in the meta line, before the pips, and the meta line is a line-2 item.
+    expect(meta.firstElementChild).toBe(slot);
+    expect(tokens(meta)).toContain("md:order-5");
+    expect(tokens(slot)).toContain("md:-ml-[18px]");
+    // Never in the dot's own line: the name's trigger is not preceded by a glint.
+    const name = screen.getByRole("button", { name: new RegExp(`^${cardDetailCopy.triggerAria(card.name)}`) });
+    expect(row().firstElementChild!.contains(glint)).toBe(false);
+    expect(name.parentElement!.contains(glint)).toBe(false);
+  });
+
+  it("says the finish in the row's description, once, and draws the glint silent", () => {
+    renderRow(<DecklistRow deckId="d1" card={foiled({ foil: "etched" })} newestAsOf={null} />);
+    const name = screen.getByRole("button", { name: new RegExp(`^${cardDetailCopy.triggerAria(card.name)}`) });
+    const ids = name.getAttribute("aria-describedby")!.split(" ");
+    const said = ids.map((id) => document.getElementById(id)?.textContent).filter((t) => t === "etched foil");
+    expect(said).toHaveLength(1);
+    expect(screen.getByTestId("foil-mark").getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("draws nothing for a plain card, a part-foil one, or one with no art", () => {
+    renderRow(<DecklistRow deckId="d1" card={foiled({ foil: undefined })} newestAsOf={null} />);
+    expect(screen.queryByTestId("foil-mark")).toBeNull();
+    cleanup();
+    renderRow(<DecklistRow deckId="d1" card={foiled({ imageUri: null })} newestAsOf={null} />);
+    expect(screen.queryByTestId("foil-mark")).toBeNull();
+  });
+
+  it("draws the glint on a Shopping row beneath the dot too, in the line-2 indent from lg and below md", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...foiled(), owned: true }} inShopping newestAsOf={null} />);
+    const slot = screen.getByTestId("foil-mark").closest("span.flex-none")!;
+    expect(tokens(slot)).toContain("max-md:-ml-[16px]");
+    expect(tokens(slot)).toContain("lg:-ml-[18px]");
+    expect(tokens(slot)).not.toContain("md:-ml-[18px]");
+  });
+
+  it("leaves a basic land's stepper row as it was: one line, the pip track beside the name", () => {
+    renderRow(<DecklistRow deckId="d1" card={foiled({ typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", name: "Forest", manaCost: null })} newestAsOf={null} />);
+    expect(tokens(row())).not.toContain("md:flex-wrap");
+    expect(row().querySelector("[aria-hidden='true'].md\\:basis-full")).toBeNull();
   });
 });
