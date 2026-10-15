@@ -7,6 +7,8 @@ const { deleteDeck, renameDeck } = vi.hoisted(() => ({
   renameDeck: vi.fn(),
 }));
 vi.mock("../../app/decks/actions", () => ({ deleteDeck, renameDeck }));
+const { readDeckExport } = vi.hoisted(() => ({ readDeckExport: vi.fn() }));
+vi.mock("../../app/decks/export-actions", () => ({ readDeckExport }));
 
 const { DeckCardOverflow } = await import("./deck-card-overflow");
 
@@ -320,5 +322,47 @@ describe("DeckCardOverflow — in the deck page's header", () => {
     expect(deleteDeck).not.toHaveBeenCalled();
     fireEvent.click(screen.getAllByRole("button", { name: /^Delete/ }).at(-1)!);
     await waitFor(() => expect(deleteDeck).toHaveBeenCalledWith("d1"));
+  });
+});
+
+describe("DeckCardOverflow · Export", () => {
+  const read = {
+    ok: true as const,
+    deckName: "Atraxa Counters",
+    commanderName: "Atraxa, Praetors' Voice",
+    partnerName: null,
+    commanderPrinting: {},
+    partnerPrinting: null,
+    decklistCards: [{ name: "Sol Ring", quantity: 1 }],
+    shoppingCards: [],
+  };
+
+  it("reads the deck's export on the press and opens the deck page's own dialog", async () => {
+    readDeckExport.mockResolvedValueOnce(read);
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa Counters" built={99} placement="tile" />);
+    fireEvent.click(trigger("Atraxa Counters"));
+    fireEvent.click(screen.getByRole("button", { name: "Export" }));
+    expect(readDeckExport).toHaveBeenCalledWith("d1");
+    const dialog = await screen.findByRole("dialog", { name: "Export deck" });
+    // In a portal on the body, so a transformed tile cannot pin the fixed overlay to itself.
+    expect(trigger("Atraxa Counters").parentElement!.contains(dialog)).toBe(false);
+    expect(dialog.textContent).toContain("Sol Ring");
+    // The menu closed behind it.
+    expect(screen.queryByRole("button", { name: "Rename" })).toBeNull();
+  });
+
+  it("keeps the menu open and says so when the read fails", async () => {
+    readDeckExport.mockResolvedValueOnce({ ok: false });
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa Counters" built={99} placement="tile" />);
+    fireEvent.click(trigger("Atraxa Counters"));
+    fireEvent.click(screen.getByRole("button", { name: "Export" }));
+    await screen.findByRole("button", { name: "Couldn’t load. Try again" });
+    expect(screen.queryByRole("dialog", { name: "Export deck" })).toBeNull();
+  });
+
+  it("is absent from the deck header's menu, which has its own Export button", () => {
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa Counters" built={99} placement="header" />);
+    fireEvent.click(screen.getByRole("button", { name: "Actions for Atraxa Counters" }));
+    expect(screen.queryByRole("button", { name: "Export" })).toBeNull();
   });
 });

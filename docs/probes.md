@@ -2497,3 +2497,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   keys; the account's `user_prefs` row (its seen keys and About fields, or its absence) is read before any page and put
   back exactly, then re-read as a check. `PROBE_BASE` must be loopback with a port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true
   UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true ABOUT_SHEET_ENABLED=true`; stop it by its own PID.
+- `pnpm probe:deck-tile-export` proves Export from a `/decks` tile's ⋯ menu, in a browser at 1300x900 and 390x844: the
+  first tile's menu, then Export, opens the deck page's own export dialog (`Export deck`) over `/decks`, its preview
+  naming the deck and counting its cards, drawn above the tiles (what is painted at the dialog's own title belongs to
+  it), with no navigation away; Escape closes it and focus returns to the tile's ⋯ button. The dialog's data is read on
+  the press (`readDeckExport`), never from `/decks`' cached payload. A run that finds no tile fails. Its one write is the
+  About row `clearAboutSheet` sets. Point it at `local-dev` through a server you started (`PROBE_BASE`), and stop that
+  server by its own PID; `PROBE_SHOTS=<dir>` keeps a screenshot per width.

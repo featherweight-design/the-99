@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
+import { readDeckExport, type DeckExportRead } from "../../app/decks/export-actions";
+import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { RenameForm } from "./rename-form";
@@ -105,6 +108,13 @@ export function DeckCardOverflow({
   // reason.
   const [busy, setBusy] = useState(false);
   /**
+   * Export (tile only: the deck header draws its own Export button). The deck page's own dialog, fed by a read
+   * made on the press (`readDeckExport`), never by /decks' cached payload. While the read is in flight the row
+   * is busy and the menu stays open; the dialog's code is fetched beside the read, so neither waits on the other.
+   */
+  const [exporting, setExporting] = useState<{ read: Omit<Extract<DeckExportRead, { ok: true }>, "ok">; Dialog: typeof import("./export-dialog").ExportDialog } | null>(null);
+  const [exportFailed, setExportFailed] = useState(false);
+  /**
    * Viewport coordinates for the panel, fixed rather than `absolute`, clamped, flipped near the
    * fold and kept clear of the phone's tab bar: `useAnchoredPanel`, which was lifted out of this
    * file so the game log's delete confirm floats the same way. The delete pane is wider than the
@@ -190,6 +200,35 @@ export function DeckCardOverflow({
     wantsDeleteRowFocus.current = false;
     deleteRow.current?.focus();
   }, [mode]);
+
+  async function handleExport(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busy) return;
+    setBusy(true);
+    setExportFailed(false);
+    try {
+      const [read, mod] = await Promise.all([readDeckExport(deckId), import("./export-dialog")]);
+      if (!read.ok) {
+        setExportFailed(true);
+        return;
+      }
+      setOpen(false);
+      setMode("menu");
+      setExporting({ read: { deckName: read.deckName, commanderName: read.commanderName, partnerName: read.partnerName,
+        commanderPrinting: read.commanderPrinting, partnerPrinting: read.partnerPrinting,
+        decklistCards: read.decklistCards, shoppingCards: read.shoppingCards }, Dialog: mod.ExportDialog });
+    } catch {
+      setExportFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function closeExport() {
+    setExporting(null);
+    buttonRef.current?.focus();
+  }
 
   function handleClose() {
     if (busy) return;
@@ -311,6 +350,17 @@ export function DeckCardOverflow({
                 {refreshCopy.decks.menu.rename}
               </button>
               ) : null}
+              {!header ? (
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={busy}
+                aria-busy={busy || undefined}
+                className={`${ITEM} first:border-t-0 cursor-pointer bg-transparent text-[color:var(--fg)] disabled:cursor-default disabled:opacity-60`}
+              >
+                {exportFailed ? refreshCopy.decks.menu.exportFailed : deckHeaderCopy.export}
+              </button>
+              ) : null}
               {/* Between Rename and Delete on a tile, whether or not the Update row
                   above rendered — it is gated on `built > 0`, so the shipped menu is
                   two rows on a brew (errata E9). In the header there is no Rename, so
@@ -405,6 +455,11 @@ export function DeckCardOverflow({
           )}
         </div>
       )}
+      {/* The dialog in a portal on the body: a tile can hold a transform, which would make the dialog's
+          fixed overlay fixed to the tile. */}
+      {exporting
+        ? createPortal(<exporting.Dialog {...exporting.read} open onClose={closeExport} />, document.body)
+        : null}
     </div>
   );
 }
