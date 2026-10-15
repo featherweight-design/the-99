@@ -62,16 +62,16 @@ describe("the Shopping head's key", () => {
   });
 });
 
-describe("the key's `over $N` item (phone Shopping row option B)", () => {
-  const on = (ui: React.ReactNode, rowB = true) => (
-    <DeckPageSwitches howItWorks={false} phoneShoppingRowB={rowB}>{withTools(ui)}</DeckPageSwitches>
+describe("the key's `over $N` item (Shopping row option B)", () => {
+  const on = (ui: React.ReactNode) => (
+    <DeckPageSwitches howItWorks={false}>{withTools(ui)}</DeckPageSwitches>
   );
 
-  it("draws an outlined plate and `over $10` after the buy item, below md", () => {
+  it("draws an outlined plate and `over $10` after the buy item, at every width", () => {
     render(on(<GotItProvider deckId={DECK}>{head()}</GotItProvider>));
     const item = screen.getByTestId("shopping-key-over");
     expect(item).toHaveTextContent(swapToolsCopy.row.over("$10"));
-    expect(item.className).toContain("md:hidden");
+    expect(item.className).not.toContain("hidden");
     expect((item.firstElementChild as HTMLElement).style.boxShadow).toBe(OVER_LIMIT_RING);
     // After the buy item, in the key's own grid.
     const key = screen.getByTestId("shopping-key");
@@ -84,12 +84,9 @@ describe("the key's `over $N` item (phone Shopping row option B)", () => {
     expect(screen.getByTestId("shopping-key-over")).toBeInTheDocument();
   });
 
-  it("is absent with the switch off, and with the swap tools off", () => {
-    render(on(<GotItProvider deckId={DECK}>{head()}</GotItProvider>, false));
-    expect(screen.queryByTestId("shopping-key-over")).toBeNull();
-    cleanup();
+  it("is absent with the swap tools off", () => {
     render(
-      <DeckPageSwitches howItWorks={false} phoneShoppingRowB>
+      <DeckPageSwitches howItWorks={false}>
         <GotItProvider deckId={DECK}>{head()}</GotItProvider>
       </DeckPageSwitches>,
     );

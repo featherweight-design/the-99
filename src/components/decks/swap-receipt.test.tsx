@@ -56,6 +56,7 @@ describe("SwapReceiptRow", () => {
       );
     });
     expect(shell().className).toContain("max-md:min-h-[96px]");
+    expect(shell().className).toContain("lg:min-h-[58px]");
     cleanup();
     await draw(base);
     expect(shell().className).not.toContain("96px");

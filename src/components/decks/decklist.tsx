@@ -10,7 +10,6 @@ import { GotItDoorRegistration } from "./got-it-door";
 import { StandInsSheet } from "./stand-ins-sheet";
 import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
-import { useDeckPageSwitches } from "./deck-page-switches";
 import { placeReceipts } from "../../lib/swaps/place-receipts";
 import { isOverLimit } from "../../lib/swaps/limit";
 import { isLandFace } from "../../lib/cards/facet";
@@ -23,7 +22,7 @@ import { manaSupply } from "../../lib/mana/supply";
 import { manaSupplyRows } from "../../lib/mana/supply-rows";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
-import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
+import { cardCopies, groupByCardType, groupByRole, isBasicLand } from "../../lib/decks/grouping";
 import { printedNameOf } from "../../lib/collection/browse";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { labelRolesOf } from "../../lib/decks/label-role-counts";
@@ -314,9 +313,9 @@ export function buildMarkKeyEntries({
     // shows cards, so the fix was to draw the mark on the tile rather than to remove the
     // words. Suppressing the key made Card view the one place a reader met neither.
     // THE FOIL GLINT, one entry for foil and etched (foil mark addendum, R4), by the same rule the cards in view
-    // follow: a deck is a closed set, so the entry says what a tile below draws, and is absent when none does. In Card
-    // view only until the two-line row draws it under the dot (the next PR); a list row draws `· foil` nowhere today.
-    if (inCardView && shown.some((c) => c.imageUri && c.foil)) {
+    // follow: a deck is a closed set, so the entry says what a tile or row below draws, and is absent when none does. A
+    // list row draws it under the dot (the two-line row) except a basic land's stepper row, which has no second line.
+    if (shown.some((c) => c.imageUri && c.foil && (inCardView || !isBasicLand(c.typeLine)))) {
       entries.push({ id: "foil", sample: <FoilMark finish="foil" silent />, word: foilMarkCopy.key });
     }
     for (const fact of CARD_FACTS) {
@@ -398,7 +397,6 @@ export function Decklist({
   // List until this browser says otherwise, which is also what the server
   // renders: the stored choice arrives on the pass after hydration.
   // Option B of the phone Shopping row: a receipt that replaces a whole row keeps that row's height below `md`.
-  const { phoneShoppingRowB } = useDeckPageSwitches();
   const [storedView, chooseView] = useStoredView(DECK_VIEW_KEY, isDeckView);
   // The panel's body, held for this visit to this deck (`useDeckPanel`), not remembered. Stats is a
   // third segment of the All / Shopping control, so choosing either list segment returns here.
@@ -1244,7 +1242,7 @@ export function Decklist({
                 style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}
               >
                 {placeReceipts(groupCards, receiptsInSection(key), sort.key, compareCards).map((item) => {
-                  if ("receipt" in item) return <SwapReceiptRow key={item.receipt.swapId} receipt={item.receipt} tall={phoneShoppingRowB} />;
+                  if ("receipt" in item) return <SwapReceiptRow key={item.receipt.swapId} receipt={item.receipt} tall />;
                   const card = item.card;
                   const row = (
                     <DecklistRow

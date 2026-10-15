@@ -178,6 +178,10 @@ const WASH = {
   rest: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] lg:group-hover/buy:bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] group-active/buy:bg-[color-mix(in_oklab,var(--warning)_30%,transparent)]",
   open: "bg-[color-mix(in_oklab,var(--warning)_24%,transparent)]",
   idle: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)]",
+  // An over-limit tag folded into the row's outline (the two-line row): no resting wash, but the hover and press washes stay, so a
+  // press still answers the pointer.
+  restFolded: "bg-transparent lg:group-hover/buy:bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] group-active/buy:bg-[color-mix(in_oklab,var(--warning)_30%,transparent)]",
+  idleFolded: "bg-transparent",
 } as const;
 
 export function BuyTag({
@@ -309,10 +313,10 @@ export function BuyTag({
           : `font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]} ${
               variant === "tile" ? TILE_CORNER[corner] : ""
             }`
-      }${folded ? " bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] max-md:bg-transparent" : ""}`}
+      }`}
       style={{
         color: "var(--warning)",
-        // A folded plate takes its wash from a class instead, so `max-md:` can lift it.
+        // A folded plate keeps its ring and drops its wash, at every width (the key draws it that way).
         ...(captionBox ? {} : folded ? { ...PLATE[variant], background: undefined } : PLATE[variant]),
         ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
       }}
@@ -378,8 +382,8 @@ function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagP
       <span
         id={descriptionId}
         className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT.row} group-focus-visible/buy:outline-2 group-focus-visible/buy:outline-offset-2 group-focus-visible/buy:[outline-style:solid] group-focus-visible/buy:outline-[color:var(--accent)] ${
-          pressState === "rest" ? WASH.rest : pressState === "open" ? WASH.open : WASH.idle
-        }${foldOver && pressState === "rest" ? " max-md:bg-transparent" : ""}`}
+          pressState === "rest" ? (foldOver ? WASH.restFolded : WASH.rest) : pressState === "open" ? WASH.open : foldOver ? WASH.idleFolded : WASH.idle
+        }`}
         style={{
           color: "var(--warning)",
           ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
@@ -389,7 +393,7 @@ function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagP
         {children}
       </span>
       {under ? (
-        <span id={underId} className={`${foldOver ? "max-md:sr-only " : ""}block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
+        <span id={underId} className={`${foldOver ? "sr-only" : "block lg:hidden"} font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
           {under}
         </span>
       ) : null}

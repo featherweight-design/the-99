@@ -82,7 +82,6 @@ import { printedNameOf } from "../../../lib/collection/browse";
 import { loadDeckTokens } from "../../../lib/tokens/read";
 import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
 import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
-import { phoneShoppingRowBEnabled } from "../../../lib/decks/phone-shopping-row-flag";
 import { GotItProvider } from "../../../components/decks/got-it";
 import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 import { changeCommanderEnabled } from "../../../lib/commander-change/flag";
@@ -737,12 +736,10 @@ export default async function DeckBuilderPage({
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
   // `socialFriends`: the stand-ins modal reads friends' spares from the uncached route (Social R2 PR 8a).
-  // `phoneShoppingRowB`: the phone Shopping row's option B (Social R2 PR 7).
   const switched = (
     <DeckPageSwitches
       howItWorks={howItWorksEnabled(env)}
       socialFriends={socialFriendsEnabled(env)}
-      phoneShoppingRowB={phoneShoppingRowBEnabled(env)}
     >
       {shell}
     </DeckPageSwitches>

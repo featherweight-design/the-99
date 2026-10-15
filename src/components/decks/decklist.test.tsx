@@ -667,8 +667,8 @@ describe("the empty-covered state renders when there is nothing to buy", () => {
   });
 });
 
-describe("the phone Shopping row is 52px and prints the EDHREC figure on its meta line", () => {
-  it("renders the EDHREC figure when shoppingFigure is provided", () => {
+describe("the phone Shopping row is 52px and prints no EDHREC figure (foil addendum R4)", () => {
+  it("draws no EDHREC figure when shoppingFigure is provided", () => {
     render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
         <AddOptimisticCardProvider value={{
@@ -681,7 +681,8 @@ describe("the phone Shopping row is 52px and prints the EDHREC figure on its met
       </CardDetailProvider>,
     );
 
-    expect(screen.getByText(recommendationsCopy.shopping.rowFigure("42"))).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.shopping.rowFigure("42"))).not.toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.shopping.rowFigureDesktop("42"))).not.toBeInTheDocument();
   });
 
   it("phone Shopping row has min-h-[52px] class when shoppingFigure is provided", () => {
@@ -747,38 +748,27 @@ describe("the phone All row stays 44px and prints no figure", () => {
   });
 });
 
-describe("Shopping row figure rendering differs by width", () => {
-  it("phone renders rowNoFigure sentence, desktop renders em dash, when no figure in map", () => {
-    // The two widths differ deliberately: the sentence has enough space on a
-    // dedicated meta line (phone); an em dash reads fine inline (desktop).
+describe("Shopping rows draw no EDHREC figure at any width (foil addendum R4)", () => {
+  it("draws neither the phone sentence nor the desktop dash when there is no figure in the map", () => {
     renderDecklist([rampOwned, rampUnowned], { shoppingFigures: {} });
 
-    // Phone sentence is in the DOM (the phone div is not JS-hidden, only CSS-hidden)
-    expect(screen.getByText(recommendationsCopy.shopping.rowNoFigure)).toBeInTheDocument();
-    // Desktop em dash is also in the DOM (CSS-hidden on phone)
-    expect(screen.getByText(recommendationsCopy.shopping.rowNoFigureDesktop)).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.shopping.rowNoFigure)).not.toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.shopping.rowNoFigureDesktop)).not.toBeInTheDocument();
   });
 
-  // An outage says nothing about any one card, so the row prints nothing rather
-  // than an absence it cannot vouch for. The degraded banner explains the gap.
-  it("prints no figure line at all when EDHREC was unreachable", () => {
+  it("prints no figure line when EDHREC was unreachable either", () => {
     renderDecklist([rampOwned, rampUnowned], { shoppingFigures: null });
 
-    expect(screen.queryByText(recommendationsCopy.shopping.rowNoFigure)).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(recommendationsCopy.shopping.rowNoFigureDesktop),
-    ).not.toBeInTheDocument();
     expect(screen.queryByText(/edhrec/i)).not.toBeInTheDocument();
   });
 
-  it("renders rowFigure (phone) and rowFigureDesktop (desktop) when figure present", () => {
+  it("prints no figure when one is known", () => {
     renderDecklist([rampOwned, rampUnowned], {
       shoppingFigures: { "arcane-signet": 67 },
     });
 
-    expect(screen.getByText(recommendationsCopy.shopping.rowFigure("67"))).toBeInTheDocument();
-    expect(screen.getByText(recommendationsCopy.shopping.rowFigureDesktop("67"))).toBeInTheDocument();
-    expect(screen.queryByText(recommendationsCopy.shopping.rowNoFigure)).not.toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.shopping.rowFigure("67"))).not.toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.shopping.rowFigureDesktop("67"))).not.toBeInTheDocument();
   });
 });
 

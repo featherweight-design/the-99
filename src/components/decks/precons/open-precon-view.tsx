@@ -155,8 +155,14 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
     ...(hasLands ? [] : basicIds),
   ];
   // The foil key follows the cards in view, exactly as the deck's marks do: a precon is a closed set, so the entry says what
-  // the tiles below draw (every copy of a card the box holds is foil, and only over art, the film's own rule).
-  const foilInView = [...commanders, ...groups.flatMap(([, g]) => g), ...basics].some((c) => c.imageUri && c.foil > 0 && c.foil === c.quantity);
+  // the tiles or rows below draw (every copy of a card the box holds is foil). Card view draws it over art only (the film's own
+  // rule) and counts the basics, which are tiles there; List view draws it on every such row (it replaced the printed `· foil`,
+  // which needed no art) and its basics are one line of text, so they are left out. A touch reader has no tooltip, so the key is
+  // what says what the glint means.
+  const allFoil = (c: { foil: number; quantity: number }) => c.foil > 0 && c.foil === c.quantity;
+  const foilInView = card
+    ? [...commanders, ...groups.flatMap(([, g]) => g), ...basics].some((c) => c.imageUri && allFoil(c))
+    : [...commanders, ...groups.flatMap(([, g]) => g)].some(allFoil);
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
   const linked = row.built.filter((b) => b.linked);
   const linkDeck = (className: string) => (
@@ -271,7 +277,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
           </div>
         </header>
 
-        {card && foilInView ? (
+        {foilInView ? (
           <div className="px-[16px] pt-[10px] md:px-[26px]">
             <MarkKey
               marks={[{ id: "foil", sample: <FoilMark finish="foil" silent />, word: foilMarkCopy.key }]}

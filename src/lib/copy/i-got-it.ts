@@ -15,7 +15,7 @@ export const gotItCopy = {
     /** Drawn in the tag's figure slot while the write is in flight. */
     pending: "adding…",
     /** The key item after a drawn `buy` plate. */
-    keyBuy: "bought it? press to add it",
+    keyBuy: "press to add",
     /** Replaces `swapToolsCopy.limit.key` in the key while I got it is on (R2 review: shorter). */
     keySwap: "cheaper stand-ins",
     /** Card details opened from a Shopping row: on the In your collection label line, in Edit copies' slot. */

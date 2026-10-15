@@ -11,7 +11,6 @@ import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
-import { phoneShoppingRowBEnabled } from "../decks/phone-shopping-row-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
@@ -63,7 +62,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   NOTICES_ENABLED: noticesEnabled,
   NO_COLLECTION_ENTRY_ENABLED: noCollectionEntryEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
-  PHONE_SHOPPING_ROW_B_ENABLED: phoneShoppingRowBEnabled,
   PRECONS_ENABLED: preconsEnabled,
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,
