@@ -9,6 +9,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-14-upcoming-precons.md`
 
 | Read | For |
 |---|---|
+| `addendum-announced-collapse/` | Addendum A1 (2026-10-15, approved by Hugh): how a large reveal collapses in the Announced group. Its own README. |
 | **`The 99 - Upcoming Precons (R2).dc.html`** | **R2, current: Hugh's three notes and the answers. Start here.** |
 | `R2 - Precons.dc.html` | The collapsible group (C1–C3) and quiet rows (Q1–Q3). |
 | `R2 - Home-About.dc.html` | About's sheet as a banner line (A1–A3), a proposal. |
