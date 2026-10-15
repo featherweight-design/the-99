@@ -13,7 +13,8 @@ export function SpendFriendLink({ token }: { token: string }) {
   useEffect(() => {
     if (sent.current) return;
     sent.current = true;
-    // The card already says the link is used up; a failure here leaves it open for its inviter to revoke.
+    // Fire and forget: a failure leaves the link open, for its inviter to revoke. What the card says about it
+    // is PR D's (the request card); this only spends it.
     void spendFriendLinkAction(token).catch(() => {});
   }, [token]);
   return null;

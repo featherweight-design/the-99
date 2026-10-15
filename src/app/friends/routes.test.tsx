@@ -1,6 +1,7 @@
 // `/friends` and `/friend/[token]` (Social R1 PR B): not found with the switch off for a signed-in reader
 // (E18); the friend link's signed-out card drawn whatever the switches say, reading nothing (E8); and the
 // already-friends spend run once after mount, only for an open link from a friend, never by the render (G4).
+import { renderToString } from "react-dom/server";
 import { cleanup, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -98,6 +99,11 @@ describe("/friend/[token]", () => {
 });
 
 describe("SpendFriendLink", () => {
+  it("spends nothing from a render: renderToString runs the render and no effect", () => {
+    renderToString(<SpendFriendLink token="t" />);
+    expect(m.spendFriendLinkAction).not.toHaveBeenCalled();
+  });
+
   it("spends the link once, under Strict Mode and across re-renders", () => {
     const { rerender } = render(<StrictMode><SpendFriendLink token="t" /></StrictMode>);
     rerender(<StrictMode><SpendFriendLink token="t" /></StrictMode>);

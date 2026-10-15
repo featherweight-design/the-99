@@ -106,7 +106,7 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
     }
   }
 
-  // About and Admin are real links, not buttons that route: they go somewhere,
+  // About, Friends and Admin are real links, not buttons that route: they go somewhere,
   // so they should open in a new tab when a reader asks them to. Manage account
   // and Sign out act on the session and have no URL to offer.
   const rowClass = (i: number) =>
