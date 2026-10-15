@@ -31,7 +31,9 @@
 // heading in the display face, and Analyze with the provenance opener beside it at 1300 and under
 // it at 390. With a reading, the bracket box and the climb share a row at 1300 (2fr / 1fr, the
 // climb on the left) and stack box-first at 390; there is no Overview; the tab's own gutters are
-// 16 / 30 and the mix sits inside them, under a rule. To reach the empty state the run CLEARS the
+// 16 / 30. The Recommended mix is NOT in the tab: #1310 gave it one mount, at "Your deck", on the
+// spine above the tab row, Analysis on or off, so it is read there and asserted absent from the
+// panel. To reach the empty state the run CLEARS the
 // deck's stored reading before each width, and puts the row back as it was in a `finally`.
 //
 // IT WRITES: the signed-in account's `user_prefs.about_version_seen`, raised with
@@ -429,7 +431,7 @@ async function walkEmpty(page, label, width) {
     `"${e.cta.text}", ${e.cta.h}px, opener ${e.besides ? "beside" : e.below ? "under" : "elsewhere"}`);
 }
 
-/** With a reading: the grid, the gutters, the mix inside them, and no Overview. */
+/** With a reading: the grid, the gutters, no Overview, and the mix at Your deck rather than in the tab (#1310). */
 async function walkLayout(page, label, width) {
   const phone = width < 768;
   const l = await page.evaluate((scope) => {
@@ -438,21 +440,25 @@ async function walkLayout(page, label, width) {
     const box = panel?.querySelector('section[aria-label="Your bracket"]')?.getBoundingClientRect();
     const climb = panel?.querySelector('[data-testid="climb-rung"]')?.parentElement?.parentElement?.getBoundingClientRect();
     const findings = panel?.querySelector('[data-testid="findings-block"]')?.getBoundingClientRect();
-    const mix = panel?.querySelector('section[aria-label="Recommended mix"]');
+    // The mix strip: none in the panel, and one on the spine above the tab row (Your deck, #1310).
+    const panelMix = panel?.querySelectorAll('section[aria-label="Recommended mix"]').length ?? null;
+    const tabTop = root?.querySelector('[role="tablist"]')?.getBoundingClientRect().top ?? null;
+    const spineMix = tabTop === null ? null : [...(root?.querySelectorAll('section[aria-label="Recommended mix"]') ?? [])]
+      .filter((m) => !panel?.contains(m) && m.getBoundingClientRect().bottom <= tabTop + 0.5).length;
     const pb = panel?.getBoundingClientRect();
     const name = panel?.querySelector('[data-testid="verdict-name"]');
-    return box && climb && findings && mix && pb ? {
+    return box && climb && findings && pb ? {
       box: { l: box.left, r: box.right, t: box.top, b: box.bottom, w: box.width },
       climb: { l: climb.left, r: climb.right, t: climb.top, w: climb.width },
       gutter: Math.round(findings.left - pb.left),
-      mixLeft: Math.round(mix.getBoundingClientRect().left - findings.left),
-      mixRule: getComputedStyle(mix).borderTopWidth,
+      panelMix,
+      spineMix,
       overview: /\bOverview\b/.test(panel.textContent ?? ""),
       nameSize: name ? getComputedStyle(name).fontSize : null,
       analyzed: panel.querySelector('[data-testid="verdict-analyzed"]')?.textContent ?? null,
     } : null;
   }, PAGE);
-  if (!report(`${label}px · the reading draws its box, climb, findings and mix`, l !== null, l ? "all four" : "one is missing")) return;
+  if (!report(`${label}px · the reading draws its box, climb and findings`, l !== null, l ? "all three" : "one is missing")) return;
   if (phone) {
     report(`${label}px · the box comes first, then the climb`, l.box.b <= l.climb.t + 1, `box ends ${Math.round(l.box.b)}, climb from ${Math.round(l.climb.t)}`);
   } else {
@@ -462,8 +468,8 @@ async function walkLayout(page, label, width) {
       `climb ${Math.round(l.climb.w)}px, box ${Math.round(l.box.w)}px, ratio ${ratio.toFixed(2)}`);
   }
   report(`${label}px · the tab's gutter is ${phone ? 16 : 30}px`, l.gutter === (phone ? 16 : 30), `${l.gutter}px`);
-  report(`${label}px · the mix sits inside the gutters, under a rule`, l.mixLeft === 0 && l.mixRule === "1px",
-    `offset ${l.mixLeft}px, rule ${l.mixRule}`);
+  report(`${label}px · the Analysis tab draws no mix strip`, l.panelMix === 0, `${l.panelMix} in the panel`);
+  report(`${label}px · the mix strip is at Your deck, above the tab row`, l.spineMix === 1, `${l.spineMix} above the tabs`);
   report(`${label}px · no Overview section on a reading`, !l.overview, l.overview ? "drawn" : "absent");
   report(`${label}px · the name is ${phone ? 19 : 21}px, dated under it`,
     l.nameSize === `${phone ? 19 : 21}px` && /^analyzed /.test(l.analyzed ?? ""), `${l.nameSize}, "${l.analyzed}"`);

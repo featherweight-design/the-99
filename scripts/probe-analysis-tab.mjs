@@ -10,11 +10,12 @@
 // edge, not on Analysis's own — Analysis sits at x≈98 and would pass at any width, while the
 // cells it pushes are Games and Versions.
 //
-// THE MIX STRIP MOVED, rather than being drawn twice. Round 0 pays for the tab with roughly
-// 150px of net vertical above the tabs, all of it the strip's — so a build that renders the
-// strip in the panel while leaving it in the spine has paid nothing and looks correct in every
-// screenshot of either surface alone. The check is that exactly ONE strip exists, on the right
-// side of the tab row.
+// THE MIX STRIP HAS ONE MOUNT, at "Your deck", Analysis on or off (#1310). Round 0 had moved it
+// into the Analysis panel; #1310 put it back on the spine above the tab row, because its
+// "consider →" cells switch the shell's tabs and a strip inside one panel could not. So the check
+// is that exactly ONE strip exists, above the tab row, before and after the Analysis tab is
+// opened, and that the Analysis panel holds NONE: a second mount in the panel looks right in a
+// screenshot of either surface alone.
 //
 // IT ASSERTS AGAINST A STATED EXPECTATION, never against what it finds. `PROBE_ANALYSIS_EXPECT`
 // is `on` (default) or `off`, and the run fails when the server disagrees with it. Reading the
@@ -168,15 +169,17 @@ const readTabs = (page) =>
     });
   }, PAGE);
 
-/** Where the Recommended mix strip is, relative to the tab row. */
+/** Where the Recommended mix strip is, relative to the tab row, and how many the Analysis panel holds. */
 const readStrip = (page) =>
   page.evaluate((scope) => {
     const root = document.querySelector(scope);
     const strips = [...(root?.querySelectorAll('section[aria-label="Recommended mix"]') ?? [])];
     const tablist = root?.querySelector('[role="tablist"]');
     const tabTop = tablist ? tablist.getBoundingClientRect().top : null;
+    const panel = root?.querySelector("#panel-analysis");
     return {
       count: strips.length,
+      inPanel: panel ? panel.querySelectorAll('section[aria-label="Recommended mix"]').length : null,
       // Which side of the tab row each strip sits on. The spine is above it; the panel below.
       sides: strips.map((s) => {
         const r = s.getBoundingClientRect();
@@ -276,11 +279,11 @@ async function run() {
         last.x + last.w <= viewport.width,
         `last cell ends at ${last.x + last.w} of ${viewport.width}`);
 
-      // Before the press: the strip must not be in the spine, and the panel is not up yet.
+      // Before the press: the strip is on the spine, at Your deck (#1310), and the panel is not up yet.
       const before = await readStrip(p);
-      report(`${label}px · the strip has LEFT the spine`,
-        before.sides.every((s) => !s.above),
-        `${before.count} strip(s) above the tabs: ${before.sides.filter((s) => s.above).length}`);
+      report(`${label}px · the strip is at Your deck, above the tabs`,
+        before.count === 1 && before.sides[0]?.above === true,
+        `${before.count} strip(s), above the tabs: ${before.sides.filter((s) => s.above).length}`);
 
       // ── The profile payload, counted as SERVER-ACTION POSTS ─────────────────────────────
       //
@@ -397,16 +400,16 @@ async function run() {
         panel ? "panel-analysis is in the document" : "no panel");
 
       const after = await readStrip(p);
-      // EXACTLY ONE. A build that draws the strip in the panel while leaving it in the spine
-      // has paid none of the vertical the tab costs, and looks right in a screenshot of either.
+      // EXACTLY ONE, with the Analysis tab open: the spine's (#1310). A second mount in the panel
+      // looks right in a screenshot of either surface alone.
       report(`${label}px · exactly one mix strip exists`, after.count === 1,
         `${after.count} strip(s)`);
-      report(`${label}px · and it is below the tab row, in the panel`,
-        after.count === 1 && after.sides[0]?.above === false,
+      report(`${label}px · and it is above the tab row, at Your deck`,
+        after.count === 1 && after.sides[0]?.above === true,
         after.count === 1 ? `top ${after.sides[0].top} vs tabs ${after.tabTop}` : "not measurable");
-      if (after.count === 1) {
-        console.log(`       (the strip is ${after.sides[0].height}px — the vertical it vacated)`);
-      }
+      report(`${label}px · the Analysis tab draws no mix strip`,
+        after.inPanel === 0,
+        after.inPanel === null ? "no Analysis panel to read" : `${after.inPanel} strip(s) in the panel`);
       await ctx.close();
     }
     } finally {

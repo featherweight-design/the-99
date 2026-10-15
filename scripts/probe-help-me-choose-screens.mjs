@@ -12,6 +12,7 @@
 //   4. No row overflows its own box or the page.
 //   5. Nothing moves (the STATES invariant): no running animation once the page settles.
 //   6. Find commanders, Change answers and Start over, each pressed.
+//   7. Typed plain words never become answer chips (#1469): they stay words, quoted under You wrote.
 //
 // Needs a server with HELP_ME_CHOOSE_ENABLED=true. Find commanders with words BEGINS A READ (`submitChoose`),
 // which writes a read and reserves a credit, so it guards that path first (`assertModelStandIn`, `intake`):
@@ -70,7 +71,8 @@ function report(label, ok, detail) {
   if (!ok) failures += 1;
 }
 
-// The longest commander-legal, non-basic single-faced name on the catalog when this was written.
+// The longest commander-legal, non-basic single-faced name on the catalog when this was written: typed as
+// plain words, it must stay words (7).
 const LONG_CARD = "Okina, Temple to the Grandfathers";
 
 const ROUTES = [
@@ -186,36 +188,35 @@ async function run() {
         const blank = await page.locator(`${PAGE} textarea`).inputValue();
         report(`${at}: Start over returns the form blank`, blank === "", JSON.stringify(blank));
       }
-      // 7. An answer chip is one line, whatever it names: a long card name truncates inside the chip
-      //    rather than wrapping out of its fixed height or past the bar's edge.
+      // 7. Plain words never become chips (#1469; ruling 2, T1): typed words naming a card and two
+      //    themes land on the results with NO answer chip for any of them, quoted whole under You wrote.
+      //    Only the controls set chips, and this form sets none.
+      //
+      //    The [[ ]] tag box is NOT walked here, and that is deliberate: a tagged card reaches the read
+      //    (`submitChoose` passes it as `tagged`), never an answer chip. The live route drops every card
+      //    answer (`parseLiveParams` sets `card: null`, F1, since #1575), so no path on the shipped
+      //    form draws a card chip, and a check for one through the tag box would have nothing to find.
       {
-        // On the phone this reads at 320, the narrowest phone in use: at 390 no card on the catalog is
-        // long enough to wrap a chip, and a check that cannot fail measures nothing.
-        const chipWidth = width === 390 ? 320 : width;
-        if (chipWidth !== width) await page.setViewportSize({ width: chipWidth, height: 844 });
-        const at = `chips @ ${chipWidth}`;
+        const at = `words @ ${width}`;
+        const typed = `build around ${LONG_CARD} with dinosaurs and landfall`;
         await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
-        await page.locator(`${PAGE} textarea`).fill(`build around ${LONG_CARD} with dinosaurs and landfall`);
+        await page.locator(`${PAGE} textarea`).fill(typed);
         await page.locator(`${PAGE} button:visible`, { hasText: "Find commanders" }).first().click();
-        // The chips, not the order line: a card and two themes may leave none fitting, which has none.
-        // Reported, not thrown: a missing chip fails this leg and leaves the rest of the walk measured.
-        const drew = await page.locator(`${PAGE} [data-testid='answer-chip']`).first().waitFor({ timeout: 90_000 }).then(() => true, () => false);
-        const chips = !drew ? [] : await page.evaluate((scope) => {
+        // The bar's own quote of the words, not the order line: it draws whatever the read does.
+        const drew = await page.locator(`${PAGE} [data-testid='you-wrote']`).first().waitFor({ timeout: 90_000 }).then(() => true, () => false);
+        const bar = !drew ? null : await page.evaluate((scope) => {
           const root = document.querySelector(scope) ?? document.body;
-          const bar = root.querySelector("[data-testid='answer-chip']")?.closest("section") ?? root;
-          const edge = bar.getBoundingClientRect().right;
-          return [...root.querySelectorAll("[data-testid='answer-chip']")].map((c) => {
-            const b = c.getBoundingClientRect();
-            return { text: c.textContent, h: Math.round(b.height), wraps: c.scrollHeight > c.clientHeight + 1, past: b.right - edge };
-          });
+          return {
+            chips: [...root.querySelectorAll("[data-testid='answer-chip']")].map((c) => c.textContent),
+            wrote: root.querySelector("[data-testid='you-wrote'] p")?.textContent ?? null,
+          };
         }, PAGE);
-        const card = chips.find((c) => c.text.includes(LONG_CARD.slice(0, 12)));
-        const bad = chips.filter((c) => c.h > 33 || c.wraps || c.past > 1);
-        report(`${at}: every answer chip holds one line inside the bar, the long card's included`,
-          card !== undefined && bad.length === 0,
-          card ? (bad.length ? JSON.stringify(bad) : `${chips.length} chips, the card's ${card.h}px`) : "no card chip drawn");
-
-        if (chipWidth !== width) await page.setViewportSize({ width, height: 844 });
+        report(`${at}: typed plain words become no answer chip`,
+          bar !== null && bar.chips.length === 0,
+          bar === null ? "the results bar never drew" : bar.chips.length ? JSON.stringify(bar.chips) : "no chips");
+        report(`${at}: the words are kept whole, under You wrote`,
+          bar !== null && bar.wrote === `\u201c${typed}\u201d`,
+          JSON.stringify(bar?.wrote ?? null));
       }
       // 8. The row's box (close-out gap 9): a 40x56 thumb at radius 5, identity pips 4px apart,
       //    and Show more across the whole row on a phone. Resolved styles, which a class cannot prove.

@@ -957,8 +957,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   is one empty state: a 150px ring of five 44px marks, 1 at twelve o'clock and running
   clockwise on a 50px radius, then the heading in the display face, then Analyze with the
   provenance opener beside it at 1300 and under it at 390. With a reading, the climb and the box
-  share a row at 1300, 2fr to 1fr, and stack box-first at 390. The gutters are 16px and 30px,
-  and the mix sits inside them under a rule. To reach the empty state it DELETES the walked
+  share a row at 1300, 2fr to 1fr, and stack box-first at 390. The gutters are 16px and 30px.
+  The Recommended mix is NOT in the tab: since #1310 the strip has one mount, at Your deck on the
+  spine above the tab row, Analysis on or off, so the probe asserts the panel holds no strip and
+  the spine holds one above the tabs (with either read pointed at the wrong place, both fail at
+  both widths). To reach the empty state it DELETES the walked
   deck's `deck_profiles` row before each width, and puts the row back as captured in a
   `finally`. With the gutters and the grid reverted it reads `0px` and `ratio 1.00`.
 
@@ -992,12 +995,26 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   five fail; the counts are in its header. Besides the `deck_profiles` row above, it writes only
   that one `user_prefs` row. Point it at `local-dev`, **never production**.
 
+- `pnpm probe:analysis-tab` walks the Analysis tab at 1300x900 and 390x844 against a STATED
+  expectation, `PROBE_ANALYSIS_EXPECT=on|off`, never against what it finds: the tab second in the
+  row, the row inside the viewport, the action calls the tab and its Analyze press make, and the
+  Recommended mix strip. Since #1310 the strip has ONE mount, at Your deck on the spine above the
+  tab row, Analysis on or off: the probe asserts exactly one strip, above the tabs, before and after
+  the tab is opened, and none inside `#panel-analysis` (pointed at the whole page instead, the panel
+  check reads 1; expecting the strip below the tabs, the spine check fails). It clears the walked
+  deck's reading before each width and restores it in a `finally` (`profile-hold.mjs`). Point it at
+  `local-dev`, **never production**.
+
 - `pnpm probe:analysis-load-order` reads the Analysis tab's FIRST PAINT at 1300x900 and 390x844,
   on a deck with versions, a stored analysis and a written overview (Hugh's staging walk,
   2026-09-25). A MutationObserver installed before the tab is pressed stamps each part's first
   visible frame and its top: the verdict, the overview, Suggested changes, and before any reading
   the empty state with the credit note beside Analyze. They must all paint in ONE frame when the
-  loader lets go, and nothing may paint at or above a part already on screen. It also reads the
+  loader lets go, and nothing may paint at or above a part already on screen. The one exception is
+  a deck never analyzed: since #1465 its empty state draws at once and the credit note follows when
+  its own read lands (1.1 to 1.9s measured on 2026-10-15), so that case asserts the ORDER (the empty
+  state first) and a BOUND (the note within 2.5s of it), not one frame. With the lag reversed the
+  order check fails, and with a 0.5s bound the bound check fails, at both widths. It also reads the
   tab row: one line with Analysis selected, and where five tabs are wider than a phone the ROW
   scrolls rather than the page.
 
@@ -1035,6 +1052,19 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   With the panel's hold removed it fails four checks. It writes a reading and an overview onto a
   deck that had neither and deletes both, with the overview's ledger unit, in a `finally`. Point
   it at `local-dev` or a scratch branch, **never production**.
+
+  **`PROBE_HUB=on|off` states whether the server runs the Tuning hub** (two or more of
+  `TUNING_ENABLED`, `MANA_BALANCE_ENABLED` and `PROPOSED_CUTS_ENABLED`), and a page that disagrees
+  fails the run. Off, Suggested changes' own section paints with the verdict, as above. On, the hub
+  stands from the tab's first frame (#1809), so that check becomes: the hub is drawn from the tab's
+  first frame, is one node never missing, keeps its top within 1px from the press to the frame the
+  verdict lands, and after that moves only on a landing frame: the verdict's (the reading draws
+  above it, as #1809's own probe asserts) and, on the fallback, the overview's, which grows in
+  place. Measured 2026-10-15: `held` green with the hub on and off, `fallback` green with it on.
+  With the landing frame counted in the hold, a hub that waits for the reading, or a landing frame
+  shifted by 1ms, the hub checks fail at both widths. One move is printed rather than failed: BEFORE the press, the hub drops once when the
+  credit note lands under the empty state (#1465), 56px at 1300 and 35px at 390, on the note's own
+  frame.
 
 - `pnpm probe:verdict-findings` walks the Analysis tab's findings and their receipt at
   1300x900 and 390x844 — thirty-four checks, and every one is a fact about layout or about two
@@ -2454,6 +2484,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   in a `finally`: local-dev or a scratch branch, never production. Measured 2026-10-11 on local-dev: all
   checks pass, and with the row lock on the deck removed from `insertNote` the race check fails on every run
   (both adds land, the deck holds 101).
+
+- `pnpm probe:help-me-choose-screens` walks Help me choose's results at 1300x900 and 390x844:
+  the first page's candidates, every trial settling, the separators, overflow and animation, the
+  three presses (Find commanders, Change answers, Start over), the row's box, the five-color drop
+  and the searching screen. **Plain words never become chips** (#1469): words naming a card and
+  two themes land on the results with no answer chip, quoted whole under You wrote (with a color
+  preset on the form, the chip check reads `colorsGreen` and fails). The `[[ ]]` tag box is not
+  walked for a chip, because none exists: a tagged card goes to the read, and the live route drops
+  every card answer (`parseLiveParams`). Its presses begin reads, which write `intake_reads` rows
+  and reserve a credit under the signed-in account; run it against `next dev` with a dummy key
+  (the spend guard checks), on `local-dev`, and delete the reads and their `model_calls` rows
+  afterwards. **Never production.**
 
 - `pnpm probe:help-me-choose-one-loading` presses Help me choose's credit press in a real browser at
   1300x900 and 390x844, down BOTH entry paths, sampling the page every 40ms.

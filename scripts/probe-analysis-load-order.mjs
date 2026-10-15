@@ -7,6 +7,10 @@
 //        tab appears after another part has painted, least of all above it. Read by a
 //        MutationObserver installed before the tab is pressed, which stamps each part's first
 //        visible frame and where it sat.
+//        A deck NEVER analyzed is the exception, by #1465: its empty state draws at once and the
+//        credit note beside Analyze follows when its own read lands (about 0.7 to 2s measured). So
+//        that case asserts the ORDER (the empty state first, never the note) and a BOUND (the note
+//        within 2.5s of it), not one frame.
 //   d.   The tab row stays one line with Analysis selected, on a deck with versions.
 //
 // It WRITES, on the deck it walks, only what the deck lacked: a reading (Analyze) and an overview
@@ -39,6 +43,9 @@ if (!EMAIL.includes("+clerk_test")) throw new Error("PROBE_EMAIL must be a +cler
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 const sql = neon(TARGET);
+// How long after a never-analyzed deck's empty state its credit note may land (#1465: measured at
+// about 0.7 to 2s, the note's own read).
+const NOTE_BOUND_MS = 2_500;
 
 let failures = 0;
 function report(label, ok, detail) {
@@ -191,8 +198,9 @@ async function run() {
       }, PAGE);
       report(at("the overview is among them, written"), Boolean(parts.overview) && written, JSON.stringify({ painted: parts.overview ?? null, written }));
 
-      // a, before any reading: the empty state and the credit note beside Analyze paint together.
-      // A deck never analyzed, so nothing is stored and only the overview's read is waited on.
+      // a, before any reading: the empty state first, then the credit note beside Analyze within
+      // NOTE_BOUND_MS of it (#1465: the empty state no longer waits on the note's read). A deck
+      // never analyzed, so nothing is stored.
       const [bare] = await sql`
         select d.id from decks d where d.user_id = ${userId}
           and not exists (select 1 from deck_profiles p where p.deck_id = d.id)
@@ -209,9 +217,11 @@ async function run() {
       await empty.locator(`${PAGE} [data-testid='analysis-empty']`).first().waitFor({ timeout: 60_000 });
       await empty.waitForTimeout(4_000);
       const bareParts = await empty.evaluate(() => window.__parts);
-      report(at("before a reading, the credit note arrives with the empty state"),
-        Boolean(bareParts.empty && bareParts.pressNote) && Math.abs(bareParts.pressNote.at - bareParts.empty.at) <= 50,
-        JSON.stringify(bareParts));
+      const noteLag = bareParts.empty && bareParts.pressNote ? bareParts.pressNote.at - bareParts.empty.at : null;
+      report(at("before a reading, the empty state paints first, never after the credit note"),
+        noteLag !== null && noteLag >= 0, JSON.stringify(bareParts));
+      report(at(`and the credit note follows within ${NOTE_BOUND_MS / 1000}s of it`),
+        noteLag !== null && noteLag <= NOTE_BOUND_MS, `${noteLag ?? "no note"}ms after the empty state`);
       await empty.close();
 
       // d: one line of tabs with Analysis selected, on a deck with versions.
