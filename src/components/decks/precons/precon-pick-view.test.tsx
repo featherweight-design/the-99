@@ -85,9 +85,24 @@ describe("Precons I own: the foot", () => {
 });
 
 describe("Precons I own: refusals", () => {
+  it("names the landed boxes without claiming a deck when one was an add from before the pick started decks", async () => {
+    // A retry spanning the deploy: Abzan's add is recovered from before decks, so it has none.
+    addPrecons.mockResolvedValueOnce([
+      { rowFile: "Abzan", ok: true, entryId: "e1" }, { rowFile: "Sultai", ok: false },
+      { rowFile: "Temur", ok: true, entryId: "e3", deckId: "d3" },
+    ]);
+    draw();
+    tick("Abzan Armor"); tick("Sultai Arisen"); tick("Temur Roar");
+    fireEvent.click(addButton());
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Added Abzan Armor and Temur Roar. We couldn’t add Sultai Arisen.");
+    expect(alert.textContent).not.toMatch(/deck/);
+  });
+
   it("names the boxes that landed and the one that didn't, unticks the landed and keeps the failed box's id", async () => {
     addPrecons.mockResolvedValueOnce([
-      { rowFile: "Abzan", ok: true, entryId: "e1" }, { rowFile: "Sultai", ok: false }, { rowFile: "Temur", ok: true, entryId: "e3" },
+      { rowFile: "Abzan", ok: true, entryId: "e1", deckId: "d1" }, { rowFile: "Sultai", ok: false },
+      { rowFile: "Temur", ok: true, entryId: "e3", deckId: "d3" },
     ]);
     draw();
     tick("Abzan Armor"); tick("Sultai Arisen"); tick("Temur Roar");

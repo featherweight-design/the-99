@@ -378,9 +378,13 @@ export const preconsCopy = {
     cancel: "Cancel",
     /** Replaces Cancel once any box has landed (S7). */
     done: "Done",
-    /** Part-failure (S7): the boxes that landed and the ones that didn't. Every refusal otherwise reads `start.owned`'s. */
-    partFailed: (landed: string[], failed: string[]) =>
-      `Added ${names(landed)} and started ${landed.length === 1 ? "its deck" : "their decks"}. We couldn’t add ${names(failed)}.`,
+    /**
+     * Part-failure (S7): the boxes that landed and the ones that didn't. Every refusal otherwise reads `start.owned`'s.
+     * `decks` is whether every landed box started its deck: a retry spanning the deploy can recover a box added before
+     * the pick started decks, and that one has none, so the line then names the boxes alone, as the receipt does.
+     */
+    partFailed: (landed: string[], failed: string[], decks: boolean) =>
+      `Added ${names(landed)}${decks ? ` and started ${landed.length === 1 ? "its deck" : "their decks"}` : ""}. We couldn’t add ${names(failed)}.`,
     tryAgain: "Try again",
     /**
      * The receipt strip on the destination (S5). `d` counts the boxes whose deck still stands. Decks are named only
