@@ -27,6 +27,10 @@ export type ScanLabResult = {
 
 const ms = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 600_000 ? Math.round(v) : null;
+/** How long ago the screen changed: any age a session can reach, held to the integer column's range. Not `ms`, whose
+ * ten-minute cap is for one frame's timings: the same answer can stay on screen far longer. */
+const age = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.min(Math.round(v), 2_147_483_647) : null;
 const unit = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) && v >= -1 && v <= 1 ? v : null;
 
@@ -63,7 +67,7 @@ export function parseResult(raw: unknown): ScanLabResult | null {
     agreedFrames: agreed,
     indexVersion: r.indexVersion,
     frame,
-    changedMsBeforeTap: ms(r.changedMsBeforeTap),
+    changedMsBeforeTap: age(r.changedMsBeforeTap),
     shownOracleId: shown as string | null,
   };
 }

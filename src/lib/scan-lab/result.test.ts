@@ -34,5 +34,8 @@ describe("scan-lab result", () => {
     expect(parseResult(ok)).toMatchObject({ changedMsBeforeTap: null, shownOracleId: null });
     expect(parseResult({ ...ok, shownOracleId: "Grizzled Angler" })).toBeNull();
     expect(parseResult({ ...ok, changedMsBeforeTap: -5 })).toMatchObject({ changedMsBeforeTap: null });
+    // The same answer can stay on screen past a frame timing's ten-minute cap.
+    expect(parseResult({ ...ok, changedMsBeforeTap: 600_000 })).toMatchObject({ changedMsBeforeTap: 600_000 });
+    expect(parseResult({ ...ok, changedMsBeforeTap: 1e12 })).toMatchObject({ changedMsBeforeTap: 2_147_483_647 });
   });
 });
