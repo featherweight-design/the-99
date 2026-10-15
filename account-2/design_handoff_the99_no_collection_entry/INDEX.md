@@ -1,4 +1,4 @@
-# The 99 — No-collection entry · R1 handoff package
+# The 99 — No-collection entry · R2 handoff package
 
 A way into the app for a player with no collection file: precons they own, a deck they play, or cards by hand, beside
 the upload on first run and on the empty Collection. Phone and desktop.

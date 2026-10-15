@@ -1,6 +1,6 @@
 # The 99 — No-collection entry (design handoff, R2)
 
-`design_handoff_the99_no_collection_entry/` · 2026-10-15 · account 2 · **R2, for Hugh's audit.** R2 changes path (a) only: an import checkbox replaces R1's offer after the import, drawn on the shipped pages.
+`design_handoff_the99_no_collection_entry/` · 2026-10-15 · account 2 · **R2, approved by Hugh 2026-10-15.** R2 changes path (a) only: an import checkbox replaces R1's offer after the import, drawn on the shipped pages.
 
 A stateful first-run addendum: a way into the app for a player with no collection file, or one who can't upload
 theirs. Phone and desktop. It changes `design/design_handoff_the99_first_run_onboarding/` (step 1 and the locked
@@ -61,6 +61,9 @@ Commanders, Discover and Decks wait for a card; every write is an add, one Histo
    - **Arrival:** the shipped clean strip takes the precon start's three-line form (`ArrivalBand` `lines`): head `All 100
      lines came over clean.`, body `All 100 cards added to your collection.` + `History`, meta `Imported from your list a
      moment ago`.
+   - **Dismiss:** the arrival strip's dismiss is the ✕ alone at both widths, `aria-label="Dismiss"`, a 32px press (Hugh's
+     R2 audit). This drops the word `Dismiss` the shipped `ArrivalBand` draws beside it on desktop, for every arrival
+     strip, the precon receipt (S5) included.
    - **Refused:** the shared toast on the import page with the precon add's `addFailed` / `addUnsure`; the list and the
      box stay. (S11)
    - **Unticked:** the import is exactly as shipped (S12). No offer follows it; a player who owns part of the list uses
@@ -178,18 +181,20 @@ precon key line on `PRECONS_ENABLED`.
 
 | File | What it is |
 |---|---|
-| `The 99 - No-Collection Entry (R1).dc.html` | The calls, locks and gaps in one board |
+| `The 99 - No-Collection Entry (R2).dc.html` | The calls, locks and gaps in one board (R2; R1 kept beside it) |
+| `R2 - FirstRun-Desktop.dc.html` / `-Phone` | R2: Import a deck's sub line reads `Paste a list you play.` |
 | `R1 - FirstRun-Desktop.dc.html` / `-Phone` | S1, S15, S16, focus, the lock's note |
 | `R1 - PreconPick-Desktop.dc.html` / `-Phone` | S2, S3 (twin), S4, S17 |
-| `R1 - PreconResult.dc.html` | S5, S6, S7 at both widths |
+| `R1 - PreconResult.dc.html` | S5, S6, S7 at both widths (`R2 -` drops the word Dismiss) |
 | `R2 - Import-Desktop.dc.html` / `-Phone` | S8, S10, S11, S12 (R2: the checkbox; replaces `R1 - Import-*`) |
 | `R1 - Empty-Desktop.dc.html` / `-Phone` | S12 Home, S13 Collection, the lock outside first run, Open 7 |
 | `R1 - LaterUpload.dc.html` | S14 at both widths |
-| `R1 - About-Entry.dc.html` | The new entry, its phone reduction, the two edits |
+| `R2 - About-Entry.dc.html` | The new entry, its phone reduction, the two edits (R2 wording for path (a)) |
 | `STATES-no-collection-entry.md` | The matrix |
 | `READINESS.md` | The verdict and what blocks a green |
 | `no-collection-entry · copy strings.ts` | Every new or changed string, for `/copy-review` |
 | `about · start without a collection.ts` | The About entry and edits as code |
+| `design-tables/no-collection-entry.md` | The property table |
 | `brand/` | The locked brand sheet |
 
 Source it was aligned with, on `main`:
