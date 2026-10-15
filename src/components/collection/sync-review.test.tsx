@@ -69,7 +69,7 @@ function renderReview(d: UploadChangePreview, c: SyncReviewControls = controls()
   return { ...utils, onContinue, onCancel };
 }
 
-const confirmButton = () => screen.getByRole("button", { name: /Sync collection|Syncing…|Record .* tokens|Back to Collection/ });
+const confirmButton = () => screen.getByRole("button", { name: /Sync collection|Syncing…|Sync .* token changes?|Back to Collection/ });
 
 describe("Sync review · the tiles", () => {
   it("draws four tiles in risk order, as ONE polite live region", () => {
@@ -286,10 +286,10 @@ describe("Sync review · the bar", () => {
     expect(document.activeElement).toBe(within(first).getAllByRole("radio")[0]);
   });
 
-  it("names what happens when no card moves: Record N tokens", () => {
+  it("names what happens when no card moves: Sync N token changes", () => {
     renderReview(data({ counts: { taken: 0, kept: 121 }, stale: "noNewer" }));
     expect(screen.getByText("Your cards stay as they are, including the 121 you changed. 114 tokens change.")).toBeTruthy();
-    expect(confirmButton().textContent).toBe("Record 114 tokens");
+    expect(confirmButton().textContent).toBe("Sync 114 token changes");
     expect(screen.getByText("This file looks no newer than your Oct 2 upload, so this sync takes only its tokens.")).toBeTruthy();
   });
 
@@ -326,7 +326,7 @@ describe("Sync review · the bar", () => {
     expect(f({ conflicts: 3, undecided: 1 })).toEqual({ kind: "held", line: "1 card still to decide." });
     expect(f({ taken: 18 }, { tokensChange: false, tokensChanged: 0 }).line).toBe("Taking 18 cards from the file and keeping 119 of yours.");
     // Nothing of yours kept and only tokens moving: no "including the 0 you changed".
-    expect(f({ taken: 0, kept: 0 })).toEqual({ kind: "confirm", line: "Your cards stay as they are. 114 tokens change.", label: "Record 114 tokens" });
+    expect(f({ taken: 0, kept: 0 })).toEqual({ kind: "confirm", line: "Your cards stay as they are. 114 tokens change.", label: "Sync 114 token changes" });
   });
 });
 

@@ -206,7 +206,7 @@ export const collectionEditCopy = {
         undecided: (k: number) => `${cards(k)} still to decide.`,
         nothing: "Nothing will change.",
         confirm: "Sync collection",
-        confirmTokens: (t: number) => `Record ${t === 1 ? "1 token" : `${n(t)} tokens`}`,
+        confirmTokens: (t: number) => `Sync ${t === 1 ? "1 token change" : `${n(t)} token changes`}`,
         pending: "Syncing…",
         back: "Back to Collection",
       },
