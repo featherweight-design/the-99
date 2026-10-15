@@ -48,6 +48,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
@@ -390,7 +391,8 @@ async function walkEmpty(page, label, width) {
       return { n: Number(m.dataset.bracket), w: Math.round(b.width), cx: b.left + b.width / 2 - rb.left, cy: b.top + b.height / 2 - rb.top };
     });
     const h2 = empty.querySelector("h2");
-    const cta = [...empty.querySelectorAll("button")].find((b) => !b.hasAttribute("aria-haspopup"));
+    // By its label: the description box now draws its own buttons ahead of it (card tags).
+    const cta = [...empty.querySelectorAll("button")].find((b) => !b.hasAttribute("aria-haspopup") && /^(Analyze|Try again)$/.test(b.textContent.trim()));
     const opener = empty.querySelector('[data-testid="provenance-opener"]');
     const cb = cta.getBoundingClientRect();
     const ob = opener.getBoundingClientRect();
@@ -523,6 +525,8 @@ async function run() {
     const first = await browser.newContext({ viewport: WIDTHS[0].viewport });
     const scout = await first.newPage();
     await signIn(scout);
+    // THE SPEND GUARD, before any press: Analyze may write the overview.
+    await assertModelStandIn(BASE, ["synopsis"], { get: pageGet(scout) });
     const href = await findDeck(scout);
     await first.close();
     // A MISSING FIXTURE IS A FAILURE, AND IT HAS TO REACH THE EXIT CODE. An earlier version

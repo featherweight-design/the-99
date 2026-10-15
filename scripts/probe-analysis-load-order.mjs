@@ -23,6 +23,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 
@@ -84,7 +85,9 @@ const OBSERVE = () => {
     overview: "[data-testid='synopsis-overview']",
     empty: "[data-testid='analysis-empty']",
     pressNote: "[data-testid='press-note']",
-    tuning: "section[aria-labelledby='tuning-heading']",
+    // Suggested changes: the Tuning hub when two or more of its tools are on (the hub stands where the
+    // tool's own section stood, and the opening holds on it), the tool's section otherwise.
+    tuning: "section[data-tuning-hub], section[aria-labelledby='tuning-heading']",
   };
   const seen = {};
   window.__parts = seen;
@@ -130,6 +133,8 @@ async function run() {
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
       const page = await context.newPage();
       const userId = await signIn(page);
+      // THE SPEND GUARD, before any press: Analyze and Write one may write the overview.
+      await assertModelStandIn(BASE, ["synopsis"], { get: pageGet(page) });
       const deck = await deckFor(userId);
       const at = (s) => `${s} @ ${width}`;
 

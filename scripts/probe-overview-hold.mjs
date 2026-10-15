@@ -15,6 +15,12 @@
 // local-dev fixture account holds have one. Point PROBE_TARGET_URL at a scratch branch or local-dev, never
 // production.
 //
+// Run it with the Tuning hub OFF (TUNING_ENABLED alone of TUNING_ENABLED, MANA_BALANCE_ENABLED and
+// PROPOSED_CUTS_ENABLED): it measures Suggested changes' own section painting with the verdict, and
+// with two or more of those on the hub stands there from idle instead (tuning-hub-stays-put, #1809),
+// so that check has nothing to measure. Measured 2026-10-15: green with the hub off, and the one
+// check red at both widths with it on.
+//
 //   PROBE_TARGET_URL=<local-dev> PROBE_EMAIL=<+clerk_test account> PROBE_HOLD=held \
 //     PROBE_BASE=http://localhost:3260 node scripts/probe-overview-hold.mjs
 
@@ -23,6 +29,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
@@ -155,6 +162,8 @@ async function run() {
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
       const page = await context.newPage();
       const userId = await signIn(page);
+      // THE SPEND GUARD, before any press: the first Analyze writes the overview.
+      await assertModelStandIn(BASE, ["synopsis"], { get: pageGet(page) });
       // A legal, whole deck with no overview: the press is a first press that writes, once its reading
       // is held and cleared below. Chosen once, and reset after each width, so both widths measure the
       // same deck.

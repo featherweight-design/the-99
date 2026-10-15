@@ -19,6 +19,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
@@ -158,6 +159,8 @@ async function run() {
       const ctx = await browser.newContext({ viewport });
       const p = await ctx.newPage();
       await signIn(p);
+      // THE SPEND GUARD, before any press: Analyze may write the overview.
+      await assertModelStandIn(BASE, ["synopsis"], { get: pageGet(p) });
       if (!deckId) {
         await p.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
         await p.waitForTimeout(1200);

@@ -32,6 +32,7 @@ import { neon } from "@neondatabase/serverless";
 import { randomUUID } from "node:crypto";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
@@ -305,6 +306,8 @@ try {
   await clerkSetup();
   const setup = await (await browser.newContext()).newPage();
   const userId = await signIn(setup);
+  // THE SPEND GUARD, before any press: Suggested changes and Look deeper (tuning), Help me choose (intake) and Find a deck (fits).
+  await assertModelStandIn(BASE, ["tuning", "intake", "fits"], { get: pageGet(setup) });
   accountId = userId;
   const ids = await accountDeckIds(setup);
   const source = process.env.PROBE_CUTS_DECK

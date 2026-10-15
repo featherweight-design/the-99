@@ -24,6 +24,7 @@ import { neon } from "@neondatabase/serverless";
 import { randomUUID } from "node:crypto";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
@@ -152,6 +153,8 @@ try {
   await clerkSetup();
   const setup = await (await browser.newContext()).newPage();
   await signIn(setup);
+  // THE SPEND GUARD, before any press: Suggested changes and Look deeper (tuning).
+  await assertModelStandIn(BASE, ["tuning"], { get: pageGet(setup) });
   const ids = await accountDeckIds(setup);
   // Proposed cuts needs a deck over 100 cards: one is cloned under this account from any over-100
   // deck on the database (PROBE_CUTS_DECK names one), and the clone is deleted in the `finally`.

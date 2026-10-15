@@ -21,6 +21,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { neon } from "@neondatabase/serverless";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
@@ -166,6 +167,8 @@ let ours = null;
 try {
   const page = await (await browser.newContext({ viewport: { width: 1300, height: 900 } })).newPage();
   const userId = await signIn(page);
+  // THE SPEND GUARD, before any press: the re-analyze press may write the overview.
+  await assertModelStandIn(BASE, ["synopsis"], { get: pageGet(page) });
   await clearAboutSheet(page, userId);
   const deck = await pickDeck(userId);
   if (!deck) throw new Error("The account owns no legal, whole deck with a stored reading.");

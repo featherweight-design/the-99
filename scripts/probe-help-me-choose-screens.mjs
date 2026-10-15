@@ -13,12 +13,15 @@
 //   5. Nothing moves (the STATES invariant): no running animation once the page settles.
 //   6. Find commanders, Change answers and Start over, each pressed.
 //
-// Needs a server with HELP_ME_CHOOSE_ENABLED=true. It makes no writes. Point it at local-dev.
+// Needs a server with HELP_ME_CHOOSE_ENABLED=true. Find commanders with words BEGINS A READ (`submitChoose`),
+// which writes a read and reserves a credit, so it guards that path first (`assertModelStandIn`, `intake`):
+// run it against `next dev` with a dummy ANTHROPIC_API_KEY. Point it at local-dev.
 //
 //   E2E_AUDIT_USER_EMAIL=... PROBE_BASE=http://localhost:3210 node scripts/probe-help-me-choose-screens.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
@@ -71,7 +74,9 @@ function report(label, ok, detail) {
 const LONG_CARD = "Okina, Temple to the Grandfathers";
 
 const ROUTES = [
-  ["theme", "/decks/new/choose?w=dinosaurs+that+stomp%2C+lots+of+little+tokens+under+%24200&v=submit"],
+  // `v=results`, never the retired `v=submit` (which now lands on the form): the free results with the
+  // words kept, and no read begun by an address (F8).
+  ["theme", "/decks/new/choose?w=dinosaurs+that+stomp%2C+lots+of+little+tokens+under+%24200&v=results"],
   ["owned", "/decks/new/choose?c=g&v=results"],
 ];
 
@@ -128,6 +133,8 @@ async function run() {
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
       const page = await context.newPage();
       await signIn(page);
+      // THE SPEND GUARD, before any press: Find commanders with words begins the read.
+      await assertModelStandIn(BASE, ["intake"], { get: pageGet(page) });
       for (const [name, url] of ROUTES) {
         await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
         await page.locator(`${PAGE} [data-testid='result-row']`).first().waitFor({ state: "attached", timeout: 90_000 });
@@ -163,8 +170,9 @@ async function run() {
         await findButton().click();
         await page.locator(`${PAGE} [data-testid='order-line']`).waitFor({ timeout: 90_000 });
         const landed = new URL(page.url());
-        report(`${at}: Find commanders lands on the results with the words resolved`,
-          landed.searchParams.get("v") === "results" && (landed.searchParams.get("t") ?? "").includes("dinosaurs"),
+        // The words stay the words (`w`, never chips: ruling 2, T1) and the press begins a read (`r`).
+        report(`${at}: Find commanders lands on the results, its words kept and a read begun`,
+          landed.searchParams.get("v") === "results" && (landed.searchParams.get("w") ?? "").includes("dinosaurs") && !!landed.searchParams.get("r"),
           landed.search);
         await page.locator(`${PAGE} a:visible`, { hasText: "Change answers" }).first().click();
         await page.locator(`${PAGE} textarea`).waitFor({ timeout: 60_000 });
@@ -190,8 +198,9 @@ async function run() {
         await page.locator(`${PAGE} textarea`).fill(`build around ${LONG_CARD} with dinosaurs and landfall`);
         await page.locator(`${PAGE} button:visible`, { hasText: "Find commanders" }).first().click();
         // The chips, not the order line: a card and two themes may leave none fitting, which has none.
-        await page.locator(`${PAGE} [data-testid='answer-chip']`).first().waitFor({ timeout: 90_000 });
-        const chips = await page.evaluate((scope) => {
+        // Reported, not thrown: a missing chip fails this leg and leaves the rest of the walk measured.
+        const drew = await page.locator(`${PAGE} [data-testid='answer-chip']`).first().waitFor({ timeout: 90_000 }).then(() => true, () => false);
+        const chips = !drew ? [] : await page.evaluate((scope) => {
           const root = document.querySelector(scope) ?? document.body;
           const bar = root.querySelector("[data-testid='answer-chip']")?.closest("section") ?? root;
           const edge = bar.getBoundingClientRect().right;
