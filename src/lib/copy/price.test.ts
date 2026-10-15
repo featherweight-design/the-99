@@ -26,8 +26,11 @@ describe("priceCopy", () => {
       priceCopy.strip.provenance,
       priceCopy.strip.lastChecked("Monday"),
       priceCopy.strip.behind,
+      priceCopy.strip.cartNote,
     ].join(" · ");
-    expect(line).toBe("prices from Mana Pool · last checked Monday · these are behind");
+    expect(line).toBe(
+      "single-copy prices on Mana Pool · last checked Monday · these are behind · a cart with shipping or fewer packages can cost more",
+    );
     expect(line).not.toMatch(/error|failed|warning|stale|out of date|problem/i);
   });
 

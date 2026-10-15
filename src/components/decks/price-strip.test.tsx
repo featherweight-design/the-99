@@ -22,8 +22,8 @@ describe("PriceStrip provenance line", () => {
         shoppingCards={list}
       />,
     );
-    expect(screen.getByText(/prices from Mana Pool/)).toHaveTextContent(
-      `${priceCopy.strip.provenance} · ${priceCopy.strip.lastChecked("Monday")}`,
+    expect(screen.getByText(/single-copy prices on Mana Pool/)).toHaveTextContent(
+      `${priceCopy.strip.provenance} · ${priceCopy.strip.lastChecked("Monday")} · ${priceCopy.strip.cartNote}`,
     );
     // A substring, not a `RegExp` built from the copy: the clause carries
     // punctuation, which a regex would read as syntax.
@@ -38,8 +38,8 @@ describe("PriceStrip provenance line", () => {
         shoppingCards={list}
       />,
     );
-    expect(screen.getByText(/prices from Mana Pool/)).toHaveTextContent(
-      `${priceCopy.strip.provenance} · ${priceCopy.strip.lastChecked("12 August")} · ${priceCopy.strip.behind}`,
+    expect(screen.getByText(/single-copy prices on Mana Pool/)).toHaveTextContent(
+      `${priceCopy.strip.provenance} · ${priceCopy.strip.lastChecked("12 August")} · ${priceCopy.strip.behind} · ${priceCopy.strip.cartNote}`,
     );
   });
 
@@ -72,7 +72,7 @@ describe("PriceStrip responsive arrangement", () => {
       />,
     );
     expect(screen.getAllByText("$12.40")).toHaveLength(1);
-    expect(screen.getAllByText(/prices from Mana Pool/)).toHaveLength(1);
+    expect(screen.getAllByText(/single-copy prices on Mana Pool/)).toHaveLength(1);
     expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
@@ -141,6 +141,8 @@ describe("PriceStrip figure line", () => {
     expect(screen.getByText(/no prices from Mana Pool/)).toHaveTextContent(
       `${priceCopy.strip.provenanceUnpriced} · ${priceCopy.strip.lastChecked("Monday")}`,
     );
+    // No figure, nothing for a cart to cost more than.
+    expect(screen.queryByText(new RegExp(priceCopy.strip.cartNote))).toBeNull();
   });
 
   // Nothing to shop for is not a total of nothing, and a provenance line above
