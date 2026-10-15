@@ -466,13 +466,6 @@ export function CollectionBrowser({
     },
     [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement],
   );
-  // The reveal is over once the last tile's fade is (the beat, the capped stagger and the 200ms fade, well inside this).
-  // Dropping the boundary then means a view switch or a breakpoint change, which mounts a fresh list, replays nothing.
-  useEffect(() => {
-    if (revealFrom === null) return;
-    const done = setTimeout(() => setRevealFrom(null), REVEAL_DONE_MS);
-    return () => clearTimeout(done);
-  }, [revealFrom]);
   const showMore = useCallback(() => {
     setRevealFrom(shown);
     setShown((s) => s + PAGE_SIZE);
@@ -563,6 +556,15 @@ export function CollectionBrowser({
     setHeld({ from: wanted, rows: resolvedWanted as BrowseListCard[] });
   }
   const windowed = complete ? (resolvedWanted as BrowseListCard[]) : held.rows;
+  // The reveal is over once the last tile's fade is (the beat, the capped stagger and the 200ms fade, well inside this),
+  // counted from when the new rows are on screen: a Show more whose draw fields are still arriving keeps the rows already
+  // drawn, and its boundary has to be there when they mount. Dropping it then means a view switch or a breakpoint change,
+  // which mounts a fresh list, replays nothing.
+  useEffect(() => {
+    if (revealFrom === null || !complete) return;
+    const done = setTimeout(() => setRevealFrom(null), REVEAL_DONE_MS);
+    return () => clearTimeout(done);
+  }, [revealFrom, complete]);
 
   // The ordered ids Prev/Next pages through — the sorted list, not the window,
   // so paging runs past the 200 cards currently rendered. Carries each card's own
