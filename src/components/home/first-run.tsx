@@ -132,7 +132,7 @@ export function FirstRunChecklist({ addByHand = false, about = null }: { addByHa
       {/* About's line (About on the banner, PR A; A3, or A1 for an account that read /about and then cleared its
           collection), between the heading and the steps. No arrival lines here (H7), and no ✕: the checklist is the
           first-run surface itself, and the line goes once About is opened. */}
-      {about && <ArrivalsBanner data={null} about={about} closable={false} />}
+      {about && <ArrivalsBanner data={null} about={about} closable={false} gutter="checklist" />}
 
       <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px] max-md:group-has-[[data-reviewing]]/first-run:pt-[8px]">
         {/* Step 1 — live. A client component, because the card changes while its review is

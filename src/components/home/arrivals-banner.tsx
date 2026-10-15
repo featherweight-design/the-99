@@ -111,6 +111,7 @@ export function ArrivalsBanner({
   data,
   about = null,
   closable = true,
+  gutter = "dashboard",
 }: {
   /** The arrivals, or null when only About has something to say. */
   data: ArrivalsBannerData | null;
@@ -118,7 +119,10 @@ export function ArrivalsBanner({
   about?: AboutLine | null;
   /** False on the first-run checklist: About's line alone, with no ✕. */
   closable?: boolean;
+  /** The page's own gutter at desktop, so the band lines up with its heading: 26 on the Dashboard, 28 on the checklist. */
+  gutter?: "dashboard" | "checklist";
 }) {
+  const smMx = gutter === "checklist" ? "sm:mx-[28px]" : "sm:mx-[26px]";
   const keys = data?.keys ?? [];
   const aboutIds = about?.ids ?? [];
   const id = [...keys, ...aboutIds.map((a) => `about:${a}`)].join(" ");
@@ -175,12 +179,12 @@ export function ArrivalsBanner({
             aria-label={copy.regionLabel}
             className={
               `${SHELL} mx-[16px] mt-[14px] flex items-start gap-[10px] py-[10px] pl-[14px] ` +
-              "sm:mx-[26px] sm:mt-[18px] sm:min-h-[46px] sm:items-center sm:gap-[12px] sm:py-[7px] " +
+              `${smMx} sm:mt-[18px] sm:min-h-[46px] sm:items-center sm:gap-[12px] sm:py-[7px] ` +
               (closable ? "pr-[4px] sm:pr-[8px]" : "pr-[14px]")
             }
           >
             <Mark className="mt-[2px] sm:mt-0" />
-            <div className="flex min-w-0 flex-1 flex-col gap-[4px] pt-[2px] sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-[14px] sm:gap-y-[2px] sm:pt-0">
+            <div className="flex min-w-0 flex-1 flex-col gap-[4px] pt-[2px] sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-[14px] sm:pt-0">
               <p className="m-0 text-[14px] leading-[1.45] text-[color:var(--fg-body)]">
                 {single === "about" && aboutShown ? <AboutSentence line={aboutShown} /> : <Sentence line={lines[0]!} />}
               </p>
@@ -188,7 +192,7 @@ export function ArrivalsBanner({
                 <Link
                   href={ABOUT_HREF}
                   data-about-link
-                  className={`${LINK} min-h-[24px] self-start text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
+                  className={`${LINK} min-h-[24px] self-start whitespace-nowrap text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
                 >
                   {copy.aboutShow}
                   <PendingReporter href={ABOUT_HREF} />
@@ -196,14 +200,14 @@ export function ArrivalsBanner({
               ) : (
                 <Link
                   href={arrivals!.href}
-                  className={`${LINK} min-h-[24px] self-start text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
+                  className={`${LINK} min-h-[24px] self-start whitespace-nowrap text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
                 >
                   {lines[0]!.kind === "set" ? copy.seeOne : copy.seeMany}
                   <PendingReporter href={arrivals!.href} />
                 </Link>
               )}
             </div>
-            {closeButton("-mt-[8px] h-[44px] w-[44px] text-[14px] sm:mt-0 sm:h-[32px] sm:w-[32px] sm:text-[13px]")}
+            {closeButton("h-[44px] w-[44px] text-[14px] sm:mt-0 sm:h-[32px] sm:w-[32px] sm:text-[13px]")}
           </section>
         ) : aboutShown && arrivals ? (
           // About and arrivals (A2): the heading `New in the app` and ✕ on one row, then one line each, About's
@@ -213,7 +217,7 @@ export function ArrivalsBanner({
             aria-label={copy.regionLabel}
             className={
               `${SHELL} mx-[16px] mt-[14px] flex flex-col pt-[2px] pr-[4px] pb-[6px] pl-[14px] ` +
-              "sm:mx-[26px] sm:mt-[18px] sm:pt-[6px] sm:pr-[8px]"
+              `${smMx} sm:mt-[18px] sm:pt-[6px] sm:pr-[8px]`
             }
           >
             <div className="flex items-center gap-[10px]">
@@ -264,7 +268,7 @@ export function ArrivalsBanner({
             aria-label={copy.regionLabel}
             className={
               `${SHELL} mx-[16px] mt-[14px] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-[10px] pt-[6px] pr-[4px] pb-[4px] pl-[14px] ` +
-              "sm:mx-[26px] sm:mt-[18px] sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-x-[10px] sm:pt-[7px] sm:pr-[8px] sm:pb-[6px]"
+              `${smMx} sm:mt-[18px] sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-x-[10px] sm:pt-[7px] sm:pr-[8px] sm:pb-[6px]`
             }
           >
             <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-[10px]">

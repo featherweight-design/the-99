@@ -340,6 +340,15 @@ describe("ArrivalsBanner, About's line", () => {
     expect(region()).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
   });
+
+  it("lines up with the page's own desktop gutter: 28 on the checklist, 26 on the Dashboard", () => {
+    const { unmount } = render(<ArrivalsBanner data={null} about={FIRST} closable={false} gutter="checklist" />);
+    expect(region()!.className).toContain("sm:mx-[28px]");
+    expect(region()!.className).not.toContain("sm:mx-[26px]");
+    unmount();
+    render(<ArrivalsBanner data={null} about={FIRST} />);
+    expect(region()!.className).toContain("sm:mx-[26px]");
+  });
 });
 
 describe("About's line on both Home surfaces", () => {
