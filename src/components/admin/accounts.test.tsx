@@ -172,6 +172,17 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(clearOverride).toHaveBeenCalledWith({ switchName: "ALL_FEATURES", scope: "user", targetUserId: "user_9mara" });
   });
 
+  // The head is the card's full-width bar like every group's, and the body and control sit in a row with
+  // the rows' own side padding; inside the head's column the body ran flush to the card's edge.
+  it("pads the All features row as the card's other rows are padded", () => {
+    render(<AccountPageView page={{ ...PAGE, allFeatures: false }} />);
+    const box = screen.getByTestId("account-all-features");
+    const body = within(box).getByText(/./, { selector: "p" });
+    expect(body.parentElement!.className).toMatch(/(^| )px-\[14px\]( |$)/);
+    expect(body.parentElement!.className).toMatch(/(^| )md:px-\[16px\]( |$)/);
+    expect(box.querySelector("h3")!.parentElement).toBe(box);
+  });
+
   it("draws no All features control when the overrides did not load", () => {
     render(<AccountPageView page={PAGE} />);
     expect(screen.queryByTestId("account-all-features")).toBeNull();
