@@ -7,6 +7,7 @@ import { SpineMobile } from "./spine-mobile";
 import { deckHeaderCopy, overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { pairDeck, props } from "./spine-fixtures";
 
 const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
@@ -547,5 +548,18 @@ describe("SpineMobile — the deck's ⋯ beside Export", () => {
     expect(trigger.parentElement!.parentElement).toBe(exportButton.parentElement);
     fireEvent.click(trigger);
     expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
+  });
+});
+
+// Hugh, 2026-10-15: the ⋯ is always the row's last control, and the commit offer is the primary.
+describe("SpineMobile — the commit offer", () => {
+  it("puts Commit as v1 after Export and before the ⋯, as the primary", () => {
+    renderSpine(<SpineMobile {...props} offerFirstCommit />);
+    const exportButton = screen.getByRole("button", { name: /Export/ });
+    const commit = screen.getByRole("link", { name: deckVersioningCopy.pending.firstCommitCta });
+    const trigger = screen.getByRole("button", { name: "Actions for Atraxa Superfriends" });
+    expect(exportButton.compareDocumentPosition(commit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(commit.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(commit.className).toContain("bg-[color:var(--fg)]");
   });
 });

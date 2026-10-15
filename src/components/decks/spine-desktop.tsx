@@ -751,6 +751,15 @@ export function SpineDesktop({
                 >
                   {deckHeaderCopy.export}
                 </button>
+              ) : offerFirstCommit ? (
+                /* The commit offer is the row's one primary while it is here, so Export
+                   steps down to the ghost style (Hugh, 2026-10-15). */
+                <GhostButton
+                  onClick={onExport}
+                  className="flex h-[32px] items-center gap-[6px] px-[14px] text-[12.5px]"
+                >
+                  {deckHeaderCopy.export}
+                </GhostButton>
               ) : (
                 /* The one filled button on this surface, and bone — accent is
                    reserved for status and never fills an action. */
@@ -761,10 +770,10 @@ export function SpineDesktop({
                   {deckHeaderCopy.export}
                 </PrimaryButton>
               )}
-              {/* The Decks tile's own ⋯, beside Export: Move and Delete from inside the deck. A delete
-                  lands on /decks, which `deleteDeck`'s redirect does. */}
-              <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" move={move} />
               {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
+              {/* The Decks tile's own ⋯, always the row's last control: Move and Delete from inside
+                  the deck. A delete lands on /decks, which `deleteDeck`'s redirect does. */}
+              <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" move={move} />
             </div>
           )}
         </div>
