@@ -5,13 +5,15 @@
 //         replace), straight to confirmUpload() with no step 3.
 // Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { confirmUpload, previewUploadChange, type UploadChangePreview, type UploadMode, type UploadPreview } from "../../app/collection/actions";
 import { UploadEntry } from "./upload-entry";
 import { importReviewCopy } from "../../lib/copy/import-review";
 import { ReviewScreen } from "./review-screen";
 import type { ReviewChange } from "./replace-review-detail";
-import { UploadChoice } from "./upload-choice";
+import { UploadChoice, type SyncChoice } from "./upload-choice";
+import { effectivePick, followUpShown, syncNext, syncNote, type SyncChoiceRead } from "./sync-choice-view";
+import type { SyncAnswers, SyncPick } from "../../lib/collection/sync";
 import { GhostButton } from "../ui/button";
 import { ConfirmModal } from "./confirm-modal";
 import { replaceCopy } from "../../lib/copy/replace";
@@ -19,8 +21,14 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import type { ShortDeck } from "../../lib/collection/write";
 import { usePendingPush } from "../shell/pending-push";
 
-/** The modes this flow offers. Sync is drawn by the collection sync plan's PR 2. */
+/** The modes whose review this flow draws. Sync's review is the collection sync plan's PR 3. */
 type FlowMode = Exclude<UploadMode, "sync">;
+
+/** The choice's dry runs. `sync` is the plain Sync's, or null when Sync is off or its read failed (the card is then not drawn). */
+type ChoiceReads = Record<FlowMode, UploadChangePreview> & { sync: SyncChoiceRead | null };
+
+/** A sync dry run under one follow-up pick: the read, or `failed`. */
+type PickRead = SyncChoiceRead | "failed";
 
 export function ReplaceFlow({
   currentCardCount,
@@ -30,6 +38,7 @@ export function ReplaceFlow({
   onAddByHand,
   deckCheck = false,
   history = false,
+  sync = false,
 }: {
   currentCardCount: number;
   embedded?: boolean;
@@ -48,6 +57,8 @@ export function ReplaceFlow({
   deckCheck?: boolean;
   /** Collection editing is on without the deck check (first run): a replace it finds still lands in History. */
   history?: boolean;
+  /** Collection Sync is on for the reader (`collectionSyncEnabled`, resolved by the page): the choice draws a third card. */
+  sync?: boolean;
 }) {
   const nav = usePendingPush();
   const [preview, setPreview] = useState<UploadPreview | null>(null);
@@ -89,14 +100,25 @@ export function ReplaceFlow({
   // derivation, with nothing to reset in an effect.
   const [read, setRead] = useState<{
     key: string;
-    datas: Record<FlowMode, UploadChangePreview> | null;
+    datas: ChoiceReads | null;
     error: string | null;
     /** The server answered "nothing to compare" (confirmed elsewhere): the shipped review and dialog stand. */
     noRead: boolean;
   } | null>(null);
   const [attempt, setAttempt] = useState(0);
   // Which card the reader has picked (never preselected), and whether the review is open.
-  const [picked, setPicked] = useState<FlowMode | null>(null);
+  const [picked, setPicked] = useState<UploadMode | null>(null);
+  // Sync's follow-up pick under an older-looking file (Only what it adds is picked when it first appears),
+  // and the conflict answers (PR 3 draws them). Both are the reader's, so they survive Back, a failure
+  // and a retry (K4), and reset only with a new upload.
+  const [followPick, setFollowPick] = useState<SyncPick>("additions");
+  const [answers, setAnswers] = useState<SyncAnswers>({});
+  // Each follow-up pick's own dry run (G8), cached per pick for this upload and attempt as the mode reads are.
+  // Keyed `<readKey>:<pick>`, so a read lands in its own entry whatever is selected by then, and a new upload or
+  // attempt reads as uncached by derivation.
+  const [pickReads, setPickReads] = useState<Record<string, PickRead>>({});
+  // The reads issued and not yet landed, by the same key: never issued twice.
+  const inFlight = useRef(new Set<string>());
   const [reviewing, setReviewing] = useState(false);
   // The review's state for the picked mode: the decks as last said, and a failed write's notice.
   const [change, setChange] = useState<ReviewChange | null>(null);
@@ -110,29 +132,82 @@ export function ReplaceFlow({
     setPicked(null);
     setReviewing(false);
     setChange(null);
+    setFollowPick("additions");
+    setAnswers({});
   };
+  const syncBase = datas?.sync ?? null;
+  const pickNow: SyncPick = syncBase ? effectivePick(syncBase, followPick) : "everything";
+  const cachedReads: Partial<Record<SyncPick, PickRead>> = {
+    additions: pickReads[`${readKey}:additions`],
+    tokens: pickReads[`${readKey}:tokens`],
+  };
+  // The read Sync's figure, note and digest come from: the plain Sync's, or the pick's own.
+  const pickRead: PickRead | undefined = pickNow === "everything" ? (syncBase ?? undefined) : cachedReads[pickNow];
+  const planDigest = pickRead && pickRead !== "failed" ? pickRead.sync.planDigest : "";
+  const syncUsable = syncBase !== null && syncBase.sync.unavailable === null;
   useEffect(() => {
     if (!deckCheck || !previewedId || firstImport) return;
     let live = true;
     const key = readKey;
-    const settle = (r: { datas: Record<FlowMode, UploadChangePreview> | null; error: string | null; noRead: boolean }) => {
+    const settle = (r: { datas: ChoiceReads | null; error: string | null; noRead: boolean }) => {
       if (live) setRead({ key, ...r });
     };
-    Promise.all([previewUploadChange(previewedId, "replace"), previewUploadChange(previewedId, "add")])
-      .then(([replace, add]) => {
-        // Either one answering "confirmed elsewhere" ends the comparison: the other read cannot be acted on.
-        if (!replace || !add) return settle({ datas: null, error: null, noRead: true });
-        const missing = [replace, add].find((r) => r && "missingCard" in r);
+    Promise.all([
+      previewUploadChange(previewedId, "replace"),
+      previewUploadChange(previewedId, "add"),
+      // The plain Sync's dry run. A failure here leaves Replace and Add standing: the Sync card is just not drawn.
+      sync ? previewUploadChange(previewedId, "sync").catch(() => undefined) : Promise.resolve(undefined),
+    ])
+      .then(([replace, add, syncRead]) => {
+        // Any one answering "confirmed elsewhere" ends the comparison: the others cannot be acted on.
+        if (!replace || !add || syncRead === null) return settle({ datas: null, error: null, noRead: true });
+        const missing = [replace, add, syncRead].find((r) => r && "missingCard" in r);
         if (missing && "missingCard" in missing)
           return settle({ datas: null, error: collectionEditCopy.shortWarning.catalogFailure(missing.missingCard), noRead: false });
-        if (replace && "detail" in replace && add && "detail" in add) return settle({ datas: { replace, add }, error: null, noRead: false });
+        const syncData = syncRead && "detail" in syncRead && syncRead.sync ? { detail: syncRead.detail, sync: syncRead.sync } : null;
+        if (replace && "detail" in replace && add && "detail" in add)
+          return settle({ datas: { replace, add, sync: syncData }, error: null, noRead: false });
         return settle({ datas: null, error: collectionEditCopy.upload.prepareFailed, noRead: false });
       })
       .catch(() => settle({ datas: null, error: collectionEditCopy.upload.prepareFailed, noRead: false }));
     return () => {
       live = false;
     };
-  }, [deckCheck, previewedId, firstImport, readKey]);
+  }, [deckCheck, sync, previewedId, firstImport, readKey]);
+
+  // A follow-up pick's own dry run, read once per pick and cached. When the follow-up can appear, both
+  // partial picks are read straight away (the pick in force first), because each option's body quotes its
+  // own read's figures (G8); Everything's is the plain Sync's. Otherwise only the pick in force, if partial.
+  const wanted: SyncPick[] = syncBase && followUpShown(syncBase)
+    ? [pickNow, ...(["additions", "tokens"] as const).filter((p) => p !== pickNow)].filter((p) => p !== "everything")
+    : pickNow !== "everything" ? [pickNow] : [];
+  // The queue is independent of the selection: every wanted pick not cached is issued once, and its result is
+  // filed under its own key when it lands, whatever is selected by then. No cleanup discards a pending read.
+  const toRead = choosing && syncUsable ? wanted.filter((p) => cachedReads[p] === undefined).join(",") : "";
+  useEffect(() => {
+    if (!toRead || !previewedId) return;
+    for (const pick of toRead.split(",") as SyncPick[]) {
+      const key = `${readKey}:${pick}`;
+      if (inFlight.current.has(key)) continue;
+      inFlight.current.add(key);
+      const file = (r: PickRead) => {
+        inFlight.current.delete(key);
+        setPickReads((was) => ({ ...was, [key]: r }));
+      };
+      previewUploadChange(previewedId, "sync", { pick })
+        .then((r) => file(r && "detail" in r && r.sync ? { detail: r.detail, sync: r.sync } : "failed"))
+        .catch(() => file("failed"));
+    }
+  }, [toRead, previewedId, readKey]);
+  // Retry clears only the failed pick's entry; the effect then reads it again. The selection is untouched.
+  const retryPick = (pick: SyncPick) =>
+    setPickReads((was) => {
+      const key = `${readKey}:${pick}`;
+      if (was[key] !== "failed") return was;
+      const next = { ...was };
+      delete next[key];
+      return next;
+    });
 
   function openReview(mode: FlowMode) {
     if (!datas || pending) return;
@@ -153,7 +228,13 @@ export function ReplaceFlow({
       // `firstImport` is read off the preview, which a server refusal corrects before the
       // modal opens, so a confirm from that modal is no longer "first". A retry after a
       // FAILED first import keeps the claim, and with it the server's guard (Copilot, #1097).
-      const outcome = await confirmUpload(preview.uploadId, { firstImport, confirmShort, mode: choosing ? (picked ?? "replace") : undefined });
+      const outcome = await confirmUpload(preview.uploadId, {
+        firstImport,
+        confirmShort,
+        mode: choosing ? (picked ?? "replace") : undefined,
+        // Sync carries the reader's pick, answers and the digest its preview was drawn with (K4).
+        ...(choosing && picked === "sync" ? { pick: pickNow, answers, planDigest } : {}),
+      });
       if (outcome && "needsConfirm" in outcome) {
         // The preview was drawn at 0 cards and the modal reads its variant off that figure,
         // so it would ask for IMPORT over a write that replaces a collection. Correct it first.
@@ -204,7 +285,12 @@ export function ReplaceFlow({
       // is already confirmed answers null, so ask it before claiming the collection is unchanged.
       // A read that fails too is INDETERMINATE: the write may have landed and the answer been lost,
       // so it must not claim the collection is unchanged either.
-      const landed = choosing ? await previewUploadChange(preview.uploadId, picked ?? "replace").then((r) => (r === null ? "yes" : "no"), () => "unknown" as const) : "no";
+      const landed = choosing
+        ? await previewUploadChange(preview.uploadId, picked ?? "replace", picked === "sync" ? { pick: pickNow, answers } : undefined).then(
+            (r) => (r === null ? "yes" : "no"),
+            () => "unknown" as const,
+          )
+        : "no";
       if (landed === "yes") {
         nav.go(`/collection/replace/summary/${preview.uploadId}`);
         return;
@@ -313,6 +399,45 @@ export function ReplaceFlow({
         </section>
       );
     }
+    // The Sync card, from the plain Sync's dry run and the pick's own.
+    let syncChoice: SyncChoice | undefined;
+    if (datas.sync) {
+      const base = datas.sync;
+      const own = pickRead && pickRead !== "failed" ? pickRead : null;
+      const ownOf = (p: SyncPick) => {
+        const r = p === "everything" ? base : cachedReads[p];
+        return r && r !== "failed" ? r : null;
+      };
+      const adds = ownOf("additions");
+      const tokensOnly = ownOf("tokens");
+      syncChoice = {
+        unavailable: base.sync.unavailable,
+        // Every "since your <date> upload" names the file this one is compared with, never the newest upload.
+        anchorAt: base.sync.anchorConfirmedAt,
+        figure: own ? { before: own.detail.copiesBefore, after: own.detail.copiesAfter } : pickRead === "failed" ? "failed" : null,
+        // The plain Sync's read failing drops the card (see the choice read), so only a partial pick retries here.
+        onRetry: pickNow !== "everything" ? () => retryPick(pickNow) : undefined,
+        note: own ? syncNote(own, pickNow) : null,
+        next: own ? syncNext(own, pickNow) : { kind: "sync" },
+        stale:
+          base.sync.stale === "older"
+            ? { kind: "older", missing: base.sync.missingFromAnchor }
+            : base.sync.stale === "noNewer"
+              ? // The tokens the plain Sync changes by count, either way: the one token figure the step uses.
+                { kind: "noNewer", tokens: base.sync.tokensChanged > 0 ? base.sync.tokensChanged : null }
+              : null,
+        followUp: followUpShown(base)
+          ? {
+              pick: followPick,
+              // Each option's figures are its own dry run's, tokens included (the tokens that pick changes).
+              adds: adds ? { cards: adds.detail.up, tokens: adds.sync.tokensChanged } : null,
+              tokens: tokensOnly ? tokensOnly.sync.tokensChanged : null,
+              all: { up: base.detail.up, leaving: base.detail.leaving, down: base.detail.down, tokens: base.sync.tokensChanged },
+              onPick: setFollowPick,
+            }
+          : null,
+      };
+    }
     return (
       <UploadChoice
         filename={preview.filename}
@@ -323,9 +448,11 @@ export function ReplaceFlow({
         addAfter={datas.add.detail.copiesAfter}
         facts={datas.replace}
         overlap={datas.add.detail.overlap}
+        sync={syncChoice}
         picked={picked}
-        onPick={(mode) => { if (mode !== "sync") setPicked(mode); }}
-        onContinue={() => picked && openReview(picked)}
+        onPick={(mode) => { if (mode !== "sync" || syncUsable) setPicked(mode); }}
+        // TODO(collection sync PR 3): Sync's review. The choice holds Continue for Sync until then.
+        onContinue={() => picked && picked !== "sync" && openReview(picked)}
         onCancel={cancel}
       />
     );
