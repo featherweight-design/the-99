@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION, aboutEntries, type AboutEntry } from "../copy/about";
-import { gateDecision, sheetCookieValue, sheetDecision } from "./gate";
+import { sheetCookieValue, sheetDecision } from "./gate";
 import { aboutNotice } from "./notice";
 import { readSheetState } from "./sheet-state";
-import { isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
+import { isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
 const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
@@ -132,8 +132,8 @@ describe("an entry tied to a switch", () => {
     // `deck-benchmarks` (2026-10-10) is since: 13, the evidence line's one bump, and
     // `shopping-got-it` and `deck-printings` (2026-10-11) since: 14, the collection home epic's, and
     // `mana-balance`, `all-decks-cart`, `precons`, `upcoming-precons`, `deck-tokens`, `notes`, `added-copy`, `decks-stats`, `find-a-deck-read` and `proposed-cuts` since: 14 too, the current
-    // version, with no bump of their own. `start-without-a-collection` (2026-10-15) is since: 15, the no-collection
-    // entry line's one bump.
+    // version, with no bump of their own. `start-without-a-collection` (2026-10-15) is since: 14 too: it briefly
+    // bumped to 15 (#1840), and went back, since a switched entry is announced by its id.
     const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts", "start-without-a-collection"];
     const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts, startWithout] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
@@ -434,7 +434,11 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     expect(ids[ids.indexOf("import") + 1]).toBe("start-without-a-collection");
   });
 
-  // With the switch off (production), a reader current at 14 is told nothing on either path: no Home line, no sheet,
+  // What the proxy decides on the redirect path: it sends a reader to /about only when they are `behind` by this
+  // rule (`proxy.ts`, `seen: behind ? 0 : ABOUT_VERSION`), never on the version alone.
+  const behind = (visible: readonly AboutEntry[], s: SeenState) => isFirstRun(s) || unseenEntries(visible, s).length > 0;
+
+  // With the switch off (production), a reader current at 14 is told nothing on any path: no Home line, no sheet,
   // and no redirect.
   it("announces nothing to a current reader while its switch is off", () => {
     const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }));
@@ -443,7 +447,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     expect(unseenEntries(visible, current)).toEqual([]);
     expect(aboutNotice(current, visible, false)).toBeNull();
     expect(sheetDecision({ userId: "u", seen: current, visible }).show).toBe(false);
-    expect(gateDecision({ userId: "u", pathname: "/", search: "", seen: 14 }).kind).toBe("pass");
+    expect(behind(visible, current)).toBe(false);
   });
 
   // #1840 briefly shipped ABOUT_VERSION 15, so a reader may hold 15 as their seen version, ahead of 14. That state is
@@ -454,7 +458,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     expect(unseenEntries(visible, ahead)).toEqual([]);
     expect(aboutNotice(ahead, visible, false)).toBeNull();
     expect(sheetDecision({ userId: "u", seen: ahead, visible }).show).toBe(false);
-    expect(gateDecision({ userId: "u", pathname: "/decks", search: "", seen: 15 }).kind).toBe("pass");
+    expect(behind(visible, ahead)).toBe(false);
   });
 
   // Flipped on, it is announced by its own id to everyone current, the way a switched entry always is.
