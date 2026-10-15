@@ -16,6 +16,7 @@ vi.mock("./card-modal", async (importOriginal) => {
   return importOriginal();
 });
 vi.mock("../../app/collection/actions", () => ({}));
+vi.mock("../../app/collection/wishlist/actions", () => ({}));
 
 describe("a mounted view whose download failed", () => {
   // The real modal module, loaded once before the test and outside its clock, so the attempt that lands resolves it

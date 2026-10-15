@@ -569,6 +569,7 @@ export function CardDetailProvider({
   onArtChange,
   deckId = null,
   deckName = null,
+  onWishlistWrite,
   deckPage = false,
   deckOracleIds,
   comboDeckOracleIds,
@@ -605,6 +606,8 @@ export function CardDetailProvider({
   deckName?: string | null;
   /** See `CardDetailContextValue.deckOracleIds`. */
   deckOracleIds?: ReadonlySet<string>;
+  /** A write made from the details' Wishlist section landed: the list that owns this provider (the Wishlist tab) refreshes. */
+  onWishlistWrite?: () => void;
   /**
    * Deck printings: the deck's held picks by oracle id (`DeckDetail.printingPicks`). With a
    * `deckId`, a card the deck holds opens with the picker in deck scope, picking for this deck.
@@ -1639,6 +1642,7 @@ export function CardDetailProvider({
           onShowTokens={deckId && sheetsBelow === 0 && partnerOf === null ? () => { close(); landOnDeckTokens(); } : null}
           deckPrinting={deckPrintingFor(card.oracleId)}
           onProxyWrite={() => evict(card.oracleId)}
+          onWishlistWrite={onWishlistWrite}
           openAtPrinting={openAtPrinting}
           onArtChange={(art, settled) => {
             // Dropped on both calls, re-read on the settled one alone: the optimistic call
@@ -1737,6 +1741,7 @@ export function CardDetailProvider({
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
           deckPrinting={deckPrintingFor(card.oracleId)}
           onProxyWrite={() => evict(card.oracleId)}
+          onWishlistWrite={onWishlistWrite}
           openAtPrinting={openAtPrinting}
           onArtChange={(art, settled) => {
             // Dropped on both calls, re-read on the settled one alone: the optimistic call

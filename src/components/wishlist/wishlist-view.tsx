@@ -97,7 +97,7 @@ export function WishlistView({
   const strongStrip = "font-medium text-[color:var(--fg)]";
 
   return (
-    <CardDetailProvider>
+    <CardDetailProvider onWishlistWrite={onWant}>
       <div className="flex flex-col">
         <div className="flex items-center gap-[12px] px-[14px] pt-[14px] md:px-[34px] md:pt-[18px]">
           <WishlistSearch onOpenChange={setSearching} onWant={onWant} onFailure={onFailure} />

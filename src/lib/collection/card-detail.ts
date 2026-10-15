@@ -6,6 +6,8 @@ import type { ModalComboPartner } from "../combos/near-miss";
 // rooted in collection_items, and a deck routinely lists cards the user does not own.
 
 import { cache } from "react";
+import { wishlistEnabled } from "../wishlist/flag";
+import { loadWishlistWant } from "../wishlist/wishlist";
 import { liveCents, openingScryfallId } from "../cards/opening-printing";
 import type { PrintingPrices } from "../cards/price-lookup";
 import type { BrowseCard, BrowsePrinting, ProxyingDeck } from "./browse";
@@ -405,8 +407,18 @@ export const loadCardDetail = cache(async function loadCardDetail(
   const partners = settle(async () =>
     (await import("../combos/near-miss")).loadCardComboPartners({ userId, oracleId, deckOracleIds }),
   );
+  // The Wishlist section: off for this reader, or a failed read, is no section. Started with the rest and caught here,
+  // so a rejection that lands before anyone awaits it is never an unhandled one.
+  const wishlist: Promise<BrowseCard["wishlist"]> = wishlistEnabled(env)
+    ? loadWishlistWant(userId, oracleId).then((want) => ({ want }), () => null)
+    : Promise.resolve(null);
   const assemble = async (base: BrowseCard) =>
-    withComboPartners(await withBracketFacts(base, () => unsettle(flags)), userId, deckOracleIds, () => unsettle(partners));
+    withComboPartners(
+      await withBracketFacts({ ...base, wishlist: await wishlist }, () => unsettle(flags)),
+      userId,
+      deckOracleIds,
+      () => unsettle(partners),
+    );
 
   if (owned.length > 0) {
     // Only for a card the user owns: the availability query is driven by the collection, so
