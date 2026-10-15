@@ -74,7 +74,8 @@ query is involved anywhere in this design. Rules that apply under every capabili
 | Hold on failed art | **(audit G2)** `img[data-arrival="failed"] ~ [data-foil] { opacity: 0 }`; `armArtArrival` marks an errored image `failed` (was `in`) | same |
 | Fade-in on landing | `@media (prefers-reduced-motion: no-preference) { img[data-arrival="in"] ~ [data-foil] { animation: art-in var(--motion-fade) var(--motion-ease); } }` | same |
 | Fade duration / curve | 300ms (`--motion-fade`), ease-in-out (`--motion-ease`), delay 0; the art's own `art-in` | same |
-| `data-arrival="done"` or no mark | film at once, no fade | same |
+| `data-arrival="done"` | film at once, no fade | same |
+| No mark (art the server drew, before hydration) | film held at `opacity: 0` until the image is armed (set at build, after round 1 of review) | same |
 | Reduced motion | no fade; film appears with the art | same |
 
 ### Element: reduced transparency / forced colors
@@ -134,7 +135,7 @@ query is involved anywhere in this design. Rules that apply under every capabili
 | 5 Mixed finishes | `×3 · 1 foil`; foil + etched; a deck pin owned in both | plain tile | no `data-foil` |
 | 6 Art arriving | `img:not([src])`, or `data-arrival="pending"` (held under either motion preference) | no film, sunken ground | `data-foil` set, film at `opacity: 0` |
 | 7 Art landing | `data-arrival="in"`, reduced-motion no-preference | film fades in with the art, 300ms | `data-foil`, img `data-arrival="in"` |
-| 8 Art cached / painted before hydration | `data-arrival="done"` or no mark | film at once | `data-foil` |
+| 8 Art cached / painted before hydration | `data-arrival="done"` once armed; no mark before hydration | film at once when `done`; held while unmarked | `data-foil` |
 | 9 No art | no img (`no art on file`) | plain text tile | `data-foil` NOT set |
 | 10 Art failed | img `error` event | no film (audit G2) | img `data-arrival="failed"` |
 | 11 No longer foil-only | pin no longer foil-only, or no owned copy of the drawn printing | plain | no `data-foil` |

@@ -61,7 +61,7 @@ Table: `docs/superpowers/design-tables/foil-treatment.md`. Implementation: `git 
 | `failed` hold (G2), and `armArtArrival` marks an error `failed` | ✅ MATCH: `globals.css:1063`; `hydrated-art.tsx:87-108` (error sets `broke`, release writes `failed`; a complete image with `naturalWidth` 0 is `failed` too) |
 | Fade-in on `in` under no-preference | ✅ MATCH: `globals.css:1066` |
 | 300ms, ease-in-out, delay 0, `art-in` | ✅ MATCH: `--motion-fade: 300ms` (`:539`) |
-| `done` or no mark: film at once | ✅ MATCH: no rule targets those |
+| `done`: film at once; no mark: held until armed (rule added after this verify ran, from review round 1) | ✅ MATCH after the change: `img:not([data-arrival]) ~ [data-foil]` holds it |
 | Reduced motion: no fade | ✅ MATCH: the fade lives only under no-preference |
 | Sibling order (img precedes span) on every surface | ✅ MATCH: `deck-card-tile.tsx:307-329`, `grid-view.tsx:172-191`, `read-only-card-tile.tsx:69-85`. `data-arrival` is written on the img itself (`useArtFade` arms `img, img`) |
 
