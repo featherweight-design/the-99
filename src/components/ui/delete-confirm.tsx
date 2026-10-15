@@ -23,6 +23,7 @@ export function DeleteConfirm({
   error,
   onCancel,
   onConfirm,
+  phoneTall = false,
 }: {
   heading: string;
   body: string;
@@ -34,7 +35,10 @@ export function DeleteConfirm({
   error: string | null;
   onCancel: () => void;
   onConfirm: () => void;
+  /** 44px buttons at 13px below `md`, for a pane a phone reader presses (the pods menu); 32px everywhere otherwise. */
+  phoneTall?: boolean;
 }) {
+  const size = phoneTall ? "h-[44px] text-[13px] md:h-[32px] md:text-[12.5px]" : "h-[32px] text-[12.5px]";
   const cancel = useRef<HTMLButtonElement>(null);
 
   // Entering the pane replaces the control the reader pressed, so without this they are dropped on
@@ -52,7 +56,8 @@ export function DeleteConfirm({
       <p className="m-0 line-clamp-2 font-display text-[14px] font-semibold break-words text-[color:var(--fg)]">
         {heading}
       </p>
-      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{body}</p>
+      {/* `[overflow-wrap:anywhere]`: a body can name a person, and a name may be one unbroken run. */}
+      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{body}</p>
       {error && (
         <p role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
           {error}
@@ -64,7 +69,7 @@ export function DeleteConfirm({
           type="button"
           disabled={pending}
           onClick={onCancel}
-          className="h-[32px] flex-1 cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-transparent font-sans text-[12.5px] text-[color:var(--fg-body)]"
+          className={`${size} flex-1 cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-transparent font-sans text-[color:var(--fg-body)]`}
         >
           {cancelLabel}
         </button>
@@ -74,7 +79,7 @@ export function DeleteConfirm({
           type="button"
           disabled={pending}
           onClick={onConfirm}
-          className="h-[32px] flex-1 cursor-pointer rounded-[6px] border-none bg-[color:var(--danger)] font-sans text-[12.5px] font-semibold text-[color:var(--bg)]"
+          className={`${size} flex-1 cursor-pointer rounded-[6px] border-none bg-[color:var(--danger)] font-sans font-semibold text-[color:var(--bg)]`}
         >
           {pending && pendingLabel ? pendingLabel : confirmLabel}
         </button>

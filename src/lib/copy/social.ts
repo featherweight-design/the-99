@@ -118,5 +118,22 @@ export const socialCopy = {
     // Ticked past the batch cap (ADD_MEMBERS_MAX): the button holds and this says why.
     addMax: (max: number) => `You can add up to ${max} at a time.`,
     failed: "We couldn’t change that pod. Try again.", // toast, role alert
+    // The header's `…` menu (E2). Rename is the owner's alone; everyone can leave.
+    save: "Save",
+    menuAria: (pod: string) => `${pod} actions`,
+    rename: "Rename",
+    leave: "Leave pod",
+    del: "Delete pod",
+    leaveHeading: (pod: string) => `Leave “${pod}”?`,
+    leaveOwnerBody: (next: string) => `It passes to ${next}, its longest-standing member. Nobody is told.`,
+    leaveMemberBody: (owner: string) => `Only ${owner} can add you back. Nobody is told.`,
+    // The owner adds only their own friends, so a member who is not theirs (after a hand-on) needs that first (C1).
+    leaveMemberStrangerBody: (owner: string) => `Only ${owner} can add you back, once you’re friends. Nobody is told.`,
+    leaveLastBody: "You’re its last member, so leaving deletes it.",
+    leaveConfirm: "Leave pod",
+    leaveLastConfirm: "Leave and delete",
+    delHeading: (pod: string) => `Delete “${pod}”?`,
+    delBody: "No friendship changes, and nobody is told.",
+    delConfirm: "Delete pod",
   },
 } as const;

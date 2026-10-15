@@ -107,7 +107,8 @@ export function FriendsHead({
         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-[14px] md:gap-x-[16px]">
           {faceButton}
           <div className="col-start-2 row-start-1 flex min-w-0 flex-col">
-            <h1 className="m-0 font-display text-[22px] font-bold leading-[1.15] text-[color:var(--fg)] md:text-[28px]">{p.title}</h1>
+            {/* Focusable by script: where focus lands when the pods section leaves under it (`pods-pane.tsx`). */}
+            <h1 id="friends-title" tabIndex={-1} className="m-0 outline-none font-display text-[22px] font-bold leading-[1.15] text-[color:var(--fg)] md:text-[28px]">{p.title}</h1>
             {editing ? null : (
               <p className="m-0 mt-[2px] flex flex-wrap items-center gap-x-[6px] text-[13.5px] text-[color:var(--fg-muted)] md:text-[14px]">
                 <span>
