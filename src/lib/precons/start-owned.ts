@@ -57,11 +57,12 @@ export async function startPreconOwned(
 ): Promise<PreconStartResult> {
   // A retry: the deck this action made, found through its link. Read before the catalog, so an ingest
   // that replaced the precon since changes nothing.
-  const made = await madeBy(userId, fileName, actionId);
-  if (made === "other") return { ok: false, reason: "failed" };
-  if (made) return { ok: true, deckId: made, entryId: actionId };
-  // An id some other write already used (an add with no deck, a card's add) is not this start's.
-  if (await committedAnswer(userId, fileName, actionId)) return { ok: false, reason: "failed" };
+  const answered = await retryAnswer(
+    () => madeBy(userId, fileName, actionId),
+    async () => (await committedAnswer(userId, fileName, actionId)) !== null,
+    actionId,
+  );
+  if (answered) return answered;
 
   // The box and the deck from ONE snapshot: the ingest replaces a precon's rows in one transaction, so two
   // reads could add one generation's box and start the next generation's deck, reserving against a list
@@ -104,6 +105,27 @@ export async function startPreconOwned(
     const raced = await madeBy(userId, fileName, actionId);
     if (raced && raced !== "other") return { ok: true, deckId: raced, entryId: actionId };
   }
+  return { ok: false, reason: "failed" };
+}
+
+/**
+ * A start already answered by an earlier write under the same id, or null when this one must run. The deck this
+ * action made is its answer. An id some other write already used (an add with no deck, a card's add) is not this
+ * start's, UNLESS that entry turns out to be this very start committing in the meantime: an overlapping retry can
+ * see the entry land after it looked for the deck, so the deck is looked for again before the box is called
+ * failed. Calling a committed box failed lets the pick forget its id, and a later press would add it twice.
+ */
+export async function retryAnswer(
+  made: () => Promise<string | "other" | null>,
+  committed: () => Promise<boolean>,
+  actionId: string,
+): Promise<PreconStartResult | null> {
+  const first = await made();
+  if (first === "other") return { ok: false, reason: "failed" };
+  if (first) return { ok: true, deckId: first, entryId: actionId };
+  if (!(await committed())) return null;
+  const late = await made();
+  if (late && late !== "other") return { ok: true, deckId: late, entryId: actionId };
   return { ok: false, reason: "failed" };
 }
 

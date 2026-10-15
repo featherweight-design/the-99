@@ -347,12 +347,13 @@ export const preconsCopy = {
   },
   /**
    * Precons I own (`/decks/precons?pick=own`, no-collection entry S2 to S7): a pick of the boxes a player owns, added
-   * to the collection one History entry per box. Cards are copies, the precon arrival's unit.
+   * to the collection one History entry per box, each starting its deck (Hugh: "If someone owns the precons, we should
+   * create the decks."). Cards are copies, the precon arrival's unit.
    */
   pick: {
     title: "Precons I own",
-    sub: "Select every deck you own. Its cards and tokens go into your collection at the box’s own printings, foils as foils, and no deck is started.",
-    subPhone: "Select every deck you own. Its cards and tokens go into your collection, and no deck is started.",
+    sub: "Select every deck you own. Its cards and tokens go into your collection at the box’s own printings, foils as foils, and its deck is started.",
+    subPhone: "Select every deck you own. Its cards and tokens go into your collection, and its deck is started.",
     backHome: "‹ Home",
     backCollection: "‹ Collection",
     /** The row's figure: `100 cards` on desktop, `100` at 390. */
@@ -366,7 +367,7 @@ export const preconsCopy = {
     /** S17: a box with a standing precon add, after the row's meta (`preconAddedDay`). Still pickable. */
     added: (date: string) => `✓ added ${date}`,
     /** S17: the plain note under such a box once ticked. */
-    addedAgain: (date: string) => `You added this box on ${date}. Adding it again gives you a second copy of each card.`,
+    addedAgain: (date: string) => `You added this box on ${date}. Adding it again gives you a second copy of each card and a second deck.`,
     leadNone: "Select the decks you own.",
     lead: (b: number, c: number, t: number) =>
       `${plural(b, "box", "boxes")} · ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}`,
@@ -377,15 +378,31 @@ export const preconsCopy = {
     cancel: "Cancel",
     /** Replaces Cancel once any box has landed (S7). */
     done: "Done",
-    /** Part-failure (S7): the boxes that landed and the ones that didn't. Every refusal otherwise reads `start.owned`'s. */
-    partFailed: (landed: string[], failed: string[]) => `Added ${names(landed)}. We couldn’t add ${names(failed)}.`,
+    /**
+     * Part-failure (S7): the boxes that landed and the ones that didn't. Every refusal otherwise reads `start.owned`'s.
+     * `decks` is whether every landed box started its deck: a retry spanning the deploy can recover a box added before
+     * the pick started decks, and that one has none, so the line then names the boxes alone, as the receipt does.
+     */
+    partFailed: (landed: string[], failed: string[], decks: boolean) =>
+      `Added ${names(landed)}${decks ? ` and started ${landed.length === 1 ? "its deck" : "their decks"}` : ""}. We couldn’t add ${names(failed)}.`,
     tryAgain: "Try again",
-    /** The receipt strip on the destination (S5). */
+    /**
+     * The receipt strip on the destination (S5). `d` counts the boxes whose deck still stands. Decks are named only
+     * when every box has one: fewer means a deck the player has since deleted, or a box added before the pick started
+     * decks (a retry spanning that deploy), and the two cannot be told apart, so the line names the precons alone,
+     * which is true either way.
+     */
     receipt: {
-      head: (b: number) => `${plural(b, "precon", "precons")} added to your collection:`,
+      head: (b: number, d = 0) =>
+        d > 0 && d === b
+          ? `Added ${plural(b, "deck", "decks")} and ${b === 1 ? "its" : "their"} cards to your collection:`
+          : `${plural(b, "precon", "precons")} added to your collection:`,
       body: (boxNames: string[], c: number, t: number) =>
         `${names(boxNames)}. ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}.`,
-      phone: (b: number, c: number) => `${plural(b, "precon", "precons")} added · ${plural(c, "card", "cards")}`,
+      phone: (b: number, c: number, d = 0) =>
+        d > 0 && d === b
+          ? `${plural(b, "deck", "decks")} added · ${plural(c, "card", "cards")}`
+          : `${plural(b, "precon", "precons")} added · ${plural(c, "card", "cards")}`,
       history: "History",
     },
   },

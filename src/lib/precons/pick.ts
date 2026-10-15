@@ -4,7 +4,7 @@
  * that names what landed and what didn't. The page, the action and Home's receipt all read these.
  */
 import { isUuid } from "../uuid";
-import type { PreconAddResult } from "./add";
+import { DECK_NAME_MAX, hasControlChars } from "../decks/deck-name";
 import type { PreconBox } from "./list";
 
 export const PICK_PARAM = "pick";
@@ -74,17 +74,27 @@ export function pickTotals(picked: readonly { box: PreconBox; edition: PickEditi
 
 /** `file` is the edition file the press meant to add, so a retry is matched to that file and no other. */
 export type PickRequest = { fileName: string; edition: PickEdition; file: string; actionId: string };
-export type PickBoxToAdd = { rowFile: string; fileName: string; actionId: string };
+/** `name` is the deck the box starts: the row's own precon name, as the start dialog fills it in. */
+export type PickBoxToAdd = { rowFile: string; fileName: string; actionId: string; name: string };
+
+/** The name a box's deck starts under: the precon's own, cut to the deck name's cap as the start dialog cuts it, or null. */
+export function pickDeckName(name: string | null | undefined): string | null {
+  if (typeof name !== "string") return null;
+  // `validateDeckName`'s own rule, asked rather than thrown, so a refused name refuses only its box.
+  const trimmed = name.slice(0, DECK_NAME_MAX).trim();
+  return trimmed.length === 0 || hasControlChars(trimmed) ? null : trimmed;
+}
 
 /**
  * The request as a closed set, or null: each entry names a plain box the catalog lists (never a twin's own file),
  * an edition the box has (Collector's only where a twin exists), the file that edition adds today, and its own uuid;
  * no box or id twice.
  */
-export function resolvePick(requests: unknown, catalog: readonly { fileName: string; twinOf: string | null }[]): PickBoxToAdd[] | null {
+export function resolvePick(requests: unknown, catalog: readonly { fileName: string; twinOf: string | null; name?: string }[]): PickBoxToAdd[] | null {
   if (!Array.isArray(requests) || requests.length === 0 || requests.length > PICK_MAX) return null;
   const plain = new Set(catalog.filter((c) => c.twinOf === null).map((c) => c.fileName));
   const twin = new Map(catalog.filter((c) => c.twinOf !== null).map((c) => [c.twinOf as string, c.fileName]));
+  const names = new Map(catalog.map((c) => [c.fileName, c.name]));
   const files = new Set<string>();
   const ids = new Set<string>();
   const out: PickBoxToAdd[] = [];
@@ -96,9 +106,13 @@ export function resolvePick(requests: unknown, catalog: readonly { fileName: str
     if (!isUuid(actionId) || ids.has(actionId as string)) return null;
     const file = edition === "collector" ? twin.get(fileName) : fileName;
     if (file === undefined || file !== asked) return null;
+    // The deck is named for the row's own box, as the start dialog names it, so a Collector's Edition starts under
+    // the plain name. A name the deck rule refuses refuses the box.
+    const name = pickDeckName(names.get(fileName) ?? fileName);
+    if (name === null) return null;
     files.add(fileName);
     ids.add(actionId as string);
-    out.push({ rowFile: fileName, fileName: file, actionId: actionId as string });
+    out.push({ rowFile: fileName, fileName: file, actionId: actionId as string, name });
   }
   return out;
 }
@@ -115,6 +129,7 @@ export function resolvePick(requests: unknown, catalog: readonly { fileName: str
 export function recoverCommitted(
   requests: unknown,
   committed: ReadonlyMap<string, string>,
+  decks: ReadonlyMap<string, string> = new Map(),
 ): { recovered: PickOutcome[]; rest: unknown[] } | null {
   if (!Array.isArray(requests)) return null;
   const recovered: PickOutcome[] = [];
@@ -124,7 +139,10 @@ export function recoverCommitted(
     const file = typeof actionId === "string" ? committed.get(actionId) : undefined;
     const ofRow = typeof fileName === "string" && file !== undefined && file === asked
       && (edition === "collector" ? file !== fileName : edition === "regular" && file === fileName);
-    if (ofRow) recovered.push({ rowFile: fileName as string, ok: true, entryId: actionId as string });
+    if (ofRow) {
+      const deckId = decks.get(actionId as string);
+      recovered.push({ rowFile: fileName as string, ok: true, entryId: actionId as string, ...(deckId ? { deckId } : {}) });
+    }
     else rest.push(r);
   }
   return { recovered, rest };
@@ -135,22 +153,26 @@ export function recoverCommitted(
  * added nor refused, and only a retry under the same id can say which.
  */
 export type PickOutcome =
-  | { rowFile: string; ok: true; entryId: string }
+  | { rowFile: string; ok: true; entryId: string; deckId?: string }
   | { rowFile: string; ok: false; unknown?: true };
 
+/** What one box's add answers: its History entry and, once the box started its deck, that deck. */
+export type PickAddResult = { ok: true; entryId: string; deckId?: string } | { ok: false };
+
 /**
- * One add per box, in order, each with its own id, so each is its own History entry. A box that refuses or throws
- * is reported and the run goes on: nothing is retried here, and a retry is the caller's, with the same ids.
+ * One add per box, in order, each with its own id, so each is its own History entry (and, through the owned start,
+ * its own deck). A box that refuses or throws is reported and the run goes on: nothing is retried here, and a retry
+ * is the caller's, with the same ids.
  */
 export async function runPickAdds(
   boxes: readonly PickBoxToAdd[],
-  add: (fileName: string, actionId: string) => Promise<PreconAddResult>,
+  add: (fileName: string, actionId: string, name: string) => Promise<PickAddResult>,
 ): Promise<PickOutcome[]> {
   const out: PickOutcome[] = [];
   for (const b of boxes) {
-    let result: PreconAddResult;
+    let result: PickAddResult;
     try {
-      result = await add(b.fileName, b.actionId);
+      result = await add(b.fileName, b.actionId, b.name);
     } catch (error) {
       // not a fallback: and not a refusal either. The add may have committed with its answer lost, so it is reported as
       // unknown and the caller holds the box and its edition until a retry under the same id says which.
@@ -158,7 +180,9 @@ export async function runPickAdds(
       out.push({ rowFile: b.rowFile, ok: false, unknown: true });
       continue;
     }
-    out.push(result.ok ? { rowFile: b.rowFile, ok: true, entryId: result.entryId } : { rowFile: b.rowFile, ok: false });
+    out.push(result.ok
+      ? { rowFile: b.rowFile, ok: true, entryId: result.entryId, ...(result.deckId ? { deckId: result.deckId } : {}) }
+      : { rowFile: b.rowFile, ok: false });
   }
   return out;
 }

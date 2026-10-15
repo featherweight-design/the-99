@@ -7,7 +7,7 @@ vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; chil
 vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 import { PreconPickReceipt } from "./precon-pick-receipt";
 
-const receipt = { entryIds: ["e1", "e2", "e3"], names: ["Abzan Armor", "Sultai Arisen", "Temur Roar"], copies: 300, tokens: 31 };
+const receipt = { entryIds: ["e1", "e2", "e3"], names: ["Abzan Armor", "Sultai Arisen", "Temur Roar"], copies: 300, tokens: 31, decks: 3 };
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -19,14 +19,14 @@ describe("the precon pick's receipt (S5)", () => {
   it("names the boxes, their cards and tokens, and History, as a status", () => {
     render(<PreconPickReceipt receipt={receipt} />);
     const strip = screen.getByRole("status");
-    expect(strip).toHaveTextContent("3 precons added to your collection: Abzan Armor, Sultai Arisen and Temur Roar. 300 cards and 31 tokens. History");
-    expect(strip).toHaveTextContent("3 precons added · 300 cards · History");
+    expect(strip).toHaveTextContent("Added 3 decks and their cards to your collection: Abzan Armor, Sultai Arisen and Temur Roar. 300 cards and 31 tokens. History");
+    expect(strip).toHaveTextContent("3 decks added · 300 cards · History");
     expect(screen.getAllByRole("link", { name: "History" })[0]).toHaveAttribute("href", "/collection/history");
   });
 
   it("names four or more boxes by two and a count", () => {
-    render(<PreconPickReceipt receipt={{ ...receipt, entryIds: ["a", "b", "c", "d"], names: ["A", "B", "C", "D"] }} />);
-    expect(screen.getByRole("status")).toHaveTextContent("4 precons added to your collection: A, B and 2 others.");
+    render(<PreconPickReceipt receipt={{ ...receipt, entryIds: ["a", "b", "c", "d"], names: ["A", "B", "C", "D"], decks: 4 }} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Added 4 decks and their cards to your collection: A, B and 2 others.");
   });
 
   it("spends the address's claim once seen and keeps drawing the strip", () => {
@@ -50,9 +50,23 @@ describe("the precon pick's receipt (S5)", () => {
 
   it("draws a later pick's receipt after an earlier one was dismissed", () => {
     window.localStorage.setItem("the99:precon-pick-receipt:e1", "1");
-    render(<PreconPickReceipt receipt={{ ...receipt, entryIds: ["e9"], names: ["Abzan Armor"] }} />);
-    expect(screen.getByRole("status")).toHaveTextContent("1 precon added to your collection: Abzan Armor. 300 cards and 31 tokens.");
+    render(<PreconPickReceipt receipt={{ ...receipt, entryIds: ["e9"], names: ["Abzan Armor"], decks: 1 }} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Added 1 deck and its cards to your collection: Abzan Armor. 300 cards and 31 tokens.");
     expect(screen.getAllByRole("link", { name: "History" })[0]).toHaveAttribute("href", "/collection/history?entry=e9");
+  });
+
+  // An add made before the pick started decks names no deck, and keeps the line it shipped with.
+  it("says only that the precons were added when no box started a deck", () => {
+    render(<PreconPickReceipt receipt={{ ...receipt, entryIds: ["e9"], names: ["Abzan Armor"], decks: 0 }} />);
+    const strip = screen.getByRole("status");
+    expect(strip).toHaveTextContent("1 precon added to your collection: Abzan Armor. 300 cards and 31 tokens.");
+    expect(strip).toHaveTextContent("1 precon added · 300 cards · History");
+  });
+
+  it("names the precons alone when fewer boxes have a deck: one deleted since, or an add from before decks (a retry across the deploy)", () => {
+    render(<PreconPickReceipt receipt={{ ...receipt, decks: 2 }} />);
+    expect(screen.queryByText(/decks/)).toBeNull();
+    expect(screen.getAllByText(/3 precons added/).length).toBeGreaterThan(0);
   });
 });
 

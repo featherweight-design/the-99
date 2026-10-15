@@ -7,10 +7,11 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { collectionHistory, precons } from "../../db/schema";
-import { preconSource, standingPreconAdds } from "./added";
+import { preconAddDecks, preconSource, standingPreconAdds } from "./added";
 import { parsePickReceipt } from "./pick";
 
-export type PickReceipt = { entryIds: string[]; names: string[]; copies: number; tokens: number };
+/** `decks`: how many of the entries started a deck that still stands (an owned start links it, `start-owned.ts`). */
+export type PickReceipt = { entryIds: string[]; names: string[]; copies: number; tokens: number; decks: number };
 
 type ReceiptEntry = {
   id: string;
@@ -18,8 +19,11 @@ type ReceiptEntry = {
   preconTokens: { quantity: number }[] | null;
 };
 
-/** The strip's figures over the entries that count, in the URL's order: copies each added, and the tokens each read. Pure. */
-export function summarisePickReceipt(entries: readonly (ReceiptEntry & { name: string })[]): PickReceipt | null {
+/**
+ * The strip's figures over the entries that count, in the URL's order: copies each added, the tokens each read, and
+ * how many started a deck (`decks`, the entry ids with a deck of the reader's). Pure.
+ */
+export function summarisePickReceipt(entries: readonly (ReceiptEntry & { name: string })[], decks: ReadonlySet<string> = new Set()): PickReceipt | null {
   if (entries.length === 0) return null;
   let copies = 0;
   let tokens = 0;
@@ -27,7 +31,7 @@ export function summarisePickReceipt(entries: readonly (ReceiptEntry & { name: s
     for (const r of e.rows ?? []) copies += Math.max(0, (r.after?.quantity ?? 0) - (r.before?.quantity ?? 0));
     for (const t of e.preconTokens ?? []) tokens += t.quantity;
   }
-  return { entryIds: entries.map((e) => e.id), names: entries.map((e) => e.name), copies, tokens };
+  return { entryIds: entries.map((e) => e.id), names: entries.map((e) => e.name), copies, tokens, decks: entries.filter((e) => decks.has(e.id)).length };
 }
 
 /** The precon an entry added, or null: only an `add` whose source is `precon:<file>` and whose rows were kept. Pure. */
@@ -57,5 +61,6 @@ export async function readPickReceipt(userId: string, raw: string | string[] | u
   const heads = await db.select({ fileName: precons.fileName, name: precons.name }).from(precons)
     .where(inArray(precons.fileName, kept.map((k) => k.fileName)));
   const name = new Map(heads.map((h) => [h.fileName, h.name]));
-  return summarisePickReceipt(kept.map((k) => ({ ...k, name: name.get(k.fileName) ?? k.fileName })));
+  const decks = await preconAddDecks(userId, kept.map((k) => k.id));
+  return summarisePickReceipt(kept.map((k) => ({ ...k, name: name.get(k.fileName) ?? k.fileName })), new Set(decks.keys()));
 }

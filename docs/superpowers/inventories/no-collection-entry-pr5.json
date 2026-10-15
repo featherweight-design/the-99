@@ -58,7 +58,7 @@
     },
     {
       "id": "s17-note",
-      "label": "A box already added, ticked: still pickable, with `You added this box on <date>. Adding it again gives you a second copy of each card.` under it (S17)",
+      "label": "A box already added, ticked: still pickable, with `You added this box on <date>. Adding it again gives you a second copy of each card and a second deck.` under it (S17)",
       "view": "src/components/decks/precons/precon-pick-view.tsx",
       "steps": [
         {

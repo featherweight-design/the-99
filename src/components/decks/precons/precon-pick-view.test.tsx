@@ -85,15 +85,30 @@ describe("Precons I own: the foot", () => {
 });
 
 describe("Precons I own: refusals", () => {
-  it("names the boxes that landed and the one that didn't, unticks the landed and keeps the failed box's id", async () => {
+  it("names the landed boxes without claiming a deck when one was an add from before the pick started decks", async () => {
+    // A retry spanning the deploy: Abzan's add is recovered from before decks, so it has none.
     addPrecons.mockResolvedValueOnce([
-      { rowFile: "Abzan", ok: true, entryId: "e1" }, { rowFile: "Sultai", ok: false }, { rowFile: "Temur", ok: true, entryId: "e3" },
+      { rowFile: "Abzan", ok: true, entryId: "e1" }, { rowFile: "Sultai", ok: false },
+      { rowFile: "Temur", ok: true, entryId: "e3", deckId: "d3" },
     ]);
     draw();
     tick("Abzan Armor"); tick("Sultai Arisen"); tick("Temur Roar");
     fireEvent.click(addButton());
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Added Abzan Armor and Temur Roar. We couldn’t add Sultai Arisen.");
+    expect(alert.textContent).not.toMatch(/deck/);
+  });
+
+  it("names the boxes that landed and the one that didn't, unticks the landed and keeps the failed box's id", async () => {
+    addPrecons.mockResolvedValueOnce([
+      { rowFile: "Abzan", ok: true, entryId: "e1", deckId: "d1" }, { rowFile: "Sultai", ok: false },
+      { rowFile: "Temur", ok: true, entryId: "e3", deckId: "d3" },
+    ]);
+    draw();
+    tick("Abzan Armor"); tick("Sultai Arisen"); tick("Temur Roar");
+    fireEvent.click(addButton());
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Added Abzan Armor and Temur Roar and started their decks. We couldn’t add Sultai Arisen.");
     expect(push).not.toHaveBeenCalled();
     expect(screen.getByRole("checkbox", { name: /Abzan Armor/ })).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Sultai Arisen/ })).toBeChecked();
@@ -214,7 +229,7 @@ describe("Precons I own, with cards", () => {
   const drawWith = (over: { hasCollection?: boolean; added?: Record<string, string>; entry?: "home" | "collection" } = {}) =>
     render(<PreconPickView rows={owning} entry={over.entry ?? "collection"} initial={{ q: "", colours: [] }} hasCollection={over.hasCollection ?? true} added={over.added ?? {}} />);
   const rowOf = (name: string) => screen.getByRole("checkbox", { name: new RegExp(name) }).closest("li")!;
-  const NOTE = "You added this box on Jun 30. Adding it again gives you a second copy of each card.";
+  const NOTE = "You added this box on Jun 30. Adding it again gives you a second copy of each card and a second deck.";
 
   it("shows the shipped `you own N of M` on every row while the collection holds any card (E2)", () => {
     drawWith();

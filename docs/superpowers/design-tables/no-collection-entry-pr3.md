@@ -55,8 +55,8 @@ named; — not built here, with where it is.
 |---|---|---|---|---|
 | 22 | Where | Home's dashboard | `router.push` to Home with `?precons=<entry ids>` whichever page the pick was opened from: Home is the one page that reads the receipt. A pick that added nothing goes back to its entry | ✓ |
 | 23 | Strip | arrival band anatomy: `--surface-rail`, `✓` `--success`, `✕` alone, `role="status"` | `ArrivalBandShell` + `ArrivalDismiss` inside `role="status"` | ✓ |
-| 24 | Desktop text | `3 precons added to your collection:` (bold) `Abzan Armor, Sultai Arisen and Temur Roar. 300 cards and 31 tokens.` `History`, 13.5px | `pick.receipt.head` / `body`, 13.5px; four or more read `A, B and 4 others` | ✓ |
-| 25 | Phone text | one line, mono 10.5: `3 precons added · 300 cards · History` | `pick.receipt.phone` | ✓ |
+| 24 | Desktop text | `Added 3 decks and their cards to your collection:` (bold) `Abzan Armor, Sultai Arisen and Temur Roar. 300 cards and 31 tokens.` `History`, 13.5px (each box starts its deck, Hugh's ruling; an add from before that keeps `3 precons added to your collection:`) | `pick.receipt.head` / `body`, 13.5px; four or more read `A, B and 4 others` | ✓ |
+| 25 | Phone text | one line, mono 10.5: `3 decks added · 300 cards · History` | `pick.receipt.phone` | ✓ |
 | 26 | Dismiss | its own key, not `arrivalDismissKey(deckId)` | `pickReceiptDismissKey` (first entry id) | ✓ |
 | 27 | The claim | read from the ledger | `readPickReceipt`: the reader's own precon adds that still stand; outside Home's cached payload; spent off the URL once seen and held for the visit | ✓ |
 
@@ -73,7 +73,7 @@ named; — not built here, with where it is.
 | # | Property | Handoff | Built | |
 |---|---|---|---|---|
 | 31 | Rows | landed untick with `--success` `✓ added just now`; the failed box stays ticked | as drawn: a tag on desktop, in place of the meta line at 390 | ✓ |
-| 32 | Toast | `Added Abzan Armor and Sultai Arisen. We couldn’t add Temur Roar.` | `pick.partFailed` | ✓ |
+| 32 | Toast | `Added Abzan Armor and Sultai Arisen and started their decks. We couldn’t add Temur Roar.` | `pick.partFailed` | ✓ |
 | 33 | Retry | none silent; Try again re-sends the failed box with its own id | ids kept per box and edition, dropped only once that box lands | ✓ |
 | 34 | Cancel → Done | Done goes to Home with S5's strip naming what landed | desktop Done carries the landed entries | ✓ |
 | 35 | Phone Done | the phone foot draws no Cancel or Done | the header's way back carries the receipt once a box has landed | ≈ the board draws no way to the receipt at 390 |

@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
   selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
   enabled: true, collectionEdit: true, addedCopy: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
   invalidated: [] as string[], warmed: [] as string[], committed: [] as unknown[],
-  line: true, picks: [] as unknown[][], pickResult: ((): unknown => ({ ok: true, entryId: "e" })) as (f: string) => unknown,
+  line: true, picking: false, picks: [] as unknown[][], pickResult: ((): unknown => ({ ok: true, entryId: "e" })) as (f: string) => unknown,
 }));
 
 vi.mock("../../db", () => {
@@ -30,19 +30,21 @@ vi.mock("../../db", () => {
 });
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => state.enabled }));
+// The dialog's owned start and the pick share one lib call; a pick's call answers from `pickResult`, keyed by file.
 vi.mock("../../lib/precons/start-owned", () => ({
-  startPreconOwned: async (...args: unknown[]) => { state.addCalls.push(args); return state.addResult; },
+  startPreconOwned: async (...args: unknown[]) => {
+    if (state.picking) { state.picks.push(args); return state.pickResult(args[1] as string); }
+    state.addCalls.push(args); return state.addResult;
+  },
 }));
 vi.mock("../../lib/collection/edit-flag", () => ({
   collectionEditEnabled: () => state.collectionEdit, noCollectionEntryEnabled: () => state.line && state.collectionEdit,
 }));
-vi.mock("../../lib/precons/add", () => ({
-  addPreconForUser: async (...args: unknown[]) => { state.picks.push(args); return state.pickResult(args[1] as string); },
-}));
-const committed = vi.hoisted(() => ({ map: new Map<string, string>(), asked: [] as string[][] }));
+const committed = vi.hoisted(() => ({ map: new Map<string, string>(), decks: new Map<string, string>(), asked: [] as string[][] }));
 vi.mock("../../lib/precons/added", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/precons/added")>()),
   committedPreconAdds: async (_user: string, ids: string[]) => { committed.asked.push(ids); return committed.map; },
+  preconAddDecks: async () => committed.decks,
 }));
 vi.mock("../../lib/collection/added-copy-flag", () => ({ addedCopyEnabled: () => state.addedCopy }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: (id: string) => state.invalidated.push(id) }));
@@ -71,8 +73,8 @@ const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}
 
 beforeEach(() => {
   state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; state.committed = [];
-  state.line = true; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}` });
-  committed.map = new Map(); committed.asked = [];
+  state.line = true; state.picking = false; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}`, deckId: `deck-${f}` });
+  committed.map = new Map(); committed.decks = new Map(); committed.asked = [];
   state.enabled = true; state.collectionEdit = true; state.addedCopy = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
@@ -194,16 +196,28 @@ describe("startPreconOwned", () => {
 
 describe("addPrecons (no-collection entry S4 to S7)", () => {
   const ID = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
-  const CATALOG = [{ fileName: "Abzan", twinOf: null }, { fileName: "Revival", twinOf: null }, { fileName: "Revival_CE", twinOf: "Revival" }];
+  const CATALOG = [
+    { fileName: "Abzan", twinOf: null, name: "Abzan Armor" }, { fileName: "Revival", twinOf: null, name: "Revival Trance" },
+    { fileName: "Revival_CE", twinOf: "Revival", name: "Revival Trance (Collector's Edition)" },
+    { fileName: "Sultai", twinOf: null, name: "Sultai Arisen" }, { fileName: "Temur", twinOf: null, name: "Temur Roar" },
+  ];
+  beforeEach(() => { state.picking = true; });
 
   it("adds each box for the signed-in reader with its own id, the twin at its chosen edition, and retires the readers", async () => {
     state.selects = [CATALOG];
     const out = await addPrecons([
       { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }, { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: ID(2) },
     ]);
-    expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Abzan", ID(1)], ["user_1", "Revival_CE", ID(2)]]);
-    expect(out).toEqual([{ rowFile: "Abzan", ok: true, entryId: "entry-Abzan" }, { rowFile: "Revival", ok: true, entryId: "entry-Revival_CE" }]);
+    expect(state.picks.map((a) => [a[0], a[1], a[3]])).toEqual([["user_1", "Abzan", ID(1)], ["user_1", "Revival_CE", ID(2)]]);
+    expect(out).toEqual([
+      { rowFile: "Abzan", ok: true, entryId: "entry-Abzan", deckId: "deck-Abzan" },
+      { rowFile: "Revival", ok: true, entryId: "entry-Revival_CE", deckId: "deck-Revival_CE" },
+    ]);
+    // Each box starts its deck under the precon's own name; a Collector's Edition under the plain one, as the dialog names it.
+    expect(state.picks.map((a) => a[2])).toEqual(["Abzan Armor", "Revival Trance"]);
+    expect(state.picks.map((a) => a[5])).toEqual([true, true]);
     expect(state.invalidated).toEqual(["user_1"]);
+    expect(state.revalidated).toEqual(["deck-Abzan", "deck-Revival_CE"]);
     await Promise.all(state.after.map((f) => f()));
     expect(state.warmed).toEqual(["user_1"]);
   });
@@ -227,8 +241,8 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
       { fileName: "Revival_CE", edition: "regular", file: "Revival_CE", actionId: ID(1) }, { fileName: "Abzan", edition: "collector", file: "Abzan_CE", actionId: ID(2) },
       { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: ID(3) },
     ]);
-    expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Revival_CE", ID(3)]]);
-    expect(out).toEqual([{ rowFile: "Revival_CE", ok: false }, { rowFile: "Abzan", ok: false }, { rowFile: "Revival", ok: true, entryId: "entry-Revival_CE" }]);
+    expect(state.picks.map((a) => [a[0], a[1], a[3]])).toEqual([["user_1", "Revival_CE", ID(3)]]);
+    expect(out).toEqual([{ rowFile: "Revival_CE", ok: false }, { rowFile: "Abzan", ok: false }, { rowFile: "Revival", ok: true, entryId: "entry-Revival_CE", deckId: "deck-Revival_CE" }]);
   });
 
   it("refuses a malformed request before anything is read or added", async () => {
@@ -248,15 +262,15 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
       { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }, { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: ID(2) },
     ]);
     expect(committed.asked).toEqual([[ID(1), ID(2)]]);
-    expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Abzan", ID(1)]]);
-    expect(out).toEqual([{ rowFile: "Revival", ok: true, entryId: ID(2) }, { rowFile: "Abzan", ok: true, entryId: "entry-Abzan" }]);
+    expect(state.picks.map((a) => [a[0], a[1], a[3]])).toEqual([["user_1", "Abzan", ID(1)]]);
+    expect(out).toEqual([{ rowFile: "Revival", ok: true, entryId: ID(2) }, { rowFile: "Abzan", ok: true, entryId: "entry-Abzan", deckId: "deck-Abzan" }]);
   });
 
   it("recovers nothing from an entry of another box, and refuses a request naming a box or id twice", async () => {
     committed.map = new Map([[ID(1), "Sultai"]]);
     state.selects = [CATALOG];
     await addPrecons([{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }]);
-    expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Abzan", ID(1)]]);
+    expect(state.picks.map((a) => [a[0], a[1], a[3]])).toEqual([["user_1", "Abzan", ID(1)]]);
     await expect(addPrecons([
       { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(3) }, { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(4) },
     ])).rejects.toThrow("bad pick");
@@ -267,5 +281,53 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
     state.pickResult = () => ({ ok: false, reason: "failed" });
     expect(await addPrecons([{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }])).toEqual([{ rowFile: "Abzan", ok: false }]);
     expect(state.invalidated).toEqual([]);
+  });
+
+  const THREE = [
+    { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) },
+    { fileName: "Sultai", edition: "regular", file: "Sultai", actionId: ID(2) },
+    { fileName: "Temur", edition: "regular", file: "Temur", actionId: ID(3) },
+  ];
+
+  // Hugh: "If someone owns the precons, we should create the decks." Each box goes through the owned start, which
+  // writes the box's add and its deck in one transaction.
+  it("makes three decks and adds their cards for three boxes, one owned start per box", async () => {
+    state.selects = [CATALOG];
+    const out = await addPrecons(THREE);
+    expect(state.picks.map((a) => [a[1], a[2], a[3]])).toEqual([["Abzan", "Abzan Armor", ID(1)], ["Sultai", "Sultai Arisen", ID(2)], ["Temur", "Temur Roar", ID(3)]]);
+    expect(out).toEqual([
+      { rowFile: "Abzan", ok: true, entryId: "entry-Abzan", deckId: "deck-Abzan" },
+      { rowFile: "Sultai", ok: true, entryId: "entry-Sultai", deckId: "deck-Sultai" },
+      { rowFile: "Temur", ok: true, entryId: "entry-Temur", deckId: "deck-Temur" },
+    ]);
+    expect(state.revalidated).toEqual(["deck-Abzan", "deck-Sultai", "deck-Temur"]);
+  });
+
+  // A retry after a lost answer is answered from the entries and the decks they started: nothing is started again.
+  it("makes no second deck on a retry with the same ids, answering with the decks the first try made", async () => {
+    committed.map = new Map([[ID(1), "Abzan"], [ID(2), "Sultai"], [ID(3), "Temur"]]);
+    committed.decks = new Map([[ID(1), "deck-1"], [ID(2), "deck-2"], [ID(3), "deck-3"]]);
+    const out = await addPrecons(THREE);
+    expect(state.picks).toEqual([]);
+    expect(out).toEqual([
+      { rowFile: "Abzan", ok: true, entryId: ID(1), deckId: "deck-1" },
+      { rowFile: "Sultai", ok: true, entryId: ID(2), deckId: "deck-2" },
+      { rowFile: "Temur", ok: true, entryId: ID(3), deckId: "deck-3" },
+    ]);
+    expect(state.revalidated).toEqual([]);
+  });
+
+  // S7: a box whose deck or cards failed is named, the others land, and nothing is retried.
+  it("names the middle box when its start fails, and lands the other two", async () => {
+    state.selects = [CATALOG];
+    state.pickResult = (f) => (f === "Sultai" ? { ok: false, reason: "failed" } : { ok: true, entryId: `entry-${f}`, deckId: `deck-${f}` });
+    const out = await addPrecons(THREE);
+    expect(state.picks.map((a) => a[1])).toEqual(["Abzan", "Sultai", "Temur"]);
+    expect(out).toEqual([
+      { rowFile: "Abzan", ok: true, entryId: "entry-Abzan", deckId: "deck-Abzan" },
+      { rowFile: "Sultai", ok: false },
+      { rowFile: "Temur", ok: true, entryId: "entry-Temur", deckId: "deck-Temur" },
+    ]);
+    expect(state.revalidated).toEqual(["deck-Abzan", "deck-Temur"]);
   });
 });

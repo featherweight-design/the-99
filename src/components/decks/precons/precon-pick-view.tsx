@@ -233,7 +233,7 @@ export function PreconPickView({ rows, entry, initial, hasCollection = false, ad
     // it is not refused, and its retry under the same id answers which.
     say(unknown.size > 0 ? preconsCopy.start.owned.addUnsure
       : ok.length === 0 ? preconsCopy.start.owned.addFailed
-      : copy.partFailed(ok.map((o) => name(o.rowFile)), failed.map((o) => name(o.rowFile))));
+      : copy.partFailed(ok.map((o) => name(o.rowFile)), failed.map((o) => name(o.rowFile)), ok.every((o) => o.ok && o.deckId !== undefined)));
     add.current?.focus();
   }
 
