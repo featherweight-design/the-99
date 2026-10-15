@@ -100,8 +100,9 @@ function askParams(p: ChooseParams): ChooseParams {
 /**
  * The ask a read is stored with (History): the results address's query without its `?` and without
  * the read's id, built on the server from the press's parsed, tag-resolved and capped params. Text,
- * so reopening is `parseChooseParams` and a link, and nothing but the History list and the results
- * page ever reads it back: it reaches no prompt.
+ * so reopening is `parseChooseParams` and a link, and nothing but the History reads
+ * (`history-read.ts`) ever reads it back: it reaches no prompt. The results page reads the address,
+ * not the column.
  */
 export function askOf(p: ChooseParams): string {
   return serializeChooseParams(askParams(p)).slice(1);

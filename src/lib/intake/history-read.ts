@@ -68,13 +68,21 @@ export async function loadChooseHistory(
   };
 }
 
-/** Whether the player has a run History would list: the New deck door's link, one indexed read. */
+/**
+ * Whether the player has a run History lists, for the New deck door's link: one indexed read. A hint
+ * rather than the list itself: it does not reap an abandoned read, so a player whose only run died
+ * unreaped sees the link and an empty list until the list's own read reaps it.
+ */
 export async function hasListableRun(userId: string): Promise<boolean> {
   const [row] = await db.select({ id: intakeReads.id }).from(intakeReads)
     .where(and(
       eq(intakeReads.userId, userId),
       sql`${intakeReads.ask} is not null`,
-      or(eq(intakeReads.status, "ok"), and(eq(intakeReads.status, "failed"), eq(intakeReads.errorClass, "nothing_valid"))),
+      or(
+        eq(intakeReads.status, "ok"),
+        eq(intakeReads.status, "pending"),
+        and(eq(intakeReads.status, "failed"), eq(intakeReads.errorClass, "nothing_valid")),
+      ),
     ))
     .limit(1);
   return row !== undefined;

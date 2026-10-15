@@ -35,7 +35,7 @@ describe("the stored ask", () => {
   it("is never imported by a prompt builder or the model client", () => {
     const builders = files.filter((f) => /^lib\/model\//.test(f.rel) || /^lib\/intake\/(the-read|read)[^/]*\.ts$/.test(f.rel));
     expect(builders.length).toBeGreaterThan(3);
-    const reaching = builders.filter((f) => /history-read|from "\.\/history"|\bloadChooseHistory\b|\bshapeRun\b/.test(f.text)).map((f) => f.rel);
+    const reaching = builders.filter((f) => /history-read|from "\.\/history"|\bloadChooseHistory\b|\bloadPastRead\b|\bhasListableRun\b|\bshapeRun\b|\baskOf\b|\bpastRunHref\b/.test(f.text)).map((f) => f.rel);
     expect(reaching).toEqual([]);
   });
 });
