@@ -1768,6 +1768,17 @@ describe("DecklistRow, phone Shopping row option B", () => {
     expect(screen.getByText("Esika, God of the Tree", { selector: "span.md\\:hidden" })).toBeInTheDocument();
   });
 
+  it("keeps a Shopping land with no figure at the shipped shell height from md, and cuts a renamed two-face commander to its front face", () => {
+    const land = { ...priced(1500), cardTypeGroup: "Lands" as const, typeLine: "Land", manaCost: null } as DeckDetailCard;
+    inB(<DecklistRow deckId="d1" card={land} shoppingFigure={undefined} inShopping newestAsOf={asOf} />, true);
+    expect(row().className).toContain("min-h-[44px] md:min-h-[34px]");
+    expect(row().className).not.toContain("min-h-[52px]");
+    cleanup();
+    const renamed = priced(1500, { printedName: "Esika, Printed // Other Face", name: "Esika // Bridge", layout: "transform" } as Partial<DeckDetailCard>);
+    inB(<DecklistRow deckId="d1" card={renamed} shoppingFigure={24} inShopping newestAsOf={asOf} />, true);
+    expect(screen.getByText("Esika, Printed", { selector: "span.md\\:hidden" })).toBeInTheDocument();
+  });
+
   it("changes nothing outside Shopping", () => {
     inB(<DecklistRow deckId="d1" card={priced(1500)} newestAsOf={asOf} />, true);
     expect(row().className).not.toContain("max-md:");

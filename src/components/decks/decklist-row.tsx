@@ -318,8 +318,10 @@ export function DecklistRow({
   // reason to draw one.
   // Option B draws the two-line layout on every Shopping row, a land with no EDHREC figure included (the figure
   // stays conditional, and the second line is then cost and nothing, which still carries the row's width).
-  const hasMetaLine = hasShoppingMeta || !inLandsGroup || rowB;
-  const rowShell = hasMetaLine ? (inShopping ? ROW_SHELL_SHOPPING : ROW_SHELL_META) : ROW_SHELL;
+  const shellHasMeta = hasShoppingMeta || !inLandsGroup;
+  const hasMetaLine = shellHasMeta || rowB;
+  // The SHELL keeps the original condition (a land with no figure is 34px from md), and `rowB` forces only the markup.
+  const rowShell = shellHasMeta ? (inShopping ? ROW_SHELL_SHOPPING : ROW_SHELL_META) : ROW_SHELL;
   // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
   // line and needs context. Desktop: bare "24%" because it is inline with the
   // name. Absence: phone gets the full sentence; desktop gets "—" which reads
@@ -342,9 +344,9 @@ export function DecklistRow({
   // modal — one tap away on this very name — is the recovery path for the clip.
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
-  // Option B's phone name: the front face of a two-face card whose name still carries both (`printedFaceName`
-  // already cuts a printed name to its front face at every width). Null when there is nothing to cut.
-  const frontFace = !card.printedName && isTwoFaced(card.layout ?? card.catalogLayout) ? faceNames(card.name).front : null;
+  // Option B's phone name: the front face of a two-face card, from the name the row speaks (a printed name when the
+  // player owns a renamed copy). From `md` the row prints what it printed. Null for a one-face card.
+  const frontFace = isTwoFaced(card.layout ?? card.catalogLayout) ? faceNames(fullName).front : null;
   // What the row prints. A recounted row carries its pair inline with the name,
   // because the brass rule says only "the draft touched this" and a reader
   // looking at `Sol Ring` cannot tell 1 → 2 from a card that was not there.
