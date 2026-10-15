@@ -561,8 +561,8 @@ describe("the view", () => {
     draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(3) })]));
     const tile = document.querySelector<HTMLElement>("[data-token-tile]")!;
     const foot = tile.querySelector<HTMLElement>("[data-token-foot]")!;
-    // Inside the frame (the bordered shell), below the caption, behind a hairline.
-    expect(foot.parentElement!.className).toContain("border");
+    // Inside the frame (the bordered shell, which is the foot's own parent), below the caption, behind a hairline.
+    expect(foot.parentElement).toBe(tile.querySelector("[data-token-frame]"));
     expect(foot.className).toContain("border-t-[color:var(--border)]");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Add the Goblin token to this deck’s Shopping list" })); });
     expect(stub.joined).toHaveBeenCalledWith(DECK, "g", true);
@@ -592,6 +592,8 @@ describe("the view", () => {
     draw(ok([token({ oracleId: "a", name: "Ally" }), token({ oracleId: "b", name: "Food" })]));
     expect(document.querySelector("[data-token-tile]")!.parentElement!.className).toContain("items-stretch");
     expect(document.querySelector("[data-token-foot]")!.className).toContain("mt-auto");
+    // The frame takes the tile's height (`flex-1`), or the foot would sit under the caption instead of at the bottom.
+    expect(document.querySelector("[data-token-frame]")!.className).toContain("flex-1");
   });
 
   it("names a tile's art for what it does: its card details", () => {

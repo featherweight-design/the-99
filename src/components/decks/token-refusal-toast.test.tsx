@@ -38,4 +38,21 @@ describe("TokenRefusalToast", () => {
     act(() => { window.dispatchEvent(new Event(DECK_TOAST_CLAIM)); });
     expect(done).toHaveBeenCalledTimes(1);
   });
+
+  it("sits above a deck toast that is already up, and in the slot itself when none is", () => {
+    const { container } = render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
+    expect(container.querySelector("[data-toast=deck]")!.className).not.toContain("114px");
+    cleanup();
+    const receipt = document.createElement("div");
+    receipt.setAttribute("data-toast", "deck");
+    document.body.appendChild(receipt);
+    try {
+      render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
+      const alert = screen.getByRole("alert");
+      expect(alert.className).toContain("bottom-[calc(var(--tabbar-h,0px)+114px)]");
+      expect(alert.className).toContain("md:bottom-[120px]");
+    } finally {
+      receipt.remove();
+    }
+  });
 });

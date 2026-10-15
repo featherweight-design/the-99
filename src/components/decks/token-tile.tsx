@@ -46,7 +46,7 @@ export function TokenTile({
   return (
     <li className={`flex min-w-0 flex-col ${TILE_FIELD}`} data-token-tile data-token-state={token.state}>
       <span id={`token-${token.oracleId}-face`} className="sr-only">{tokenFaceDescription(token)}</span>
-      <div className={`${TILE_SHELL_SCALED} relative flex-1 bg-[color:var(--surface)] [border:1px_solid_var(--border)] transition-colors md:hover:[border:1px_solid_var(--border-strong)]`}>
+      <div data-token-frame className={`${TILE_SHELL_SCALED} relative flex-1 bg-[color:var(--surface)] [border:1px_solid_var(--border)] transition-colors md:hover:[border:1px_solid_var(--border-strong)]`}>
         {detail ? (
           <button
             ref={artRef}

@@ -85,6 +85,10 @@ export function useToastClock(ref: RefObject<HTMLElement | null>, running: boole
 /** The deck page's toast slot: the phone column's foot above the tab bar, bottom left of the pane from md. */
 const DECK_SLOT =
   "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[16px] md:left-[calc(var(--rail-w)+16px)] md:right-auto md:w-[440px]";
+/** The same slot, one toast higher: a toast that has to show while another already holds the slot (a token refusal over a
+ *  receipt's Undo) sits above it rather than on it. */
+const DECK_SLOT_STACKED =
+  "fixed bottom-[calc(var(--tabbar-h,0px)+114px)] left-[16px] right-[16px] z-[60] md:bottom-[120px] md:left-[calc(var(--rail-w)+16px)] md:right-auto md:w-[440px]";
 
 /**
  * The all-decks cart's slot: bottom right at 380 on desktop; on the phone above the tab bar, over
@@ -94,11 +98,13 @@ const CART_SLOT =
   "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[22px] md:left-auto md:right-[22px] md:w-[380px]";
 
 export function ToastFrame({
-  frameRef, role = "status", placement = "center", title, detail, body, actions, onHold,
+  frameRef, role = "status", placement = "center", stacked = false, title, detail, body, actions, onHold,
 }: {
   frameRef: RefObject<HTMLDivElement | null>;
   role?: "status" | "alert";
   placement?: "center" | "deck" | "cart" | "inline";
+  /** `deck` only: draw one toast above the slot, over a toast that is already in it. */
+  stacked?: boolean;
   title: ReactNode;
   detail?: ReactNode;
   body?: ReactNode;
@@ -138,7 +144,7 @@ export function ToastFrame({
       role={role}
       {...holds}
       data-toast={placement}
-      className={`${placement === "inline" ? "w-full max-w-[440px]" : placement === "cart" ? CART_SLOT : DECK_SLOT} flex min-h-[52px] items-start gap-[10px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] pl-[14px] pr-[6px] shadow-[0_12px_30px_rgba(0,0,0,0.45)]`}
+      className={`${placement === "inline" ? "w-full max-w-[440px]" : placement === "cart" ? CART_SLOT : stacked ? DECK_SLOT_STACKED : DECK_SLOT} flex min-h-[52px] items-start gap-[10px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] pl-[14px] pr-[6px] shadow-[0_12px_30px_rgba(0,0,0,0.45)]`}
     >
       <span className="flex min-w-0 flex-1 flex-col gap-[3px] py-[10px]">
         <span className="text-[13.5px] leading-[1.35] text-[color:var(--fg)]">{title}</span>
