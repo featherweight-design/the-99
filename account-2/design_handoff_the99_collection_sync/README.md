@@ -1,6 +1,6 @@
-# The 99 — Collection Sync (design handoff, R1)
+# The 99 — Collection Sync (design handoff, R2)
 
-`design_handoff_the99_collection_sync/` · 2026-10-15 · account 2 · **R1, waiting on Hugh's audit against the brief's locks.**
+`design_handoff_the99_collection_sync/` · 2026-10-15 · account 2 · **R2: Hugh's R1 audit passed with two changes, both made here.**
 
 Source of truth: `docs/superpowers/design-briefs/2026-10-14-collection-sync.md`, on branch `brief/collection-sync`
 (not on main yet). Read alongside: `upload-choice.tsx`, `replace-review-detail.tsx`, `review-screen.tsx`,
@@ -15,7 +15,7 @@ the fixture's figures come from the brief's staging reads.
 
 | File | Holds |
 |---|---|
-| `The 99 - Collection Sync (R1).dc.html` | The ten calls, the merge rule, the locks. Start here. |
+| `The 99 - Collection Sync (R2).dc.html` | The ten calls, the merge rule, the locks. Start here. |
 | `R1 - Choice-Desktop.dc.html` | C1 nothing picked, C2 Sync picked, C3 Sync unavailable (three reasons), C4 focus. |
 | `R1 - Choice-Phone.dc.html` | The same at 390. |
 | `R1 - Stale.dc.html` | S1 Hugh's case (file's cards match the last upload, carries tokens), S2 an older file with the follow-up choice. Both widths. |
@@ -35,6 +35,20 @@ the fixture's figures come from the brief's staging reads.
 | `brand/` | The locked brand sheet. |
 
 The same canvas is live as a Design artifact in account 2.
+
+## R2 (2026-10-15)
+
+Hugh's audit of R1: two changes, everything else approved. The `R2 - *` boards and `The 99 - Collection Sync (R2).dc.html`
+replace their R1 namesakes; boards with no R2 copy (Choice-Phone, Receipt, About-Entry) are unchanged from R1.
+
+1. **Desktop choice cards lose their left gutter.** The radio now sits on the title row, and the body, the figure and
+   the note run the full width of the card. Radio 22px at the card's padding (22, 22), title indented 34px
+   (radio 22 + gap 12) with a 26px line so the radio centres on it. This is the shipped `Card` in
+   `upload-choice.tsx`, so it changes Replace's and Add's cards on desktop too: same words and order, new layout.
+   Phone (padding 14) keeps the radio column, which costs less there. Boards: `R2 - Choice-Desktop`, `R2 - Stale`.
+2. **`Kept from the app` reads `Kept from The 99`**, in the tile (`kept from The 99`), the list heading
+   (`Kept from The 99 · N`) and everywhere the board and tables quote it. Boards: Review, Conflicts, Edge-States,
+   Confirm, Main.
 
 ---
 
@@ -71,9 +85,9 @@ tokens line, and the cards both sides changed on top as pairs of radios with two
    card, the follow-up isn't drawn and Sync's note says it records only the tokens (Hugh's case, S1). The review heads
    with one warning line naming the pick and a `Change` link back (E5).
 5. **What a row shows: four tiles, in order of risk.** `to decide` (warning ink and edge while non-zero, faint at 0),
-   `from the file` (the shipped up-or-new green), `kept from the app`, `nothing to do`. Agreed cards (both sides moved the
+   `from the file` (the shipped up-or-new green), `kept from The 99`, `nothing to do`. Agreed cards (both sides moved the
    same way) count in `nothing to do` and are listed nowhere. Lists: To decide, then the shipped file-side three
-   (`Leaving your collection`, `Going down`, `Going up or new`), then `Kept from the app`, whose rows read the shipped way
+   (`Leaving your collection`, `Going down`, `Going up or new`), then `Kept from The 99`, whose rows read the shipped way
    (`at last upload → now`). The `edited` tag and the overwrite banner appear only when a conflict is answered File,
    the one place Sync overwrites the player's work: `Taking the file’s count overwrites 2 cards you changed in the app
    since your Oct 2 upload.`

@@ -1,4 +1,4 @@
-# The 99 — Collection Sync · R1 handoff package
+# The 99 — Collection Sync · R2 handoff package
 
 A third choice at upload, Sync, beside Replace and Add, and its review: the file's changes taken, the app's kept, and the
 cards both sides changed differently decided by the player. Phone and desktop.
@@ -7,9 +7,12 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-14-collection-sync.md` 
 
 ## Start here
 
+R2 (2026-10-15): where an `R2 - *` board exists it replaces the `R1 - *` one. R2 tightened the desktop choice cards
+and renamed `Kept from the app` to `Kept from The 99`; README §R2 has the details.
+
 | Read | For |
 |---|---|
-| **`The 99 - Collection Sync (R1).dc.html`** | **The ten calls, the merge rule and the locks, in one board.** |
+| **`The 99 - Collection Sync (R2).dc.html`** | **The ten calls, the merge rule and the locks, in one board.** |
 | `R1 - Choice-Desktop.dc.html` / `R1 - Choice-Phone.dc.html` | The choice with three cards: nothing picked, Sync picked, unavailable, focus. |
 | `R1 - Stale.dc.html` | The stale-file banner and Sync's follow-up, both widths. |
 | `R1 - Review-Desktop.dc.html` / `R1 - Review-Phone.dc.html` | The review with no conflicts, and tokens only. |
@@ -20,7 +23,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-14-collection-sync.md` 
 | `R1 - About-Entry.dc.html` | The About edits. |
 | `README.md` | Each open question answered, with reasons; the gap report. |
 | `STATES-collection-sync.md` | The matrix. |
-| `READINESS.md` | R1, waiting on Hugh's audit. |
+| `READINESS.md` | R2, Hugh's R1 audit applied. |
 | `collection-sync · copy strings.ts` | Every new string, for `/copy-review`. |
 | `about · collection sync.ts` | The About edits as code. |
 | `design-tables/collection-sync.md` | The design-table section. |

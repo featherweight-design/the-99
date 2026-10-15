@@ -51,12 +51,12 @@ export const collectionSyncCopy = {
   review: {
     title: "Review before you sync",
     titlePhone: "Review sync",
-    tiles: { decide: "to decide", file: "from the file", kept: "kept from the app", nothing: "nothing to do" },
+    tiles: { decide: "to decide", file: "from the file", kept: "kept from The 99", nothing: "nothing to do" },
     tokensLine: (t: number) => `${tokens(t)} will be recorded from the file, as an upload records them. Tokens you marked by hand stay.`,
     tokensFigure: (t: number, copies: number) => `${tokens(t)} · ${n(copies)} ${copies === 1 ? "copy" : "copies"}`,
     /** The issues panel's third line on a Sync (README G4). */
     emblemsSkipped: (k: number) => `emblem ${k === 1 ? "row" : "rows"} skipped`,
-    listKept: (k: number) => `Kept from the app · ${n(k)}`,
+    listKept: (k: number) => `Kept from The 99 · ${n(k)}`,
     listDecide: (k: number) => `To decide · ${n(k)}`,
     decideLede: (since: string) => `You and the file both changed these since your ${since} upload. Pick which count to keep.`,
     decideLeft: (k: number) => (k === 0 ? "All answered." : `${n(k)} left.`),

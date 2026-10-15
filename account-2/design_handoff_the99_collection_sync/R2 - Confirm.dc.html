@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Confirm and refusals</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.ph{width:390px;flex:none;background:#121217;border:1px solid #2E3340;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.scr{background:#121217;border:1px solid #2E3340;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.dlg{background:#22232B;border:1px solid #2E3340;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.dt{margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px;color:#C6D2D3}
+.db{margin:0;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.deck{display:flex;align-items:center;gap:12px;min-height:44px;padding:10px 14px;box-sizing:border-box;background:#1E1F26;border:1px solid #2E3340;border-radius:10px}
+.btne{height:44px;padding:0 20px;border-radius:8px;background:#2D2E35;color:#C6D2D3;border:1px solid #424755;font:600 14px 'IBM Plex Sans',sans-serif}
+.btng{height:44px;padding:0 20px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #2E3340;font:600 14px 'IBM Plex Sans',sans-serif}
+.btng.focus{box-shadow:0 0 0 2px #5C86C9}
+.btnp{height:44px;padding:0 24px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 14px 'IBM Plex Sans',sans-serif}
+.btnp[disabled],.btng[disabled]{opacity:.6}
+.bar{display:flex;align-items:center;gap:20px;padding:16px 56px;background:#181920;border-top:1px solid #2E3340}
+.barp{padding:12px 18px 14px;background:#181920;border-top:1px solid #2E3340}
+.sum{margin:0 0 10px;font-size:11.5px;line-height:1.45;text-align:center;color:#7C8A8C}
+.fail{padding:12px 14px;background:#1E1F26;border:1px solid #2E3340;border-left:3px solid #C6533F;border-radius:10px}
+.tile{padding:12px 14px;border:1px solid #1A1F2B;border-radius:12px;background:#1E1F26}
+.tile .n{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1}
+.tile .l{margin-top:6px;font-size:12px;color:#95A4A6}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+.link{min-height:44px;padding:0;margin-top:6px;background:none;border:0;font:13.5px 'IBM Plex Sans',sans-serif;color:#5C86C9;text-decoration:underline;text-underline-offset:2px}
+</style>
+</helmet>
+<div style="width:1800px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Confirm, pending, refused · desktop and phone · R2</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">The shipped confirm, in Sync’s words</h2>
+    <p class="cap" style="margin:0;max-width:1300px">The short-deck dialog is §E as shipped, with its title and confirm Sync’s own: “Syncing leaves 2 decks short”, “Sync anyway”. Cancel takes focus and nothing is red. Pending, failed and unconfirmed are the shipped states; the conflict answers survive every one of them.</p>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">X1 · short-deck dialog · desktop</span>
+      <section class="scr" style="width:900px;height:560px">
+        <div aria-hidden="true" style="position:absolute;inset:0;padding:36px 56px;opacity:.35"><span class="m" style="font-size:11px;color:#7C8A8C">STEP 3 OF 4 · The Vault 10-14-26.csv</span><div style="margin-top:12px;font-family:'Metamorphous',serif;font-size:29px">Review before you sync</div></div>
+        <div style="position:absolute;inset:0;background:rgba(10,10,14,.6)"></div>
+        <div role="dialog" aria-modal="true" aria-labelledby="x1t" class="dlg" style="position:absolute;left:210px;top:70px;width:480px;box-sizing:border-box">
+          <h2 class="dt" id="x1t">Syncing leaves 2 decks short</h2>
+          <p class="db">Nothing about these decks changes. Each will show what it’s short of and put it on its shopping list.</p>
+          <div class="deck"><span style="flex:1;font-size:14px">Tithe and Tax</span><span class="m" style="font-size:12px;color:#95A4A6">◆ short 1</span></div>
+          <div class="deck"><span style="flex:1;font-size:14px">Plowshares and Prayer</span><span class="m" style="font-size:12px;color:#95A4A6">2 cards short</span></div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px"><button class="btng focus" type="button">Cancel</button><button class="btne" type="button">Sync anyway</button></div>
+        </div>
+      </section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">X1 · as a sheet · phone</span>
+      <section class="ph" style="height:560px">
+        <div style="position:absolute;inset:0;background:rgba(10,10,14,.6)"></div>
+        <div role="dialog" aria-modal="true" aria-labelledby="x1pt" class="dlg" style="position:absolute;left:0;right:0;bottom:0;border-radius:18px 18px 0 0;padding:20px 18px 22px">
+          <h2 class="dt" id="x1pt" style="font-size:18px">Syncing leaves 2 decks short</h2>
+          <p class="db">Nothing about these decks changes. Each will show what it’s short of and put it on its shopping list.</p>
+          <div class="deck"><span style="flex:1;font-size:14px">Tithe and Tax</span><span class="m" style="font-size:12px;color:#95A4A6">◆ short 1</span></div>
+          <div class="deck"><span style="flex:1;font-size:14px">Plowshares and Prayer</span><span class="m" style="font-size:12px;color:#95A4A6">2 cards short</span></div>
+          <div style="display:flex;flex-direction:column;gap:10px"><button class="btne" type="button" style="height:46px">Sync anyway</button><button class="btng focus" type="button" style="height:46px">Cancel</button></div>
+        </div>
+      </section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:340px;padding-top:24px">
+      <span class="k">Why the decks come from file-side moves only</span>
+      <span class="cap">A Sync lowers a card only where the file lowered it, or where a conflict was answered File. Kept app changes never lower anything, so the dialog is usually shorter than Replace’s for the same file: Hugh’s 2 short decks under Replace are 0 under Sync when the file adds nothing.</span>
+    </div>
+  </div>
+
+  <span class="k">X2 · confirming · X3 · refused · X4 · unconfirmed</span>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <section class="scr" style="width:900px">
+        <div style="padding:28px 56px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;opacity:.6" aria-busy="true">
+          <div class="tile"><div class="n" style="color:#7C8A8C">0</div><div class="l">to decide</div></div>
+          <div class="tile"><div class="n" style="color:#6FA368">17</div><div class="l">from the file</div></div>
+          <div class="tile"><div class="n">119</div><div class="l">kept from The 99</div></div>
+          <div class="tile"><div class="n">3,385</div><div class="l">nothing to do</div></div>
+        </div>
+        <div class="bar"><span style="font-size:13.5px;color:#B3C0C2">Taking 17 cards from the file and keeping 119 of yours, with 114 tokens. You decided 3.</span><span style="margin-left:auto;display:flex;gap:12px"><button class="btng" type="button" disabled>Cancel</button><button class="btnp" type="button" disabled>Syncing…</button></span></div>
+      </section>
+      <span class="cap" style="max-width:900px">X2: everything above the bar freezes at .6 without reflow and the radios can’t be changed; Cancel is disabled, as shipped (A4).</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <section class="ph">
+        <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div class="fail" role="alert" tabindex="-1"><div style="font-size:14px;font-weight:600">We couldn’t import that</div><p style="margin:4px 0 0;font-size:13.5px;line-height:1.55;color:#B3C0C2">Your collection is unchanged, and this review is still here.</p><button class="link" type="button">Try again</button></div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div class="tile"><div class="n" style="color:#7C8A8C">0</div><div class="l">to decide</div></div>
+            <div class="tile"><div class="n" style="color:#6FA368">17</div><div class="l">from the file</div></div>
+          </div>
+        </div>
+        <div class="barp"><p class="sum">Taking 17 cards from the file and keeping 119 of yours, with 114 tokens. You decided 3.</p><div style="display:flex;gap:10px"><button class="btng" type="button" style="height:46px">Cancel</button><button class="btnp" type="button" style="flex:1;height:46px">Sync collection</button></div></div>
+      </section>
+      <span class="cap" style="max-width:390px">X3: the shipped A5 banner at the head of the review, focused. Nothing was written, tokens included (one transaction). The 3 answers stand.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <section class="ph">
+        <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div class="fail" role="alert" tabindex="-1" style="border-left-color:#E0913C"><p style="margin:0;font-size:13.5px;line-height:1.55;color:#B3C0C2">We couldn’t confirm whether that went through. Check your collection, then try again if it didn’t.</p></div>
+        </div>
+        <div class="barp"><div style="display:flex;gap:10px"><button class="btng" type="button" style="height:46px">Cancel</button><button class="btnp" type="button" style="flex:1;height:46px">Sync collection</button></div></div>
+      </section>
+      <span class="cap" style="max-width:390px">X4: the shipped string. A retry that finds the sync already applied comes back as nothing to sync (Edge states E2), never as a second entry.</span>
+    </div>
+  </div>
+  <p class="cap" style="margin:0;max-width:1300px">These stay inline banners, not ToastFrame: the review is still on screen and the failure belongs to it (the shipped A5 Must-not: clear the review). The shipped title says “import”; /copy-review may want “We couldn’t sync that” for this mode (README gap G6).</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
