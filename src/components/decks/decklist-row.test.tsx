@@ -1691,10 +1691,14 @@ describe("DecklistRow, phone Shopping row option B", () => {
     // Screen-reader text at every width: the limit is the tag's outline and the key's `over $N`, never words under it.
     expect(under.className).not.toContain("lg:hidden");
     expect(tag.getAttribute("aria-describedby")).toContain(under.id);
-    // The plate keeps its ring and drops its wash at every width.
+    // The plate keeps its ring and drops its resting wash at every width, and keeps the hover and press washes.
     const plate = tag.firstElementChild as HTMLElement;
     expect(plate.style.boxShadow).toBe(OVER_LIMIT_RING);
-    expect(plate.className).toContain("!bg-transparent");
+    const cls = plate.className.split(/\s+/);
+    expect(cls).toContain("bg-transparent");
+    expect(cls.some((c) => c.startsWith("lg:group-hover/buy:bg-"))).toBe(true);
+    expect(cls.some((c) => c.startsWith("group-active/buy:bg-"))).toBe(true);
+    expect(cls.some((c) => c.startsWith("bg-[color-mix"))).toBe(false);
   });
 
   it("leaves a row under the limit with its wash and no ⇄", () => {
