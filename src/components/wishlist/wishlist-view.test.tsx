@@ -148,6 +148,34 @@ describe("the search", () => {
     expect(screen.getByRole("searchbox", { name: /search/i })).toHaveFocus();
   });
 
+  it("names each stepper by its card, and puts focus back in the field when a held step takes the stepper away", async () => {
+    m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 2 }] });
+    m.setWant.mockResolvedValue({ ok: true, status: "held", want: 1, have: 1 });
+    view({ tiles: [tile()] });
+    const list = await search("sol");
+    expect(within(list).getByRole("group", { name: "Sol Ring" })).toBeInTheDocument();
+    const fewer = within(list).getByRole("button", { name: wishlistCopy.details.fewer });
+    fewer.focus();
+    await act(async () => fireEvent.click(fewer));
+    expect(within(list).getByRole("button", { name: wishlistCopy.page.search.add })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: /search/i })).toHaveFocus();
+  });
+
+  it("does not let a stepper from an earlier Add take focus when the search opens again", async () => {
+    m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: null }] });
+    m.add.mockResolvedValue({ ok: true, status: "wanted", want: 2, have: 1 });
+    view();
+    const list = await search("sol");
+    await act(async () => fireEvent.click(within(list).getByRole("button", { name: wishlistCopy.page.search.add })));
+    const field = screen.getByRole("searchbox", { name: /search/i });
+    fireEvent.keyDown(field, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("wishlist-results")).toBeNull());
+    field.focus();
+    fireEvent.change(field, { target: { value: "s" } });
+    await screen.findByTestId("want-stepper");
+    expect(field).toHaveFocus();
+  });
+
   it("never draws a count no write saved when two steps overlap and both fail", async () => {
     m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 2 }] });
     const settles: ((v: unknown) => void)[] = [];

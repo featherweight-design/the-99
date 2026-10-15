@@ -283,7 +283,8 @@ export function CollectionPlaceHead({
           the path, carries no query, and Back is a route change. */}
       <nav
         aria-label={collectionTabsCopy.regionAria}
-        className="flex h-[48px] items-stretch gap-[2px] pl-[8px] pr-[4px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
+        // Scrolls sideways rather than widening the page when five tabs and + Add outgrow a narrow phone (320px).
+        className="flex h-[48px] items-stretch gap-[2px] overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 pl-[8px] pr-[4px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
       >
         {visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyShows }, wishlistEnabled).map((tab) => {
           const on = tab.place === effective;

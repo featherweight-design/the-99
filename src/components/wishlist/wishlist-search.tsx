@@ -89,7 +89,20 @@ export function WishlistSearch({
     onOpenChange(open);
   }, [open, onOpenChange]);
 
-  const { ref: rootRef, onEscape } = useSearchDismiss<HTMLDivElement>(trimmed !== "", () => setQuery(""));
+  // A new query, or none, spends every pending focus request: rows an earlier Add turned into a stepper must not take
+  // focus from the field when they draw again.
+  const changeQuery = (next: string) => {
+    setQuery(next);
+    setFresh(new Set());
+  };
+  const { ref: rootRef, onEscape } = useSearchDismiss<HTMLDivElement>(trimmed !== "", () => changeQuery(""));
+
+  // A step that answers `held` takes its row's stepper away, focused press and all. When that left focus nowhere, it
+  // goes back to the field; a reader who has already moved on is left where they are.
+  const [refocus, setRefocus] = useState(0);
+  useEffect(() => {
+    if (refocus > 0 && (document.activeElement === null || document.activeElement === document.body)) inputRef.current?.focus();
+  }, [refocus]);
 
   const wantOf = (r: WishlistSearchResult) =>
     pending.get(r.oracleId)?.want ?? (confirmed.has(r.oracleId) ? confirmed.get(r.oracleId)! : r.want);
@@ -124,6 +137,7 @@ export function WishlistSearch({
       if (!out.ok) throw new Error(out.reason);
       const want = out.status === "wanted" ? out.want : null;
       confirm(id, want);
+      if (want === null) setRefocus((n) => n + 1);
       onWant({ card: r, want, have: out.have });
     } catch {
       onFailure("set");
@@ -153,8 +167,8 @@ export function WishlistSearch({
         autoComplete="off"
         spellCheck={false}
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onClear={() => setQuery("")}
+        onChange={(e) => changeQuery(e.target.value)}
+        onClear={() => changeQuery("")}
         ref={inputRef}
         containerClassName="h-[44px] md:h-[46px] py-0 rounded-[10px] md:bg-[color:var(--bg)]"
         className="text-[16px] md:text-[15px]"
@@ -201,7 +215,7 @@ export function WishlistSearch({
                       </span>
                     </span>
                     {want !== null ? (
-                      <span className="flex flex-none items-center gap-[8px] md:gap-[12px]">
+                      <span role="group" aria-labelledby={`${listId}-${i}`} className="flex flex-none items-center gap-[8px] md:gap-[12px]">
                         <span aria-hidden className="hidden font-mono text-[11px] text-[color:var(--fg-muted)] md:inline md:text-[12.5px]">{copy.details.want}</span>
                         <WantStepper
                           value={want}
