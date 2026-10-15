@@ -20,6 +20,7 @@ vi.mock("../../app/friends/actions", () => ({
 }));
 
 import { PodsPane } from "./pods-pane";
+import { FriendInviteContext } from "./invite-context";
 import { socialCopy } from "../../lib/copy/social";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
 
@@ -232,6 +233,41 @@ describe("+ Add friends", () => {
     expect(within(dialog).getByTestId("pod-add-empty").textContent).toBe(line);
     expect(within(dialog).queryByRole("checkbox")).toBeNull();
     expect(within(dialog).queryByRole("button", { name: P.addConfirm(0) })).toBeNull();
+  });
+
+  it("offers Add a friend under the no-friends line: one press closes the sheet and makes a link", async () => {
+    const invite = vi.fn();
+    render(
+      <FriendInviteContext.Provider value={{ invite, pending: false, held: false }}>
+        <PodsPane pods={[mine()]} sharedIds={[]} friends={[]} />
+      </FriendInviteContext.Provider>,
+    );
+    await press(screen.getByRole("button", { name: P.addFriends }));
+    await press(within(screen.getByRole("dialog")).getByRole("button", { name: socialCopy.page.invite }));
+    expect(invite).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("holds that Add a friend at ten open links, and keeps it off when the reader has friends", async () => {
+    const invite = vi.fn();
+    const { unmount } = render(
+      <FriendInviteContext.Provider value={{ invite, pending: false, held: true }}>
+        <PodsPane pods={[mine()]} sharedIds={[]} friends={[]} />
+      </FriendInviteContext.Provider>,
+    );
+    await press(screen.getByRole("button", { name: P.addFriends }));
+    const held = within(screen.getByRole("dialog")).getByRole("button", { name: socialCopy.page.invite });
+    expect(held.getAttribute("aria-disabled")).toBe("true");
+    await press(held);
+    expect(invite).not.toHaveBeenCalled();
+    unmount();
+    render(
+      <FriendInviteContext.Provider value={{ invite, pending: false, held: false }}>
+        <PodsPane pods={[mine()]} sharedIds={[]} friends={[friend("Dave"), friend("Priya")]} />
+      </FriendInviteContext.Provider>,
+    );
+    await press(screen.getByRole("button", { name: P.addFriends }));
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: socialCopy.page.invite })).toBeNull();
   });
 });
 

@@ -49,11 +49,13 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
   if (!socialFriendsEnabled(await requestSwitchEnv(userId))) notFound();
   // `readInvite` names the inviter only for an open link (E6); an ended one carries its state alone.
   const view = landingView(isInviteToken(token) ? await readInvite(userId, token) : null);
+  // The server's clock, so the card's first render names the same day as the server drew it.
+  const now = new Date();
   return (
     <>
       {/* Opening a friend's link spends it, once, after mount (G4): the card says it is used up. */}
       {view.kind === "friends" && <SpendFriendLink token={token} />}
-      <FriendLanding token={token} view={view} />
+      <FriendLanding token={token} view={view} nowMs={now.getTime()} />
     </>
   );
 }

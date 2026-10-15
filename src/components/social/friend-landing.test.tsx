@@ -16,11 +16,12 @@ vi.mock("../../app/friends/actions", () => ({ redeemInviteAction: m.redeem, decl
 vi.mock("../../lib/ui/motion", () => ({ prefersReducedMotion: () => m.reduced }));
 
 import { FriendLanding } from "./friend-landing";
-import { landingView, friendsSinceLabel } from "../../lib/social/landing";
+import { landingView } from "../../lib/social/landing";
 import { socialCopy } from "../../lib/copy/social";
 
 const L = socialCopy.landing;
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
+const NOW = new Date("2026-10-15T21:41:00Z").getTime();
 const SOL = { oracleId: "o1", name: "Sol Ring Commander", artCropUri: "https://cards.scryfall.io/art_crop/x.jpg" };
 const OPEN = { kind: "open" as const, name: "Ana", commander: SOL };
 const FRIEND = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Ana" };
@@ -45,7 +46,7 @@ afterEach(() => {
 
 describe("the arrival", () => {
   it("draws a named card face down, then turns it face up once, as one labelled image", () => {
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     expect(turn().dataset.up).toBe("false");
     expect(turn().dataset.arrival).toBe("true");
     // Arriving moves no focus.
@@ -64,7 +65,7 @@ describe("the arrival", () => {
   });
 
   it("draws a sender with no commander by their initials in the grey frame (L2b)", () => {
-    render(<FriendLanding token={TOKEN} view={{ kind: "open", name: "Jo Bloggs", commander: null }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "open", name: "Jo Bloggs", commander: null }} />);
     arrive();
     expect(screen.getByTestId("friend-card-front").dataset.frame).toBe("grey");
     expect(screen.getByTestId("friend-card-initials").textContent).toBe("JB");
@@ -76,7 +77,7 @@ describe("the arrival", () => {
     ["expired", { kind: "expired" as const }, L.expiredTitle, true],
     ["ended", { kind: "ended" as const }, L.endedTitle, false],
   ])("never turns an %s card, and names nobody", (_n, view, heading, dim) => {
-    render(<FriendLanding token={TOKEN} view={view} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={view} />);
     arrive();
     expect(turn().dataset.up).toBe("false");
     expect(screen.queryByTestId("friend-card-front")).toBeNull();
@@ -85,20 +86,30 @@ describe("the arrival", () => {
     expect(screen.getByRole("link", { name: L.toFriends }).getAttribute("href")).toBe("/friends");
   });
 
-  it("turns a friend's card face up with the day you became friends", () => {
-    render(<FriendLanding token={TOKEN} view={{ kind: "friends", name: "Ana", commander: SOL, since: "Oct 2" }} />);
+  it("turns a friend's card face up with the day you became friends, as /friends names it", () => {
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "friends", name: "Ana", commander: SOL, since: new Date("2026-10-02T12:00:00Z") }} />);
     arrive();
     expect(screen.getByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeFriend("Oct 2")) })).toBeTruthy();
     expect(title()).toBe(L.alreadyTitle("Ana"));
     expect(screen.getByText(L.alreadyBody)).toBeTruthy();
     expect(screen.queryByRole("button", { name: L.accept })).toBeNull();
   });
+
+  it("names a friendship made today or yesterday the way /friends does", () => {
+    const { unmount } = render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "friends", name: "Ana", commander: SOL, since: new Date(NOW - 3_600_000) }} />);
+    arrive();
+    expect(screen.getByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeFriend(socialCopy.friends.today)) })).toBeTruthy();
+    unmount();
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "friends", name: "Ana", commander: SOL, since: new Date(NOW - 86_400_000) }} />);
+    arrive();
+    expect(screen.getByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeFriend(socialCopy.friends.yesterday)) })).toBeTruthy();
+  });
 });
 
 describe("Accept", () => {
   it("leaves for /friends with the new friend's receipt, and does not turn the card", async () => {
     m.redeem.mockResolvedValue({ ok: true, friend: FRIEND, alreadyFriends: false });
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     arrive();
     await press(L.accept);
     expect(m.redeem).toHaveBeenCalledWith(TOKEN);
@@ -108,7 +119,7 @@ describe("Accept", () => {
 
   it.each([["ended"], ["notFound"]])("redraws a refusal as %s, a link that no longer works", async (reason) => {
     m.redeem.mockResolvedValue({ ok: false, reason });
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     arrive();
     await press(L.accept);
     expect(title()).toBe(L.endedTitle);
@@ -119,7 +130,7 @@ describe("Accept", () => {
 
   it("redraws your own link as your own card", async () => {
     m.redeem.mockResolvedValue({ ok: false, reason: "self" });
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     arrive();
     await press(L.accept);
     expect(title()).toBe(L.selfTitle);
@@ -128,14 +139,14 @@ describe("Accept", () => {
 
   it("refreshes into not found when the switch went off", async () => {
     m.redeem.mockResolvedValue({ ok: false, reason: "off" });
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     await press(L.accept);
     expect(m.refresh).toHaveBeenCalled();
   });
 
   it("keeps the card up and offers Try again when the write throws (L8)", async () => {
     m.redeem.mockRejectedValueOnce(new Error("down")).mockResolvedValue({ ok: true, friend: FRIEND, alreadyFriends: false });
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     arrive();
     await press(L.accept);
     expect(screen.getByRole("alert").textContent).toContain(L.acceptFailed);
@@ -149,7 +160,7 @@ describe("Accept", () => {
   it("holds both buttons while it is in flight", async () => {
     let answer: (v: unknown) => void = () => {};
     m.redeem.mockReturnValue(new Promise((r) => { answer = r; }));
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     await press(L.accept);
     expect((screen.getByRole("button", { name: L.accept }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: L.decline }) as HTMLButtonElement).disabled).toBe(true);
@@ -162,7 +173,7 @@ describe("a press while a failure toast stands", () => {
     m.redeem.mockRejectedValueOnce(new Error("down"));
     let answer: (v: unknown) => void = () => {};
     m.decline.mockReturnValue(new Promise((r) => { answer = r; }));
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     arrive();
     await press(L.accept);
     expect(screen.getByRole("button", { name: L.retry })).toBeTruthy();
@@ -179,7 +190,7 @@ describe("a press while a failure toast stands", () => {
 describe("Decline", () => {
   it("turns the card back first, then says the request is declined, by the name it kept", async () => {
     m.decline.mockResolvedValue({ ok: true });
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     arrive();
     await press(L.decline);
     expect(turn().dataset.up).toBe("false");
@@ -198,7 +209,7 @@ describe("Decline", () => {
   it("waits only the 120ms cross-fade under reduced motion", async () => {
     m.reduced = true;
     m.decline.mockResolvedValue({ ok: true });
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     arrive();
     await press(L.decline);
     act(() => { vi.advanceTimersByTime(119); });
@@ -212,7 +223,7 @@ describe("Decline", () => {
     ["self", L.selfTitle],
   ])("redraws a refusal (%s) as what the link now is, never as declined", async (reason, heading) => {
     m.decline.mockResolvedValue({ ok: false, reason });
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     arrive();
     await press(L.decline);
     act(() => { vi.advanceTimersByTime(1000); });
@@ -225,7 +236,7 @@ describe("Decline", () => {
   ])("shows the decline toast with Try again when it %s", async (_n, arrange) => {
     arrange();
     m.decline.mockResolvedValue({ ok: true });
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     arrive();
     await press(L.decline);
     expect(screen.getByRole("alert").textContent).toContain(L.declineFailed);
@@ -239,7 +250,7 @@ describe("your own link", () => {
   it("copies the link at this page's own origin, and says so", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
-    render(<FriendLanding token={TOKEN} view={{ kind: "self", name: "Hugh", commander: null }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "self", name: "Hugh", commander: null }} />);
     arrive();
     expect(screen.getByText(L.selfBody)).toBeTruthy();
     await press(L.copyLink);
@@ -251,7 +262,7 @@ describe("your own link", () => {
 
   it("says when the copy failed", async () => {
     Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn().mockRejectedValue(new Error("no")) }, configurable: true });
-    render(<FriendLanding token={TOKEN} view={{ kind: "self", name: "Hugh", commander: null }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "self", name: "Hugh", commander: null }} />);
     await press(L.copyLink);
     expect(screen.getByRole("alert").textContent).toContain(L.copyFailed);
   });
@@ -259,7 +270,7 @@ describe("your own link", () => {
 
 describe("a long name", () => {
   it("breaks anywhere in the column, so 30 characters with no space stay inside it", () => {
-    render(<FriendLanding token={TOKEN} view={{ kind: "open", name: "W".repeat(30), commander: null }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "open", name: "W".repeat(30), commander: null }} />);
     expect(screen.getByRole("region").className).toContain("[overflow-wrap:anywhere]");
     arrive();
     expect(screen.getByText(L.openRules("W".repeat(30))).className).toContain("[overflow-wrap:anywhere]");
@@ -277,16 +288,13 @@ describe("landingView", () => {
     expect(landingView(open())).toEqual(OPEN);
     expect(landingView(open({ self: true, alreadyFriends: true }))).toEqual({ kind: "self", name: "Ana", commander: SOL });
     expect(landingView(open({ alreadyFriends: true, friendsSince: new Date("2026-10-02T23:30:00Z") })))
-      .toEqual({ kind: "friends", name: "Ana", commander: SOL, since: "Oct 2" });
-  });
-  it("names the day in UTC", () => {
-    expect(friendsSinceLabel(new Date("2026-10-02T00:30:00Z"))).toBe("Oct 2");
+      .toEqual({ kind: "friends", name: "Ana", commander: SOL, since: new Date("2026-10-02T23:30:00Z") });
   });
 });
 
 describe("the column", () => {
   it("lands its heading and buttons with a card that turns, and draws an unturned card's at once", () => {
-    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
     // Held while the card waits face down, however late the page hydrates; timed from the turn's own render.
     expect(screen.getByRole("heading", { level: 1 }).className).toContain("friend-land-wait");
     expect(screen.getByRole("heading", { level: 1 }).className).not.toContain("friend-land-in");
@@ -298,7 +306,7 @@ describe("the column", () => {
     expect(screen.getByRole("heading", { level: 1 }).className).toContain("friend-land-in");
     expect(screen.getByRole("button", { name: L.accept }).parentElement?.className).toContain("friend-land-in");
     cleanup();
-    render(<FriendLanding token={TOKEN} view={{ kind: "ended" }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "ended" }} />);
     expect(screen.getByRole("heading", { level: 1 }).className).not.toContain("friend-land-in");
   });
 });

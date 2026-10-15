@@ -12,6 +12,8 @@ import { ADD_MEMBERS_MAX } from "../../lib/social/client-rules";
 import { socialCopy } from "../../lib/copy/social";
 import { Face } from "./face";
 import { SocialModal } from "./social-modal";
+import { useFriendInvite } from "./invite-context";
+import { ACCENT_BUTTON } from "./friends-head";
 
 const copy = socialCopy.pods;
 
@@ -36,6 +38,7 @@ export function PodAddFriends({
 }) {
   const [ticked, setTicked] = useState<ReadonlySet<string>>(() => new Set());
   const groupId = useId();
+  const friendInvite = useFriendInvite();
   // Only friends still on offer count: one who left the list while it was open (a friendship ended) is neither
   // counted nor sent, or the whole batch would be refused for a row the reader can no longer see.
   const live = [...ticked].filter((id) => candidates.some((f) => f.publicId === id));
@@ -53,9 +56,27 @@ export function PodAddFriends({
   return (
     <SocialModal title={copy.addTitle(podName)} sub={copy.addSub} closeLabel={socialCopy.page.close} onClose={onClose} returnFocusRef={returnFocusRef} width={420}>
       {candidates.length === 0 ? (
-        <p className="m-0 py-[10px] text-[13.5px] leading-[1.5] text-[color:var(--fg-body)]" data-testid="pod-add-empty">
-          {hasFriends ? copy.addAllIn : copy.addNoFriends}
-        </p>
+        <div data-testid="pod-add-empty">
+          <p className="m-0 py-[10px] text-[13.5px] leading-[1.5] text-[color:var(--fg-body)]">
+            {hasFriends ? copy.addAllIn : copy.addNoFriends}
+          </p>
+          {/* No friends yet: the head's own Add a friend, one press one link (decision 15). The sheet closes first, so
+              the link's dialog opens over /friends rather than over this sheet. */}
+          {!hasFriends && friendInvite ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (friendInvite.pending || friendInvite.held) return;
+                onClose();
+                friendInvite.invite();
+              }}
+              aria-disabled={friendInvite.pending || friendInvite.held || undefined}
+              className={`${ACCENT_BUTTON} mt-[6px] h-[44px] w-full ${friendInvite.held ? "!bg-[color:var(--elevated)] !text-[color:var(--fg-locked)]" : ""} max-md:h-[48px] max-md:text-[15px] md:w-auto md:px-[18px]`}
+            >
+              {friendInvite.pending ? socialCopy.page.invitePending : socialCopy.page.invite}
+            </button>
+          ) : null}
+        </div>
       ) : (
         <>
           <div role="group" aria-labelledby={groupId} className="-mx-[2px] min-h-0 flex-1 overflow-y-auto px-[2px]">

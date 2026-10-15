@@ -38,6 +38,7 @@ export const socialCopy = {
     emptyBody: "Friends are added by friend link only: send one, or show its QR code at the table. Nobody can find you by name.",
     since: (date: string) => `since ${date}`, // "since today", "since Oct 2"
     today: "today",
+    yesterday: "yesterday",
     menuAria: (name: string) => `${name} actions`,
     remove: "Remove friend",
     removeHeading: (name: string) => `Remove ${name}?`,

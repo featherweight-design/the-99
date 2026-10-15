@@ -17,9 +17,11 @@ function sameDay(a: Date, b: Date, timeZone: string | undefined): boolean {
   return day.format(a) === day.format(b);
 }
 
-/** `today`, or `Oct 2`: the friend row's `since`. */
+/** `today`, `yesterday`, or `Oct 2`: a friendship's `since`, on the friend row and on the already-friends card. */
 export function sinceDay(since: Date, now: Date, timeZone?: string): string {
-  return sameDay(since, now, timeZone) ? socialCopy.friends.today : fmt({ month: "short", day: "numeric" }, timeZone).format(since);
+  if (sameDay(since, now, timeZone)) return socialCopy.friends.today;
+  if (sameDay(since, new Date(now.getTime() - DAY_MS), timeZone)) return socialCopy.friends.yesterday;
+  return fmt({ month: "short", day: "numeric" }, timeZone).format(since);
 }
 
 /** `today, 9:41 PM`, or `Oct 9`: an open link's `made`. */
