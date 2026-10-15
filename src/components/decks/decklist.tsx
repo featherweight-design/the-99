@@ -24,6 +24,7 @@ import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
 import { printedNameOf } from "../../lib/collection/browse";
+import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { labelRolesOf } from "../../lib/decks/label-role-counts";
 import { useLabelRows, useRoleCounter } from "./label-rows-context";
 import { commanderAsRow, commanderShoppingRows, isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
@@ -759,10 +760,19 @@ export function Decklist({
   // Flattened in render order, so Prev/Next walks the list the way the eye does — across
   // group boundaries rather than restarting inside each one. Carries each card's own art
   // (H23 carousel PR 1b), so the modal's neighbor plates resolve without a second fetch.
-  const orderedIds = groups
-    .flatMap(([, groupCards]) => groupCards)
-    .filter((c) => !spentOracleIds.has(c.oracleId))
-    .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri, foil: c.foil }));
+  //
+  // The commanders lead, in the order the header draws them: the decklist draws no row for them in
+  // its type and role groups, so a list of the 99 alone left its first card with no way back to
+  // them (the header's own opens already page commanders-first, through `useCommanderSiblings`).
+  const orderedIds = [
+    ...[commander, partner].flatMap((c) =>
+      c ? [{ oracleId: c.oracleId, name: commanderDisplayName(c), imageUri: c.imageUri, colorIdentity: c.colorIdentity }] : [],
+    ),
+    ...groups
+      .flatMap(([, groupCards]) => groupCards)
+      .filter((c) => !spentOracleIds.has(c.oracleId))
+      .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri, foil: c.foil })),
+  ];
 
   // Every branch below draws the bar as `key="deck-bar"` in a column `div`, so moving between the list, Stats and
   // Notes keeps the same mounted bar and the tab an arrow key just focused.
