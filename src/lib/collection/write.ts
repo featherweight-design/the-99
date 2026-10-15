@@ -37,6 +37,7 @@ import { readSyncBase } from "./sync-base";
  */
 
 import { addedFor, dateOf, fileArrival, handArrival, restoredAdded, type Arrival } from "./added-at";
+import { sweepCollectedIn } from "../wishlist/collected";
 /** Entries older than this are hidden from history and pruned on the player's next write. */
 import { HISTORY_RETENTION_DAYS } from "./retention";
 export { HISTORY_RETENTION_DAYS };
@@ -1084,6 +1085,8 @@ export async function applyCollectionChange(
         .where(eq(collectionHistory.id, opts.id));
       // Every score component derives from the collection (plan Decision 4).
       await tx.delete(commanderScores).where(eq(commanderScores.userId, userId));
+      // A wishlist line the collection now reaches leaves as collected, with this write (Social R2 G5).
+      await sweepCollectedIn(tx, userId);
       // Retention PRUNES rather than deletes: the entry's id is the only record that an action
       // applied, so deleting it would let a very late retry apply again.
       await tx.update(collectionHistory)

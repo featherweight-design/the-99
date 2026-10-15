@@ -11,6 +11,7 @@ import type { CatalogCard, DetailedCatalogCard, MatchIndexes } from "./match";
 import { toCollectionItemValues, type PendingItem } from "./pending";
 import { addedByKey, addedFor, fileArrival } from "./added-at";
 import { collectionItemKey } from "./key";
+import { sweepCollectedIn } from "../wishlist/collected";
 
 const INSERT_BATCH = 500;
 // scryfall_id is a uuid column, so a malformed id from a hand-edited CSV would fail the
@@ -228,6 +229,8 @@ export async function replaceCollection(
       for (let i = 0; i < dated.length; i += INSERT_BATCH) {
         await tx.insert(collectionItems).values(dated.slice(i, i + INSERT_BATCH));
       }
+      // A wishlist line the new collection reaches leaves as collected, with this replace (Social R2 G5).
+      await sweepCollectedIn(tx, userId);
     });
   } catch (err) {
     // Only this module's own sentinel is swallowed; a real failure still reaches the caller.

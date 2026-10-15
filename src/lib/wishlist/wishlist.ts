@@ -1,13 +1,18 @@
 /**
- * The player's own wishlist (scope §2, Hugh's rulings Q7 and Q9, 2026-10-12). Card level: any printing
- * will do. A line's `quantity` is how many copies the player wants to own in all, and it reads as GOT once
- * the collection holds that many; GOT is derived on every read and never stored, so a line stays, drawn as
- * got, until the player clears it (Q9). Reads and writes here are the viewer's OWN rows only; a friend's
- * wishlist is read through `src/lib/social/wishlist.ts`, which joins the friendship.
+ * The player's own wishlist (scope §2, Hugh's ruling Q7, 2026-10-12; Social R2). Card level: any printing will
+ * do. A line's `quantity` is how many copies the player wants to own in all. Once the collection holds that many,
+ * deck copies included, the card is COLLECTED and leaves the list (Social R2 G5, Hugh, 2026-10-15, reversing Q9's
+ * "stays until cleared"): the collection write that reaches the want deletes the line and records it for the tab's
+ * one-time strip (`collected.ts`). Every read here also leaves out a line the collection already reaches, so a read
+ * never shows a collected card and never deletes one. Reads and writes here are the viewer's OWN rows only; a
+ * friend's wishlist is read through `src/lib/social/wishlist.ts`, which joins the friendship.
  */
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, wishlistItems } from "../../db/schema";
+import { loadPrices } from "../decks/price-query";
+import type { PriceFact } from "../decks/price";
+import { sweepCollectedIn } from "./collected";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const MAX_WISHLIST_QUANTITY = 99;
@@ -19,9 +24,13 @@ export function cleanQuantity(raw: unknown): number | null {
   return n;
 }
 
-export type WishlistLine = { oracleId: string; quantity: number; owned: number; got: boolean; addedAt: Date };
+export type WishlistLine = { oracleId: string; quantity: number; owned: number; addedAt: Date };
 
-/** One owner's lines with what their collection holds of each, newest first. Apart so a test can render it. */
+/**
+ * One owner's lines still WANTED (the collection holds fewer than wanted), with what it holds of each, newest
+ * first. A collected line is left out here rather than deleted (G5: a read never deletes). Apart so a test can
+ * render it.
+ */
 export function wishlistLinesQuery(ownerId: string, q: Pick<typeof db, "select"> = db) {
   const owned = q
     .select({ oracleId: collectionItems.oracleId, n: sql<number>`sum(${collectionItems.quantity})::int`.as("n") })
@@ -38,35 +47,93 @@ export function wishlistLinesQuery(ownerId: string, q: Pick<typeof db, "select">
     })
     .from(wishlistItems)
     .leftJoin(owned, eq(owned.oracleId, wishlistItems.oracleId))
-    .where(eq(wishlistItems.userId, ownerId))
+    .where(and(eq(wishlistItems.userId, ownerId), sql`coalesce(${owned.n}, 0) < ${wishlistItems.quantity}`))
     .orderBy(sql`${wishlistItems.createdAt} desc`, asc(wishlistItems.oracleId));
 }
 
-export function toLines(rows: { oracleId: string; quantity: number; owned: number; addedAt: Date }[]): WishlistLine[] {
-  return rows.map((r) => ({ ...r, got: r.owned >= r.quantity }));
+export async function loadWishlist(viewerId: string): Promise<WishlistLine[]> {
+  return wishlistLinesQuery(viewerId);
 }
 
-export async function loadWishlist(viewerId: string): Promise<WishlistLine[]> {
-  return toLines(await wishlistLinesQuery(viewerId));
+/** A wishlist tile (Social R2 G1): the line, and the card it names as the collection's own grid draws it. */
+export type WishlistTile = WishlistLine & {
+  name: string;
+  /** The catalog's full card image; null for a card Scryfall has no image of. */
+  imageUri: string | null;
+  layout: string;
+  backImageUri: string | null;
+  /** What one copy costs, from the price read every buy tag uses; null when the card has never been stocked. */
+  price: PriceFact | null;
+};
+
+/** The viewer's wanted lines as tiles: the catalog's name and full card image, and the price read's figure. */
+export async function loadWishlistTiles(viewerId: string): Promise<WishlistTile[]> {
+  const lines = await wishlistLinesQuery(viewerId);
+  if (lines.length === 0) return [];
+  const ids = lines.map((l) => l.oracleId);
+  const [faces, read] = await Promise.all([
+    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri, layout: cards.layout, backImageUri: cards.backImageUri })
+      .from(cards)
+      .where(inArray(cards.oracleId, ids)),
+    loadPrices(ids),
+  ]);
+  const byId = new Map(faces.map((f) => [f.oracleId, f]));
+  return lines.flatMap((l) => {
+    const f = byId.get(l.oracleId);
+    return f ? [{ ...l, name: f.name, imageUri: f.imageUri, layout: f.layout, backImageUri: f.backImageUri, price: read.prices.get(l.oracleId) ?? null }] : [];
+  });
 }
 
 /**
- * Put a card on the viewer's wishlist wanting `quantity` copies, or change how many. A card id the catalog
- * does not hold writes nothing (checked in the statement, so no foreign-key error reaches the caller).
+ * How many copies the viewer wants of one card, for card details' Wishlist section, or null when the card is not
+ * on the list (never put there, cleared, or collected). A malformed id reads as not on the list.
  */
-export async function setWishlistQuantity(viewerId: string, oracleId: unknown, rawQuantity: unknown = 1): Promise<boolean> {
-  const quantity = cleanQuantity(rawQuantity);
-  if (typeof oracleId !== "string" || !UUID.test(oracleId) || quantity === null) return false;
-  const written = await db.execute<{ oracle_id: string }>(sql`
-    insert into ${wishlistItems} (user_id, oracle_id, quantity)
-    select ${viewerId}, c.oracle_id, ${quantity} from ${cards} c where c.oracle_id = ${oracleId}
-    on conflict (user_id, oracle_id) do update set quantity = excluded.quantity
-    returning oracle_id
-  `);
-  return written.rows.length > 0;
+export async function loadWishlistWant(viewerId: string, oracleId: string): Promise<number | null> {
+  if (!UUID.test(oracleId)) return null;
+  const [row] = await db
+    .select({ quantity: wishlistItems.quantity })
+    .from(wishlistItems)
+    .where(and(
+      eq(wishlistItems.userId, viewerId),
+      eq(wishlistItems.oracleId, oracleId),
+      sql`${wishlistItems.quantity} > (
+        select coalesce(sum(ci.quantity), 0) from ${collectionItems} ci
+        where ci.user_id = ${viewerId} and ci.oracle_id = ${oracleId}
+      )`,
+    ));
+  return row?.quantity ?? null;
 }
 
-/** Clear a line, got or not (Q9: a got line stays until the player clears it). */
+/**
+ * What a want write did: `wanted`, the line stands; `collected`, the want is no more than the collection holds, so
+ * the line left as collected (G5) and the strip will name it; `null`, nothing was written (bad input, or a card id
+ * the catalog does not hold).
+ */
+export type WantResult = "wanted" | "collected" | null;
+
+/**
+ * Put a card on the viewer's wishlist wanting `quantity` copies, or change how many. A card id the catalog
+ * does not hold writes nothing (checked in the statement, so no foreign-key error reaches the caller). A want the
+ * collection already reaches (lowered to what is held) leaves the list as collected, in the same transaction, under
+ * the player's collection lock, so a collection write cannot interleave with it.
+ */
+export async function setWishlistQuantity(viewerId: string, oracleId: unknown, rawQuantity: unknown = 1): Promise<WantResult> {
+  const quantity = cleanQuantity(rawQuantity);
+  if (typeof oracleId !== "string" || !UUID.test(oracleId) || quantity === null) return null;
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
+    const written = await tx.execute<{ oracle_id: string }>(sql`
+      insert into ${wishlistItems} (user_id, oracle_id, quantity)
+      select ${viewerId}, c.oracle_id, ${quantity} from ${cards} c where c.oracle_id = ${oracleId}
+      on conflict (user_id, oracle_id) do update set quantity = excluded.quantity
+      returning oracle_id
+    `);
+    if (written.rows.length === 0) return null;
+    return (await sweepCollectedIn(tx, viewerId, oracleId)).length > 0 ? "collected" : "wanted";
+  });
+}
+
+/** Clear a line the player no longer wants. */
 export async function clearWishlistLine(viewerId: string, oracleId: unknown): Promise<boolean> {
   if (typeof oracleId !== "string" || !UUID.test(oracleId)) return false;
   const gone = await db

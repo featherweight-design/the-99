@@ -883,14 +883,23 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   sweep. The coverage test keeps `account_tombstones.clerk_id` with that reason, and `probe:purge` proves a late
   write erased by the sweep and the raw id retired after the day.
 
-- **The wishlist** (scope §2, Hugh's rulings Q7 and Q9, 2026-10-12), behind `SOCIAL_WISHLIST_ENABLED`, which stands
-  alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted
-  outside any deck at CARD level (any printing), with `quantity` the copies wanted IN ALL. A line is GOT once the
-  collection holds that many, derived on every read and never stored, and it stays until the player clears it.
-  The owner's own rows are read and written in `src/lib/wishlist/`; a FRIEND's wishlist is visible (Q7) and is read
-  only through `src/lib/social/wishlist.ts`, which joins the viewer's friendship row in the same statement and
-  returns the card, the wanted count and got, never an owned count. `pnpm probe:wishlist` proves it on a scratch
-  branch.
+- **The wishlist** (scope §2, Hugh's ruling Q7, 2026-10-12; Social R2), behind `SOCIAL_WISHLIST_ENABLED`, which
+  stands alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted
+  outside any deck at CARD level (any printing), with `quantity` the copies wanted IN ALL. **A card the collection
+  holds that many of, deck copies included, is COLLECTED and leaves the list** (Social R2 G5, Hugh, 2026-10-15,
+  reversing Q9's "stays until cleared"): `sweepCollectedIn` (`src/lib/wishlist/collected.ts`) deletes the line and
+  records it in `wishlist_collected` for the tab's one-time strip, INSIDE the write that reached the want:
+  `applyCollectionChange` (every ledger write, Revert included) and `replaceCollection`, after their rows, and
+  `setWishlistQuantity` when a want is lowered to what is held (under the same per-player lock). A rolled-back write
+  takes the delete back with it. **A read never deletes**: every own read leaves out a line the collection already
+  reaches, so a copy that arrived around the chokepoints hides the line until the next write sweeps it. The strip's ✕
+  is `dismissCollected(viewer, through)`, which forgets only what the strip drew. `loadWishlistTiles` adds the
+  catalog's name and full card image and the price read's figure (G1); `loadWishlistWant` is card details' want.
+  `wishlist_collected` is purged with the account. The owner's own rows are read and written in `src/lib/wishlist/`;
+  a FRIEND's wishlist is visible (Q7) and is read only through `src/lib/social/wishlist.ts`, which joins the viewer's
+  friendship row in the same statement and returns the card, the wanted count and got, never an owned count (got
+  can only read true for a line no chokepoint has swept yet).
+  `pnpm probe:wishlist` proves it on a scratch branch.
 
 - **Opponents in the game log** (scope §4, Feature C; Hugh's ruling Q15), behind `SOCIAL_GAMES_ENABLED`, which requires
   `SOCIAL_FRIENDS_ENABLED` (`'true'` on staging, unset on production; dark until its UI PR). `deck_game_opponents`
