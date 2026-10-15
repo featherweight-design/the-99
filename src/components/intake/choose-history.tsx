@@ -238,7 +238,7 @@ function RunRow({ row, column, zoned }: { row: ChooseHistoryRow; column: boolean
                 key={id}
                 className={`${thumb} relative overflow-hidden rounded-[3px] bg-[color:var(--elevated)]`}
               >
-                {row.thumbArt[i] ? <ArtLayer src={row.thumbArt[i]} /> : null}
+                {row.thumbArt[i] ? <ArtLayer src={row.thumbArt[i]} media={column ? "(min-width: 1024px)" : "(max-width: 1023.98px)"} /> : null}
               </span>
             ))}
           </span>

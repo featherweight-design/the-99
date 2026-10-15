@@ -51,6 +51,29 @@ describe("ChooseHistory", () => {
     expect(second.querySelectorAll("span[aria-hidden] > span")).toHaveLength(0);
   });
 
+  it("preloads a placement's art only at the widths that draw it", () => {
+    const realMatch = window.matchMedia;
+    const RealImage = window.Image;
+    const loaded: string[] = [];
+    class SpyImage { set src(v: string) { loaded.push(v); } addEventListener() {} removeEventListener() {} decode() { return Promise.resolve(); } complete = false; }
+    const at = (width: number) => (q: string) => ({
+      matches: (/min-width:\s*1024px/.test(q) && width >= 1024) || (/max-width:\s*1023\.98px/.test(q) && width < 1024),
+      media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
+    }) as unknown as MediaQueryList;
+    try {
+      window.Image = SpyImage as unknown as typeof Image;
+      window.matchMedia = at(390);
+      const hiddenColumn = render(<ChooseHistory layout="column" initial={firstPage([A])} />);
+      expect(loaded).toEqual([]);
+      hiddenColumn.unmount();
+      render(<ChooseHistory layout="view" initial={firstPage([A])} />);
+      expect(loaded.length).toBeGreaterThan(0);
+    } finally {
+      window.matchMedia = realMatch;
+      window.Image = RealImage;
+    }
+  });
+
   it("says what will land here when the player has made no read", () => {
     render(<ChooseHistory layout="column" initial={firstPage([])} />);
     expect(screen.getByText("No runs yet")).toBeTruthy();
