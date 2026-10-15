@@ -18,8 +18,14 @@
 // Suggested changes depends on the Tuning hub, so PROBE_HUB states which the server runs (and the run
 // fails when the page disagrees). OFF (TUNING_ENABLED alone of TUNING_ENABLED, MANA_BALANCE_ENABLED and
 // PROPOSED_CUTS_ENABLED): Suggested changes' own section paints with the verdict. ON (two or more of
-// them): the hub stands from the tab's first frame instead (#1809), so that check is replaced by the hub
+// them, MANA_BALANCE_ENABLED among them): the hub stands from the tab's first frame instead (#1809), so that
+// check is replaced by the hub
 // staying put, as the same node, from the press to the frame the verdict lands. See `hubStaysPut`.
+// Mana Balance is a PREREQUISITE of ON, not a convenience: it is what lets the hub draw on a deck with no
+// reading yet (`drawn` in builder-shell.tsx). With only Tuning and Proposed cuts on, the hub waits for the
+// reading on the whole, unread deck this probe opens, and the first-frame checks fail on shipped behavior.
+// That setup is not supported here; the probe does not infer the setup from what it sees, which would hide
+// a hub that went missing.
 //
 //   PROBE_TARGET_URL=<local-dev> PROBE_EMAIL=<+clerk_test account> PROBE_HOLD=held PROBE_HUB=on \
 //     PROBE_BASE=http://localhost:3260 node scripts/probe-overview-hold.mjs

@@ -1059,7 +1059,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
   **`PROBE_HUB=on|off` states whether the server runs the Tuning hub** (two or more of
   `TUNING_ENABLED`, `MANA_BALANCE_ENABLED` and `PROPOSED_CUTS_ENABLED`), and a page that disagrees
-  fails the run. Off, Suggested changes' own section paints with the verdict, as above. On, the hub
+  fails the run. On REQUIRES `MANA_BALANCE_ENABLED`: Mana Balance is what lets the hub draw on a
+  deck with no reading yet (`drawn` in `builder-shell.tsx`), and without it the hub waits for the
+  reading on the unread deck this probe opens, so the first-frame checks fail on shipped behavior.
+  Tuning and Proposed cuts on with Mana Balance off is not a supported setup for this probe. Off, Suggested changes' own section paints with the verdict, as above. On, the hub
   stands from the tab's first frame (#1809), so that check becomes: the hub is drawn from the tab's
   first frame, is one node never missing (a whole panel gone counts as a missing hub), keeps its top within 1px from the press to the frame the
   verdict lands, and after that moves only on a landing frame: the verdict's (the reading draws
