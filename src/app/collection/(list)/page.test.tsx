@@ -45,4 +45,35 @@ describe("/collection, empty collection", () => {
     expect(screen.getByRole("button", { name: /Add cards/ })).toBeTruthy();
     expect(screen.getByText(/Bring a file over, or add cards one at a time/)).toBeTruthy();
   });
+
+  it("the no-collection entry on: one Upload tile, the ways group, and the body that names it (S13)", async () => {
+    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
+    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
+    vi.stubEnv("PRECONS_ENABLED", "true");
+    await renderEmpty();
+    expect(screen.getAllByRole("link", { name: /Upload a file/ })).toHaveLength(1);
+    const group = screen.getByRole("group", { name: "No file? Start another way" });
+    expect(Array.from(group.querySelectorAll("a")).map((a) => a.getAttribute("href"))).toEqual([
+      "/decks/precons?pick=own&from=collection",
+      "/decks/import",
+    ]);
+    expect(screen.getByText("A pile of possibilities waiting for a commander. Bring a file over, or start another way.")).toBeTruthy();
+  });
+
+  it("the no-collection entry on with precons off: the group without Precons I own (S15)", async () => {
+    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
+    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
+    vi.stubEnv("PRECONS_ENABLED", "");
+    await renderEmpty();
+    expect(screen.getByRole("group", { name: "No file? Start another way" })).toBeTruthy();
+    expect(screen.queryByText("Precons I own")).toBeNull();
+  });
+
+  it("the line's switch without collection editing draws the shipped single button (S16)", async () => {
+    vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
+    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
+    await renderEmpty();
+    expect(screen.getByRole("link", { name: "Upload your CSV" })).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "No file? Start another way" })).toBeNull();
+  });
 });

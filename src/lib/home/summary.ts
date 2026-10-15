@@ -22,6 +22,16 @@ export const getCollectionStats = cache(async function getCollectionStats(
   return { totalCards: row?.totalCards ?? 0, uniqueCards: row?.uniqueCards ?? 0 };
 });
 
+/**
+ * Whether the reader has any deck, for the shell's lock note at zero cards (no-collection entry, call 6): the note
+ * adds `Your decks are on Home until then.` with a deck, and Go to step 1 belongs to first run alone, which is no
+ * cards AND no decks. One indexed probe, read only while the nav is locked with that switch on.
+ */
+export const hasAnyDeck = cache(async function hasAnyDeck(userId: string): Promise<boolean> {
+  const [row] = await db.select({ id: decks.id }).from(decks).where(eq(decks.userId, userId)).limit(1);
+  return row !== undefined;
+});
+
 export async function getCollectionLastUpdated(userId: string): Promise<Date | null> {
   const [row] = await db
     .select({ confirmedAt: csvUploads.confirmedAt })

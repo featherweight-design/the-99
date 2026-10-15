@@ -31,6 +31,7 @@ export function UploadEntry({
   onPreview,
   entry = "dropzone",
   onAddByHand,
+  ways,
   choice = false,
 }: {
   /** Collection editing is on: the file may be added instead, so the note stops saying it replaces. */
@@ -40,6 +41,11 @@ export function UploadEntry({
   entry?: Entry;
   /** Buttons entry only: a third, ghost button beside Paste that opens Add cards (B0c). */
   onAddByHand?: (trigger: HTMLElement) => void;
+  /**
+   * Buttons entry only: what sits under the button row while it shows (the no-collection entry's ways group, S1),
+   * handed whether a file is being read. Gone with the row while the paste panel is open.
+   */
+  ways?: (pending: boolean) => React.ReactNode;
 }) {
   const [mode, setMode] = useState<Mode>("dropzone");
   const [dragOver, setDragOver] = useState(false);
@@ -203,6 +209,7 @@ export function UploadEntry({
         ) : (
           pastePanel
         )}
+        {mode === "dropzone" && ways ? ways(pending) : null}
         {error && (
           <p className="text-[13px]" style={{ color: "var(--danger)" }}>
             {error}

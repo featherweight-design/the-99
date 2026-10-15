@@ -34,6 +34,27 @@ export const collectionEditCopy = {
     addByHand: "Add cards by hand",
     bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or add cards by hand.",
   },
+  // The "ways" group (no-collection entry S1, S13, S15): one quiet group under the upload, on first run's step 1 and
+  // on the empty Collection, behind NO_COLLECTION_ENTRY_ENABLED. Strings are the handoff's `ways` block. The phone
+  // draws each row's label alone; the desktop columns carry a sub-line, the full form on step 1 and the short form
+  // in the empty Collection's narrower column.
+  ways: {
+    kicker: "No file? Start another way",
+    precons: "Precons I own",
+    preconsSub: "Pick the boxes. We know every card in them.",
+    preconsSubShort: "Pick the boxes you own.",
+    importDeck: "Import a deck",
+    importDeckSub: "Paste a list you play.",
+    importDeckSubShort: "Paste a list you play.",
+    /** Step 1's third row: `firstRun.addByHand`, moved out of the button row into the group. */
+    addByHand: "Add cards by hand",
+    /** The empty Collection's third row: the empty state's own word (`empty.addTitle`). */
+    addCards: "Add cards",
+    addSub: "Search by name and add them one by one.",
+    addSubShort: "Search by name, one by one.",
+    /** The empty Collection's body with the group under it (S13): its second clause names the group. */
+    emptyBody: "A pile of possibilities waiting for a commander. Bring a file over, or start another way.",
+  },
   // §A, the Replace review (the choice step and the Add review come with the next PR). Strings are
   // the handoff's; lines marked (new) have no key there and go to /copy-review.
   upload: {

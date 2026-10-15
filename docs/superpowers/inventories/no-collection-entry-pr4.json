@@ -1,0 +1,52 @@
+{
+  "feature": "No-collection entry PR 4: the ways group, the open lock, Home at zero cards and the rankers' empty states (handoff design_handoff_the99_no_collection_entry, S1, S12 Home, S13, S15, S16; plan 2026-10-15-no-collection-entry.md, PR 4)",
+  "note": "Needs an account with ZERO cards, and COLLECTION_EDIT_ENABLED=true, NO_COLLECTION_ENTRY_ENABLED=true and PRECONS_ENABLED=true for the reader. The first-run rows need no decks as well; the S12 rows need one deck and no cards. Nothing here writes. S15 (precons off) and S16 (edit off) are switch states the component tests prove. The rankers' empty states (/commanders, /discover) and Home at zero cards with a deck (S12) are not rows here, because every row must render the shared group; their component tests pin both switch states.",
+  "out": "contact-sheets/no-collection-entry-pr4",
+  "shares": {
+    "module": "src/components/collection/ways-group.tsx",
+    "binding": "WaysGroup",
+    "note": "One group on first run's step 1 and on the empty Collection. Step 1's card mounts it through ReplaceFlow's `ways` slot, so its view is the step-1 card; the empty Collection's is the doors component."
+  },
+  "rows": [
+    {
+      "id": "s1-first-run",
+      "label": "Home, first run: step 1 with the ways group under the upload, Collection open, three slots locked (S1)",
+      "view": "src/components/home/first-run-step-one.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-ways-group=step1]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "s1-note",
+      "label": "First run, a locked slot's note: three names and Go to step 1",
+      "view": "src/components/home/first-run-step-one.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-ways-group=step1]",
+          "settle": 800
+        },
+        {
+          "click": "[data-locked-slot=Decks]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "s13-empty-collection",
+      "label": "/collection at zero cards: one Upload tile, then the ways group with Add cards (S13)",
+      "view": "src/components/collection/collection-empty-doors.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "[data-ways-group=empty]",
+          "settle": 1000
+        }
+      ]
+    }
+  ]
+}

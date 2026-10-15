@@ -49,12 +49,32 @@ const ITEMS: NavItem[] = [
   { href: "/decks",      label: "Decks",      lockable: true  },
 ];
 
+/** The live slots: every item, or while locked those the lock does not hold (Home, and Collection when open). */
+function liveItems(locked: boolean, openLock: OpenLock): NavItem[] {
+  if (!locked) return ITEMS;
+  const held = new Set(lockedItems(openLock).map((i) => i.href));
+  return ITEMS.filter((i) => !held.has(i.href));
+}
+
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(href + "/");
 }
 
 const LOCKABLE = ITEMS.filter((i) => i.lockable);
+
+/**
+ * The lock at zero cards with NO_COLLECTION_ENTRY_ENABLED (no-collection entry, call 6), or null for the shipped
+ * four-slot lock. Collection opens, because its empty state is where a player who starts empty starts; Commanders,
+ * Discover and Decks wait for a card. `hasDecks` says whether this is first run (no decks: the note's button is
+ * `Go to step 1`) or not (`Add your cards`, and the note says where the decks are).
+ */
+export type OpenLock = { hasDecks: boolean } | null;
+
+/** The slots the lock holds: all four as shipped, or the three after Collection with the lock open. */
+function lockedItems(openLock: OpenLock): NavItem[] {
+  return openLock ? LOCKABLE.filter((i) => i.href !== "/collection") : LOCKABLE;
+}
 
 // ---------------------------------------------------------------------------
 // The lock — first-run locked nav
@@ -80,8 +100,13 @@ const TAB_NOTE_INSET = 12;
  * the page, so it is brought into view and focused; anywhere else (an account
  * with decks and no collection, or a locked route) there is no step 1 on screen
  * and the replace route is the same flow on its own page.
+ *
+ * With the lock open (no-collection entry) the button is drawn on first run
+ * alone, and step 1 is Home's: off Home, the fallback goes there rather than to
+ * the replace page, which would drop the ways group the step now carries. An
+ * account with decks gets `Add your cards` instead and never reaches this.
  */
-function useGoToStep1() {
+function useGoToStep1(openLock: OpenLock) {
   // A code-started navigation to a route that is not kept, so it reports its press like a link.
   const { go } = usePendingPush();
   return useCallback(() => {
@@ -94,9 +119,20 @@ function useGoToStep1() {
       reveal(target, "center");
       target.focus({ preventScroll: true });
     } else {
-      go("/collection/replace");
+      go(openLock ? "/" : "/collection/replace");
     }
-  }, [go]);
+  }, [go, openLock]);
+}
+
+/**
+ * The note's one button. First run, and the shipped lock: `Go to step 1`. With the lock open and a deck there is no
+ * step 1, so it reads `Add your cards` and goes to /collection, where every way in is.
+ */
+function useNoteAction(openLock: OpenLock): { label: string; run: () => void } {
+  const goToStep1 = useGoToStep1(openLock);
+  const { go } = usePendingPush();
+  const addYourCards = useCallback(() => go("/collection"), [go]);
+  return openLock?.hasDecks ? { label: lockCopy.addYourCards, run: addYourCards } : { label: lockCopy.goToStep1, run: goToStep1 };
 }
 
 type OpenNote = { href: NavHref; x: number; y: number } | null;
@@ -173,10 +209,13 @@ function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
   return { open, setOpen, show, close, slots, notes, inLock };
 }
 
-/** The note's sentence, with the slot's own label drawn in `--fg`. */
-function NoteSentence({ id, label, className }: { id: string; label: string; className: string }) {
-  const others = nameList(LOCKABLE.filter((i) => i.label !== label).map((i) => i.label));
-  const sentence = lockCopy.note(label, others);
+/**
+ * The note's sentence, with the slot's own label drawn in `--fg`. It names the other slots the lock holds, and with
+ * the lock open and a deck it adds where the decks are.
+ */
+function NoteSentence({ id, label, className, openLock }: { id: string; label: string; className: string; openLock: OpenLock }) {
+  const others = nameList(lockedItems(openLock).filter((i) => i.label !== label).map((i) => i.label));
+  const sentence = openLock?.hasDecks ? `${lockCopy.note(label, others)} ${lockCopy.withDecks}` : lockCopy.note(label, others);
   const rest = sentence.startsWith(label) ? sentence.slice(label.length) : null;
   return (
     <p id={id} className={className}>
@@ -221,9 +260,9 @@ function tabPlace(slot: HTMLElement) {
  * slot, so the pointer can travel onto it (WCAG 1.4.13); it closes on Escape,
  * on focus leaving slot and note, and on a press outside both.
  */
-function RailLock({ pathname }: { pathname: string }) {
+function RailLock({ pathname, openLock }: { pathname: string; openLock: OpenLock }) {
   const { open, show, close, slots, notes, inLock, setOpen } = useLockNotes(railPlace);
-  const goToStep1 = useGoToStep1();
+  const action = useNoteAction(openLock);
   const baseId = useId();
 
   const onBlur = (href: NavHref) => (e: React.FocusEvent) => {
@@ -237,7 +276,7 @@ function RailLock({ pathname }: { pathname: string }) {
       data-lock-well
       className="flex w-[48px] shrink-0 flex-col items-center gap-1 rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] pt-[4px] pb-[9px] touch:w-[80px] touch:rounded-[14px] touch:px-[3px] touch-short:pb-[5px]"
     >
-      {LOCKABLE.map(({ href, label }) => {
+      {lockedItems(openLock).map(({ href, label }) => {
         const isOpen = open?.href === href;
         const noteId = `${baseId}-note-${label}`;
         const sentenceId = `${noteId}-sentence`;
@@ -294,18 +333,19 @@ function RailLock({ pathname }: { pathname: string }) {
               <NoteSentence
                 id={sentenceId}
                 label={label}
+                openLock={openLock}
                 className="m-0 text-[13px] leading-[1.5] [text-wrap:pretty] text-[color:var(--fg-body)]"
               />
               {isOpen && (
                 <button
                   type="button"
                   onClick={() => {
-                    goToStep1();
+                    action.run();
                     close(href, false);
                   }}
                   className="mt-[2px] h-[32px] self-start rounded-[8px] border border-[color:var(--border-strong)] bg-transparent px-[13px] text-[12.5px] text-[color:var(--fg)]"
                 >
-                  {lockCopy.goToStep1}
+                  {action.label}
                 </button>
               )}
             </div>
@@ -340,18 +380,18 @@ function LockedSlotAndNote({ children }: { children: React.ReactNode }) {
  * a TAP only; it closes on a press outside, a second tap on the slot, Go to step
  * 1, or Escape. Focus stays on the slot, and the note's button is next.
  */
-function TabLockSlots({ pathname, liveHome }: { pathname: string; liveHome: React.ReactNode }) {
+function TabLockSlots({ pathname, liveHome, openLock }: { pathname: string; liveHome: React.ReactNode; openLock: OpenLock }) {
   const { open, show, close, slots, notes } = useLockNotes(tabPlace);
   // The About sheet holds this slot while it is up (H1): a tapped note stays
   // open in state and is drawn once the sheet closes.
   const sheetUp = useAboutSheetUp();
-  const goToStep1 = useGoToStep1();
+  const action = useNoteAction(openLock);
   const baseId = useId();
 
   return (
     <div className="flex w-full items-center">
       {liveHome}
-      {LOCKABLE.map(({ href, label }) => {
+      {lockedItems(openLock).map(({ href, label }) => {
         // Open in STATE (`waiting`) and drawn (`isOpen`) differ only while the About sheet
         // is up. The toggle reads the state, so a second tap cancels a waiting note rather
         // than asking for it again.
@@ -402,18 +442,19 @@ function TabLockSlots({ pathname, liveHome }: { pathname: string; liveHome: Reac
               <NoteSentence
                 id={sentenceId}
                 label={label}
+                openLock={openLock}
                 className="m-0 text-[14px] leading-[1.5] [text-wrap:pretty] text-[color:var(--fg-body)]"
               />
               {isOpen && (
                 <button
                   type="button"
                   onClick={() => {
-                    goToStep1();
+                    action.run();
                     close(href, false);
                   }}
                   className="flex h-[44px] w-full items-center justify-center rounded-[10px] border border-[color:var(--border-strong)] bg-transparent text-[14px] text-[color:var(--fg)]"
                 >
-                  {lockCopy.goToStep1}
+                  {action.label}
                 </button>
               )}
             </div>
@@ -424,12 +465,15 @@ function TabLockSlots({ pathname, liveHome }: { pathname: string; liveHome: Reac
   );
 }
 
-/** The phone's bracket over tabs 2 to 5, carrying the reason in words (4.4-4.11). */
-function TabBracket() {
+/**
+ * The phone's bracket over the locked tabs, carrying the reason in words (4.4-4.11): tabs 2 to 5 as shipped, tabs 3
+ * to 5 with the lock open (no-collection entry, call 6), where Collection is live beside Home.
+ */
+function TabBracket({ openLock }: { openLock: OpenLock }) {
   return (
     // `ml-[20%]`: one slot of the bar's content width (374 at 390 = 5 x 74.8),
-    // so the row spans slots 2 to 5 at any phone width.
-    <div data-lock-bracket className="relative ml-[20%] h-[14px] flex-none">
+    // so the row spans slots 2 to 5 at any phone width; `ml-[40%]`, two slots, spans 3 to 5.
+    <div data-lock-bracket className={`relative h-[14px] flex-none ${openLock ? "ml-[40%]" : "ml-[20%]"}`}>
       <span
         aria-hidden="true"
         data-lock-bracket-box
@@ -510,7 +554,13 @@ function NavSlot({ href, name, active, pip, className, handlers, children }: Nav
 /** The admin door (admin STATES D1): a boolean from the server, and the environment it names. */
 export type AdminDoorProps = { adminDoor?: boolean; adminEnv?: string };
 
-export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolean; theme: ThemeKey } & AdminDoorProps) {
+export function NavRail({
+  locked,
+  openLock = null,
+  theme,
+  adminDoor,
+  adminEnv,
+}: { locked: boolean; openLock?: OpenLock; theme: ThemeKey } & AdminDoorProps) {
   const pathname = usePathname();
   // Live slots only: a locked slot's note already names it, and two popovers from one slot is
   // the collision the handoff's D1 warned of. Home, live in first run, gets the tag.
@@ -569,7 +619,7 @@ export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolea
         className="flex flex-col items-center gap-1 touch:min-h-0 touch:w-full touch:flex-1 touch:overflow-y-auto touch:pt-[4px] touch:pb-[8px] touch:[scrollbar-width:none] touch:[&::-webkit-scrollbar]:hidden"
         aria-label="Primary"
       >
-        {ITEMS.filter((i) => !locked || !i.lockable).map(({ href, label }) => {
+        {liveItems(locked, openLock).map(({ href, label }) => {
           const active = isActive(pathname, href);
           return (
             <NavSlot
@@ -595,7 +645,7 @@ export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolea
 
         {/* Home stays outside the well, above it (1.1); the well replaces the
             divider and lone padlock the rail drew before (1.2). */}
-        {locked && <RailLock pathname={pathname} />}
+        {locked && <RailLock pathname={pathname} openLock={openLock} />}
       </nav>
 
       {/* ------------------------------------------------------------------ */}
@@ -616,10 +666,10 @@ export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolea
 // §Tab bar container / §Tab item Active / §Tab item Idle
 // ---------------------------------------------------------------------------
 
-export function TabBar({ locked }: { locked: boolean }) {
+export function TabBar({ locked, openLock = null }: { locked: boolean; openLock?: OpenLock }) {
   const pathname = usePathname();
 
-  const live = ITEMS.filter((i) => !locked || !i.lockable).map(({ href, label }) => {
+  const live = liveItems(locked, openLock).map(({ href, label }) => {
     const active = isActive(pathname, href);
     return (
       <NavSlot
@@ -674,8 +724,8 @@ export function TabBar({ locked }: { locked: boolean }) {
     >
       {locked ? (
         <>
-          <TabBracket />
-          <TabLockSlots pathname={pathname} liveHome={live} />
+          <TabBracket openLock={openLock} />
+          <TabLockSlots pathname={pathname} liveHome={live} openLock={openLock} />
         </>
       ) : (
         live

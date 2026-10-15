@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { NavRail, TabBar, MobileHeader } from "./nav";
-import { getCollectionStats } from "../../lib/home/summary";
+import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
+import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
 import { perfRead } from "../../lib/perf/timing";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { SHEET_ON_HEADER } from "../../lib/about/gate";
@@ -22,6 +23,10 @@ import { requestSwitchEnv } from "../../lib/switches/request";
  * this to draw Collection, Commanders, Discover and Decks as locked slots, each
  * opening a note that says why, until the collection is read
  * (docs/superpowers/design-tables/first-run-locked-nav.md).
+ *
+ * With NO_COLLECTION_ENTRY_ENABLED (no-collection entry, call 6) Collection opens at zero cards and the other three
+ * stay locked: `openLock` carries whether the account has a deck, which decides the note's button (first run's
+ * `Go to step 1`, or `Add your cards` outside it) and its `Your decks are on Home until then.`
  */
 export default async function Shell({
   children,
@@ -40,6 +45,13 @@ export default async function Shell({
 
   const stats = await perfRead("shell.collectionStats", () => getCollectionStats(userId));
   const locked = stats.uniqueCards === 0;
+  // The reader's resolved switches, once for the shell: the lock's shape and the stall diagnostic both decide here.
+  const env = await requestSwitchEnv(userId);
+  // The deck probe runs only while locked with the line's switch on; every other render keeps the shipped reads.
+  const openLock =
+    locked && noCollectionEntryEnabled(env)
+      ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) }
+      : null;
   // The proxy's decision about the one-time About sheet, carried on a request
   // header it sets on document loads only. Read on every render and handed down
   // even when it says nothing, because the sheet latches the state it MOUNTED
@@ -54,7 +66,7 @@ export default async function Shell({
   const door = isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {};
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
-  const stall = navStallLogEnabled(await requestSwitchEnv(userId))
+  const stall = navStallLogEnabled(env)
     ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
     : null;
 
@@ -68,7 +80,7 @@ export default async function Shell({
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     <NavigationPendingProvider stall={stall}>
       <div className="flex min-h-screen flex-1">
-        <NavRail locked={locked} theme={theme} {...door} />
+        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} />
         <div className="flex min-w-0 flex-1 flex-col">
           <MobileHeader theme={theme} {...door} />
           {/* The bottom padding on mobile leaves room for the fixed tab bar, which
@@ -82,7 +94,7 @@ export default async function Shell({
             {children}
           </ShellMain>
         </div>
-        <TabBar locked={locked} />
+        <TabBar locked={locked} openLock={openLock} />
         {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
         {sheet && <AboutSheet state={sheet} />}
       </div>

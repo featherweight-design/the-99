@@ -16,13 +16,32 @@ import { AddCardsSheet } from "../collection/add-cards-sheet";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { ReplaceFlow } from "../collection/replace-flow";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { WaysGroup } from "../collection/ways-group";
 
-export function FirstRunStepOne({ fan, addByHand = false }: { fan: React.ReactNode; addByHand?: boolean }) {
+export function FirstRunStepOne({
+  fan,
+  addByHand = false,
+  ways = null,
+}: {
+  fan: React.ReactNode;
+  addByHand?: boolean;
+  /**
+   * The no-collection entry's ways group under the upload (S1), or null for the shipped card. With it, `Add cards by
+   * hand` leaves the button row for the group, so the buttons say "your file" and the group says "no file".
+   * `precons` is `PRECONS_ENABLED`, resolved for this reader (S15).
+   */
+  ways?: { precons: boolean } | null;
+}) {
   const c = refreshCopy.firstRun;
   const [adding, setAdding] = useState(false);
   const saved = useRef(false);
   const trigger = useRef<HTMLElement | null>(null);
   const [reviewing, setReviewing] = useState<{ file: string; rows: number } | null>(null);
+  const openAdd = (el: HTMLElement) => {
+    trigger.current = el;
+    saved.current = false;
+    setAdding(true);
+  };
 
   return (
     <>
@@ -65,7 +84,9 @@ export function FirstRunStepOne({ fan, addByHand = false }: { fan: React.ReactNo
             short variant rather than a second copy of the subtree. While a
             review is open the phone's gives way to the REVIEWING line. */}
         <p className={`m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] sm:text-[13px] ${reviewing ? "hidden md:block" : ""}`}>
-          <span className="sm:hidden">{addByHand ? collectionEditCopy.firstRun.bodyShort : c.step1BodyShort}</span>
+          {/* The short body names Add cards by hand only while it is a button beside the upload; with the
+              ways group it is the group's to name. */}
+          <span className="sm:hidden">{addByHand && !ways ? collectionEditCopy.firstRun.bodyShort : c.step1BodyShort}</span>
           <span className="hidden sm:inline">{c.step1Body}</span>
         </p>
         {/* ReplaceFlow rather than UploadEntry: preview and confirm are its
@@ -85,13 +106,10 @@ export function FirstRunStepOne({ fan, addByHand = false }: { fan: React.ReactNo
             embedded
             history={addByHand}
             onReviewing={setReviewing}
-            onAddByHand={
-              addByHand
-                ? (el) => {
-                    trigger.current = el;
-                    saved.current = false;
-                    setAdding(true);
-                  }
+            onAddByHand={addByHand && !ways ? openAdd : undefined}
+            ways={
+              ways
+                ? (pending) => <WaysGroup surface="step1" precons={ways.precons} onAddCards={openAdd} disabled={pending} />
                 : undefined
             }
           />

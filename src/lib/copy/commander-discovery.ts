@@ -34,6 +34,22 @@
 const n = (v: number) => v.toLocaleString("en-US");
 
 export const discoveryCopy = {
+  /**
+   * `/discover` at zero cards. `on` is the no-collection entry's (Open 7, NO_COLLECTION_ENTRY_ENABLED); `off` is the
+   * shipped empty state, word for word, which `/commanders` shares.
+   */
+  noCards: {
+    on: {
+      title: "Nothing to rank yet",
+      body: "Discover finds commanders your cards are close to building. Add some and they show up here.",
+      button: "Add your cards",
+    },
+    off: {
+      title: "No collection yet",
+      body: "Upload your cards and we’ll rank every commander you can build.",
+      button: "Upload collection",
+    },
+  },
   // ── Scope (§7.2, tier 1) — page header ────────────────────────────────
   // Two segments, always both available. The long labels are the desktop ones;
   // the phone buys the short pair and lets `subtitle` carry the meaning.
