@@ -162,6 +162,19 @@ describe("Precons I own: refusals", () => {
     expect(window.sessionStorage.getItem("the99:precon-pick-attempts:user_1")).toBeNull();
   });
 
+  // A reader who set off elsewhere during the add, while that page is still loading, is not pulled to Home.
+  it("does not navigate once the reader has pressed a link away, though the pick is still mounted", async () => {
+    let settle!: (v: unknown) => void;
+    addPrecons.mockReturnValueOnce(new Promise((r) => { settle = r; }));
+    window.history.replaceState(null, "", "/decks/precons?pick=own");
+    draw();
+    tick("Abzan Armor");
+    fireEvent.click(addButton());
+    fireEvent.click(screen.getByRole("link", { name: /Back|Home|Done|Cancel/ }));
+    await act(async () => settle([{ rowFile: "Abzan", ok: true, entryId: "e1" }]));
+    expect(push).not.toHaveBeenCalled();
+  });
+
   // A reader who left during the add is not pulled to Home when its answer arrives.
   it("does not navigate once the pick has unmounted", async () => {
     let settle!: (v: unknown) => void;

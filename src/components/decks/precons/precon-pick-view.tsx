@@ -79,12 +79,38 @@ export function PreconPickView({ rows, entry, initial }: {
   // One idempotency id per box and edition, kept across retries and dropped only once that box has landed, so a
   // retry after an unknown outcome is answered from the entry it wrote, and a box ticked again later adds again.
   const ids = useRef(new Map<string, string>());
-  // Whether the pick is still on screen: the header's way back and the shell stay live during an add, and a reader who
-  // left must not be pulled to Home when its answer arrives.
+  // Whether the pick is still on screen, and whether the reader has set off elsewhere: the header's way back and the
+  // shell stay live during an add, and a reader who left, or is leaving while the next page loads, must not be pulled
+  // to Home when its answer arrives. Departure is a same-origin link to another path, or the Navigation API's own
+  // navigation (Back included), seen as it starts.
   const mounted = useRef(true);
+  const departed = useRef(false);
   useEffect(() => {
     mounted.current = true;
-    return () => { mounted.current = false; };
+    const elsewhere = (url: string) => {
+      try {
+        if (new URL(url, location.href).pathname !== location.pathname) departed.current = true;
+      } catch {
+        // A destination the URL parser refuses is not a route this page can reach.
+      }
+    };
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (a && a.target !== "_blank" && a.origin === location.origin) elsewhere(a.href);
+    };
+    const onNavigate = (e: Event) => {
+      const url = (e as Event & { destination?: { url?: string } }).destination?.url;
+      if (url) elsewhere(url);
+    };
+    const navigation = (window as Window & { navigation?: EventTarget }).navigation;
+    document.addEventListener("click", onClick, true);
+    navigation?.addEventListener("navigate", onNavigate);
+    return () => {
+      mounted.current = false;
+      document.removeEventListener("click", onClick, true);
+      navigation?.removeEventListener("navigate", onNavigate);
+    };
   }, []);
   const searchWrap = useRef<HTMLDivElement>(null);
   const foot = useRef<HTMLDivElement>(null);
@@ -157,6 +183,7 @@ export function PreconPickView({ rows, entry, initial }: {
     // Kept before the press goes out, so an answer lost to a reload is still retried under the same ids.
     writeAttempts(account, { ...readAttempts(account), ...Object.fromEntries(requests.map((r) => [r.fileName, { edition: r.edition, id: r.actionId }])) });
     setToast(null);
+    departed.current = false;
     setPending(true);
     let outcomes: PickOutcome[];
     try {
@@ -186,7 +213,7 @@ export function PreconPickView({ rows, entry, initial }: {
     const nowLanded = [...landed, ...ok.map((o) => ({ rowFile: o.rowFile, entryId: o.entryId }))];
     if (failed.length === 0) {
       // S5: every box written. The inputs stay locked while the destination loads.
-      router.push(receiptHref(nowLanded));
+      if (!departed.current) router.push(receiptHref(nowLanded));
       return;
     }
     setLanded(nowLanded);
