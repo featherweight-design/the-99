@@ -1007,15 +1007,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
 - `pnpm probe:analysis-load-order` reads the Analysis tab's FIRST PAINT at 1300x900 and 390x844,
   on a deck with versions, a stored analysis and a written overview (Hugh's staging walk,
-  2026-09-25). A MutationObserver installed before the tab is pressed stamps each part's first
-  visible frame and its top: the verdict, the overview, Suggested changes, and before any reading
+  2026-09-25). A sampler installed before the tab is pressed reads every part in one
+  requestAnimationFrame pass, with the frame's own timestamp and a frame counter, and stamps each
+  part's first visible frame and its top, so two parts share a frame only when they were drawn in
+  the same painted frame: the verdict, the overview, Suggested changes, and before any reading
   the empty state with the credit note beside Analyze. They must all paint in ONE frame when the
   loader lets go, and nothing may paint at or above a part already on screen. The one exception is
   a deck never analyzed: since #1465 its empty state draws at once and the credit note follows when
   its own read lands (about 0.7 to 2s; 1.1 to 1.9s measured on 2026-10-15), so that case asserts the
-  ORDER (the empty state in an earlier frame than the note, which sits inside it, so a lag of 0 means
-  the empty state waited for the note again) and a BOUND (the note within 2.5s of it), not one frame.
-  With a 0.5s bound the bound check fails at both widths. It also reads the
+  ORDER (the empty state in an earlier FRAME than the note, by the counter; the note sits inside it,
+  so the same frame means the empty state waited for the note again) and a BOUND (the note within
+  2.5s of it), not one frame. With the empty state hidden in the probe's own page until the note
+  exists, the order check fails at both widths; with a 0.5s bound, the bound check does. It also reads the
   tab row: one line with Analysis selected, and where five tabs are wider than a phone the ROW
   scrolls rather than the page.
 
@@ -1058,12 +1061,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `TUNING_ENABLED`, `MANA_BALANCE_ENABLED` and `PROPOSED_CUTS_ENABLED`), and a page that disagrees
   fails the run. Off, Suggested changes' own section paints with the verdict, as above. On, the hub
   stands from the tab's first frame (#1809), so that check becomes: the hub is drawn from the tab's
-  first frame, is one node never missing, keeps its top within 1px from the press to the frame the
+  first frame, is one node never missing (a whole panel gone counts as a missing hub), keeps its top within 1px from the press to the frame the
   verdict lands, and after that moves only on a landing frame: the verdict's (the reading draws
   above it, as #1809's own probe asserts) and, on the fallback, the overview's, which grows in
-  place. Measured 2026-10-15: `held` green with the hub on and off, `fallback` green with it on.
-  With the landing frame counted in the hold, a hub that waits for the reading, or a landing frame
-  shifted by 1ms, the hub checks fail at both widths. One move is printed rather than failed: BEFORE the press, the hub drops once when the
+  place. The hub and every part are sampled together in requestAnimationFrame with a shared frame
+  counter, and the landings are compared by FRAME, not by time; only the announcements are also read
+  on mutations. Measured 2026-10-15: `held` green with the hub on and off, `fallback` green with it
+  on. With the landing frame counted in the hold, a hub that waits for the reading, a landing one
+  frame off, or the panel taken out of the page for 200ms, the hub checks fail at both widths. One move is printed rather than failed: BEFORE the press, the hub drops once when the
   credit note lands under the empty state (#1465), 56px at 1300 and 35px at 390, on the note's own
   frame.
 

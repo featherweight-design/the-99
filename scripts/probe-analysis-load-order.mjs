@@ -84,7 +84,10 @@ async function signIn(page) {
   return userId;
 }
 
-// Stamps, from before the tab is pressed, each part's first VISIBLE frame and its top edge.
+// Stamps, from before the tab is pressed, each part's first VISIBLE frame and its top edge. Sampled in
+// requestAnimationFrame, every part in one pass with the frame's own timestamp and a frame counter, so two
+// parts are "different frames" only when they were drawn in different painted frames. A MutationObserver
+// stamping each part with its own `performance.now()` could split one frame into two times.
 const OBSERVE = () => {
   const parts = {
     loader: "[data-opening-loader='drawn']",
@@ -99,17 +102,20 @@ const OBSERVE = () => {
   const seen = {};
   window.__parts = seen;
   const t0 = performance.now();
-  const look = () => {
+  let frame = 0;
+  const sample = (ts) => {
+    frame += 1;
     const panel = document.querySelector("#panel-analysis");
-    if (!panel) return;
-    for (const [name, sel] of Object.entries(parts)) {
-      if (seen[name]) continue;
-      const el = [...panel.querySelectorAll(sel)].find((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden");
-      if (el) seen[name] = { at: Math.round(performance.now() - t0), top: Math.round(el.getBoundingClientRect().top + window.scrollY) };
+    if (panel) {
+      for (const [name, sel] of Object.entries(parts)) {
+        if (seen[name]) continue;
+        const el = [...panel.querySelectorAll(sel)].find((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden");
+        if (el) seen[name] = { at: Math.round(ts - t0), frame, top: Math.round(el.getBoundingClientRect().top + window.scrollY) };
+      }
     }
+    requestAnimationFrame(sample);
   };
-  new MutationObserver(look).observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
-  look();
+  requestAnimationFrame(sample);
 };
 
 async function deckFor(userId) {
@@ -219,9 +225,11 @@ async function run() {
       const bareParts = await empty.evaluate(() => window.__parts);
       const noteLag = bareParts.empty && bareParts.pressNote ? bareParts.pressNote.at - bareParts.empty.at : null;
       // The note sits inside the empty state, so it can never paint first; what #1465 changed is that the empty
-      // state no longer WAITS for it. Painting in the same frame (a lag of 0) is the regression this catches.
+      // state no longer WAITS for it. Painting in the same FRAME is the regression this catches, read by the
+      // frame counter rather than by time.
+      const frameLag = bareParts.empty && bareParts.pressNote ? bareParts.pressNote.frame - bareParts.empty.frame : null;
       report(at("before a reading, the empty state paints before the credit note, not with it"),
-        noteLag !== null && noteLag > 0, JSON.stringify(bareParts));
+        frameLag !== null && frameLag > 0, JSON.stringify(bareParts));
       report(at(`and the credit note follows within ${NOTE_BOUND_MS / 1000}s of it`),
         noteLag !== null && noteLag <= NOTE_BOUND_MS, `${noteLag ?? "no note"}ms after the empty state`);
       await empty.close();

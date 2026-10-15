@@ -92,7 +92,10 @@ async function signIn(page) {
 }
 
 // Stamps each part's first visible frame and top, every heading the loader shows, and every top the
-// verdict and the overview take afterwards, so a move after the first paint is seen.
+// verdict and the overview take afterwards, so a move after the first paint is seen. The geometry is
+// SAMPLED in requestAnimationFrame, every part and the hub in one pass with the frame's own timestamp
+// and a frame counter, so two stamps share a frame exactly when they were drawn in the same painted
+// frame. Only the announcements are also read on mutations: a status line can change between frames.
 const OBSERVE = () => {
   const parts = {
     verdict: "[data-testid='verdict-cell']",
@@ -109,22 +112,28 @@ const OBSERVE = () => {
   const w = { t0, seen: {}, headings: [], tops: { verdict: new Set(), overview: new Set() }, said: [], hub };
   window.__hold = w;
   const visible = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
-  const look = () => {
+  let frame = 0;
+  const sample = (ts) => {
+    frame += 1;
     const panel = document.querySelector("#panel-analysis");
-    if (!panel) return;
-    const now = Math.round(performance.now() - t0);
+    if (!panel) {
+      // Once drawn, a hub whose whole panel is gone is a missing hub.
+      if (hub.node !== null) hub.missing += 1;
+      return;
+    }
+    const now = Math.round(ts - t0);
     if (hub.panelAt === null && visible(panel)) hub.panelAt = now;
     const h0 = panel.querySelector("section[data-tuning-hub]");
     if (h0 && visible(h0)) {
       if (hub.node === null) { hub.node = h0; hub.at = now; } else if (hub.node !== h0) hub.replaced = true;
       const top = Math.round((h0.getBoundingClientRect().top + window.scrollY) * 10) / 10;
-      if (hub.tops.length === 0 || Math.abs(hub.tops.at(-1).top - top) > 0.5) hub.tops.push({ at: now, top });
+      if (hub.tops.length === 0 || Math.abs(hub.tops.at(-1).top - top) > 0.5) hub.tops.push({ at: now, frame, top });
     } else if (hub.node !== null) hub.missing += 1;
     if (hub.noteAt === null && [...panel.querySelectorAll("[data-testid='press-note']")].some(visible)) hub.noteAt = now;
     for (const [name, sel] of Object.entries(parts)) {
       if (w.seen[name]) continue;
       const el = [...panel.querySelectorAll(sel)].find(visible);
-      if (el) w.seen[name] = { at: now, top: Math.round(el.getBoundingClientRect().top + window.scrollY) };
+      if (el) w.seen[name] = { at: now, frame, top: Math.round(el.getBoundingClientRect().top + window.scrollY) };
     }
     const h = panel.querySelector("[data-testid='analysis-empty'] h2");
     if (h && w.headings.at(-1)?.text !== h.textContent) w.headings.push({ at: now, text: h.textContent });
@@ -132,13 +141,16 @@ const OBSERVE = () => {
       const el = [...panel.querySelectorAll(parts[name])].find(visible);
       if (el) w.tops[name].add(Math.round(el.getBoundingClientRect().top + window.scrollY));
     }
-    // Each announcement once, in the order it was first said: two regions can hold text at once.
-    for (const s of panel.querySelectorAll("p.sr-only[role='status']")) {
+    listen();
+  };
+  // Each announcement once, in the order it was first said: two regions can hold text at once.
+  const listen = () => {
+    for (const s of document.querySelectorAll("#panel-analysis p.sr-only[role='status']")) {
       if (s.textContent && !w.said.includes(s.textContent)) w.said.push(s.textContent);
     }
   };
-  new MutationObserver(look).observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
-  const tick = () => { look(); requestAnimationFrame(tick); };
+  new MutationObserver(listen).observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
+  const tick = (ts) => { sample(ts); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
 };
 
@@ -165,7 +177,8 @@ async function reset(id, before) {
 // same node throughout, never missing once drawn, and its top still (within 1px) from the press, through
 // the hold, to the frame the verdict lands. At that frame the reading is drawn ABOVE the hub, so the hub
 // moves down by the reading's height by design (#1809's own probe asserts the same); what is held there
-// is that it moves only on a landing frame: the verdict's, and on the fallback the overview's too.
+// is that it moves only on a landing frame: the verdict's, and on the fallback the overview's too. Frames
+// are the sampler's own counter, so "the landing frame" is the painted frame the verdict appeared in.
 //
 // Measured 2026-10-15, and printed rather than failed: BEFORE the press, the hub moves once when the
 // credit note lands under the empty state (#1465: the note follows the empty state by about 0.7 to 2s),
@@ -179,13 +192,14 @@ function hubStaysPut(at, hub, pressAt, released, landings) {
   const idle = hub.tops.filter((t) => t.at <= pressAt);
   console.log(`  info  ${at("the hub before the press")} — ${JSON.stringify({ tops: idle, creditNoteAt: hub.noteAt, pressAt })}`);
   const settled = idle.at(-1)?.top ?? null;
-  const held = hub.tops.filter((t) => t.at > pressAt && (released === null || t.at < released));
+  // `released` and `landings` are sampler FRAMES; `pressAt` is a time, read before the press.
+  const held = hub.tops.filter((t) => t.at > pressAt && (released === null || t.frame < released));
   report(at("its top stays put from the press to the analysis landing"),
     settled !== null && released !== null && held.every((t) => Math.abs(t.top - settled) <= 1),
-    JSON.stringify({ settled, moves: held, released }));
-  const after = hub.tops.filter((t) => released !== null && t.at >= released);
+    JSON.stringify({ settled, moves: held, landingFrame: released }));
+  const after = hub.tops.filter((t) => released !== null && t.frame >= released);
   report(at("and after, moves only on a landing frame"),
-    released !== null && after.every((t) => landings.includes(t.at)),
+    released !== null && after.every((t) => landings.includes(t.frame)),
     JSON.stringify({ landings, moves: after }));
 }
 
@@ -278,8 +292,9 @@ async function run() {
       if (HUB === "on") {
         // On the fallback the overview also grows in place when it lands (the growth Hugh accepted), so
         // the hub may move on that frame too.
-        const landings = MODE === "fallback" && w.seen.written ? [released, w.seen.written.at] : [released];
-        hubStaysPut(at, w.hub, pressAt, released, landings);
+        const landed = w.seen.verdict?.frame ?? null;
+        const landings = MODE === "fallback" && w.seen.written ? [landed, w.seen.written.frame] : [landed];
+        hubStaysPut(at, w.hub, pressAt, landed, landings);
       } else {
         report(at("no Tuning hub, as PROBE_HUB says"), w.hub.at === null, w.hub.at === null ? "absent" : `drawn at ${w.hub.at}ms`);
       }
