@@ -111,8 +111,8 @@ async function main() {
     check("nor are V's decks to S, who is a friend of V's friend", (await listFriendDecks(S, v.publicId)).length === 0);
     check("a forged id reads nothing", (await listFriendDecks(V, "00000000-0000-4000-8000-000000000000")).length === 0);
     const seated = await listPodSeats(V, pod.id);
-    check("a pod seats its other members who are friends, with their decks", seated.length === 1
-      && seated[0].publicId === f.publicId && seated[0].decks.length === 2, JSON.stringify(seated));
+    check("a pod seats its other members who are friends, and reads no decks", seated.length === 1
+      && seated[0].publicId === f.publicId && !("decks" in seated[0]), JSON.stringify(seated));
     check("a pod the reader is not in seats nobody", (await listPodSeats(S, pod.id)).length === 0);
     // F's own pod holds V and S, who are not friends: V is offered F, never S.
     const fays = await pods.createPod(F, "Fay's table");

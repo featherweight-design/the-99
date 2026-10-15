@@ -14,6 +14,7 @@ import { colorLabel } from "./format";
 import type { OpponentCommander } from "./game-opponents";
 import type { Matchups } from "./matchups";
 import { gameMatchupsCopy } from "../copy/game-matchups";
+import { faceInitials } from "../social/initials";
 
 export type MatchupSplit = "commanders" | "identities" | "friends";
 
@@ -48,14 +49,8 @@ const MISSING: Record<string, string> = { W: "white", U: "blue", B: "black", R: 
 
 const shortName = (name: string) => name.split(",")[0].trim();
 
-/** Letters and digits only: the first of each of the first two words, or the first two of one word. */
-export function initialsOf(name: string): string {
-  const words = name.match(/[\p{L}\p{N}]+/gu) ?? [];
-  const [first, second] = words;
-  if (first === undefined) return "?";
-  const letters = second !== undefined ? Array.from(first)[0] + Array.from(second)[0] : Array.from(first).slice(0, 2).join("");
-  return letters.toUpperCase();
-}
+/** The face's initials, or `?` when the name holds no letter or digit: one rule with the friend faces (`faceInitials`). */
+export const initialsOf = (name: string): string => faceInitials(name) || "?";
 
 function commanderThumb(c: OpponentCommander | null): Thumb {
   return c?.imageUri ? { kind: "art", imageUri: c.imageUri } : { kind: "blank" };

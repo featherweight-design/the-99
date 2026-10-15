@@ -6,18 +6,28 @@
  *   seats it would drop are filled (clear a seat first), so lowering the pod never silently discards one;
  * - `won` is for a loss, on one seat at most, and leaving Lost clears it BEFORE the action is called, because
  *   the server refuses a winner on anything else;
+ * - a seat is ONE of three kinds, which `parseOpponents` takes as they are: anyone by a commander (and a label), a
+ *   friend with a deck of theirs (name and commander are the deck's), or a friend alone or with a commander of
+ *   their own (no label: the friend's name is the name), and a friend sits once;
  * - what is sent is `OpponentInput`, the shape `parseOpponents` checks again.
  */
 import type { OpponentInput } from "./game-opponents";
 import type { OpponentCommanderHit } from "./opponent-commanders";
 
 /** What a seat draws of its commander. The hit's partner reading stays on the search, never in a seat. */
-export type SeatCommander = Pick<OpponentCommanderHit, "oracleId" | "name" | "imageUri" | "colorIdentity">;
+export type SeatCommander = Pick<OpponentCommanderHit, "oracleId" | "name" | "imageUri">;
+
+/** A friend at a seat: their `publicId` is what is sent, and their name is what the seat is called. */
+export type SeatFriend = { publicId: string; name: string };
 
 export type Seat = {
   /** A client key, stable while the seat lives and meaningless after: never sent. */
   key: string;
-  commander: SeatCommander;
+  /** Null for a friend seated alone, who has no commander to draw. */
+  commander: SeatCommander | null;
+  friend: SeatFriend | null;
+  /** The friend's deck, when one was picked: today's name, drawn on the seat. Its commander is `commander`. */
+  deck: { id: string; name: string } | null;
   /** Who sat there, in the player's words. Empty is none. */
   label: string;
   won: boolean;
@@ -35,10 +45,40 @@ export const podSizeHeld = (podSize: number, filled: number) => seatCount(podSiz
 /** Whether the table has room for another seat. */
 export const hasRoom = (podSize: number, filled: number) => filled < seatCount(podSize);
 
-/** The seat a commander press fills: a new one at the end, or the named one changed in place (its label kept). */
-export function seatWith(seats: readonly Seat[], at: string | null, commander: SeatCommander, key: string): Seat[] {
-  if (at === null) return [...seats, { key, commander, label: "", won: false }];
-  return seats.map((s) => (s.key === at ? { ...s, commander } : s));
+/** What a picker press names: anyone by commander, or a friend (with a deck, or a commander of their own, or neither). */
+export type SeatPick = { friend: SeatFriend | null; deck: { id: string; name: string } | null; commander: SeatCommander | null };
+
+/**
+ * The seat a picker press fills: a new one at the end, or the named one changed in place (`won` kept). A friend
+ * carries no label, and anyone keeps the one already typed on that seat.
+ */
+export function seatWith(seats: readonly Seat[], at: string | null, pick: SeatPick, key: string): Seat[] {
+  const filled = (s: Seat): Seat => ({ ...s, ...pick, label: pick.friend ? "" : s.label });
+  if (at === null) return [...seats, filled({ key, commander: null, friend: null, deck: null, label: "", won: false })];
+  return seats.map((s) => (s.key === at ? filled(s) : s));
+}
+
+/** The friends already at the table, other than the seat being changed: a friend sits once. */
+export const seatedFriends = (seats: readonly Seat[], except: string | null): Set<string> =>
+  new Set(seats.flatMap((s) => (s.friend && s.key !== except ? [s.friend.publicId] : [])));
+
+/** Seats a pod fills: the friends in join order that fit, and who did not. A pod of any size is clamped to the log's 2 to 8. */
+export const POD_SIZE_MIN = 2;
+export const POD_SIZE_MAX = 8;
+
+export type PodFill = { podSize: number; add: SeatFriend[]; unseated: string[] };
+
+/**
+ * One press of a Seat a pod chip (plan note 2). The pod's member count (the player included) is the pod size, held
+ * to the log's range, and never below what the filled seats need. Its friends not already at the table are seated
+ * in join order while a seat is free; the rest are named in `unseated`.
+ */
+export function podFill(seats: readonly Seat[], memberCount: number, friends: readonly SeatFriend[]): PodFill {
+  const podSize = Math.min(POD_SIZE_MAX, Math.max(POD_SIZE_MIN, memberCount, seats.length + 1));
+  const seated = seatedFriends(seats, null);
+  const free = seatCount(podSize) - seats.length;
+  const fresh = friends.filter((f) => !seated.has(f.publicId));
+  return { podSize, add: fresh.slice(0, free), unseated: fresh.slice(free).map((f) => f.name) };
 }
 
 export const seatWithout = (seats: readonly Seat[], key: string): Seat[] => seats.filter((s) => s.key !== key);
@@ -76,17 +116,17 @@ export function seatsForResult(seats: readonly Seat[], result: string | null): S
 /** The commander's short name, before the comma: `Yuriko` for `Yuriko, the Tiger's Shadow`. */
 export const shortName = (name: string) => name.split(",")[0].trim();
 
-/** The seat's own name for a screen reader and a heading: the label when there is one, else the commander. */
-export const seatName = (s: Seat) => cleanLabel(s.label) || shortName(s.commander.name);
+/** The seat's own name for a screen reader and a heading: the friend, else the label when there is one, else the commander. */
+export const seatName = (s: Seat) => s.friend?.name ?? (cleanLabel(s.label) || shortName(s.commander?.name ?? ""));
 
 /** What `logGame` is sent. A label only when typed, `won` only when set and the game was lost. */
 export function opponentsFor(seats: readonly Seat[], result: string | null): OpponentInput[] {
   return seats.map((s) => {
+    const won = s.won && result === "loss" ? { won: true } : {};
+    // A friend's deck carries its own name and commanders, so none is sent beside it (`parseOpponents` refuses them).
+    if (s.friend && s.deck) return { friend: s.friend.publicId, deck: s.deck.id, ...won };
+    if (s.friend) return { friend: s.friend.publicId, ...(s.commander ? { commander: s.commander.oracleId } : {}), ...won };
     const label = cleanLabel(s.label);
-    return {
-      commander: s.commander.oracleId,
-      ...(label !== "" ? { label } : {}),
-      ...(s.won && result === "loss" ? { won: true } : {}),
-    };
+    return { commander: s.commander?.oracleId, ...(label !== "" ? { label } : {}), ...won };
   });
 }

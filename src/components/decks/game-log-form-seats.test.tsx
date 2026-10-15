@@ -19,7 +19,17 @@ const search = vi.fn(async (q: string) => (q.toLowerCase().startsWith("y") ? [hi
 
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: async () => [] }));
 vi.mock("../../app/decks/actions", () => ({ logGame: (id: string, input: Record<string, unknown>) => logGame(id, input) }));
-vi.mock("../../app/decks/[id]/opponent-actions", () => ({ searchOpponentCommandersAction: (q: string) => search(q) }));
+const friends = vi.fn(async (): Promise<unknown[]> => []);
+const friendDecks = vi.fn(async (_id: string): Promise<unknown[]> => []);
+const pods = vi.fn(async (): Promise<unknown[]> => []);
+const podSeats = vi.fn(async (_id: string): Promise<unknown[]> => []);
+vi.mock("../../app/decks/[id]/opponent-actions", () => ({
+  searchOpponentCommandersAction: (q: string) => search(q),
+  listPickerFriendsAction: () => friends(),
+  listFriendDecksAction: (id: string) => friendDecks(id),
+  listPickerPodsAction: () => pods(),
+  listPodSeatsAction: (id: string) => podSeats(id),
+}));
 
 const you = { name: "Kenrith, the Returned King", deckName: "Rainbow", imageUri: null };
 const seatsCopy = gameSeatsCopy.seats;

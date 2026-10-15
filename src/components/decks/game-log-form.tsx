@@ -158,6 +158,8 @@ export function GameLogForm({
   // The empty state unmounts this form when the game arrives, so nothing ever releases the hold.
   const [holding, setHolding] = useState(false);
   const busy = isPending || holding;
+  // A Seat a pod read is in flight: seats, pod size and Save wait for it, so the fill lands on what the player sees.
+  const [podPending, setPodPending] = useState(false);
   const noteField = useRef<HTMLInputElement>(null);
   const noteTags = useTaggedField({
     value: note,
@@ -281,7 +283,7 @@ export function GameLogForm({
   const [prefix, dateWord] = dateParts(dateLabel);
 
   function submit() {
-    if (!result || busy || dateUnusable) return;
+    if (!result || busy || podPending || dateUnusable) return;
     startTransition(async () => {
       setError(null);
       const outcome = await logGame(deckId, {
@@ -438,7 +440,7 @@ export function GameLogForm({
                   role="radio"
                   aria-checked={on}
                   tabIndex={on ? 0 : -1}
-                  disabled={busy}
+                  disabled={busy || podPending}
                   onKeyDown={podRoving.onKeyDown(i)}
                   // Held, not disabled: a disabled button takes no press, and the press is what says why.
                   aria-disabled={podSizeHeld(n, seats.length) || undefined}
@@ -466,11 +468,20 @@ export function GameLogForm({
           podSize={podSize}
           result={result}
           seats={seats}
-          busy={busy}
+          busy={busy || podPending}
           held={podHeld}
-          onSeat={(at, commander) => {
-            setSeats((held) => seatWith(held, at, commander, `seat${++seatKeys.current}`));
+          onSeat={(at, pick) => {
+            setSeats((held) => seatWith(held, at, pick, `seat${++seatKeys.current}`));
             setPodHeld(false);
+          }}
+          onPodPending={setPodPending}
+          onPod={(size, add) => {
+            setPodSize(size);
+            // A seat's key is made here, at press time, never inside the updater: a strict-mode double call must not skip one.
+            const keyed = add.map((friend) => ({ friend, key: `seat${++seatKeys.current}` }));
+            setSeats((held) => keyed.reduce((seats, { friend, key }) => seatWith(seats, null, { friend, deck: null, commander: null }, key), held));
+            setPodHeld(false);
+            return keyed.map((k) => k.key);
           }}
           onClear={(key) => { setSeats((held) => seatWithout(held, key)); setPodHeld(false); }}
           onWon={(key) => setSeats((held) => seatWon(held, key))}
@@ -573,7 +584,7 @@ export function GameLogForm({
         <button
           type="button"
           onClick={submit}
-          disabled={!result || busy || dateUnusable}
+          disabled={!result || busy || podPending || dateUnusable}
           // The one filled button on this rendered screen, and bone: accent
           // means "in use / to buy" and is not available as an action fill.
           // R3 §1.

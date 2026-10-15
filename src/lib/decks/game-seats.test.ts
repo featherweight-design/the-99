@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   hasRoom, opponentsFor, podSizeHeld, seatCount, seatLabelled, seatName, seatWith, seatWithout, seatWon, seatsForResult,
-  shortName, SEAT_LABEL_MAX, type Seat, type SeatCommander,
+  podFill, seatedFriends, shortName, SEAT_LABEL_MAX, type Seat, type SeatCommander, type SeatFriend, type SeatPick,
 } from "./game-seats";
 import { OPPONENT_LABEL_MAX, parseOpponents } from "./game-opponents";
 import { cleanName } from "../social/rules";
 
-const cmd = (id: string, name = `Cmdr ${id}`): SeatCommander => ({ oracleId: id, name, imageUri: null, colorIdentity: [] });
-const seat = (key: string, over: Partial<Seat> = {}): Seat => ({ key, commander: cmd(key), label: "", won: false, ...over });
+const cmd = (id: string, name = `Cmdr ${id}`): SeatCommander => ({ oracleId: id, name, imageUri: null });
+const seat = (key: string, over: Partial<Seat> = {}): Seat => ({ key, commander: cmd(key), friend: null, deck: null, label: "", won: false, ...over });
+const anyone = (c: SeatCommander): SeatPick => ({ friend: null, deck: null, commander: c });
 
 describe("seats and the pod", () => {
   it("a table of N has N - 1 seats, and a pod is held while its filled seats would not fit", () => {
@@ -26,8 +27,8 @@ describe("seats and the pod", () => {
 describe("filling and clearing seats", () => {
   it("adds a new seat at the end, and changes one in place keeping its label and its trophy", () => {
     const base = [seat("a", { label: "Sam", won: true }), seat("b")];
-    expect(seatWith(base, null, cmd("c"), "k3").map((s) => s.commander.oracleId)).toEqual(["a", "b", "c"]);
-    const changed = seatWith(base, "a", cmd("z"), "ignored");
+    expect(seatWith(base, null, anyone(cmd("c")), "k3").map((s) => s.commander?.oracleId)).toEqual(["a", "b", "c"]);
+    const changed = seatWith(base, "a", anyone(cmd("z")), "ignored");
     expect(changed[0]).toMatchObject({ key: "a", label: "Sam", won: true, commander: { oracleId: "z" } });
     expect(changed).toHaveLength(2);
   });
@@ -88,7 +89,7 @@ describe("what is sent", () => {
   // The parser checks ids as uuids, so these seats carry real-shaped ones.
   const A = "00000000-0000-4000-8000-00000000000a";
   const B = "00000000-0000-4000-8000-00000000000b";
-  const uuidSeat = (id: string, over: Partial<Seat> = {}): Seat => ({ key: id, commander: cmd(id), label: "", won: false, ...over });
+  const uuidSeat = (id: string, over: Partial<Seat> = {}): Seat => ({ key: id, commander: cmd(id), friend: null, deck: null, label: "", won: false, ...over });
   it("is accepted by the server's own parser, for a loss with a winner", () => {
     const seats = [uuidSeat(A, { label: "Sam", won: true }), uuidSeat(B)];
     expect(parseOpponents(opponentsFor(seats, "loss"), { podSize: 4, result: "loss" })).toHaveLength(2);
@@ -106,5 +107,69 @@ describe("names", () => {
     expect(shortName("Atraxa")).toBe("Atraxa");
     expect(seatName(seat("a", { commander: cmd("a", "Yuriko, the Tiger's Shadow") }))).toBe("Yuriko");
     expect(seatName(seat("a", { label: "  Lee " }))).toBe("Lee");
+  });
+});
+
+describe("friend seats", () => {
+  const F1 = "00000000-0000-4000-8000-0000000000f1";
+  const F2 = "00000000-0000-4000-8000-0000000000f2";
+  const DECK = "00000000-0000-4000-8000-0000000000d1";
+  const dave: SeatFriend = { publicId: F1, name: "Dave" };
+  const jo: SeatFriend = { publicId: F2, name: "Jo" };
+
+  it("sends a friend's deck alone, a friend's own commander beside the friend, and a bare friend as just the friend", () => {
+    const seats = [
+      seat("a", { friend: dave, deck: { id: DECK, name: "Avengers Tempo" }, commander: cmd("x") }),
+      seat("b", { friend: jo, commander: cmd("y") }),
+      seat("c", { friend: { publicId: "3", name: "Sam" }, commander: null }),
+    ];
+    expect(opponentsFor(seats, "win")).toEqual([{ friend: F1, deck: DECK }, { friend: F2, commander: "y" }, { friend: "3" }]);
+  });
+  it("is accepted by the server's own parser, and a friend carries no label even if the seat held one", () => {
+    const A = "00000000-0000-4000-8000-00000000000a";
+    const seats = [
+      seat("a", { friend: dave, deck: { id: DECK, name: "d" }, commander: cmd(A), won: true }),
+      seat("b", { friend: jo, commander: cmd(A), label: "ignored" }),
+    ];
+    expect(parseOpponents(opponentsFor(seats, "loss"), { podSize: 4, result: "loss" })).toEqual([
+      { kind: "friendDeck", friend: F1, deck: DECK, won: true },
+      { kind: "friend", friend: F2, commander: A, partner: null, won: false },
+    ]);
+  });
+  it("picking a friend over a seat drops the label it held, and picking anyone over a friend seat keeps nothing of the friend", () => {
+    const withLabel = [seat("a", { label: "Lee" })];
+    expect(seatWith(withLabel, "a", { friend: dave, deck: null, commander: null }, "k")[0]).toMatchObject({ friend: dave, label: "", commander: null });
+    const friendSeat = [seat("a", { friend: dave, deck: { id: DECK, name: "d" }, commander: cmd("x") })];
+    expect(seatWith(friendSeat, "a", anyone(cmd("z")), "k")[0]).toMatchObject({ friend: null, deck: null, commander: { oracleId: "z" } });
+  });
+  it("names a friend seat by the friend, and lists the friends at the OTHER seats as already seated", () => {
+    const seats = [seat("a", { friend: dave, commander: cmd("x") }), seat("b", { friend: jo, commander: null })];
+    expect(seatName(seats[0])).toBe("Dave");
+    expect(seatName(seats[1])).toBe("Jo");
+    expect([...seatedFriends(seats, "a")]).toEqual([F2]);
+    expect([...seatedFriends(seats, null)].sort()).toEqual([F1, F2]);
+  });
+});
+
+describe("Seat a pod", () => {
+  const f = (n: number): SeatFriend => ({ publicId: `p${n}`, name: `Friend ${n}` });
+  it("sets the pod size to the member count and seats the friends in join order", () => {
+    expect(podFill([], 4, [f(1), f(2)])).toEqual({ podSize: 4, add: [f(1), f(2)], unseated: [] });
+  });
+  it("clamps the size to 2 to 8, and names who did not fit", () => {
+    const nine = Array.from({ length: 8 }, (_, i) => f(i + 1));
+    const fill = podFill([], 9, nine);
+    expect(fill.podSize).toBe(8);
+    expect(fill.add).toHaveLength(7);
+    expect(fill.unseated).toEqual(["Friend 8"]);
+    expect(podFill([], 1, []).podSize).toBe(2);
+  });
+  it("never lowers the pod below the seats already filled, and skips a friend already seated", () => {
+    const seats = [seat("a", { friend: f(1), commander: null }), seat("b")];
+    expect(podFill(seats, 2, [f(1), f(2)]).podSize).toBe(3);
+    const fill = podFill(seats, 4, [f(1), f(2)]);
+    expect(fill.podSize).toBe(4);
+    expect(fill.add).toEqual([f(2)]);
+    expect(fill.unseated).toEqual([]);
   });
 });

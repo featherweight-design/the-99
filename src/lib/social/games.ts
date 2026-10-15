@@ -14,16 +14,25 @@
  * Nothing returned carries a Clerk id: a friend is a `publicId` and a display name. `resolveFriendSeatsIn`
  * returns the friend's account id only to the write that stores it, never to a client.
  */
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { decks, friendLinks, podMembers, socialProfiles } from "../../db/schema";
-import type { Reader } from "./access";
+import { listFriends, listPods, type Reader } from "./access";
+import { commanderCard } from "./commander";
 import { isUuid } from "./rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export type FriendDeck = { deckId: string; name: string; commanderOracleId: string; partnerOracleId: string | null };
+/** A deck as the picker draws it: its name and its commander's name and art, nothing of its list. */
+export type FriendDeck = {
+  deckId: string;
+  name: string;
+  commanderOracleId: string;
+  partnerOracleId: string | null;
+  commanderName: string;
+  commanderImageUri: string | null;
+};
 
 /** A friend's decks, by name, only while the two are friends. Apart so a test can render its SQL. */
 export function friendDecksQuery(viewerId: string, friendPublicIds: readonly string[], q: Reader = db) {
@@ -34,16 +43,26 @@ export function friendDecksQuery(viewerId: string, friendPublicIds: readonly str
       name: decks.name,
       commanderOracleId: decks.commanderOracleId,
       partnerOracleId: decks.partnerOracleId,
+      commanderName: commanderCard.name,
+      commanderImageUri: commanderCard.imageUri,
     })
     .from(friendLinks)
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
     .innerJoin(decks, eq(decks.userId, friendLinks.friendUserId))
+    .innerJoin(commanderCard, eq(commanderCard.oracleId, decks.commanderOracleId))
+    // Newest first (the handoff's F3): the deck a friend is playing now leads.
     .where(and(eq(friendLinks.userId, viewerId), inArray(socialProfiles.publicId, [...friendPublicIds])))
-    .orderBy(asc(socialProfiles.publicId), asc(decks.name), asc(decks.id));
+    .orderBy(asc(socialProfiles.publicId), desc(decks.createdAt), asc(decks.id));
 }
 
-const deckOf = (r: FriendDeck): FriendDeck =>
-  ({ deckId: r.deckId, name: r.name, commanderOracleId: r.commanderOracleId, partnerOracleId: r.partnerOracleId });
+const deckOf = (r: FriendDeck): FriendDeck => ({
+  deckId: r.deckId,
+  name: r.name,
+  commanderOracleId: r.commanderOracleId,
+  partnerOracleId: r.partnerOracleId,
+  commanderName: r.commanderName,
+  commanderImageUri: r.commanderImageUri,
+});
 
 /** The decks a friend can be seated with. A stranger, a former friend or a forged id reads nothing. */
 export async function listFriendDecks(viewerId: string, friendPublicId: unknown): Promise<FriendDeck[]> {
@@ -66,18 +85,15 @@ export function podSeatsQuery(viewerId: string, podId: string, q: Reader = db) {
     .orderBy(asc(podMembers.joinedAt), asc(podMembers.userId));
 }
 
-export type PodSeat = { publicId: string; displayName: string; decks: FriendDeck[] };
+export type PodSeat = { publicId: string; displayName: string };
 
-/** One tap seats a pod: each friend in it, with the decks they can be seated with. */
+/**
+ * One tap seats a pod: each friend in it, in join order. Members only: a seated friend's decks are read by
+ * `listFriendDecks` when "Which deck?" asks, so a pod's answer does not grow with everyone's deck count.
+ */
 export async function listPodSeats(viewerId: string, podId: unknown): Promise<PodSeat[]> {
   if (!isUuid(podId)) return [];
-  const seats = await podSeatsQuery(viewerId, podId);
-  if (seats.length === 0) return [];
-  const owned = await friendDecksQuery(viewerId, seats.map((s) => s.publicId));
-  return seats.map((s) => ({
-    ...s,
-    decks: owned.filter((d) => d.publicId === s.publicId).map(deckOf),
-  }));
+  return podSeatsQuery(viewerId, podId);
 }
 
 /** A friend seat as the game log asked for it: a friend, and optionally one of their decks. */
@@ -159,4 +175,38 @@ export async function resolveFriendSeatsIn(tx: Tx, viewerId: string, asks: reado
     });
   }
   return out;
+}
+
+/** A friend as the seat picker lists them: a face, a name and how many decks they can be seated with. */
+export type PickerFriend = { publicId: string; displayName: string; commanderArt: string | null; deckCount: number };
+
+/** One count per friend of the viewer's who has a deck, through the viewer's own link rows. Apart so a test can render its SQL. */
+export function friendDeckCountsQuery(viewerId: string, q: Reader = db) {
+  return q
+    .select({ publicId: socialProfiles.publicId, count: sql<number>`count(${decks.id})::int` })
+    .from(friendLinks)
+    .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
+    .innerJoin(decks, eq(decks.userId, friendLinks.friendUserId))
+    .where(eq(friendLinks.userId, viewerId))
+    .groupBy(socialProfiles.publicId);
+}
+
+/** The viewer's friends with a deck count each, read when the picker OPENS (G7). Their live face, never persisted. */
+export async function listPickerFriends(viewerId: string): Promise<PickerFriend[]> {
+  const [friends, counts] = await Promise.all([listFriends(viewerId), friendDeckCountsQuery(viewerId)]);
+  const byFriend = new Map(counts.map((c) => [c.publicId, c.count]));
+  return friends.map((f) => ({
+    publicId: f.publicId,
+    displayName: f.displayName,
+    commanderArt: f.commander?.artCropUri ?? null,
+    deckCount: byFriend.get(f.publicId) ?? 0,
+  }));
+}
+
+/** A pod the viewer is in, as a quick-seat chip: its name and how many people sit in it, the viewer included. */
+export type PickerPod = { id: string; name: string; memberCount: number };
+
+export async function listPickerPods(viewerId: string): Promise<PickerPod[]> {
+  const pods = await listPods(viewerId);
+  return pods.map((p) => ({ id: p.id, name: p.name, memberCount: p.members.length }));
 }

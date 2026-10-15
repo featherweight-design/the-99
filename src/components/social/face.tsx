@@ -4,19 +4,12 @@
 // pencil badge or a ring belongs to whoever wraps it.
 
 import type { ProfileCommander } from "../../lib/social/commander";
+import { faceInitials } from "../../lib/social/initials";
 import { FadingImg } from "../ui/hydrated-art";
 
 export type FaceSize = 64 | 40 | 26;
 
-/** Two letters: the first of each of the first two words, or the first two of a one-word name. */
-export function faceInitials(name: string): string {
-  const words = name.trim().split(/\s+/u).filter(Boolean);
-  const letters = (w: string) => [...w].filter((c) => /[\p{L}\p{N}]/u.test(c));
-  const out = words.length > 1
-    ? [letters(words[0])[0], letters(words[1])[0]]
-    : letters(words[0] ?? "").slice(0, 2);
-  return out.filter(Boolean).join("").toLocaleUpperCase("en-US");
-}
+export { faceInitials };
 
 // The board's three boxes: 14px corners on the 64 head tile, 10px on the 40 row tile, a disc at 26. The head
 // tile is 56 with 13px corners at phone (R2 Friends-Phone) and 64 from md.
