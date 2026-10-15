@@ -56,7 +56,7 @@
           "settle": 500
         },
         {
-          "wait": "[class*=\"min-h-[50px]\"]",
+          "wait": "[data-testid=\"read-only-card-tile\"]",
           "settle": 2000
         }
       ]

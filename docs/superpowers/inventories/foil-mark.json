@@ -1,6 +1,6 @@
 {
   "feature": "The foil mark: one glint for foil and etched",
-  "note": "PR 1 of the foil mark (plan `2026-10-15-foil-mark.md`). The surfaces that draw `FoilGlint`: /collection's tile and row, the deck's Card-view tile, and the open precon's Card-view tile. PR 2 adds the two-line deck row and the precon list row.\n\nPRECONDITION, and it decides whether the sheet proves anything: the account must OWN a foil card whose printing has art. A glint draws only for a card whose every copy is foil, over art; part-foil, not owned and plain draw nothing, so a sheet taken on an arbitrary page photographs no glint and reads as coverage. Every /collection row searches for a known foil card first (`FOIL_CARD`); `FOIL_DECK` must be a deck that HOLDS one and `FOIL_PRECON` a precon id whose box lists foil copies. The deck's Card view is not addressable (the toggle lives in localStorage), so that row presses it, then waits for the caption.\n\nThe keys are in `foil-mark-key.json`, a file of their own: they draw `FoilMark`, not `FoilGlint`, and one `shares` block names one binding.\n\nSet `about_version_seen` first (see `card-captions.json`), or every cell redirects to /about and fails.",
+  "note": "PR 1 of the foil mark (plan `2026-10-15-foil-mark.md`). The surfaces that draw `FoilGlint`: /collection's tile and row, the deck's Card-view tile, and the open precon's Card-view tile. PR 2 adds the two-line deck row and the precon list row.\n\nPRECONDITION, and it decides whether the sheet proves anything: the account must OWN a foil card whose printing has art. A glint draws only for a card whose every copy is foil, over art; part-foil, not owned and plain draw nothing, so a sheet taken on an arbitrary page photographs no glint and reads as coverage. Every /collection row searches for a known foil card first (`FOIL_CARD`); `FOIL_DECK` must be a deck that HOLDS one and `FOIL_PRECON` a precon id whose box lists foil copies. The deck's Card view is not addressable (the toggle lives in localStorage), so that row presses it, then waits for the caption.\n\nThe keys are in `foil-mark-key.json`, a file of their own: they draw `FoilMark`, not `FoilGlint`, and one `shares` block names one binding.\n\nSet `about_version_seen` first (see `card-captions.json`), or every cell redirects to /about and fails.\n\nTHE FIRST CELL OF A RUN lands on the Welcome page (the About gate marks itself seen on that visit), and `main, h1` is satisfied by it, so the first row opens with two throwaway visits that absorb the gate; the second waits for the search box, which only /collection draws.",
   "shares": {
     "module": "src/components/cards/foil-mark.tsx",
     "binding": "FoilGlint",
@@ -12,6 +12,16 @@
       "label": "/collection?view=grid: the glint first on a tile's meta line",
       "view": "src/components/collection/grid-view.tsx",
       "steps": [
+        {
+          "goto": "/collection?view=rows",
+          "wait": "main, [role=main], h1",
+          "settle": 2000
+        },
+        {
+          "goto": "/collection?view=rows",
+          "wait": "input[type=search]",
+          "settle": 1500
+        },
         {
           "goto": "/collection?view=grid",
           "wait": "main, [role=main], h1",
@@ -78,7 +88,7 @@
           "settle": 500
         },
         {
-          "wait": "[class*=\"min-h-[50px]\"]",
+          "wait": "[data-testid=\"read-only-card-tile\"]",
           "settle": 2000
         }
       ]
