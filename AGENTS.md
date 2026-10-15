@@ -895,6 +895,11 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   UNLINKED by the account purge (`SOCIAL_UNLINKED`), keeping the snapshot. The label is player-typed and no prompt
   reads the table (`game-opponents.test.ts` pins who may). `summarizeMatchups` splits a deck's games by commander,
   color identity and friend as `GameSummary` cells: counts with denominators, no rate.
+  The picker's reads ship dark behind the same switch (R3 PR 1, plan `2026-10-15-social-r3-opponents-and-matchups.md`):
+  `searchOpponentCommandersAction`, `listFriendDecksAction` and `listPodSeatsAction` (`src/app/decks/[id]/opponent-actions.ts`)
+  each re-check `socialGamesEnabled` for the signed-in reader and answer an empty list when it is off, and
+  `loadDeckOpponents` returns a deck's seats and matchups, or null when the switch is off, there are no games or the read
+  failed (logged, never thrown). None has a caller beyond its tests and the probe until the form (PR 2) and the Games tab (PR 4).
 
 - **Stuck-loader reports** (`NAV_STALL_LOG_ENABLED`, a plumbing switch; `'true'` on staging, off on production
   until Hugh turns it on). A loading screen still up 8 seconds (`STALL_AFTER_MS`) sends ONE report per navigation to

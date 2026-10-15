@@ -2263,6 +2263,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production and local-dev are refused by
   id. Mutation-checked: dropping the FOR SHARE on the friendship fails the race check, and dropping the viewer
   predicate from either friend read fails the stranger checks.
+  Since Social R3 PR 1 it also proves the reads the log form's picker and the deck page's Games tab take: the "anyone" seat's
+  commander search (`searchOpponentCommanders`: the whole catalog with no owned filter, commander-legal and able to lead a
+  deck, a one-letter query, a non-string and a LIKE wildcard offering nothing, the page capped at 8), and `loadDeckOpponents`
+  (the seats and matchups of a deck's games; another player's deck id reads no seats; the switch off reads nothing; a failing
+  read answers null instead of throwing). Mutation-checked: dropping `isCommanderCandidate` from the search fails the
+  "never offered" check.
 - `pnpm probe:social` proves the social foundation's queries (plan `boards/plan-social-foundation-2026-10-12.md`,
   PR 1): three made-up accounts plus a fourth, where the stranger gets nothing from any read or write; a token that
   is spent, declined, revoked or expired cannot be accepted, and two accepts at once let exactly one through; the

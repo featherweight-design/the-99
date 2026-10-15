@@ -44,6 +44,8 @@ async function main() {
   const { listFriendDecks, listPodSeats } = await import("../src/lib/social/games");
   const opp = await import("../src/lib/decks/game-opponents");
   const { listDeckGames } = await import("../src/lib/decks/games");
+  const { searchOpponentCommanders } = await import("../src/lib/decks/opponent-commanders");
+  const { loadDeckOpponents } = await import("../src/lib/decks/deck-opponents-read");
   const { summarizeMatchups } = await import("../src/lib/decks/matchups");
   const { purgeAccount } = await import("../src/lib/account/purge");
 
@@ -121,6 +123,21 @@ async function main() {
     check("a pod seats only its members who are the reader's friends", fromFays.length === 1 && fromFays[0].publicId === f.publicId,
       JSON.stringify(fromFays.map((x) => x.displayName)));
 
+    // The "anyone" seat's commander search (R3 PR 1): the whole catalog, no owned filter, only what can lead a deck.
+    const { rows: named } = await db.execute<{ name: string }>(sql`select name from cards where oracle_id = ${C1}`);
+    const wanted = named[0].name;
+    const hits = await searchOpponentCommanders(wanted);
+    const hit = hits.find((h) => h.oracleId === C1);
+    check("the search finds a commander V does not own, by name", hit !== undefined && hit.name === wanted, JSON.stringify(hits.map((h) => h.name)));
+    check("a hit carries its identity in WUBRG order, its cost and a partner reading",
+      hit !== undefined && Array.isArray(hit.colorIdentity) && "partner" in hit && "manaCost" in hit && "imageUri" in hit);
+    const { rows: plainName } = await db.execute<{ name: string }>(sql`select name from cards where oracle_id = ${NOT_A_COMMANDER}`);
+    check("a card that cannot lead a deck is never offered", !(await searchOpponentCommanders(plainName[0].name)).some((h) => h.oracleId === NOT_A_COMMANDER));
+    check("a one-letter query, a non-string and a LIKE wildcard offer nothing",
+      (await searchOpponentCommanders("a")).length === 0 && (await searchOpponentCommanders(42)).length === 0
+      && (await searchOpponentCommanders("%%")).length === 0);
+    check("the page is capped", (await searchOpponentCommanders("ar")).length <= 8);
+
     // The write path.
     const g1 = await log(V, mine, "loss", [{ friend: f.publicId, deck: fay1, won: true }, { commander: C3, label: "Sam" }]);
     check("a loss logs with a friend's deck and a stranger by commander", g1 !== null);
@@ -132,6 +149,17 @@ async function main() {
     check("the read carries no account id", !JSON.stringify([...read.values()]).includes(F));
     const g2 = await log(V, mine, "win", [{ friend: f.publicId }]);
     check("a friend seats with no deck known", g2 !== null && (await opp.listGameOpponents(mine, V)).get(g2!)?.[0].friend?.name === "Fay");
+
+    // The deck page's read (R3 PR 1): the seats and the matchups, behind the switch, never throwing.
+    const ON = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const played = await listDeckGames(mine, V);
+    const loaded = await loadDeckOpponents(mine, V, played, ON);
+    check("the deck read gives each game's seats and a matchup summary", loaded !== null
+      && loaded.opponents.get(g1!)?.length === 2 && loaded.matchups.games === played.length && loaded.matchups.recorded === 2,
+      JSON.stringify(loaded?.matchups.recorded));
+    check("another player's deck id reads no seats", (await loadDeckOpponents(mine, S, played, ON))?.opponents.size === 0);
+    check("with the switch off the read is null and reads nothing", (await loadDeckOpponents(mine, V, played, {} as NodeJS.ProcessEnv)) === null);
+    check("a failing read is null, not a throw", (await loadDeckOpponents(mine, V, played, ON, async () => { throw new Error("down"); })) === null);
 
     const before = await games(mine);
     check("a stranger cannot be seated, and no game is left behind",
