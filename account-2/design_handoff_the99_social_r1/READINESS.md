@@ -1,8 +1,9 @@
 # READINESS — Social R1 (friends and pods)
 
-**🟡 R1, for Hugh's audit against the brief's locks.** Every R1 state in the brief is drawn at both widths and every
-§Open R1 item is called. Hugh ruled G3 (the app stays invite-only) and G4 (an already-friends open spends the link)
-on 2026-10-15. Not green until Hugh approves the round and engineering confirms G1 and G2 are in the plan.
+**🟡 R2, for Hugh's audit.** R2 answers Hugh's R1 audit (2026-10-15): friend-link wording, the name set in one place,
+a signature commander as each player's face, the friend request as a card, and pods drawn two ways (A chips, B table)
+for Hugh to choose. Hugh ruled G3 (invite-only stays) and G4 (an already-friends open spends the link). Not green until
+Hugh approves R2 and picks A or B, and engineering confirms G1, G2 and G11 to G14 are in the plan.
 
 ## Locks held
 
@@ -15,7 +16,7 @@ on 2026-10-15. Not green until Hugh approves the round and engineering confirms 
 | Q4 pods friends-only | Add friends lists your friends only; no join code. |
 | Q5 hand-on | Leave's confirm names the next owner; the last leave deletes, and says so. |
 | Spares view-only | Only the grant is drawn this round; no borrow, ask or cart change. |
-| Name and public id only | Initials and display names; no email, avatar or Clerk id; ended links name nobody. |
+| Name and public id only | **Widened in R2, at Hugh's go-ahead:** a friend read also returns the friend's chosen commander (oracle id) for its art. No email, uploaded avatar or Clerk id; ended links name nobody. |
 | Silent removal | Every remove, leave, delete and decline says nobody is told, and nothing notifies. |
 | No model calls | Names are typed and drawn; nothing reaches a prompt. |
 | Limits 30 / 40 / 10 / 7 | `maxLength` 30 and 40; the 11th link is held; expiry on every link. |

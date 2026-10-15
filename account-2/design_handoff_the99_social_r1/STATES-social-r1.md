@@ -75,3 +75,16 @@ Both widths carry every state; where the phone board omits a frame, the desktop 
 | Rename | Pods P10 | Head becomes the field. |
 | Spares shared on / off | Pods P3 (on), P5 (off) | Per pod, per reader, unticked by default. |
 | Pod write failed | — | Toast, `We couldn't change that pod. Try again.` |
+
+## R2 additions
+
+| State | Drawn | Rule |
+|---|---|---|
+| No commander chosen | R2 Friends F1 (D, P) | Dashed + tile and `Choose your commander`; initials everywhere. |
+| Picker, before typing | R2 Friends F2 | Your decks' commanders first; one press picks and closes. |
+| Picker, searching | R2 Friends F3 | Any catalog commander, pips; `Use initials instead` once set. |
+| Faces in rows and chips | R2 Friends F4, F5 | 40px rows with commander name; 26px chips; initials fallback (Jo). |
+| Name edit | R2 Friends F6 | Only here. |
+| Friend link dialog / sheet | R2 Invite I1 to I5, P1 to P5 | `Add a friend`, no name line, `/friend/` path. |
+| Friend request card, every state | R2 Landing L1 to L8 (D, P) | Face up: open, no-commander sender (L2b), your own, already friends. Face down: signed out, expired, ended, after Decline. |
+| Pods, A or B | R2 Pods (D, P) | Both drawn; Hugh to choose. Add friends list with faces. |

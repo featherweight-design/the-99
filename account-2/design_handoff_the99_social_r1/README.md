@@ -28,9 +28,44 @@ Every board is drawn in the shipped shell (rail, mobile header, tab bar, account
 delete pane, `ToastFrame`) in the Kamigawa theme. Both routes are new, so only the menu row carries the dashed outline.
 No About entry this round: the line batches them at launch.
 
+## R2 (2026-10-15), after Hugh's audit
+
+R2 overrides R1 where they differ. Boards: `The 99 - Social R1 (R2).dc.html` and `R2 - *.dc.html`.
+
+**19. Friend links, not invites.** A link only adds an existing player as a friend, so the words never say invite: the
+button and dialog say `Add a friend`, the list is `Open friend links` with `Friend link` rows, the landing's kicker is
+`Friend request`, and the route is `/friend/[token]` (G14). The code's `invite` names can stay.
+
+**20. Your name and commander are set in one place only**, the head of `/friends`. The name line is gone from the dialog,
+the sheet and the landing card (Hugh: no alias system).
+
+**21. A signature commander is each player's face.** Optional, chosen and never inferred. Press the face in the head
+(or `Choose your commander` while it is unset). The picker is a dialog at desktop and a tall sheet at phone. It offers
+your own decks' commanders first (newest deck first, up to eight), and typing searches every commander the catalog
+knows, with colour pips. One press picks, saves and closes; `Use initials instead` clears it. While unset, a face is
+initials, and nothing asks again.
+
+**22. The face is drawn everywhere a person is**: head 64px, friend rows 40px with the commander's name under the
+person's, chips 26px, the Add friends list, and the friend request card.
+
+**23. The friend request is a card.** Face up only where R1 allowed the sender's name (open, already friends). It shows
+the name bar with colour pips, the commander's art, a frame in its colour identity, the type line (`Friend request`,
+or `Friend · since Oct 2`), the rule of friendship in the text box and an art credit. Face down (the 99's back)
+everywhere else: signed out, expired (faded), used, revoked, not found, and after Decline, which flips it (180ms, none
+under reduced motion). Your own link shows your own card. A sender with no commander gets initials in the art box and
+a grey frame. The card is one image to assistive tech, labelled with name, commander and type line. The heading carries
+the question.
+
+**24. Pods: A or B, for Hugh.** A puts the face in front of each chip. B seats each member as an art tile with the
+name under it, over a 30% blur of the same art; the owner's ✕ is a 28px disc on the seat; + Add friends is an empty
+seat. A is the default if Hugh does not choose.
+
+**25. Rulings.** The app stays invite-only (G3). Opening a friend link from someone already your friend spends it (G4):
+the page calls `redeemInvite`, which already answers `alreadyFriends` and writes no new friendship.
+
 ---
 
-## Decisions
+## Decisions (R1)
 
 **1. Friends sit in the account menu, as a link row second from the top. No sixth nav item.** Three reasons, any one
 enough. The tab bar is five wide, and the nav's own comment records that a fifth item already takes Commanders to 9px;
@@ -144,6 +179,11 @@ removing, every pod write. `false` from a write that is already done (a double s
 | G7 | The link's host (`the-99.dev`) is read from docs, not config. | Eng |
 | G8 | QR generation needs a library or a small encoder; the boards draw a stand-in matrix. No network call: the code is drawn on the client from the token. | Eng |
 | G9 | The member order (owner, You, then by name) needs `listPods` to return members in that order or the client to sort. | Eng |
+| G11 | `social_profiles` needs a nullable `commander_oracle_id`, a writer (`setCommander`), and every friend and pod read in `src/lib/social/` to return it. The purge already deletes the profile. | Eng |
+| G12 | Face art is the catalog's representative printing's art crop for that oracle id. No printing choice this round. | Eng |
+| G13 | The picker searches the commander set `/commanders` lists; its deck row reads the viewer's own decks' commanders, newest first, up to eight, a partner pair as two tiles. | Eng |
+| G14 | The route moves from `/invite/[token]` to `/friend/[token]`; G2 applies to the new path. | Eng |
+| G15 | Option B's blur is a CSS filter over the seats' own images (no extra request), dropped under reduced transparency. | Eng |
 | G10 | No caption under the spares checkbox, by Hugh's minimal-controls preference. The empty Pods sentence and the R2 About entry carry what "spares" means. | Hugh |
 
 ## Out of scope, unchanged from the brief

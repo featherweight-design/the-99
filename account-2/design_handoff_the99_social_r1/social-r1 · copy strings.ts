@@ -1,4 +1,4 @@
-// social-r1 · copy strings.ts. R1. PLACEHOLDERS: /copy-review sets the words.
+// social-r1 · copy strings.ts. R2 (friend links, one name field, commander faces). PLACEHOLDERS: /copy-review sets the words.
 // Target: a new src/lib/copy/social.ts, plus one row in the account menu (shellCopy.accountMenu).
 // Reuse: the delete pane's Keep label is folderCopy.del.cancel ("Keep it"), shared by every delete pane.
 // Names are display names (1 to 30 code points); pods are 1 to 40. No string here reaches a model.
@@ -17,15 +17,15 @@ export const socialCopy = {
     nameLine: (name: string) => ({ before: "Friends see you as ", name, action: "Change" }),
     nameField: {
       label: "Your name, as friends see it",
-      hint: "Up to 30 characters. Friends see only this.",
+      hint: "Up to 30 characters. Friends see this and your commander.",
       save: "Save",
       cancel: "Cancel",
       failed: "We couldn’t save your name. Try again.", // toast, role alert
     },
-    invite: "Invite a friend",
+    invite: "Add a friend",
     invitePending: "Making a link…",
     // Held at MAX_OPEN_INVITES; the line under the held button, joined to it by aria-describedby.
-    held: "10 links open, the most at once. Revoke one, or wait for one to be used.",
+    held: "10 friend links open, the most at once. Revoke one, or wait for one to be used.",
     // Receipt strip after Accept, role status, bare ✕ (aria-label "Close").
     accepted: (name: string) => `You and ${name} are friends.`,
     close: "Close",
@@ -34,7 +34,7 @@ export const socialCopy = {
   friends: {
     head: (n: number) => `Friends · ${n}`,
     emptyTitle: "No friends yet",
-    emptyBody: "Friends are added by invite only: send a link, or show its QR code at the table. Nobody can find you by name.",
+    emptyBody: "Friends are added by friend link only: send one, or show its QR code at the table. Nobody can find you by name.",
     since: (date: string) => `since ${date}`, // "since today", "since Oct 2"
     menuAria: (name: string) => `${name} actions`,
     remove: "Remove friend",
@@ -74,7 +74,7 @@ export const socialCopy = {
     addSub: "Only your friends can be added. They aren’t told.",
     addConfirm: (n: number) => (n === 0 ? "Add friends" : `Add ${friends(n)}`), // held at 0
     addAllIn: "Every friend is already in this pod.",
-    addNoFriends: "No friends to add yet. Invite one first.",
+    addNoFriends: "No friends to add yet. Add one first.",
     // Confirms, in the shared delete pane.
     leaveHeading: (pod: string) => `Leave “${pod}”?`,
     leaveOwnerBody: (next: string) => `It passes to ${next}, its longest-standing member. Nobody is told.`,
@@ -89,8 +89,8 @@ export const socialCopy = {
   },
 
   invites: {
-    head: (n: number) => `Open links · ${n}`,
-    row: "Invite link",
+    head: (n: number) => `Open friend links · ${n}`,
+    row: "Friend link",
     made: (when: string) => `made ${when}`, // "made today, 9:41 PM", "made Oct 9"
     // Time left, from expiresAt: whole days down to 1, then under a day (--warning).
     left: (msLeft: number) => {
@@ -101,53 +101,75 @@ export const socialCopy = {
     revoke: "Revoke",
     showAria: (made: string) => `Show the link made ${made}`,
     revokeAria: (made: string) => `Revoke the link made ${made}`,
-    tooMany: "You have 10 links open. Revoke one to make another.", // toast, no retry
-    createFailed: "We couldn’t make a link. Try again.", // toast, Try again
+    tooMany: "You have 10 friend links open. Revoke one to make another.", // toast, no retry
+    createFailed: "We couldn’t make a friend link. Try again.", // toast, Try again
     retry: "Try again",
   },
 
+  // R2: the signature commander, set in the head of /friends only.
+  commander: {
+    choose: "Choose your commander", // the line's press and the empty tile's aria-label
+    changeAria: (commander: string) => `Your commander: ${commander}. Change`,
+    title: "Your commander",
+    sub: "Friends see its art beside your name. Any commander, owned or not.",
+    search: "Search commanders",
+    fromDecks: "From your decks",
+    savedNote: "Saved as soon as you pick one.",
+    anyNote: "Any commander in the catalog, owned or not.",
+    clear: "Use initials instead",
+    noResults: (q: string) => `No commander matches “${q}”.`,
+    failed: "We couldn’t save your commander. Try again.", // toast, role alert
+  },
+
   dialog: {
-    title: "Invite a friend",
+    title: "Add a friend",
     sub: "Show this at the table, or send the link. Whoever opens it first can accept.",
-    qrAria: "QR code for the invite link",
+    qrAria: "QR code for the friend link",
     qrCaption: "Scan with a phone camera",
-    linkAria: "Invite link",
+    linkAria: "Friend link",
     copy: "Copy link",
     copied: "✓ Copied",
     share: "Share link", // phone, only where navigator.share exists
     shareText: "Add me as a friend on The 99",
     meta: (expires: string) => `Works once · expires ${expires}`, // "Thu, Oct 22"; under a day: "Fri, Oct 16, 9:12 PM"
     soon: "under a day left",
-    nameLine: (name: string) => ({ before: "They’ll see you as ", name, action: "Change" }),
     close: "Close",
   },
 
   landing: {
-    kicker: "Friend invite",
-    signedOutTitle: "Someone sent you a friend invite",
-    signedOutBody: "Sign in to see who it’s from and answer it.",
+    kicker: "Friend request",
+    signedOutTitle: "Someone sent you a friend request",
+    signedOutBody: "Sign in to turn the card over and see who it’s from.",
     signIn: "Sign in",
     signedOutFine: "No account? The 99 is invite-only. Ask whoever sent this.",
     openTitle: (name: string) => `${name} wants to be friends`,
-    openBody: "Friends see each other’s display name and nothing else, until one of you shares more.",
-    openName: (inviter: string, you: string) => ({ before: `${inviter} will see you as `, name: you, action: "Change" }),
+    // The card's text box (rules text), not a paragraph beside it.
+    openRules: (name: string) => `When you accept, you and ${name} become friends. Each of you sees the other’s name and commander, and nothing else until one of you shares more.`,
+    typeRequest: "Friend request",
+    typeOwn: "Your friend link",
+    typeFriend: (since: string) => `Friend · since ${since}`,
+    ownRules: "This is what a friend sees when they open your link: your name, your commander, and an Accept.",
+    friendRules: (name: string) => `You and ${name} are friends. Each of you sees the other’s name and commander.`,
+    credit: (commander: string) => `Art · ${commander}`, // drawn uppercase by CSS
+    noCommander: "No commander chosen",
+    cardAria: (name: string, commander: string | null, type: string) => `${name}${commander ? `, ${commander}` : ""}. ${type}`,
     accept: "Accept",
     decline: "Decline",
     openFine: (name: string) => `${name} isn’t told if you decline.`,
-    expiredTitle: "This invite has expired",
-    expiredBody: "Invite links last 7 days. Ask for a new one.",
+    expiredTitle: "This friend link has expired",
+    expiredBody: "Friend links last 7 days. Ask for a new one.",
     // Redeemed, declined, revoked and not found: one card, no name.
-    endedTitle: "This invite link no longer works",
-    endedBody: "A link works once, and only until it expires or is taken back. Ask for a new one.",
-    selfTitle: "This is your own invite link",
+    endedTitle: "This friend link no longer works",
+    endedBody: "A friend link works once, and only until it expires or is taken back. Ask for a new one.",
+    selfTitle: "This is your own friend link",
     selfBody: "Send it to the friend you want to add. It works once, for the first person who opens it.",
     alreadyTitle: (name: string) => `You and ${name} are already friends`,
     alreadyBody: "Nothing to accept. This link is used up now.", // opening it spent it (redeemInvite)
-    declinedTitle: "Invite declined",
+    declinedTitle: "Request declined",
     declinedBody: (name: string) => `${name} isn’t told. The link no longer works.`,
     toFriends: "Go to Friends",
     toHome: "Go to Home",
-    acceptFailed: "We couldn’t accept that invite. Try again.", // toast, Try again
-    declineFailed: "We couldn’t decline that invite. Try again.",
+    acceptFailed: "We couldn’t accept that friend request. Try again.", // toast, Try again
+    declineFailed: "We couldn’t decline that friend request. Try again.",
   },
 } as const;
