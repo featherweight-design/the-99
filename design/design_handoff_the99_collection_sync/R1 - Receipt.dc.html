@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Receipt and History</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.ph{width:390px;flex:none;background:#121217;border:1px solid #2E3340;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.scr{background:#121217;border:1px solid #2E3340;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.lh{margin:0 0 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#95A4A6}
+.row{display:flex;align-items:center;gap:10px;min-height:40px;padding:8px 12px;box-sizing:border-box;border:1px solid #1A1F2B;border-radius:8px;background:#1E1F26}
+.row .nm{flex:1;min-width:0;font-size:13.5px;color:#C6D2D3}
+.row .d{flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A4A6}
+.kind{flex:none;width:150px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#95A4A6}
+.ent{display:flex;align-items:center;gap:14px;min-height:56px;padding:12px 16px;box-sizing:border-box;border-bottom:1px solid #1A1F2B}
+.btne{height:44px;padding:0 20px;border-radius:8px;background:#2D2E35;color:#C6D2D3;border:1px solid #424755;font:600 14px 'IBM Plex Sans',sans-serif}
+.btng{height:44px;padding:0 18px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #2E3340;font:600 13.5px 'IBM Plex Sans',sans-serif}
+.dlg{background:#22232B;border:1px solid #2E3340;border-radius:18px 18px 0 0;padding:20px 18px 22px;display:flex;flex-direction:column;gap:12px}
+.warn{padding:12px 14px;background:#212229;border:1px solid #2E3340;border-left:3px solid #E0913C;border-radius:10px;font-size:13px;line-height:1.55;color:#B3C0C2}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+</style>
+</helmet>
+<div style="width:1800px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Receipt and History · desktop and phone · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">The import summary, one clause longer; one History entry</h2>
+    <p class="cap" style="margin:0;max-width:1300px">After a Sync the player lands on the shipped import summary. Its lede gains what the sync kept and what the player decided; the sections below it are the shipped ones. In History the sync is one row, kind Sync upload, titled by the file, and Revert takes it back whole.</p>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Y1 · the summary · desktop</span>
+      <section class="scr" style="width:900px">
+        <div style="padding:36px 56px 32px;display:flex;flex-direction:column;gap:16px">
+          <span class="m" style="font-size:11px;letter-spacing:.06em;color:#7C8A8C">synced Oct 15, 2026 · The Vault 10-14-26.csv</span>
+          <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:29px">What the sync did for your decks</h1>
+          <p style="margin:0;font-size:14px;line-height:1.6;color:#B3C0C2;max-width:700px">Was 4,616. 15 arrived and 2 left, and the 119 cards you changed in the app stayed as you had them. You decided 3. Here’s what your decks still need after the update. Syncing left a deck short: Tithe and Tax.</p>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px">
+            <div><h2 class="lh">No longer to buy · 2</h2><div style="display:flex;flex-direction:column;gap:6px"><div class="row"><span class="nm">Jeweled Lotus</span><span class="d">Kalain’s Workshop</span></div><div class="row"><span class="nm">Esper Sentinel</span><span class="d">Tithe and Tax</span></div></div></div>
+            <div><h2 class="lh">Still short · 1</h2><div class="row"><span class="nm">Smothering Tithe</span><span class="d">Tithe and Tax · not in the new list</span></div></div>
+          </div>
+        </div>
+      </section>
+      <span class="cap" style="max-width:900px">The kept clause is the receipt for the player’s own work: it is why they chose Sync. “not in the new list” is the shipped reason; for a Sync it is still true (the file dropped it).</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Y1 · phone</span>
+      <section class="ph">
+        <div style="padding:20px 18px;display:flex;flex-direction:column;gap:14px">
+          <span class="m" style="font-size:10.5px;color:#7C8A8C">synced Oct 15 · The Vault 10-14-26.csv</span>
+          <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px">What the sync did for your decks</h1>
+          <p style="margin:0;font-size:13.5px;line-height:1.6;color:#B3C0C2">Was 4,616. 15 arrived and 2 left, and the 119 cards you changed in the app stayed as you had them. You decided 3. Syncing left a deck short: Tithe and Tax.</p>
+          <div><h2 class="lh">Still short · 1</h2><div class="row"><span class="nm">Smothering Tithe</span></div></div>
+        </div>
+      </section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:340px;padding-top:24px">
+      <span class="k">Tokens only</span>
+      <span class="cap">A sync that moved no card (Hugh’s case) has nothing for the decks, so its lede is the shipped nothing-to-report line with Sync’s ending: “Nothing your decks care about moved. Your cards are as you left them, and 114 tokens from the file are recorded.”</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Y2 · History · the entry, opened · desktop</span>
+      <section class="scr" style="width:900px">
+        <div style="padding:16px 0">
+          <div class="ent" style="background:#1E1F26"><span class="kind" style="color:#C6D2D3">Sync upload</span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px">The Vault 10-14-26.csv</span><span class="m" style="font-size:11.5px;color:#95A4A6">+15 · −2 copies across 17 cards · 14:02</span></span><button class="btng" type="button">Revert</button></div>
+          <div style="padding:14px 16px 14px 180px;display:flex;flex-direction:column;gap:10px;background:#1E1F26;border-bottom:1px solid #1A1F2B">
+            <span style="font-size:13px;line-height:1.5;color:#95A4A6">Kept the 119 cards you’d changed in the app. You decided 3. Recorded 114 tokens.</span>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+              <div><h2 class="lh">Left · 2</h2><div class="row"><span class="nm">Swords to Plowshares</span><span class="d">−1</span></div></div>
+              <div><h2 class="lh">Went up · 2</h2><div class="row"><span class="nm">Esper Sentinel</span><span class="d">+1</span></div></div>
+              <div><h2 class="lh">New · 13</h2><div class="row"><span class="nm">Jeweled Lotus</span><span class="d">+1</span></div></div>
+            </div>
+          </div>
+          <div class="ent"><span class="kind">Added in the app</span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px">Added from Virtue and Valor</span><span class="m" style="font-size:11.5px;color:#95A4A6">+100 copies across 97 cards · Oct 12</span></span><button class="btng" type="button">Revert</button></div>
+        </div>
+      </section>
+      <span class="cap" style="max-width:900px">The kind tag fits the 150px column. The kept cards are not in the entry’s rows: the sync didn’t write them, so a revert can’t touch them. The figures line is History’s shipped grammar (copies across cards), unchanged.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Y3 · revert, partly changed since · phone</span>
+      <section class="ph" style="height:640px">
+        <div style="position:absolute;inset:0;background:rgba(10,10,14,.6)"></div>
+        <div role="dialog" aria-modal="true" aria-labelledby="y3t" class="dlg" style="position:absolute;left:0;right:0;bottom:0">
+          <h2 id="y3t" style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:18px">Revert this sync?</h2>
+          <div class="warn">1 card has changed since the sync, so only what’s left can go back.</div>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 50px 50px;gap:8px;align-items:center;font-size:13px">
+            <span class="m" style="font-size:10px;color:#7C8A8C"></span><span class="m" style="font-size:10px;color:#7C8A8C">THEN</span><span class="m" style="font-size:10px;color:#7C8A8C">NOW</span>
+            <span>Esper Sentinel<br><span style="font-size:11.5px;color:#7C8A8C">changed since, stays</span></span><span class="m">×2</span><span class="m">×3</span>
+            <span>Swords to Plowshares</span><span class="m">×0</span><span class="m">×0</span>
+          </div>
+          <p style="margin:0;font-size:12.5px;line-height:1.5;color:#95A4A6">The 114 tokens it recorded stay recorded.</p>
+          <div style="display:flex;flex-direction:column;gap:10px"><button class="btne" type="button" style="height:46px">Revert what’s left</button><button class="btng" type="button" style="height:46px;box-shadow:0 0 0 2px #5C86C9">Cancel</button></div>
+        </div>
+      </section>
+      <span class="cap" style="max-width:390px">The shipped revert confirm (F5) in Sync’s words. The tokens line is honest to today’s code: a token write is not in the ledger, so Revert doesn’t undo it (gap G3).</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

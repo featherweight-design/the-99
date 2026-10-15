@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sync edge states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.sr{position:absolute;width:1px;height:1px;opacity:0;margin:0}
+.ph{width:390px;flex:none;background:#121217;border:1px solid #2E3340;border-radius:28px;overflow:hidden;display:flex;flex-direction:column}
+.scr{background:#121217;border:1px solid #2E3340;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.hd{display:flex;align-items:baseline;gap:12px;padding:18px 18px 14px}
+.pad{padding:4px 18px 18px;display:flex;flex-direction:column;gap:16px}
+.tile{padding:12px 14px;border:1px solid #1A1F2B;border-radius:12px;background:#1E1F26}
+.tile .n{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1}
+.tile .l{margin-top:6px;font-size:12px;color:#95A4A6}
+.lh{margin:0 0 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#95A4A6}
+.row{display:flex;align-items:center;gap:10px;min-height:40px;padding:8px 12px;box-sizing:border-box;border:1px solid #1A1F2B;border-radius:8px;background:#1E1F26}
+.row .nm{flex:1;min-width:0;font-size:13px;color:#C6D2D3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .d{flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px}
+.card{position:relative;display:flex;gap:12px;padding:14px;background:#1E1F26;border:1px solid #2E3340;border-radius:12px;box-sizing:border-box}
+.card.on{border-color:#5C86C9;box-shadow:0 0 0 1px #5C86C9}
+.rad{flex:none;width:22px;height:22px;margin-top:2px;border-radius:50%;border:2px solid #424755;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.rad.on{border-color:#5C86C9}
+.rad.on span{width:10px;height:10px;border-radius:50%;background:#5C86C9}
+.cc{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.ct{font-size:15px;font-weight:600;color:#C6D2D3}
+.cb{font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.fig{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#95A4A6}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:#16171D;border-radius:10px;font-size:13.5px;line-height:1.55;color:#95A4A6}
+.warn{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:#212229;border:1px solid #2E3340;border-left:3px solid #E0913C;border-radius:10px;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.bar{padding:12px 18px 14px;background:#181920;border-top:1px solid #2E3340}
+.sum{margin:0 0 10px;font-size:11.5px;line-height:1.45;text-align:center;color:#7C8A8C}
+.btnp{flex:1;height:46px;border-radius:10px;background:#C6D2D3;color:#121217;border:0;font:600 15px 'IBM Plex Sans',sans-serif}
+.btng{flex:none;height:46px;padding:0 18px;border-radius:10px;background:transparent;color:#C6D2D3;border:1px solid #2E3340;font:400 14px 'IBM Plex Sans',sans-serif}
+.more{min-height:44px;padding:0;background:none;border:0;font:13px 'IBM Plex Sans',sans-serif;color:#5C86C9;text-decoration:underline;text-underline-offset:2px;text-align:left}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+</style>
+</helmet>
+<div style="width:1800px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Edge states · phone, one desktop strip · R2</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">Reading, a re-sync, nothing of yours to keep, a long list, the stale pick named</h2>
+    <p class="cap" style="margin:0;max-width:1300px">Each is drawn at 390; the desktop forms are the same content in the desktop review’s grid. Copy here is placeholder for /copy-review.</p>
+  </div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">E1 · reading</span>
+      <section class="ph" style="min-height:520px">
+        <div class="hd"><span style="font-family:'Metamorphous',serif;font-size:18px">Review sync</span><span class="m" style="margin-left:auto;font-size:10px;color:#7C8A8C">The Vault 10-14-26.csv</span></div>
+        <div class="pad" aria-busy="true">
+          <p role="status" style="margin:0;font-size:13px;color:#95A4A6">Comparing with your collection…</p>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div class="tile" style="height:60px;box-sizing:border-box;background:#16171D"></div><div class="tile" style="height:60px;box-sizing:border-box;background:#16171D"></div>
+            <div class="tile" style="height:60px;box-sizing:border-box;background:#16171D"></div><div class="tile" style="height:60px;box-sizing:border-box;background:#16171D"></div>
+          </div>
+        </div>
+      </section>
+      <span class="cap" style="max-width:390px">The shipped line, as the other two modes read it. Sync reads one more thing (the rebuilt base), inside the same dry run.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">E2 · a re-sync: nothing differs at all</span>
+      <section class="ph">
+        <div class="pad" style="padding-top:18px">
+          <label class="card on"><input class="sr" type="radio" name="e2" checked><span class="rad on"><span></span></span><span class="cc"><span class="ct">Sync my collection</span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="fig">4,616 → 4,616 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>Nothing new in this file. It matches your last upload, tokens included.</span></span></span></label>
+          <div style="height:1px;background:#2E3340"></div>
+          <span class="k">Its review</span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div class="tile"><div class="n" style="color:#7C8A8C">0</div><div class="l">to decide</div></div>
+            <div class="tile"><div class="n" style="color:#7C8A8C">0</div><div class="l">from the file</div></div>
+            <div class="tile"><div class="n">121</div><div class="l">kept from The 99</div></div>
+            <div class="tile"><div class="n">3,384</div><div class="l">nothing to do</div></div>
+          </div>
+          <p class="note" style="margin:0">Nothing to sync. Your collection already has everything in this file, and its tokens are recorded.</p>
+        </div>
+        <div class="bar"><p class="sum">Nothing will change.</p><div style="display:flex;gap:10px"><button class="btnp" type="button">Back to Collection</button></div></div>
+      </section>
+      <span class="cap" style="max-width:390px">Same file, tokens differ: the review is R3 on the phone review board (Record 114 tokens). Nothing differs: the bar offers the way out, since a Sync that writes nothing would be an empty History entry.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">E3 · nothing of yours to keep</span>
+      <section class="ph">
+        <div class="pad" style="padding-top:18px">
+          <label class="card on"><input class="sr" type="radio" name="e3" checked><span class="rad on"><span></span></span><span class="cc"><span class="ct">Sync my collection</span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="fig">4,329 → 4,346 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>You haven’t changed anything in the app since your Oct 2 upload, so this does what Replace does.</span></span></span></label>
+          <div style="height:1px;background:#2E3340"></div>
+          <span class="k">Its review</span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div class="tile"><div class="n" style="color:#7C8A8C">0</div><div class="l">to decide</div></div>
+            <div class="tile"><div class="n" style="color:#6FA368">18</div><div class="l">from the file</div></div>
+            <div class="tile"><div class="n" style="color:#7C8A8C">0</div><div class="l">kept from The 99</div></div>
+            <div class="tile"><div class="n">3,391</div><div class="l">nothing to do</div></div>
+          </div>
+        </div>
+        <div class="bar"><p class="sum">Taking 18 cards from the file, with 114 tokens. Nothing of yours to keep.</p><div style="display:flex;gap:10px"><button class="btng" type="button">Cancel</button><button class="btnp" type="button">Sync collection</button></div></div>
+      </section>
+      <span class="cap" style="max-width:390px">Sync stays offered: it can’t lose anything, and the note says it matches Replace, so neither choice is wrong. No Kept list.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">E4 · a long list, all shown</span>
+      <section class="ph">
+        <div class="pad" style="padding-top:18px">
+          <div>
+            <h2 class="lh">Going up or new · 1,240</h2>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{tail}}" as="r" hint-placeholder-count="4"><div class="row"><span class="nm">{{r.n}}</span><span class="d" style="color:#6FA368">{{r.d}}</span></div></sc-for>
+            </div>
+            <p style="margin:8px 0 0;font-size:12.5px;color:#95A4A6">Showing the first 500 of 1,240.</p>
+          </div>
+          <div>
+            <h2 class="lh">Kept from The 99 · 121</h2>
+            <div class="row"><span class="nm">Ellivere of the Wild Court</span><span class="d" style="color:#B3C0C2">new → ×1</span></div>
+            <button class="more" type="button">Show all 121</button>
+          </div>
+        </div>
+      </section>
+      <span class="cap" style="max-width:390px">The shipped cap and note, on any Sync list. The confirm still applies all 1,240: the list is a view of the dry run, not its limit.</span>
+    </div>
+  </div>
+
+  <span class="k">E5 · the stale pick, named at the head of the review · desktop strip</span>
+  <section class="scr" style="width:1168px">
+    <div style="padding:36px 56px 28px;display:flex;flex-direction:column;gap:18px">
+      <div><span class="m" style="font-size:11px;letter-spacing:.06em;color:#7C8A8C">STEP 3 OF 4 · The Vault 9-28-26.csv · 3,531 rows</span><h1 style="margin:12px 0 0;font-family:'Metamorphous',serif;font-weight:400;font-size:29px">Review before you sync</h1></div>
+      <div class="warn"><span aria-hidden="true" style="color:#E0913C">⚠</span><span style="flex:1">This file looks older than your Oct 2 upload, so this sync takes only what it adds: 3 cards and its 114 tokens.</span><a href="#" style="flex:none;font-size:13.5px">Change</a></div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+        <div class="tile"><div class="n" style="color:#7C8A8C">0</div><div class="l">to decide</div></div>
+        <div class="tile"><div class="n" style="color:#6FA368">3</div><div class="l">from the file</div></div>
+        <div class="tile"><div class="n">121</div><div class="l">kept from The 99</div></div>
+        <div class="tile"><div class="n">3,384</div><div class="l">nothing to do</div></div>
+      </div>
+    </div>
+  </section>
+  <p class="cap" style="margin:0;max-width:1168px">Change goes back to the choice step with the follow-up open. Under Only what it adds, a card both sides changed is still a conflict only when the file’s count is higher; a file’s lower count is ignored with the rest of its removals. Under Only its tokens there is never a conflict.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      tail: [
+        { n: 'Zur the Enchanter', d: 'new → ×1' },
+        { n: 'Zurgo Helmsmasher', d: 'new → ×1' },
+        { n: 'Zuran Orb', d: '×1 → ×2' },
+        { n: 'Zndrsplt’s Judgment', d: 'new → ×1' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
