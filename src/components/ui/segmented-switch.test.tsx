@@ -116,3 +116,23 @@ describe("SegmentedSwitch, compact and pending", () => {
     expect(screen.getAllByRole("tab")[0].getAttribute("aria-controls")).toBe("p-x");
   });
 });
+
+describe("SegmentedSwitch keys when focus is not the selection", () => {
+  it("selects the focused first segment on Home when nothing is chosen", () => {
+    const change = vi.fn();
+    render(<SegmentedSwitch kind="tabs" ariaLabel="P" segments={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} value={null} onChange={change} />);
+    const [a] = screen.getAllByRole("tab");
+    a.focus();
+    fireEvent.keyDown(a, { key: "Home" });
+    expect(change).toHaveBeenCalledWith("a");
+  });
+
+  it("selects the focused segment on End when the choice stayed elsewhere", () => {
+    const change = vi.fn();
+    render(<SegmentedSwitch kind="tabs" ariaLabel="P" segments={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} value="a" onChange={change} />);
+    const [, b] = screen.getAllByRole("tab");
+    b.focus();
+    fireEvent.keyDown(b, { key: "End" });
+    expect(change).toHaveBeenCalledWith("b");
+  });
+});

@@ -32,7 +32,9 @@ export function onSegmentKeys<T extends string>(
   else if (e.key === "End") to = walk(n - 1, -1);
   else return;
   e.preventDefault();
-  if (to < 0 || to === from) return;
+  // Only when no segment can take focus. A key landing on the focused segment still selects it, since focus need
+  // not be the selection (a failed read leaves focus on its tab); callers drop a repeat of their own value.
+  if (to < 0) return;
   select(values[to]);
   document.getElementById(idOf(values[to]))?.focus();
 }

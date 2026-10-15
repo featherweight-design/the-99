@@ -57,7 +57,7 @@ export function AvailabilityControl({
         // A radiogroup is one tab stop, and the app's segment keys (arrows, Home, End) move the choice and the
         // focus together. Selection follows focus, the shipped behaviour for a group this small. The markup stays
         // its own (segmented-switch plan, PR 2).
-        onKeyDown={(e) => onSegmentKeys(e, modes, idOf, onChange)}
+        onKeyDown={(e) => onSegmentKeys(e, modes, idOf, (m) => m !== value && onChange(m))}
         className={[
           "flex",
           // One capsule with the segments butted inside it, so the pair reads as
