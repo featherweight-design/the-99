@@ -375,6 +375,17 @@ describe("the friends list", () => {
     expect(document.querySelectorAll("[data-friend-row]")).toHaveLength(2);
   });
 
+  it("puts focus on the Friends heading after a removal, the last friend's included", async () => {
+    a.unfriendAction.mockResolvedValue({ ok: true });
+    draw();
+    for (const [name, left] of [["Dave", 1], ["Jo", 0]] as const) {
+      fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria(name) }));
+      fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
+      expect(screen.getByRole("heading", { name: socialCopy.friends.head(left) })).toHaveFocus();
+    }
+  });
+
   it("draws a removed friend again when a later redraw lists them (they accepted a new link)", async () => {
     a.unfriendAction.mockResolvedValue({ ok: true });
     const { rerender } = draw();

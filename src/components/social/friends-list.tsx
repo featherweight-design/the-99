@@ -39,9 +39,19 @@ export function FriendsList({
   removing: string | null;
   onRemove: (friend: Friend) => void;
 }) {
+  // A removal takes its row, its ⋯ and the confirm with it, so the dialog's own return lands on nothing: when
+  // the list shrinks and focus is left on the page itself, it goes to the Friends heading. Effects run after the
+  // dialog's cleanup in the same commit.
+  const head = useRef<HTMLHeadingElement>(null);
+  const count = useRef(friends.length);
+  useEffect(() => {
+    const shrank = friends.length < count.current;
+    count.current = friends.length;
+    if (shrank && (document.activeElement === null || document.activeElement === document.body)) head.current?.focus();
+  }, [friends.length]);
   return (
     <section aria-labelledby="friends-head" className="mt-[24px] md:mt-[34px]">
-      <h2 id="friends-head" className={SECTION_HEAD}>{f.head(friends.length)}</h2>
+      <h2 id="friends-head" ref={head} tabIndex={-1} className={`${SECTION_HEAD} outline-none`}>{f.head(friends.length)}</h2>
       {friends.length === 0 ? (
         <div className="mt-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:mt-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
           <p className="m-0 font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{f.emptyTitle}</p>
