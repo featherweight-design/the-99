@@ -29,6 +29,7 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage } from "./lib/surface.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 // Run under tsx for this one import: the fixture restamps the reading with the app's own
 // fingerprint of its new list, never a copy of the hash.
 import { listFingerprint } from "../src/lib/profile/fingerprint.ts";
@@ -295,6 +296,9 @@ async function main() {
       const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, isMobile: vp.isMobile ?? false, hasTouch: vp.hasTouch ?? false });
       const page = await context.newPage();
       await signIn(page);
+      // THE SPEND GUARD, before any press: both Re-analyze presses are free only while the fixture deck is illegal
+      // (D12), and this probe exists to catch that regressing, when they would write the overview.
+      await assertModelStandIn(BASE, ["synopsis"], { get: pageGet(page) });
       if (!fixture) {
         fixture = await buildFixture(await page.evaluate(() => window.Clerk.user.id));
         if (!fixture) {
