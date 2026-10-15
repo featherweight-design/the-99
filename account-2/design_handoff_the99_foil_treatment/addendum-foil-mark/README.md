@@ -1,4 +1,4 @@
-# Addendum M1 · The foil mark (R2)
+# Addendum M1 · The foil mark (R3)
 
 Hugh's brief, 2026-10-15. A small, subtle "this copy is foil" mark on card tiles and card rows, which today show foil
 only through the film (invisible in list views, at a glance and in forced colours). Builds on this folder's R1 and R2
@@ -8,6 +8,11 @@ printing it draws is foil, with etched as its own finish (`soleFoilFinish`, `lib
 
 R2 (after Hugh's audit): the glint moves beside the ownership indicator, Collector's Edition keeps it, the precon list
 row swaps its printed word for it, and every row is redrawn in Social R2's approved layouts.
+
+R3 (Hugh): All and Shopping share ONE two-line card row at both widths. Line 1: dot, glint, name, `//`, `×N`, the fact
+marks (Game Changer, tutor, …), ✕. Line 2, indented under the name: pips and the EDHREC figure, then in use or short,
+the one other-ways press (⇄ and the spare glyph) and the buy tag. This is Social R2's phone option B with the fact
+marks moved up to line 1, carried to desktop and to All, so no mark can squeeze the name.
 
 Canvas: https://claude.ai/artifact/Y3hffxW2QUfLXAH97g5RsD (boards `M-*`, bottom row, under "Foil mark addendum").
 
@@ -47,9 +52,11 @@ Drawn over the shipped pages, Kamigawa theme. Dashed pink outlines mark what thi
 11. **Key**: `foil` and `etched` join `CollectionMarkKey` unconditionally. On a deck, its Shopping view and a precon they
     follow the cards in view.
 12. **Tooltip** through the same `FactTooltip` chrome (pointer-fine, 400ms in, instant out). Enhancement only.
-13. **Shopping** is the decklist row, drawn in Social R2's layouts (desktop: spare marker beside buy; phone: option B,
-    the name on line 1 with the dot and glint, one press for ⇄ and the spare on line 2). The glint appears only where
-    the card is owned and still listed (copies sleeved elsewhere).
+13. **Card rows are two lines in All and Shopping, at both widths** (R3, Hugh). Line 1: dot, glint, name, `//`, `×N`,
+    fact marks, ✕. Line 2: pips · figure, then in use / short, the other-ways press, the buy tag. The name wraps on the
+    phone and ellipsizes on desktop, but no mark shares its line except the facts that follow it. On the phone, when
+    line 2 holds short, the press and the buy tag at once, the word `edhrec` drops and the figure stays. Desktop rows
+    grow from 34px to about 60px. The glint appears in Shopping only where the card is owned and still listed.
 14. **About**: none. Cosmetic, per the foil handoff's own ruling.
 
 ## Engineering
@@ -61,8 +68,10 @@ Drawn over the shipped pages, Kamigawa theme. Dashed pink outlines mark what thi
   `nameSpoken` gains the clause.
 - `collection/rows-view.tsx`: in the count cell after `×N` (desktop and phone); the row's `aria-label` gains the clause.
 - `decks/deck-card-tile.tsx`: right after the ownership dot on the meta line (`card.foil`), `flex-none`.
-- `decks/decklist-row.tsx`: right after the ownership dot, before the name block, in one `flex-none` group, in every
-  branch (desktop, phone, Shopping, and Social R2's option B row when it ships). `readOnly` rows drop the printed
+- `decks/decklist-row.tsx` (R3): the row becomes two lines at every width, All and Shopping alike. Social R2's phone
+  option B form is used from `md` up too, with the fact marks joining the name line. Line 2 takes the pips, the
+  figure, in use / short, the other-ways press and the buy tag. The glint goes right after the ownership dot, before
+  the name, in one `flex-none` group. `readOnly` rows drop the printed
   `· {preconsCopy.open.edition.foil}` and draw the glint from `card.printedFoil`.
 - `decks/read-only-card-tile.tsx`: right after the dot, `card.printedFoil`.
 - Keys: `CollectionMarkKey` two unconditional entries; `decklist.tsx`, the Shopping view and the precon view's key:
@@ -77,7 +86,6 @@ Drawn over the shipped pages, Kamigawa theme. Dashed pink outlines mark what thi
 - **M4** Closed (Hugh, R2): the precon list row swaps `· foil` for the glint.
 - **M5** Not drawn: tokens (no finish recorded), suggestion and Consider tiles (never foil), the Add panel's search
   rows, card details (already says it).
-- **M6** The busiest desktop Shopping row (a 590px column at 1300) squeezes the name to one letter once Social R2's
-  spare marker joins every other mark, glint or not. Proposed: `min-width: 72px` on the name, and the fact marks become
-  the deck tile's wrapping, clipping group (audit F8) so a mark that does not fit drops whole; dropped marks stay in the
-  row's label. Hugh's call: it touches the row beyond the glint.
+- **M6** Closed (Hugh, R3): the busiest Shopping row's squeezed name is answered by the two-line row, not a name floor.
+- **M7** The two-line row makes the desktop All list nearly twice as long (about 60px rows against 34px, two columns).
+  The precon's read-only list rows stay one line: they carry only the name, pips and printing, and nothing squeezes them.

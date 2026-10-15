@@ -1,4 +1,4 @@
-# States · foil mark (R2)
+# States · foil mark (R3)
 
 | Holding of the drawn printing | Film | Glint | Key entry | Spoken after the name |
 |---|---|---|---|---|
@@ -17,8 +17,11 @@
 | Collection grid tile | first on the meta line, before the in-use chip and facts |
 | Collection list row | count column, after `×N` |
 | Deck Card view tile | meta line, right after the ownership dot |
-| Decklist row, Shopping row (desktop, phone, option B) | right after the ownership dot, before the name |
+| Decklist row, Shopping row (two lines, desktop and phone) | line 1, right after the ownership dot, before the name |
 | Precon tile, precon list row | right after the dot |
 
 Size 12px on every surface; `flex-none`, never dropped. On an overflowing deck tile meta line the fact marks drop whole
 first (audit F8).
+
+R3: All and Shopping rows are two lines at both widths. Facts sit on line 1 after the name; line 2 holds pips, the
+figure, in use / short, the other-ways press and the buy tag.
