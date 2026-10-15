@@ -22,7 +22,9 @@ import {
   cardArt,
   matchesPreference,
   resolvedPrinting,
+  soleFoilFinish,
   type BrowsePrinting,
+  type FoilFinish,
 } from "../collection/browse";
 import { selectCollectionRows } from "../collection/browse-read";
 import { recordSoftFailure } from "../cache/soft-failure";
@@ -50,6 +52,11 @@ export type DeckPrinting = {
   setCode: string;
   collectorNumber: string;
   source: DeckPrintingSource;
+  /**
+   * The finish every owned copy of this printing shares, when it is foil or etched: the foil film on
+   * the deck's Card view (foil handoff R1). Owned sources only; the catalog's printing is no copy.
+   */
+  foil?: FoilFinish;
 };
 
 export type DeckPrintings = {
@@ -169,6 +176,7 @@ export async function readDeckPrintings(
       setCode: p.setCode,
       collectorNumber: p.collectorNumber,
       source: held ? "deck" : "collection",
+      foil: soleFoilFinish(p.finishes),
     });
   }
 

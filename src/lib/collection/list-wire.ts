@@ -64,7 +64,7 @@ export type CollectionDrawKey = (typeof COLLECTION_DRAW_KEYS)[number];
  * printing's name, and no list-wide version has to stand guard over the batch.
  */
 export type CollectionDrawFields = Partial<Pick<BrowseListCard, CollectionDrawKey>> & {
-  art?: Pick<BrowseListCard, "printedName" | "primarySetCode">;
+  art?: Pick<BrowseListCard, "printedName" | "primarySetCode" | "foil">;
 };
 
 /**
@@ -184,6 +184,7 @@ export function collectionDrawFieldsFor(
       if (Object.hasOwn(card, key)) (fields as Record<string, unknown>)[key] = card[key];
     }
     fields.art = { printedName: card.printedName, primarySetCode: card.primarySetCode };
+    if (card.foil) fields.art.foil = card.foil;
     out[card.oracleId] = fields;
   }
   return out;

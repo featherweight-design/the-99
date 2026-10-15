@@ -107,6 +107,15 @@ describe("readDeckPrintings", () => {
     expect(heldPicks.size).toBe(0);
   });
 
+  it("reads the foil film's finish off the printing the deck draws, never another of the card's", async () => {
+    state.cards = [ownedCard([printing("C21", "263", { finishes: { foil: 2 } }), printing("KHM", "31", { finishes: { nonfoil: 1, foil: 1 } })])];
+    state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "c21", collector_number: "263" }];
+    expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBe("foil");
+    // The mixed printing draws nothing (audit ruling G8).
+    state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
+    expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBeUndefined();
+  });
+
   it("skips the deck's step entirely with picks off", async () => {
     state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];

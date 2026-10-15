@@ -10,6 +10,7 @@ import {
   printedFaceName,
   printedNameOf,
   printingCaption,
+  soleFoilFinish,
   resolveImageUri,
   resolveFlavorName,
   sortCards,
@@ -684,6 +685,33 @@ describe("finish aggregation (#105 decision 9)", () => {
   it("tolerates a set with no catalog row", () => {
     const [agg] = aggregateCollection([raw({ setName: null, releasedAt: null })]);
     expect(agg.printings[0].setName).toBeNull();
+  });
+});
+
+// The foil film (foil handoff R1): the drawn printing's finish, when every copy held of it shares it.
+describe("the foil film's finish", () => {
+  it("is foil or etched only when every copy held is that finish", () => {
+    expect(soleFoilFinish({ foil: 2 })).toBe("foil");
+    expect(soleFoilFinish({ etched: 1, nonfoil: 0 })).toBe("etched");
+    expect(soleFoilFinish({ nonfoil: 1 })).toBeUndefined();
+    // Mixed draws nothing on the grid (audit ruling G8).
+    expect(soleFoilFinish({ nonfoil: 3, foil: 1 })).toBeUndefined();
+    expect(soleFoilFinish({ foil: 1, etched: 1 })).toBeUndefined();
+    expect(soleFoilFinish({})).toBeUndefined();
+  });
+
+  it("follows the drawn printing, so a pick moves it and clears it", () => {
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263", finish: "foil", quantity: 2 }),
+      raw({ setCode: "lea", collectorNumber: "270", finish: "nonfoil", quantity: 1 }),
+    ]);
+    expect(agg.foil).toBe("foil");
+    expect(toListCards([agg])[0].foil).toBe("foil");
+    const picked = withDeckPick(agg, { setCode: "LEA", collectorNumber: "270" });
+    expect(picked.primarySetCode).toBe("LEA");
+    expect(picked.foil).toBeUndefined();
+    // Absent on the wire for a plain card: JSON carries nothing for it.
+    expect(Object.hasOwn(JSON.parse(JSON.stringify(picked)), "foil")).toBe(false);
   });
 });
 

@@ -15,6 +15,7 @@ beforeEach(() => {
   vi.stubGlobal("Image", function () {
     const img = new RealImage();
     Object.defineProperty(img, "complete", { get: () => cached, configurable: true });
+    Object.defineProperty(img, "naturalWidth", { get: () => (cached ? 488 : 0), configurable: true });
     probes.push(img);
     return img;
   });

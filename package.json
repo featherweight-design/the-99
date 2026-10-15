@@ -245,6 +245,7 @@
     "probe:precon-arrival": "node scripts/probe-precon-arrival.mjs",
     "probe:upcoming-precons-ui": "node scripts/probe-upcoming-precons-ui.mjs",
     "probe:art-layer": "node scripts/probe-art-layer.mjs",
+    "probe:foil-film": "node scripts/probe-foil-film.mjs",
     "probe:run-after": "node scripts/probe-run-after.mjs",
     "probe:tokens-group": "node scripts/probe-tokens-group.mjs",
     "probe:stats-press": "node scripts/probe-stats-press.mjs",

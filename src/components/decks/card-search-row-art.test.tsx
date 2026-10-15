@@ -27,6 +27,8 @@ describe("the add panel's result thumb", () => {
   it("draws at once when the art has already loaded", () => {
     vi.restoreAllMocks();
     vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+    // Loaded, not broken: a complete image with no width never loaded (`failed`).
+    vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(488);
     const { container } = draw();
     expect(container.querySelector("img")?.dataset.arrival).toBe("done");
   });

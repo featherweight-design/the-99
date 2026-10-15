@@ -76,8 +76,11 @@ export function ReadOnlyCardTile({
               {addPanelCopy.tile.noArt}
             </span>
           )}
+          {/* The foil film (foil handoff R1): the box's foil copies, when every copy of this card in it
+              is foil, and only over art. */}
           <span
             aria-hidden
+            data-foil={card.imageUri && card.printedFoil ? "foil" : undefined}
             className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
           />
         </CardDetailTrigger>
