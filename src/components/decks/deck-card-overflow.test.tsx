@@ -360,6 +360,24 @@ describe("DeckCardOverflow · Export", () => {
     expect(screen.queryByRole("dialog", { name: "Export deck" })).toBeNull();
   });
 
+  it("holds the menu's other rows while the read is in flight, and returns focus to the ⋯ button on close", async () => {
+    let land!: (r: typeof read) => void;
+    readDeckExport.mockReturnValueOnce(new Promise((resolve) => { land = resolve; }));
+    render(<DeckCardOverflow deckId="d1" deckName="Atraxa Counters" built={99} placement="tile" />);
+    fireEvent.click(trigger("Atraxa Counters"));
+    fireEvent.click(screen.getByRole("button", { name: "Export" }));
+    // Rename and Delete wait: a pane opened now would close under the reader when the export lands.
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.getByRole("button", { name: "Rename" })).toHaveProperty("disabled", true);
+    land(read);
+    const dialog = await screen.findByRole("dialog", { name: "Export deck" });
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Export deck" })).toBeNull());
+    expect(document.activeElement).toBe(trigger("Atraxa Counters"));
+  });
+
   it("is absent from the deck header's menu, which has its own Export button", () => {
     render(<DeckCardOverflow deckId="d1" deckName="Atraxa Counters" built={99} placement="header" />);
     fireEvent.click(screen.getByRole("button", { name: "Actions for Atraxa Counters" }));

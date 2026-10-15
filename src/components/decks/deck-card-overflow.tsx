@@ -140,18 +140,23 @@ export function DeckCardOverflow({
   function handleMove(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    // While Export reads, the menu's other rows wait: a pane opened now would be closed under the reader when
+    // the export lands, and a delete confirmed now would lose the guard \`busy\` holds for it.
+    if (busy) return;
     setMode("move");
   }
 
   function handleRename(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (busy) return;
     setMode("rename");
   }
 
   function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (busy) return;
     setMode("delete");
   }
 
@@ -225,9 +230,10 @@ export function DeckCardOverflow({
     }
   }
 
+  // Focus goes back to this tile's ⋯ button through the dialog's own restore (`returnFocusRef`): restoring it here
+  // too would be undone by the dialog's cleanup, which runs after and returns focus to whatever had it at mount.
   function closeExport() {
     setExporting(null);
-    buttonRef.current?.focus();
   }
 
   function handleClose() {
@@ -343,6 +349,7 @@ export function DeckCardOverflow({
               <button
                 type="button"
                 onClick={handleRename}
+                disabled={busy}
                 // bg/border as utilities, not inline: an inline background
                 // outranks hover: and the row never highlights.
                 className={`${ITEM} first:border-t-0 cursor-pointer bg-transparent text-[color:var(--fg)]`}
@@ -369,6 +376,7 @@ export function DeckCardOverflow({
               <button
                 type="button"
                 onClick={handleMove}
+                disabled={busy}
                 aria-label={folderCopy.move.rowAria(deckName, shelfLabel)}
                 // ITEM without its `transition-colors`: this round draws no
                 // motion, and an easing hover is motion. The shipped rows keep
@@ -384,6 +392,7 @@ export function DeckCardOverflow({
                 ref={deleteRow}
                 type="button"
                 onClick={handleDelete}
+                disabled={busy}
                 className={`${ITEM} first:border-t-0 cursor-pointer bg-transparent text-[color:var(--danger)]`}
               >
                 {refreshCopy.decks.menu.delete}
@@ -394,6 +403,7 @@ export function DeckCardOverflow({
                 <button
                   type="button"
                   onClick={() => { handleClose(); onAmong(); }}
+                  disabled={busy}
                   className={`${ITEM.replace(" transition-colors", "")} cursor-pointer bg-transparent text-[color:var(--fg)]`}
                 >
                   {decksStatsCopy.menu.among}
@@ -458,7 +468,7 @@ export function DeckCardOverflow({
       {/* The dialog in a portal on the body: a tile can hold a transform, which would make the dialog's
           fixed overlay fixed to the tile. */}
       {exporting
-        ? createPortal(<exporting.Dialog {...exporting.read} open onClose={closeExport} />, document.body)
+        ? createPortal(<exporting.Dialog {...exporting.read} open onClose={closeExport} returnFocusRef={buttonRef} />, document.body)
         : null}
     </div>
   );
