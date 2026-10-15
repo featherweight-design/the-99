@@ -170,6 +170,7 @@ export const collectionEditCopy = {
     kinds: {
       uploadReplace: "Replace upload",
       uploadAdd: "Add upload",
+      uploadSync: "Sync upload",
       add: "Added in the app",
       edit: "Edited in details",
       /** A card marked bought from a deck's Shopping list (I got it); its deck line is in i-got-it.ts. */

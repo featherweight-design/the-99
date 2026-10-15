@@ -25,7 +25,7 @@
 //   - `planSync` taking every file change regardless of the app (`a = b` check dropped): fails a and d.
 //   - the `undecided` refusal dropped from `applyCollectionChange`: fails b.
 //   - the digest comparison dropped: fails b's stale checks.
-//   - `syncTokenMode` returning "replace" for additions: fails f (T2 deleted).
+//   - `syncTokenMode` returning "replace" for additions: fails f (T1, recorded in d and absent from the file, deleted).
 //   - the `syncSummary` write dropped: fails a (the summary) and every later case (no Sync anchors).
 //   - `readSyncBase` admitting `reverted_by is not null`: fails e.
 //

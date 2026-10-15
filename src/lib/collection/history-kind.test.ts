@@ -5,6 +5,7 @@ describe("historyKindOf", () => {
   it("maps each ledger kind to the list's kind", () => {
     expect(historyKindOf({ kind: "upload_replace", removesOnly: false, source: null })).toBe("uploadReplace");
     expect(historyKindOf({ kind: "upload_add", removesOnly: false, source: null })).toBe("uploadAdd");
+    expect(historyKindOf({ kind: "upload_sync", removesOnly: false, source: null })).toBe("uploadSync");
     expect(historyKindOf({ kind: "add", removesOnly: false, source: null })).toBe("add");
     expect(historyKindOf({ kind: "revert", removesOnly: false, source: null })).toBe("revert");
   });

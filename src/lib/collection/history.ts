@@ -75,7 +75,7 @@ export type HistoryListEntry = {
   id: string;
   seq: number;
   createdAt: Date;
-  kind: "upload_replace" | "upload_add" | "add" | "edit" | "revert";
+  kind: "upload_replace" | "upload_add" | "upload_sync" | "add" | "edit" | "revert";
   source: string | null;
   raised: number;
   lowered: number;

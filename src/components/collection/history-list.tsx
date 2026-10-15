@@ -29,6 +29,7 @@ const c = collectionEditCopy.history;
 const TAG_INK: Record<HistoryKind, string> = {
   uploadReplace: "var(--warning)",
   uploadAdd: "var(--success)",
+  uploadSync: "var(--fg)",
   add: "var(--success)",
   edit: "var(--accent)",
   shopping: "var(--success)",
