@@ -73,8 +73,9 @@ function mount(c: BrowseCard, props: Partial<Parameters<typeof CardModal>[0]> = 
 
 const films = (host: HTMLElement) => Array.from(host.querySelectorAll<HTMLElement>('[data-testid="foil-film"]'));
 const ownFilm = (host: HTMLElement) => films(host).find((f) => f.parentElement === host) ?? null;
-const desktop = () => screen.getByTestId("modal-art-desktop");
-const phone = () => screen.getByTestId("modal-art-mobile");
+// The one-faced face is the tilt host round the art (foil R2 PR 2, G1 and G2), not the box the stack hangs off.
+const desktop = () => screen.getByTestId("modal-art-desktop-tilt");
+const phone = () => screen.getByTestId("modal-art-mobile-tilt");
 
 // The rule itself, read off the printing a face is drawn from (audit G9).
 describe("faceFilm", () => {

@@ -172,9 +172,10 @@ async function run(page, steps) {
     if (step.wait !== undefined) {
       await onPage(page, step.wait).first().waitFor({ state: "visible", timeout: 15_000 });
     }
-    // A pointer resting on page content (a row's hover preview): the page's own scope, as every verb is.
+    // A pointer resting on page content (a row's hover preview): the page's own scope, as every verb is. `at` rests it
+    // at a point inside the element ({ x, y } in px from its top left), for a card that tilts toward the pointer.
     if (step.hover !== undefined) {
-      await onPage(page, step.hover).first().hover({ timeout: 15_000 });
+      await onPage(page, step.hover).first().hover({ timeout: 15_000, ...(step.at ? { position: step.at } : {}) });
     }
     // The desktop rail's name tag is drawn under a resting pointer, and the rail is shell rather
     // than page, so it is the one step reached outside `onPage`: named by the slot's own

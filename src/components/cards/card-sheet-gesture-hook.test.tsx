@@ -2,7 +2,7 @@
 // a dialog holding a band (with a peek and a turn plate in it) and a sheet (with its grip). The
 // math has its own tests; these pin what the hook does with it.
 import { useRef, useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 
 import { useCardSheetGestures } from "./card-sheet-gesture";
@@ -18,12 +18,18 @@ type HarnessProps = {
   bodyScrollTop?: number;
   canCollapse?: boolean;
   disabled?: boolean;
+  /** The sheet starts at its min snap, where a tap on the band returns it to the teaser. */
+  startMin?: boolean;
+  onSnap?: (to: "full" | "teaser" | "min") => void;
+  /** A press on the card's own box (the tilt host) clicks this. */
+  onCard?: () => void;
 };
 
 function Harness({
   canPrev = true, canNext = true, startFull = false, onPage = () => {}, onPeek = () => {}, onTurn = () => {},
-  bodyScrollTop = 0, canCollapse = true, disabled = false,
+  bodyScrollTop = 0, canCollapse = true, disabled = false, startMin = false, onSnap = () => {}, onCard = () => {},
 }: HarnessProps) {
+  const tiltRef = useRef<HTMLDivElement | null>(null);
   const bandRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -36,14 +42,21 @@ function Harness({
     canPrev,
     canNext,
     onPage,
-    onSnap: (to) => setFull(to === "full"),
+    onSnap: (to) => {
+      onSnap(to);
+      setFull(to === "full");
+    },
     bodyRef,
     canCollapse,
     disabled,
+    min: startMin,
+    canMinimize: startMin,
+    tiltRef,
   });
   return (
     <div onClickCapture={g.onClickCapture}>
       <div ref={bandRef} data-testid="band" onPointerDown={g.onBandPointerDown}>
+        <div ref={tiltRef} data-testid="card" data-tilt="" onClick={onCard} />
         <button type="button" onClick={onPeek}>peek</button>
         <button type="button" onClick={onTurn}>turn</button>
       </div>
@@ -339,5 +352,104 @@ describe("disabled (a card leaving)", () => {
     expect(onPage).not.toHaveBeenCalled();
     drag(band, [600, 100], [100, 100]);
     expect(onPage).not.toHaveBeenCalled();
+  });
+});
+
+// The tilt's hold (foil R2, audit G7 and G13): 300ms inside the swipe's slop, on the card's own box, lifts it.
+describe("the hold", () => {
+  const card = () => screen.getByTestId("card");
+  const lifted = () => card().hasAttribute("data-tilting");
+  const down = (target: Element, id = 9, x = 300, y = 200) =>
+    fireEvent.pointerDown(target, { pointerId: id, clientX: x, clientY: y, button: 0, pointerType: "touch" });
+  const moveTo = (x: number, y: number, id = 9) => fireEvent.pointerMove(window, { pointerId: id, clientX: x, clientY: y, pointerType: "touch" });
+  const up = (x = 300, y = 200, id = 9) => fireEvent.pointerUp(window, { pointerId: id, clientX: x, clientY: y, pointerType: "touch" });
+  const wait = (ms: number) => act(() => { vi.advanceTimersByTime(ms); });
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("lifts the card after 300ms, follows the finger, and pages nothing", () => {
+    const onPage = vi.fn();
+    render(<Harness onPage={onPage} />);
+    // jsdom lays nothing out: give the card a 400 x 560 box, so the follow writes where the finger is.
+    card().getBoundingClientRect = () => ({ left: 0, top: 0, width: 400, height: 560, right: 400, bottom: 560, x: 0, y: 0, toJSON: () => ({}) });
+    down(card());
+    wait(299);
+    expect(lifted()).toBe(false);
+    wait(1);
+    expect(lifted()).toBe(true);
+    // A drag that would page, once the card is held, only tilts it.
+    moveTo(800, 210);
+    expect(card().style.getPropertyValue("--tilt-x")).toBe("1");
+    moveTo(60, 210);
+    // The card follows the finger: x is where it is across the box, y where it is down it.
+    expect(card().style.getPropertyValue("--tilt-x")).toBe("0.15");
+    expect(card().style.getPropertyValue("--tilt-y")).toBe("0.375");
+    expect(card().style.getPropertyValue("--tilt-lift")).toBe("1");
+    up(60, 210);
+    expect(onPage).not.toHaveBeenCalled();
+    expect(lifted()).toBe(false);
+    expect(card().style.getPropertyValue("--tilt-x")).toBe("");
+  });
+
+  it("stays a swipe when the press moves first", () => {
+    const onPage = vi.fn();
+    render(<Harness onPage={onPage} />);
+    down(card(), 9, 700, 300);
+    moveTo(500, 302);
+    wait(400);
+    expect(lifted()).toBe(false);
+    moveTo(250, 305);
+    up(250, 305);
+    expect(onPage).toHaveBeenCalledWith("next", expect.any(Number));
+  });
+
+  it("swallows the release's tap: no snap to the teaser from min, and no click", () => {
+    const onSnap = vi.fn();
+    const onCard = vi.fn();
+    render(<Harness startMin onSnap={onSnap} onCard={onCard} />);
+    down(card());
+    wait(300);
+    up();
+    fireEvent.click(card());
+    expect(onSnap).not.toHaveBeenCalled();
+    expect(onCard).not.toHaveBeenCalled();
+    // Only that one: a later tap at min still returns to the teaser.
+    wait(1);
+    down(card(), 10);
+    up(300, 200, 10);
+    expect(onSnap).toHaveBeenCalledWith("teaser");
+  });
+
+  it("is armed on the card alone: not on a peek, not at the full snap", () => {
+    const { unmount } = render(<Harness />);
+    down(screen.getByRole("button", { name: "peek" }));
+    wait(400);
+    expect(lifted()).toBe(false);
+    up();
+    unmount();
+    render(<Harness startFull />);
+    down(card());
+    wait(400);
+    expect(lifted()).toBe(false);
+    up();
+  });
+
+  it("is not armed under reduced motion (G7)", () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === "(prefers-reduced-motion: reduce)" })) as typeof window.matchMedia;
+    try {
+      const onPage = vi.fn();
+      render(<Harness onPage={onPage} />);
+      down(card(), 9, 700, 300);
+      wait(400);
+      expect(lifted()).toBe(false);
+      // The press is still a swipe after any rest.
+      moveTo(450, 302);
+      moveTo(250, 305);
+      up(250, 305);
+      expect(onPage).toHaveBeenCalled();
+    } finally {
+      window.matchMedia = real;
+    }
   });
 });
