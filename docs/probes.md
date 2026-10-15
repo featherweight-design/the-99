@@ -2502,5 +2502,5 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   naming the deck and counting its cards, drawn above the tiles (what is painted at the dialog's own title belongs to
   it), with no navigation away; Escape closes it and focus returns to the tile's ⋯ button. The dialog's data is read on
   the press (`readDeckExport`), never from `/decks`' cached payload. A run that finds no tile fails. Its one write is the
-  About row `clearAboutSheet` sets. Point it at `local-dev` through a server you started (`PROBE_BASE`), and stop that
+  About row `clearAboutSheet` sets, read before and put back in a `finally`. Point it at `local-dev` through a server you started (`PROBE_BASE`), and stop that
   server by its own PID; `PROBE_SHOTS=<dir>` keeps a screenshot per width.

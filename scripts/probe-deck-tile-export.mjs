@@ -5,13 +5,14 @@
 // (what is painted at the dialog's own title belongs to the dialog), with no navigation away from /decks. Escape closes it and
 // focus returns to the tile's ⋯ button. A run that finds no tile FAILS, because it measured nothing.
 //
-// Its one write is the About row `clearAboutSheet` sets for the account. Point it at `local-dev`.
+// Its one write is the About row `clearAboutSheet` sets for the account, read first and put back in a `finally`.
+// Point it at `local-dev`.
 //
 //   PROBE_BASE=http://localhost:3044 node scripts/probe-deck-tile-export.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
@@ -60,10 +61,12 @@ async function signIn(page) {
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
+  let capture = null;
   try {
     for (const [label, viewport] of [["1300", { width: 1300, height: 900 }], ["390", { width: 390, height: 844 }]]) {
       const page = await browser.newPage({ viewport });
       const userId = await signIn(page);
+      capture ??= await captureAboutSeen(userId);
       await clearAboutSheet(page, userId);
       await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
       const triggers = onPage(page, 'button[aria-label^="Actions for "]');
@@ -102,6 +105,7 @@ async function run() {
     }
   } finally {
     await browser.close();
+    if (capture) await restoreAboutSeen(capture).catch((err) => { failures += 1; console.error("About restore failed", err); });
   }
 }
 
