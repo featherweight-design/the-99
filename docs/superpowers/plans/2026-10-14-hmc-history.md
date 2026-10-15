@@ -28,7 +28,7 @@ has a run to list. Nothing is deleted, filtered, or re-asked from History.
 ## Decisions taken here (each the one defensible reading; flag any you overrule)
 
 1. **The ask is one nullable `text` column on `intake_reads`**, the results-address query string for the ask
-   (`serializeChooseParams` of the press's canonical params, without `r`, `n`, `d` and the card), written by `startRead` in
+   (`serializeChooseParams` of the press's canonical params in results mode, `results: true`, so it carries `v=results`; stored without the leading `?` and without `r`, `n` and the card), written by `startRead` in
    the insert that reserves the credit. Text rather than jsonb so reopening is one parser (`parseChooseParams`) and the
    reopen link is `CHOOSE_PATH?<ask>&r=<id>&h=1`. A row with a null ask (the five staging rows, every retired-engine row) is
    never listed; production has none. Not backfilled: the words were never stored and the hash is one-way.
