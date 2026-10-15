@@ -11,7 +11,7 @@
 //   - the confirm landing on the receipt with the merge the review drew, written as one `upload_sync` entry.
 //
 // THE FIXTURE, per width, for the signed-in account (`E2E_AUDIT_USER_EMAIL`), on the database `.env` names. It
-// must be a SCRATCH branch: staging and production are refused by `neon.branch_id`. Five printings no deck of
+// must be a SCRATCH branch: production, staging and local-dev are refused (`assertScratchBranch`) by `neon.branch_id`. Five printings no deck of
 // the account holds, so no lowering can leave a deck short or prune a reservation:
 //   - the account's collection becomes the APP side (the hand changes since the last upload): P1 ×3, P2 ×1,
 //     P3 ×1, P4 ×1, P5 ×2;

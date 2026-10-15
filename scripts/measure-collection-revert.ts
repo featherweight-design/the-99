@@ -14,7 +14,7 @@
 //      `commander_scores` (plan Decision 4), so the next ranked list recomputes from scratch.
 //      Timed as `recommendCommanders`, the compute that recompute runs, median of 3.
 //
-// It WRITES the account's collection, so it runs only on a scratch branch: refused on production
+// It WRITES the account's collection, so it runs only on a scratch branch: refused on local-dev, production
 // and staging by `neon.branch_id`. Make one from staging (`pull:staging` is not needed: a branch
 // of staging already holds the real collection and decks) and point DATABASE_URL at it.
 //

@@ -529,7 +529,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   lands in the first unanswered row with no alert, answers one row App and watches the tiles follow the server's
   re-read, presses `Take the file’s for all 3` as a rule, then confirms and checks the collection holds the merge
   the review drew and one `upload_sync` entry. It WRITES the signed-in account's collection and a base upload, so it
-  refuses staging and production by `neon.branch_id`, and puts back every table the confirm can write from a
+  refuses production, staging and local-dev by `neon.branch_id` (`assertScratchBranch`), and puts back every table the confirm can write from a
   snapshot in a `finally`. Run against `next start` with `COLLECTION_EDIT_ENABLED=true COLLECTION_SYNC_ENABLED=true`.
 
 - `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload
@@ -542,7 +542,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
 - `pnpm measure:collection-revert` times the ledger's worst deck check and the score recompute a
   collection write costs, on the busiest account of a scratch branch of staging (it writes, so it
-  refuses production and staging by `neon.branch_id`). Measured 2026-10-09 on 3,393 rows and 23
+  refuses production, staging and local-dev by `neon.branch_id` (`assertScratchBranch`)). Measured 2026-10-09 on 3,393 rows and 23
   committed versions: reverting a Replace that raised every row lowers 2,926 cards, and its dry run
   takes about 2.1s, of which each of the check's two claim reads is about 140ms; a one-card edit
   takes about 0.5s, and the ranked list it leaves to recompute about 2.2s warm (14.1s on the
