@@ -1,0 +1,50 @@
+{
+  "feature": "Help me choose history, PR 3 (handoff design_handoff_the99_hmc_history, R1): a past run opened from History, the run that will not open, and the New deck door. About's two edits are read on /about by the close-out walk.",
+  "note": "Needs HELP_ME_CHOOSE_ENABLED=true and fixture runs for the signed-in account on local-dev (a temporary script writes them; none is checked in). No `shares` block: these rows render the past-run parts and the door, not the History control (that is hmc-history.json).",
+  "out": "contact-sheets/hmc-history-past",
+  "rows": [
+    {
+      "id": "door",
+      "label": "/decks/new: the Help me choose door with its past-runs link",
+      "view": "src/components/intake/help-me-choose-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new",
+          "wait": "[data-testid=past-runs-link]:visible",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "past-run",
+      "label": "A past run opened from History: results, read-only, with its note",
+      "view": "src/app/decks/new/choose/page.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=history",
+          "wait": "a[href*=\"h=1\"]:visible",
+          "settle": 1500
+        },
+        {
+          "click": "a[href*=\"h=1\"]"
+        },
+        {
+          "wait": "[data-testid=past-run-note]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "wont-open",
+      "label": "A past run that will not open: the row is gone",
+      "view": "src/components/intake/past-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?w=gone&v=results&r=00000000-0000-4000-8000-000000000000&h=1",
+          "wait": "[data-testid=past-wont-open]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}
