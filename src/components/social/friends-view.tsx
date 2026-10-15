@@ -59,7 +59,7 @@ function useFieldWrite<T>(served: T, show: (v: T) => void) {
   };
 }
 
-type Shown = { url: string; expiresAt: Date; made?: boolean };
+type Shown = { url: string; expiresAt: Date };
 
 export function FriendsView({
   profile,
@@ -102,8 +102,17 @@ export function FriendsView({
     setCommander(profile.commander);
   }
   const face = useRef<HTMLButtonElement>(null);
-  // Where focus goes when a just-made link's dialog closes: its opener may have been the toast's Try again.
+  // Where focus goes when the dialog closes: the Show press that opened it while that row still stands, else Add a
+  // friend (a link made from the toast's Try again, or one that expired while it was shown). Read at close.
   const invite = useRef<HTMLButtonElement>(null);
+  const showOpener = useRef<HTMLElement | null>(null);
+  const [dialogReturn] = useState(() => ({
+    get current(): HTMLElement | null {
+      const opener = showOpener.current;
+      // Safari does not focus a pressed button, so the capture can be the body: that is no opener.
+      return opener && opener !== document.body && opener.isConnected ? opener : invite.current;
+    },
+  }));
   const [picking, setPicking] = useState(false);
   const [receipt, setReceipt] = useState(accepted);
   // A redraw that resolves a different friend (or none: the friendship ended) replaces the receipt; the same one
@@ -191,13 +200,18 @@ export function FriendsView({
     const out = await createInviteAction().catch(() => null);
     makingNow.current = false;
     setMaking(false);
-    if (out?.ok) setShown({ url: out.url, expiresAt: new Date(out.expiresAt), made: true });
+    if (out?.ok) {
+      showOpener.current = null;
+      setShown({ url: out.url, expiresAt: new Date(out.expiresAt) });
+    }
     else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
     else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
   }
 
   async function revoke(link: OpenInvite) {
     // At once, no confirm (decision 5): a link already ended is gone either way (E12), so any `ok` is done.
+    // The Revoke press leaves with its row (the whole section, for the last link): focus goes to Add a friend first.
+    invite.current?.focus();
     setRevoked((r) => new Set(r).add(link.token));
     const out = await revokeInviteAction(link.token).catch(() => null);
     if (out?.ok) return;
@@ -259,12 +273,15 @@ export function FriendsView({
           links={open}
           now={now}
           timeZone={timeZone}
-          onShow={(l) => setShown({ url: linkUrl(l.token), expiresAt: l.expiresAt })}
+          onShow={(l) => {
+            showOpener.current = document.activeElement as HTMLElement | null;
+            setShown({ url: linkUrl(l.token), expiresAt: l.expiresAt });
+          }}
           onRevoke={revoke}
         />
       </div>
 
-      {shown ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={shown.made ? invite : undefined} /> : null}
+      {shown ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
       {picking ? <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} /> : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </>

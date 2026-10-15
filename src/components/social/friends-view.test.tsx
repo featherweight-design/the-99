@@ -530,6 +530,37 @@ describe("friend links", () => {
     expect(screen.getByRole("button", { name: socialCopy.page.invite })).toHaveFocus();
   });
 
+  it("moves focus to Add a friend when the last link is revoked", async () => {
+    draw({ links: [link(1)] });
+    const revoke = screen.getByRole("button", { name: /^Revoke the link made/ });
+    revoke.focus();
+    await act(async () => fireEvent.click(revoke));
+    expect(document.querySelectorAll("[data-link-row]")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: socialCopy.page.invite })).toHaveFocus();
+  });
+
+  it("returns focus to Show while its row stands, and to Add a friend once the link expired under the dialog", async () => {
+    vi.useFakeTimers({ now: NOW });
+    try {
+      draw({ links: [link(1), link(2, new Date(NOW.getTime() + 30_000))] });
+      const shows = screen.getAllByRole("button", { name: /^Show the link made/ });
+      shows[0].focus();
+      fireEvent.click(shows[0]);
+      fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: socialCopy.dialog.close }));
+      expect(shows[0]).toHaveFocus();
+      shows[1].focus();
+      fireEvent.click(shows[1]);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(document.querySelectorAll("[data-link-row]")).toHaveLength(1);
+      fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: socialCopy.dialog.close }));
+      expect(screen.getByRole("button", { name: socialCopy.page.invite })).toHaveFocus();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("clears an earlier Try again when a new make starts, so it cannot make a second link", async () => {
     a.createInviteAction.mockRejectedValueOnce(new Error("down")).mockReturnValueOnce(new Promise(() => {}));
     draw();
