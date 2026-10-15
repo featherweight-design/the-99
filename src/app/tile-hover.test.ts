@@ -11,12 +11,15 @@ const CSS = read("app", "globals.css");
 // Small-polish R2 §3, E7: hovering a tile brightens its art by 6% and moves nothing.
 describe("E7: hover on tiles", () => {
   it("brightens the art only where there is a hover, with no translate and no shadow", () => {
-    const hover = /@media \(hover: hover\) \{\s*([^}]*)\}/g;
+    const hover = /@media \(hover: hover\) \{\n([\s\S]*?)\n\}/g;
     const rules = [...CSS.matchAll(hover)].map((m) => m[1]).find((r) => r.includes("art-lift-host:hover"));
     expect(rules).toBeTruthy();
     expect(rules).toMatch(/\.art-lift-host:hover \.art-lift/);
     expect(rules).toMatch(/\.art-lift-host:hover \.art-wash-art/);
-    expect(rules).toMatch(/filter: brightness\(1\.06\)/);
+    expect(rules).toMatch(/\.art-lift-host:hover \.art-wash-art \{ filter: brightness\(1\.06\); \}/);
+    // An image with a filter of its own (the unowned set cell's dimming) composes with the lift instead of losing to it.
+    expect(rules).toMatch(/\.art-lift-host:hover \.art-lift \{ filter: var\(--art-base, \) brightness\(1\.06\); \}/);
+    expect(CSS).toMatch(/\.art-lift \{ filter: var\(--art-base, none\); \}/);
     expect(rules).not.toMatch(/transform|translate|box-shadow/);
   });
 

@@ -19,6 +19,7 @@
 //
 // Owned and missing geometry is IDENTICAL, so the grid never reflows when a filter flips.
 
+import type { CSSProperties } from "react";
 import { formatCents, priceOf, priceState, type PriceFact } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
@@ -127,7 +128,7 @@ export function SetCell({
             className="art-lift h-full w-full object-cover"
             style={cell.owned
               ? { opacity: 1 }
-              : { opacity: 0.28, filter: "saturate(.55)" }}
+              : { opacity: 0.28, "--art-base": "saturate(.55)" } as CSSProperties}
           />
         ) : null}
 

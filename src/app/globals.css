@@ -834,8 +834,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    end state with no transition. */
 .art-lift,
 .art-lift-host .art-wash-art { transition: filter var(--motion-quick) var(--motion-ease); }
+/* An image that already carries a filter of its own (the set cell's unowned dimming) names it as `--art-base`, so the
+   brighten composes with it rather than losing to an inline `filter`. */
+.art-lift { filter: var(--art-base, none); }
 @media (hover: hover) {
-  .art-lift-host:hover .art-lift,
+  .art-lift-host:hover .art-lift { filter: var(--art-base, ) brightness(1.06); }
   .art-lift-host:hover .art-wash-art { filter: brightness(1.06); }
 }
 
