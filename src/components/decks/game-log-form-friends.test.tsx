@@ -264,6 +264,37 @@ describe("Seat a pod", () => {
     expect(screen.queryByRole("button", { name: seats.whichDeck })).toBeNull();
   });
 
+  it("Cancel during a pod read, then reopening before it lands, leaves the new form editable", async () => {
+    pods.mockResolvedValue([pod]);
+    let land!: (m: unknown[]) => void;
+    podSeats.mockReturnValue(new Promise((r) => { land = r; }));
+    await mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Thursday" }));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.cancel }));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.open }));
+    won();
+    expect(screen.getByRole("button", { name: gameLogCopy.form.save })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "6" })).toBeEnabled();
+    land([member(DAVE, "Dave")]);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByRole("button", { name: gameLogCopy.form.save })).toBeEnabled();
+    expect(screen.getByText(seats.count(0, 3))).toBeInTheDocument();
+  });
+
+  it("picking a deck for the first of two friends returns focus to that seat, not the last", async () => {
+    pods.mockResolvedValue([pod]);
+    podSeats.mockResolvedValue([member(DAVE, "Dave"), member(JO, "Jo")]);
+    friends.mockResolvedValue([friend(DAVE, "Dave", 1), friend(JO, "Jo", 1)]);
+    await mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Thursday" }));
+    const [first] = await screen.findAllByRole("button", { name: seats.whichDeck });
+    fireEvent.click(first);
+    const dialog = await screen.findByRole("dialog", { name: picker.title });
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Avengers Tempo/ }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: picker.title })).toBeNull());
+    await waitFor(() => expect(screen.getByRole("button", { name: seats.change("Dave") })).toHaveFocus());
+  });
+
   it("each chip undoes its own seats: pressing pod B after pod A leaves A pressed and able to clear", async () => {
     const b = { id: "00000000-0000-4000-8000-0000000000c2", name: "Friday", memberCount: 3 };
     pods.mockResolvedValue([pod, b]);

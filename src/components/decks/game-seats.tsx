@@ -66,6 +66,7 @@ function SeatView({
         aria-label={copy.change(name)}
         aria-expanded={editing}
         data-seat-art
+        data-seat-key={seat.key}
         className={`shrink-0 cursor-pointer rounded-[8px] border-0 bg-transparent p-0 md:rounded-[10px] ${seat.won ? "outline outline-2 outline-offset-2 outline-[color:var(--fg)]" : ""}`}
       >
         <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? faceInitials(seat.friend.name) : null} />
@@ -184,25 +185,32 @@ export function GameSeats({
   // The seats each chip's press made (key and friend), by pod: a chip undoes only those, and only while the seat still
   // holds that friend. A seat cleared and filled again by hand, or by another pod, is no longer its.
   const [podFilled, setPodFilled] = useState<Record<string, { key: string; friend: string }[]>>({});
+  const reading = useRef(false);
+  const onPodPendingRef = useRef(onPodPending);
+  useEffect(() => { onPodPendingRef.current = onPodPending; });
   // A pod read that lands after the row is gone (the form was cancelled) must not seat anyone into the next one.
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
-    return () => { mounted.current = false; };
+    return () => {
+      mounted.current = false;
+      // A read still in flight is abandoned with the row: release the form's hold now, because the read's own
+      // release is skipped once the row is gone, and it must not clear the hold of a form opened after this one.
+      if (reading.current) onPodPendingRef.current(false);
+    };
   }, []);
   const [podNote, setPodNote] = useState<string | null>(null);
-  const reading = useRef(false);
   const room = hasRoom(podSize, seats.length);
   const lost = result === "loss" && seats.length > 0;
   const addRef = useRef<HTMLButtonElement>(null);
 
   const section = useRef<HTMLElement>(null);
-  // Set when a pick closes a picker whose opener may now be gone.
-  const refocus = useRef<HTMLElement | null>(null);
+  // Set when a pick closes a picker whose opener may now be gone: the opener, and the seat it was changing (null: a new one).
+  const refocus = useRef<{ opener: HTMLElement; at: string | null } | null>(null);
 
   function pick(choice: SeatPick) {
     if (!picking) return;
-    refocus.current = picking.anchor;
+    refocus.current = { opener: picking.anchor, at: picking.at };
     onSeat(picking.at, choice);
     setPicking(null);
   }
@@ -231,8 +239,10 @@ export function GameSeats({
     } catch {
       if (mounted.current) setPodNote(copy.podFailed);
     } finally {
-      reading.current = false;
-      onPodPending(false);
+      if (mounted.current) {
+        reading.current = false;
+        onPodPending(false);
+      }
     }
   }
 
@@ -245,14 +255,15 @@ export function GameSeats({
   }, [seats]);
 
   // Filling the last seat removes Add opponent in the same commit that closes the picker, so the dialog's own
-  // focus return lands on a detached button and focus drops to the page. The seat just filled is the last one.
+  // focus return lands on a detached button and focus drops to the page. A seat that was changed takes focus back;
+  // a new one is the last.
   useEffect(() => {
-    const opener = refocus.current;
-    if (!opener || picking) return;
+    const held = refocus.current;
+    if (!held || picking) return;
     refocus.current = null;
-    if (opener.isConnected) return;
-    const arts = section.current?.querySelectorAll<HTMLElement>("[data-seat-art]");
-    arts?.[arts.length - 1]?.focus();
+    if (held.opener.isConnected) return;
+    const arts = Array.from(section.current?.querySelectorAll<HTMLElement>("[data-seat-art]") ?? []);
+    (arts.find((a) => held.at !== null && a.dataset.seatKey === held.at) ?? arts[arts.length - 1])?.focus();
   }, [picking, seats]);
 
   return (
