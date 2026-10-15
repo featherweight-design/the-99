@@ -555,8 +555,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the acceptance check for Hugh's case before the flip (0 taken, 40 kept, 0 conflicts, `noNewer`).
 
 - `pnpm measure:collection-revert` times the ledger's worst deck check and the score recompute a
-  collection write costs, on the busiest account of a scratch branch of staging (it writes, so it
-  runs on a scratch branch off local-dev only, `assertScratchBranch`). Measured 2026-10-09 on 3,393 rows and 23
+  collection write costs, on the busiest account of a scratch branch off local-dev, which holds a `pull:staging` snapshot (it writes, so it
+  refuses local-dev itself, `assertScratchBranch`). Measured 2026-10-09 on 3,393 rows and 23
   committed versions: reverting a Replace that raised every row lowers 2,926 cards, and its dry run
   takes about 2.1s, of which each of the check's two claim reads is about 140ms; a one-card edit
   takes about 0.5s, and the ranked list it leaves to recompute about 2.2s warm (14.1s on the

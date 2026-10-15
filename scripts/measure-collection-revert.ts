@@ -15,8 +15,8 @@
 //      Timed as `recommendCommanders`, the compute that recompute runs, median of 3.
 //
 // It WRITES the account's collection, so it runs only on a scratch branch: refused on local-dev, production
-// and staging by `neon.branch_id`. Make one from staging (`pull:staging` is not needed: a branch
-// of staging already holds the real collection and decks) and point DATABASE_URL at it.
+// and staging by `neon.branch_id`. Make one from local-dev (it holds a `pull:staging` snapshot of the
+// real collection and decks, so nothing more is needed) and point DATABASE_URL at it.
 //
 // Run: `pnpm measure:collection-revert`
 import { requireEnv } from "./lib/env.mjs";
