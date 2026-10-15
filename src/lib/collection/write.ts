@@ -36,8 +36,8 @@ import { readSyncBase } from "./sync-base";
  * on its own (`write.test.ts`); the transaction only reads, calls them and writes what they say.
  */
 
-/** Entries older than this are hidden from history and pruned on the player's next write. */
 import { addedFor, fileArrival, handArrival, restoredAdded, type Arrival } from "./added-at";
+/** Entries older than this are hidden from history and pruned on the player's next write. */
 import { HISTORY_RETENTION_DAYS } from "./retention";
 export { HISTORY_RETENTION_DAYS };
 
@@ -452,7 +452,8 @@ export function planAdd(current: Map<string, Held>, items: Held[]): Planned[] {
   return items.flatMap((i) => {
     const c = current.get(keyOf(i)) ?? null;
     if (!c) return planned(i, null, stateOf(i));
-    const merged = stateOf(c);
+    // The after side carries no date: it rides on the BEFORE side only (`HistoryRowState.addedAt`).
+    const merged: HistoryRowState = { quantity: c.quantity, scryfallId: c.scryfallId, condition: c.condition };
     mergeHolding(merged, i);
     return planned(i, stateOf(c), merged);
   });

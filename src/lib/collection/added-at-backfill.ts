@@ -7,7 +7,8 @@
  *    is the account's FIRST confirmed upload (the file that filled the collection: every holding of it shares
  *    that day), exact when a later file brought it;
  *  - the earliest hand entry in the ledger that raised it from nothing (`add`, `edit`: Add cards, I got it, a
- *    precon add), always exact. Ledger entries are kept 90 days, so this only reaches recent ones.
+ *    precon add), always exact. An upload's own entries are `upload_*` kinds (`kindOf`), so an `add` entry is a
+ *    hand change by construction and a file's holdings are dated by the upload source above. Ledger entries are kept 90 days, so this only reaches recent ones.
  * A holding in neither stays null: it sorts last and reads as unknown. Only rows with a null `added_at` are
  * touched, so a re-run changes nothing it already settled.
  */
