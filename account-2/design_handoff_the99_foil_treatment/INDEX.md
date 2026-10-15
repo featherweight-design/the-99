@@ -32,7 +32,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-foil-treatment.md` (
 6. Mixed: no film. Every owned copy foil, or nothing.
 7. Large views: R2, below.
 
-## R2 · Large views (waiting on Hugh's audit)
+## R2 · Large views (approved)
 
 | Read | For |
 |---|---|
@@ -43,7 +43,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-foil-treatment.md` (
 | `R2 - Motion.dc.html` | Tilt, focus sweep, phone landing band, cold arrival, flip, looping. |
 | `R2 - States.dc.html`, `STATES-foil-large-views.md` | Every state. |
 | `README.md` §R2 | Calls, where details reads foil, the CSS, timing, sizes, gaps. |
-| `READINESS-r2.md` | R2, waiting on Hugh. |
+| `READINESS-r2.md` | R2, approved. |
 
 1. Intensity: R1's film at 80%, spread 1.5x.
 2. The film slides with the tilt; focus plays one sweep.

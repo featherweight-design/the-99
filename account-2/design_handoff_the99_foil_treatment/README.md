@@ -201,7 +201,7 @@ no new dependencies, no new strings.
 
 ## R2 · Large views (addendum, 2026-10-15)
 
-**Status: R2 drawn, waiting on Hugh's audit.** Nothing here goes to main until he approves.
+**Status: R2 approved (Hugh, "Much better! Let's open a PR", 2026-10-15).**
 
 **Source of truth:** `docs/superpowers/design-briefs/2026-10-15-foil-large-views.md` on branch `brief/foil-large-views`.
 It builds on R1 (audited GREEN, handoff #1776; the build is #1784) and closes R1's G4. The tilt was added at Hugh's

@@ -1,6 +1,6 @@
 # READINESS — Foil treatment, R2 (large views)
 
-**🟡 R2 drawn, waiting on Hugh's audit.** Nothing here goes to main until he approves. R1's readiness is `READINESS.md`.
+**🟢 R2 approved (Hugh, 2026-10-15).** Ready to build. R1's readiness is `READINESS.md`.
 
 ## Locks held
 
