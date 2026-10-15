@@ -55,13 +55,13 @@ export function CardWishlist({
   const fail = (text: string) => setToast({ id: ++toasts.current, text });
 
   // Remove puts the Add button back where focus was; it takes focus once it is drawn.
-  const [removed, setRemoved] = useState(false);
+  const focusAdd = useRef(false);
   useEffect(() => {
-    if (removed && want === null) {
+    if (focusAdd.current && want === null) {
+      focusAdd.current = false;
       addRef.current?.focus();
-      setRemoved(false);
     }
-  }, [removed, want]);
+  }, [want]);
 
   function settle(out: WantOutcome) {
     if (!out.ok) return false;
@@ -119,8 +119,8 @@ export function CardWishlist({
       if (ticket !== latest.current) return;
       if (!out.ok) return fail(copy.failedSet);
       confirmed.current = null;
+      focusAdd.current = true;
       setWant(null);
-      setRemoved(true);
       onWrite();
     } catch {
       if (ticket === latest.current) fail(copy.failedSet);
