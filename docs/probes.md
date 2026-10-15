@@ -256,10 +256,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   commanders and the plate for a set with none, and writes the seen key to `user_prefs` (polled), so the next load is
   closed with the next release in its count; a press opens it and is remembered (`the99:precons:announced`); in rows a
   set row opens its own cards and a set with none revealed has no press; with Most owned saved in the browser the plain
-  address hides the group while `?sort=newest#announced` lands on it open and in view; `?sort=owned` hides it (T7). It
-  PLANTS its own fixtures on local-dev (two `commander` sets `zqa` and `zqb`, three `zqa` printings of legendary
+  address hides the group while `?sort=newest#announced` lands on it open and in view; `?sort=owned` hides it (T7); at
+  390 the six-card strip scrolls sideways and is a named keyboard stop the arrow keys scroll, and at 1300 it wraps and is
+  no stop. It PLANTS its own fixtures on local-dev (two `commander` sets `zqa` and `zqb`, six `zqa` printings of legendary
   creatures the catalog holds, `zqa`'s non-baseline `catalog_first_seen` row) and clears the reader's two seen keys
-  before each width, and deletes all of it in its `finally`. Fails closed on its target: `PROBE_DB_BRANCH` must name the
+  before each width, and deletes all of it in its `finally`, then puts the account's `user_prefs` row back exactly as it
+  was before the run (deleted if the probe created it, else its seen codes restored) and checks it, since a visit
+  acknowledges every arrival, not only the fixtures'. Fails closed on its target: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging and production are refused by id. Needs a server on `PROBE_BASE` on the same
   database, started with `PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true` (a `next start` on a free port; stop it by
   its own PID).

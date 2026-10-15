@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
@@ -175,6 +175,34 @@ describe("AnnouncedGroup", () => {
     rerender(<G matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} filtering={false} />);
     expect(head()).toHaveAttribute("aria-expanded", "false");
     expect(window.localStorage.getItem(ANNOUNCED_KEY)).toBe("closed");
+  });
+
+  describe("the strip as a keyboard stop", () => {
+    // jsdom lays nothing out: the strip's widths and the observer are stood in for.
+    let wide = 0;
+    beforeEach(() => {
+      vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+      vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(() => wide);
+      vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => 300);
+    });
+    afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+    it("is a named region the keyboard reaches while it scrolls sideways", () => {
+      wide = 1200;
+      draw({ opensByItself: true });
+      const strip = screen.getByRole("region", { name: "15 revealed commanders" });
+      expect(strip).toHaveAttribute("tabindex", "0");
+      expect(strip.className).toContain("focus-visible:outline-[color:var(--accent)]");
+    });
+
+    it("is no stop at all once it wraps and fits", () => {
+      wide = 300;
+      draw({ opensByItself: true });
+      const strips = screen.getAllByTestId("revealed-strip");
+      expect(strips[0]).not.toHaveAttribute("tabindex");
+      expect(strips[0]).not.toHaveAttribute("role");
+      expect(screen.queryByRole("region", { name: /revealed commander/ })).toBeNull();
+    });
   });
 
   describe("rows (Q1–Q3)", () => {

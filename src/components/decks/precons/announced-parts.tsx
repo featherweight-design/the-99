@@ -1,7 +1,10 @@
+"use client";
+
 // The pieces the Announced group's two views share (handoff R1 T2–T6, R2 Q3; design table: Set block, Revealed
 // card, Strip, None plate, `new` tag, Jump): a revealed commander, the strip of them, the empty plate, the set
 // block in tiles, and the meta lines' words.
 
+import { useEffect, useRef, useState } from "react";
 import { preconDate, preconsCopy } from "../../../lib/copy/precons";
 import { colorNames } from "../../../lib/copy/color-labels";
 import { WUBRG_COLOR } from "../../../lib/collection/browse";
@@ -64,12 +67,41 @@ function NonePlate() {
   );
 }
 
-/** The strip: wraps at 900, one row that scrolls sideways at 390, bleeding to the block's right edge. */
+/** Whether a box scrolls sideways now: its content is wider than it is. Re-measured as it resizes. */
+function useOverflowsX<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [overflows, setOverflows] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => setOverflows(el.scrollWidth > el.clientWidth + 1);
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    measure();
+    return () => observer.disconnect();
+  }, []);
+  return [ref, overflows] as const;
+}
+
+/**
+ * The strip: wraps at 900, one row that scrolls sideways at 390, bleeding to the block's right edge. While it
+ * overflows, the scroll box is a named region and a keyboard stop with the focus ring, so a keyboard reader can
+ * scroll to the cards past the edge (the cards take no focus: they link nowhere). Wrapped, it is neither.
+ */
 export function RevealedStrip({ commanders, className = "" }: { commanders: readonly RevealedCommander[]; className?: string }) {
+  const [ref, overflows] = useOverflowsX<HTMLDivElement>();
   return (
-    <ul className={`m-0 -mr-[12px] flex list-none flex-nowrap gap-[8px] overflow-x-auto p-0 pr-[12px] md:mr-0 md:flex-wrap md:gap-x-[8px] md:gap-y-[12px] md:overflow-visible md:pr-0 ${className}`}>
-      {commanders.length === 0 ? <NonePlate /> : commanders.map((c) => <RevealedCard key={c.oracleId} card={c} />)}
-    </ul>
+    <div
+      ref={ref}
+      data-testid="revealed-strip"
+      {...(overflows ? { role: "region", "aria-label": copy.stripLabel(commanders.length), tabIndex: 0 } : {})}
+      className={`-mr-[12px] overflow-x-auto rounded-[4px] pr-[12px] md:mr-0 md:overflow-visible md:pr-0 ${FOCUS_RING} ${className}`}
+    >
+      <ul className="m-0 flex list-none flex-nowrap gap-[8px] p-0 md:flex-wrap md:gap-x-[8px] md:gap-y-[12px]">
+        {commanders.length === 0 ? <NonePlate /> : commanders.map((c) => <RevealedCard key={c.oracleId} card={c} />)}
+      </ul>
+    </div>
   );
 }
 

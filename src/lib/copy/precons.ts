@@ -307,6 +307,8 @@ export const preconsCopy = {
     /** A filter narrowed the set's commanders. */
     matches: (shown: number, revealed: number) => `${n(shown)} of ${n(revealed)} revealed ${shown === 1 ? "matches" : "match"}`,
     nonePlate: "none revealed yet",
+    /** The phone strip's name while it scrolls sideways (a keyboard stop): how many cards it holds. */
+    stripLabel: (count: number) => plural(count, "revealed commander", "revealed commanders"),
     noneRow: "No commanders revealed yet",
     /** Rows view, line 2: the first commander and how many more. */
     more: (first: string, more: number) => `${first} and ${n(more)} more`,

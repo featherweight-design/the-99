@@ -10,10 +10,13 @@
 //    (`?sort=newest#announced`) still lands on it, open (the explicit `sort=newest` beats the saved order);
 //  - `?sort=owned` hides the group (T7).
 //
-// FIXTURES, on local-dev only: two upcoming Commander sets (`zqa` with three revealed legendary creatures, printed from
+//  - at 390 the six-card strip scrolls sideways and is a named keyboard stop; at 1300 it wraps and is none.
+//
+// FIXTURES, on local-dev only: two upcoming Commander sets (`zqa` with six revealed legendary creatures, printed from
 // cards the catalog already holds; `zqb` with none), `zqa`'s non-baseline `catalog_first_seen` stamp (an arrival), and
 // the reader's seen keys for those two codes cleared before each width. Everything the probe added is deleted in the
-// `finally`, the reader's two keys included. It fails closed on its target: `PROBE_DB_BRANCH` must name the branch
+// `finally`, and the account's `user_prefs` row is put back exactly as it was before the run (deleted if the probe
+// created it, else its `upcoming_seen_codes` restored): a visit acknowledges EVERY arrival, not only the fixtures'. It fails closed on its target: `PROBE_DB_BRANCH` must name the branch
 // `DATABASE_URL` reports, and staging and production are refused by id.
 //
 // Needs a server on PROBE_BASE with PRECONS_ENABLED=true and UPCOMING_PRECONS_ENABLED=true, on the same database:
@@ -73,8 +76,8 @@ async function plant() {
     from cards c
     where c.type_line like 'Legendary Creature%'
       and exists (select 1 from printings p where p.oracle_id = c.oracle_id and p.image_uri_small is not null)
-    order by c.oracle_id limit 3`;
-  if (picks.length < 3) throw new Error("the catalog holds fewer than three legendary creatures with art");
+    order by c.oracle_id limit 6`;
+  if (picks.length < 6) throw new Error("the catalog holds fewer than six legendary creatures with art");
   for (const [i, p] of picks.entries()) {
     await sql`insert into printings (scryfall_id, oracle_id, set_code, collector_number, image_uri_small, finishes)
       values (gen_random_uuid(), ${p.oracle_id}, 'zqa', ${String(10 + i)}, ${p.art}, '{nonfoil}')`;
@@ -84,11 +87,25 @@ async function plant() {
     values ('set', 'zqa', ${new Date(Date.now() - 86_400_000)}, false)`;
 }
 
-async function cleanUp(userId) {
+async function cleanUp() {
   await sql`delete from catalog_first_seen where kind = 'set' and key = any(${SETS})`;
   await sql`delete from printings where set_code = any(${SETS})`;
   await sql`delete from sets where code = any(${SETS})`;
-  if (userId) await clearSeen(userId);
+}
+
+/** The account's `user_prefs` row before the probe touched it: whether it existed, and its seen codes. */
+async function readPrior(userId) {
+  const rows = await sql`select upcoming_seen_codes as k from user_prefs where user_id = ${userId}`;
+  return rows.length === 0 ? { existed: false, codes: null } : { existed: true, codes: rows[0].k };
+}
+
+/** Puts that row back: deleted if the probe created it, else exactly its prior codes. */
+async function restorePrior(userId, prior) {
+  if (!prior.existed) await sql`delete from user_prefs where user_id = ${userId}`;
+  else await sql`update user_prefs set upcoming_seen_codes = ${prior.codes} where user_id = ${userId}`;
+  const now = await readPrior(userId);
+  const same = now.existed === prior.existed && JSON.stringify(now.codes) === JSON.stringify(prior.codes);
+  report("the account's user_prefs row is restored as it was", same, `${JSON.stringify(prior)} -> ${JSON.stringify(now)}`);
 }
 
 /** The reader's seen keys for the fixtures, cleared. An upsert, so the row's stamp moves and a cached page retires. */
@@ -158,6 +175,7 @@ async function walk(browser, vp, userIdHolder) {
   try {
     const userId = await signIn(page);
     userIdHolder.id = userId;
+    if (userIdHolder.prior === undefined) userIdHolder.prior = await readPrior(userId);
     await clearSeen(userId);
     await page.evaluate(() => { localStorage.removeItem("the99:precons:announced"); localStorage.removeItem("the99:precons:order"); });
 
@@ -166,7 +184,20 @@ async function walk(browser, vp, userIdHolder) {
     report("an unseen arrival opens the group by itself (C2)", await expanded(page));
     const a = setBlock(page, NAME_A);
     report("the arrived set is tagged new", (await a.getByText("new", { exact: true }).count()) === 1);
-    report("its three revealed commanders are drawn, each named in text", (await a.locator("[data-testid=revealed-card]").count()) === 3);
+    report("its six revealed commanders are drawn, each named in text", (await a.locator("[data-testid=revealed-card]").count()) === 6);
+    const strip = a.locator("[data-testid=revealed-strip]");
+    if (vp.width < 768) {
+      report("390: the strip scrolls sideways and is a named keyboard stop",
+        (await strip.getAttribute("role")) === "region" && (await strip.getAttribute("tabindex")) === "0"
+          && (await strip.getAttribute("aria-label")) === "6 revealed commanders"
+          && (await strip.evaluate((el) => el.scrollWidth > el.clientWidth)));
+      await strip.focus();
+      await page.keyboard.press("ArrowRight");
+      await page.waitForTimeout(300);
+      report("390: focused, the arrow keys scroll it", (await strip.evaluate((el) => el.scrollLeft)) > 0);
+    } else {
+      report("1300: the wrapped strip is no keyboard stop", (await strip.getAttribute("tabindex")) === null && (await strip.getAttribute("role")) === null);
+    }
     report("a set with none revealed draws the plate (T2)", (await setBlock(page, NAME_B).locator("[data-testid=none-plate]").count()) === 1);
     report("the set's name is an h3", (await a.locator("h3").first().textContent())?.trim() === NAME_A);
     report("the countdown reads in 30 days", (await a.textContent())?.includes("in 30 days") === true);
@@ -199,11 +230,11 @@ async function walk(browser, vp, userIdHolder) {
     const row = setRow(page, NAME_A);
     const press = row.locator("h3 button");
     report("rows: a set row is a closed disclosure", (await press.getAttribute("aria-expanded")) === "false");
-    report("rows: line 2 names the first commander and how many more", /and 2 more/.test((await row.textContent()) ?? ""));
+    report("rows: line 2 names the first commander and how many more", /and 5 more/.test((await row.textContent()) ?? ""));
     await press.click();
     await page.waitForTimeout(300);
     report("rows: a press opens the row's cards (Q3)",
-      (await press.getAttribute("aria-expanded")) === "true" && (await row.locator("[data-testid=revealed-card]:visible").count()) === 3);
+      (await press.getAttribute("aria-expanded")) === "true" && (await row.locator("[data-testid=revealed-card]:visible").count()) === 6);
     await shoot(page, vp, "rows-open");
     const none = setRow(page, NAME_B);
     report("rows: a set with nothing revealed does not open (R2)",
@@ -231,15 +262,16 @@ async function walk(browser, vp, userIdHolder) {
 async function main() {
   await guardTarget();
   await clerkSetup();
-  const holder = { id: null };
+  const holder = { id: null, prior: undefined };
   const browser = await chromium.launch();
-  await cleanUp(null);
+  await cleanUp();
   try {
     await plant();
     for (const vp of VIEWPORTS) await walk(browser, vp, holder);
   } finally {
     await browser.close();
-    await cleanUp(holder.id);
+    await cleanUp();
+    if (holder.id && holder.prior !== undefined) await restorePrior(holder.id, holder.prior);
   }
   console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
   process.exit(failures === 0 ? 0 : 1);
