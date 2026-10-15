@@ -106,7 +106,7 @@ export function SetCell({
       type="button"
       onClick={() => onOpen?.(cell.oracleId)}
       aria-label={label}
-      className="group flex w-full min-w-0 flex-col text-left"
+      className="group art-lift-host flex w-full min-w-0 flex-col text-left"
     >
       <span
         className="relative block aspect-[63/88] w-full overflow-hidden rounded-[6px]"
@@ -124,7 +124,7 @@ export function SetCell({
             src={cell.imageUriSmall}
             alt=""
             loading="lazy"
-            className="h-full w-full object-cover"
+            className="art-lift h-full w-full object-cover"
             style={cell.owned
               ? { opacity: 1 }
               : { opacity: 0.28, filter: "saturate(.55)" }}

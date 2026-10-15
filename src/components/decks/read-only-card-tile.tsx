@@ -46,7 +46,7 @@ export function ReadOnlyCardTile({
   return (
     <li className={`flex flex-col ${TILE_FIELD}`} data-testid={basic ? "read-only-basic-tile" : "read-only-card-tile"}>
       <div
-        className={`${TILE_SHELL_SCALED} relative ${
+        className={`${TILE_SHELL_SCALED} art-lift-host relative ${
           basic
             ? "[border:1px_dashed_var(--border-dashed)] bg-transparent"
             : "bg-[color:var(--surface)] [border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)] transition-colors"
@@ -66,7 +66,7 @@ export function ReadOnlyCardTile({
             <HydratedImg
               src={card.imageUri}
               decoding="async"
-              className="absolute inset-0 h-full w-full object-cover object-center"
+              className="art-lift absolute inset-0 h-full w-full object-cover object-center"
             />
           ) : (
             <span

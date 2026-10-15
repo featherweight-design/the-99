@@ -241,7 +241,7 @@ export function SuggestionTile({
       // an attribute nobody renders fails for the wrong reason, or passes over an empty list.
       data-testid="suggestion-tile"
       data-oracle-id={suggestion.oracleId}
-      className="group flex flex-col gap-[8px] rounded-[10px] p-[9px] pb-[10px] transition-colors border bg-[color:var(--surface)] border-[color:var(--border)] hover:bg-[color:var(--elevated-hover)] hover:border-[color:var(--border-strong)]"
+      className="group art-lift-host flex flex-col gap-[8px] rounded-[10px] p-[9px] pb-[10px] transition-colors border bg-[color:var(--surface)] border-[color:var(--border)] hover:bg-[color:var(--elevated-hover)] hover:border-[color:var(--border-strong)]"
       style={{ opacity: noArt ? 0.55 : 1 }}
     >
       {/* THE ART, bare — consider-tiles handoff call 1 and `STATES-consider-tiles.md` c10.
@@ -271,7 +271,7 @@ export function SuggestionTile({
             alt=""
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            className="art-lift absolute inset-0 h-full w-full object-cover object-center"
           />
         )}
         <span
