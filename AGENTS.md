@@ -913,8 +913,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   catalog's name and full card image and the price read's figure (G1); `loadWishlistWant` is card details' want.
   `wishlist_collected` is purged with the account. The owner's own rows are read and written in `src/lib/wishlist/`;
   a FRIEND's wishlist is visible (Q7) and is read only through `src/lib/social/wishlist.ts`, which joins the viewer's
-  friendship row in the same statement and returns the card, the wanted count and got, never an owned count (got
-  can only read true for a line no chokepoint has swept yet).
+  friendship row in the same statement and returns the card (with the catalog's name and full card image, for the
+  friend page's tiles) and the wanted count, never an owned count and no got: like every own read it leaves out a
+  line the friend's collection already reaches (Social R2 PR 6), so a friend's tile reads `wants N` only.
   `pnpm probe:wishlist` proves it on a scratch branch.
 
 - **Opponents in the game log** (scope §4, Feature C; Hugh's ruling Q15), behind `SOCIAL_GAMES_ENABLED`, which requires

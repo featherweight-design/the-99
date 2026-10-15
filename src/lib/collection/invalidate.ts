@@ -93,6 +93,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // /friends (Social R1) reads profiles, friends and links, never the collection; the picker's deck read imports
   // the schema through `db`, so it is listed as the friend link is.
   { path: "/friends", dynamic: false },
+  // A friend's page (Social R2 P2) reads the FRIEND's collection, to leave out a line it already reaches; this
+  // reader's replace moves nothing there, and the page is dynamic. Listed for the import, as /about is.
+  { path: "/friends/[publicId]", dynamic: true },
   // The card-scan lab (staging only) never reads the collection: its "What card was it?" step searches
   // `cards` and labels a `scan_lab_results` row, through `db` and so the whole schema. Listed as /about is.
   { path: "/lab/scan", dynamic: false },

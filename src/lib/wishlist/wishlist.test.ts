@@ -40,9 +40,18 @@ describe("friendWishlistQuery", () => {
     expect(sql).toContain(`"social_profiles"."public_id" = $`);
   });
 
-  it("returns the card, the wanted count and got, never an owned count", () => {
+  it("returns the card and the wanted count, never an owned count or got", () => {
     const q = friendWishlistQuery("viewer", "00000000-0000-0000-0000-000000000001");
-    expect(Object.keys((q as unknown as { _: { selectedFields: object } })._.selectedFields)).toEqual(["oracleId", "quantity", "got"]);
+    expect(Object.keys((q as unknown as { _: { selectedFields: object } })._.selectedFields))
+      .toEqual(["oracleId", "quantity", "name", "imageUri", "layout", "backImageUri"]);
+  });
+
+  it("leaves out a line the friend's collection already reaches (G5)", () => {
+    expect(sql).toMatch(/where coalesce\("owned"\."n", 0\) < "wishlist_items"\."quantity"/);
+  });
+
+  it("joins the card from the catalog", () => {
+    expect(sql).toContain(`inner join "cards" on "cards"."oracle_id" = "wishlist_items"."oracle_id"`);
   });
 });
 

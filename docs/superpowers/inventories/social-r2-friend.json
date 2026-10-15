@@ -1,0 +1,48 @@
+{
+  "feature": "Social R2 PR 6: a friend's page, /friends/[publicId], and the › on friend rows (P1-P3, PP1-PP3)",
+  "clearAbout": true,
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true and SOCIAL_WISHLIST_ENABLED=true, and a SCRATCH branch seeded with scripts/seed-r2-friend-fixture.mts, which prints COLIN_PUBLIC_ID, PETER_PUBLIC_ID and MAX_PUBLIC_ID. Colin has a face and five wanted cards (a sixth his collection reaches must not show), Peter a face and an empty wishlist, Max no face and two cards. Writes nothing.",
+  "rows": [
+    {
+      "id": "friend-rows-linked",
+      "label": "/friends: each row a link with › before its … (P1); at 390 the since date drops and › and … sit at the right edge (PP1)",
+      "view": "src/components/social/friends-list.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "[data-friend-row]", "settle": 1500}
+      ]
+    },
+    {
+      "id": "friend-page-lines",
+      "label": "Colin's page: head with face, since and commander, the … menu, and five tiles reading wants N (P2, PP2)",
+      "view": "src/components/social/friend-page.tsx",
+      "steps": [
+        {"goto": "/friends/${COLIN_PUBLIC_ID}", "wait": "h1:visible", "settle": 2000}
+      ]
+    },
+    {
+      "id": "friend-page-menu",
+      "label": "Colin's page with the head's … menu open: Remove friend, the row's own",
+      "view": "src/components/social/friend-page.tsx",
+      "steps": [
+        {"goto": "/friends/${COLIN_PUBLIC_ID}", "wait": "h1:visible", "settle": 1500},
+        {"clickRole": "button", "name": "Colin actions", "wait": "[role=dialog]", "settle": 400}
+      ]
+    },
+    {
+      "id": "friend-page-no-face",
+      "label": "Max's page: initials for a friend with no commander, two tiles",
+      "view": "src/components/social/friend-page.tsx",
+      "steps": [
+        {"goto": "/friends/${MAX_PUBLIC_ID}", "wait": "h1:visible", "settle": 2000}
+      ]
+    },
+    {
+      "id": "friend-page-empty",
+      "label": "Peter's page: the empty wishlist (P3, PP3)",
+      "view": "src/components/social/friend-page.tsx",
+      "steps": [
+        {"goto": "/friends/${PETER_PUBLIC_ID}", "wait": "h1:visible", "settle": 1500}
+      ]
+    }
+  ]
+}
