@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Collection Sync · R2 · the calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1560px;box-sizing:border-box;padding:48px 56px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:30px">
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Collection upload · Sync · R2 · 2026-10-15 · Kaldheim</span>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;color:#C6D2D3">A third card, and a review that asks only where both sides moved</h1>
+    <p style="margin:0;max-width:860px;font-size:14px;line-height:1.55;color:#95A4A6">Sync sits third beside Replace and Add, which keep their place and words. Its review is the shipped review with one section on top: the cards you and the file changed differently, each a pair of radios, with two bulk presses above them. Every count on Sync's screens is in cards, one printing in one finish, which is what the shipped tiles already count.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+    <sc-for list="{{calls}}" as="c" hint-placeholder-count="10">
+      <div style="display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+        <span class="k">{{c.n}} · {{c.q}}</span>
+        <span style="font-size:15px;font-weight:600;color:#C6D2D3">{{c.a}}</span>
+        <span style="font-size:12.5px;line-height:1.5;color:#95A4A6">{{c.why}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">The merge, per card (brief §What engineering proposes 1)</span>
+      <div style="display:flex;flex-direction:column;border:1px solid #2E3340;border-radius:10px;overflow:hidden">
+        <sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:220px 1fr 150px;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid #1A1F2B;background:#16171D">
+            <span class="m" style="font-size:12px;color:#B3C0C2">{{r.when}}</span>
+            <span style="font-size:13px;color:#C6D2D3">{{r.what}}</span>
+            <span class="m" style="font-size:11px;letter-spacing:.06em;color:{{r.ink}}">{{r.where}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <span style="font-size:12px;line-height:1.5;color:#7C8A8C">b is the collection after your last upload, rebuilt from History; a is now; f is the file. Printing and condition ride with whichever side wins.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">The locks, and where each is kept</span>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <sc-for list="{{locks}}" as="l" hint-placeholder-count="8">
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#16171D;border:1px solid #1A1F2B;border-radius:8px">
+            <span class="m" style="flex:none;width:18px;font-size:12px;color:#6FA368">✓</span>
+            <span style="flex:1;font-size:13px;line-height:1.45;color:#C6D2D3">{{l.lock}}<span style="color:#95A4A6"> {{l.how}}</span></span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;padding:16px 18px;border:1px dashed #424755;border-radius:10px">
+    <span class="k">Switch off</span>
+    <span style="font-size:13px;line-height:1.5;color:#B3C0C2">With COLLECTION_EDIT_ENABLED off there is no choice step, so there is no Sync: the shipped Replace flow, unchanged. No slot is held for it.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      calls: [
+        { n: '1', q: 'The name', a: 'Sync stays. The card reads “Sync my collection”.', why: 'It is the word Hugh ranked, it collides with nothing in the app, and the card body says what it keeps. Merge reads as engineering; Keep my changes hides that the file is taken too.' },
+        { n: '2', q: 'Three cards, and the default', a: 'Three equals, none picked, Sync third.', why: 'Replace and Add keep their place and words (lock 4) and the shipped rule that nothing is preselected stands. Sync wins on its own figure line, which names what it keeps. Unavailable: dimmed, still focusable, its reason in place of the figure.' },
+        { n: '3', q: 'Conflicts', a: 'A section at the top of the Sync review, not a step.', why: 'Each card is a pair of radios, App ×a or File ×f, with “was ×b” beside the name. Two bulk presses above name their count and act on every conflict, shown or not. Nothing is picked for the player; the button waits until every card is answered.' },
+        { n: '4', q: 'The stale file', a: 'A banner above the cards; options inside the Sync card.', why: 'It concerns the file, so it heads the step, and it says “looks”. Picked under it, Sync offers Only what it adds (first), Only its tokens, or Everything. Cancel is the step’s own. Additions always carry the tokens, so the first two combine; when the file adds nothing only the second is drawn.' },
+        { n: '5', q: 'What a row shows', a: 'Four tiles: To decide, From the file, Kept from The 99, Nothing to do.', why: 'In order of risk. Agreed cards need nothing and go into Nothing to do, with no list. The file’s side keeps the shipped three lists; Kept from The 99 is one list of what stays.' },
+        { n: '6', q: 'One unit', a: 'Cards, everywhere on Sync’s screens.', why: 'A card is one printing in one finish, what the shipped tiles count. Never ledger entries (a precon add is 1 entry and 97 cards) and never copies. The bar reads “Taking 18 cards from the file and keeping 121 of yours.”' },
+        { n: '7', q: 'The receipt', a: 'The shipped summary, one clause longer; History says Sync upload.', why: 'The lede adds “and the 121 cards you changed in the app stayed”, plus the conflicts decided. The History entry is one row, kind Sync upload, and Revert takes it back whole.' },
+        { n: '8', q: 'An unknown base', a: 'Sync is disabled, with the reason on the card.', why: 'Three reasons: never uploaded, no record of the last upload, last upload past 90 days. A merge reduced to additions would be a fourth mode to explain; Add already covers that need.' },
+        { n: '9', q: 'Tokens', a: 'One line under the tiles; no token rows.', why: '“114 tokens will be recorded from the file. Tokens you marked by hand stay.” A hand mark the file also reads takes the file’s count, as Replace does today, without a row.' },
+        { n: '10', q: 'A re-sync', a: 'The card says the cards are unchanged; the review offers the tokens alone.', why: 'If the tokens differ, the button reads “Record 114 tokens”. If nothing differs, the review says so and the bar offers Back to Collection.' }
+      ],
+      rules: [
+        { when: 'f = b', what: 'The file didn’t change it. Keep the app’s.', where: 'KEPT FROM THE 99', ink: '#B3C0C2' },
+        { when: 'a = b, f ≠ b', what: 'Only the file changed it. Take the file’s.', where: 'FROM THE FILE', ink: '#6FA368' },
+        { when: 'a ≠ b, f ≠ b, a = f', what: 'Both moved it the same way. Nothing to do.', where: 'NOTHING TO DO', ink: '#7C8A8C' },
+        { when: 'a ≠ b, f ≠ b, a ≠ f', what: 'Both moved it differently. The player picks.', where: 'TO DECIDE', ink: '#E0913C' }
+      ],
+      locks: [
+        { lock: 'No data changes before confirm.', how: 'Every figure is the dry run; the review and the choice write nothing.' },
+        { lock: 'Tokens sync as Replace syncs them.', how: 'One line, no choice, no conflict, in the same transaction.' },
+        { lock: 'File-only changes are taken; app-only changes are kept.', how: 'The From the file and Kept from The 99 tiles and lists.' },
+        { lock: 'A card changed differently on both sides is the player’s call.', how: 'Per card or in bulk, nothing pre-picked.' },
+        { lock: 'One History entry; Revert takes it back.', how: 'Kind Sync upload, the shipped Revert and Revert what’s left.' },
+        { lock: 'Replace and Add are unchanged.', how: 'Same cards, same words, same place; Sync is drawn third.' },
+        { lock: 'First-run uploads never show Sync.', how: 'The first import still skips the choice, STEP 2 OF 3.' },
+        { lock: 'Sync is gated by COLLECTION_EDIT_ENABLED.', how: 'Switch off is the shipped Replace flow.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

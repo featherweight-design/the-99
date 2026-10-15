@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sync review, no conflicts, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.scr{background:#121217;border:1px solid #2E3340;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.pad{padding:36px 56px 28px;display:flex;flex-direction:column;gap:22px}
+.meta{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#7C8A8C}
+.h1{margin:12px 0 0;font-family:'Metamorphous',serif;font-weight:400;font-size:29px;color:#C6D2D3}
+.tile{padding:16px 18px;border:1px solid #1A1F2B;border-radius:12px;background:#1E1F26}
+.tile .n{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;line-height:1}
+.tile .l{margin-top:6px;font-size:12px;color:#95A4A6}
+.lh{margin:0 0 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#95A4A6}
+.row{display:flex;align-items:center;gap:10px;min-height:40px;padding:8px 12px;box-sizing:border-box;border:1px solid #1A1F2B;border-radius:8px;background:#1E1F26}
+.row .nm{flex:1;min-width:0;font-size:14px;color:#C6D2D3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .d{flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px}
+.tag{flex:none;padding:0 5px;border:1px solid #E0913C;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#E0913C}
+.more{min-height:44px;padding:0;margin-top:4px;background:none;border:0;font:13px 'IBM Plex Sans',sans-serif;color:#5C86C9;text-decoration:underline;text-underline-offset:2px;text-align:left}
+.tok{display:flex;gap:12px;align-items:center;padding:12px 14px;background:#16171D;border-radius:10px;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.deck{display:flex;align-items:center;gap:12px;min-height:44px;padding:10px 14px;box-sizing:border-box;background:#1E1F26;border:1px solid #2E3340;border-radius:10px}
+.bar{display:flex;align-items:center;gap:20px;padding:16px 56px;background:#181920;border-top:1px solid #2E3340}
+.btnp{height:44px;padding:0 24px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 14px 'IBM Plex Sans',sans-serif;white-space:nowrap}
+.btng{height:44px;padding:0 20px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #2E3340;font:600 14px 'IBM Plex Sans',sans-serif}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+</style>
+</helmet>
+<div style="width:1280px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Review, no conflicts · desktop 1168 · R2</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">The shipped review, with Sync’s four tiles and a list of what stays</h2>
+    <p class="cap" style="margin:0;max-width:1000px">Hand-built on the fixture: a newer export that adds 16 cards, raises 1 and drops 1, over the 121 cards the player changed in the app. In order of risk: tiles, the tokens line, the decks that will read short, then the lists. The file’s side keeps the shipped three lists and their names; the app’s side is one list.</p>
+  </div>
+
+  <section class="scr">
+    <div class="pad">
+      <div>
+        <span class="meta">STEP 3 OF 4 · The Vault 10-14-26.csv · 3,570 rows</span>
+        <h1 class="h1">Review before you sync</h1>
+      </div>
+      <div style="display:flex;gap:16px">
+        <div style="flex:1.4;display:flex;align-items:center;gap:16px;padding:20px 22px;border-radius:12px;background:#1E1F26;border:1px solid #1A1F2B">
+          <span aria-hidden="true" style="flex:none;width:44px;height:44px;border-radius:50%;background:#16171D;display:flex;align-items:center;justify-content:center;color:#6FA368;font-size:20px">✓</span>
+          <span><span class="m" style="display:block;font-size:30px;font-weight:600;line-height:1">3,401</span><span style="display:block;margin-top:4px;font-size:13px;color:#95A4A6">cards matched to the Oracle database: ready to sync</span></span>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:16px 18px;border-radius:12px;background:#1E1F26;border:1px solid #1A1F2B">
+          <span style="display:flex;align-items:center;gap:10px"><span aria-hidden="true" style="width:9px;height:9px;border-radius:50%;background:#E0913C"></span><span class="m" style="font-size:16px;color:#E0913C">2</span><span style="font-size:13px;color:#95A4A6">not in the catalog</span></span>
+          <span style="display:flex;align-items:center;gap:10px"><span aria-hidden="true" style="width:9px;height:9px;border-radius:50%;background:#7C8A8C"></span><span class="m" style="font-size:16px;color:#7C8A8C">6</span><span style="font-size:13px;color:#95A4A6">emblem rows skipped</span></span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+        <div class="tile"><div class="n" style="color:#7C8A8C">0</div><div class="l">to decide</div></div>
+        <div class="tile"><div class="n" style="color:#6FA368">18</div><div class="l">from the file</div></div>
+        <div class="tile"><div class="n" style="color:#C6D2D3">121</div><div class="l">kept from The 99</div></div>
+        <div class="tile"><div class="n" style="color:#C6D2D3">3,382</div><div class="l">nothing to do</div></div>
+      </div>
+
+      <div class="tok"><span aria-hidden="true" style="color:#7C8A8C">ⓘ</span><span style="flex:1">114 tokens will be recorded from the file, as an upload records them. Tokens you marked by hand stay.</span><span class="m" style="flex:none;font-size:12px;color:#95A4A6">114 tokens · 313 copies</span></div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;align-items:start">
+        <div>
+          <h2 class="lh">Decks that will read short · 1</h2>
+          <div class="deck"><span style="flex:1;font-size:14px;color:#C6D2D3">Tithe and Tax</span><span class="m" style="font-size:12px;color:#95A4A6">◆ short 1</span><span style="font-size:13px;color:#95A4A6">Smothering Tithe</span></div>
+        </div>
+        <div>
+          <h2 class="lh">Leaving your collection · 1</h2>
+          <div class="row"><span class="nm">Smothering Tithe</span><span class="d" style="color:#95A4A6">×1 → ×0</span></div>
+        </div>
+        <div>
+          <h2 class="lh">Going up or new · 17</h2>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{up}}" as="r" hint-placeholder-count="8"><div class="row"><span class="nm">{{r.n}}</span><span class="d" style="color:#6FA368">{{r.d}}</span></div></sc-for>
+          </div>
+          <button class="more" type="button">Show all 17</button>
+        </div>
+        <div>
+          <h2 class="lh">Kept from The 99 · 121</h2>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{kept}}" as="r" hint-placeholder-count="8"><div class="row"><span class="nm">{{r.n}}</span><span class="d" style="color:#B3C0C2">{{r.d}}</span></div></sc-for>
+          </div>
+          <button class="more" type="button">Show all 121</button>
+        </div>
+      </div>
+    </div>
+    <div class="bar">
+      <span style="font-size:13.5px;color:#B3C0C2">Taking 18 cards from the file and keeping 121 of yours, with 114 tokens. 1 deck will read short.</span>
+      <span style="margin-left:auto;display:flex;gap:12px"><button class="btng" type="button">Cancel</button><button class="btnp" type="button">Sync collection</button></span>
+    </div>
+  </section>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="k">The tiles</span><span class="cap">To decide is first because it is the only one that asks something; at 0 it reads in the faint ink and has no list. From the file takes the shipped up-or-new green. Kept and Nothing to do are plain. Agreed cards (both sides moved the same way) are counted in Nothing to do and listed nowhere.</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Kept from The 99</span><span class="cap">Each row reads the shipped way, before → after, where before is the card at your last upload and after is now: what the sync leaves alone. No <span class="m">edited</span> tag here, since every row would carry it; the tag moves to rows a conflict hands to the file (see Conflicts).</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="k">The bar, and the unit</span><span class="cap">Every count is cards: one printing in one finish. “121 of yours” is cards, never the 4 History entries that touched them. The button is the plain verb, Sync collection; pending, Syncing…; the short-deck dialog follows it as Replace’s does.</span></div>
+  </div>
+  <p class="cap" style="margin:0;max-width:1100px">The issues panel’s third line reads “emblem rows skipped” on a Sync, counting emblems alone, because the tokens line now says the file’s tokens are recorded. Replace’s panel is unchanged (gap G4 in the README).</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      up: [
+        { n: 'Esper Sentinel', d: 'new → ×1' },
+        { n: 'Jeweled Lotus', d: 'new → ×1' },
+        { n: 'Fierce Guardianship', d: 'new → ×1' },
+        { n: 'Deflecting Swat', d: 'new → ×1' },
+        { n: 'Arcane Signet', d: '×2 → ×3' },
+        { n: 'Teferi’s Protection', d: 'new → ×1' },
+        { n: 'Dockside Extortionist', d: 'new → ×1' },
+        { n: 'Enlightened Tutor', d: 'new → ×1' }
+      ],
+      kept: [
+        { n: 'Ellivere of the Wild Court', d: 'new → ×1' },
+        { n: 'Moonshaker Cavalry', d: 'new → ×1' },
+        { n: 'Kor Spiritdancer', d: 'new → ×1' },
+        { n: 'Sol Ring', d: '×3 → ×4' },
+        { n: 'Sigarda’s Aid', d: 'new → ×1' },
+        { n: 'Danitha Capashen, Paragon', d: 'new → ×1' },
+        { n: 'Command Tower', d: '×4 → ×5' },
+        { n: 'Sram, Senior Edificer', d: 'new → ×1' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
