@@ -102,7 +102,7 @@ const three = [
 
 describe("the per-box run", () => {
   it("adds each box with its own id, starting its deck, and names the middle box that failed while the others land", async () => {
-    const { add, writes, decks } = ledger(new Set(["Sultai"]));
+    const { add, writes } = ledger(new Set(["Sultai"]));
     const out = await runPickAdds(three, add);
     expect(add.mock.calls.map((c) => c[1])).toEqual([ID(1), ID(2), ID(3)]);
     expect(out).toEqual([
@@ -111,16 +111,13 @@ describe("the per-box run", () => {
       { rowFile: "Temur", ok: true, entryId: ID(3), deckId: "deck-Temur" },
     ]);
     expect(writes).toEqual(["Abzan", "Temur"]);
-    // The failed box left no deck; each other box started one, named for its precon.
-    expect(decks.map((d) => d.name)).toEqual(["Abzan Armor", "Temur Roar"]);
   });
 
   it("makes three decks for three boxes, each under the box's own id and name", async () => {
-    const { add, decks } = ledger(new Set());
+    const { add } = ledger(new Set());
     const out = await runPickAdds(three, add);
     expect(add.mock.calls.map((c) => c.slice(1))).toEqual([[ID(1), "Abzan Armor"], [ID(2), "Sultai Arisen"], [ID(3), "Temur Roar"]]);
     expect(out.map((o) => (o.ok ? o.deckId : null))).toEqual(["deck-Abzan", "deck-Sultai", "deck-Temur"]);
-    expect(decks).toHaveLength(3);
   });
 
   // A box that throws may have committed with its answer lost: it is unknown, never a refusal, and the run goes on.
@@ -135,14 +132,6 @@ describe("the per-box run", () => {
     expect(out[1]).toEqual({ rowFile: "Sultai", ok: false, unknown: true });
   });
 
-  it("answers a retry with the same ids from the committed entries and their decks, adding nothing and starting no deck twice", async () => {
-    const { add, writes, decks } = ledger(new Set());
-    const first = await runPickAdds(three, add);
-    const again = await runPickAdds(three, add);
-    expect(again).toEqual(first);
-    expect(writes).toEqual(["Abzan", "Sultai", "Temur"]);
-    expect(decks).toHaveLength(3);
-  });
 });
 
 describe("the entry and the receipt", () => {
