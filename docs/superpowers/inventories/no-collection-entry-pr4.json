@@ -1,6 +1,6 @@
 {
   "feature": "No-collection entry PR 4: the ways group, the open lock, Home at zero cards and the rankers' empty states (handoff design_handoff_the99_no_collection_entry, S1, S12 Home, S13, S15, S16; plan 2026-10-15-no-collection-entry.md, PR 4)",
-  "note": "Needs an account with ZERO cards, and COLLECTION_EDIT_ENABLED=true, NO_COLLECTION_ENTRY_ENABLED=true and PRECONS_ENABLED=true for the reader. The first-run rows need no decks as well; the S12 rows need one deck and no cards. Nothing here writes. S15 (precons off) and S16 (edit off) are switch states the component tests prove. The rankers' empty states (/commanders, /discover) and Home at zero cards with a deck (S12) are not rows here, because every row must render the shared group; their component tests pin both switch states.",
+  "note": "Needs an account with ZERO cards, and COLLECTION_EDIT_ENABLED=true, NO_COLLECTION_ENTRY_ENABLED=true and PRECONS_ENABLED=true for the reader. The first-run rows need no decks as well; the S12 rows need one deck and no cards. Nothing here writes. S15 (precons off) and S16 (edit off) are switch states the component tests prove. The rankers' empty states (/commanders, /discover) and Home at zero cards with a deck (S12) are not rows here, because every row must render the shared group; their component tests pin both switch states. The locked slot's note is drawn by a press on a shell control, which the sheet's steps cannot reach by design (every verb but hoverRail is scoped to the page); the nav tests pin its three forms.",
   "out": "contact-sheets/no-collection-entry-pr4",
   "shares": {
     "module": "src/components/collection/ways-group.tsx",
@@ -17,22 +17,6 @@
           "goto": "/",
           "wait": "[data-ways-group=step1]",
           "settle": 1000
-        }
-      ]
-    },
-    {
-      "id": "s1-note",
-      "label": "First run, a locked slot's note: three names and Go to step 1",
-      "view": "src/components/home/first-run-step-one.tsx",
-      "steps": [
-        {
-          "goto": "/",
-          "wait": "[data-ways-group=step1]",
-          "settle": 800
-        },
-        {
-          "click": "[data-locked-slot=Decks]",
-          "settle": 400
         }
       ]
     },
