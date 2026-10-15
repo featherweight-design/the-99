@@ -27,6 +27,10 @@ carries it, and tracked for cards added by hand. Approved by the orchestrator as
 - Backfill: one script per database, `pnpm db:backfill:added-at`, naming its target by branch and failing closed
   (`pull:staging` rule), `--dry-run` first, run after that database's migration deploys. Staging, then
   production. Never through the Neon MCP.
+- The backfill dates a holding from the ledger when its CURRENT ownership began with a hand entry (exact, and not when a
+  later entry removed it), else from the first confirmed upload holding it, INEXACT always: a snapshot says a holding was
+  there by then, not when it arrived, and a Sync can leave a file's card unapplied. Each account is written in its own
+  transaction under the per-user advisory lock both writers take.
 - The sort ties inexact dates and falls to name, so it never orders holdings a file brought in one batch; unknown
   dates sort last. Dates read exact only where `added_exact`, else "in your collection since <day>".
 

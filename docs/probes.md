@@ -464,9 +464,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   fills an empty collection is dated INEXACT, every holding on one day, through the ledger's Replace and the
   legacy `replaceCollection` alike; a hand add is exact; a quantity edit and a second file keep every standing
   holding's date; a second file's new holding is exact; a removal then a re-add is a new date, and the revert
-  of the removal puts the old date back. It also runs the backfill (`backfillAddedAt`) on a fixture of two
-  confirmed uploads and a ledger entry: the first file's holdings take its date inexact, a later file's exact,
-  a hand-added one its entry's, a holding in neither stays null, and a second run changes nothing.
+  of the removal puts the old date back. It also runs the backfill (`backfillAddedAt`) on a fixture of two confirmed uploads and ledger entries: a holding
+  whose current ownership began with a hand entry takes that entry's time, exact; the first confirmed upload
+  holding any other is its date, inexact always; a holding added and then removed is not dated to its first
+  life; a holding in none stays null; and a second run changes nothing.
 - `pnpm db:backfill:added-at [--dry-run]` dates the holdings the column found already there, ONCE per
   database after its migration (0127). It names its target by branch and fails closed (the `pull:staging`
   rule): `BACKFILL_TARGET_URL` and `BACKFILL_TARGET_BRANCH` are never defaulted, and a database that reports a

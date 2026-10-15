@@ -2,15 +2,17 @@
  * Dates the holdings the column found already there (Date added, PR 1). SERVER/SCRIPT-ONLY, run once per
  * database by `scripts/backfill-added-at.ts`, which names its target by Neon branch.
  *
- * A holding with a null `added_at` takes the EARLIEST of two sources, and says how sure it is:
- *  - the first confirmed upload whose stored file (`pendingItems`, kept forever) holds it. INEXACT when that
- *    is the account's FIRST confirmed upload (the file that filled the collection: every holding of it shares
- *    that day), exact when a later file brought it;
- *  - the earliest hand entry in the ledger that raised it from nothing (`add`, `edit`: Add cards, I got it, a
- *    precon add), always exact. An upload's own entries are `upload_*` kinds (`kindOf`), so an `add` entry is a
- *    hand change by construction and a file's holdings are dated by the upload source above. Ledger entries are kept 90 days, so this only reaches recent ones.
- * A holding in neither stays null: it sorts last and reads as unknown. Only rows with a null `added_at` are
- * touched, so a re-run changes nothing it already settled.
+ * A holding with a null `added_at` is dated from the best evidence there is, and says how sure it is:
+ *  - the ledger, when the holding's CURRENT ownership began with a hand entry (`add`, `edit` or `revert` raising it
+ *    from nothing: Add cards, I got it, a precon add): that entry's time, EXACT. Valid only when no entry removed
+ *    the holding after that raise, so a holding that was added, removed and brought back some other way is not
+ *    dated to its first life. The ledger keeps 90 days, so this reaches recent holdings only. An upload's own
+ *    entries are `upload_*` kinds (`kindOf`), so these entries are hand changes by construction;
+ *  - else the first confirmed upload whose stored file (`pendingItems`, kept forever) holds it, INEXACT always:
+ *    a snapshot says a holding was there by then, not when it arrived, and a Sync can leave a file's card unapplied.
+ * A holding with neither stays null: it sorts last and reads as unknown. Only rows with a null `added_at` are
+ * touched, so a re-run changes nothing it already settled. Each account is written in its own transaction under the
+ * per-user advisory lock both collection writers take.
  */
 export type Queryable = { query: (text: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> };
 /** A pool: the writes run one account at a time on a connection of their own, inside a transaction. */
@@ -18,9 +20,7 @@ export type Pooled = Queryable & { connect: () => Promise<Queryable & { release:
 
 /** Every holding that would be dated, with its date and exactness. `$1` null = every account. */
 const CHOSEN = `
-with firsts as (
-  select user_id, min(confirmed_at) as t0 from csv_uploads where confirmed_at is not null group by user_id
-), from_upload as (
+with from_upload as (
   select u.user_id, pi->>'oracleId' as oracle_id, lower(coalesce(pi->>'setCode', '')) as set_code,
          coalesce(pi->>'collectorNumber', '') as collector_number,
          coalesce(pi->>'finish', case when (pi->>'foil')::boolean then 'foil' else 'nonfoil' end) as finish,
@@ -30,22 +30,25 @@ with firsts as (
   group by 1, 2, 3, 4, 5
 ), from_ledger as (
   select h.user_id, r->>'oracleId' as oracle_id, r->>'setCode' as set_code, r->>'collectorNumber' as collector_number,
-         r->>'finish' as finish, min(h.created_at) as at
+         r->>'finish' as finish,
+         max(h.created_at) filter (
+           where h.kind in ('add', 'edit', 'revert')
+             and (r->'before' is null or jsonb_typeof(r->'before') = 'null')
+             and r->'after' is not null and jsonb_typeof(r->'after') <> 'null'
+         ) as raised_at,
+         max(h.created_at) filter (where r->'after' is null or jsonb_typeof(r->'after') = 'null') as removed_at
   from collection_history h, jsonb_array_elements(h.rows) r
-  where h.rows is not null and h.kind in ('add', 'edit') and h.reverts_id is null
-    and ($1::text is null or h.user_id = $1)
-    and (r->'before' is null or jsonb_typeof(r->'before') = 'null')
-    and r->'after' is not null and jsonb_typeof(r->'after') <> 'null'
+  where h.rows is not null and ($1::text is null or h.user_id = $1)
   group by 1, 2, 3, 4, 5
 ), candidates as (
-  select f.user_id, f.oracle_id, f.set_code, f.collector_number, f.finish, f.at, (f.at > t.t0) as exact
-  from from_upload f join firsts t using (user_id)
+  select user_id, oracle_id, set_code, collector_number, finish, at, false as exact from from_upload
   union all
-  select user_id, oracle_id, set_code, collector_number, finish, at, true from from_ledger
+  select user_id, oracle_id, set_code, collector_number, finish, raised_at, true
+  from from_ledger where raised_at is not null and (removed_at is null or raised_at > removed_at)
 ), chosen as (
   select distinct on (user_id, oracle_id, set_code, collector_number, finish)
          user_id, oracle_id, set_code, collector_number, finish, at, exact
-  from candidates order by user_id, oracle_id, set_code, collector_number, finish, at asc, exact desc
+  from candidates order by user_id, oracle_id, set_code, collector_number, finish, exact desc, at asc
 )`;
 
 const JOIN = `
