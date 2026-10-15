@@ -1426,9 +1426,12 @@ export function BuilderShell({
   const openExport = () => setExportOpen(true);
 
   // The tools, built once and mounted either directly (hub off) or inside the hub's tiles.
-  const cutsPanel = (freshEachVisit: boolean) => (
+  // `inHub`: mounted under the hub's tab row, where it opens fresh each visit and, at the line,
+  // finishes in place rather than draw nothing under the row.
+  const cutsPanel = (inHub: boolean) => (
     <CutsPanelView
-      freshEachVisit={freshEachVisit}
+      freshEachVisit={inHub}
+      finishInPlace={inHub}
       key={deck.id}
       deckId={deck.id}
       onSettled={onCutsSettled}

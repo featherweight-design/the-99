@@ -215,3 +215,70 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     expect(onRequest).toHaveBeenCalledOnce();
   });
 });
+
+// Hugh, 2026-10-14: once Analyze is pressed the block holds its idle height, so the Tuning hub below
+// it does not jump up when the field and the second paragraph leave. jsdom lays nothing out, so the
+// height is given; the browser half is `probe:tuning-hub-stays-put`.
+describe("AnalysisEmpty holds its height through the press", () => {
+  const section = () => screen.getByTestId("analysis-empty") as HTMLElement;
+  const withHeight = (px: number, run: () => void) => {
+    const real = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight")!;
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", { configurable: true, get: () => px });
+    try { run(); } finally { Object.defineProperty(HTMLElement.prototype, "offsetHeight", real); }
+  };
+
+  it("keeps the idle height as its floor while loading and failed, and lets go back at idle", () => {
+    withHeight(412, () => {
+      const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} />);
+      expect(section().style.minHeight).toBe("");
+      rerender(<AnalysisEmpty phase="loading" onRequest={() => {}} />);
+      expect(section().style.minHeight).toBe("412px");
+      rerender(<AnalysisEmpty phase="loading" stage="writing" onRequest={() => {}} />);
+      expect(section().style.minHeight).toBe("412px");
+      rerender(<AnalysisEmpty phase="failed" onRequest={() => {}} />);
+      expect(section().style.minHeight).toBe("412px");
+      rerender(<AnalysisEmpty phase="idle" onRequest={() => {}} />);
+      expect(section().style.minHeight).toBe("");
+    });
+  });
+
+  // Copilot, PR #1809: a resize changes the idle height with no render here; the press must hold
+  // the height the block has NOW, not the one its last render read.
+  it("holds the height a resize left it at, not the last render's", () => {
+    const observers: { cb: () => void; on: boolean }[] = [];
+    const RealObserver = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      private entry: { cb: () => void; on: boolean };
+      constructor(cb: () => void) { this.entry = { cb, on: false }; observers.push(this.entry); }
+      observe() { this.entry.on = true; }
+      unobserve() {}
+      disconnect() { this.entry.on = false; }
+    } as unknown as typeof ResizeObserver;
+    let height = 412;
+    const real = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight")!;
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", { configurable: true, get: () => height });
+    try {
+      const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} />);
+      // The phone rotates: the block is taller now, and nothing here re-rendered.
+      height = 530;
+      act(() => { for (const o of observers) if (o.on) o.cb(); });
+      rerender(<AnalysisEmpty phase="loading" onRequest={() => {}} />);
+      expect(section().style.minHeight).toBe("530px");
+      // Loading no longer listens: a resize now leaves the floor where the press set it.
+      height = 300;
+      act(() => { for (const o of observers) if (o.on) o.cb(); });
+      rerender(<AnalysisEmpty phase="loading" stage="writing" onRequest={() => {}} />);
+      expect(section().style.minHeight).toBe("530px");
+    } finally {
+      Object.defineProperty(HTMLElement.prototype, "offsetHeight", real);
+      globalThis.ResizeObserver = RealObserver;
+    }
+  });
+
+  it("holds nothing when it was never idle", () => {
+    withHeight(412, () => {
+      render(<AnalysisEmpty phase="loading" onRequest={() => {}} />);
+      expect(section().style.minHeight).toBe("");
+    });
+  });
+});

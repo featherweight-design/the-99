@@ -252,8 +252,8 @@ describe("CutsPanelView", () => {
   });
 
   it("C8: the last cut finishes the tool in place", async () => {
-    const p = withResult(1, 1, { over: 0, total: 99 });
-    p.items = [item(1, { verdict: "accepted" })];
+    const p = withResult(1, 1, { over: 0, total: 100 });
+    p.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
     await mount(deps(p));
     expect(screen.getByText(copy.done.head(99, 1))).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
@@ -310,8 +310,81 @@ describe("CutsPanelView", () => {
     await waitFor(() => expect(d.read).toHaveBeenCalledTimes(2));
   });
 
+  // Hugh, 2026-10-14: in the hub the tool is mounted only while open under its tab row, so at the line
+  // it finishes in place (C8) even once the result has stopped being current (the first analysis
+  // writes the overview's Key cards into the fingerprint), never an empty panel under the tabs.
+  it("in the hub, finishes in place at the line over a result that is no longer current", async () => {
+    const atTheLine = withResult(1, 1, { over: 0, total: 100, resultCurrent: false });
+    atTheLine.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
+    render(<CutsPanelView deckId="d1" deps={deps(atTheLine)} finishInPlace />);
+    expect(await screen.findByText("Back to 99 / 99. You cut 1.")).toBeTruthy();
+    expect(screen.getByText(copy.done.body)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
+  });
+
+  it("in the hub, finishes in place at the line with no result at all, and counts no cuts", async () => {
+    render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 100 }))} finishInPlace />);
+    const done = await screen.findByTestId("cuts-done");
+    expect(done.children[0].textContent).toBe("Back to 99 / 99.");
+    expect(done.children[1].textContent).toBe(copy.done.body);
+  });
+
+  it("in the hub, a deck that reached the line by another edit says the neutral form", async () => {
+    // One row never answered, and one cut whose card was put back by hand: the tool cut nothing that stands.
+    const p = withResult(2, 2, { over: 0, total: 100, resultCurrent: false });
+    p.items = [item(1), item(2, { verdict: "accepted", inDeck: true, quantityBefore: 1, quantityNow: 1 })];
+    render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
+    expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99.");
+  });
+
+  // Copilot, PR #1809 round 2: `over` is clamped at zero, so a deck trimmed below its size elsewhere
+  // while the tool is open reads like one at the line. It must not claim `Back to 99 / 99.`
+  it("in the hub, a deck trimmed below its size says only that the tool closes, never the line", async () => {
+    const p = withResult(1, 1, { over: 0, total: 99, resultCurrent: false });
+    p.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
+    render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
+    const done = await screen.findByTestId("cuts-done");
+    expect(done.textContent).toBe(copy.done.body);
+    expect(done.textContent).not.toMatch(/Back to/);
+  });
+
+  // A Cut removes ONE copy (`cutItem`), so a card held twice is still in the deck after its cut.
+  it("counts a cut of one copy of a card the deck still holds", async () => {
+    const p = withResult(1, 1, { over: 0, total: 100, resultCurrent: false });
+    p.items = [item(1, { cutName: "Forest", verdict: "accepted", inDeck: true, quantityBefore: 2, quantityNow: 1 })];
+    render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
+    expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99. You cut 1.");
+  });
+
+  it("does not count a multi-copy cut whose copy was put back by hand", async () => {
+    const p = withResult(1, 1, { over: 0, total: 100, resultCurrent: false });
+    p.items = [item(1, { cutName: "Forest", verdict: "accepted", inDeck: true, quantityBefore: 2, quantityNow: 2 })];
+    render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
+    expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99.");
+  });
+
+  it("C8 is the drawn box: surface, a success border, radius 10, head and body on their own lines", async () => {
+    const p = withResult(1, 1, { over: 0, total: 100 });
+    p.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
+    render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
+    const done = await screen.findByTestId("cuts-done");
+    expect(done.style.background).toBe("var(--surface)");
+    expect(done.style.border).toBe("1px solid var(--success)");
+    expect(done.className).toContain("rounded-[10px]");
+    expect(done.className).toContain("px-[14px]");
+    expect(done.className).toContain("py-[12px]");
+    expect(done.className).toContain("gap-[4px]");
+    const [head, body] = [...done.children] as HTMLElement[];
+    expect(head.className).toContain("text-[13.5px]");
+    expect(head.className).toContain("font-semibold");
+    expect(head.style.color).toBe("var(--fg)");
+    expect(body.className).toContain("text-[12.5px]");
+    expect(body.className).toContain("leading-[1.55]");
+    expect(body.style.color).toBe("var(--fg-body)");
+  });
+
   it("draws nothing for a deck that is not over", async () => {
-    const { container } = render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 99 }))} />);
+    const { container } = render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 100 }))} />);
     await waitFor(() => expect(container.querySelector("section")).toBeNull());
   });
 });
@@ -334,6 +407,13 @@ describe("CutsPanelView: a visit to the deck", () => {
     await mountOn(deps(withResult(6, 6)));
     expect(screen.queryAllByRole("article")).toHaveLength(0);
     expect(screen.getByRole("button", { name: offer })).toBeTruthy();
+  });
+
+  it("at the line, a previous visit's cuts are not counted as this tool's", async () => {
+    const p = withResult(1, 1, { over: 0, total: 100 });
+    p.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
+    render(<CutsPanelView deckId={D1} deps={deps(p)} freshEachVisit finishInPlace />);
+    expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99.");
   });
 
   it("on its own, outside the hub (no History to reach it from), still shows the stored result", async () => {

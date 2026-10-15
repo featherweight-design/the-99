@@ -326,6 +326,54 @@ describe("AnalysisPanel", () => {
       expect(screen.getByText("hub without a reading")).toBeInTheDocument();
       expect(screen.queryByText("direct cuts")).toBeNull();
     });
+
+    // Hugh, 2026-10-14: Tuning stays put before, during and after an analysis. It is the SAME node
+    // in every state, never under a `hidden` ancestor, and is handed no reading until the verdict
+    // paints, so Suggested changes stays dimmed through a first press's held write.
+    describe("stays drawn through an analysis", () => {
+      type Step = { state: ProfileState; hold?: "reading" | "writing" | null; permits: "none" | "some" };
+      const tree = (step: Step, hub: (p: readonly number[] | null) => React.ReactNode) => (
+        <CardDetailProvider fetchCard={async () => null}>
+          <AnalysisPanel state={step.state} onRequest={onRequest} hold={step.hold ?? null} hub={hub}>
+          </AnalysisPanel>
+        </CardDetailProvider>
+      );
+      const walk = (steps: Step[]) => {
+        const hub = vi.fn((permits: readonly number[] | null) => (
+          <section data-testid="the-hub" data-permits={permits === null ? "none" : "some"}>Tuning</section>
+        ));
+        const { rerender } = render(tree(steps[0], hub));
+        const first = screen.getByTestId("the-hub");
+        for (const step of steps) {
+          rerender(tree(step, hub));
+          const node = screen.getByTestId("the-hub");
+          expect(node).toBe(first);
+          expect(node.closest("[hidden]")).toBeNull();
+          expect(node.getAttribute("data-permits")).toBe(step.permits);
+        }
+      };
+
+      it("a first press that holds through the overview write", () => {
+        walk([
+          { state: { kind: "idle" }, permits: "none" },
+          { state: { kind: "loading", held: null }, hold: "reading", permits: "none" },
+          { state: ready(), hold: "writing", permits: "none" },
+          { state: ready(), hold: null, permits: "some" },
+        ]);
+      });
+
+      it("a press with no hold, a failure, a refusal and a re-analysis", () => {
+        walk([
+          { state: { kind: "idle" }, permits: "none" },
+          { state: { kind: "loading", held: null }, permits: "none" },
+          { state: { kind: "failed", held: null }, permits: "none" },
+          { state: { kind: "illegal", built: 98, size: 99, held: null }, permits: "none" },
+          { state: ready(), permits: "some" },
+          { state: { kind: "loading", held: reading() }, permits: "some" },
+          { state: ready({ fresh: false }), permits: "some" },
+        ]);
+      });
+    });
   });
 
   // OPENING THE TAB (§8, 8a): the tab draws only its loader. It draws nothing it cannot

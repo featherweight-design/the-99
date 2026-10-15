@@ -24,6 +24,11 @@ export type CutItem = {
   /** Read live: the card is still in the list and is not a commander. A cut whose card has left
    *  can no longer be taken. Optional for fixtures that predate it; absent reads as true. */
   inDeck?: boolean;
+  /** The copies the list held when this cut was made (the Cut's own undo snapshot), null while it
+   *  has not been cut. A Cut removes ONE copy, so a cut stands while the list holds fewer than this. */
+  quantityBefore?: number | null;
+  /** Read live: the copies the list holds now (0 once the card has left it). */
+  quantityNow?: number;
   /** Read live: the card is locked now (Locked, never cut), so Cut would refuse it. */
   locked?: boolean;
 };
@@ -84,3 +89,13 @@ export type CutsPanel = CutsState & {
   /** How many of the stored report's asked-for cuts there were (the overage at run time). */
   asked: number;
 };
+
+/**
+ * Whether a cut still stands: the list holds fewer copies than it did when the cut was made. A Cut
+ * removes one copy, so `inDeck` cannot say it (a Forest cut from 2 to 1 is still in the deck), and a
+ * copy put back by hand brings the list back to where it was. Unknown (not cut, or a payload from
+ * before the quantities were read) never stands.
+ */
+export function cutStands(item: Pick<CutItem, "quantityBefore" | "quantityNow">): boolean {
+  return item.quantityBefore != null && item.quantityNow !== undefined && item.quantityNow < item.quantityBefore;
+}

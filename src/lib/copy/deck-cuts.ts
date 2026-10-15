@@ -103,7 +103,9 @@ export const deckCutsCopy = {
     neverCut: (commander: string, locked: number, key: number) =>
       `Never named: ${commander}${locked > 0 ? `, the ${locked} ${locked === 1 ? "card" : "cards"} you locked` : ""}${key > 0 ? `${locked > 0 ? " and" : ", and"} the ${key} Key ${key === 1 ? "card" : "cards"}` : ""}.`,
     done: {
-      head: (body: number, cut: number) => `Back to ${body} / ${body}. You cut ${cut}.`,
+      // The count only when cuts were made from a result: a deck that reached the line some other way
+      // (trimmed elsewhere while the tool was open) did not cut anything here (Hugh, 2026-10-15).
+      head: (body: number, cut: number) => (cut > 0 ? `Back to ${body} / ${body}. You cut ${cut}.` : `Back to ${body} / ${body}.`),
       body: "The deck isn\u2019t over any more, so Proposed cuts closes here.",
     },
     deeper: {

@@ -12,6 +12,24 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   comparisons on staging.
 - Never `pkill` or `killall` by pattern. Stop a dev server only by the exact PID you
   started, checked first with `ps -o pid=,comm= -p <pid>`.
+- **A probe that presses anything model-backed calls `assertModelStandIn` before it can
+  press** (`scripts/lib/model-stand-in.mjs`; orchestrator's ruling, 2026-10-15, after a probe
+  pointed at `next start` made real overview calls). It fails closed unless the SERVER proves
+  every path the probe presses is free: Next's dev pages manifest
+  (`/_next/static/development/_devPagesManifest.json`) answers only from `next dev` (`next start`
+  404s it), and the dev-only `/api/dev/model-stand-in` (404 from a production build) reports
+  each path's mode as the paths themselves decide it. A dev build is not enough alone:
+  Suggested changes and Look deeper call the real model in development unless the server has
+  `TUNING_STUB_DELAY_MS`, and each other path has a `*_LIVE` opt-in. A live path passes only
+  when the server holds no real key (start it with a dummy `ANTHROPIC_API_KEY`) and no
+  `ANTHROPIC_BASE_URL`. **Today only `probe:tuning-hub-stays-put` calls it.** Applying it to the
+  other probes that press a spend path through a server is a follow-up PR, still pending: `ai-sweep`
+  and `run-after` (tuning), `analysis-load-order`, `analysis-tab`, `banner-busy`, `bracket-chip`,
+  `brackets-sheet`, `verdict-lean`, `verdict-findings`, `verdict-block`, `overview-hold` and
+  `synopsis-ui` (the overview), and `help-me-choose-screens` and `help-me-choose-one-loading` (the
+  read). Until it lands, run those only against `next dev` with their stand-ins set, as each header
+  says. `probe:synopsis --live` and `probe:tuning-owned` make real calls in-process on purpose,
+  under their own caps, and will not be guarded.
 
 ---
 - `pnpm probe:precon-notice` walks the one-suggestion precon notice on a deck page at 390 and 1300 (Hugh's walk,
@@ -2080,6 +2098,36 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   deeper` and `Cut`/`Keep` 44px tall on a phone, the count rows drawn, the Suggestion tag on every
   line, and that a Cut collapses its row without the offer returning. The same flags must be given
   to the server and the probe (locks are in the fingerprint).
+
+- `pnpm probe:tuning-hub-stays-put` proves the Analysis tab's Tuning hub stays where it is, as the same
+  node, before, during and after an analysis, at 1300x900 and 390x844 (Hugh, 2026-10-14). Two cases,
+  each on decks it clones under the audit account and deletes in a `finally`, with every ledger row
+  their runs and overviews made; the account's About row is captured and put back.
+  **The walk** (`PROBE_CASES=walk`): a deck over its size (Analyze refused) and a legal deck at exactly
+  its size, never analyzed. Before the first analysis Suggested changes' tile is dimmed and Proposed
+  cuts (over size; inert at size), Mana Balance and History each open their tool and come back. Then,
+  sampled every animation frame from load: idle, the press, running (the empty state's loading phase,
+  through the overview write) and done. The hub must be drawn in every frame, be the node first seen
+  (a handle compared every frame), and keep its top within 1px from idle through running; no layout
+  shift may move it before the reading lands. At done the reading is drawn ABOVE the hub, so its top
+  moves by the reading's height by design: the check is that it sits under the reading at the idle
+  gap and moved once. CLS is printed per deck and width, with the press's own shifts apart.
+  **The second repro** (`PROBE_CASES=cuts`): an over-size deck with Proposed cuts open, a result naming
+  exactly the overage written through the real run store after the visit began (Look deeper's
+  stand-in: no model call), every cut pressed through the real Cut button down to the line, then the
+  deck analyzed. The hub must be drawn in every frame, Proposed cuts must stay the open tool, and the
+  panel under the tab row must never be empty: at the line it finishes in place (C8).
+  Before the fix it failed 10 checks: the hub was hidden for every frame of the overview write
+  (~650 at both widths) and jumped 196px up at 1300 (284px at 390) when Analyze was pressed. Step 5 of
+  the second repro (an empty panel) did not show on local-dev: the panel re-reads only when the list,
+  description, declared bracket or locks move, and none did; `tuning-hub.test.tsx` pins that re-read.
+  **Run it against `next dev`, never `next start`**: the overview's model stand-in answers only
+  outside production (`synopsisLive`), so a production server makes a REAL model call on the first
+  press; the spend guard (above) refuses before any press otherwise. At the line it also reads
+  C8's box head, `Back to 99 / 99. You cut N.` for the N cuts it pressed. Start the server with `ANALYSIS_TAB_ENABLED`, `TUNING_ENABLED`, `MANA_BALANCE_ENABLED` and
+  `PROPOSED_CUTS_ENABLED` all `true`, `SYNOPSIS_STUB_DELAY_MS=3000`, and `ANTHROPIC_API_KEY` set to a
+  dummy value so a mistake fails instead of spending. Loopback `PROBE_BASE` only; it refuses staging
+  and production by `neon.branch_id`. `PROBE_WIDTH=390` runs one width.
 
 - `pnpm probe:purge` proves the account purge (`purgeAccount`, run by the Clerk `user.deleted` webhook) against a real
   database. It builds an account with friends (as inviter and as redeemer), a pod it owns with two members, a

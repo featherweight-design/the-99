@@ -9,6 +9,7 @@ import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
 import { cutsAsk } from "../../lib/tuning/cuts-ask";
 import type { CountRow } from "../../lib/tuning/cuts-count";
 import type { CutsPanel } from "../../lib/tuning/cuts-state";
+import { DECK_TOTAL } from "../../lib/decks/deck-size";
 import { CreditButton } from "../ui/credit-button";
 import { CreditsText } from "../ui/credits-text";
 import { useAiSweepRef } from "../ui/use-ai-sweep";
@@ -55,7 +56,8 @@ export function CutsFreeCount({
   panel: CutsPanel;
   /** The sentences after the bold over line. Defaults to the count's own. */
   lead?: string;
-  /** Cuts made from the result, for the "Back to 99" line once the deck is back at its body size. */
+  /** Cuts this tool made toward the line (cut, and still standing: `cutStands`), for C8's head once the
+   *  deck is back at its body size. Zero reads the neutral `Back to 99 / 99.` */
   cutCount?: number;
   headingRef?: Ref<HTMLHeadingElement>;
   /** In place of the offer. Omitted: the offer. `null`: nothing. */
@@ -68,7 +70,7 @@ export function CutsFreeCount({
 }) {
   const { over } = panel;
   const standing = cutsStanding(panel);
-  const headline = over === 0 ? copy.done.head(panel.bodySize, cutCount) : copy.overLead(overWords(over), panel.bodySize);
+  const headline = copy.overLead(overWords(over), panel.bodySize);
   return (
     <>
       <div className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[12px]">
@@ -77,10 +79,28 @@ export function CutsFreeCount({
         </h2>
         <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{copy.sub}</span>
       </div>
-      <p className="mt-[8px] text-[13px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
-        <b className="font-semibold" style={{ color: "var(--fg)" }}>{headline}</b>{" "}
-        {over === 0 ? copy.done.body : lead}
-      </p>
+      {over === 0 ? (
+        // C8 / C8b, as drawn (R2 canvas C, the `done` box, lines 212-217): the same box at both widths.
+        <div
+          data-testid="cuts-done"
+          className="mt-[14px] flex flex-col gap-[4px] rounded-[10px] px-[14px] py-[12px]"
+          style={{ background: "var(--surface)", border: "1px solid var(--success)" }}
+        >
+          {/* `over` is clamped at zero, so a deck trimmed BELOW its size elsewhere while the tool was
+              open also lands here (Copilot, PR #1809 round 2). The head claims the line, `Back to
+              99 / 99.`, so it is drawn only for a deck exactly at it; under it, the body line alone,
+              which is true of either. */}
+          {panel.total >= DECK_TOTAL ? (
+            <span className="text-[13.5px] font-semibold" style={{ color: "var(--fg)" }}>{copy.done.head(panel.bodySize, cutCount)}</span>
+          ) : null}
+          <span className="text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>{copy.done.body}</span>
+        </div>
+      ) : (
+        <p className="mt-[8px] text-[13px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
+          <b className="font-semibold" style={{ color: "var(--fg)" }}>{headline}</b>{" "}
+          {lead}
+        </p>
+      )}
 
       {over === 0 ? null : band !== undefined ? band : (
         <CutsBand>

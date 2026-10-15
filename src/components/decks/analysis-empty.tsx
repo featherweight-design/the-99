@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
@@ -121,8 +121,35 @@ export function AnalysisEmpty({
     : phase === "failed" ? copy.failed : copy.idle;
   const busy = phase === "loading";
   const disabled = busy || blocked !== null;
+  // THE BLOCK HOLDS ITS HEIGHT ONCE ANALYZE IS PRESSED (Hugh, 2026-10-14): the loading and failed
+  // states draw neither the second paragraph nor the description field, so the block shrank under
+  // the press and everything below it, the Tuning hub first, jumped up. The idle height is read
+  // after each idle render and set as the block's floor, before paint, for as long as it is not
+  // idle; back at idle it lets go. A block first drawn loading or failed has no idle height to hold.
+  const sectionRef = useRef<HTMLElement>(null);
+  const idleHeight = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    if (phase === "idle") {
+      el.style.minHeight = "";
+      idleHeight.current = el.offsetHeight;
+    } else if (idleHeight.current !== null) {
+      el.style.minHeight = `${idleHeight.current}px`;
+    }
+  });
+  // AND WHILE IDLE, ON EVERY RESIZE: a phone rotated or a window resized changes the block's height
+  // with no render here, and the press would then hold a stale height and move Tuning after all
+  // (Copilot, PR #1809). Observed only while idle: from the press on, the height is the floor.
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (phase !== "idle" || !el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => { idleHeight.current = el.offsetHeight; });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [phase]);
   return (
-    <section className="flex flex-col gap-[7px] md:gap-[8px]" data-testid="analysis-empty" data-phase={phase}>
+    <section ref={sectionRef} className="flex flex-col gap-[7px] md:gap-[8px]" data-testid="analysis-empty" data-phase={phase}>
       <h3 className="m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[10px] md:tracking-[0.16em]">
         {copy.overview}
       </h3>
