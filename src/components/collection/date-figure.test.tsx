@@ -11,9 +11,12 @@ describe("readCardDate", () => {
     });
   });
   it("adds the year for a day in an earlier year, exact or since", () => {
-    expect(readCardDate({ added: Date.UTC(2025, 11, 31, 12) / 60_000 }, NOW)?.text).toBe("Dec 31, 2025");
+    expect(readCardDate({ added: Date.UTC(2025, 11, 31, 12) / 60_000 }, NOW)).toEqual({
+      text: "Dec 31 \u201925",
+      spoken: "added Dec 31, 2025",
+    });
     expect(readCardDate({ since: Date.UTC(2025, 8, 2) / 86_400_000 }, NOW)).toEqual({
-      text: "since Sep 2, 2025",
+      text: "since Sep 2 \u201925",
       spoken: "in your collection since Sep 2, 2025",
     });
   });
