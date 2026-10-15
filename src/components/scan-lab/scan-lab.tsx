@@ -249,7 +249,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   }, [reading, keepFrame]);
 
   return (
-    <main className="mx-auto flex w-full max-w-[560px] flex-col gap-[12px] px-[16px] py-[20px] text-[color:var(--fg)]">
+    <div className="mx-auto flex w-full max-w-[560px] flex-col gap-[12px] px-[16px] py-[20px] text-[color:var(--fg)]">
       <h1 className="m-0 font-display text-[22px] font-bold">{copy.title}</h1>
       <p className="m-0 text-[14px] text-[color:var(--fg-muted)]">{copy.intro}</p>
       {status === "idle" && (
@@ -301,6 +301,6 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
           </span>
         </section>
       )}
-    </main>
+    </div>
   );
 }
