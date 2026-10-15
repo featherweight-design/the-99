@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { VersionRail } from "./version-history";
 import { deckVersioningCopy, historyOriginCopy } from "../../lib/copy/deck-versioning";
@@ -228,7 +228,7 @@ const ORIGIN: DeckOrigin = {
   partnerOracleId: null,
   commanderName: "Ulalek, Fused Atrocity",
   partnerName: null,
-  manaValue: 3.6,
+  manaValue: 3.6, startVersionId: null,
 };
 
 function mountLinked(versions: VersionSummary[]) {
@@ -328,5 +328,66 @@ describe("VersionRail with v0", () => {
     expect(unlinkPrecon).not.toHaveBeenCalled();
     fireEvent.click(within(dialog).getByRole("button", { name: preconsCopy.link.unlink.submit }));
     await waitFor(() => expect(unlinkPrecon).toHaveBeenCalledWith("deck_1", ORIGIN.fileName));
+  });
+});
+
+// A started deck's first version IS v0 (`startVersionId`): one row for the box's list, not a committed
+// v1 above a dashed v0 holding the same cards.
+describe("VersionRail on a deck started from its precon", () => {
+  const STARTED = [version({ number: 1, adds: 2, removes: 2 }), version({ number: 0 })];
+  const mountStarted = (versions = STARTED, startVersionId = "v_0") =>
+    render(<VersionRail deckId="deck_1" deckName="HD - Eldrazi" versions={versions} origin={{ ...ORIGIN, startVersionId }} />);
+
+  it("draws no virtual v0 and no divider beneath the start's version", () => {
+    mountStarted();
+    expect(document.querySelector("[data-origin-row]")).toBeNull();
+    expect(screen.queryByText(historyOriginCopy.originDivider)).toBeNull();
+    expect(screen.queryByText(historyOriginCopy.brewLine)).toBeNull();
+    expect(screen.getAllByRole("button", { expanded: false }).map((r) => r.textContent?.match(/^v\d+/)?.[0])).toEqual(["v1", "v0"]);
+  });
+
+  it("gives the start's version the precon's note when it has none of its own, and keeps a note it has", () => {
+    mountStarted();
+    const rows = screen.getAllByRole("button", { expanded: false });
+    expect(rows[1].textContent).toContain(historyOriginCopy.originNote("Eldrazi Unbound"));
+    expect(rows[0].textContent).not.toContain(historyOriginCopy.originNote("Eldrazi Unbound"));
+    cleanup();
+    mountStarted([version({ number: 0, note: "the box" })]);
+    expect(screen.getAllByRole("button", { expanded: false })[0].textContent).not.toContain("as the box lists it");
+  });
+
+  it("draws the start's version as `initial`, current while it is the newest", () => {
+    mountStarted([version({ number: 0 })]);
+    const [row] = screen.getAllByRole("button", { expanded: false });
+    expect(within(row).getAllByText(copy.initial).length).toBeGreaterThan(0);
+    expect(within(row).getAllByText(copy.current).length).toBeGreaterThan(0);
+  });
+
+  it("opens the start's version with the precon's page and the unlink beneath its list", async () => {
+    getVersionDiff.mockClear();
+    unlinkPrecon.mockClear();
+    mountStarted();
+    fireEvent.click(screen.getAllByRole("button", { expanded: false })[1]);
+    const open = await screen.findByRole("link", { name: historyOriginCopy.originOpen("Eldrazi Unbound") });
+    expect(open.getAttribute("href")).toBe("/decks/precons/EldraziUnbound_CMM");
+    expect(open.closest("[data-origin-actions]")).not.toBeNull();
+    // The panel names the precon's note too, never `no note` under a row that has one.
+    const panel = document.getElementById(screen.getAllByRole("button", { expanded: true })[0].getAttribute("aria-controls")!)!;
+    expect(within(panel).queryByText(copy.noNote)).toBeNull();
+    expect(panel.textContent).toContain(historyOriginCopy.originNote("Eldrazi Unbound"));
+    // Not v0's own panel: the start's version opens its committed list, with nothing to diff against.
+    expect(document.querySelector("[data-origin-panel]")).toBeNull();
+    expect(screen.queryByText(historyOriginCopy.originHeading)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.link.unlink.entryLong }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: preconsCopy.link.unlink.submit }));
+    await waitFor(() => expect(unlinkPrecon).toHaveBeenCalledWith("deck_1", ORIGIN.fileName));
+  });
+
+  it("draws the actions under the start's version only", async () => {
+    mountStarted();
+    fireEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
+    await waitFor(() => expect(getVersionDiff).toHaveBeenCalled());
+    expect(document.querySelector("[data-origin-actions]")).toBeNull();
   });
 });

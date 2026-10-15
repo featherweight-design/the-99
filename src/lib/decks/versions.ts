@@ -140,10 +140,13 @@ export async function commitVersion(
   snapshot: CommitSnapshot | undefined,
   /** The committer's resolved switches (`requestSwitchEnv`). */
   env: NodeJS.ProcessEnv,
+  /** The number a FIRST commit takes: 1, or 0 for a precon start, whose list is the precon's v0. Ignored
+   *  once the deck has a version, which every later commit counts on from. */
+  opts: { first: 0 | 1 } = { first: 1 },
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   return tx
-    ? commitVersionIn(tx, deckId, note, snapshot, env)
-    : db.transaction((t) => commitVersionIn(t, deckId, note, snapshot, env));
+    ? commitVersionIn(tx, deckId, note, snapshot, env, opts.first)
+    : db.transaction((t) => commitVersionIn(t, deckId, note, snapshot, env, opts.first));
 }
 
 async function commitVersionIn(
@@ -152,6 +155,7 @@ async function commitVersionIn(
   note: string | null,
   snapshot: CommitSnapshot | undefined,
   env: NodeJS.ProcessEnv,
+  first: 0 | 1,
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   const [deck] = await tx.select().from(decks)
     .where(eq(decks.id, deckId))
@@ -178,7 +182,7 @@ async function commitVersionIn(
 
   const [inserted] = await tx.insert(deckVersions).values({
     deckId,
-    number: (previous?.number ?? 0) + 1,
+    number: previous ? previous.number + 1 : first,
     note,
     commanderOracleId: deck.commanderOracleId,
     partnerOracleId: deck.partnerOracleId,

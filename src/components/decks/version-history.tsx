@@ -321,8 +321,6 @@ function OriginPanel({ deckId, deckName, origin, current, panelId }: {
   current: string | null;
   panelId: string;
 }) {
-  const [unlinking, setUnlinking] = useState(false);
-  const action = "inline-flex items-center min-h-[44px] md:min-h-[36px] font-sans text-[13px] font-semibold";
   return (
     <div
       id={panelId}
@@ -333,7 +331,21 @@ function OriginPanel({ deckId, deckName, origin, current, panelId }: {
         <b className="font-semibold text-[color:var(--fg)]">{historyOriginCopy.originHeading}</b>{" "}
         {historyOriginCopy.originBody(origin.name, current)}
       </p>
-      <div className="flex flex-wrap items-center gap-x-[18px] mt-[6px]">
+      <OriginActions deckId={deckId} deckName={deckName} origin={origin} />
+    </div>
+  );
+}
+
+/**
+ * The precon's own page and the way to unlink (K13): v0's panel's action line, and the same line under a
+ * started deck's first version, which IS v0 and so draws no panel of v0's own.
+ */
+function OriginActions({ deckId, deckName, origin }: { deckId: string; deckName: string; origin: DeckOrigin }) {
+  const [unlinking, setUnlinking] = useState(false);
+  const action = "inline-flex items-center min-h-[44px] md:min-h-[36px] font-sans text-[13px] font-semibold";
+  return (
+    <>
+      <div data-origin-actions className="flex flex-wrap items-center gap-x-[18px] mt-[6px]">
         <Link href={`/decks/precons/${encodeURIComponent(origin.fileName)}`} className={`${action} text-[color:var(--accent)] no-underline`}>
           {historyOriginCopy.originOpen(origin.name)}
           <PendingReporter href={`/decks/precons/${encodeURIComponent(origin.fileName)}`} />
@@ -349,7 +361,7 @@ function OriginPanel({ deckId, deckName, origin, current, panelId }: {
       {unlinking && (
         <UnlinkDialog deckId={deckId} deckName={deckName} fileName={origin.fileName} preconName={origin.name} onDismiss={() => setUnlinking(false)} />
       )}
-    </div>
+    </>
   );
 }
 
@@ -393,12 +405,16 @@ export function VersionRail({
   // a ref: the map is read while rendering the panel's initial state, which is
   // what a ref must not be used for.
   const [cache] = useState<Map<string, VersionDiffPayload>>(() => new Map());
+  // A started deck's first version IS v0 (`startVersionId`): it carries v0's note and actions, and no
+  // virtual v0 is drawn beneath it. Otherwise v0 is drawn apart, last.
+  const startId = origin?.startVersionId ?? null;
+  const apart = startId === null ? origin : null;
 
   return (
     <div className="w-full">
       <h2 className="sr-only">{copy.heading(versions.length)}</h2>
       <div className="flex flex-col gap-[6px] px-[14px] md:px-[26px] pt-[18px] md:pt-[14px] mb-[18px] md:mb-[26px]">
-        {origin && versions.length === 0 && (
+        {apart && versions.length === 0 && (
           // K14: a linked brew. Nothing is committed, so nothing is current; v0 stands alone.
           <p className="m-0 mb-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{historyOriginCopy.brewLine}</p>
         )}
@@ -408,36 +424,40 @@ export function VersionRail({
           // one — and the last entry has none, which is the v1 arm.
           const previous = versions[i + 1] ?? null;
           const open = openId === version.id;
+          const isStart = origin !== null && version.id === startId;
+          // The start's version reads the precon's note wherever its own is drawn: the row and its panel.
+          const shown = isStart && version.note === null ? { ...version, note: historyOriginCopy.originNote(origin.name) } : version;
           return (
             <div key={version.id} className="flex flex-col gap-[6px]">
               <RailRow
                 // Over COMMITTED rows only: v0 is never in `versions` (lock 4).
-                version={{ ...version, current: i === 0 }}
-                // A v1 with v0 before it shows its delta against the precon.
-                initial={previous === null && origin === null}
+                version={{ ...shown, current: i === 0 }}
+                // A v1 with v0 drawn before it shows its delta against the precon.
+                initial={previous === null && apart === null}
                 open={open}
                 panelId={panelId}
                 onToggle={() => setOpenId(open ? null : version.id)}
               />
               {open && (
                 <VersionDiff
-                  key={diffCacheKey(version, previous, origin)}
+                  key={diffCacheKey(version, previous, apart)}
                   deckId={deckId}
-                  version={version}
+                  version={shown}
                   previous={previous}
-                  origin={origin}
+                  origin={apart}
                   panelId={panelId}
                   cache={cache}
                 />
               )}
+              {open && isStart && <OriginActions deckId={deckId} deckName={deckName} origin={origin} />}
             </div>
           );
         })}
-        {origin && (
+        {apart && (
           <>
             {versions.length > 0 && <OriginDivider />}
             <OriginRow
-              origin={origin}
+              origin={apart}
               open={openId === ORIGIN}
               panelId={`${panelPrefix}-${ORIGIN}`}
               onToggle={() => setOpenId(openId === ORIGIN ? null : ORIGIN)}
@@ -446,7 +466,7 @@ export function VersionRail({
               <OriginPanel
                 deckId={deckId}
                 deckName={deckName}
-                origin={origin}
+                origin={apart}
                 current={versions[0] ? `v${versions[0].number}` : null}
                 panelId={`${panelPrefix}-${ORIGIN}`}
               />

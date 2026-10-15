@@ -699,6 +699,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   stamps do not share a vertical, because the meta cell to their left sizes to its date text below
   `md:` — the game log's existing behaviour, not this surface's.
 
+  It also writes three precon-linked decks from the first local precon whose every card is in the
+  catalog (it needs `PRECONS_ENABLED` on the server), and reads each rail at both widths: a start
+  committed as v0 draws ONE row, `v0`, with the precon's note, its card count the precon's 99 and,
+  opened, the Open and Unlink line, and no virtual v0 or divider; a start from before v0 (a v1
+  committed with its deck, holding exactly the box's list) draws its `v1` the same way; and a brew
+  linked later (its v1 committed two minutes on, one card short) keeps its virtual v0 below the
+  divider, counting the 99 without its commander.
+
 - `pnpm probe:games-empty` walks the Games tab's empty state in a real browser at 1440x900
   and 390x844, because its three rulings are facts about laid-out geometry rather than
   markup: that the desktop group is centred, that the card-fan mark sits level with the top
@@ -2062,8 +2070,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   - the edition switch's lists differ where the editions' printings do (Avengers Tower is MSH 260 in Regular and
     MSH 452 in the Collector's Edition), and where a Collector's Edition shares its plain printing (Final Fantasy's
     Cid, FIC 13) it reads that printing with every copy foil;
-  - a started deck is committed as v1, holding the 99, whose list is the live one (no draft left over), and v1
-    records the pinned printing of a card held in two printings (Chromatic Lantern at FRC 54, never the MBC 73 the
+  - a started deck is committed as v0, the precon's own, holding the 99, whose list is the live one (no draft left
+    over), and v0 records the pinned printing of a card held in two printings (Chromatic Lantern at FRC 54, never the MBC 73 the
     player prefers), which only a read inside the start's own transaction can see;
   - every card the box prints, commanders included, is pinned in `deck_printings` to the box's printing (Brainstorm
     and Arcane Signet at Multiverse Reforged's);
@@ -2076,7 +2084,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   database, through the real `startPreconOwned`, `loadDeckBuyRows` and `applyCollectionChange` (revert), on Hugh's own
   overlap: two older committed decks list Arcane Signet, Command Tower, Sol Ring and Swords to Plowshares and hold none,
   then Multiverse Reforged is started with the box:
-  - one transaction writes the box's 100 copies, the deck (committed as v1, linked to the add) and one History entry;
+  - one transaction writes the box's 100 copies, the deck (committed as v0, linked to the add) and one History entry;
   - the new deck owes nothing, and the older decks stay short of all four: the box's copies are reserved to the new
     deck, a copy each, so seniority never hands them to an older deck;
   - History's "Went to" for each of the four names the new deck alone;

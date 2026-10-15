@@ -3,7 +3,9 @@
  * `HANDOFF-R3 · built-from link.md` §5). It is assembled AT READ from `precon_cards` and is never a
  * `deck_versions` row, so every reader of committed history (the newest version, the claim model,
  * game stamping, a commit's `since`, the analysis and synopsis pins, the brew test) never meets it
- * (lock 4). `origin-read.ts` reads it; these are the pure halves.
+ * (lock 4). `origin-read.ts` reads it; these are the pure halves. A deck STARTED from the precon holds
+ * the list as its own first version instead (a start commits it as v0), and the rail draws that row in
+ * this one's place (`start-version.ts`).
  *
  * Client-safe: no database import, so the rail can take the type.
  */
@@ -26,8 +28,14 @@ export type DeckOrigin = {
   name: string;
   setCode: string;
   releaseDate: string;
-  /** Every card the precon lists, commanders included, from `precon_cards` (never a literal 100). */
+  /** The precon's 99: every card it lists but its commanders, as a version's count is (never a literal 99). */
   cardCount: number;
+  /**
+   * The deck's version that IS this list, when the deck was started from the precon: its v0, or a v1 a
+   * start committed before starts committed v0 (`isStartVersion`). Null on a deck linked after the fact,
+   * whose v0 is drawn apart. Set by `readDeckOriginAndStart`; `assembleOrigin` knows no versions.
+   */
+  startVersionId: string | null;
   /** v0's helm, as v1's commander line reads a predecessor's. */
   commanderOracleId: string | null;
   partnerOracleId: string | null;
@@ -93,7 +101,8 @@ export function assembleOrigin(rows: readonly OriginRow[]): OriginRead | null {
       name: head.name,
       setCode: head.setCode,
       releaseDate: head.releaseDate,
-      cardCount: rows.reduce((n, r) => n + r.quantity, 0),
+      cardCount: cards.reduce((n, c) => n + c.quantity, 0),
+      startVersionId: null,
       commanderOracleId: commanders[0]?.oracleId ?? null,
       partnerOracleId: commanders[1]?.oracleId ?? null,
       commanderName: commanders[0]?.name ?? null,

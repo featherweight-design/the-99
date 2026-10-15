@@ -741,6 +741,97 @@ try {
 
     await vpContext.close();
   }
+
+  // ── A precon-linked deck's v0 (precons R3 §5), three ways. A START commits the box's list as v0, so
+  // the rail draws ONE row for it: v0, carrying the precon's note, its Open and Unlink line, and no dashed
+  // virtual v0 beneath it. A start made before that committed it as v1 and keeps its number, but draws no
+  // virtual v0 either (`isStartVersion`). A brew linked after the fact keeps its virtual v0, drawn apart
+  // below a divider. Needs PRECONS_ENABLED on the server, which is what the deck page reads v0 under.
+  const precon = (await pool.query(
+    `select p.file_name, p.name,
+            (select sum(quantity)::int from precon_cards pc where pc.file_name = p.file_name and not pc.is_commander) body
+       from precons p
+      where not exists (select 1 from precon_cards pc where pc.file_name = p.file_name
+                        and not exists (select 1 from cards c where c.oracle_id = pc.oracle_id))
+        and (select count(*) from precon_cards pc where pc.file_name = p.file_name and pc.is_commander) = 1
+      order by p.file_name limit 1`,
+  )).rows[0];
+  check("precon fixture · a precon whose every card is in the catalog", precon !== undefined);
+  if (precon) {
+    const preconDeck = async (label, { first, late, drift }) => {
+      const { rows } = await pool.query(
+        `insert into decks (user_id, name, commander_oracle_id, built_from_precon, filled)
+           select $1, $2, pc.oracle_id, $3, true from precon_cards pc where pc.file_name = $3 and pc.is_commander limit 1
+         returning id, commander_oracle_id`,
+        [userId, `Probe · ${label}`, precon.file_name],
+      );
+      const { id: deckId, commander_oracle_id: commander } = rows[0];
+      createdDeckIds.push(deckId);
+      // The body as a start writes it: one row per card, copies summed across printings.
+      await pool.query(
+        `insert into deck_cards (deck_id, oracle_id, quantity, auto)
+           select $1, oracle_id, sum(quantity), false from precon_cards where file_name = $2 and not is_commander
+           group by oracle_id`,
+        [deckId, precon.file_name],
+      );
+      const v = await pool.query(
+        `insert into deck_versions (deck_id, number, commander_oracle_id, committed_at, commander_since)
+           select $1, $2, $3, d.created_at + $4::interval, d.created_at + $4::interval from decks d where d.id = $1
+         returning id`,
+        [deckId, first, commander, late ? "2 minutes" : "0 seconds"],
+      );
+      await pool.query(
+        `insert into deck_version_cards (version_id, oracle_id, quantity)
+           select $1, oracle_id, quantity from deck_cards where deck_id = $2 ${drift ? "offset 1" : ""}`,
+        [v.rows[0].id, deckId],
+      );
+      return deckId;
+    };
+    const cases = [
+      { label: "a start, committed as v0", opts: { first: 0 }, rows: ["v0"], apart: false },
+      { label: "a start from before v0, committed as v1", opts: { first: 1 }, rows: ["v1"], apart: false },
+      { label: "a brew linked later", opts: { first: 1, late: true, drift: true }, rows: ["v1"], apart: true },
+    ];
+    for (const c of cases) c.deckId = await preconDeck(c.label, c.opts);
+
+    for (const viewport of VIEWPORTS) {
+      const vpContext = await browser.newContext({ viewport });
+      const vpPage = await vpContext.newPage();
+      await signIn(vpPage);
+      for (const c of cases) {
+        await vpPage.goto(`${BASE}/decks/${c.deckId}`, { waitUntil: "networkidle" });
+        await vpPage.waitForTimeout(900);
+        await vpPage.locator("#tab-versions").click();
+        await vpPage.waitForTimeout(700);
+        // Committed rows only: the virtual v0 is a row button of its own, counted apart below.
+        const rows = await railRows(vpPage).and(vpPage.locator(":not([data-origin-row])")).allInnerTexts();
+        const numbers = rows.map((t) => t.match(/^v\d+/)?.[0]);
+        const originRow = await vpPage.locator("main [data-origin-row]").count();
+        const divider = await vpPage.locator("main").getByText("before your first commit").count();
+        const tag = `${viewport.label} · ${c.label}`;
+        console.log(`\n########## ${tag}`);
+        for (const t of rows) console.log(`    ${t.replace(/\s+/g, " ")}`);
+        check(`${tag} · its committed rows`, JSON.stringify(numbers) === JSON.stringify(c.rows), JSON.stringify(numbers));
+        check(`${tag} · ${c.apart ? "draws" : "draws no"} virtual v0`, (originRow === 1) === c.apart, `${originRow} origin rows`);
+        check(`${tag} · ${c.apart ? "draws" : "draws no"} the divider`, (divider === 1) === c.apart, `${divider} dividers`);
+        if (!c.apart) {
+          check(`${tag} · the start's row carries the precon's note`, rows[0]?.includes(`${precon.name}, as the box lists it`), rows[0]);
+          check(`${tag} · its card count is the precon's 99`, new RegExp(`\\b${precon.body} cards\\b`, "i").test(rows[0] ?? ""), rows[0]);
+          await railRows(vpPage).first().click();
+          await vpPage.waitForTimeout(900);
+          const actions = vpPage.locator("main [data-origin-actions]");
+          check(`${tag} · open, it offers the precon's page and the unlink`,
+            (await actions.count()) === 1
+              && (await actions.getByRole("link", { name: `Open ${precon.name} ›` }).count()) === 1
+              && (await actions.getByRole("button").count()) === 1);
+        } else {
+          const meta = await vpPage.locator("main [data-origin-row]").innerText();
+          check(`${tag} · v0 counts the 99, commanders apart`, new RegExp(`\\b${precon.body} cards\\b`, "i").test(meta), meta.replace(/\s+/g, " "));
+        }
+      }
+      await vpContext.close();
+    }
+  }
 } finally {
   // The decks, and nothing else: versions, version cards and games all cascade,
   // and the run writes no collection row to take back. Driven off the ids recorded

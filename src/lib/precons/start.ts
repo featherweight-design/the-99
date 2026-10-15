@@ -1,7 +1,7 @@
 /**
  * "Start with this precon" (Hugh, 2026-10-14): the deck a precon starts is the box as printed, and a
  * finished deck. Its list is the edition's own rows, every card (commanders included) is pinned to the
- * edition's printing in `deck_printings`, and it is committed as v1 in the same transaction as the deck,
+ * edition's printing in `deck_printings`, and it is committed as v0 (the precon's own) in the same transaction as the deck,
  * so there is no draft to commit and no moment the deck exists without its list or its printings.
  *
  * A pin names a printing; the reads honor it only while the player holds that printing
@@ -123,7 +123,8 @@ export async function preparePreconDeckIn(db: Tx, fileName: string): Promise<Pre
 }
 
 /**
- * Writes the prepared deck inside `tx` and commits it as v1 there: no snapshot (the deck has declared no
+ * Writes the prepared deck inside `tx` and commits it as v0 there (the box's list IS v0, so Versions draws one
+ * row for it, `start-version.ts`): no snapshot (the deck has declared no
  * bracket to carry). `addEntryId` links the deck to the collection add a start with "I own this precon"
  * made in the same transaction (`startPreconOwned`). Returns the deck's id.
  */
@@ -145,7 +146,7 @@ export async function writePreconDeckIn(
     builtFromPrecon: deck.builtFromPrecon,
   });
   if (addEntryId) await tx.update(decks).set({ preconAddEntryId: addEntryId }).where(eq(decks.id, deckId));
-  await commitVersion(deckId, null, tx, undefined, env);
+  await commitVersion(deckId, null, tx, undefined, env, { first: 0 });
   // Each token the deck makes shows the box's own printing, through the ONE writer, which takes it only
   // while the player holds that printing, from any source: a start with the box holds it (the add's
   // `syncPreconTokens` ran earlier in this transaction); a plain start holds it only from an earlier add or

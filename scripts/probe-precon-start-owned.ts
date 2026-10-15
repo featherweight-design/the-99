@@ -4,7 +4,7 @@
 // none of them, then Multiverse Reforged (one of each) is started with "I own this precon".
 //
 // Cases:
-//   a  one start writes the box, the deck (committed v1) and one History entry, linked to each other
+//   a  one start writes the box, the deck (committed v0) and one History entry, linked to each other
 //   b  the new deck owes nothing: every copy the box brought is its own
 //   c  the older decks stay short of the four cards: they never take the box's copies
 //   d  History's "Went to" for each of the four names the new deck alone
@@ -96,10 +96,11 @@ async function run() {
   const started = await startPreconOwned(USER, FILE, "Multiverse Reforged", actionId, ENV, true);
   if (!started.ok) throw new Error(`start refused: ${started.reason}`);
   const deckId = started.deckId;
-  const [linked] = await rows<{ entry: string | null; versions: number }>(sql`
-    select precon_add_entry_id::text entry, (select count(*)::int from deck_versions where deck_id = ${deckId}::uuid) versions
+  const [linked] = await rows<{ entry: string | null; versions: number; first: number }>(sql`
+    select precon_add_entry_id::text entry, (select count(*)::int from deck_versions where deck_id = ${deckId}::uuid) versions,
+      (select min(number)::int from deck_versions where deck_id = ${deckId}::uuid) first
     from decks where id = ${deckId}::uuid`);
-  check("a · the deck is linked to the add and committed as v1", linked, { entry: actionId, versions: 1 });
+  check("a · the deck is linked to the add and committed as v0", linked, { entry: actionId, versions: 1, first: 0 });
   const [copies] = await rows<{ n: number }>(sql`select coalesce(sum(quantity), 0)::int n from collection_items where user_id = ${USER}`);
   check("a · the box's 100 copies are in the collection", copies.n, 100);
 

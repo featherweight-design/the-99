@@ -39,16 +39,20 @@ export function preconArrivalQuery(userId: string, deckId: string) {
     .from(decks)
     .innerJoin(precons, eq(precons.fileName, decks.builtFromPrecon))
     // Until the deck is committed AFTER its start: the URL keeps `?from=precon`, so a deck the player has since
-    // committed must not read as just started on a reload. A start commits the deck's version 1 in the same
-    // transaction that makes the deck, so any later version (number > 1) is the player's; a version 1 committed more
-    // than a minute after the deck was created is the player's too (a deck started before starts committed).
+    // committed must not read as just started on a reload. A start commits the deck's FIRST version (v0, or v1 for a
+    // start made before starts committed v0) in the same transaction that makes the deck, so any later version is the
+    // player's; a first version committed more than a minute after the deck was created is the player's too (a deck
+    // started before starts committed).
     .where(and(
       eq(decks.id, deckId),
       eq(decks.userId, userId),
       sql`not exists (
         select 1 from deck_versions dv
         where dv.deck_id = ${decks}.id
-          and (dv.number > 1 or dv.committed_at > ${decks}.created_at + interval '1 minute')
+          and (
+            dv.number > (select min(f.number) from deck_versions f where f.deck_id = ${decks}.id)
+            or dv.committed_at > ${decks}.created_at + interval '1 minute'
+          )
       )`,
     ));
 }

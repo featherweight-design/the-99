@@ -6,8 +6,8 @@
 //      the Collector's Edition prints at its own number reads that number there and the plain one in Regular
 //   b  and where an edition shares its plain printing (Final Fantasy's Collector's Editions), it reads the same
 //      number with every copy foil, and Regular none
-//   c  a started deck is committed as v1 (one version, its 99 cards) whose list is the live one (no draft left
-//      over), and v1 records the pinned printing of a card held in two, read inside the start's own transaction
+//   c  a started deck is committed as v0 (one version, its 99 cards, the precon's own v0) whose list is the live one (no draft left
+//      over), and v0 records the pinned printing of a card held in two, read inside the start's own transaction
 //   d  every card the box prints, commanders included, is pinned to the box's printing (Brainstorm and Arcane
 //      Signet at Multiverse Reforged's, never a printing the player happens to hold)
 //   e  a Collector's Edition start pins the Collector's Edition's printings, and records the plain edition
@@ -38,7 +38,7 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-precon-start-${Date.now()}`;
 // A script has no signed-in reader: it decides switches from the environment, saying so. The deck
-// printings switch is on here whatever the environment says, so v1 records the printing each card showed.
+// printings switch is on here whatever the environment says, so v0 records the printing each card showed.
 const ENV = { ...process.env, DECK_PRINTINGS_ENABLED: "true" };
 let failures = 0;
 let guarded = false;
@@ -92,7 +92,7 @@ async function run() {
   check("b · and FIC 13 in the Collector's Edition, every copy foil", cid(ff.collector.cards), { label: "FIC 13", foil: 1, of: 1 });
 
   // c's setup: the player holds Chromatic Lantern in two printings, the box's (FRC 54) and MBC 73, so only the
-  // deck's pin decides which v1 records. A pin is honored only on a printing held.
+  // deck's pin decides which v0 records. A pin is honored only on a printing held.
   await fixture.execute(sql`
     insert into collection_items (user_id, oracle_id, quantity, set_code, collector_number, scryfall_id)
     select ${USER}, p.oracle_id, 1, p.set_code, p.collector_number, p.scryfall_id from printings p
@@ -103,12 +103,13 @@ async function run() {
     insert into card_art_preferences (user_id, oracle_id, set_code, collector_number)
     select ${USER}, oracle_id, 'mbc', '73' from cards where name = 'Chromatic Lantern'`);
   const frc = await startPreconDeck(USER, "MultiverseReforged_FRC", "Probe FRC", ENV);
-  const [versions] = await rows<{ n: number; cards: number }>(sql`
-    select count(*)::int n, (select coalesce(sum(vc.quantity), 0)::int from deck_version_cards vc
+  const [versions] = await rows<{ n: number; first: number; cards: number }>(sql`
+    select count(*)::int n, min(number)::int first, (select coalesce(sum(vc.quantity), 0)::int from deck_version_cards vc
       join deck_versions v on v.id = vc.version_id where v.deck_id = ${frc}::uuid) cards
     from deck_versions where deck_id = ${frc}::uuid`);
-  check("c · committed as v1", versions.n, 1);
-  check("c · and v1 holds the 99", versions.cards, 99);
+  check("c · committed as one version", versions.n, 1);
+  check("c · numbered v0, the precon's own", versions.first, 0);
+  check("c · and v0 holds the 99", versions.cards, 99);
   const pins = await pinsMatch(frc, "MultiverseReforged_FRC");
   check("d · every printed card is pinned", pins.pins === pins.want && pins.want > 0, true);
   check("d · each at the box's printing", pins.wrong, 0);
@@ -120,7 +121,7 @@ async function run() {
     join cards c on c.oracle_id = pc.oracle_id join printings p on p.scryfall_id = pc.scryfall_id
     where pc.file_name = 'MultiverseReforged_FRC' and c.name in ('Brainstorm', 'Arcane Signet') order by c.name, pc.position`);
   check("d · Brainstorm and Arcane Signet at the box's own printings", named, boxAt);
-  // v1 is committed in the start's own transaction, so it must read the pins written there, not the shared pool.
+  // v0 is committed in the start's own transaction, so it must read the pins written there, not the shared pool.
   const recorded = await rows<{ name: string; printed: string }>(sql`
     select c.name, upper(vc.set_code) || ' ' || vc.collector_number printed from deck_version_cards vc
     join deck_versions v on v.id = vc.version_id join cards c on c.oracle_id = vc.oracle_id
@@ -129,7 +130,7 @@ async function run() {
     select distinct on (c.name) c.name, upper(p.set_code) || ' ' || p.collector_number printed from precon_cards pc
     join cards c on c.oracle_id = pc.oracle_id join printings p on p.scryfall_id = pc.scryfall_id
     where pc.file_name = 'MultiverseReforged_FRC' and c.name = 'Chromatic Lantern' order by c.name, pc.position`);
-  check("c · v1 records the box's printing of a card held in two, read inside the start's transaction", recorded, boxAtAll);
+  check("c · v0 records the box's printing of a card held in two, read inside the start's transaction", recorded, boxAtAll);
   const [drift] = await rows<{ n: number }>(sql`
     select count(*)::int n from (
       (select oracle_id, quantity from deck_cards where deck_id = ${frc}::uuid
@@ -137,7 +138,7 @@ async function run() {
       union all
       (select vc.oracle_id, vc.quantity from deck_version_cards vc join deck_versions v on v.id = vc.version_id where v.deck_id = ${frc}::uuid
         except select oracle_id, quantity from deck_cards where deck_id = ${frc}::uuid)) d`);
-  check("c · and the live list is v1's: no draft left over", drift.n, 0);
+  check("c · and the live list is v0's: no draft left over", drift.n, 0);
 
   const ce = await startPreconDeck(USER, "AvengersAssembleCollectorSEdition_MSC", "Probe CE", ENV);
   const cePins = await pinsMatch(ce, "AvengersAssembleCollectorSEdition_MSC");

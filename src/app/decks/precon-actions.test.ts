@@ -39,7 +39,10 @@ vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async (id: string) 
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { state.after.push(fn); } }));
 vi.mock("../../lib/decks/revalidate-claims", () => ({ revalidateClaims: (id: string) => state.revalidated.push(id) }));
 vi.mock("../../lib/decks/versions", () => ({
-  commitVersion: async (deckId: string, note: unknown, tx: unknown) => { state.committed.push({ deckId, note, inTx: tx !== undefined }); return { version: {}, cardCount: 0 }; },
+  commitVersion: async (deckId: string, note: unknown, tx: unknown, _snapshot: unknown, _env: unknown, opts?: { first: number }) => {
+    state.committed.push({ deckId, note, inTx: tx !== undefined, first: opts?.first ?? 1 });
+    return { version: {}, cardCount: 0 };
+  },
 }));
 vi.mock("../../lib/decks/write-imported-deck", () => ({
   writeImportedDeck: async (_tx: unknown, d: unknown) => { state.written.push(d); return "deck-1"; },
@@ -86,8 +89,8 @@ describe("createDeckFromPrecon", () => {
       ],
       builtFromPrecon: "EldraziUnbound_CMM",
     }]);
-    // Committed as v1 inside the deck's own transaction: no draft is left to commit.
-    expect(state.committed).toEqual([{ deckId: "deck-1", note: null, inTx: true }]);
+    // Committed as v0, the precon's own, inside the deck's own transaction: no draft is left to commit.
+    expect(state.committed).toEqual([{ deckId: "deck-1", note: null, inTx: true, first: 0 }]);
     expect(state.revalidated).toEqual(["deck-1"]);
     // The feed's order, so a pair's lead is the commander its page names first.
     expect(state.orders).toEqual([preconCards.position]);
