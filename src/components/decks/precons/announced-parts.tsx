@@ -114,7 +114,12 @@ function RevealedCard({ card, siblings }: { card: RevealedCommander; siblings: r
   );
 }
 
-/** T2: nothing revealed yet. One card's size, in the shipped no-art language. */
+/**
+ * T2: nothing revealed yet. One strip card's size (76x106, 84x117), in the shipped no-art language, in both views,
+ * inside the set's dashed block. It stays that small in tiles too, beside ~190px commander tiles, on purpose: it is a
+ * NOTE that nothing is revealed, not a stand-in for a tile, so it must not read as a missing card (design review B,
+ * 2026-10-15).
+ */
 function NonePlate() {
   return (
     <li className="flex h-[106px] w-[76px] flex-none items-center justify-center rounded-[4px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[6px] text-center md:h-[117px] md:w-[84px]" data-testid="none-plate">
@@ -169,29 +174,39 @@ export function RevealedStrip({ commanders, className = "" }: { commanders: read
 }
 
 /**
+ * The ring a revealed tile draws while its press has keyboard focus: on the tile itself, 2px `--accent` 2px off, as
+ * every focus ring here is. The tile clips (`TILE_SHELL`'s `overflow-hidden`, for the art's corners), so a ring on
+ * the press inside it would be cut on three sides; the press draws none of its own.
+ */
+export const TILE_FOCUS_RING =
+  "has-[:focus-visible]:outline has-[:focus-visible]:outline-solid has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)]";
+
+/**
  * One revealed commander in tiles: the precon tile's shell, art box and caption (`PreconTile`'s anatomy), holding
- * a card rather than a precon, so it is the decklists' size in their grid. The art is the press; the caption's
- * dots and name are drawn for the eye, the press speaks them.
+ * a card rather than a precon. As on `PreconTile`, the WHOLE tile is the press: the name in the caption is the
+ * control, and its `::after` is stretched over the tile, so the art and the caption both open it and hover anywhere
+ * on it draws the preview. One accessible name, the press's.
  */
 function RevealedTile({ card, siblings }: { card: RevealedCommander; siblings: readonly string[] }) {
   const identity = card.colorIdentity.length > 0 ? card.colorIdentity : ["C"];
   const art = card.imageUri ?? card.imageUriSmall;
+  const pressable = useCardDetailIfAny() !== null;
   return (
     <li
-      className={`${TILE_SHELL} art-lift-host relative min-w-0 border border-solid border-[color:var(--border)] bg-[color:var(--surface)] md:hover:border-[color:var(--border-strong)] transition-colors`}
+      className={`${TILE_SHELL} art-lift-host relative min-w-0 border border-solid border-[color:var(--border)] bg-[color:var(--surface)] md:hover:border-[color:var(--border-strong)] transition-colors ${TILE_FOCUS_RING}`}
       data-testid="revealed-tile"
     >
-      <CommanderPress
-        card={card}
-        siblings={siblings}
-        className={`relative block w-full overflow-hidden bg-[color:var(--surface-sunken)] ${TILE_ART_CLIP}`}
+      <div
+        aria-hidden
+        className={`relative w-full overflow-hidden bg-[color:var(--surface-sunken)] ${TILE_ART_CLIP}`}
         style={{ aspectRatio: TILE_ART_RATIO }}
+        data-testid="revealed-art"
       >
         {art && (
           <HydratedImg src={art} decoding="async" className="art-lift absolute inset-0 h-full w-full object-cover object-center" />
         )}
         <span className={INNER_EDGE} />
-      </CommanderPress>
+      </div>
       <CardTileCaption
         meta={
           <span aria-hidden className="flex flex-none gap-[3px]">
@@ -200,8 +215,26 @@ function RevealedTile({ card, siblings }: { card: RevealedCommander; siblings: r
             ))}
           </span>
         }
-        name={card.name}
-        nameHidden
+        name={pressable ? (
+          <CardDetailTrigger
+            oracleId={card.oracleId}
+            name={card.name}
+            siblings={siblings}
+            imageUri={art}
+            preview
+            ariaLabel={spokenName(card, true)}
+            testId="revealed-press"
+            // A block that truncates itself (a button is never inline, so the caption's own ellipsis cannot reach
+            // its text); stretched over the tile by its `::after` (the tile is the positioned box, and the caption's
+            // clip is not its containing block); no ring of its own, which the tile would clip: the tile draws it
+            // (`TILE_FOCUS_RING`).
+            className="block w-full truncate p-0 text-left font-[inherit] text-[length:inherit] text-[color:inherit] focus-visible:outline-none after:absolute after:inset-0 after:rounded-[inherit] after:content-['']"
+          >
+            {card.name}
+          </CardDetailTrigger>
+        ) : card.name}
+        nameHidden={!pressable}
+        nameSpoken={pressable ? undefined : <span className="sr-only">{spokenName(card)}</span>}
       />
     </li>
   );
@@ -236,37 +269,45 @@ export function countLine(m: AnnouncedMatch): string {
 export type ListedJump = { count: number; year: string };
 
 /**
- * One set in tiles (T2–T6, L1, L2). The dashed block holds the set's head (and the empty plate while nothing is
- * revealed); its commanders follow it as tiles at the list's full width, so each is exactly a decklist tile's size.
+ * One set in tiles (T2–T6, L1, L2): a dashed block (the handoff's lock that an announced set is not a precon) holding
+ * the set's head and its commanders as tiles in the decklists' own grid. They are narrower than a decklist tile only
+ * by the block's inset (orchestrator's ruling, option 3, 2026-10-15).
  */
-export function AnnouncedSet({ match, today, isNew, listed }: { match: AnnouncedMatch; today: string; isNew: boolean; listed: ListedJump | null }) {
+export function AnnouncedSet({ match, today, isNew, listed, compact = false }: {
+  match: AnnouncedMatch;
+  today: string;
+  isNew: boolean;
+  listed: ListedJump | null;
+  /**
+   * Draw the commanders as the small strip instead of tiles: About's specimen, a figure of one set with one commander,
+   * where a lone decklist-sized tile in a wide figure read as an empty box and clipped its name at 390.
+   */
+  compact?: boolean;
+}) {
   const { set } = match;
   const code = set.code.toUpperCase();
   return (
-    <li className="flex flex-col gap-[10px]" data-testid="announced-set">
-      <div className="flex flex-col gap-[10px] rounded-[10px] border border-dashed border-[color:var(--border-dashed)] p-[11px_12px_12px] md:p-[12px_14px_14px]" data-testid="announced-set-head">
-        <div className="flex flex-col gap-[3px]">
-          <div className="flex items-center gap-[8px]">
-            <h3 className="m-0 font-display text-[15px] font-normal text-[color:var(--fg)] md:text-[16px]">{set.name}</h3>
-            {isNew && <span className={NEW_TAG}>{copy.newTag}</span>}
-          </div>
-          <span className="hidden font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:block">
-            {copy.meta(code, whenLine(set.releasesOn, today), countLine(match))}
-          </span>
-          <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">{whenLine(set.releasesOn, today, true)}</span>
-          <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">{copy.metaCode(code, countLine(match))}</span>
-          {listed && (
-            <a
-              href={`#precons-${listed.year}`}
-              className={`inline-flex min-h-[24px] items-center self-start font-mono text-[11px] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px] ${FOCUS_RING}`}
-            >
-              {copy.listed(listed.count)}
-            </a>
-          )}
+    <li className="flex flex-col gap-[10px] rounded-[10px] border border-dashed border-[color:var(--border-dashed)] p-[11px_12px_12px] md:p-[12px_14px_14px]" data-testid="announced-set">
+      <div className="flex flex-col gap-[3px]">
+        <div className="flex items-center gap-[8px]">
+          <h3 className="m-0 font-display text-[15px] font-normal text-[color:var(--fg)] md:text-[16px]">{set.name}</h3>
+          {isNew && <span className={NEW_TAG}>{copy.newTag}</span>}
         </div>
-        {match.commanders.length === 0 && <RevealedTiles commanders={match.commanders} />}
+        <span className="hidden font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:block">
+          {copy.meta(code, whenLine(set.releasesOn, today), countLine(match))}
+        </span>
+        <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">{whenLine(set.releasesOn, today, true)}</span>
+        <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">{copy.metaCode(code, countLine(match))}</span>
+        {listed && (
+          <a
+            href={`#precons-${listed.year}`}
+            className={`inline-flex min-h-[24px] items-center self-start font-mono text-[11px] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px] ${FOCUS_RING}`}
+          >
+            {copy.listed(listed.count)}
+          </a>
+        )}
       </div>
-      {match.commanders.length > 0 && <RevealedTiles commanders={match.commanders} />}
+      {compact ? <RevealedStrip commanders={match.commanders} /> : <RevealedTiles commanders={match.commanders} />}
     </li>
   );
 }

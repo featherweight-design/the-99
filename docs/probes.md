@@ -283,9 +283,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   closed with the next release in its count; a press opens it and is remembered (`the99:precons:announced`); in rows a
   set row opens its own cards and a set with none revealed has no press; with Most owned saved in the browser the plain
   address hides the group while `?sort=newest#announced` lands on it open and in view; `?sort=owned` hides it (T7).
-  Revealed commanders open card details (Hugh, 2026-10-15, reversing G2): in tiles each is a decklist tile's width in the
-  decklists' columns (both boxes measured), a press and Enter open card details titled by that card, Escape hands focus
-  back, and a 1300 hover draws the hover preview of its normal art; in rows the opened strip keeps 76x106 (390) and
+  Revealed commanders open card details (Hugh, 2026-10-15, reversing G2): in tiles they sit in the decklists' grid
+  inside each set's dashed block (ruling option 3), with the decklists' column count and a grid narrower by exactly the
+  block's inset (both measured); the whole tile is the press (a press on the art, one on the caption's name, and Enter
+  open card details titled by that card), Escape hands focus back, the tile's focus ring is visible on all four sides
+  (no clipping ancestor cuts into its extent, which a computed-style check cannot see), a long name ends in an ellipsis,
+  the none plate stays a small 76/84px note, and a 1300 hover over the art draws the hover preview of its normal art; in
+  rows a keyboard-focused strip card's ring is checked the same way, and the opened strip keeps 76x106 (390) and
   84x117 (1300) and the lead thumb 34x48, at 390 it scrolls sideways as a named region whose cards are the Tab stops, at
   1300 it wraps and is no region. The catalog's own many-commander set (Star Trek Commander on local-dev, 15) draws every
   commander as a tile that wraps inside the viewport, the page never scrolls sideways at 390, and no page or console error

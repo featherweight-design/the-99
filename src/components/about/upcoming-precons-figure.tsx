@@ -38,11 +38,14 @@ export const UPCOMING_SET: { match: AnnouncedMatch; today: string } = {
   },
 };
 
-/** The set block as the group draws it in tiles, in the list it belongs to. */
+/**
+ * The set block, in the list it belongs to, with its one commander in the compact strip (`compact`): the page draws
+ * commanders as decklist-sized tiles since 2026-10-15, and one such tile alone in this figure read as an empty box.
+ */
 export function UpcomingPreconsFigureBody() {
   return (
     <ul className="m-0 list-none p-[12px]">
-      <AnnouncedSet match={UPCOMING_SET.match} today={UPCOMING_SET.today} isNew={false} listed={null} />
+      <AnnouncedSet match={UPCOMING_SET.match} today={UPCOMING_SET.today} isNew={false} listed={null} compact />
     </ul>
   );
 }

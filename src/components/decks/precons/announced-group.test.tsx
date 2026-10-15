@@ -5,9 +5,10 @@ import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { RevealedCommander } from "../../../lib/precons/revealed";
 import type { UpcomingSet } from "../../../lib/precons/upcoming";
 import { ANNOUNCED_KEY, AnnouncedGroup, useAnnouncedVisit, type AnnouncedGroupProps } from "./announced-group";
-import { AnnouncedSet } from "./announced-parts";
+import { AnnouncedSet, TILE_FOCUS_RING } from "./announced-parts";
 import { PRECON_TILES_CLASS } from "./precon-grid";
 import { TILE_SHELL } from "../../ui/card-tile-caption";
+import { UpcomingPreconsFigureBody } from "../../about/upcoming-precons-figure";
 
 // The shared card-details trigger and hover-preview provider, passed through untouched but recorded, so a test can
 // say the revealed commanders are drawn by THOSE components (import identity) and with what.
@@ -131,10 +132,12 @@ describe("AnnouncedGroup", () => {
     expect(within(trcBlock).getAllByTestId("revealed-tile")).toHaveLength(15);
     const chapel = within(trcBlock).getByRole("button", { name: "View details for Christine Chapel, Combat Medic, White. Revealed commander." });
     expect(chapel).toHaveAttribute("data-testid", "revealed-press");
-    // Spoken once: the press carries the name, the drawn caption is hidden, and no sr-only sentence repeats it.
+    // Spoken once: the press IS the drawn name (its label replaces the text), the art is hidden, and no sr-only
+    // sentence repeats it.
     expect(within(trcBlock).queryByText(/Revealed commander\.$/)).toBeNull();
-    const caption = within(chapel.closest("li") as HTMLElement).getByText("Christine Chapel, Combat Medic");
-    expect(caption).toHaveAttribute("aria-hidden", "true");
+    expect(chapel).toHaveTextContent("Christine Chapel, Combat Medic");
+    expect(within(chapel.closest("li") as HTMLElement).getByTestId("revealed-art")).toHaveAttribute("aria-hidden", "true");
+    expect(within(chapel.closest("li") as HTMLElement).getAllByRole("button")).toHaveLength(1);
     expect(within(mdcBlock).getByRole("button", { name: "View details for Gargantos, the Endbringer, Black, Green. Revealed commander." })).toBeInTheDocument();
     expect(within(trcBlock).getByText("TRC · Nov 13, 2026 · in 30 days · 15 commanders revealed")).toBeInTheDocument();
     expect(within(trcBlock).getByText("Nov 13, 2026 · in 30 days")).toBeInTheDocument();
@@ -148,8 +151,22 @@ describe("AnnouncedGroup", () => {
       const grid = within(trcBlock).getByTestId("revealed-tiles");
       expect(grid.className).toBe(PRECON_TILES_CLASS);
       for (const tile of within(grid).getAllByTestId("revealed-tile")) expect(tile.className.startsWith(`${TILE_SHELL} `)).toBe(true);
-      // Outside the dashed head, so the grid runs the list's full width, as the decklists' does.
-      expect(within(trcBlock).getByTestId("announced-set-head")).not.toContainElement(grid);
+      // Inside the set's dashed block (the ruling's option 3), which is the set's own list item.
+      expect(trcBlock.className).toContain("border-dashed");
+      expect(trcBlock).toContainElement(grid);
+    });
+
+    it("makes the whole tile the press, and draws its focus ring on the tile, which clips", () => {
+      draw({ opensByItself: true });
+      const tile = screen.getAllByTestId("revealed-tile")[0];
+      const press = within(tile).getByTestId("revealed-press");
+      // Stretched over the tile as PreconTile's link is: the tile is the positioned box.
+      expect(press.className).toContain("after:absolute");
+      expect(press.className).toContain("after:inset-0");
+      expect(tile.className).toContain("relative");
+      // The press draws no ring the tile's overflow would cut; the tile draws it.
+      expect(press.className).toContain("focus-visible:outline-none");
+      expect(tile.className).toContain(TILE_FOCUS_RING);
     });
 
     it("draws each one with the shared trigger and its hover preview, in tiles", () => {
@@ -183,6 +200,19 @@ describe("AnnouncedGroup", () => {
       render(<ul><AnnouncedSet match={mdc} today="2026-10-14" isNew={false} listed={null} /></ul>);
       expect(screen.queryByRole("button")).toBeNull();
       expect(screen.getByText("Gargantos, the Endbringer, Black, Green. Revealed commander.")).toHaveClass("sr-only");
+    });
+
+    it("draws About's specimen compact: the small strip, not a lone decklist-sized tile", () => {
+      render(<ul><AnnouncedSet match={mdc} today="2026-10-14" isNew={false} listed={null} compact /></ul>);
+      expect(screen.getByTestId("revealed-strip")).toBeInTheDocument();
+      expect(screen.queryByTestId("revealed-tiles")).toBeNull();
+      expect(screen.getByTestId("revealed-card")).toBeInTheDocument();
+    });
+
+    it("is how About's upcoming-precons specimen draws its set", () => {
+      render(<UpcomingPreconsFigureBody />);
+      expect(screen.getByTestId("revealed-strip")).toBeInTheDocument();
+      expect(screen.queryByTestId("revealed-tiles")).toBeNull();
     });
   });
 

@@ -131,7 +131,7 @@ export function AnnouncedGroup({
           <CardDetailProvider>
           <HoverPreviewProvider>
           {view === "tiles" ? (
-            <ul className="m-0 flex list-none flex-col gap-[22px] p-0 pt-[10px]">
+            <ul className="m-0 flex list-none flex-col gap-[10px] p-0 pt-[10px]">
               {matches.map((m) => (
                 <AnnouncedSet key={m.set.code} match={m} today={today} isNew={newCodes.includes(m.set.code)} listed={listed[m.set.code] ?? null} />
               ))}

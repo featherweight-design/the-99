@@ -10,9 +10,11 @@
 //    (`?sort=newest#announced`) still lands on it, open (the explicit `sort=newest` beats the saved order);
 //  - `?sort=owned` hides the group (T7).
 //
-//  - revealed commanders open card details (Hugh, 2026-10-15, reversing G2): in tiles each is drawn the width of a
-//    decklist tile below it, in the decklists' grid; a press, and Enter on a focused one, open card details on the
-//    right card, Escape hands focus back, and at 1300 a hover draws the shared hover preview;
+//  - revealed commanders open card details (Hugh, 2026-10-15, reversing G2): in tiles they sit in the decklists'
+//    grid inside the set's dashed block (ruling option 3): the same column count, the grid narrower by exactly the
+//    block's inset; the whole tile is the press (art and caption both open it), Enter on a focused one opens it,
+//    Escape hands focus back, the tile's focus ring is visible on all four sides (no clipping ancestor cuts it), and
+//    at 1300 a hover over the art draws the shared hover preview; the none plate stays a small note;
 //  - in rows, an opened row's strip keeps its small cards (76x106 at 390, 84x117 at 1300) and the row's lead thumb
 //    its 34x48; at 390 the six-card strip scrolls sideways and is a named region whose CARDS are the keyboard stops
 //    (Tab reaches one and scrolls it into view); at 1300 it wraps and is no region;
@@ -110,6 +112,31 @@ async function manySet() {
 
 /** A card's front face, which card details titles a double-faced card by. */
 const front = (name) => name.split(" // ")[0];
+
+/**
+ * Whether a focus ring is really SEEN: the element's outline is a 2px solid ring, and no ancestor that clips (overflow
+ * other than visible) cuts into the ring's extent (outline width plus offset) on any side. Computed style alone passes
+ * a ring its tile clips away. Returns `[ok, detail]` for `report`.
+ */
+async function ringVisible(locator) {
+  return locator.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    if (cs.outlineStyle !== "solid" || cs.outlineWidth !== "2px") return [false, `outline ${cs.outlineStyle} ${cs.outlineWidth}`];
+    const ext = parseFloat(cs.outlineWidth) + parseFloat(cs.outlineOffset);
+    const r = el.getBoundingClientRect();
+    const ring = { l: r.left - ext, t: r.top - ext, r: r.right + ext, b: r.bottom + ext };
+    for (let a = el.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+      const s = getComputedStyle(a);
+      if (s.overflowX === "visible" && s.overflowY === "visible") continue;
+      const ar = a.getBoundingClientRect();
+      const box = { l: ar.left + parseFloat(s.borderLeftWidth), t: ar.top + parseFloat(s.borderTopWidth),
+        r: ar.right - parseFloat(s.borderRightWidth), b: ar.bottom - parseFloat(s.borderBottomWidth) };
+      const cut = [ring.l < box.l - 0.5 && "left", ring.t < box.t - 0.5 && "top", ring.r > box.r + 0.5 && "right", ring.b > box.b + 0.5 && "bottom"].filter(Boolean);
+      if (cut.length > 0) return [false, `cut ${cut.join(",")} by <${a.tagName.toLowerCase()} ${a.className.slice(0, 40)}>`];
+    }
+    return [true, `${cs.outlineWidth} at ${cs.outlineOffset}`];
+  });
+}
 
 /** Whether the page scrolls sideways. */
 const overflowsX = (page) => page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 0.5);
@@ -220,19 +247,36 @@ async function walk(browser, vp, userIdHolder) {
     report("each tile is a button named by its card, its colors and what it is",
       pressNames.length === 6 && pressNames.every((n, i) => n === null ? false : n.startsWith(`View details for ${holder.picks[i].name}, `) && n.endsWith(". Revealed commander.")),
       JSON.stringify(pressNames.slice(0, 2)));
-    // The same width as a decklist tile: the first revealed tile against the newest year's first precon tile.
-    const rBox = await a.locator("[data-testid=revealed-tile]").first().boundingBox();
-    const pBox = await onPage(page, "section[aria-labelledby^=precons-] > ul > li").first().boundingBox();
-    report("a revealed tile is a decklist tile's width", rBox && pBox && Math.abs(rBox.width - pBox.width) < 0.5,
-      `revealed ${rBox?.width.toFixed(2)} vs precon ${pBox?.width.toFixed(2)}`);
-    report("and in the decklists' columns", rBox && pBox && Math.abs(rBox.x - pBox.x) < 0.5, `x ${rBox?.x.toFixed(1)} vs ${pBox?.x.toFixed(1)}`);
-    const artBox = await a.locator("[data-testid=revealed-press]").first().boundingBox();
+    // The decklists' grid inside the set's dashed block (ruling option 3): the same column count as the newest year's
+    // decklist grid, and the grid narrower than that one by exactly the block's inset (its border and padding).
+    const grids = await page.evaluate((name) => {
+      const cols = (ul) => new Set([...ul.children].map((li) => Math.round(li.getBoundingClientRect().x))).size;
+      const set = [...document.querySelectorAll("main [data-testid=announced-set]")].find((el) => el.textContent.includes(name));
+      const rUl = set.querySelector("[data-testid=revealed-tiles]");
+      const pUl = document.querySelector("main section[aria-labelledby^=precons-] > ul");
+      const cs = getComputedStyle(set);
+      const inset = ["borderLeftWidth", "borderRightWidth", "paddingLeft", "paddingRight"].reduce((t, k) => t + parseFloat(cs[k]), 0);
+      const w = (el) => el.getBoundingClientRect().width;
+      return { rCols: cols(rUl), pCols: Math.min(cols(pUl), pUl.children.length), rGrid: w(rUl), pGrid: w(pUl), inset,
+        rTile: w(rUl.firstElementChild), pTile: w(pUl.firstElementChild) };
+    }, NAME_A);
+    report("the commander tiles take the decklists' column count", grids.pCols >= Math.min(6, grids.rCols) && grids.rCols === grids.pCols,
+      `${grids.rCols} vs ${grids.pCols}`);
+    report("their grid is the decklists' less the dashed block's inset", Math.abs(grids.rGrid - (grids.pGrid - grids.inset)) < 0.5,
+      `${grids.rGrid.toFixed(2)} vs ${grids.pGrid.toFixed(2)} - ${grids.inset}`);
+    report("so a commander tile is a decklist tile less the inset over the columns",
+      Math.abs(grids.rTile - (grids.pTile - grids.inset / grids.pCols)) < 0.5,
+      `${grids.rTile.toFixed(2)} vs ${grids.pTile.toFixed(2)} - ${grids.inset}/${grids.pCols}`);
+    const artBox = await a.locator("[data-testid=revealed-art]").first().boundingBox();
     report("its art box is 63:88", artBox && Math.abs(artBox.width / artBox.height - 63 / 88) < 0.01, artBox ? `${artBox.width.toFixed(1)}x${artBox.height.toFixed(1)}` : "");
     report("no sideways page scroll in tiles", !(await overflowsX(page)));
 
-    // Press, Enter, focus back, hover.
+    // Press, Enter, focus back, hover. The press is the whole tile: a press on the ART opens it.
     const first = a.locator("[data-testid=revealed-press]").first();
-    await first.click();
+    const firstArt = a.locator("[data-testid=revealed-art]").first();
+    await firstArt.scrollIntoViewIfNeeded();
+    const ab = await firstArt.boundingBox();
+    await page.mouse.click(ab.x + ab.width / 2, ab.y + ab.height / 3);
     const dialog = page.getByRole("dialog", { name: front(holder.picks[0].name) });
     report("a press opens card details on that card", await dialog.waitFor({ state: "visible", timeout: 15_000 }).then(() => true, () => false));
     await page.keyboard.press("Escape");
@@ -243,7 +287,7 @@ async function walk(browser, vp, userIdHolder) {
     await first.focus();
     await page.keyboard.press("Tab");
     report("Tab reaches the next commander", await second.evaluate((el) => document.activeElement === el));
-    report("its focus ring is drawn (2px solid)", await second.evaluate((el) => { const cs = getComputedStyle(el); return cs.outlineStyle === "solid" && cs.outlineWidth === "2px"; }));
+    report("its tile draws the focus ring, visible on all four sides", ...(await ringVisible(second.locator("xpath=ancestor::li[1]"))));
     await page.keyboard.press("Enter");
     const dialog2 = page.getByRole("dialog", { name: front(holder.picks[1].name) });
     report("Enter opens card details on that card", await dialog2.waitFor({ state: "visible", timeout: 15_000 }).then(() => true, () => false));
@@ -253,8 +297,11 @@ async function walk(browser, vp, userIdHolder) {
       await page.evaluate(() => document.activeElement?.tagName));
     if (vp.width >= 768) {
       await page.mouse.move(0, 0);
-      await second.hover();
-      await page.mouse.move((await second.boundingBox()).x + 20, (await second.boundingBox()).y + 30);
+      // Over the ART, not the name: the whole tile previews.
+      await a.locator("[data-testid=revealed-art]").nth(1).scrollIntoViewIfNeeded();
+      const sb = await a.locator("[data-testid=revealed-art]").nth(1).boundingBox();
+      await page.mouse.move(sb.x + sb.width / 2, sb.y + sb.height / 2);
+      await page.mouse.move(sb.x + sb.width / 2 + 10, sb.y + sb.height / 2 + 10);
       const preview = page.getByTestId("hover-preview");
       const shown = await preview.waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false);
       const bg = shown ? await preview.evaluate((el) => el.style.background) : "";
@@ -267,9 +314,24 @@ async function walk(browser, vp, userIdHolder) {
         await page.mouse.move(0, 0);
       }
     }
+    // The caption is the press too.
+    const thirdName = a.locator("[data-testid=revealed-press]").nth(2);
+    await thirdName.click();
+    const dialog3 = page.getByRole("dialog", { name: front(holder.picks[2].name) });
+    report("a press on the caption's name opens card details on that card", await dialog3.waitFor({ state: "visible", timeout: 15_000 }).then(() => true, () => false));
+    await page.keyboard.press("Escape");
+    await dialog3.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
+    const plate = await setBlock(page, NAME_B).locator("[data-testid=none-plate]").boundingBox();
+    report("the none plate stays a small note, inside the dashed block", plate && Math.round(plate.width) === (vp.width < 768 ? 76 : 84),
+      plate ? `${plate.width.toFixed(1)}x${plate.height.toFixed(1)}` : "no box");
     report("a set with none revealed draws the plate (T2)", (await setBlock(page, NAME_B).locator("[data-testid=none-plate]").count()) === 1);
     report("the set's name is an h3", (await a.locator("h3").first().textContent())?.trim() === NAME_A);
     report("the countdown reads in 30 days", (await a.textContent())?.includes("in 30 days") === true);
+    await page.mouse.move(0, 0);
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.waitForTimeout(300);
+    report("a long name ends in an ellipsis, as a decklist tile's does",
+      await a.locator("[data-testid=revealed-press]").evaluateAll((els) => els.some((e) => e.scrollWidth > e.clientWidth) ? els.every((e) => getComputedStyle(e).textOverflow === "ellipsis") : true));
     await shoot(page, vp, "tiles-open");
 
     // The catalog's own many-commander set, if local-dev holds one upcoming.
@@ -349,7 +411,10 @@ async function walk(browser, vp, userIdHolder) {
       report("1300: the wrapped strip is no region and no stop", (await strip.getAttribute("tabindex")) === null && (await strip.getAttribute("role")) === null);
     }
     const rowCard = row.locator("[data-testid=revealed-press]").nth(2);
-    await rowCard.focus();
+    // From the keyboard, so the ring is the focus-visible one a keyboard reader sees.
+    await row.locator("[data-testid=revealed-press]").nth(1).focus();
+    await page.keyboard.press("Tab");
+    report("rows: a strip card focused from the keyboard draws a ring visible on all four sides", ...(await ringVisible(rowCard)));
     await page.keyboard.press("Enter");
     const rowDialog = page.getByRole("dialog", { name: front(holder.picks[2].name) });
     report("rows: Enter on a strip card opens card details on that card", await rowDialog.waitFor({ state: "visible", timeout: 15_000 }).then(() => true, () => false));
