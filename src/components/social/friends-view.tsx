@@ -86,8 +86,10 @@ export function FriendsView({
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
   const timeZone = hydrated ? undefined : "UTC";
-  // From the server's latest draw, so a link made after a redraw is dated against that draw's clock.
-  const now = useMemo(() => new Date(nowMs), [nowMs]);
+  // From the server's latest draw, so a link made after a redraw is dated against that draw's clock, and moved
+  // on by the client only to the moment an open link expires (below), so a held Add a friend lets go then.
+  const [expiredAt, setExpiredAt] = useState(nowMs);
+  const now = useMemo(() => new Date(Math.max(nowMs, expiredAt)), [nowMs, expiredAt]);
 
   const [name, setName] = useState(profile.displayName);
   const [commander, setCommander] = useState(profile.commander);
@@ -104,7 +106,21 @@ export function FriendsView({
   const [removing, setRemoving] = useState<string | null>(null);
   const [gone, setGone] = useState<ReadonlySet<string>>(new Set());
   const [revoked, setRevoked] = useState<ReadonlySet<string>>(new Set());
+  // A redraw is the server's word on who is a friend and which links are open, so it retires every local
+  // override: a removed friend who accepts a new link later is drawn again (during render, not in an effect).
+  const [drawnFriends, setDrawnFriends] = useState(friends);
+  if (friends !== drawnFriends) {
+    setDrawnFriends(friends);
+    setGone(new Set());
+  }
+  const [drawnLinks, setDrawnLinks] = useState(links);
+  if (links !== drawnLinks) {
+    setDrawnLinks(links);
+    setRevoked(new Set());
+  }
   const [making, setMaking] = useState(false);
+  // The guard reads a ref: a Try again toast from an earlier failure holds a callback from that render.
+  const makingNow = useRef(false);
   const [shown, setShown] = useState<Shown | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   // A counter, not the clock: two toasts in one millisecond are still two toasts.
@@ -114,8 +130,15 @@ export function FriendsView({
   const writeCommander = useFieldWrite<ProfileCommander | null>(profile.commander, setCommander);
 
   const listed = friends.filter((f) => !gone.has(f.publicId));
-  const open = links.filter((l) => !revoked.has(l.token));
+  const open = links.filter((l) => !revoked.has(l.token) && l.expiresAt.getTime() > now.getTime());
   const held = open.length >= maxLinks;
+  // Wake when the soonest open link expires, so it leaves the list and stops counting toward the ten.
+  const nextExpiry = Math.min(...open.map((l) => l.expiresAt.getTime()));
+  useEffect(() => {
+    if (!Number.isFinite(nextExpiry)) return;
+    const t = setTimeout(() => setExpiredAt(nextExpiry), Math.min(nextExpiry - now.getTime(), 2_147_483_647));
+    return () => clearTimeout(t);
+  }, [nextExpiry, now]);
   const linkUrl = (token: string) => `${origin ?? window.location.origin}${invitePath(token)}`;
 
   async function rename(next: string) {
@@ -142,19 +165,29 @@ export function FriendsView({
   }
 
   async function makeLink() {
-    if (making) return;
+    if (makingNow.current) return;
+    makingNow.current = true;
+    setToast(null);
     setMaking(true);
     const out = await createInviteAction().catch(() => null);
+    makingNow.current = false;
     setMaking(false);
     if (out?.ok) setShown({ url: out.url, expiresAt: new Date(out.expiresAt) });
     else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
     else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
   }
 
-  function revoke(link: OpenInvite) {
-    // At once, no confirm (decision 5): a link already ended is gone either way (E12).
+  async function revoke(link: OpenInvite) {
+    // At once, no confirm (decision 5): a link already ended is gone either way (E12), so any `ok` is done.
     setRevoked((r) => new Set(r).add(link.token));
-    void revokeInviteAction(link.token).catch(() => {});
+    const out = await revokeInviteAction(link.token).catch(() => null);
+    if (out?.ok) return;
+    setRevoked((r) => {
+      const next = new Set(r);
+      next.delete(link.token);
+      return next;
+    });
+    say(socialCopy.invites.revokeFailed);
   }
 
   function closeReceipt() {

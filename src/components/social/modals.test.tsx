@@ -289,4 +289,17 @@ describe("AddFriendDialog", () => {
     expect(screen.getByRole("button", { name: d.copy }).className).toContain("md:bg-[color:var(--accent)]");
     delete (navigator as { share?: unknown }).share;
   });
+
+  it("shows and selects the link field at phone when the clipboard refuses, even where Share hides it", async () => {
+    Object.defineProperty(navigator, "share", { value: vi.fn(), configurable: true });
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) }, configurable: true });
+    render(<AddFriendDialog url={URL_} expiresAt={new Date("2026-10-22T21:41:00Z")} now={NOW} timeZone="UTC" onClose={() => {}} />);
+    await screen.findByRole("button", { name: d.share });
+    const input = screen.getByRole("textbox", { name: d.linkAria });
+    expect(input.className).toContain("max-md:hidden");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: d.copy })));
+    expect(input.className).not.toContain("max-md:hidden");
+    expect(input).toHaveFocus();
+    delete (navigator as { share?: unknown }).share;
+  });
 });

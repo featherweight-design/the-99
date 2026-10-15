@@ -63,6 +63,7 @@ export const socialCopy = {
     revokeAria: (made: string) => `Revoke the link made ${made}`,
     tooMany: "You have 10 friend links open. Revoke one to make another.", // toast, no retry
     createFailed: "We couldn’t make a friend link. Try again.", // toast, Try again
+    revokeFailed: "We couldn’t revoke that link. Try again.", // toast, role alert; the row comes back
     retry: "Try again",
   },
 

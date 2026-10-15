@@ -374,6 +374,17 @@ describe("the friends list", () => {
     expect(alert().textContent).toContain(socialCopy.friends.removeFailed);
     expect(document.querySelectorAll("[data-friend-row]")).toHaveLength(2);
   });
+
+  it("draws a removed friend again when a later redraw lists them (they accepted a new link)", async () => {
+    a.unfriendAction.mockResolvedValue({ ok: true });
+    const { rerender } = draw();
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria("Dave") }));
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
+    expect(document.querySelectorAll("[data-friend-row]")).toHaveLength(1);
+    rerender(view({ friends: [DAVE, JO] }));
+    expect(document.querySelectorAll("[data-friend-row]")).toHaveLength(2);
+  });
 });
 
 describe("the receipt after Accept (E10)", () => {
@@ -408,6 +419,41 @@ describe("friend links", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Revoke the link made/ })));
     expect(a.revokeInviteAction).toHaveBeenCalledWith(link(1).token);
     expect(document.querySelectorAll("[data-link-row]")).toHaveLength(0);
+  });
+
+  it("puts a link back, with a toast, when the revoke fails or is refused", async () => {
+    a.revokeInviteAction.mockRejectedValueOnce(new Error("down")).mockResolvedValueOnce({ ok: false, reason: "off" });
+    draw({ links: [link(1)] });
+    for (let i = 0; i < 2; i++) {
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Revoke the link made/ })));
+      expect(document.querySelectorAll("[data-link-row]")).toHaveLength(1);
+      expect(alert().textContent).toContain(socialCopy.invites.revokeFailed);
+    }
+  });
+
+  it("lets go of a held Add a friend when one of the ten expires while the page is open", async () => {
+    vi.useFakeTimers({ now: NOW });
+    try {
+      draw({ links: [...Array.from({ length: 9 }, (_, i) => link(i)), link(9, new Date(NOW.getTime() + 60_000))] });
+      expect(screen.getByRole("button", { name: socialCopy.page.invite }).getAttribute("aria-disabled")).toBe("true");
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(61_000);
+      });
+      expect(screen.getByRole("button", { name: socialCopy.page.invite }).getAttribute("aria-disabled")).toBeNull();
+      expect(document.querySelectorAll("[data-link-row]")).toHaveLength(9);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("clears an earlier Try again when a new make starts, so it cannot make a second link", async () => {
+    a.createInviteAction.mockRejectedValueOnce(new Error("down")).mockReturnValueOnce(new Promise(() => {}));
+    draw();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite })));
+    expect(screen.getByRole("button", { name: socialCopy.invites.retry })).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite })));
+    expect(screen.queryByRole("button", { name: socialCopy.invites.retry })).toBeNull();
+    expect(a.createInviteAction).toHaveBeenCalledTimes(2);
   });
 
   it("holds Add a friend at ten, with the reason joined to it", () => {

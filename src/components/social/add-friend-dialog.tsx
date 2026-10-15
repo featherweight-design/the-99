@@ -31,6 +31,8 @@ export function AddFriendDialog({
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const field = useRef<HTMLInputElement>(null);
+  // The clipboard refused: show the link field at every width (a phone with Share hides it) and select it.
+  const [manual, setManual] = useState(false);
   // No quiet zone in the path: the plate's own 16px padding is the quiet zone (R2 Invite `.qr`).
   const qr = qrPath(url, 0);
 
@@ -39,6 +41,11 @@ export function AddFriendDialog({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- a browser capability, known only once mounted
     setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
   }, []);
+  useEffect(() => {
+    if (!manual) return;
+    field.current?.focus();
+    field.current?.select();
+  }, [manual]);
   useEffect(() => {
     if (!copied) return;
     const t = setTimeout(() => setCopied(false), COPIED_MS);
@@ -51,6 +58,8 @@ export function AddFriendDialog({
       setCopied(true);
     } catch {
       // No clipboard (an insecure origin, a refused permission): select the field, so a long press copies it.
+      setManual(true);
+      field.current?.focus();
       field.current?.select();
     }
   }
@@ -106,7 +115,7 @@ export function AddFriendDialog({
           value={url}
           aria-label={d.linkAria}
           onFocus={(e) => e.currentTarget.select()}
-          className={`h-[44px] min-w-0 flex-1 rounded-[8px] bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[12.5px] text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:h-[40px] md:rounded-[6px] ${canShare ? "max-md:hidden" : ""}`}
+          className={`h-[44px] min-w-0 flex-1 rounded-[8px] bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[12.5px] text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:h-[40px] md:rounded-[6px] ${canShare && !manual ? "max-md:hidden" : ""}`}
         />
         {copyButton(!canShare)}
       </div>
