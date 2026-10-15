@@ -28,21 +28,29 @@ function drawnKey(p: OwnProfile): string {
 /**
  * Optimistic writes to one field, any number in flight. Only the newest write's answer draws; a failure puts back the
  * last value a write CONFIRMED (or the server drew), never the optimistic value an earlier, still unanswered write
- * left on screen. An older write answering after the newest has settled draws what is confirmed by then.
+ * left on screen. An older write answering after the newest has settled draws what is confirmed by then. A write
+ * started before the server's latest redraw is superseded by it: its answer, success or failure, draws nothing.
  */
 function useFieldWrites<T>(served: T, show: (v: T) => void) {
   const confirmed = useRef(served);
   const seq = useRef({ latest: 0, confirmedBy: 0, latestSettled: true });
-  // The server's redraw is the truth a failure falls back to.
+  // The server's redraw is the truth a failure falls back to, and it retires every write started before it.
+  const generation = useRef(0);
   useEffect(() => {
     confirmed.current = served;
+    generation.current += 1;
   }, [served]);
   return async function write(next: T, save: () => Promise<{ value: T } | null>): Promise<boolean> {
     const s = seq.current;
     const n = ++s.latest;
+    const g = generation.current;
     s.latestSettled = false;
     show(next);
     const out = await save();
+    if (g !== generation.current) {
+      if (n === s.latest) s.latestSettled = true;
+      return out !== null;
+    }
     if (out && n > s.confirmedBy) {
       confirmed.current = out.value;
       s.confirmedBy = n;

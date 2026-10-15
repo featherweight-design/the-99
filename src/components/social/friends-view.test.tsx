@@ -231,6 +231,34 @@ describe("the head", () => {
     }
   });
 
+  it("a name save that answers after a newer redraw does not overwrite it", async () => {
+    let answer: (v: unknown) => void = () => {};
+    a.setDisplayNameAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    const { rerender } = draw();
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    fireEvent.change(screen.getByLabelText(socialCopy.page.nameField.label), { target: { value: "First" } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.nameField.save })));
+    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Second", commander: null }} />);
+    await act(async () => answer({ ok: true, displayName: "First" }));
+    expect(screen.getByText("Second").tagName).toBe("B");
+    expect(screen.queryByText("First")).toBeNull();
+  });
+
+  it("a commander save that answers after a newer redraw does not overwrite it", async () => {
+    const AANG = { oracleId: "o-aang", name: "Avatar Aang", artCropUri: "https://x/aang.jpg", colorIdentity: ["W", "U", "B", "R", "G"] };
+    let answer: (v: unknown) => void = () => {};
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA] });
+    a.setCommanderAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    const { rerender } = draw();
+    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
+    const tile = await screen.findByRole("button", { name: SOKKA.name });
+    await act(async () => fireEvent.click(tile));
+    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Hugh", commander: AANG }} />);
+    await act(async () => answer({ ok: true }));
+    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(AANG.name) })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
+  });
+
   it("follows the server's redraw of the name and the face, keeping a pending name only until it lands", async () => {
     a.setDisplayNameAction.mockReturnValue(new Promise(() => {}));
     const { rerender } = draw();
