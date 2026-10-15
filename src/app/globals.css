@@ -1518,3 +1518,9 @@ html {
   .friend-land-in { animation: friend-land-in 240ms var(--motion-ease) 720ms both; }
 }
 @keyframes friend-land-in { from { opacity: 0; } }
+
+/* A pod's wash (Social R1 PR E1, G15): the members' art blurred behind the seats. Dropped where the reader asks for
+   less transparency, as the art wash is. */
+@media (prefers-reduced-transparency: reduce) {
+  .pod-wash { display: none; }
+}

@@ -1,0 +1,40 @@
+{
+  "feature": "Social R1 PR E1: the pods table on /friends (handoff design_handoff_the99_social_r1 R2, R2 - Pods option B; plan 2026-10-15-social-r1.md, PR E)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true for the reader, and fixtures: the reader's friends Dave (Atraxa), Priya (no commander), Alex (Ghalta) and Zed (Krenko); a pod the reader owns with Dave, Priya and Alex; a pod Sam (not the reader's friend) owns with the reader and Dave, its spares shared; and a pod of the reader alone. The rows write nothing (the Add dialog and the create field are opened, never confirmed), but the fixtures are social rows: plant them on a scratch branch off local-dev ONLY. The empty state, the failure toasts and the Add empties are held by pods-pane.test.tsx.",
+  "shares": {
+    "module": "src/components/social/social-toast.tsx",
+    "binding": "SocialToast",
+    "note": "A pod write that fails is the social screens' one toast (E15)."
+  },
+  "out": "contact-sheets/social-r1-pods",
+  "rows": [
+    {
+      "id": "table",
+      "label": "Pods: the table, three a row at 390 and five at 1300; you outlined, the owner's ✕, + Add friends, the tags, the solo line and the spares box",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
+        { "scrollTo": "[data-testid=pods-pane]", "settle": 600 }
+      ]
+    },
+    {
+      "id": "add",
+      "label": "Pods: + Add friends open on the reader's pod, the friends not yet in it with their faces, nothing ticked",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
+        { "clickRole": "button", "name": "^\\+ Add friends$", "wait": "[role=dialog]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "create",
+      "label": "Pods: New pod pressed, the inline name field over the list",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
+        { "clickRole": "button", "name": "^New pod$", "wait": "#pod-new-name", "settle": 600 },
+        { "scrollTo": "[data-testid=pods-pane]", "settle": 400 }
+      ]
+    }
+  ]
+}

@@ -12,6 +12,9 @@ import { encode } from "uqr";
 export const DISPLAY_NAME_MAX = 30;
 export const POD_NAME_MAX = 40;
 
+/** The most friends one Add batch may name: a pod is a table, not a mailing list. `addMembers` refuses more. */
+export const ADD_MEMBERS_MAX = 32;
+
 /** Code points, which is what `cleanName` and the columns' `char_length` checks count. */
 export function codePointLength(s: string): number {
   return [...s].length;
