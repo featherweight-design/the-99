@@ -184,6 +184,8 @@ describe("Seg keys", () => {
     expect(screen.getAllByRole("radio").map((r) => r.tabIndex)).toEqual([-1, 0, -1]);
     fireEvent.keyDown(radio("Off"), { key: "ArrowLeft" });
     expect(document.activeElement).toBe(radio("Not set"));
+    // The tab stop follows focus, so Tab leaves the group from where the reader is.
+    expect(screen.getAllByRole("radio").map((r) => r.tabIndex)).toEqual([-1, -1, 0]);
     fireEvent.keyDown(radio("Not set"), { key: "Home" });
     expect(document.activeElement).toBe(radio("Off"));
     fireEvent.keyDown(radio("Off"), { key: "End" });

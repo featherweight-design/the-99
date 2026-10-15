@@ -133,8 +133,11 @@ export function Seg<K extends string>({
   const idOf = (k: K) => `${base}-${k}`;
   const keys = options.map((o) => o.key);
   const isOff = (k: K) => disabled || locked.includes(k) || (pressed !== null && k !== shown);
-  // The tab stop: the shown option while it can take focus, else the first that can.
-  const stop = shown !== null && !isOff(shown) ? shown : keys.find((k) => !isOff(k)) ?? null;
+  // The option the keys last moved focus to: the tab stop follows it, so Tab and Shift+Tab leave the group from
+  // where the reader is, while the saved choice stays put until Enter or Space.
+  const [focused, setFocused] = useState<K | null>(null);
+  // The tab stop: the focused option, else the shown one, while it can take focus; else the first that can.
+  const stop = [focused, shown].find((k): k is K => k !== null && keys.includes(k) && !isOff(k)) ?? keys.find((k) => !isOff(k)) ?? null;
   return (
     <div
       role="radiogroup"
@@ -151,6 +154,7 @@ export function Seg<K extends string>({
             type="button"
             id={idOf(o.key)}
             tabIndex={o.key === stop ? 0 : -1}
+            onFocus={() => setFocused(o.key)}
             role="radio"
             aria-checked={on}
             disabled={off}

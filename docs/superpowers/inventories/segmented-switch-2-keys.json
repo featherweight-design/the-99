@@ -16,12 +16,40 @@
     },
     {
       "id": "build-from",
-      "label": "/commanders: Build from, unchanged markup",
+      "label": "/commanders: Build from in the rack, unchanged markup",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "main, [role=main], h1",
+          "settle": 4000,
+          "scrollTo": "[role=radiogroup]"
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "build-from-sheet",
+      "label": "/commanders: Build from in the Filters sheet, unchanged markup",
+      "widths": [
+        "phone"
+      ],
       "steps": [
         {
           "goto": "/commanders",
           "wait": "main, [role=main], h1",
           "settle": 4000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filters$",
+          "wait": "[role=dialog]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[role=dialog] [role=radiogroup]",
+          "settle": 400
         }
       ]
     }
