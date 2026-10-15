@@ -15,6 +15,14 @@ assertScratchBranch(rows[0]?.b, "seed-r3-picker-fixture");
 const friends = await import("../src/lib/social/friends");
 const pods = await import("../src/lib/social/pods");
 
+// A rerun starts clean: the previous run's friends (purged with everything they hold) and the viewer's Thursday pods go
+// first, so the sheet's name matches and its first pod are the ones this run made.
+const { purgeAccount } = await import("../src/lib/account/purge");
+await db.execute(sql`delete from pod_members where pod_id in (select id from pods where owner_user_id = ${viewer} and name = 'Thursday')`);
+await db.execute(sql`delete from pods where owner_user_id = ${viewer} and name = 'Thursday'`);
+const { rows: old } = await db.execute<{ user_id: string }>(sql`select user_id from social_profiles where user_id like 'r3-fixture-%'`);
+for (const o of old) await purgeAccount(o.user_id);
+
 const tag = Date.now();
 const { rows: picks } = await db.execute<{ oracle_id: string }>(sql`
   select oracle_id from cards where commander_legal and type_line like 'Legendary Creature%'
