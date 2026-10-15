@@ -5,7 +5,7 @@
  */
 import { and, eq, inArray, isNotNull, like, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { collectionHistory } from "../../db/schema";
+import { collectionHistory, decks } from "../../db/schema";
 
 const PREFIX = "precon:";
 export const preconSource = (fileName: string) => `${PREFIX}${fileName}`;
@@ -93,5 +93,19 @@ export async function committedPreconAdds(userId: string, ids: readonly string[]
     .where(and(eq(collectionHistory.userId, userId), eq(collectionHistory.kind, "add"), inArray(collectionHistory.id, [...ids])));
   const out = new Map<string, string>();
   for (const r of rows) if (r.source?.startsWith(PREFIX)) out.set(r.id, r.source.slice(PREFIX.length));
+  return out;
+}
+
+/**
+ * The decks this reader's precon adds among `ids` started, each entry id to its deck: an owned start links its deck
+ * to the add by `decks.precon_add_entry_id` (`start-owned.ts`), so a pick's retry answers with the deck its first try
+ * made and starts no second one. Owner-scoped in its own query; an entry with no deck of theirs is absent.
+ */
+export async function preconAddDecks(userId: string, ids: readonly string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db.select({ id: decks.id, entryId: decks.preconAddEntryId }).from(decks)
+    .where(and(eq(decks.userId, userId), inArray(decks.preconAddEntryId, [...ids])));
+  const out = new Map<string, string>();
+  for (const r of rows) if (r.entryId && !out.has(r.entryId)) out.set(r.entryId, r.id);
   return out;
 }

@@ -131,7 +131,7 @@ export async function readReaderDecks(userId: string, q: Reader = db): Promise<R
 
 /** Every box and the plain edition it is a twin of: what the pick's add validates its request against. */
 export function readPickCatalog(q: Reader = db) {
-  return q.select({ fileName: precons.fileName, twinOf: precons.twinOf }).from(precons);
+  return q.select({ fileName: precons.fileName, twinOf: precons.twinOf, name: precons.name }).from(precons);
 }
 
 /** The precon cards the reader owns, any printing (brief lock 6). One query, never a list of ids. */

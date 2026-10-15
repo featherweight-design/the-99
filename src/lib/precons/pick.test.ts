@@ -2,18 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import { summarisePrecons, type PreconSource } from "./list";
 import {
   PICK_FROM_COLLECTION_HREF, parsePickReceipt, pickAddedOn, pickEntry, pickFile, pickReceiptDismissKey, pickReceiptHref, pickTotals,
-  recoverCommitted, resolvePick, runPickAdds,
+  pickDeckName, recoverCommitted, resolvePick, runPickAdds, type PickAddResult,
 } from "./pick";
 import { pickEntryFile, summarisePickReceipt } from "./pick-receipt-read";
-import type { PreconAddResult } from "./add";
 
 const ID = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
 const src = (fileName: string, copies: number, tokens: number, twinOf: string | null = null): PreconSource => ({
   fileName, name: fileName, setCode: "TDC", releaseDate: "2025-04-11", twinOf, unmappedCount: 0, cards: [], copies, tokens,
 });
 const catalog = [
-  { fileName: "Abzan", twinOf: null }, { fileName: "Sultai", twinOf: null }, { fileName: "Temur", twinOf: null },
-  { fileName: "Revival", twinOf: null }, { fileName: "Revival_CE", twinOf: "Revival" },
+  { fileName: "Abzan", twinOf: null, name: "Abzan Armor" }, { fileName: "Sultai", twinOf: null }, { fileName: "Temur", twinOf: null },
+  { fileName: "Revival", twinOf: null, name: "Revival Trance" }, { fileName: "Revival_CE", twinOf: "Revival", name: "Revival Trance (Collector's Edition)" },
 ];
 
 describe("the twin rule", () => {
@@ -31,7 +30,7 @@ describe("the twin rule", () => {
 
   it("adds exactly one edition per twin, and only an edition the box has", () => {
     expect(resolvePick([{ fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: ID(1) }], catalog))
-      .toEqual([{ rowFile: "Revival", fileName: "Revival_CE", actionId: ID(1) }]);
+      .toEqual([{ rowFile: "Revival", fileName: "Revival_CE", actionId: ID(1), name: "Revival Trance" }]);
     // A twin's own file is never a box, a box twice is refused, and Collector's needs a twin.
     expect(resolvePick([{ fileName: "Revival_CE", edition: "regular", file: "Revival_CE", actionId: ID(1) }], catalog)).toBeNull();
     expect(resolvePick([
@@ -52,6 +51,20 @@ describe("the twin rule", () => {
   });
 });
 
+describe("the deck a box starts", () => {
+  // Named for the row's own precon, as the start dialog fills its name in; a twin starts under the plain name.
+  it("is named for the precon, cut to the deck name's cap, and a box with no usable name is refused", () => {
+    expect(resolvePick([{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }], catalog))
+      .toEqual([{ rowFile: "Abzan", fileName: "Abzan", actionId: ID(1), name: "Abzan Armor" }]);
+    // A catalog row with no name falls back to its file, never to nothing.
+    expect(resolvePick([{ fileName: "Sultai", edition: "regular", file: "Sultai", actionId: ID(1) }], catalog)![0].name).toBe("Sultai");
+    expect(pickDeckName("x".repeat(200))).toBe("x".repeat(120));
+    expect(pickDeckName("   ")).toBeNull();
+    expect(pickDeckName("a\u0007b")).toBeNull();
+    expect(resolvePick([{ fileName: "Bad", edition: "regular", file: "Bad", actionId: ID(1) }], [{ fileName: "Bad", twinOf: null, name: "  " }])).toBeNull();
+  });
+});
+
 describe("the foot's sum", () => {
   it("counts boxes, copies and tokens, each box at its chosen edition", () => {
     const plain = { copies: 100, tokens: 10, twin: null };
@@ -62,43 +75,59 @@ describe("the foot's sum", () => {
   });
 });
 
-/** A ledger keyed by action id, as `addPreconForUser` answers from it: a committed id is answered, never re-added. */
+/**
+ * A ledger keyed by action id, as the owned start (`startPreconOwned`) answers from it: a committed id is answered
+ * with the deck it made, never started again, and a refusal leaves neither an entry nor a deck.
+ */
 function ledger(failing: Set<string>) {
   const entries = new Map<string, string>();
+  const decks: { id: string; name: string; entry: string }[] = [];
   const writes: string[] = [];
-  const add = vi.fn(async (fileName: string, actionId: string): Promise<PreconAddResult> => {
-    if (entries.has(actionId)) return { ok: true, entryId: actionId, cards: 1, copies: 1, foil: 0, placed: [], tokens: { marked: 0, names: [] } };
-    if (failing.has(fileName)) return { ok: false, reason: "failed" };
+  const add = vi.fn(async (fileName: string, actionId: string, name: string): Promise<PickAddResult> => {
+    const made = decks.find((d) => d.entry === actionId);
+    if (entries.has(actionId) && made) return { ok: true, entryId: actionId, deckId: made.id };
+    if (failing.has(fileName)) return { ok: false };
     entries.set(actionId, fileName);
+    decks.push({ id: `deck-${fileName}`, name, entry: actionId });
     writes.push(fileName);
-    return { ok: true, entryId: actionId, cards: 1, copies: 1, foil: 0, placed: [], tokens: { marked: 0, names: [] } };
+    return { ok: true, entryId: actionId, deckId: `deck-${fileName}` };
   });
-  return { add, writes };
+  return { add, writes, decks };
 }
 const three = [
-  { rowFile: "Abzan", fileName: "Abzan", actionId: ID(1) },
-  { rowFile: "Sultai", fileName: "Sultai", actionId: ID(2) },
-  { rowFile: "Temur", fileName: "Temur", actionId: ID(3) },
+  { rowFile: "Abzan", fileName: "Abzan", actionId: ID(1), name: "Abzan Armor" },
+  { rowFile: "Sultai", fileName: "Sultai", actionId: ID(2), name: "Sultai Arisen" },
+  { rowFile: "Temur", fileName: "Temur", actionId: ID(3), name: "Temur Roar" },
 ];
 
 describe("the per-box run", () => {
-  it("adds each box with its own id, and names the middle box that failed while the others land", async () => {
-    const { add, writes } = ledger(new Set(["Sultai"]));
+  it("adds each box with its own id, starting its deck, and names the middle box that failed while the others land", async () => {
+    const { add, writes, decks } = ledger(new Set(["Sultai"]));
     const out = await runPickAdds(three, add);
     expect(add.mock.calls.map((c) => c[1])).toEqual([ID(1), ID(2), ID(3)]);
     expect(out).toEqual([
-      { rowFile: "Abzan", ok: true, entryId: ID(1) },
+      { rowFile: "Abzan", ok: true, entryId: ID(1), deckId: "deck-Abzan" },
       { rowFile: "Sultai", ok: false },
-      { rowFile: "Temur", ok: true, entryId: ID(3) },
+      { rowFile: "Temur", ok: true, entryId: ID(3), deckId: "deck-Temur" },
     ]);
     expect(writes).toEqual(["Abzan", "Temur"]);
+    // The failed box left no deck; each other box started one, named for its precon.
+    expect(decks.map((d) => d.name)).toEqual(["Abzan Armor", "Temur Roar"]);
+  });
+
+  it("makes three decks for three boxes, each under the box's own id and name", async () => {
+    const { add, decks } = ledger(new Set());
+    const out = await runPickAdds(three, add);
+    expect(add.mock.calls.map((c) => c.slice(1))).toEqual([[ID(1), "Abzan Armor"], [ID(2), "Sultai Arisen"], [ID(3), "Temur Roar"]]);
+    expect(out.map((o) => (o.ok ? o.deckId : null))).toEqual(["deck-Abzan", "deck-Sultai", "deck-Temur"]);
+    expect(decks).toHaveLength(3);
   });
 
   // A box that throws may have committed with its answer lost: it is unknown, never a refusal, and the run goes on.
   it("reports a box that throws as unknown, and goes on", async () => {
-    const add = vi.fn(async (fileName: string, actionId: string): Promise<PreconAddResult> => {
+    const add = vi.fn(async (fileName: string, actionId: string): Promise<PickAddResult> => {
       if (fileName === "Sultai") throw new Error("down");
-      return { ok: true, entryId: actionId, cards: 1, copies: 1, foil: 0, placed: [], tokens: { marked: 0, names: [] } };
+      return { ok: true, entryId: actionId, deckId: `deck-${fileName}` };
     });
     vi.spyOn(console, "error").mockImplementation(() => {});
     const out = await runPickAdds(three, add);
@@ -106,12 +135,13 @@ describe("the per-box run", () => {
     expect(out[1]).toEqual({ rowFile: "Sultai", ok: false, unknown: true });
   });
 
-  it("answers a retry with the same ids from the committed entries, adding nothing twice", async () => {
-    const { add, writes } = ledger(new Set());
+  it("answers a retry with the same ids from the committed entries and their decks, adding nothing and starting no deck twice", async () => {
+    const { add, writes, decks } = ledger(new Set());
     const first = await runPickAdds(three, add);
     const again = await runPickAdds(three, add);
     expect(again).toEqual(first);
     expect(writes).toEqual(["Abzan", "Sultai", "Temur"]);
+    expect(decks).toHaveLength(3);
   });
 });
 
@@ -137,7 +167,7 @@ describe("the entry and the receipt", () => {
     expect(summarisePickReceipt([
       { id: ID(1), name: "Abzan Armor", rows: [{ before: null, after: { quantity: 2 } }, { before: { quantity: 1 }, after: { quantity: 3 } }], preconTokens: [{ quantity: 4 }] },
       { id: ID(2), name: "Temur Roar", rows: [{ before: null, after: { quantity: 1 } }], preconTokens: null },
-    ])).toEqual({ entryIds: [ID(1), ID(2)], names: ["Abzan Armor", "Temur Roar"], copies: 5, tokens: 4 });
+    ], new Set([ID(2), ID(9)]))).toEqual({ entryIds: [ID(1), ID(2)], names: ["Abzan Armor", "Temur Roar"], copies: 5, tokens: 4, decks: 1 });
     expect(summarisePickReceipt([])).toBeNull();
   });
 });
@@ -152,6 +182,15 @@ describe("recovering a retry from its committed entry", () => {
     );
     expect(out!.recovered).toEqual([{ rowFile: "Abzan", ok: true, entryId: A }, { rowFile: "Revival", ok: true, entryId: B }]);
     expect(out!.rest).toEqual([{ fileName: "Temur", edition: "regular", file: "Temur", actionId: "x" }]);
+  });
+
+  it("answers a recovered box with the deck its add started", () => {
+    const out = recoverCommitted(
+      [{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: A }, { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: B }],
+      new Map([[A, "Abzan"], [B, "Revival_CE"]]),
+      new Map([[A, "deck-a"]]),
+    );
+    expect(out!.recovered).toEqual([{ rowFile: "Abzan", ok: true, entryId: A, deckId: "deck-a" }, { rowFile: "Revival", ok: true, entryId: B }]);
   });
 
   it("recovers nothing from an entry of another box, nor a Collector's Edition from its own Regular file", () => {

@@ -432,8 +432,8 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
   const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
   const LINE = { COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
   const drawn = (o: Record<string, string>, id: string) => visibleEntries(env(o)).find((e) => e.id === id);
-  const PRECON_LINE = "Pick the precons you own and their cards go into your Collection at the box’s printings, tokens too.";
-  const PRECON_KEY = "Each precon box is its own change in History, and Revert takes it back. Adding a box twice stacks its copies.";
+  const PRECON_LINE = "Pick the precons you own and each one starts its deck, with its cards in your Collection at the box’s printings, tokens too.";
+  const PRECON_KEY = "Each precon box is its own change in History, and Revert takes its cards back. Adding a box twice stacks its copies and starts a second deck.";
 
   it("bumps nothing, as a switched entry, and sits in chapter 01 straight after import", () => {
     const entry = aboutEntries.find((e) => e.id === "start-without-a-collection")!;

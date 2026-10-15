@@ -20,10 +20,9 @@ import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { warmCommanderScores } from "../../lib/recs/warm";
 import { isUuid } from "../../lib/uuid";
 import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
-import { addPreconForUser } from "../../lib/precons/add";
 import { readPickCatalog } from "../../lib/precons/list-read";
 import { PICK_MAX, recoverCommitted, resolvePick, runPickAdds, type PickOutcome } from "../../lib/precons/pick";
-import { committedPreconAdds } from "../../lib/precons/added";
+import { committedPreconAdds, preconAddDecks } from "../../lib/precons/added";
 import { after } from "next/server";
 
 export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
@@ -66,10 +65,13 @@ export async function startPreconOwned(fileName: string, rawName: string, action
 }
 
 /**
- * Precons I own (no-collection entry S4 to S7): adds each ticked box with `addPreconForUser`, once per box and each
- * with its own id, so each is its own History entry with its tokens marked. The request is checked against the
- * catalog as a closed set (`resolvePick`). A box that refuses does not stop the others, and nothing is retried here:
- * the outcomes say which landed, and a retry with the same ids is answered from the committed entries.
+ * Precons I own (no-collection entry S4 to S7): each ticked box goes into the collection AND starts its deck, exactly
+ * as "Start with this precon" with "I own this precon" does (`startPreconOwned`; Hugh: "If someone owns the precons,
+ * we should create the decks."): once per box and each with its own id, so each is its own History entry with its
+ * tokens marked, and its deck and its cards land in one transaction or not at all. The deck is named for the precon,
+ * as the start dialog names it. The request is checked against the catalog as a closed set (`resolvePick`). A box
+ * that refuses does not stop the others, and nothing is retried here: the outcomes say which landed, and a retry with
+ * the same ids is answered from the committed entries and the decks they started, so it starts no second deck.
  */
 export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
   const userId = await requireUserId();
@@ -87,7 +89,8 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
   const ids = Array.isArray(requests)
     ? (requests as unknown[]).map((r) => (typeof r === "object" && r !== null ? (r as Record<string, unknown>).actionId : null)).filter((id): id is string => isUuid(id))
     : [];
-  const split = recoverCommitted(requests, await committedPreconAdds(userId, ids));
+  const [entries, made] = await Promise.all([committedPreconAdds(userId, ids), preconAddDecks(userId, ids)]);
+  const split = recoverCommitted(requests, entries, made);
   if (split === null) throw new Error("bad pick");
   let added: PickOutcome[] = [];
   if (split.rest.length > 0) {
@@ -103,13 +106,15 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
       else boxes.push(...one);
     }
     const placements = addedCopyEnabled(env);
-    added = [...refused, ...(boxes.length > 0 ? await runPickAdds(boxes, (fileName, actionId) => addPreconForUser(userId, fileName, actionId, env, placements)) : [])];
+    added = [...refused, ...(boxes.length > 0 ? await runPickAdds(boxes, (fileName, actionId, name) => startOwned(userId, fileName, name, actionId, env, placements)) : [])];
   }
   const outcomes = [...split.recovered, ...added];
   if (outcomes.some((o) => o.ok)) {
     // A pick that stays on the page (S7) must see the nav unlock now, so the readers are retired in the response;
     // the scores warm after it, as every collection write does.
     invalidateCollectionReaders(userId);
+    // Each deck a box started, as the owned start revalidates its one.
+    for (const o of added) if (o.ok && o.deckId) revalidateClaims(o.deckId, userId);
     after(() => warmCommanderScores(userId, env));
   }
   return outcomes;

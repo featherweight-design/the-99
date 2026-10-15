@@ -317,18 +317,18 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the empty Collection',
     width: 'plate',
     caption:
-      'No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nPick the precons you own and their cards go into your Collection at the box’s printings, tokens too.\nImport a deck you play and select that you own its cards. Or add cards one at a time. A file can come later.',
+      'No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nPick the precons you own and each one starts its deck, with its cards in your Collection at the box’s printings, tokens too.\nImport a deck you play and select that you own its cards. Or add cards one at a time. A file can come later.',
     captionLineSwitches: {
-      'Pick the precons you own and their cards go into your Collection at the box’s printings, tokens too.': 'PRECONS_ENABLED',
+      'Pick the precons you own and each one starts its deck, with its cards in your Collection at the box’s printings, tokens too.': 'PRECONS_ENABLED',
     },
     keys: [
       'Commanders, Discover and Decks open once your Collection has a card in it.',
-      'Each precon box is its own change in History, and Revert takes it back. Adding a box twice stacks its copies.',
+      'Each precon box is its own change in History, and Revert takes its cards back. Adding a box twice stacks its copies and starts a second deck.',
       'An imported deck’s cards are added as one change, at the printings the list named.',
       'Your first file asks whether it replaces or adds, and says what a replace would remove.',
     ],
     keySwitches: {
-      'Each precon box is its own change in History, and Revert takes it back. Adding a box twice stacks its copies.':
+      'Each precon box is its own change in History, and Revert takes its cards back. Adding a box twice stacks its copies and starts a second deck.':
         'PRECONS_ENABLED',
     },
     marksPending: true,
