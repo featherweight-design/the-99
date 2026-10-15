@@ -9,6 +9,7 @@ import { IssueInspector } from "./issue-inspector";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { importReviewCopy } from "../../lib/copy/import-review";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { STEP_BODY, STEP_BODY_ARIA, STEP_FOOT, STEP_FRAME } from "./review-parts";
 import { Crown } from "../ui/crown";
 import { replaceCopy } from "../../lib/copy/replace";
 import { cards, collectionEditCopy, rows } from "../../lib/copy/collection-edit";
@@ -99,7 +100,7 @@ export function ReviewScreen({
 
   return (
     // Wrapping section splits into scrollable content + sticky confirm bar
-    <section className={embedded ? "flex flex-col" : "flex flex-1 flex-col"}>
+    <section className={embedded ? "flex flex-col" : STEP_FRAME}>
       {/* Mobile page header — "Review import" and the filename (first-run redesign D11, 5b).
           The ‹ is gone: Cancel in the confirm bar is the phone's exit now. Embedded in first
           run's step-1 card (5a) there is no header at all; the card's own title and its
@@ -115,7 +116,10 @@ export function ReviewScreen({
       )}
 
       {/* Desktop content area — §Desktop Content Area (padding 36px 56px 20px, max-width 940px). Cap widened to 1280px per #32 so the review fills the shell content column instead of leaving an empty right column at typical desktop widths. */}
-      <div className={`flex-1 md:max-w-[1280px] md:mx-auto md:p-[36px_56px_20px] ${embedded ? "p-[0_14px]" : "p-[16px_18px]"}`}>
+      <div
+        {...(embedded ? {} : STEP_BODY_ARIA)}
+        className={`flex-1 md:max-w-[1280px] md:mx-auto md:p-[36px_56px_20px] ${embedded ? "p-[0_14px]" : `p-[16px_18px] ${STEP_BODY} focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]`}`}
+      >
         {/* Desktop step indicator — §Desktop Step Indicator */}
         <p
           className="hidden md:block font-mono text-[11px] tracking-[0.06em]"
@@ -376,7 +380,7 @@ export function ReviewScreen({
         className={`${
           embedded
             ? "mt-[14px] p-[12px_14px_14px] md:mt-0"
-            : "sticky bottom-[var(--tabbar-h)] md:bottom-0 p-[12px_18px_14px]"
+            : `${STEP_FOOT} p-[12px_18px_14px]`
         } z-10 md:p-[16px_56px] md:flex md:items-center md:gap-[20px]`}
         style={{ background: "var(--surface-rail)", borderTop: "1px solid var(--border-strong)" }}
       >
