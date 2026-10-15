@@ -66,6 +66,9 @@ describe("rows by split", () => {
     expect(initialsOf("  Émile  Zola ")).toBe("ÉZ");
     expect(initialsOf("*** !!")).toBe("?");
     expect(initialsOf("Dave")).toBe("DA");
+    // One rule with the friend faces (`faceInitials`): words are whitespace-separated, so a hyphenated name is one word.
+    expect(initialsOf("Jo-Ann Lee")).toBe("JL");
+    expect(initialsOf("O’Brien")).toBe("OB");
   });
 });
 

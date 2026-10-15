@@ -26,7 +26,6 @@ export const gameSeatsCopy = {
     wonAria: (name: string) => `${name} won`,
     wonPill: "Won",
     wonLine: "won this game",
-    /** A pod size pressed below the filled seats; `filled` is how many are. The handoff said "All N seats", false while the pod has room left. */
     /** Under a friend seated alone, and the press that opens that friend's decks. */
     whichDeck: "Which deck?",
     /** The chips' label, beside one chip per pod. */
@@ -35,6 +34,7 @@ export const gameSeatsCopy = {
     podLeftOut: (names: string) => `No room for ${names}. A pod seats up to 8.`,
     /** A pod's seats could not be read. */
     podFailed: "Couldn’t seat that pod. Try again.",
+    /** A pod size pressed below the filled seats; `filled` is how many are. The handoff said "All N seats", false while the pod has room left. */
     held: (filled: number) => `${filled} seats are filled. Clear a seat to make the pod smaller.`,
   },
   picker: {

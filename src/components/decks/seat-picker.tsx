@@ -232,6 +232,11 @@ function Body({
     setView(next);
   }
 
+  // Asked to open on a friend: wait for the friends rather than draw the generic list and jump.
+  if (openAt && !view && friends.state === "busy") {
+    return <p className="m-0 px-[14px] py-[14px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</p>;
+  }
+
   if (current.step === "decks") {
     const friend = current.friend;
     return (
