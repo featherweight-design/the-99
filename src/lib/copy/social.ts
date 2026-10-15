@@ -115,6 +115,8 @@ export const socialCopy = {
     addConfirm: (n: number) => (n === 0 ? "Add friends" : `Add ${friends(n)}`), // held at 0
     addAllIn: "Every friend is already in this pod.",
     addNoFriends: "No friends to add yet. Add one first.",
+    // Ticked past the batch cap (ADD_MEMBERS_MAX): the button holds and this says why.
+    addMax: (max: number) => `You can add up to ${max} at a time.`,
     failed: "We couldn’t change that pod. Try again.", // toast, role alert
   },
 } as const;

@@ -216,7 +216,7 @@ describe("+ Add friends", () => {
     m.add.mockResolvedValue({ ok: false, reason: "notFriend" });
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
     await press(screen.getByRole("button", { name: P.addFriends }));
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    fireEvent.click(within(screen.getByRole("dialog")).getAllByRole("checkbox")[0]);
     await press(screen.getByRole("button", { name: P.addConfirm(1) }));
     expect(screen.getByRole("dialog")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toContain(P.failed);
@@ -256,6 +256,64 @@ describe("the spares box", () => {
     await press(box);
     expect(box.checked).toBe(false);
     expect(screen.getByRole("alert").textContent).toContain(P.failed);
+  });
+});
+
+describe("round 1: races and edges", () => {
+  it("keeps a member removed and re-added before the redraw, by their new join", async () => {
+    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
+    // Same ids, same order: only Dave's join moved.
+    rerender(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }, { ...DAVE, joinedAt: new Date("2026-10-15") }, PRIYA] })]} sharedIds={[]} friends={FRIENDS} />);
+    expect(seatNames(card("Thursday"))).toContain("Dave");
+  });
+
+  it("holds the spares box while its write is in flight, and puts back the saved value on a failure", async () => {
+    let fail: (e: Error) => void = () => {};
+    m.share.mockReturnValueOnce(new Promise((_, rej) => { fail = rej; }));
+    render(<PodsPane pods={[mine()]} sharedIds={["pod-1"]} friends={FRIENDS} />);
+    const box = screen.getByRole("checkbox", { name: P.share }) as HTMLInputElement;
+    await press(box);
+    expect(box.checked).toBe(false);
+    expect(box.getAttribute("aria-busy")).toBe("true");
+    await press(box);
+    expect(m.share).toHaveBeenCalledTimes(1);
+    await act(async () => fail(new Error("down")));
+    expect(box.checked).toBe(true);
+    expect(box.hasAttribute("aria-busy")).toBe(false);
+  });
+
+  it("closes only the Add dialog that started a write, not one reopened since", async () => {
+    let done: (v: unknown) => void = () => {};
+    m.add.mockReturnValueOnce(new Promise((res) => { done = res; }));
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    await press(screen.getByRole("button", { name: P.addFriends }));
+    fireEvent.click(within(screen.getByRole("dialog")).getAllByRole("checkbox")[0]);
+    await press(screen.getByRole("button", { name: P.addConfirm(1) }));
+    await press(screen.getByRole("button", { name: socialCopy.page.close }));
+    await press(screen.getByRole("button", { name: P.addFriends }));
+    const reopened = screen.getByRole("dialog");
+    await act(async () => done({ ok: true, added: 1 }));
+    expect(screen.getByRole("dialog")).toBe(reopened);
+  });
+
+  it("holds Add past the batch cap and says why", async () => {
+    const many = Array.from({ length: 33 }, (_, i) => friend(`F${String(i).padStart(2, "0")}`));
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={many} />);
+    await press(screen.getByRole("button", { name: P.addFriends }));
+    for (const box of within(screen.getByRole("dialog")).getAllByRole("checkbox")) fireEvent.click(box);
+    const confirm = screen.getByRole("button", { name: P.addConfirm(33) });
+    expect(confirm.getAttribute("aria-disabled")).toBe("true");
+    expect(screen.getByRole("status").textContent).toBe(P.addMax(32));
+    await press(confirm);
+    expect(m.add).not.toHaveBeenCalled();
+  });
+
+  it("lets Escape cancel a composition without closing the name field", async () => {
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    await press(screen.getByRole("button", { name: P.newPod }));
+    fireEvent.keyDown(screen.getByLabelText(P.nameLabel), { key: "Escape", isComposing: true });
+    expect(screen.getByLabelText(P.nameLabel)).toBeTruthy();
   });
 });
 

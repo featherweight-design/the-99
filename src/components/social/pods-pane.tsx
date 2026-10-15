@@ -24,7 +24,8 @@ const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompar
 
 /** What a redraw is compared by: everything a held press could have changed. */
 function servedKey(pods: readonly Pod[], sharedIds: readonly string[]): string {
-  return JSON.stringify([pods.map((p) => [p.id, p.members.map((m) => m.publicId)]), [...sharedIds].sort()]);
+  // A member's join time too: one removed and re-added before the redraw has the same id and a new join.
+  return JSON.stringify([pods.map((p) => [p.id, p.members.map((m) => [m.publicId, new Date(m.joinedAt).getTime()])]), [...sharedIds].sort()]);
 }
 
 export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds: string[]; friends: Friend[] }) {
@@ -42,7 +43,12 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [adding, setAdding] = useState<string | null>(null);
+  // The open Add dialog, with the opening it belongs to: a request that finishes closes only its own opening.
+  const [adding, setAdding] = useState<{ podId: string; seq: number } | null>(null);
+  const openings = useRef(0);
+  // A spares write per pod at a time: its box holds while one is in flight, so a rollback is never to a value that
+  // was itself unsaved.
+  const [sharePending, setSharePending] = useState<ReadonlySet<string>>(() => new Set());
   const addSeats = useRef(new Map<string, HTMLButtonElement>());
   const addReturn = useRef<HTMLElement | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
@@ -55,7 +61,7 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
 
   const shown = [...pods].sort(byName).map((p) => ({ ...p, members: p.members.filter((m) => !removed.has(`${p.id}:${m.publicId}`)) }));
   const shared = (podId: string) => sharing[podId] ?? sharedIds.includes(podId);
-  const adding_ = shown.find((p) => p.id === adding) ?? null;
+  const adding_ = shown.find((p) => p.id === adding?.podId) ?? null;
 
   async function create() {
     const clean = name.trim();
@@ -93,8 +99,10 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
   }
 
   async function share(podId: string, on: boolean) {
+    if (sharePending.has(podId)) return;
     const before = shared(podId);
     setSharing((prev) => ({ ...prev, [podId]: on }));
+    setSharePending((prev) => new Set(prev).add(podId));
     try {
       const r = await shareSparesWithAction(podId, on);
       if (off(r)) router.refresh();
@@ -105,14 +113,20 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
     } catch {
       setSharing((prev) => ({ ...prev, [podId]: before }));
       fail();
+    } finally {
+      setSharePending((prev) => {
+        const next = new Set(prev);
+        next.delete(podId);
+        return next;
+      });
     }
   }
 
-  async function add(podId: string, ids: string[]) {
+  async function add(podId: string, seq: number, ids: string[]) {
     setBusy(true);
     try {
       const r = await addMembersAction(podId, ids);
-      if (r.ok) setAdding(null);
+      if (r.ok) setAdding((now) => (now?.seq === seq ? null : now));
       else if (off(r)) router.refresh();
       else fail();
     } catch {
@@ -146,7 +160,8 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
             void create();
           }}
           onKeyDown={(e) => {
-            if (e.key === "Escape") {
+            // Escape while composing cancels the composition, not the field.
+            if (e.key === "Escape" && !e.nativeEvent.isComposing) {
               setCreating(false);
               setName("");
             }
@@ -200,11 +215,12 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
           key={p.id}
           pod={p}
           shared={shared(p.id)}
+          sharePending={sharePending.has(p.id)}
           onRemove={(m) => void remove(p, m)}
           onShare={(on) => void share(p.id, on)}
           onAdd={() => {
             addReturn.current = addSeats.current.get(p.id) ?? null;
-            setAdding(p.id);
+            setAdding({ podId: p.id, seq: ++openings.current });
           }}
           addRef={(el) => {
             if (el) addSeats.current.set(p.id, el);
@@ -214,11 +230,12 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
       ))}
       {adding_ ? (
         <PodAddFriends
+          key={adding!.seq}
           podName={adding_.name}
           candidates={candidates}
           hasFriends={friends.length > 0}
           busy={busy}
-          onAdd={(ids) => void add(adding_.id, ids)}
+          onAdd={(ids) => void add(adding_.id, adding!.seq, ids)}
           onClose={() => setAdding(null)}
           returnFocusRef={addReturn}
         />

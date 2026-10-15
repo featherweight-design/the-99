@@ -10,6 +10,7 @@ import { db } from "../../db";
 import { friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { resolveFriend } from "./access";
 import { cleanPodName, isUuid, nextPodOwner } from "./rules";
+import { ADD_MEMBERS_MAX } from "./client-rules";
 
 const isId = isUuid;
 
@@ -79,8 +80,8 @@ export async function addMember(viewerId: string, podId: unknown, friendPublicId
   });
 }
 
-/** The most friends one batch may name: a pod is a table, not a mailing list. */
-export const ADD_MEMBERS_MAX = 32;
+// The cap is a rule the picker runs too, so it lives with the client-safe rules.
+export { ADD_MEMBERS_MAX };
 
 export type AddMembersResult =
   | { ok: true; added: number }

@@ -79,6 +79,7 @@ function Seat({ member, podName, onRemove }: { member: PodMember; podName: strin
 export function PodCard({
   pod,
   shared,
+  sharePending = false,
   onRemove,
   onAdd,
   onShare,
@@ -86,6 +87,8 @@ export function PodCard({
 }: {
   pod: Pod;
   shared: boolean;
+  /** A write of this box is in flight: it holds until that write answers. */
+  sharePending?: boolean;
   onRemove: (member: PodMember) => void;
   onAdd: () => void;
   onShare: (on: boolean) => void;
@@ -131,7 +134,10 @@ export function PodCard({
         <input
           type="checkbox"
           checked={shared}
-          onChange={(e) => onShare(e.target.checked)}
+          aria-busy={sharePending || undefined}
+          onChange={(e) => {
+            if (!sharePending) onShare(e.target.checked);
+          }}
           className="peer sr-only"
         />
         <span

@@ -8,6 +8,7 @@
 
 import { useId, useState, type RefObject } from "react";
 import type { Friend } from "../../lib/social/access";
+import { ADD_MEMBERS_MAX } from "../../lib/social/client-rules";
 import { socialCopy } from "../../lib/copy/social";
 import { Face } from "./face";
 import { SocialModal } from "./social-modal";
@@ -36,7 +37,9 @@ export function PodAddFriends({
   const [ticked, setTicked] = useState<ReadonlySet<string>>(() => new Set());
   const groupId = useId();
   const n = ticked.size;
-  const held = n === 0 || busy;
+  // Past the batch cap the button holds and says why, so a press never meets a refusal it could not see (E11).
+  const over = n > ADD_MEMBERS_MAX;
+  const held = n === 0 || over || busy;
   const toggle = (id: string) =>
     setTicked((prev) => {
       const next = new Set(prev);
@@ -74,6 +77,7 @@ export function PodAddFriends({
               </label>
             ))}
           </div>
+          {over ? <p role="status" className="m-0 mt-[10px] text-[12.5px] text-[color:var(--fg-muted)]">{copy.addMax(ADD_MEMBERS_MAX)}</p> : null}
           <div className="mt-[14px] flex flex-none justify-end">
             <button
               type="button"
