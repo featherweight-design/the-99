@@ -404,7 +404,9 @@ export function GroupToggle({
           className={[
             phoneRows
               ? "contents md:flex md:items-center md:gap-[10px] md:grow-0 md:flex-none"
-              : "flex items-center gap-[7px] md:gap-[10px] md:grow-0 md:flex-none",
+              // Wraps at phone: with Stats and Notes off there are no phone rows, and the grouping well, sort and
+              // the view well do not fit 358px on one line. Desktop keeps one row.
+              : "flex flex-wrap items-center gap-[7px] md:flex-nowrap md:gap-[10px] md:grow-0 md:flex-none",
             // Growing is the phone's push of the view well to the right edge,
             // and NOTHING else — so it happens only when the well is drawn.
             // Under Shopping the well is absent and a growing cluster would
