@@ -132,7 +132,8 @@ export function RowsView({
           <span className="flex items-center gap-[4px] whitespace-nowrap font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--accent)" }}>
             ×{c.quantity}
             {/* The foil glint in the count column, after `×N` (foil mark addendum): no new column, so every name
-                keeps its full width. */}
+                keeps its full width. The phone column is 38px and the cell does not wrap, so `×10` to `×99` with a glint
+                run up to ~9px past it, into the 10px gap before the name; three digits would reach the name. */}
             {c.imageUri && c.foil && <FoilGlint finish={c.foil} />}
           </span>
 
