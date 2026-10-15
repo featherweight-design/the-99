@@ -26,6 +26,7 @@ import { addMembers, createPod, deletePod, leavePod, removeMember, renamePod, ty
 import { shareSparesWith } from "../../lib/social/spares";
 import { cleanDisplayName, cleanPodName } from "../../lib/social/rules";
 import { invitePath, isInviteToken, originFrom } from "../../lib/social/client-rules";
+import { listOwnDeckCommanders, searchFaceCommanders, type CommanderTile } from "../../lib/decks/commander-picker";
 
 type Off = { ok: false; reason: "off" };
 const OFF: Off = { ok: false, reason: "off" };
@@ -65,6 +66,22 @@ export async function setCommanderAction(oracleId: unknown): Promise<SetCommande
   if (!result.ok) return result;
   refreshFriends();
   return { ok: true };
+}
+
+export type PickerTilesOutcome = { ok: true; tiles: CommanderTile[] } | Off;
+
+/** The picker's first row: the commanders of the reader's own decks, newest deck first (E2). A read, so nothing revalidates. */
+export async function listDeckCommandersAction(): Promise<PickerTilesOutcome> {
+  const userId = await socialReader();
+  if (!userId) return OFF;
+  return { ok: true, tiles: await listOwnDeckCommanders(userId) };
+}
+
+/** The picker's search: any commander the catalog lists, by name, with its art (E2). Too short a query finds nothing. */
+export async function searchFaceCommandersAction(query: unknown): Promise<PickerTilesOutcome> {
+  const userId = await socialReader();
+  if (!userId) return OFF;
+  return { ok: true, tiles: await searchFaceCommanders(query) };
 }
 
 // --- Friend links ----------------------------------------------------------------------------------

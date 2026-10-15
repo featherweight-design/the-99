@@ -12,13 +12,21 @@ const m = vi.hoisted(() => ({
   requestSwitchEnv: vi.fn(),
   readInvite: vi.fn(),
   spendFriendLinkAction: vi.fn(),
+  currentUser: vi.fn(),
+  ensureProfile: vi.fn(),
+  listOpenInvites: vi.fn(),
+  listFriends: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND"); } }));
-vi.mock("@clerk/nextjs/server", () => ({ auth: m.auth }));
+vi.mock("@clerk/nextjs/server", () => ({ auth: m.auth, currentUser: m.currentUser }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "localhost:3313" }) }));
 vi.mock("@clerk/nextjs", () => ({ SignInButton: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
-vi.mock("../../lib/social/friends", () => ({ readInvite: m.readInvite }));
+vi.mock("../../lib/social/friends", () => ({
+  readInvite: m.readInvite, ensureProfile: m.ensureProfile, listOpenInvites: m.listOpenInvites,
+}));
+vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends }));
 vi.mock("./actions", () => ({ spendFriendLinkAction: m.spendFriendLinkAction }));
 
 import FriendsPage from "./page";
@@ -27,6 +35,8 @@ import { socialCopy } from "../../lib/copy/social";
 import { SpendFriendLink } from "../../components/social/spend-friend-link";
 
 const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
+const PUB = "00000000-0000-4000-8000-000000000001";
+const DAVE = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Dave", since: new Date("2026-10-02T12:00:00Z"), commander: null };
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
 const params = (token = TOKEN) => Promise.resolve({ token });
 const open = (over: Record<string, unknown> = {}) => ({
@@ -39,6 +49,10 @@ beforeEach(() => {
   m.auth.mockResolvedValue({ userId: "user_1" });
   m.requestSwitchEnv.mockResolvedValue(ON);
   m.spendFriendLinkAction.mockResolvedValue({ ok: true, spent: true });
+  m.currentUser.mockResolvedValue({ firstName: "Hugh" });
+  m.ensureProfile.mockResolvedValue({ publicId: PUB, displayName: "Hugh", commander: null });
+  m.listOpenInvites.mockResolvedValue([]);
+  m.listFriends.mockResolvedValue([DAVE]);
 });
 afterEach(cleanup);
 
@@ -47,11 +61,19 @@ describe("/friends", () => {
     m.requestSwitchEnv.mockResolvedValue({});
     await expect(FriendsPage()).rejects.toThrow("NOT_FOUND");
     expect(m.requestSwitchEnv).toHaveBeenCalledWith("user_1");
+    expect(m.ensureProfile).not.toHaveBeenCalled();
   });
 
-  it("draws with it on", async () => {
+  it("draws with it on, starting a first visit's name from the Clerk first name", async () => {
     render(await FriendsPage());
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.page.title);
+    expect(m.ensureProfile).toHaveBeenCalledWith("user_1", "Hugh");
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("lets a read that throws reach the error boundary (E16)", async () => {
+    m.ensureProfile.mockRejectedValue(new Error("db down"));
+    await expect(FriendsPage()).rejects.toThrow("db down");
   });
 });
 

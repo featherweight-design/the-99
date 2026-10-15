@@ -25,6 +25,8 @@ const m = vi.hoisted(() => ({
   removeMember: vi.fn(),
   leavePod: vi.fn(),
   shareSparesWith: vi.fn(),
+  listOwnDeckCommanders: vi.fn(),
+  searchFaceCommanders: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
@@ -42,6 +44,9 @@ vi.mock("../../lib/social/pods", () => ({
   removeMember: m.removeMember, leavePod: m.leavePod,
 }));
 vi.mock("../../lib/social/spares", () => ({ shareSparesWith: m.shareSparesWith }));
+vi.mock("../../lib/decks/commander-picker", () => ({
+  listOwnDeckCommanders: m.listOwnDeckCommanders, searchFaceCommanders: m.searchFaceCommanders,
+}));
 
 import * as actions from "./actions";
 
@@ -80,6 +85,8 @@ describe("the switch", () => {
     ["removeMemberAction", () => actions.removeMemberAction(POD, FRIEND)],
     ["leavePodAction", () => actions.leavePodAction(POD)],
     ["shareSparesWithAction", () => actions.shareSparesWithAction(POD, true)],
+    ["listDeckCommandersAction", () => actions.listDeckCommandersAction()],
+    ["searchFaceCommandersAction", () => actions.searchFaceCommandersAction("krenko")],
   ];
 
   it("covers every exported action", () => {
@@ -261,5 +268,21 @@ describe("friends and pods", () => {
     m.shareSparesWith.mockResolvedValue(true);
     expect(await actions.shareSparesWithAction(POD, "true")).toEqual({ ok: true, on: false });
     expect(m.shareSparesWith).toHaveBeenLastCalledWith("user_1", POD, false);
+  });
+});
+
+describe("the picker's reads (E2)", () => {
+  it("reads the reader's own decks' commanders, by the session's id, and revalidates nothing", async () => {
+    const tiles = [{ oracleId: "o1", name: "Krenko, Mob Boss", artCropUri: null }];
+    m.listOwnDeckCommanders.mockResolvedValue(tiles);
+    expect(await actions.listDeckCommandersAction()).toEqual({ ok: true, tiles });
+    expect(m.listOwnDeckCommanders).toHaveBeenCalledWith("user_1");
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("hands the search its query as given, for the library to judge", async () => {
+    m.searchFaceCommanders.mockResolvedValue([]);
+    expect(await actions.searchFaceCommandersAction(42)).toEqual({ ok: true, tiles: [] });
+    expect(m.searchFaceCommanders).toHaveBeenCalledWith(42);
   });
 });

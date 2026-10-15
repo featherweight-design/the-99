@@ -87,6 +87,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // A friend link's landing (Social R1) reads the link, never the collection; it imports `db` for that, and
   // `db` the whole schema. Listed as /about is, for one pointless revalidation.
   { path: "/friend/[token]", dynamic: true },
+  // /friends (Social R1) reads profiles, friends and links, never the collection; the picker's deck read imports
+  // the schema through `db`, so it is listed as the friend link is.
+  { path: "/friends", dynamic: false },
 ];
 
 /**
