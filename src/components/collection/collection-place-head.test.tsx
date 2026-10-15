@@ -5,7 +5,7 @@ import { CollectionPlaceHead, placeFromPathname, visibleTabs, type CollectionPla
 import { collectionTabsCopy } from "../../lib/copy/collection";
 
 let pathname = "/collection";
-vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn() }) }));
 
 // The real Link's own click handler returns before calling `onNavigate` at all when it finds
 // no AppRouterContext (`if (!router) return;`), so a test with no router provider would never

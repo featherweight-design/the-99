@@ -24,6 +24,7 @@ import { identityGradient } from "../../lib/collection/gradients";
 import type { CatalogCardResult, PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PendingReporter } from "../shell/pending-reporter";
+import { usePendingPush } from "../shell/pending-push";
 import { PRIMARY } from "../ui/button";
 import { useSheetHost } from "../ui/sheet-host";
 import { SearchField } from "../ui/text-field";
@@ -95,6 +96,9 @@ function AddMode({
   const phone = !useIsDesktop();
   const host = useSheetHost(true);
   useInertPage(host, true);
+  // The precon row's press closes this sheet, which unmounts the row, so a report the row owned would end before
+  // the pick arrived: the push runs in the navigation-pending provider instead, as the account menu's does.
+  const leave = usePendingPush();
 
   const titleId = useId();
   const listId = useId();
@@ -433,17 +437,23 @@ function AddMode({
                 <PendingReporter href="/collection/replace" />
               </Link>
               {/* S18: the same shape, under the upload on the phone and the only row on desktop, where the upload is in
-                  the head. Closes the sheet as it opens the pick; the sheet's history entry stays under the new route. */}
+                  the head. Closes the sheet as it opens the pick, on a navigation in this tab only (`onNavigate`: a
+                  modified click opens a new tab and leaves this one as it was); the sheet's history entry stays under
+                  the new route. */}
               {preconPick ? (
                 <Link
                   href={PICK_FROM_COLLECTION_HREF}
-                  onClick={() => { leaveDialogsForNavigation(); onClose(); }}
+                  onNavigate={(e) => {
+                    e.preventDefault();
+                    leaveDialogsForNavigation();
+                    onClose();
+                    leave.go(PICK_FROM_COLLECTION_HREF);
+                  }}
                   className="flex min-h-[52px] items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[14px] text-[14px] md:mt-[4px]"
                 >
                   <span className="flex text-[color:var(--accent)]"><BoxIcon /></span>
                   <span className="flex-1">{copy.preconLead} <span className="text-[color:var(--accent)]">{copy.preconPress}</span></span>
                   <span aria-hidden className="text-[color:var(--fg-faint)]">{"›"}</span>
-                  <PendingReporter href={PICK_FROM_COLLECTION_HREF} />
                 </Link>
               ) : null}
             </div>
