@@ -116,3 +116,10 @@ it as scope. The plan treats it as a separate phase and holds it on these answer
 | Copy | Placeholders, all through `/copy-review`. |
 | Engineering asks | G3 (release-day read) and G4 (lists seen key) change the data half. G2, G5, G6, G7 need Hugh. |
 | Fixtures | G1: fourteen Star Trek names and its decks are placeholders. |
+
+## Addendum A1 · Announced collapse (2026-10-15)
+
+✅ **Approved by Hugh, 2026-10-15.** How a large reveal collapses in the Announced group's tiles view: one row
+collapsed, collapsing past two rows, `SheetGroupToggle` as the control, per visit, desktop too, rows view
+unaffected. Tile size and card details stay as #1808 shipped them. Calls and gaps G1–G5 are in
+`addendum-announced-collapse/README.md`.
