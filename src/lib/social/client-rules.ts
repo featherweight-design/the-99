@@ -55,11 +55,6 @@ export function invitePath(token: string): string {
   return `/friend/${token}`;
 }
 
-/** Where an accepted request lands: `/friends`, with the new friend's receipt resolved by `publicId` (E10). */
-export function friendsReceiptPath(publicId: string): string {
-  return `/friends?accepted=${encodeURIComponent(publicId)}`;
-}
-
 const first = (v: string | null) => v?.split(",")[0]?.trim() || null;
 
 /**
@@ -90,4 +85,16 @@ export function qrPath(text: string, border = 2): QrPath {
     if (dark) parts.push(`M${x} ${y}h1v1h-1z`);
   }));
   return { size, d: parts.join("") };
+}
+
+// --- The receipt after Accept (E10) ----------------------------------------------------------------
+// Accept on `/friend/[token]` lands on `/friends` carrying the new friend's `publicId`, never a name or a
+// Clerk id; `/friends` resolves it through the reader's own `listFriends`, so a forged or stale id draws no
+// receipt at all.
+
+export const ACCEPTED_PARAM = "accepted";
+
+/** Where an accepted request lands: `/friends`, with the new friend's receipt resolved by `publicId` (E10). */
+export function friendsReceiptPath(publicId: string): string {
+  return `/friends?${ACCEPTED_PARAM}=${encodeURIComponent(publicId)}`;
 }

@@ -6,6 +6,8 @@
 const members = (x: number) => (x === 1 ? "Just you" : `${x} members`);
 const friends = (x: number) => (x === 1 ? "1 friend" : `${x} friends`);
 
+const days = (x: number) => (x === 1 ? "1 day" : `${x} days`);
+
 export const socialCopy = {
   // The account menu row (popover and sheet), second, under About. Absent with the switch off.
   menu: { friends: "Friends" },
@@ -21,8 +23,48 @@ export const socialCopy = {
       cancel: "Cancel",
       failed: "We couldn’t save your name. Try again.", // toast, role alert
     },
-    // The modals' bare ✕ (aria-label "Close").
+    invite: "Add a friend",
+    invitePending: "Making a link…",
+    // Held at MAX_OPEN_INVITES; the line under the held button, joined to it by aria-describedby.
+    held: "10 friend links open, the most at once. Revoke one, or wait for one to be used.",
+    // Receipt strip after Accept, role status, bare ✕ (aria-label "Close").
+    accepted: (name: string) => `You and ${name} are friends.`,
     close: "Close",
+  },
+
+  friends: {
+    head: (n: number) => `Friends · ${n}`,
+    emptyTitle: "No friends yet",
+    emptyBody: "Friends are added by friend link only: send one, or show its QR code at the table. Nobody can find you by name.",
+    since: (date: string) => `since ${date}`, // "since today", "since Oct 2"
+    today: "today",
+    menuAria: (name: string) => `${name} actions`,
+    remove: "Remove friend",
+    removeHeading: (name: string) => `Remove ${name}?`,
+    // THE SENTENCE: unfriend removes each from the pods the other owns, and is silent.
+    removeBody: (name: string) => `${name} leaves the pods you own, and you leave ${name}’s. ${name} isn’t told.`,
+    removeConfirm: "Remove friend",
+    removeFailed: "We couldn’t remove that friend. Try again.", // toast, role alert
+  },
+
+  invites: {
+    head: (n: number) => `Open friend links · ${n}`,
+    row: "Friend link",
+    made: (when: string) => `made ${when}`, // "made today, 9:41 PM", "made Oct 9"
+    // Time left, from expiresAt: whole days down to 1, then under a day (--warning). Rounded, so a link made a
+    // moment ago reads `7 days left`, as the boards draw it, rather than six and a fraction floored to 6.
+    left: (msLeft: number) => {
+      if (msLeft < 86_400_000) return "Under a day left";
+      return `${days(Math.round(msLeft / 86_400_000))} left`;
+    },
+    show: "Show",
+    revoke: "Revoke",
+    showAria: (made: string) => `Show the link made ${made}`,
+    revokeAria: (made: string) => `Revoke the link made ${made}`,
+    tooMany: "You have 10 friend links open. Revoke one to make another.", // toast, no retry
+    createFailed: "We couldn’t make a friend link. Try again.", // toast, Try again
+    revokeFailed: "We couldn’t revoke that link. Try again.", // toast, role alert; the row comes back
+    retry: "Try again",
   },
 
   // R2: the signature commander, set in the head of /friends only.
@@ -42,6 +84,22 @@ export const socialCopy = {
     /** Spoken beside a colorless commander's pips, which carry color alone. */
     colorless: "Colorless",
     failed: "We couldn’t save your commander. Try again.", // toast, role alert
+  },
+
+  dialog: {
+    title: "Add a friend",
+    // C2 (copy review): opening a link does not spend it; accepting does.
+    sub: "Show this at the table, or send the link. The first person to accept it becomes your friend.",
+    qrAria: "QR code for the friend link",
+    qrCaption: "Scan with a phone camera",
+    linkAria: "Friend link",
+    copy: "Copy link",
+    copied: "✓ Copied",
+    share: "Share link", // phone, only where navigator.share exists
+    shareText: "Add me as a friend on The 99",
+    meta: (expires: string) => `Works once · expires ${expires}`, // "Thu, Oct 22"; under a day: "Fri, Oct 16, 9:12 PM"
+    soon: "under a day left",
+    close: "Close",
   },
 
   // The request card at /friend/[token] (PR D).

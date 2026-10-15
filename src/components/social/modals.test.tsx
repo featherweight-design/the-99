@@ -1,4 +1,4 @@
-// The commander picker (Social R1 PR C), with the frames the boards never drew (E15):
+// The commander picker and the Add a friend dialog (Social R1 PR C), with the frames the boards never drew (E15):
 // the picker with no decks of your own and with no results, and its search in flight (E16).
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,9 +8,11 @@ vi.mock("../../app/friends/actions", () => a);
 
 import { CommanderPicker } from "./commander-picker";
 import { SocialModal } from "./social-modal";
+import { AddFriendDialog } from "./add-friend-dialog";
 import { socialCopy } from "../../lib/copy/social";
 
 const c = socialCopy.commander;
+const d = socialCopy.dialog;
 const tile = (name: string, colorIdentity: string[] = ["W", "U"]) => ({ oracleId: `o-${name}`, name, artCropUri: `https://x/${name}.jpg`, colorIdentity });
 const AANG = tile("Avatar Aang");
 const BARAL = tile("Baral, Chief of Compliance", ["U"]);
@@ -244,5 +246,60 @@ describe("SocialModal on a phone with a keyboard up", () => {
     unmount();
     expect(remove).toHaveBeenCalledWith("resize", expect.any(Function));
     expect(remove).toHaveBeenCalledWith("scroll", expect.any(Function));
+  });
+});
+
+describe("AddFriendDialog", () => {
+  const NOW = new Date("2026-10-15T21:41:00Z");
+  const URL_ = "https://the-99.dev/friend/AbCdEfGhIjKlMnOpQrStUv";
+
+  it("leads with the QR code, then the link, Copy link and the two rules; focus opens on ✕", () => {
+    render(<AddFriendDialog url={URL_} expiresAt={new Date("2026-10-22T21:41:00Z")} now={NOW} timeZone="UTC" onClose={() => {}} />);
+    expect(screen.getByText(d.sub)).toBeTruthy();
+    const qr = screen.getByRole("img", { name: d.qrAria });
+    expect(qr.querySelector("path")!.getAttribute("d")!.length).toBeGreaterThan(100);
+    expect((screen.getByRole("textbox", { name: d.linkAria }) as HTMLInputElement).value).toBe(URL_);
+    expect(screen.getByText(d.meta("Thu, Oct 22"))).toBeTruthy();
+    expect(screen.getByRole("button", { name: d.close })).toHaveFocus();
+    expect(screen.queryByRole("button", { name: d.share })).toBeNull();
+  });
+
+  it("says Copied for two seconds, out loud", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(<AddFriendDialog url={URL_} expiresAt={new Date("2026-10-22T21:41:00Z")} now={NOW} timeZone="UTC" onClose={() => {}} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: d.copy })));
+    expect(writeText).toHaveBeenCalledWith(URL_);
+    expect(screen.getByRole("button", { name: d.copied })).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toBe(d.copied);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2100);
+    });
+    expect(screen.getByRole("button", { name: d.copy })).toBeTruthy();
+  });
+
+  it("offers Share link where the phone has a share sheet, with the link and the line", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "share", { value: share, configurable: true });
+    render(<AddFriendDialog url={URL_} expiresAt={new Date("2026-10-16T21:12:00Z")} now={NOW} timeZone="UTC" onClose={() => {}} />);
+    fireEvent.click(await screen.findByRole("button", { name: d.share }));
+    expect(share).toHaveBeenCalledWith({ url: URL_, text: d.shareText });
+    expect(screen.getByText(d.soon, { exact: false }).className).toContain("--warning");
+    // Share is drawn at phone only, so Copy link is still the filled press at desktop.
+    expect(screen.getByRole("button", { name: d.copy }).className).toContain("md:bg-[color:var(--accent)]");
+    delete (navigator as { share?: unknown }).share;
+  });
+
+  it("shows and selects the link field at phone when the clipboard refuses, even where Share hides it", async () => {
+    Object.defineProperty(navigator, "share", { value: vi.fn(), configurable: true });
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) }, configurable: true });
+    render(<AddFriendDialog url={URL_} expiresAt={new Date("2026-10-22T21:41:00Z")} now={NOW} timeZone="UTC" onClose={() => {}} />);
+    await screen.findByRole("button", { name: d.share });
+    const input = screen.getByRole("textbox", { name: d.linkAria });
+    expect(input.className).toContain("max-md:hidden");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: d.copy })));
+    expect(input.className).not.toContain("max-md:hidden");
+    expect(input).toHaveFocus();
+    delete (navigator as { share?: unknown }).share;
   });
 });

@@ -1,6 +1,6 @@
 "use client";
-// The head of /friends (Social R1 R2 Friends F1, F5, F6): your face, the title, and the name friends see
-// with its `Change`. It is the ONE place a player sets their name and their commander
+// The head of /friends (Social R1 R2 Friends F1, F5, F6; R1 F8): your face, the title, the name friends see
+// with its `Change`, and `Add a friend`. It is the ONE place a player sets their name and their commander
 // (R2 decision 20). The face opens the picker, and so does `Choose your commander` while none is set; the
 // write and the toast are the page's, so the head draws and reports.
 //
@@ -30,6 +30,10 @@ export function FriendsHead({
   onOpenPicker,
   faceRef,
   picking = false,
+  invitePending,
+  held,
+  onInvite,
+  inviteRef,
 }: {
   name: string;
   commander: ProfileCommander | null;
@@ -40,6 +44,12 @@ export function FriendsHead({
   faceRef?: RefObject<HTMLButtonElement | null>;
   /** The picker is open: the face carries the focus ring behind it (R2 F3). */
   picking?: boolean;
+  invitePending: boolean;
+  /** Ten links open: the button is held, with the reason under it. */
+  held: boolean;
+  onInvite: () => void;
+  /** The Add a friend press, where focus returns when a link it made is closed. */
+  inviteRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
@@ -185,6 +195,24 @@ export function FriendsHead({
           ) : null}
         </div>
         {commander || editing ? null : <div className="mt-[4px] md:hidden">{choose}</div>}
+      </div>
+
+      <div className="flex flex-col items-stretch gap-[8px] md:items-end">
+        <button
+          type="button"
+          onClick={() => {
+            if (!invitePending && !held) onInvite();
+          }}
+          ref={inviteRef}
+          aria-disabled={invitePending || held || undefined}
+          aria-describedby={held ? `${id}-held` : undefined}
+          className={`${ACCENT_BUTTON} min-w-[132px] md:h-[44px] ${held ? "!bg-[color:var(--elevated)] !text-[color:var(--fg-locked)]" : invitePending ? "!bg-[color:var(--accent-strong)]" : ""} max-md:h-[48px] max-md:text-[15px]`}
+        >
+          {invitePending ? p.invitePending : p.invite}
+        </button>
+        {held ? (
+          <p id={`${id}-held`} className="m-0 max-w-[340px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] md:text-right">{p.held}</p>
+        ) : null}
       </div>
     </header>
   );

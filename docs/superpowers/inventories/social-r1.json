@@ -1,0 +1,145 @@
+{
+  "feature": "Social R1 PR C: /friends head (face, name, commander picker), friends list with remove, open friend links with the hold at ten, and the Add a friend dialog and sheet (plan 2026-10-15-social-r1.md). The pods (PR E) draw between the friends and the open links; the request card is PR D's.",
+  "clearAbout": true,
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true. Rows carry a phase: each phase is one seeded state of the signed-in account, so run the sheet once per phase over that phase's rows. empty: no friends, no links, no commander. full: a commander, six friends (Dave befriended today, DAVE_PUBLIC_ID his public id), two open links, one under a day from expiry. held: as full, with ten open links. Seed only on a scratch branch. add-friend and making-link each make a link, so they run last in their phase; making-link throttles the page for the rest of its run.",
+  "rows": [
+    {
+      "phase": "empty", "id": "friends-empty",
+      "label": "/friends: no friends yet, no commander, no links (R2 F1)",
+      "view": "src/components/social/friends-view.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500}
+      ]
+    },
+    {
+      "phase": "empty", "id": "picker-from-decks",
+      "label": "Picker opened from the dashed tile: your decks first (R2 F2)",
+      "view": "src/components/social/commander-picker.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"clickRole": "button", "name": "^Choose your commander$", "wait": "[role=dialog]", "settle": 2500}
+      ]
+    },
+    {
+      "phase": "full", "id": "friends-full",
+      "label": "/friends: face set, six friends by name, two open links (R2 F5)",
+      "view": "src/components/social/friends-view.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500}
+      ]
+    },
+    {
+      "phase": "full", "id": "friends-links",
+      "label": "/friends scrolled: open friend links, one under a day (R1 F2, F4)",
+      "view": "src/components/social/open-links.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"scroll": "bottom", "settle": 500}
+      ]
+    },
+    {
+      "phase": "full", "id": "receipt",
+      "label": "/friends?accepted=: the receipt after Accept, since today (E10, R2 F4)",
+      "view": "src/components/social/friends-view.tsx",
+      "steps": [
+        {"goto": "/friends?accepted=${DAVE_PUBLIC_ID}", "wait": "h1:visible", "settle": 2500}
+      ]
+    },
+    {
+      "phase": "full", "id": "picker-search",
+      "label": "Picker from the face: searching any commander (R2 F3)",
+      "view": "src/components/social/commander-picker.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"clickRole": "button", "name": "^Your commander:", "wait": "[role=dialog]", "settle": 800},
+        {"fill": "[role=combobox]", "text": "krenko", "settle": 2500}
+      ]
+    },
+    {
+      "phase": "full", "id": "picker-no-results",
+      "label": "Picker: a search with no results (E15)",
+      "view": "src/components/social/commander-picker.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"clickRole": "button", "name": "^Your commander:", "wait": "[role=dialog]", "settle": 800},
+        {"fill": "[role=combobox]", "text": "zzqxv", "settle": 2500}
+      ]
+    },
+    {
+      "phase": "full", "id": "name-edit",
+      "label": "Changing your name (R2 F6)",
+      "view": "src/components/social/friends-head.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"clickRole": "button", "name": "^Change$", "wait": "form input", "settle": 300},
+        {"fill": "form input", "text": "Hugh H.", "settle": 300}
+      ]
+    },
+    {
+      "phase": "full", "id": "name-failed",
+      "label": "A name the server refuses: the shared toast (E15)",
+      "view": "src/components/social/social-toast.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"clickRole": "button", "name": "^Change$", "wait": "form input", "settle": 300},
+        {"fill": "form input", "text": "\u0007Hugh", "settle": 200},
+        {"clickRole": "button", "name": "^Save$", "wait": "[role=alert]", "settle": 800}
+      ]
+    },
+    {
+      "phase": "full", "id": "remove-confirm",
+      "label": "Remove friend: the menu, then the shared delete pane (R1 F6)",
+      "view": "src/components/social/friends-list.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"clickRole": "button", "name": "^Dave actions$", "settle": 300},
+        {"clickRole": "button", "name": "^Remove friend$", "settle": 500}
+      ]
+    },
+    {
+      "phase": "full", "id": "show-soon",
+      "label": "Show on a link under a day from expiry (R2 I3, P4)",
+      "view": "src/components/social/add-friend-dialog.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"clickRole": "button", "name": "^Show the link made", "wait": "[role=dialog]", "settle": 800}
+      ]
+    },
+    {
+      "phase": "full", "id": "add-friend",
+      "label": "Add a friend: a new link, QR first (R2 I1, P1)",
+      "view": "src/components/social/add-friend-dialog.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"clickRole": "button", "name": "^Add a friend$", "wait": "[role=dialog]", "settle": 1000}
+      ]
+    },
+    {
+      "phase": "full", "id": "making-link",
+      "label": "Making a link… while the call is out (E15, R2 I4)",
+      "view": "src/components/social/friends-head.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"throttle": "slow"},
+        {"clickRole": "button", "name": "^Add a friend$", "settle": 150}
+      ]
+    },
+    {
+      "phase": "held", "id": "friends-held",
+      "label": "Ten links open: Add a friend held, its reason under it (R1 F8)",
+      "view": "src/components/social/friends-head.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500}
+      ]
+    },
+    {
+      "phase": "held", "id": "friends-held-links",
+      "label": "Ten links open, the list",
+      "view": "src/components/social/open-links.tsx",
+      "steps": [
+        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
+        {"scroll": "bottom", "settle": 500}
+      ]
+    }
+  ]
+}
