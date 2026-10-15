@@ -12,7 +12,6 @@ import { db } from "../../db";
 import { cards, collectionItems, wishlistItems } from "../../db/schema";
 import { loadPrices } from "../decks/price-query";
 import type { PriceFact } from "../decks/price";
-import { sweepCollectedIn } from "./collected";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const MAX_WISHLIST_QUANTITY = 99;
@@ -105,31 +104,41 @@ export async function loadWishlistWant(viewerId: string, oracleId: string): Prom
 }
 
 /**
- * What a want write did: `wanted`, the line stands; `collected`, the want is no more than the collection holds, so
- * the line left as collected (G5) and the strip will name it; `null`, nothing was written (bad input, or a card id
- * the catalog does not hold).
+ * What a want write did: `wanted`, the line stands; `held`, the want is no more than the collection already holds,
+ * so there is nothing to want and no line stands (any earlier line for the card is gone); `null`, nothing was written
+ * (bad input, or a card id the catalog does not hold).
  */
-export type WantResult = "wanted" | "collected" | null;
+export type WantResult = "wanted" | "held" | null;
 
 /**
  * Put a card on the viewer's wishlist wanting `quantity` copies, or change how many. A card id the catalog
  * does not hold writes nothing (checked in the statement, so no foreign-key error reaches the caller). A want the
- * collection already reaches (lowered to what is held) leaves the list as collected, in the same transaction, under
- * the player's collection lock, so a collection write cannot interleave with it.
+ * collection already reaches, set new or lowered to what is held, leaves no line, and is NOT kept for the collected
+ * strip: the player made that change in front of them, and the strip says what was collected "since you last looked".
+ * Under the player's collection lock, so a collection write cannot land between the read of what is held and the
+ * write.
  */
 export async function setWishlistQuantity(viewerId: string, oracleId: unknown, rawQuantity: unknown = 1): Promise<WantResult> {
   const quantity = cleanQuantity(rawQuantity);
   if (typeof oracleId !== "string" || !UUID.test(oracleId) || quantity === null) return null;
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
-    const written = await tx.execute<{ oracle_id: string }>(sql`
-      insert into ${wishlistItems} (user_id, oracle_id, quantity)
-      select ${viewerId}, c.oracle_id, ${quantity} from ${cards} c where c.oracle_id = ${oracleId}
-      on conflict (user_id, oracle_id) do update set quantity = excluded.quantity
-      returning oracle_id
+    const { rows: [card] } = await tx.execute<{ held: number }>(sql`
+      select coalesce((
+        select sum(ci.quantity) from ${collectionItems} ci where ci.user_id = ${viewerId} and ci.oracle_id = c.oracle_id
+      ), 0)::int as held
+      from ${cards} c where c.oracle_id = ${oracleId}
     `);
-    if (written.rows.length === 0) return null;
-    return (await sweepCollectedIn(tx, viewerId, oracleId)).length > 0 ? "collected" : "wanted";
+    if (!card) return null;
+    if (quantity <= card.held) {
+      await tx.delete(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), eq(wishlistItems.oracleId, oracleId)));
+      return "held";
+    }
+    await tx.execute(sql`
+      insert into ${wishlistItems} (user_id, oracle_id, quantity) values (${viewerId}, ${oracleId}, ${quantity})
+      on conflict (user_id, oracle_id) do update set quantity = excluded.quantity
+    `);
+    return "wanted";
   });
 }
 

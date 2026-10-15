@@ -889,9 +889,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   holds that many of, deck copies included, is COLLECTED and leaves the list** (Social R2 G5, Hugh, 2026-10-15,
   reversing Q9's "stays until cleared"): `sweepCollectedIn` (`src/lib/wishlist/collected.ts`) deletes the line and
   records it in `wishlist_collected` for the tab's one-time strip, INSIDE the write that reached the want:
-  `applyCollectionChange` (every ledger write, Revert included) and `replaceCollection`, after their rows, and
-  `setWishlistQuantity` when a want is lowered to what is held (under the same per-player lock). A rolled-back write
-  takes the delete back with it. **A read never deletes**: every own read leaves out a line the collection already
+  `applyCollectionChange` (every ledger write, Revert included) and `replaceCollection`, after their rows. A
+  rolled-back write takes the delete back with it. A want the player SETS at or below what is held
+  (`setWishlistQuantity`, under the same per-player lock) leaves no line and answers `held`, and is not recorded: the
+  strip names what was collected since they last looked. **A read never deletes**: every own read leaves out a line the collection already
   reaches, so a copy that arrived around the chokepoints hides the line until the next write sweeps it. The strip's ✕
   is `dismissCollected(viewer, through)`, which forgets only what the strip drew. `loadWishlistTiles` adds the
   catalog's name and full card image and the price read's figure (G1); `loadWishlistWant` is card details' want.

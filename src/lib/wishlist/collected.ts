@@ -6,8 +6,9 @@
  * chokepoints left behind is hidden until the next collection write sweeps it.
  *
  * The chokepoints: `applyCollectionChange` (every ledger write: an upload's Add and Sync, Add cards, an edited
- * count, a precon add, a deck imported as owned, a Revert) and `replaceCollection` (an upload's Replace), plus
- * `setWishlistQuantity`, when a want is lowered to what the collection already holds.
+ * count, a precon add, a deck imported as owned, a Revert) and `replaceCollection` (an upload's Replace). A want SET
+ * at or below what is held (`setWishlistQuantity`) leaves no line either, but is not recorded here: the player made
+ * that change themselves, and the strip names what was collected since they last looked.
  */
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
@@ -19,14 +20,13 @@ type Executor = Pick<typeof db, "execute">;
  * Deletes every line of the player's wishlist the collection now reaches, and records each in
  * `wishlist_collected` (a card collected again re-dates its row). Run INSIDE the collection write's transaction,
  * after its rows are written, so the line leaves exactly when the copies arrive and a rolled-back write takes the
- * delete back with it. `oracleId` narrows it to one card (a want just set). Answers the cards that left.
+ * delete back with it. Answers the cards that left.
  */
-export async function sweepCollectedIn(tx: Executor, userId: string, oracleId?: string): Promise<string[]> {
+export async function sweepCollectedIn(tx: Executor, userId: string): Promise<string[]> {
   const { rows } = await tx.execute<{ oracle_id: string }>(sql`
     with gone as (
       delete from wishlist_items w
       where w.user_id = ${userId}
-        ${oracleId === undefined ? sql`` : sql`and w.oracle_id = ${oracleId}`}
         and w.quantity <= (
           select coalesce(sum(ci.quantity), 0) from collection_items ci
           where ci.user_id = ${userId} and ci.oracle_id = w.oracle_id

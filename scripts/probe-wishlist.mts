@@ -2,7 +2,8 @@
 // owner's lines, the tiles and card details' want, a friend's read of them through the friendship (and that a
 // stranger, a forged id and a former friend read nothing), and COLLECTED (G5): a read hides a line the collection
 // reaches and never deletes it, while a ledger write, a Replace and a want lowered to what is held each delete it in
-// their own transaction and keep it for the one-time strip, which its ✕ forgets.
+// their own transaction and keep it for the one-time strip, which its ✕ forgets; a want SET at or below what is held
+// leaves no line and is not kept for the strip.
 //
 // It WRITES, so it fails closed on its target: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL`
 // reports, and never staging, production or local-dev. Its three accounts are made-up ids, and it removes
@@ -109,8 +110,11 @@ async function main() {
     // The want write itself: re-wanted above what is held, then lowered to it.
     check("wanting X again, five, stands", (await wishlist.setWishlistQuantity(B, X, 5)) === "wanted"
       && (await wishlist.loadWishlist(B))[0]?.quantity === 5);
-    check("lowering it to the two held collects it", (await wishlist.setWishlistQuantity(B, X, 2)) === "collected"
-      && (await lineCount()) === 0 && (await collected.loadCollectedNotices(B)).map((n) => n.oracleId).join() === X);
+    check("lowering it to the two held drops the line, as held", (await wishlist.setWishlistQuantity(B, X, 2)) === "held"
+      && (await lineCount()) === 0);
+    check("and does not put it on the strip: the player did that themselves", (await collected.loadCollectedNotices(B)).length === 0);
+    check("a first want of what is already held writes no line either", (await wishlist.setWishlistQuantity(B, X, 1)) === "held"
+      && (await lineCount()) === 0 && (await collected.loadCollectedNotices(B)).length === 0);
 
     // An upload's Replace reaches a want too.
     check("B wants two Y again, more than the one held", (await wishlist.setWishlistQuantity(B, Y, 2)) === "wanted");
