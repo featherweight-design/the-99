@@ -467,6 +467,10 @@ export function BuilderShell({
   // Whether the import arrived with unresolved lines, fixed at arrival: the owned strip's head is a claim about what
   // the import brought over, which resolving a line while the strip is up must not revise.
   const [arrivedUnresolved] = useState(() => deck.unresolvedRows.length > 0);
+  // The receipt, held for the visit: `added` leaves the URL after the first view (`StripAddedParam`) while `imported`
+  // stays, so a later server refresh (resolving a line) arrives with no receipt and would drop the strip's add line.
+  const [heldAddReceipt] = useState(importAddReceipt);
+  const addReceipt = importAddReceipt ?? heldAddReceipt;
   // The basics stepper's save queue, one for the deck (`basic-counts.tsx`): it outlives a List ↔ Card switch,
   // and Clear auto and the Add panel flush it before writing the rows it would race. Built once, and handed
   // this render's prediction and router after each commit; a press always comes after one.
@@ -1694,7 +1698,7 @@ export function BuilderShell({
             )}
             {/* A ticked import (no-collection entry) also draws its strip over unresolved lines: what it
                 added is a fact the banner does not state, and its head then says only that. */}
-            {arrivedFromImport && (unresolvedRows.length === 0 || importAddReceipt) && (
+            {arrivedFromImport && (unresolvedRows.length === 0 || addReceipt) && (
               /* A length, not `counts.total`: the strip's sentence says
                  "lines", and a Moxfield export writes basics as one line
                  ("35 Forest"), so the quantity sum would claim a 99-card deck
@@ -1709,7 +1713,7 @@ export function BuilderShell({
                 deckId={deck.id}
                 importedLineCount={deck.cards.length}
                 printings={arrivalPrintings}
-                added={importAddReceipt}
+                added={addReceipt}
                 unresolved={arrivedUnresolved}
               />
             )}

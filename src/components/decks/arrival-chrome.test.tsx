@@ -154,6 +154,30 @@ describe("Arrival strip (state 13)", () => {
     expect(screen.queryByText(copy.arrival.own.head("97"))).toBeNull();
   });
 
+  // `added` leaves the URL after the first view while `imported` stays, so a later server refresh brings no receipt:
+  // the strip keeps the add it was shown with for the rest of the visit.
+  it("keeps a ticked import's add line when a refresh arrives without the receipt", async () => {
+    const receipt = { entryId: "entry-1", copies: 97 };
+    let view!: ReturnType<typeof renderBuilder>;
+    await act(async () => {
+      view = renderBuilder(shortDeck(), true, receipt);
+    });
+    await act(async () => {
+      view.rerender(
+        <BuilderShell mix={TEST_MIX}
+          deck={shortDeck()}
+          suggestions={[]}
+          degraded={false}
+          firstRun={false}
+          commanderIdentity={["B", "R", "G"]}
+          arrivedFromImport
+          importAddReceipt={null}
+         newestAsOf={null}/>,
+      );
+    });
+    expect(screen.getAllByText(copy.arrival.own.headUnresolved(97)).length).toBeGreaterThan(0);
+  });
+
   it("is absent on an ordinary visit to the same deck", async () => {
     await act(async () => {
       renderBuilder(makeDeck(), false);
