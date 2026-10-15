@@ -1269,6 +1269,9 @@ export function CardModal({
           return {
             ...withId,
             imageUri: at.imageUri,
+            // The caller's exact art IS this printing's own (the same provenance the back carries below), so a foil
+            // holding opened from its own set-grid cell draws its film (foil R2, `faceFilm`).
+            hasOwnArt: true,
             // The back moves with the front, on the same condition: this row is being
             // repointed at the printing the caller named, and half a repointing is the
             // two-printing pairing the column exists to prevent.

@@ -130,6 +130,16 @@ describe("where details reads foil", () => {
     expect(films(desktop())).toHaveLength(0);
   });
 
+  // Review round 1: an all-foil holding with no Scryfall id resolves to the set's representative art, so it is not
+  // its own. Opened from its exact set-grid cell, the caller's art IS its own, and the film follows.
+  it("draws the film on an id-less foil holding opened at its exact printing with that printing's art", () => {
+    const REP = "https://img/representative.jpg";
+    mount(card({ printings: [printing({ scryfallId: undefined, imageUri: REP, hasOwnArt: false })] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1" },
+    });
+    for (const host of [desktop(), phone()]) expect(ownFilm(host)).toHaveAttribute("data-foil", "foil");
+  });
+
   it("draws nothing over another printing's or the oracle-level picture", () => {
     mount(card({ printings: [printing({ hasOwnArt: false })] }));
     expect(films(desktop())).toHaveLength(0);
