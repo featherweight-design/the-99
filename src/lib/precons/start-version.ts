@@ -19,29 +19,41 @@ import { readDeckOrigin } from "./origin-read";
 /** How long after its deck a start's version was committed: the start writes both in one transaction. */
 export const START_WINDOW_MS = 60_000;
 
+/** A helm, primary and partner, as a version row or a precon's commanders carry it. */
+type Helm = { commanderOracleId: string | null; partnerOracleId: string | null };
+const helmKey = (h: Helm) => [h.commanderOracleId, h.partnerOracleId].filter((id) => id !== null).sort().join(",");
+
 /**
  * Whether the deck's OLDEST version is the start's list for the precon the deck is linked to NOW. Either
- * way it must hold exactly that precon's 99: a deck started from one precon, unlinked and linked to
+ * way it must hold exactly that precon's 99 under the precon's own commanders (in either order): a deck started from one precon, unlinked and linked to
  * another keeps its v0 as committed and draws the new precon's virtual v0 beneath it. A v0 needs nothing
  * more, since only a start commits one; a v1 must also have been made with its deck (committed within
  * `START_WINDOW_MS`), so a brew committed quickly and linked later keeps its own v1 and its virtual v0.
  */
 export function isStartVersion(
-  oldest: { number: number; committedAt: Date },
+  oldest: { number: number; committedAt: Date } & Helm,
   deckCreatedAt: Date,
   versionCards: readonly CardQty[],
-  originCards: readonly CardQty[],
+  origin: { cards: readonly CardQty[]; helm: Helm },
 ): boolean {
   if (oldest.number > 1) return false;
+  if (helmKey(oldest) !== helmKey(origin.helm)) return false;
   if (oldest.number === 1 && oldest.committedAt.getTime() - deckCreatedAt.getTime() > START_WINDOW_MS) return false;
-  const want = new Map(originCards.map((c) => [c.oracleId, c.quantity]));
+  const want = new Map(origin.cards.map((c) => [c.oracleId, c.quantity]));
   return versionCards.length === want.size && versionCards.every((c) => want.get(c.oracleId) === c.quantity);
 }
 
 /** The deck's oldest version and when the deck was made. Owner-scoped in its own SQL. Apart so a test can render it. */
 export function oldestVersionQuery(userId: string, deckId: string, q: Reader = db) {
   return q
-    .select({ id: deckVersions.id, number: deckVersions.number, committedAt: deckVersions.committedAt, deckCreatedAt: decks.createdAt })
+    .select({
+      id: deckVersions.id,
+      number: deckVersions.number,
+      committedAt: deckVersions.committedAt,
+      commanderOracleId: deckVersions.commanderOracleId,
+      partnerOracleId: deckVersions.partnerOracleId,
+      deckCreatedAt: decks.createdAt,
+    })
     .from(decks)
     .innerJoin(deckVersions, eq(deckVersions.deckId, decks.id))
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
@@ -61,7 +73,7 @@ export async function readDeckOriginAndStart(userId: string, deckId: string): Pr
     ? await db.select({ oracleId: deckVersionCards.oracleId, quantity: deckVersionCards.quantity })
       .from(deckVersionCards).where(eq(deckVersionCards.versionId, oldest.id))
     : [];
-  return isStartVersion(oldest, oldest.deckCreatedAt, versionCards, origin.cards)
+  return isStartVersion(oldest, oldest.deckCreatedAt, versionCards, { cards: origin.cards, helm: origin.summary })
     ? { ...origin, summary: { ...origin.summary, startVersionId: oldest.id } }
     : origin;
 }
