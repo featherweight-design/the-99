@@ -348,6 +348,27 @@ describe("VersionDiff", () => {
     expect(heading.className).not.toContain("hidden");
   });
 
+  // d9's ruling 2 (2026-10-15): the phone's In / Out pair swaps which column shows, so it is a tablist, never
+  // aria-pressed. It names no panel: from md both columns show, and a tab cannot label a column drawn beside it.
+  it("draws the phone's In / Out pair as a tablist with no panels", async () => {
+    getVersionDiff.mockResolvedValueOnce({
+      newestAsOf: null,
+      in: [card()],
+      out: [card({ oracleId: "out", name: "Mind Stone", from: 1, to: 0 })],
+    });
+    mount();
+    await screen.findByText("Sol Ring");
+    const pair = screen.getByRole("tablist", { name: copy.diffSwitch });
+    expect(pair.querySelector("[aria-pressed]")).toBeNull();
+    const inTab = screen.getByRole("tab", { name: copy.diffIn(1) });
+    const outTab = screen.getByRole("tab", { name: copy.diffOut(1) });
+    expect(inTab).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(outTab);
+    expect(outTab).toHaveAttribute("aria-selected", "true");
+    expect(outTab).not.toHaveAttribute("aria-controls");
+    expect(screen.queryByRole("tabpanel")).toBeNull();
+  });
+
   it("keeps the column heading off the phone when both columns are drawn", async () => {
     getVersionDiff.mockResolvedValueOnce({
       newestAsOf: null,

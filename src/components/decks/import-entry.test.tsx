@@ -5,6 +5,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DECK_IMPORT_FILE_MAX_BYTES } from "../../lib/upload-limits";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 
 const importDeck = vi.fn();
 const push = vi.fn();
@@ -41,10 +42,28 @@ function submit() {
 }
 
 function pickFile(file: File) {
-  fireEvent.click(screen.getByRole("button", { name: /Upload a file/ }));
+  fireEvent.click(screen.getByRole("tab", { name: /Upload a file/ }));
   const input = screen.getByLabelText("Deck file", { selector: "input" });
   Object.defineProperty(input, "files", { value: [file], configurable: true });
   fireEvent.change(input);
+}
+
+/** The mode tablist (d9's ruling 2, 2026-10-15): tabs, never aria-pressed, each linked to the panel it shows. */
+function expectModeTabs(label: string) {
+  const list = screen.getByRole("tablist", { name: label });
+  expect(list.querySelector("[aria-pressed]")).toBeNull();
+  const [paste, file] = screen.getAllByRole("tab");
+  expect(paste).toHaveAttribute("aria-selected", "true");
+  const panel = screen.getByRole("tabpanel");
+  const pasteId = panel.id;
+  expect(paste.getAttribute("aria-controls")).toBe(pasteId);
+  expect(panel.getAttribute("aria-labelledby")).toBe(paste.id);
+  fireEvent.click(file);
+  expect(file).toHaveAttribute("aria-selected", "true");
+  const filePanel = screen.getByRole("tabpanel");
+  expect(file.getAttribute("aria-controls")).toBe(filePanel.id);
+  expect(filePanel.getAttribute("aria-labelledby")).toBe(file.id);
+  expect(filePanel.id).not.toBe(pasteId);
 }
 
 beforeEach(() => {
@@ -55,10 +74,15 @@ beforeEach(() => {
 });
 
 describe("state 1 — entry", () => {
+  it("draws its modes as a tablist, each tab naming the panel it shows", () => {
+    render(<ImportEntry />);
+    expectModeTabs(deckImportCopy.entry.heading);
+  });
+
   it("offers paste and file, and no link mode", () => {
     render(<ImportEntry />);
-    expect(screen.getByRole("button", { name: /Paste a list/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Upload a file/ })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Paste a list/ })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Upload a file/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Moxfield link/ })).toBeNull();
     expect(pasteBox()).toBeTruthy();
     expect(nameBox()).toBeTruthy();

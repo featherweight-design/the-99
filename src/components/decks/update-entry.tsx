@@ -9,7 +9,7 @@
 // facts about the deck this list is being compared against, and the whole
 // premise is that neither of them changes.
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useId, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deckImportCopy as copy } from "../../lib/copy/deck-import";
 import { deckPasteCardCount } from "../../lib/decks/paste-count";
@@ -27,6 +27,7 @@ import {
 } from "../../lib/upload-limits";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { Crown } from "../ui/crown";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 import { UpdateDiff } from "./update-diff";
 import { usePendingPush } from "../shell/pending-push";
 
@@ -72,6 +73,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
   // own screen commits at press).
   const nav = usePendingPush();
   const [mode, setMode] = useState<UpdateMode>("paste");
+  const modeIds = useId();
   const [pasteText, setPasteText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -257,37 +259,33 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
         <span className="hidden md:inline">{copy.update.list.sub}</span>
       </p>
 
-      <div
-        role="group"
-        aria-label={copy.update.list.heading(deckName)}
-        className="flex gap-[8px] md:gap-[9px] mt-[16px] mb-[16px] md:mb-[22px]"
-      >
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            aria-label={m.label}
-            aria-pressed={mode === m.id}
-            onClick={() => {
-              setMode(m.id);
-              setFailure(null);
-            }}
-            className={[
-              "rounded-full font-sans cursor-pointer min-h-[44px]",
-              "text-[12.5px] md:text-[13px] px-[14px] md:px-[16px] py-[8px] md:py-[9px]",
-              mode === m.id
-                ? "font-semibold bg-[color:var(--accent)] text-[color:var(--bg)] border border-solid border-[color:var(--accent)]"
-                : "bg-[color:var(--elevated)] text-[color:var(--fg-body)] border border-solid border-[color:var(--border-strong)] md:hover:border-[color:var(--accent)] md:hover:text-[color:var(--accent-hover)] transition-colors",
-            ].join(" ")}
-          >
-            <span className="md:hidden">{m.shortLabel}</span>
-            <span className="hidden md:inline">{m.label}</span>
-          </button>
-        ))}
+      <div className="mt-[16px] mb-[16px] md:mb-[22px]">
+        <SegmentedSwitch
+          kind="tabs"
+          tone="neutral"
+          ariaLabel={copy.update.list.heading(deckName)}
+          ids={{ tab: (v) => `${modeIds}-tab-${v}`, panel: (v) => `${modeIds}-panel-${v}` }}
+          segments={MODES.map((m) => ({
+            value: m.id,
+            // The visible label swaps to the short form below md; the name stays the long one.
+            ariaLabel: m.label,
+            label: (
+              <>
+                <span className="md:hidden">{m.shortLabel}</span>
+                <span className="hidden md:inline">{m.label}</span>
+              </>
+            ),
+          }))}
+          value={mode}
+          onChange={(next) => {
+            setMode(next);
+            setFailure(null);
+          }}
+        />
       </div>
 
       {mode === "paste" ? (
-        <div>
+        <div role="tabpanel" id={`${modeIds}-panel-paste`} aria-labelledby={`${modeIds}-tab-paste`}>
           <label
             htmlFor="update-paste"
             className="block text-[13px] font-semibold mb-[8px] text-[color:var(--fg)]"
@@ -305,7 +303,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
           />
         </div>
       ) : (
-        <div>
+        <div role="tabpanel" id={`${modeIds}-panel-file`} aria-labelledby={`${modeIds}-tab-file`}>
           <label
             htmlFor="update-file"
             className="block text-[13px] font-semibold mb-[8px] text-[color:var(--fg)]"

@@ -33,7 +33,7 @@
         {
           "clickRole": "button",
           "name": "Replace upload",
-          "wait": "[aria-pressed]",
+          "wait": "[role=tablist]",
           "settle": 1500
         }
       ]

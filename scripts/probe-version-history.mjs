@@ -624,7 +624,7 @@ try {
       );
       // v3 took two cards back and dropped two, so both directions are stated with
       // their figures. Read off the panel's text rather than its headings because
-      // the phone moves those counts into the segmented pair, where they are button
+      // the phone moves those counts into the segmented pair, where they are tab
       // labels — the counts are the ruling, and the element carrying them is not.
       // Case-insensitive: the desktop column heading is uppercased in CSS, which
       // `innerText` reports, so the same copy reads `In · 2` and `IN · 2`.

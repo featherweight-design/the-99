@@ -174,7 +174,7 @@ describe("S11: the add refused", () => {
     fireEvent.click(tick());
     submit();
     await screen.findByRole("alert");
-    fireEvent.click(screen.getByRole("button", { name: copy.entry.modePaste }));
+    fireEvent.click(screen.getByRole("tab", { name: copy.entry.modePaste }));
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
     expect(importDeck.mock.calls[1][0].actionId).toBe(importDeck.mock.calls[0][0].actionId);

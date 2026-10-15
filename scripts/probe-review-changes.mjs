@@ -275,10 +275,10 @@ const readReview = (page) =>
         };
       }),
       segments: buttons
-        .filter((b) => b.hasAttribute("aria-pressed"))
+        .filter((b) => b.getAttribute("role") === "tab")
         .map((b) => ({
           label: b.innerText.trim(),
-          pressed: b.getAttribute("aria-pressed") === "true",
+          pressed: b.getAttribute("aria-selected") === "true",
           width: Math.round(b.getBoundingClientRect().width),
           height: Math.round(b.getBoundingClientRect().height),
         })),
@@ -1400,7 +1400,7 @@ try {
     // segments are still in the DOM and measure 0x0 — both columns are drawn, so
     // there is nothing to switch between and nothing to click.
     if (seen.segments.length > 1 && seen.segments[1].height > 0) {
-      await vpPage.getByRole("button", { name: seen.segments[1].label }).click();
+      await vpPage.getByRole("tab", { name: seen.segments[1].label }).click();
       await vpPage.waitForTimeout(250);
       seen = await readReview(vpPage);
       console.log(`  after pressing the second segment:`);

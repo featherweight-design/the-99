@@ -111,10 +111,25 @@ describe("the list step", () => {
     expect(screen.getByRole("button", { name: copy.list.submit })).not.toBeDisabled();
   });
 
+  // d9's ruling 2 (2026-10-15): a control that swaps a visible panel is a tablist, never aria-pressed.
+  it("draws its modes as a tablist, each tab naming the panel it shows", () => {
+    renderEntry();
+    const list = screen.getByRole("tablist", { name: copy.list.heading("Kykar, Wind's Fury") });
+    expect(list.querySelector("[aria-pressed]")).toBeNull();
+    const [paste, file] = screen.getAllByRole("tab");
+    const panel = screen.getByRole("tabpanel");
+    expect(paste.getAttribute("aria-controls")).toBe(panel.id);
+    expect(panel.getAttribute("aria-labelledby")).toBe(paste.id);
+    fireEvent.click(file);
+    const filePanel = screen.getByRole("tabpanel");
+    expect(file.getAttribute("aria-controls")).toBe(filePanel.id);
+    expect(filePanel.getAttribute("aria-labelledby")).toBe(file.id);
+  });
+
   it("offers paste and file, and no link mode", () => {
     renderEntry();
-    expect(screen.getByRole("button", { name: deckImportCopy.entry.modePaste })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: deckImportCopy.entry.modeFile })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: deckImportCopy.entry.modePaste })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: deckImportCopy.entry.modeFile })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /link/i })).not.toBeInTheDocument();
   });
 });
