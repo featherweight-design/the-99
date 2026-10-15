@@ -229,6 +229,19 @@ describe("the choose page", () => {
       expect(find(tree, IntakeForm)).toBeTruthy();
     });
 
+    it("reads the allowance only after History has finished, which can refund an abandoned read", async () => {
+      stub.themes.mockResolvedValue([]);
+      let finish: (v: { rows: never[]; nextCursor: null }) => void = () => {};
+      stub.history.mockReturnValue(new Promise((r) => { finish = r; }));
+      stub.allowance.mockClear();
+      const rendering = ChoosePage({ searchParams: Promise.resolve({}) });
+      await new Promise((r) => setTimeout(r, 20));
+      expect(stub.allowance).not.toHaveBeenCalled();
+      finish({ rows: [], nextCursor: null });
+      await rendering;
+      expect(stub.allowance).toHaveBeenCalledTimes(1);
+    });
+
     it("reads no runs on a results address", async () => {
       stub.themes.mockResolvedValue([]);
       await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "x" }) });

@@ -22,7 +22,7 @@ export function HistoryLink({ href, label, back = false }: { href: string; label
     <Link
       href={href}
       prefetch={false}
-      className="flex min-h-[44px] items-center gap-[6px] px-[2px] text-[12.5px] font-medium text-[color:var(--accent)] no-underline md:hidden"
+      className="flex min-h-[44px] items-center gap-[6px] px-[2px] text-[12.5px] font-medium text-[color:var(--accent)] no-underline lg:hidden"
     >
       {HISTORY_GLYPH}
       {label}

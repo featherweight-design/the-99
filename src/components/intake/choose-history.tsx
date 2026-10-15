@@ -1,6 +1,6 @@
 "use client";
 // Help me choose History (R1, design/design_handoff_the99_hmc_history): the player's past runs,
-// newest first. ONE component, placed twice by the route: a 380px column beside the form from `md`
+// newest first. ONE component, placed twice by the route: a 380px column beside the form from `lg` (1024px; at 768 the form would be left under 250px)
 // up, and the phone's own view (`v=history`). A row is a link to the results page for that run.
 // Stored reads only: nothing here calls a model.
 
