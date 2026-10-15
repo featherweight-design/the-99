@@ -3,6 +3,7 @@
 // Each is a SHIPPED component drawn over a fixture, inert inside `Specimen`, with no-op callbacks: no new visuals, so the
 // page can never describe a control the app does not draw. The fixtures name no real account.
 
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PodCard } from "../social/pod-card";
 import { GameMatchups } from "../decks/game-matchups";
 import type { DeckGame } from "../../lib/decks/games";
@@ -33,21 +34,55 @@ const POD: Pod = {
   nextOwner: { publicId: "m-dave", displayName: "Dave" },
 };
 
+/**
+ * The shipped components switch to their wide layout on the VIEWPORT (`md`, `lg`), but a figure sits in the page's
+ * article, which at a signed-in 1024px is 566px wide: the wide layout then clips a seat or collapses a name column.
+ * Where the wide layout needs more than the figure has, the figure keeps its natural width and is scaled down to the
+ * space it has; where the compact layout is drawn it already fits and the scale stays 1.
+ */
+function FitFigure({ wideAt, children }: { wideAt: string; children: ReactNode }) {
+  const [fit, setFit] = useState({ scale: 1, height: null as number | null });
+  const outer = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = outer.current;
+    const content = inner.current;
+    if (!box || !content || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      const scale = Math.min(1, box.clientWidth / Math.max(1, content.scrollWidth));
+      setFit({ scale, height: scale < 1 ? Math.ceil(content.offsetHeight * scale) : null });
+    });
+    observer.observe(box);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div ref={outer} style={{ height: fit.height ?? undefined, overflow: "hidden" }}>
+      <div ref={inner} className={wideAt} style={{ transform: fit.scale < 1 ? `scale(${fit.scale})` : undefined, transformOrigin: "top left" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 const noop = () => {};
 const noopAsync = async () => true;
 
 export function FriendsFigureBody() {
   return (
-    <PodCard
-      pod={POD}
-      shared
-      onRemove={noop}
-      onAdd={noop}
-      onShare={noop}
-      onRename={noop}
-      onLeave={noopAsync}
-      onDelete={noopAsync}
-    />
+    // Five 116px seats and four 12px gaps, with the card's own padding, are about 660px.
+    <FitFigure wideAt="md:min-w-[660px]">
+      <PodCard
+        pod={POD}
+        shared
+        onRemove={noop}
+        onAdd={noop}
+        onShare={noop}
+        onRename={noop}
+        onLeave={noopAsync}
+        onDelete={noopAsync}
+      />
+    </FitFigure>
   );
 }
 
@@ -68,5 +103,10 @@ const BY_GAME = new Map<string, GameOpponent[]>([
 const MATCHUPS = summarizeMatchups(GAMES, BY_GAME);
 
 export function OpponentsFigureBody() {
-  return <GameMatchups matchups={MATCHUPS} />;
+  // The `lg` row's fixed tracks need 572px before the name column takes any.
+  return (
+    <FitFigure wideAt="lg:min-w-[780px]">
+      <GameMatchups matchups={MATCHUPS} />
+    </FitFigure>
+  );
 }
