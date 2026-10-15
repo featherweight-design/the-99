@@ -52,8 +52,10 @@ Contact-sheet inventory: `docs/superpowers/inventories/foil-large-views.json`, w
 - The hover preview (`usePreviewRow`, drawn in `hover-preview.tsx`) and both peeks (`PhonePeek` and `NeighborPlate`, which
   take the `SiblingCard` data type) carry the finish and draw R1's still tile film (G10). None of them draws an `<img>`: the
   preview is a `div` with the art as `background`, and the peeks draw through `ArtLayer`. So R1's `img ~ [data-foil]` hold
-  cannot reach them either, and each gets the same film-span arrival mark as the details face, so the film never shows
-  over a plate whose art has not landed or failed.
+  cannot reach them either. The peeks' film follows their own `ArtLayer` mark, which sits in the modal's `ArrivalOrder`
+  queue: the film is hidden while that layer is pending or failed, so a neighbor whose bytes landed but is still queued
+  shows no film over its bare plate. The hover preview, which has no queue, takes the details face's independent preload
+  mark.
 - Tests: the film's presence across the "Where details reads foil" table, and the face never marked.
   `probe:foil-film` gets the background-face fixture (G17). Contact sheet at both widths. Check the 80% strength on real
   pale full-art and borderless faces there (G15, R2-G1).
