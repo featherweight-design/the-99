@@ -122,7 +122,7 @@ function TokenFoot({ deckId, token, press, pending }: {
         aria-describedby={`token-${token.oracleId}-face`}
         aria-pressed={token.joined}
         aria-label={token.joined ? tokensCopy.row.leaveAria(token.name) : tokensCopy.row.joinAria(token.name)}
-        onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined), token.name)}
+        onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined), token)}
         // 32 tall with a 44 hit area on a phone (the pseudo-element), 24 from md up, the width of the tile.
         className={`relative h-[32px] w-full rounded-[6px] border text-[12px] font-medium disabled:opacity-60 max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-[6px] max-md:after:content-[''] md:h-[24px] ${
           token.joined

@@ -13,9 +13,12 @@ import { TokenRefusalToast } from "./token-refusal-toast";
 type DeckTokensValue = {
   deckId: string; read: DeckTokensRead; provenance: ProvenanceForm | null; ownProvenance: ProvenanceForm | null;
   /** A token press the server refused or that threw: the one refusal toast of this deck (a newer replaces it). */
-  refuse: (name: string) => void;
-  /** The refusal showing now, by the token it names: a sheet's own box announces it inside the dialog (the toast is outside). */
-  refusal: { name: string; key: number } | null;
+  refuse: (token: { oracleId: string; name: string }) => void;
+  /** A new press of this token clears a refusal it left standing (a retry that lands must not leave "unchanged" up). */
+  clear: (oracleId: string) => void;
+  /** The refusal showing now, by the token it names (the oracle id identifies it, the name is for display): a sheet's own box
+   *  announces it inside the dialog, since the toast is outside. */
+  refusal: { oracleId: string; name: string; key: number } | null;
 } | null;
 
 const DeckTokensContext = createContext<DeckTokensValue>(null);
@@ -35,9 +38,10 @@ export function DeckTokensProvider({
   ownProvenance?: ProvenanceForm | null;
   children: React.ReactNode;
 }) {
-  const [refusal, setRefusal] = useState<{ name: string; key: number } | null>(null);
-  const refuse = useCallback((name: string) => setRefusal({ name, key: Date.now() }), []);
-  const value = useMemo(() => ({ deckId, read, provenance, ownProvenance, refuse, refusal }), [deckId, read, provenance, ownProvenance, refuse, refusal]);
+  const [refusal, setRefusal] = useState<{ oracleId: string; name: string; key: number } | null>(null);
+  const refuse = useCallback((token: { oracleId: string; name: string }) => setRefusal({ ...token, key: Date.now() }), []);
+  const clear = useCallback((oracleId: string) => setRefusal((cur) => (cur?.oracleId === oracleId ? null : cur)), []);
+  const value = useMemo(() => ({ deckId, read, provenance, ownProvenance, refuse, clear, refusal }), [deckId, read, provenance, ownProvenance, refuse, clear, refusal]);
   return (
     <DeckTokensContext.Provider value={value}>
       {children}

@@ -215,10 +215,12 @@ export function GotItReceipt({
     };
   }, [host, oracleId]);
   // The deck slot is this receipt's (it holds an Undo): a token refusal showing there steps aside. Once, when the receipt
-  // enters the slot: `host` is a fresh object on every provider render, so the effect above must not carry this.
+  // enters the slot, which is on mount and again when it comes back from its Undo warning (the warning swaps the frame out and
+  // back without remounting): `host` is a fresh object on every provider render, so the effect above must not carry this.
+  const frameShown = phase.k !== "warning";
   useEffect(() => {
-    window.dispatchEvent(new Event(DECK_TOAST_CLAIM));
-  }, []);
+    if (frameShown) window.dispatchEvent(new Event(DECK_TOAST_CLAIM));
+  }, [frameShown]);
 
   const facts = written.facts as ReceiptFacts | null;
   const sourceDeckId = typeof deckId === "string" ? deckId : null;

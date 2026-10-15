@@ -167,6 +167,15 @@ describe("pressing", () => {
     expect(alerts[0].textContent).toContain("Food token");
   });
 
+  it("takes the refusal down when the retry lands, so \"unchanged\" is not left up over a saved token", async () => {
+    stub.joined.mockResolvedValueOnce({ ok: false }).mockResolvedValue({ ok: true });
+    draw(ok([token()]));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Add the Food token/ })); });
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Add the Food token/ })); });
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("says so when a press was refused, and the row is unchanged", async () => {
     stub.joined.mockResolvedValue({ ok: false, reason: "notThisDeck" });
     draw(ok([token()]));

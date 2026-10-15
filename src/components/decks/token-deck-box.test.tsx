@@ -100,4 +100,16 @@ describe("TokenDeckBox", () => {
     fireEvent.click(screen.getByText("Maker 2"));
     expect(stub.open).toHaveBeenCalled();
   });
+
+  it("keeps one token's refusal out of another token's dialog, even when they share a name", async () => {
+    stub.held.mockResolvedValue({ ok: false });
+    const haste = token({ oracleId: "g1", name: "Goblin", oracleText: "Haste" });
+    const menace = token({ oracleId: "g2", name: "Goblin", oracleText: "Menace" });
+    const { rerender } = render(<DeckTokensProvider deckId={DECK} read={read([haste, menace])}><TokenDeckBox oracleId="g1" /></DeckTokensProvider>);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Mark the Goblin token as in your collection" })); });
+    expect(document.querySelector("[data-token-deck-box] [role=alert]")).not.toBeNull();
+    // Paging to the other Goblin: the refusal belongs to the first, whatever the name.
+    rerender(<DeckTokensProvider deckId={DECK} read={read([haste, menace])}><TokenDeckBox oracleId="g2" /></DeckTokensProvider>);
+    expect(document.querySelector("[data-token-deck-box] [role=alert]")).toBeNull();
+  });
 });

@@ -39,7 +39,7 @@ export function TokenDeckBox({ oracleId, onSelectCard }: { oracleId: string; onS
           aria-busy={pending}
           aria-pressed={byHand}
           aria-label={byHand ? tokensCopy.row.haveOffAria(token.name) : tokensCopy.row.haveAria(token.name)}
-          onClick={() => press(() => setTokenHeld(ctx.deckId, token.oracleId, !byHand), token.name)}
+          onClick={() => press(() => setTokenHeld(ctx.deckId, token.oracleId, !byHand), token)}
           className={`mt-[6px] flex min-h-[44px] items-center border-0 bg-transparent p-0 text-left text-[13px] disabled:opacity-60 md:min-h-[30px] ${
             byHand
               ? "font-medium text-[color:var(--accent)]"
@@ -57,7 +57,7 @@ export function TokenDeckBox({ oracleId, onSelectCard }: { oracleId: string; onS
       {toast}
       {/* The toast sits outside this modal, where a screen reader confined to it cannot reach: the same refusal is said here too,
           in the dialog, for the token this box is about. */}
-      {ctx.refusal?.name === token.name ? (
+      {ctx.refusal?.oracleId === token.oracleId ? (
         <span key={ctx.refusal.key} role="alert" className="sr-only">{tokensCopy.row.refused} {tokensCopy.row.refusedDetail(token.name)}</span>
       ) : null}
     </div>

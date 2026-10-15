@@ -39,7 +39,7 @@ function TokenShoppingRow({ deckId, token, newestAsOf }: { deckId: string; token
             disabled={pending}
             aria-busy={pending}
             aria-label={tokensCopy.row.haveAria(token.name)}
-            onClick={() => press(() => setTokenHeld(deckId, token.oracleId, true), token.name)}
+            onClick={() => press(() => setTokenHeld(deckId, token.oracleId, true), token)}
             className="flex min-h-[44px] flex-none items-center border-0 bg-transparent p-0 disabled:opacity-60 md:min-h-0"
           >
             <BuyTag variant="row" price={token.price} newestAsOf={newestAsOf} reserveSlot />
@@ -55,7 +55,7 @@ function TokenShoppingRow({ deckId, token, newestAsOf }: { deckId: string; token
           type="button"
           disabled={pending}
           aria-label={tokensCopy.shopping.removeAria(token.name)}
-          onClick={() => press(() => setTokenJoined(deckId, token.oracleId, false), token.name)}
+          onClick={() => press(() => setTokenJoined(deckId, token.oracleId, false), token)}
           className="flex h-[44px] w-[44px] flex-none items-center justify-center border-0 bg-transparent text-[14px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:opacity-60 md:h-[22px] md:w-[22px] transition-colors"
         >
           ✕

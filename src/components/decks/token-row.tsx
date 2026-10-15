@@ -65,15 +65,16 @@ export function useTokenPress() {
   const ctx = useDeckTokens();
   const [own, setOwn] = useState<{ name: string; key: number } | null>(null);
   const [pending, start] = useTransition();
-  const refuse = (name: string) => (ctx ? ctx.refuse(name) : setOwn({ name, key: Date.now() }));
-  const press = (write: () => Promise<{ ok: boolean }>, name: string) => {
+  const refuse = (token: { oracleId: string; name: string }) => (ctx ? ctx.refuse(token) : setOwn({ name: token.name, key: Date.now() }));
+  const press = (write: () => Promise<{ ok: boolean }>, token: { oracleId: string; name: string }) => {
     setOwn(null);
+    ctx?.clear(token.oracleId);
     start(async () => {
       try {
         const r = await write();
-        if (!r.ok) refuse(name);
+        if (!r.ok) refuse(token);
       } catch {
-        refuse(name);
+        refuse(token);
       }
     });
   };
@@ -109,7 +110,7 @@ export function TokenControls({
         aria-describedby={`token-${token.oracleId}-face`}
         aria-pressed={byHand}
         aria-label={byHand ? tokensCopy.row.haveOffAria(token.name) : tokensCopy.row.haveAria(token.name)}
-        onClick={() => press(() => setTokenHeld(deckId, token.oracleId, !byHand), token.name)}
+        onClick={() => press(() => setTokenHeld(deckId, token.oracleId, !byHand), token)}
         // 44 on a phone, 24 from md up; regular weight until it is held.
         className={`${CONTROL} h-[44px] bg-transparent px-[8px] md:h-[24px] ${
           byHand
@@ -128,7 +129,7 @@ export function TokenControls({
         aria-describedby={`token-${token.oracleId}-face`}
         aria-pressed={token.joined}
         aria-label={token.joined ? tokensCopy.row.leaveAria(token.name) : tokensCopy.row.joinAria(token.name)}
-        onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined), token.name)}
+        onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined), token)}
         // 32 tall with a 44 hit area on a phone (the pseudo-element), 24 from md up.
         className={`${CONTROL} relative h-[32px] border px-[10px] font-medium max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-[6px] max-md:after:content-[''] md:h-[24px] ${
           token.joined
