@@ -14,6 +14,7 @@ import { hasRoom, seatCount, seatName, shortName, SEAT_LABEL_MAX, type Seat, typ
 import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
 import { ArtLayer } from "../ui/art-layer";
 import { SeatPicker } from "./seat-picker";
+import { TrophyIcon } from "./trophy-icon";
 
 const copy = gameSeatsCopy.seats;
 
@@ -28,15 +29,6 @@ function Art({ uri, dim = false }: { uri: string | null; dim?: boolean }) {
     <span aria-hidden className={ART} style={dim ? { opacity: 0.78 } : undefined}>
       {uri && <ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION }} />}
     </span>
-  );
-}
-
-function Trophy() {
-  return (
-    <svg aria-hidden viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z" />
-      <path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5" />
-    </svg>
   );
 }
 
@@ -120,7 +112,7 @@ function SeatView({
           }
         >
           <span className="md:hidden">{copy.wonPill}</span>
-          <span className="hidden md:block"><Trophy /></span>
+          <span className="hidden md:block"><TrophyIcon /></span>
         </button>
       )}
       <button

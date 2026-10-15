@@ -72,3 +72,23 @@ describe("summarizeMatchups", () => {
     expect(JSON.stringify(m)).not.toMatch(/rate|percent|ratio/i);
   });
 });
+
+describe("a friend's row face", () => {
+  const yuriko = { oracleId: "y", name: "Yuriko" };
+  const tymna = { oracleId: "t", name: "Tymna" };
+  const seat = (over: Partial<GameOpponent>): GameOpponent => ({
+    seat: 1, friend: { key: "f1", name: "Dave" }, deckName: null, commander: null, partner: null, colorIdentity: [], label: null, won: false, ...over,
+  });
+  const game = (id: string): DeckGame => ({ id, result: "win", podSize: 4, playedAt: new Date("2026-10-01"), versionNumber: null, note: null, worked: [], hurt: [] });
+
+  it("is the commander of their latest game that named one (games arrive newest first), else none", () => {
+    const m = summarizeMatchups([game("new"), game("mid"), game("old")], new Map([
+      ["new", [seat({})]],
+      ["mid", [seat({ commander: tymna })]],
+      ["old", [seat({ commander: yuriko })]],
+    ]));
+    expect(m.friends[0].commander).toEqual(tymna);
+    const none = summarizeMatchups([game("g")], new Map([["g", [seat({})]]]));
+    expect(none.friends[0].commander).toBeNull();
+  });
+});

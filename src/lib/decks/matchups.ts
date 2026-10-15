@@ -19,7 +19,8 @@ type Cell = { key: string; summary: GameSummary; beatMe: number };
 export type CommanderCell = Cell & { commander: OpponentCommander; partner: OpponentCommander | null };
 /** `colorIdentity` in WUBRG order; empty is colorless. */
 export type IdentityCell = Cell & { colorIdentity: string[] };
-export type FriendCell = Cell & { name: string };
+/** `commander` is the one the friend played in their latest game that named one: a row's face draws its art (the snapshot, never their live face), and null draws initials. */
+export type FriendCell = Cell & { name: string; commander: OpponentCommander | null };
 
 export type Matchups = {
   /** Every game on the deck. */
@@ -50,6 +51,8 @@ export function summarizeMatchups(games: readonly DeckGame[], opponents: Readonl
   const byCommander = new Map<string, Bucket<{ commander: OpponentCommander; partner: OpponentCommander | null }>>();
   const byIdentity = new Map<string, Bucket<string[]>>();
   const byFriend = new Map<string, Bucket<string>>();
+  // Games arrive newest first, so the first commander a friend is seen with is their latest.
+  const friendFace = new Map<string, OpponentCommander>();
   let recorded = 0;
   for (const game of games) {
     const seats = opponents.get(game.id) ?? [];
@@ -70,6 +73,7 @@ export function summarizeMatchups(games: readonly DeckGame[], opponents: Readonl
         identities.set(idKey, { meta: s.colorIdentity, won: (identities.get(idKey)?.won ?? false) || s.won });
       }
       if (s.friend !== null) {
+        if (s.commander !== null && !friendFace.has(s.friend.key)) friendFace.set(s.friend.key, s.commander);
         friends.set(s.friend.key, { meta: friends.get(s.friend.key)?.meta ?? s.friend.name, won: (friends.get(s.friend.key)?.won ?? false) || s.won });
       }
     }
@@ -82,6 +86,6 @@ export function summarizeMatchups(games: readonly DeckGame[], opponents: Readonl
     recorded,
     commanders: cells(byCommander).map(({ meta, ...c }) => ({ ...c, ...meta })),
     identities: cells(byIdentity).map(({ meta, ...c }) => ({ ...c, colorIdentity: meta })),
-    friends: cells(byFriend).map(({ meta, ...c }) => ({ ...c, name: meta })),
+    friends: cells(byFriend).map(({ meta, ...c }) => ({ ...c, name: meta, commander: friendFace.get(c.key) ?? null })),
   };
 }

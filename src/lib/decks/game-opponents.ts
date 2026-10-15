@@ -183,7 +183,8 @@ export async function insertOpponentsIn(tx: Tx, gameId: string, parsed: readonly
   await tx.insert(deckGameOpponents).values(opponentRows(gameId, parsed, friends));
 }
 
-export type OpponentCommander = { oracleId: string; name: string };
+/** `imageUri` is the art a thumbnail draws, attached by `loadDeckOpponents` and never stored with the seat. */
+export type OpponentCommander = { oracleId: string; name: string; imageUri?: string | null };
 
 /** One seat as every surface draws it: the snapshot, never a friend's live rows. */
 export type GameOpponent = {
