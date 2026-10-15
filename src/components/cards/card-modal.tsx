@@ -968,6 +968,13 @@ export function CardModal({
   const zoomTiltRef = useRef<HTMLDivElement | null>(null);
   const [turning, setTurning] = useState(false);
   const [zoomTurning, setZoomTurning] = useState(false);
+  // Crossing the 768px line mid-turn hides the tree that was turning, which cancels its transition, and the tree that
+  // shows sends no transitionend: end the turn when the width changes, during render, or both hosts stay pinned flat.
+  const [turnNarrow, setTurnNarrow] = useState(narrow);
+  if (turnNarrow !== narrow) {
+    setTurnNarrow(narrow);
+    setTurning(false);
+  }
   // The zoom tilts on a press that moves past the swipe's slop; its release must not also close the layer.
   const zoomPress = useRef<{ id: number; x: number; y: number; tilting: boolean } | null>(null);
   const zoomDragged = useRef(false);

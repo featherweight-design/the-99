@@ -215,6 +215,22 @@ describe("the flip (G4)", () => {
     expect(phoneHost()).not.toHaveAttribute("data-turning");
   });
 
+  it("ends a turn the window crossed 768px during, where no transitionend comes", () => {
+    const real = window.matchMedia;
+    let wide = true;
+    const listeners = new Set<() => void>();
+    window.matchMedia = ((q: string) => q === "(min-width: 768px)"
+      ? { ...real(q), get matches() { return wide; }, addEventListener: (_: string, f: () => void) => listeners.add(f), removeEventListener: (_: string, f: () => void) => listeners.delete(f) }
+      : real(q)) as typeof window.matchMedia;
+    restore = () => { window.matchMedia = real; };
+    mount(twoFaced());
+    fireEvent.click(within(screen.getByTestId("modal-under-card")).getByRole("button", { name: /Turn over to/ }));
+    expect(desktopHost()).toHaveAttribute("data-turning");
+    act(() => { wide = false; listeners.forEach((f) => f()); });
+    expect(desktopHost()).not.toHaveAttribute("data-turning");
+    expect(phoneHost()).not.toHaveAttribute("data-turning");
+  });
+
   it("never sets data-turning under reduced motion, where no transition would clear it", () => {
     restore = reducedMotion();
     mount(twoFaced());
