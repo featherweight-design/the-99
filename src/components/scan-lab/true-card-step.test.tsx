@@ -1,5 +1,6 @@
 // The "What card was it?" step after a ✗ tap: a name search, one pick saves the true card onto that
 // tap's row, and Skip closes it without a write.
+import { StrictMode } from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 
@@ -38,6 +39,16 @@ describe("TrueCardStep", () => {
     expect(search).toHaveBeenCalledWith("whir");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Whir of Invention/ })); });
     expect(label).toHaveBeenCalledWith(ROW, WHIR.oracleId);
+    expect(onDone).toHaveBeenCalledWith("Saved as Whir of Invention");
+  });
+
+  it("reports the pick under Strict Mode, whose effect replay must not leave the step thinking it has closed", async () => {
+    search.mockResolvedValue([WHIR]);
+    label.mockResolvedValue(true);
+    const onDone = vi.fn();
+    render(<StrictMode><TrueCardStep resultId={ROW} onDone={onDone} /></StrictMode>);
+    await type("whir");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Whir of Invention/ })); });
     expect(onDone).toHaveBeenCalledWith("Saved as Whir of Invention");
   });
 

@@ -23,7 +23,11 @@ export function TrueCardStep({ resultId, onDone }: { resultId: string; onDone: (
   // A save that lands after a newer tap closed this step reports nothing: the row is saved, and the
   // step on screen (if any) belongs to another miss.
   const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
+  // Set in the setup too: Strict Mode runs setup, cleanup, setup, and a cleanup-only ref would stay false.
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; };
+  }, []);
   const trimmed = query.trim();
 
   // The debounced search. A ticket drops an answer that a newer keystroke has outdated.
