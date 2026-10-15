@@ -21,6 +21,7 @@ import { AddLine } from "../collection/add-line";
 import { HistoryEntryItem } from "../collection/history-list";
 import { ShortDeckWarning } from "../collection/short-deck-warning";
 import { UploadChoice } from "../collection/upload-choice";
+import { WaysGroup } from "../collection/ways-group";
 
 const noop = () => {};
 
@@ -117,4 +118,12 @@ export function CollectionHistoryFigureBody() {
       ))}
     </ul>
   );
+}
+
+/**
+ * `start-without-a-collection` (no-collection entry): the step-1 "ways" group itself, its words from its own copy
+ * keys. Precons I own is drawn only while `PRECONS_ENABLED` is on, as the app draws it (S15).
+ */
+export function StartWithoutACollectionFigureBody({ precons }: { precons: boolean }) {
+  return <WaysGroup surface="step1" precons={precons} onAddCards={noop} />;
 }

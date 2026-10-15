@@ -82,6 +82,7 @@ import {
   CollectionHistoryFigureBody,
   EditCopiesFigureBody,
   RemoveCardFigureBody,
+  StartWithoutACollectionFigureBody,
   UploadChoiceFigureBody,
 } from "./collection-edit-figures";
 import { statusBarStyle } from "../../lib/decks/status-style";
@@ -941,6 +942,14 @@ function UndoRemovalFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+function StartWithoutACollectionFigure({ width, precons }: { width: AboutWidth; precons?: boolean }) {
+  return (
+    <Specimen label="start-without-a-collection" width={width}>
+      <StartWithoutACollectionFigureBody precons={precons ?? true} />
+    </Specimen>
+  );
+}
+
 function CollectionAddFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="collection-add" width={width}>
@@ -1204,7 +1213,8 @@ function StandInsFigure({ width }: { width: AboutWidth }) {
 // would let a caller invoke a missing one with no type error.
 export const FIGURES: Partial<
   // `variant`: the entry is drawn in its switched form (`AboutEntry.variant`), for a figure that has one.
-  Record<string, (props: { width: AboutWidth; creditLimit: number; variant?: boolean }) => React.JSX.Element>
+  // `precons`: `PRECONS_ENABLED` for this reader, for a figure that draws a precon control only while it is on.
+  Record<string, (props: { width: AboutWidth; creditLimit: number; variant?: boolean; precons?: boolean }) => React.JSX.Element>
 > = {
   availability: AvailabilityFigure,
   "commander-availability": CommanderAvailabilityFigure,
@@ -1267,6 +1277,7 @@ export const FIGURES: Partial<
   notes: NotesFigure,
   "mana-balance": ManaBalanceFigure,
   credits: CreditsFigure,
+  "start-without-a-collection": StartWithoutACollectionFigure,
   "collection-add": CollectionAddFigure,
   "upload-choice": UploadChoiceFigure,
   "edit-copies": EditCopiesFigure,

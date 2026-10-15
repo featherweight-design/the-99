@@ -14,7 +14,7 @@ import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
-import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
+import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
@@ -67,6 +67,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   // Already reads SWAP_TOOLS_ENABLED: the read lives in Find a deck for it.
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
+  // Already reads COLLECTION_EDIT_ENABLED: the line's own switch needs it.
+  NO_COLLECTION_ENTRY_ENABLED: noCollectionEntryEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */

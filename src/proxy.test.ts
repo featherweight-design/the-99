@@ -64,29 +64,29 @@ beforeEach(() => {
 });
 
 describe("a bump with nothing new to draw (legacy gate)", () => {
-  // Every switch is off here, and versions 12, 13 and 14 added only switched entries.
+  // Every switch is off here, and versions 12, 13, 14 and 15 added only switched entries.
   it("does not redirect a reader one version behind, and remembers it", async () => {
-    aboutVersionSeen.mockResolvedValue(13);
+    aboutVersionSeen.mockResolvedValue(14);
     const res = await proxy(auth, request("/decks"));
     expect(res?.status).not.toBe(307);
     expect(res?.headers.get("location")).toBeNull();
-    expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.14;");
+    expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.15;");
   });
 
   it("skips the database read on the next navigation", async () => {
-    aboutVersionSeen.mockResolvedValue(13);
-    await proxy(auth, request("/decks", {}, "user_1.14"));
+    aboutVersionSeen.mockResolvedValue(14);
+    await proxy(auth, request("/decks", {}, "user_1.15"));
     expect(aboutVersionSeen).not.toHaveBeenCalled();
   });
 
   it("sends a reader once a switch draws an entry they have not met, though their version is current", async () => {
-    // Seen version 14 with no ids; the switch turns an entry on afterwards.
-    aboutVersionSeen.mockResolvedValue(14);
+    // Seen version 15 with no ids; the switch turns an entry on afterwards.
+    aboutVersionSeen.mockResolvedValue(15);
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
     try {
-      const res = await proxy(auth, request("/decks", {}, "user_1.14"));
+      const res = await proxy(auth, request("/decks", {}, "user_1.15"));
       expect(res?.status).toBe(307);
-      expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.14%2Bcollection-add");
+      expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.15%2Bcollection-add");
     } finally {
       vi.unstubAllEnvs();
     }

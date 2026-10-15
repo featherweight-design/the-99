@@ -1,0 +1,38 @@
+{
+  "feature": "A way in without a collection, the whole line (handoff design_handoff_the99_no_collection_entry, R2 + R3; plan 2026-10-15-no-collection-entry.md, the route x viewport inventory)",
+  "clearAbout": true,
+  "note": "State C: a collection built in the app and never uploaded (state B leaves one; or remove the account's csv_uploads rows on the scratch branch). s14's Preview stores an unconfirmed upload and confirms nothing. Needs COLLECTION_EDIT_ENABLED=true, NO_COLLECTION_ENTRY_ENABLED=true and PRECONS_ENABLED=true for the reader. The sheet keeps no fixtures of its own, so each file is one account state and is run on a FRESH account: a scratch branch made from local-dev, prepared as the file says, and deleted after. Steps press only controls inside <main>: the nav's locked-slot note is opened from the shell and is pinned by the nav tests. S4 (pending), S6, S7 and S11 (refusals) and the switch-off states (S15, S16) cannot be forced from a browser and are proved by component tests. The ways group's shared-component check is no-collection-entry-shared.json. clearAbout marks the About gate seen and restores it after.",
+  "out": "contact-sheets/no-collection-entry-c",
+  "rows": [
+    {
+      "id": "s14-replace-built",
+      "label": "/collection/replace, first file over a collection built in the app: Sync's choice, nothing picked, Sync unavailable (never uploaded), Replace's warning naming the cards from precons and by hand that would leave (S14). Previewing stores an unconfirmed upload; no confirm is pressed",
+      "view": "src/components/collection/upload-choice.tsx",
+      "account": "C: a collection built in the app, never uploaded (state B leaves one)",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 10000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "1 Sol Ring",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "wait": "[role=radiogroup]",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

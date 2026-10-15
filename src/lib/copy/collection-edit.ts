@@ -75,6 +75,16 @@ export const collectionEditCopy = {
       `Changes you made in the app may be overwritten. Your last upload was ${last}, further back than the 90 days of history we keep, so we can’t count them.`,
     /** (new) Never uploaded, so every change made in the app is still on record. */
     choiceOverwriteNoUpload: (k: number) => `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app will be overwritten.`,
+    /**
+     * S14 (no-collection entry, behind its switch): the never-uploaded warning for a collection built in the app,
+     * in place of the count above when the Replace would take any copy. Names where the copies came from.
+     */
+    replaceBuilt: (c: number, precons: number, byHand: boolean) => {
+      const from = [precons > 0 ? (precons === 1 ? "1 precon" : `${n(precons)} precons`) : null, byHand ? "by hand" : null]
+        .filter(Boolean)
+        .join(" and ");
+      return `${cards(c)} you added ${precons > 0 ? "from " : ""}${from} ${c === 1 ? "isn’t" : "aren’t"} in this file and would leave. Revert can bring them back.`;
+    },
     overlapNote: (pct: number) => `You already own ${pct}% of these cards. Adding the file raises those counts.`,
     continueReplace: "Review the replace →",
     continueAdd: "Review the add →",

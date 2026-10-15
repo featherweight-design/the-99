@@ -22,6 +22,8 @@ const stub = vi.hoisted(() => ({
   invalidate: vi.fn(),
   editedKeys: vi.fn(async () => new Set<string>()),
   lastUpload: null as Date | null,
+  noCollection: false,
+  built: vi.fn(async () => [] as { source: string | null; rows: unknown[] | null }[]),
 }));
 
 vi.mock("../../db", () => ({
@@ -33,6 +35,7 @@ vi.mock("next/server", () => ({ after: () => {} }));
 vi.mock("../../lib/collection/edit-flag", () => ({
   collectionEditEnabled: () => stub.ledger,
   collectionSyncEnabled: () => stub.ledger && stub.sync,
+  noCollectionEntryEnabled: () => stub.ledger && stub.noCollection,
 }));
 vi.mock("../../lib/collection/write", async (actual) => ({
   ...(await actual<typeof import("../../lib/collection/write")>()),
@@ -44,6 +47,7 @@ vi.mock("../../lib/collection/history", () => ({
   editedKeysSinceUpload: stub.editedKeys,
   collectionTotals: async () => ({ holdings: 10, copies: 25 }),
   lastUploadConfirmedAt: async () => stub.lastUpload,
+  readBuiltEntries: stub.built,
 }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: stub.invalidate }));
 vi.mock("../../lib/decks/availability-query", () => ({ loadDeckBuyRows: async () => [] }));
@@ -218,6 +222,33 @@ describe("previewUploadChange", () => {
       lastUploadAt: stub.lastUpload.toISOString(), historyReaches: false,
     });
     stub.lastUpload = null;
+  });
+
+  it("S14: names what a first Replace takes from a collection built in the app, only with the line's switch on", async () => {
+    stub.ledger = true;
+    const st = (quantity: number) => ({ quantity, scryfallId: null, condition: null });
+    const moved = (before: number | null, after: number | null) => ({
+      oracleId: A, setCode: "lea", collectorNumber: "1", finish: "nonfoil", name: "Gone",
+      before: before === null ? null : st(before), after: after === null ? null : st(after),
+    });
+    stub.apply.mockResolvedValue({ status: "preview", raised: 0, lowered: 1, rows: [moved(3, null)], decks: [] });
+    stub.built.mockResolvedValue([{ source: "precon:box.json", rows: [moved(null, 3)] }]);
+    stub.lastUpload = null;
+    try {
+      // Off: the shipped shape, no `built` and no read of the entries.
+      stub.built.mockClear();
+      expect(await previewUploadChange(UPLOAD, "replace")).not.toHaveProperty("built");
+      expect(stub.built).not.toHaveBeenCalled();
+      stub.noCollection = true;
+      expect(await previewUploadChange(UPLOAD, "replace")).toHaveProperty("built", { copies: 3, precons: 1, byHand: false });
+      // An Add takes nothing, and a player who has uploaded has an upload to be "since".
+      expect(await previewUploadChange(UPLOAD, "add")).not.toHaveProperty("built");
+      stub.lastUpload = new Date(Date.now() - 86_400_000);
+      expect(await previewUploadChange(UPLOAD, "replace")).not.toHaveProperty("built");
+    } finally {
+      stub.noCollection = false;
+      stub.lastUpload = null;
+    }
   });
 
   it("only a Replace reads the hand-edited holdings", async () => {

@@ -15,8 +15,12 @@ const c = collectionEditCopy.upload;
 /** "Jun 2", pinned to en-US and UTC so a server render and a browser agree. */
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
-/** The line naming what a Replace overwrites, or null when there is nothing to say. */
-export function overwriteLine(change: Pick<UploadChangePreview, "editsSinceUpload" | "lastUploadAt" | "historyReaches">): string | null {
+/**
+ * The line naming what a Replace overwrites, or null when there is nothing to say. A collection built in the app and
+ * never uploaded (no-collection entry S14) says what the choice card said: the copies leaving and where they came from.
+ */
+export function overwriteLine(change: Pick<UploadChangePreview, "editsSinceUpload" | "lastUploadAt" | "historyReaches" | "built">): string | null {
+  if (change.lastUploadAt === null && change.built) return c.replaceBuilt(change.built.copies, change.built.precons, change.built.byHand);
   if (change.lastUploadAt === null) return change.editsSinceUpload > 0 ? c.overwriteNoUpload(change.editsSinceUpload) : null;
   if (!change.historyReaches) return c.overwriteUnknown(day(change.lastUploadAt));
   return change.editsSinceUpload > 0 ? c.overwriteBanner(change.editsSinceUpload, day(change.lastUploadAt)) : null;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { handEntriesSince, listColumns, netHandChanges, revertDiffers, syncSummaryColumn } from "./history";
+import { handEntriesSince, listColumns, netHandChanges, revertDiffers, standingBuiltEntries, syncSummaryColumn } from "./history";
 import type { HistoryRow, HistoryRowState } from "../../db/schema";
 import { cartDecksOf } from "./deck-line";
 
@@ -9,6 +9,21 @@ const row = (before: number | null, after: number | null) => ({
   ...id,
   before: before === null ? null : { quantity: before, scryfallId: null, condition: null },
   after: after === null ? null : { quantity: after, scryfallId: null, condition: null },
+});
+
+// S14: a precon add reverted and then restored stands again, so a first Replace names its box, not "by hand".
+describe("standingBuiltEntries", () => {
+  const add = (id: string, revertedBy: string | null) => ({ id, revertedBy, source: `precon:${id}`, rows: [] });
+  it("keeps an add nothing reverted, drops one a revert took back, and keeps one whose revert was itself reverted", () => {
+    const entries = [add("a", null), add("b", "r1"), add("c", "r2")];
+    const out = standingBuiltEntries(entries, [{ id: "r2", revertedBy: "r3" }]);
+    expect(out.map((e) => e.source)).toEqual(["precon:a", "precon:c"]);
+  });
+
+  it("drops an add whose chain ends reverted again", () => {
+    const out = standingBuiltEntries([add("c", "r2")], [{ id: "r2", revertedBy: "r3" }, { id: "r3", revertedBy: "r4" }]);
+    expect(out).toEqual([]);
+  });
 });
 
 describe("revertDiffers", () => {

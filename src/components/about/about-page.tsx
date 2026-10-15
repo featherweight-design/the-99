@@ -36,6 +36,7 @@ import {
 } from "../../lib/copy/about";
 import { PendingReporter } from "../shell/pending-reporter";
 import { EntryCaption } from "./entry-caption";
+import { preconsEnabled } from "../../lib/precons/flag";
 import { defaultDailyAllowanceFrom } from "../../lib/model/allowance-rule";
 
 const CHAPTERS: AboutChapter[] = ["01", "02", "03", "04"];
@@ -76,6 +77,7 @@ function Entry({
   howItWorks,
   creditLimit,
   specimenLimit,
+  precons,
 }: {
   entry: AboutEntry;
   marked: boolean;
@@ -86,6 +88,8 @@ function Entry({
   creditLimit: number;
   /** The app-wide default limit, which a figure draws: a specimen has no reader of its own. */
   specimenLimit: number;
+  /** `PRECONS_ENABLED` for this reader: a figure drawing a precon control draws it only while it is on. */
+  precons: boolean;
 }) {
   const row = howItWorks ? entryRow[entry.id] : undefined;
   const caption = fillAllowance(entry.caption, creditLimit);
@@ -167,14 +171,14 @@ function Entry({
             <EntryCaption caption={caption} />
           </div>
           <div className="order-1 min-[1000px]:order-1 min-[1000px]:w-[300px] min-[1000px]:flex-none">
-            <Figure width={entry.width} creditLimit={specimenLimit} variant={entry.variantOn !== undefined} />
+            <Figure width={entry.width} creditLimit={specimenLimit} variant={entry.variantOn !== undefined} precons={precons} />
           </div>
         </div>
       ) : (
         <EntryCaption caption={caption} className="mt-[6px]" />
       )}
 
-      {Figure && !inset && <Figure width={entry.width} creditLimit={specimenLimit} variant={entry.variantOn !== undefined} />}
+      {Figure && !inset && <Figure width={entry.width} creditLimit={specimenLimit} variant={entry.variantOn !== undefined} precons={precons} />}
 
       {/* NUMBERED keys. "Annotation is a numeral and a line" is the handoff's
           grammar, and the lines shipped without the numerals — which is the
@@ -285,6 +289,7 @@ export function AboutPage({
   // A figure is a specimen with no reader, so it always draws the default; a caption draws the reader's.
   const defaultLimit = defaultDailyAllowanceFrom(process.env.MODEL_DAILY_ALLOWANCE);
   const readerLimit = creditLimit ?? defaultLimit;
+  const preconsOn = preconsEnabled(env);
   // Only the entries this reader is drawn: one tied to a switch that is off for them is not on the page.
   const visible = visibleEntries(env);
   // "How the app reaches its answers" (plan 2026-09-28): its section, its clause in the intro,
@@ -437,6 +442,7 @@ export function AboutPage({
                   howItWorks={howItWorks}
                   creditLimit={readerLimit}
                   specimenLimit={defaultLimit}
+                  precons={preconsOn}
                 />
               ))}
           </ul>
