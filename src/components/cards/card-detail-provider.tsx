@@ -1092,13 +1092,17 @@ export function CardDetailProvider({
         }
         const el = openerRef.current;
         if (!el?.isConnected) return null;
-        // An opener the page has since made inert (a group the reader collapsed while the card was open) cannot
-        // take focus, and neither can the capture, which is the same control. Focus goes to the disclosure that
-        // controls that region instead, which is where the reader's collapse left them.
-        const region = el.closest<HTMLElement>("[inert]");
-        if (!region) return el;
-        const door = region.id ? document.querySelector<HTMLElement>(`[aria-controls~="${CSS.escape(region.id)}"]`) : null;
-        return door && !door.closest("[inert]") ? door : null;
+        // An opener the page has since made inert or hidden (a group or row the reader collapsed while the card
+        // was open) cannot take focus, and neither can the capture, which is the same control. Focus goes to the
+        // disclosure that controls that region instead, which is where the reader's collapse left them, walking
+        // out while that disclosure is itself inside a collapsed region (a row's head inside a closed group).
+        let target: HTMLElement | null = el;
+        for (let hops = 0; target && hops < 8; hops++) {
+          const region: HTMLElement | null = target.closest<HTMLElement>("[inert],[hidden]");
+          if (!region) return target;
+          target = region.id ? document.querySelector<HTMLElement>(`[aria-controls~="${CSS.escape(region.id)}"]`) : null;
+        }
+        return null;
       },
     }),
     [],

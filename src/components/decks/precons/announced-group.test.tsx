@@ -4,7 +4,7 @@ import { renderToString } from "react-dom/server";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { RevealedCommander } from "../../../lib/precons/revealed";
 import type { UpcomingSet } from "../../../lib/precons/upcoming";
-import { ANNOUNCED_KEY, AnnouncedGroup, useAnnouncedVisit, type AnnouncedGroupProps } from "./announced-group";
+import { ANNOUNCED_KEY, AnnouncedGroup, announcedPrintings, useAnnouncedVisit, type AnnouncedGroupProps } from "./announced-group";
 import { AnnouncedSet, TILE_FOCUS_RING } from "./announced-parts";
 import { PRECON_TILES_CLASS } from "./precon-grid";
 import { TILE_SHELL } from "../../ui/card-tile-caption";
@@ -23,13 +23,15 @@ vi.mock("../../cards/card-detail-provider", async (importOriginal) => {
     },
   };
 });
-// Card details' read, held open by the test so it can land after the group closed. A prefetch never runs: no test
-// rests a pointer or focuses from the keyboard.
+// Card details' read, held open by the test so it can land after the group closed. The press's read and the intent
+// prefetch a focused trigger starts are held alike, so whichever one the press waits on is the one a test resolves.
 const details = vi.hoisted(() => ({ resolve: null as null | ((card: unknown) => void) }));
 vi.mock("../../../app/card-detail-action", () => ({
   getCardDetail: vi.fn(() => new Promise((resolve) => { details.resolve = resolve; })),
 }));
-vi.mock("../../../lib/cards/fetch-card-detail", () => ({ fetchCardDetail: vi.fn(async () => null) }));
+vi.mock("../../../lib/cards/fetch-card-detail", () => ({
+  fetchCardDetail: vi.fn(() => new Promise((resolve) => { details.resolve = resolve; })),
+}));
 vi.mock("../../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
   clearCardArtPreference: vi.fn(async () => {}),
@@ -76,6 +78,7 @@ describe("AnnouncedGroup", () => {
   beforeEach(() => {
     shared.triggers.length = 0;
     shared.previewProviders = 0;
+    details.resolve = null;
     window.localStorage.clear();
     window.history.replaceState(null, "", "/decks/precons");
     document.cookie = "precons_announced=; Max-Age=0; Path=/";
@@ -215,6 +218,8 @@ describe("AnnouncedGroup", () => {
       const dialog = await screen.findByRole("dialog", { name: /Christine Chapel, Combat Medic/ });
       // Outside the closed region: not inert, not hidden, and it holds focus.
       expect(region(container)).not.toContainElement(dialog);
+      // The modal views the announced printing the tile pictures (the read itself names no printing).
+      expect(dialog).toHaveTextContent("trc · 78");
       expect(dialog.closest("[inert]")).toBeNull();
       expect(dialog.closest(".invisible")).toBeNull();
       await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
@@ -224,6 +229,61 @@ describe("AnnouncedGroup", () => {
       expect(document.body.style.overflow).not.toBe("hidden");
       // The opener is inside the closed, inert region, so focus goes back to the group's own disclosure.
       expect(document.activeElement).toBe(head());
+    });
+
+    it("returns focus to the row's head when the reader closed that row before the details landed", async () => {
+      const { warmCardModal } = await import("../../cards/card-detail-provider");
+      await warmCardModal();
+      draw({ view: "rows", opensByItself: true });
+      const trcRow = screen.getAllByTestId("announced-row")[0];
+      const rowHead = within(trcRow).getByRole("button", { name: /Star Trek Commander/ });
+      fireEvent.click(rowHead);
+      const chapel = within(trcRow).getByRole("button", { name: "View details for Christine Chapel, Combat Medic, White. Revealed commander." });
+      chapel.focus();
+      await act(async () => { fireEvent.click(chapel); });
+      fireEvent.click(rowHead);
+      expect(chapel.closest("[hidden]")).not.toBeNull();
+      await act(async () => { details.resolve!({
+          oracleId: "o78", name: "Christine Chapel, Combat Medic", typeLine: "Legendary Creature — Human Doctor",
+          manaCost: "{2}{W}", cmc: 3, oracleText: null, keywords: [], rarity: "rare", colorIdentity: ["W"], imageUri: null,
+          printedName: null, quantity: 0, printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
+        }); });
+      const dialog = await screen.findByRole("dialog", { name: /Christine Chapel, Combat Medic/ });
+      await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: /Christine Chapel/ })).toBeNull());
+      expect(document.activeElement).toBe(rowHead);
+    });
+
+    it("walks out to the group's head when the row's head is inside the closed group", async () => {
+      const { warmCardModal } = await import("../../cards/card-detail-provider");
+      await warmCardModal();
+      draw({ view: "rows", opensByItself: true });
+      const trcRow = screen.getAllByTestId("announced-row")[0];
+      const rowHead = within(trcRow).getByRole("button", { name: /Star Trek Commander/ });
+      fireEvent.click(rowHead);
+      const chapel = within(trcRow).getByRole("button", { name: "View details for Christine Chapel, Combat Medic, White. Revealed commander." });
+      chapel.focus();
+      await act(async () => { fireEvent.click(chapel); });
+      // The row closes, then the group: the row's head is itself inside a collapsed region.
+      fireEvent.click(rowHead);
+      fireEvent.click(head());
+      await act(async () => { details.resolve!({
+          oracleId: "o78", name: "Christine Chapel, Combat Medic", typeLine: "Legendary Creature — Human Doctor",
+          manaCost: "{2}{W}", cmc: 3, oracleText: null, keywords: [], rarity: "rare", colorIdentity: ["W"], imageUri: null,
+          printedName: null, quantity: 0, printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
+        }); });
+      const dialog = await screen.findByRole("dialog", { name: /Christine Chapel, Combat Medic/ });
+      await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: /Christine Chapel/ })).toBeNull());
+      expect(document.activeElement).toBe(head());
+    });
+
+    it("views each commander at its announced set's printing, the first set's when two reveal one card", () => {
+      const one = (code: string, n: string) => ({
+        set: { code } as AnnouncedMatch["set"], matched: 1, revealed: 1,
+        commanders: [{ oracleId: "x", name: "X", colorIdentity: [], imageUriSmall: `s${n}`, imageUri: `n${n}`, collectorNumber: n }],
+      });
+      expect(announcedPrintings([one("aaa", "1"), one("bbb", "2")])).toEqual({ x: { setCode: "aaa", collectorNumber: "1", imageUri: "n1" } });
     });
 
     it("draws each one with the shared trigger in rows, at the strip's unchanged size", () => {
