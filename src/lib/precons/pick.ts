@@ -38,12 +38,14 @@ export function pickTotals(picked: readonly { box: PreconBox; edition: PickEditi
   return { boxes: picked.length, cards, tokens };
 }
 
-export type PickRequest = { fileName: string; edition: PickEdition; actionId: string };
+/** `file` is the edition file the press meant to add, so a retry is matched to that file and no other. */
+export type PickRequest = { fileName: string; edition: PickEdition; file: string; actionId: string };
 export type PickBoxToAdd = { rowFile: string; fileName: string; actionId: string };
 
 /**
  * The request as a closed set, or null: each entry names a plain box the catalog lists (never a twin's own file),
- * an edition the box has (Collector's only where a twin exists), and its own uuid; no box or id twice.
+ * an edition the box has (Collector's only where a twin exists), the file that edition adds today, and its own uuid;
+ * no box or id twice.
  */
 export function resolvePick(requests: unknown, catalog: readonly { fileName: string; twinOf: string | null }[]): PickBoxToAdd[] | null {
   if (!Array.isArray(requests) || requests.length === 0 || requests.length > PICK_MAX) return null;
@@ -54,12 +56,12 @@ export function resolvePick(requests: unknown, catalog: readonly { fileName: str
   const out: PickBoxToAdd[] = [];
   for (const r of requests as unknown[]) {
     if (typeof r !== "object" || r === null) return null;
-    const { fileName, edition, actionId } = r as Record<string, unknown>;
+    const { fileName, edition, actionId, file: asked } = r as Record<string, unknown>;
     if (typeof fileName !== "string" || !plain.has(fileName) || files.has(fileName)) return null;
     if (edition !== "regular" && edition !== "collector") return null;
     if (!isUuid(actionId) || ids.has(actionId as string)) return null;
     const file = edition === "collector" ? twin.get(fileName) : fileName;
-    if (file === undefined) return null;
+    if (file === undefined || file !== asked) return null;
     files.add(fileName);
     ids.add(actionId as string);
     out.push({ rowFile: fileName, fileName: file, actionId: actionId as string });
@@ -71,10 +73,10 @@ export function resolvePick(requests: unknown, catalog: readonly { fileName: str
  * The requests a committed precon add already answers, split from the rest. A retry after a lost answer is recovered
  * from its own entry BEFORE the catalog is consulted, because a refresh between the commit and the retry can drop or
  * re-map the box and refuse a request whose add already landed. `committed` maps this reader's own precon add entries,
- * by id, to the box file their source names. A Regular request is recovered only by an entry for its own file; a
- * Collector's Edition one by an entry for another file, its twin, which the catalog may no longer map. Recovery writes
- * nothing: it reports an add of this reader's that already stands. An id any other write holds is left in the rest,
- * where the add itself refuses it. Pure.
+ * by id, to the box file their source names. A request is recovered only by an entry for the exact file it asked to
+ * add (`file`, carried from the press, so no catalog is needed): its own for Regular, a different one, its twin, for
+ * Collector's Edition. Recovery writes nothing: it reports an add of this reader's that already stands. An id any
+ * other write holds is left in the rest, where the add itself refuses it. Pure.
  */
 export function recoverCommitted(
   requests: unknown,
@@ -84,9 +86,9 @@ export function recoverCommitted(
   const recovered: PickOutcome[] = [];
   const rest: unknown[] = [];
   for (const r of requests as unknown[]) {
-    const { fileName, edition, actionId } = (typeof r === "object" && r !== null ? r : {}) as Record<string, unknown>;
+    const { fileName, edition, actionId, file: asked } = (typeof r === "object" && r !== null ? r : {}) as Record<string, unknown>;
     const file = typeof actionId === "string" ? committed.get(actionId) : undefined;
-    const ofRow = typeof fileName === "string" && file !== undefined
+    const ofRow = typeof fileName === "string" && file !== undefined && file === asked
       && (edition === "collector" ? file !== fileName : edition === "regular" && file === fileName);
     if (ofRow) recovered.push({ rowFile: fileName as string, ok: true, entryId: actionId as string });
     else rest.push(r);

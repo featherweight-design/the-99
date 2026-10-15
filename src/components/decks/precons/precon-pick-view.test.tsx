@@ -76,8 +76,8 @@ describe("Precons I own: the foot", () => {
     expect(screen.getByRole("checkbox", { name: /Abzan Armor/, hidden: true }).closest("[aria-busy]")).toHaveAttribute("inert");
     expect(screen.getByPlaceholderText(/Search/)).toBeDisabled();
     expect(addPrecons).toHaveBeenCalledWith([
-      { fileName: "Abzan", edition: "regular", actionId: expect.any(String) },
-      { fileName: "Revival", edition: "collector", actionId: expect.any(String) },
+      { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: expect.any(String) },
+      { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: expect.any(String) },
     ]);
     await act(async () => settle([{ rowFile: "Abzan", ok: true, entryId: "e1" }, { rowFile: "Revival", ok: true, entryId: "e2" }]));
     expect(push).toHaveBeenCalledWith("/?precons=e1,e2");
@@ -105,7 +105,7 @@ describe("Precons I own: refusals", () => {
     addPrecons.mockResolvedValueOnce([{ rowFile: "Sultai", ok: true, entryId: "e2" }]);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/?precons=e1,e3,e2"));
-    expect(addPrecons.mock.calls[1][0]).toEqual([{ fileName: "Sultai", edition: "regular", actionId: firstId }]);
+    expect(addPrecons.mock.calls[1][0]).toEqual([{ fileName: "Sultai", edition: "regular", file: "Sultai", actionId: firstId }]);
   });
 
   // A changed edition after an unknown outcome would go out under a new id and add the other box too: the list holds
@@ -158,7 +158,7 @@ describe("Precons I own: refusals", () => {
     addPrecons.mockResolvedValueOnce([{ rowFile: "Revival", ok: true, entryId: "e9" }]);
     fireEvent.click(addButton());
     await waitFor(() => expect(push).toHaveBeenCalledWith("/?precons=e9"));
-    expect(addPrecons.mock.calls[0][0]).toEqual([{ fileName: "Revival", edition: "collector", actionId: "11111111-1111-4111-8111-111111111111" }]);
+    expect(addPrecons.mock.calls[0][0]).toEqual([{ fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: "11111111-1111-4111-8111-111111111111" }]);
     expect(window.sessionStorage.getItem("the99:precon-pick-attempts:user_1")).toBeNull();
   });
 
@@ -172,6 +172,10 @@ describe("Precons I own: refusals", () => {
     view.unmount();
     await act(async () => settle([{ rowFile: "Abzan", ok: true, entryId: "e1" }]));
     expect(push).not.toHaveBeenCalled();
+    // The kept attempt stays for the picker opened next, whose retry under the same id recovers the landed box.
+    expect(JSON.parse(window.sessionStorage.getItem("the99:precon-pick-attempts:user_1")!)).toEqual({
+      Abzan: { edition: "regular", id: addPrecons.mock.calls[0][0][0].actionId },
+    });
   });
 
   it("keeps the ticks when nothing landed, and an unknown outcome retries under the same ids", async () => {

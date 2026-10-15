@@ -82,7 +82,7 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
   // The whole request is held to one box and one id each, and the cap, before anything is recovered or added.
   if (!Array.isArray(requests) || requests.length === 0 || requests.length > PICK_MAX) throw new Error("bad pick");
   const fields = (requests as unknown[]).map((r) => (typeof r === "object" && r !== null ? (r as Record<string, unknown>) : {}));
-  if (fields.some((f) => typeof f.fileName !== "string" || !isUuid(f.actionId) || (f.edition !== "regular" && f.edition !== "collector"))) throw new Error("bad pick");
+  if (fields.some((f) => typeof f.fileName !== "string" || typeof f.file !== "string" || !isUuid(f.actionId) || (f.edition !== "regular" && f.edition !== "collector"))) throw new Error("bad pick");
   if (new Set(fields.map((f) => f.fileName)).size !== fields.length || new Set(fields.map((f) => f.actionId)).size !== fields.length) throw new Error("bad pick");
   const ids = Array.isArray(requests)
     ? (requests as unknown[]).map((r) => (typeof r === "object" && r !== null ? (r as Record<string, unknown>).actionId : null)).filter((id): id is string => isUuid(id))

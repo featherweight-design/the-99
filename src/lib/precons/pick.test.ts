@@ -27,24 +27,24 @@ describe("the twin rule", () => {
   });
 
   it("adds exactly one edition per twin, and only an edition the box has", () => {
-    expect(resolvePick([{ fileName: "Revival", edition: "collector", actionId: ID(1) }], catalog))
+    expect(resolvePick([{ fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: ID(1) }], catalog))
       .toEqual([{ rowFile: "Revival", fileName: "Revival_CE", actionId: ID(1) }]);
     // A twin's own file is never a box, a box twice is refused, and Collector's needs a twin.
-    expect(resolvePick([{ fileName: "Revival_CE", edition: "regular", actionId: ID(1) }], catalog)).toBeNull();
+    expect(resolvePick([{ fileName: "Revival_CE", edition: "regular", file: "Revival_CE", actionId: ID(1) }], catalog)).toBeNull();
     expect(resolvePick([
-      { fileName: "Revival", edition: "regular", actionId: ID(1) }, { fileName: "Revival", edition: "collector", actionId: ID(2) },
+      { fileName: "Revival", edition: "regular", file: "Revival", actionId: ID(1) }, { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: ID(2) },
     ], catalog)).toBeNull();
-    expect(resolvePick([{ fileName: "Abzan", edition: "collector", actionId: ID(1) }], catalog)).toBeNull();
+    expect(resolvePick([{ fileName: "Abzan", edition: "collector", file: "Abzan_CE", actionId: ID(1) }], catalog)).toBeNull();
   });
 
   it("refuses anything outside the closed set", () => {
     expect(resolvePick([], catalog)).toBeNull();
     expect(resolvePick("Abzan", catalog)).toBeNull();
-    expect(resolvePick([{ fileName: "Nope", edition: "regular", actionId: ID(1) }], catalog)).toBeNull();
+    expect(resolvePick([{ fileName: "Nope", edition: "regular", file: "Nope", actionId: ID(1) }], catalog)).toBeNull();
     expect(resolvePick([{ fileName: "Abzan", edition: "foil", actionId: ID(1) }], catalog)).toBeNull();
-    expect(resolvePick([{ fileName: "Abzan", edition: "regular", actionId: "x" }], catalog)).toBeNull();
+    expect(resolvePick([{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: "x" }], catalog)).toBeNull();
     expect(resolvePick([
-      { fileName: "Abzan", edition: "regular", actionId: ID(1) }, { fileName: "Sultai", edition: "regular", actionId: ID(1) },
+      { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }, { fileName: "Sultai", edition: "regular", file: "Sultai", actionId: ID(1) },
     ], catalog)).toBeNull();
   });
 });
@@ -144,19 +144,32 @@ describe("recovering a retry from its committed entry", () => {
   const B = "00000000-0000-4000-8000-0000000000b2";
   it("recovers a Regular box by its own file and a Collector's Edition by its twin's, leaving the rest", () => {
     const out = recoverCommitted(
-      [{ fileName: "Abzan", edition: "regular", actionId: A }, { fileName: "Revival", edition: "collector", actionId: B }, { fileName: "Temur", edition: "regular", actionId: "x" }],
+      [{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: A }, { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: B }, { fileName: "Temur", edition: "regular", file: "Temur", actionId: "x" }],
       new Map([[A, "Abzan"], [B, "Revival_CE"]]),
     );
     expect(out!.recovered).toEqual([{ rowFile: "Abzan", ok: true, entryId: A }, { rowFile: "Revival", ok: true, entryId: B }]);
-    expect(out!.rest).toEqual([{ fileName: "Temur", edition: "regular", actionId: "x" }]);
+    expect(out!.rest).toEqual([{ fileName: "Temur", edition: "regular", file: "Temur", actionId: "x" }]);
   });
 
   it("recovers nothing from an entry of another box, nor a Collector's Edition from its own Regular file", () => {
     const out = recoverCommitted(
-      [{ fileName: "Abzan", edition: "regular", actionId: A }, { fileName: "Revival", edition: "collector", actionId: B }],
+      [{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: A }, { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: B }],
       new Map([[A, "Sultai"], [B, "Revival"]]),
     );
     expect(out!.recovered).toEqual([]);
     expect(out!.rest).toHaveLength(2);
+  });
+
+  // A Collector's Edition retry is matched to the file its press asked for, never to any other box's entry.
+  it("recovers no Collector's Edition from an unrelated precon's entry, nor from a file the press did not ask for", () => {
+    const out = recoverCommitted(
+      [{ fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: A }, { fileName: "Revival", edition: "collector", file: "Other_CE", actionId: B }],
+      new Map([[A, "Abzan"], [B, "Revival_CE"]]),
+    );
+    expect(out!.recovered).toEqual([]);
+  });
+
+  it("refuses a new add whose asked file is not the one its edition adds today", () => {
+    expect(resolvePick([{ fileName: "Revival", edition: "collector", file: "Old_CE", actionId: A }], catalog)).toBeNull();
   });
 });

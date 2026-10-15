@@ -199,7 +199,7 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
   it("adds each box for the signed-in reader with its own id, the twin at its chosen edition, and retires the readers", async () => {
     state.selects = [CATALOG];
     const out = await addPrecons([
-      { fileName: "Abzan", edition: "regular", actionId: ID(1) }, { fileName: "Revival", edition: "collector", actionId: ID(2) },
+      { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }, { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: ID(2) },
     ]);
     expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Abzan", ID(1)], ["user_1", "Revival_CE", ID(2)]]);
     expect(out).toEqual([{ rowFile: "Abzan", ok: true, entryId: "entry-Abzan" }, { rowFile: "Revival", ok: true, entryId: "entry-Revival_CE" }]);
@@ -209,7 +209,7 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
   });
 
   it("refuses with the line's switch, collection editing or precons off, and writes nothing", async () => {
-    const one = [{ fileName: "Abzan", edition: "regular", actionId: ID(1) }];
+    const one = [{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }];
     state.line = false;
     await expect(addPrecons(one)).rejects.toThrow("the precon pick is off");
     state.line = true; state.collectionEdit = false;
@@ -224,8 +224,8 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
   it("refuses a box outside the catalog's closed set on its own, adding the rest", async () => {
     state.selects = [CATALOG];
     const out = await addPrecons([
-      { fileName: "Revival_CE", edition: "regular", actionId: ID(1) }, { fileName: "Abzan", edition: "collector", actionId: ID(2) },
-      { fileName: "Revival", edition: "collector", actionId: ID(3) },
+      { fileName: "Revival_CE", edition: "regular", file: "Revival_CE", actionId: ID(1) }, { fileName: "Abzan", edition: "collector", file: "Abzan_CE", actionId: ID(2) },
+      { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: ID(3) },
     ]);
     expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Revival_CE", ID(3)]]);
     expect(out).toEqual([{ rowFile: "Revival_CE", ok: false }, { rowFile: "Abzan", ok: false }, { rowFile: "Revival", ok: true, entryId: "entry-Revival_CE" }]);
@@ -234,7 +234,7 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
   it("refuses a malformed request before anything is read or added", async () => {
     await expect(addPrecons([{ fileName: 7, edition: "regular", actionId: ID(1) }])).rejects.toThrow("bad pick");
     await expect(addPrecons([{ fileName: "Abzan", edition: "foil", actionId: ID(1) }])).rejects.toThrow("bad pick");
-    await expect(addPrecons([{ fileName: "Abzan", edition: "regular", actionId: "nope" }])).rejects.toThrow("bad pick");
+    await expect(addPrecons([{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: "nope" }])).rejects.toThrow("bad pick");
     expect(committed.asked).toEqual([]);
     expect(state.picks).toEqual([]);
   });
@@ -245,7 +245,7 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
     committed.map = new Map([[ID(2), "Revival_CE"]]);
     state.selects = [[{ fileName: "Abzan", twinOf: null }]];
     const out = await addPrecons([
-      { fileName: "Abzan", edition: "regular", actionId: ID(1) }, { fileName: "Revival", edition: "collector", actionId: ID(2) },
+      { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }, { fileName: "Revival", edition: "collector", file: "Revival_CE", actionId: ID(2) },
     ]);
     expect(committed.asked).toEqual([[ID(1), ID(2)]]);
     expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Abzan", ID(1)]]);
@@ -255,17 +255,17 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
   it("recovers nothing from an entry of another box, and refuses a request naming a box or id twice", async () => {
     committed.map = new Map([[ID(1), "Sultai"]]);
     state.selects = [CATALOG];
-    await addPrecons([{ fileName: "Abzan", edition: "regular", actionId: ID(1) }]);
+    await addPrecons([{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }]);
     expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Abzan", ID(1)]]);
     await expect(addPrecons([
-      { fileName: "Abzan", edition: "regular", actionId: ID(3) }, { fileName: "Abzan", edition: "regular", actionId: ID(4) },
+      { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(3) }, { fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(4) },
     ])).rejects.toThrow("bad pick");
   });
 
   it("retires nothing when no box landed", async () => {
     state.selects = [CATALOG];
     state.pickResult = () => ({ ok: false, reason: "failed" });
-    expect(await addPrecons([{ fileName: "Abzan", edition: "regular", actionId: ID(1) }])).toEqual([{ rowFile: "Abzan", ok: false }]);
+    expect(await addPrecons([{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }])).toEqual([{ rowFile: "Abzan", ok: false }]);
     expect(state.invalidated).toEqual([]);
   });
 });

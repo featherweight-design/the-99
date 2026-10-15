@@ -16,7 +16,7 @@ import { PIP_ORDER, type PipCode } from "../../../lib/copy/filter-chassis";
 import { WUBRG_COLOR } from "../../../lib/collection/browse";
 import { filterPrecons, groupByYear, orderPrecons, type PreconBox, type PreconRow as Row } from "../../../lib/precons/list";
 import {
-  PICK_ENTRY_HREF, PICK_RECEIPT_PARAM, pickTotals, type PickEdition, type PickEntry, type PickOutcome,
+  PICK_ENTRY_HREF, PICK_RECEIPT_PARAM, pickFile, pickTotals, type PickEdition, type PickEntry, type PickOutcome,
 } from "../../../lib/precons/pick";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { ColourPips } from "../../ui/colour-pips";
@@ -152,7 +152,7 @@ export function PreconPickView({ rows, entry, initial }: {
       const key = `${row.fileName}:${edition}`;
       let id = ids.current.get(key);
       if (!id) { id = crypto.randomUUID(); ids.current.set(key, id); }
-      return { fileName: row.fileName, edition, actionId: id };
+      return { fileName: row.fileName, edition, file: pickFile(row.fileName, boxOf(row), edition), actionId: id };
     });
     // Kept before the press goes out, so an answer lost to a reload is still retried under the same ids.
     writeAttempts(account, { ...readAttempts(account), ...Object.fromEntries(requests.map((r) => [r.fileName, { edition: r.edition, id: r.actionId }])) });
@@ -162,6 +162,8 @@ export function PreconPickView({ rows, entry, initial }: {
     try {
       outcomes = await addPrecons(requests);
     } catch {
+      // A picker the reader has left neither redraws nor touches the kept attempts: the next one restores them itself.
+      if (!mounted.current) return;
       // It may have committed with its answer lost: the ticks and ids stay, so Try again cannot add a box twice.
       setPending(false);
       setUnsure(true);
@@ -169,6 +171,9 @@ export function PreconPickView({ rows, entry, initial }: {
       add.current?.focus();
       return;
     }
+    // Left before the answer: the kept attempts stay for the picker the reader opens next, whose retry under the same
+    // ids is answered from the entries this press wrote, so a box that landed is never added twice.
+    if (!mounted.current) return;
     const ok = outcomes.filter((o): o is Extract<PickOutcome, { ok: true }> => o.ok);
     const failed = outcomes.filter((o) => !o.ok);
     // Answered boxes leave the kept attempts; a box whose outcome is still unknown stays, ticked and held.
@@ -181,7 +186,7 @@ export function PreconPickView({ rows, entry, initial }: {
     const nowLanded = [...landed, ...ok.map((o) => ({ rowFile: o.rowFile, entryId: o.entryId }))];
     if (failed.length === 0) {
       // S5: every box written. The inputs stay locked while the destination loads.
-      if (mounted.current) router.push(receiptHref(nowLanded));
+      router.push(receiptHref(nowLanded));
       return;
     }
     setLanded(nowLanded);
