@@ -14,7 +14,8 @@ import { useEffect, useRef } from "react";
  * The count is a live region, so a step is read out. `focusOnMount` moves focus to the + when the stepper first
  * draws, for the Add to wishlist press that turns into it in place, so the reader's focus is not dropped.
  *
- * Phone: 44px tall, each press 44×44 (the tap target). Desktop (`md`): 34px tall, each press 30px wide.
+ * Phone: each press 44×44 (the tap target), so the box is 46px with its 1px border. Desktop (`md`): 34px tall, each
+ * press 32×30, for a pointer. A coarse pointer at desktop width (a tablet) keeps the phone's sizes (d9's ruling).
  */
 export function WantStepper({
   value,
@@ -45,11 +46,11 @@ export function WantStepper({
   const atMin = value <= min;
   const atMax = value >= max;
   const press =
-    "flex h-[44px] w-[44px] md:h-[32px] md:w-[30px] items-center justify-center cursor-pointer bg-transparent border-0 p-0 font-mono text-[15px] md:text-[14px] leading-none rounded-[6px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]";
+    "flex h-[44px] w-[44px] md:h-[32px] md:w-[30px] md:pointer-coarse:h-[44px] md:pointer-coarse:w-[44px] items-center justify-center cursor-pointer bg-transparent border-0 p-0 font-mono text-[15px] md:text-[14px] leading-none rounded-[6px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]";
   const ink = (off: boolean) => (off ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg-body)] hover:text-[color:var(--fg)]");
   return (
     <span
-      className="inline-flex flex-none items-center h-[44px] md:h-[34px] rounded-[8px] border border-[color:var(--border-strong)] overflow-hidden"
+      className="inline-flex flex-none items-center h-[46px] md:h-[34px] md:pointer-coarse:h-[46px] rounded-[8px] border border-[color:var(--border-strong)] overflow-hidden"
       data-testid="want-stepper"
     >
       <button
