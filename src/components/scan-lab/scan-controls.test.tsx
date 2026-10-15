@@ -79,18 +79,22 @@ describe("ScanControls", () => {
     expect(screen.getByText("Sol Ring")).toBeTruthy();
   });
 
-  it("gives a second tap during a save the reading in front of it then, not the first press's", async () => {
-    let finish = () => {};
-    const onVerdict = vi.fn((_r: Reading | null, _c: boolean) => new Promise<void>((r) => { finish = r; }));
+  it("records what a second tap during a save SEES: the held reading still on screen", async () => {
+    const pending: (() => void)[] = [];
+    const onVerdict = vi.fn((_r: Reading | null, _c: boolean) => new Promise<void>((r) => { pending.push(r); }));
     const view = render(<ScanControls reading={ZIRDA} keepFrame onKeepFrame={vi.fn()} onVerdict={onVerdict} />);
     const right = screen.getByRole("button", { name: copy.right });
     fireEvent.pointerDown(right);
     await act(async () => { fireEvent.click(right); });
     view.rerender(<ScanControls reading={NEXT} keepFrame onKeepFrame={vi.fn()} onVerdict={onVerdict} />);
+    // The first verdict is still saving, so its reading is what the player sees.
+    expect(screen.getByText("Zirda, the Dawnwalker")).toBeTruthy();
     fireEvent.pointerDown(right);
     await act(async () => { fireEvent.click(right); });
-    expect(onVerdict.mock.calls.map((c) => c[0])).toEqual([ZIRDA, NEXT]);
-    await act(async () => { finish(); });
+    expect(onVerdict.mock.calls.map((c) => c[0])).toEqual([ZIRDA, ZIRDA]);
+    await act(async () => { pending.forEach((done) => done()); });
+    // Both saved: the live reading is back.
+    expect(screen.getByText("Sol Ring")).toBeTruthy();
   });
 
   it("lets go when a press ends with no verdict", async () => {
@@ -103,6 +107,19 @@ describe("ScanControls", () => {
     await act(async () => { vi.runAllTimers(); });
     vi.useRealTimers();
     expect(screen.getByText("Sol Ring")).toBeTruthy();
+  });
+
+  it("lets go when the press is released outside the controls", async () => {
+    vi.useFakeTimers();
+    const { onVerdict, redraw } = setup();
+    fireEvent.pointerDown(screen.getByRole("button", { name: copy.right }));
+    redraw(NEXT);
+    fireEvent.pointerUp(document.body);
+    await act(async () => { vi.advanceTimersByTime(1); });
+    vi.useRealTimers();
+    expect(screen.getByText("Sol Ring")).toBeTruthy();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.wrong })); });
+    expect(onVerdict).toHaveBeenCalledWith(NEXT, false);
   });
 
   it("records the live reading when nothing was held (a keyboard press)", async () => {

@@ -6,7 +6,7 @@
 // screen, its guess, figures and preview, while the camera keeps reading behind it; the ✓/✗ press then records
 // that held reading, and the hold lets go once the verdict is saved, or when the press ends without one.
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import { EMBED_H, EMBED_W } from "../../lib/scan-lab/geometry";
 import { readingCrop, type Reading } from "../../lib/scan-lab/reading";
@@ -63,10 +63,29 @@ export function ScanControls({
     else ctx.clearRect(0, 0, EMBED_W, EMBED_H);
   }, [shown]);
 
-  function grab() {
+  // The press's own release is watched on the WINDOW, so a finger or a mouse let go outside the controls still
+  // ends the hold (capture-phase handlers on the area never see it). Removed when the hold ends and on unmount.
+  const unwatch = useRef<(() => void) | null>(null);
+  useEffect(() => () => unwatch.current?.(), []);
+
+  function grab(e: React.PointerEvent) {
     if (hold.current) return;
-    hold.current = { reading };
+    // What the player is LOOKING AT: while an earlier verdict saves, that is still its held reading.
+    hold.current = { reading: shown };
     setHeld(hold.current);
+    const which = hold.current;
+    const pointer = e.pointerId;
+    const up = (ev: PointerEvent) => { if (ev.pointerId === pointer) { stop(); maybeRelease(which, ev.target); } };
+    const cancel = (ev: PointerEvent) => { if (ev.pointerId === pointer) { stop(); release(which); } };
+    const stop = () => {
+      window.removeEventListener("pointerup", up, true);
+      window.removeEventListener("pointercancel", cancel, true);
+      if (unwatch.current === stop) unwatch.current = null;
+    };
+    unwatch.current?.();
+    unwatch.current = stop;
+    window.addEventListener("pointerup", up, true);
+    window.addEventListener("pointercancel", cancel, true);
   }
   function release(which: { reading: Reading | null } | null = hold.current) {
     // Only the hold this release was for: a newer press keeps its own.
@@ -77,9 +96,8 @@ export function ScanControls({
   // A press that ends with no verdict lets go. Off a ✓/✗ button (Keep this frame) that is the next task. On one, the
   // click that consumes the hold may come a task or more after the pointerup on a phone, so the hold waits for it and
   // lets go on its own only if no click comes at all (a finger slid off the button).
-  function maybeRelease(e: React.PointerEvent) {
-    const which = hold.current;
-    const onVerdictButton = (e.target as Element | null)?.closest?.("[data-verdict]") != null;
+  function maybeRelease(which: { reading: Reading | null } | null, target: EventTarget | null) {
+    const onVerdictButton = (target as Element | null)?.closest?.("[data-verdict]") != null;
     setTimeout(() => release(which), onVerdictButton ? VERDICT_CLICK_WAIT_MS : 0);
   }
   async function verdict(correct: boolean) {
@@ -127,8 +145,6 @@ export function ScanControls({
       <div
         className="flex flex-col gap-[8px]"
         onPointerDownCapture={grab}
-        onPointerUpCapture={maybeRelease}
-        onPointerCancelCapture={() => release()}
       >
         <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
           <input type="checkbox" checked={keepFrame} onChange={(e) => onKeepFrame(e.target.checked)} />
