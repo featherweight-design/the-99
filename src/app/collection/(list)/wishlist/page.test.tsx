@@ -1,0 +1,70 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactElement } from "react";
+
+// /collection/wishlist: absent with the reader's switch off, and with it on, the view gets plain props (ISO dates) and
+// a friends line only when friends is on and the reader has one.
+const m = vi.hoisted(() => ({
+  notFound: vi.fn(() => {
+    throw new Error("NEXT_NOT_FOUND");
+  }),
+  loadWishlistTiles: vi.fn(),
+  loadCollectedNotices: vi.fn(),
+  listFriends: vi.fn(),
+}));
+vi.mock("next/navigation", () => ({ notFound: m.notFound }));
+vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
+vi.mock("../../../../lib/switches/request", async () => {
+  const { ENV_VIEW } = await import("@/test/env-view");
+  return { requestSwitchEnv: async () => ENV_VIEW };
+});
+vi.mock("../../../../lib/wishlist/wishlist", () => ({ loadWishlistTiles: m.loadWishlistTiles }));
+vi.mock("../../../../lib/wishlist/collected", () => ({ loadCollectedNotices: m.loadCollectedNotices }));
+vi.mock("../../../../lib/social/access", () => ({ listFriends: m.listFriends }));
+vi.mock("../../../../components/wishlist/wishlist-view", () => ({ WishlistView: () => null }));
+
+import WishlistPage from "./page";
+
+const CARD = "11111111-1111-4111-8111-111111111111";
+const AT = "2026-10-15T12:00:00.000Z";
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  m.loadWishlistTiles.mockResolvedValue({
+    tiles: [{ oracleId: CARD, quantity: 2, owned: 1, addedAt: new Date(AT), name: "Sol Ring", imageUri: "https://img", layout: "normal", backImageUri: null, price: null }],
+    newestAsOf: null,
+  });
+  m.loadCollectedNotices.mockResolvedValue([{ oracleId: CARD, name: "Sol Ring", quantity: 2, collectedAt: new Date(AT) }]);
+  m.listFriends.mockResolvedValue([{ publicId: "p1" }]);
+});
+afterEach(() => vi.unstubAllEnvs());
+
+const props = async () => ((await WishlistPage()) as ReactElement<Record<string, unknown>>).props;
+
+describe("/collection/wishlist", () => {
+  it("does not exist with the reader's switch off, and reads nothing", async () => {
+    vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "");
+    await expect(WishlistPage()).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(m.loadWishlistTiles).not.toHaveBeenCalled();
+  });
+
+  it("hands the view plain props, with dates as ISO strings", async () => {
+    vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "true");
+    vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
+    expect(await props()).toEqual({
+      tiles: [{ oracleId: CARD, name: "Sol Ring", imageUri: "https://img", want: 2, have: 1, addedAt: AT }],
+      notices: [{ oracleId: CARD, name: "Sol Ring", collectedAt: AT }],
+      hasFriend: true,
+    });
+  });
+
+  it("says no friend without one, and never reads friends with friends off", async () => {
+    vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "true");
+    vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
+    m.listFriends.mockResolvedValue([]);
+    expect((await props()).hasFriend).toBe(false);
+    vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "");
+    m.listFriends.mockClear();
+    expect((await props()).hasFriend).toBe(false);
+    expect(m.listFriends).not.toHaveBeenCalled();
+  });
+});

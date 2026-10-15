@@ -68,6 +68,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/collection/history", dynamic: false },
   { path: "/collection/sets", dynamic: false },
   { path: "/collection/sets/[code]", dynamic: true },
+  // The wishlist tab: each tile's `have` is the collection's count, and a write that reaches a want collects the
+  // line, so the list and the one-time strip both move with the collection.
+  { path: "/collection/wishlist", dynamic: false },
   { path: "/commanders", dynamic: false },
   { path: "/commanders/[slug]", dynamic: true },
   { path: "/decks", dynamic: false },

@@ -12,6 +12,8 @@ const m = vi.hoisted(() => ({
   setWishlistQuantity: vi.fn(),
   clearWishlistLine: vi.fn(),
   dismissCollected: vi.fn(),
+  searchCollectionCatalog: vi.fn(),
+  loadWishlist: vi.fn(),
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
@@ -19,7 +21,9 @@ vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("next/server", () => ({ after: m.after }));
 vi.mock("../../../lib/wishlist/wishlist", () => ({
   wantOneMore: m.wantOneMore, setWishlistQuantity: m.setWishlistQuantity, clearWishlistLine: m.clearWishlistLine,
+  loadWishlist: m.loadWishlist,
 }));
+vi.mock("../../../lib/collection/catalog-read", () => ({ searchCollectionCatalog: m.searchCollectionCatalog }));
 vi.mock("../../../lib/wishlist/collected", () => ({ dismissCollected: m.dismissCollected, MAX_COLLECTED_NOTICES: 200 }));
 
 import * as actions from "./actions";
@@ -42,6 +46,7 @@ describe("the switch", () => {
     ["setWishlistWantAction", () => actions.setWishlistWantAction(CARD, 3)],
     ["removeFromWishlistAction", () => actions.removeFromWishlistAction(CARD)],
     ["dismissCollectedAction", () => actions.dismissCollectedAction([{ oracleId: CARD, collectedAt: AT }])],
+    ["searchWishlistCardsAction", () => actions.searchWishlistCardsAction("sol")],
   ];
 
   it("covers every exported action", () => {
@@ -131,5 +136,34 @@ describe("dismissing the collected strip", () => {
   ])("refuses %s, whole, before any write", async (_n, shown) => {
     expect(await actions.dismissCollectedAction(shown)).toEqual({ ok: false, reason: "invalid" });
     expect(m.dismissCollected).not.toHaveBeenCalled();
+  });
+});
+
+describe("searching for a card to want", () => {
+  const OTHER = "22222222-2222-4222-8222-222222222222";
+  const hit = (oracleId: string, name: string, owned: number) => ({
+    oracleId, name, typeLine: "Artifact", imageUri: `https://img/${name}`, manaCost: null, flavorName: null, owned,
+  });
+
+  it("maps each catalog hit to the row's shape, with the want of a card already on the list", async () => {
+    m.searchCollectionCatalog.mockResolvedValue([hit(CARD, "Sol Ring", 2), hit(OTHER, "Sol Talisman", 0)]);
+    m.loadWishlist.mockResolvedValue([{ oracleId: CARD, quantity: 4, owned: 2, addedAt: new Date(AT) }]);
+    expect(await actions.searchWishlistCardsAction("sol")).toEqual({
+      ok: true,
+      results: [
+        { oracleId: CARD, name: "Sol Ring", imageUri: "https://img/Sol Ring", owned: 2, want: 4 },
+        { oracleId: OTHER, name: "Sol Talisman", imageUri: "https://img/Sol Talisman", owned: 0, want: null },
+      ],
+    });
+    expect(m.searchCollectionCatalog).toHaveBeenCalledWith("user_1", "sol");
+    expect(m.loadWishlist).toHaveBeenCalledWith("user_1");
+    expect(m.after).not.toHaveBeenCalled();
+  });
+
+  it("refuses a query that is not a string, or is too long, before reading anything", async () => {
+    for (const q of [42, null, "x".repeat(101)]) {
+      expect(await actions.searchWishlistCardsAction(q)).toEqual({ ok: false, reason: "invalid" });
+    }
+    expect(m.searchCollectionCatalog).not.toHaveBeenCalled();
   });
 });

@@ -13,7 +13,8 @@ import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../../lib/auth";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { wishlistEnabled } from "../../../lib/wishlist/flag";
-import { clearWishlistLine, setWishlistQuantity, wantOneMore } from "../../../lib/wishlist/wishlist";
+import { clearWishlistLine, loadWishlist, setWishlistQuantity, wantOneMore } from "../../../lib/wishlist/wishlist";
+import { searchCollectionCatalog } from "../../../lib/collection/catalog-read";
 import { MAX_COLLECTED_NOTICES, dismissCollected } from "../../../lib/wishlist/collected";
 import { isUuid } from "../../../lib/uuid";
 
@@ -95,4 +96,27 @@ export async function dismissCollectedAction(shown: unknown): Promise<DismissOut
   const dismissed = await dismissCollected(userId, notices);
   if (dismissed > 0) refreshLater();
   return { ok: true, dismissed };
+}
+
+/** The longest query the tab's search sends: a card name is never near it, and a longer string is not a search. */
+const MAX_QUERY = 100;
+
+/** One search result: the card, what the collection holds of it, and its want when it is on the list (else null). */
+export type WishlistSearchResult = { oracleId: string; name: string; imageUri: string | null; owned: number; want: number | null };
+export type SearchOutcome = { ok: true; results: WishlistSearchResult[] } | Off | { ok: false; reason: "invalid" };
+
+/**
+ * The tab's search (Social R2 W1): every game card whose name matches, as the Add cards sheet finds them, each marked
+ * with the reader's want when the card is already on their list, so the row can draw its stepper at once.
+ */
+export async function searchWishlistCardsAction(query: unknown): Promise<SearchOutcome> {
+  const userId = await wishlistReader();
+  if (!userId) return OFF;
+  if (typeof query !== "string" || query.length > MAX_QUERY) return { ok: false, reason: "invalid" };
+  const [found, lines] = await Promise.all([searchCollectionCatalog(userId, query), loadWishlist(userId)]);
+  const wants = new Map(lines.map((l) => [l.oracleId, l.quantity]));
+  return {
+    ok: true,
+    results: found.map((r) => ({ oracleId: r.oracleId, name: r.name, imageUri: r.imageUri, owned: r.owned, want: wants.get(r.oracleId) ?? null })),
+  };
 }
