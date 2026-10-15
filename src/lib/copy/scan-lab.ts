@@ -19,5 +19,5 @@ export const scanLabCopy = {
   saveFailed: "Didn’t save. Try the tap again.",
   timings: (det: number, emb: number, match: number) => `corners ${det} ms · embed ${emb} ms · match ${match} ms`,
   runnersUp: "Next guesses",
-  taps: (n: number, right: number) => `${n} taps this session, ${right} right`,
+  taps: (n: number, right: number) => `${n} ${n === 1 ? "tap" : "taps"} this session, ${right} right`,
 } as const;

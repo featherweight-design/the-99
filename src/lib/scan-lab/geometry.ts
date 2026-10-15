@@ -4,7 +4,9 @@
  * onto the embedder's 320x448 input. Both models take ImageNet-normalised CHW floats.
  *
  * The contracts are the published models' (see the feasibility report): HanClinto's
- * ccgdetector-fastweb-single takes 384x384 and returns TL,TR,BR,BL normalised to its input, and
+ * ccgdetector-fastweb-single takes 384x384 and returns four corners normalised to its input, in no
+ * fixed order around the card (measured on staging 2026-10-15: opposite corners side by side), so
+ * every reader sorts them first (`sortCorners`, `cardCorners`, `quadArea`), and
  * the spike measured a centred letterbox slightly ahead of a stretch (mean IoU 0.984 to 0.979);
  * dhvazquez's embedder takes the warped card at 448 high by 320 wide.
  */
@@ -139,8 +141,13 @@ export function rgbaToTensor(rgba: ArrayLike<number>, w: number, h: number): Flo
   return out;
 }
 
-/** The quad's area in square pixels, unsigned: the same for either winding (shoelace formula). */
-export function quadArea(p: Pt[]): number {
+/**
+ * The card's area in square pixels, whatever order its four corners come in. The detector names
+ * opposite corners next to each other, and the shoelace formula over that order measures a crossed
+ * shape near zero, so the corners are put in order around the card first (`sortCorners`).
+ */
+export function quadArea(corners: Pt[]): number {
+  const p = sortCorners(corners);
   let a = 0;
   for (let i = 0; i < p.length; i++) {
     const q = p[(i + 1) % p.length];
