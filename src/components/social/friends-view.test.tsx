@@ -13,8 +13,10 @@ const a = vi.hoisted(() => ({
   searchFaceCommandersAction: vi.fn(),
 }));
 vi.mock("../../app/friends/actions", () => a);
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 
 import { FriendsView } from "./friends-view";
+import { PodsPane } from "./pods-pane";
 import { SocialToast } from "./social-toast";
 import { socialCopy } from "../../lib/copy/social";
 import { TOAST_MS } from "../collection/edit-toast";
@@ -559,6 +561,18 @@ describe("friend links", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("makes a link from the pod sheet's no-friends Add a friend, and opens the dialog on it", async () => {
+    a.createInviteAction.mockResolvedValue({ ok: true, token: "t", url: "https://the-99.dev/friend/t", expiresAt: new Date("2026-10-22T21:41:00Z") });
+    const me = { publicId: "p-me", displayName: "Hugh", joinedAt: NOW, isOwner: true, isYou: true, isFriend: false, commander: null };
+    const pod = { id: "pod-1", name: "Thursday", isOwner: true, members: [me], nextOwner: null };
+    draw({ friends: [], pods: <PodsPane pods={[pod]} sharedIds={[]} friends={[]} /> });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.pods.addFriends })));
+    const sheet = screen.getByRole("dialog");
+    await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: socialCopy.page.invite })));
+    expect(a.createInviteAction).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("dialog", { name: socialCopy.dialog.title })).toBeTruthy();
   });
 
   it("clears an earlier Try again when a new make starts, so it cannot make a second link", async () => {

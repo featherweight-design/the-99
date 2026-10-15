@@ -1,144 +1,928 @@
 {
-  "feature": "Social R1 PR C: /friends head (face, name, commander picker), friends list with remove, open friend links with the hold at ten, and the Add a friend dialog and sheet (plan 2026-10-15-social-r1.md). The pods (PR E) draw between the friends and the open links; the request card is PR D's.",
+  "feature": "Social R1 (friends and pods): /friends head (face, name, commander picker), friends list with remove, open friend links with the hold at ten, Add a friend, the pods table and its menu (PR E1, E2), and the friend request card at /friend/[token] (PR D); plan 2026-10-15-social-r1.md.",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED=true. Rows carry a phase: each phase is one seeded state of the signed-in account, so run the sheet once per phase over that phase's rows. empty: no friends, no links, no commander. full: a commander, six friends (Dave befriended today, DAVE_PUBLIC_ID his public id), two open links, one under a day from expiry. held: as full, with ten open links. Seed only on a scratch branch. add-friend and making-link each make a link, so they run last in their phase; making-link throttles the page for the rest of its run.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true. Rows carry a phase: each phase is one seeded state of the signed-in account, so run the sheet once per phase over that phase's rows. empty: no friends, no links, no commander. full: a commander, six friends (Dave befriended today, DAVE_PUBLIC_ID his public id), two open links, one under a day from expiry. held: as full, with ten open links. Seed only on a scratch branch. add-friend, making-link and pod-add-nofriends-invite each make a link, so they run last in their phase; making-link throttles the page for the rest of its run. solo: no friends, one solo pod (Draft night). pods: as full, plus Kim, Lee and Mo (not friends; Kim is Jo's friend), pods Thursday Commander (yours, five friends, spares shared), Draft night (yours, just you), Everyone (yours, all six), Game night at Jo's (Jo owns, you and Kim, spares off) and Cube club (handed on to you when Jo left; Kim not a friend), and landing tokens: SELF_TOKEN, OPEN_TOKEN_{PHONE,DESKTOP} (Kim), OPEN_NOFACE_TOKEN (Lee, no commander), FRIENDS_TOKEN_{PHONE,DESKTOP} (Dave), DECLINE_TOKEN_{PHONE,DESKTOP}, EXPIRED_TOKEN, REVOKED_TOKEN, ACCEPT_TOKEN_PHONE (Lee) and ACCEPT_TOKEN_DESKTOP (Mo): one inviter per width, because the runner does every phone row before any desktop row and the phone Accept makes Lee a friend, which would turn a Lee link at desktop into the already-friends card. accept: run after pods without reseeding (Accept makes Lee and Mo friends). The signed-out card and the account menu row are outside this script's reach (it always signs in, and its verbs are scoped to <main>), so they are photographed separately.",
   "rows": [
     {
-      "phase": "empty", "id": "friends-empty",
+      "phase": "empty",
+      "id": "friends-empty",
       "label": "/friends: no friends yet, no commander, no links (R2 F1)",
       "view": "src/components/social/friends-view.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
       ]
     },
     {
-      "phase": "empty", "id": "picker-from-decks",
+      "phase": "empty",
+      "id": "picker-from-decks",
       "label": "Picker opened from the dashed tile: your decks first (R2 F2)",
       "view": "src/components/social/commander-picker.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"clickRole": "button", "name": "^Choose your commander$", "wait": "[role=dialog]", "settle": 2500}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Choose your commander$",
+          "wait": "[role=dialog]",
+          "settle": 2500
+        }
       ]
     },
     {
-      "phase": "full", "id": "friends-full",
+      "phase": "full",
+      "id": "friends-full",
       "label": "/friends: face set, six friends by name, two open links (R2 F5)",
       "view": "src/components/social/friends-view.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
       ]
     },
     {
-      "phase": "full", "id": "friends-links",
+      "phase": "full",
+      "id": "friends-links",
       "label": "/friends scrolled: open friend links, one under a day (R1 F2, F4)",
       "view": "src/components/social/open-links.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"scroll": "bottom", "settle": 500}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scroll": "bottom",
+          "settle": 500
+        }
       ]
     },
     {
-      "phase": "full", "id": "receipt",
+      "phase": "full",
+      "id": "receipt",
       "label": "/friends?accepted=: the receipt after Accept, since today (E10, R2 F4)",
       "view": "src/components/social/friends-view.tsx",
       "steps": [
-        {"goto": "/friends?accepted=${DAVE_PUBLIC_ID}", "wait": "h1:visible", "settle": 2500}
+        {
+          "goto": "/friends?accepted=${DAVE_PUBLIC_ID}",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
       ]
     },
     {
-      "phase": "full", "id": "picker-search",
+      "phase": "full",
+      "id": "picker-search",
       "label": "Picker from the face: searching any commander (R2 F3)",
       "view": "src/components/social/commander-picker.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"clickRole": "button", "name": "^Your commander:", "wait": "[role=dialog]", "settle": 800},
-        {"fill": "[role=combobox]", "text": "krenko", "settle": 2500}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Your commander:",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "fill": "[role=combobox]",
+          "text": "krenko",
+          "settle": 2500
+        }
       ]
     },
     {
-      "phase": "full", "id": "picker-no-results",
+      "phase": "full",
+      "id": "picker-no-results",
       "label": "Picker: a search with no results (E15)",
       "view": "src/components/social/commander-picker.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"clickRole": "button", "name": "^Your commander:", "wait": "[role=dialog]", "settle": 800},
-        {"fill": "[role=combobox]", "text": "zzqxv", "settle": 2500}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Your commander:",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "fill": "[role=combobox]",
+          "text": "zzqxv",
+          "settle": 2500
+        }
       ]
     },
     {
-      "phase": "full", "id": "name-edit",
+      "phase": "full",
+      "id": "name-edit",
       "label": "Changing your name (R2 F6)",
       "view": "src/components/social/friends-head.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"clickRole": "button", "name": "^Change$", "wait": "form input", "settle": 300},
-        {"fill": "form input", "text": "Hugh H.", "settle": 300}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Change$",
+          "wait": "form input",
+          "settle": 300
+        },
+        {
+          "fill": "form input",
+          "text": "Hugh H.",
+          "settle": 300
+        }
       ]
     },
     {
-      "phase": "full", "id": "name-failed",
+      "phase": "full",
+      "id": "name-failed",
       "label": "A name the server refuses: the shared toast (E15)",
       "view": "src/components/social/social-toast.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"clickRole": "button", "name": "^Change$", "wait": "form input", "settle": 300},
-        {"fill": "form input", "text": "\u0007Hugh", "settle": 200},
-        {"clickRole": "button", "name": "^Save$", "wait": "[role=alert]", "settle": 800}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Change$",
+          "wait": "form input",
+          "settle": 300
+        },
+        {
+          "fill": "form input",
+          "text": "\u0007Hugh",
+          "settle": 200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Save$",
+          "wait": "[role=alert]",
+          "settle": 800
+        }
       ]
     },
     {
-      "phase": "full", "id": "remove-confirm",
+      "phase": "full",
+      "id": "remove-confirm",
       "label": "Remove friend: the menu, then the shared delete pane (R1 F6)",
       "view": "src/components/social/friends-list.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"clickRole": "button", "name": "^Dave actions$", "settle": 300},
-        {"clickRole": "button", "name": "^Remove friend$", "settle": 500}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Dave actions$",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Remove friend$",
+          "settle": 500
+        }
       ]
     },
     {
-      "phase": "full", "id": "show-soon",
+      "phase": "full",
+      "id": "show-soon",
       "label": "Show on a link under a day from expiry (R2 I3, P4)",
       "view": "src/components/social/add-friend-dialog.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"clickRole": "button", "name": "^Show the link made", "wait": "[role=dialog]", "settle": 800}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show the link made",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
       ]
     },
     {
-      "phase": "full", "id": "add-friend",
+      "phase": "full",
+      "id": "add-friend",
       "label": "Add a friend: a new link, QR first (R2 I1, P1)",
       "view": "src/components/social/add-friend-dialog.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"clickRole": "button", "name": "^Add a friend$", "wait": "[role=dialog]", "settle": 1000}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add a friend$",
+          "wait": "[role=dialog]",
+          "settle": 1000
+        }
       ]
     },
     {
-      "phase": "full", "id": "making-link",
+      "phase": "full",
+      "id": "making-link",
       "label": "Making a link… while the call is out (E15, R2 I4)",
       "view": "src/components/social/friends-head.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"throttle": "slow"},
-        {"clickRole": "button", "name": "^Add a friend$", "settle": 150}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add a friend$",
+          "settle": 150
+        }
       ]
     },
     {
-      "phase": "held", "id": "friends-held",
+      "phase": "held",
+      "id": "friends-held",
       "label": "Ten links open: Add a friend held, its reason under it (R1 F8)",
       "view": "src/components/social/friends-head.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
       ]
     },
     {
-      "phase": "held", "id": "friends-held-links",
+      "phase": "held",
+      "id": "friends-held-links",
       "label": "Ten links open, the list",
       "view": "src/components/social/open-links.tsx",
       "steps": [
-        {"goto": "/friends", "wait": "h1:visible", "settle": 2500},
-        {"scroll": "bottom", "settle": 500}
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scroll": "bottom",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "phase": "solo",
+      "id": "pods-solo-nofriends",
+      "label": "Pods with no friends yet: one pod, just you (R1 P2)",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "phase": "solo",
+      "id": "pod-add-nofriends",
+      "label": "Add friends with no friends: the empty (R1 P4 note)",
+      "view": "src/components/social/pod-add-friends.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "click": "ul[aria-label=\"Draft night\"] button:has-text(\"Add friends\")",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "phase": "solo",
+      "id": "pod-add-nofriends-invite",
+      "label": "Add a friend from that empty: the sheet closes, a link opens (decision 15)",
+      "view": "src/components/social/pod-add-friends.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "click": "ul[aria-label=\"Draft night\"] button:has-text(\"Add friends\")",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "click": "[data-testid=pod-add-empty] button",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "phase": "full",
+      "id": "pods-empty",
+      "label": "Pods, none yet: the empty box and New pod (R1 P1)",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-testid=pods-pane]"
+        }
+      ]
+    },
+    {
+      "phase": "full",
+      "id": "pod-create",
+      "label": "New pod: the inline field (R1 P1, P1b)",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-testid=pods-pane]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^New pod$",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pods-top",
+      "label": "/friends with pods: the section head and the first cards (R2 Pods B)",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-testid=pods-pane]"
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-owned",
+      "label": "A pod you own: seats, You outlined, owner's ✕, + Add friends, spares on (R2 B, R1 P3)",
+      "view": "src/components/social/pod-card.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Thursday Commander\"]"
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-handon",
+      "label": "Handed on to you: Kim not a friend, still removable (R1 P11)",
+      "view": "src/components/social/pod-card.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Cube club\"]"
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-member",
+      "label": "A pod you're in, not owner: Kim not a friend, spares off (R1 P5)",
+      "view": "src/components/social/pod-card.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Game night at Jo's\"]"
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-solo",
+      "label": "A pod with only you (R1 P2)",
+      "view": "src/components/social/pod-card.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Draft night\"]"
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-add",
+      "label": "Add friends: your friends not in the pod, held at 0 (R1 P4, R2 B)",
+      "view": "src/components/social/pod-add-friends.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "click": "ul[aria-label=\"Draft night\"] button:has-text(\"Add friends\")",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-add-ticked",
+      "label": "Add friends with two ticked: Add 2 friends",
+      "view": "src/components/social/pod-add-friends.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "click": "ul[aria-label=\"Draft night\"] button:has-text(\"Add friends\")",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=group] label >> nth=0",
+          "settle": 200
+        },
+        {
+          "click": "[role=dialog] [role=group] label >> nth=1",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-add-allin",
+      "label": "Add friends when every friend is in: the empty (R1 P4 note)",
+      "view": "src/components/social/pod-add-friends.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "click": "ul[aria-label=\"Everyone\"] button:has-text(\"Add friends\")",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-menu-owner",
+      "label": "The owner's menu: Rename, Leave pod, Delete pod (R1 P6)",
+      "view": "src/components/social/pod-menu.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Thursday Commander\"]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Thursday Commander actions$",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-rename",
+      "label": "Rename: the head becomes the field (R1 P10)",
+      "view": "src/components/social/pod-menu.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Thursday Commander\"]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Thursday Commander actions$",
+          "settle": 400
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Rename$",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-leave-owner",
+      "label": "Leave as owner: names the next owner (R1 P7)",
+      "view": "src/components/social/pod-menu.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Thursday Commander\"]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Thursday Commander actions$",
+          "settle": 400
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Leave pod$",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-delete",
+      "label": "Delete pod confirm (R1 P9)",
+      "view": "src/components/social/pod-menu.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Thursday Commander\"]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Thursday Commander actions$",
+          "settle": 400
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Delete pod$",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-menu-member",
+      "label": "A member's menu: Leave pod only (R1 P5)",
+      "view": "src/components/social/pod-menu.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Game night at Jo's\"]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Game night at Jo's actions$",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-leave-member",
+      "label": "Leave as member, owner is a friend (R1 P7 member)",
+      "view": "src/components/social/pod-menu.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Game night at Jo's\"]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Game night at Jo's actions$",
+          "settle": 400
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Leave pod$",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "pod-leave-last",
+      "label": "Leave as last member: Leave and delete (R1 P8)",
+      "view": "src/components/social/pod-menu.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "ul[aria-label=\"Draft night\"]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Draft night actions$",
+          "settle": 400
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Leave pod$",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-open",
+      "label": "/friend/[token] open: face up, Accept / Decline (R2 L2)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${OPEN_TOKEN_PHONE}",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-open-d",
+      "label": "/friend/[token] open: face up, Accept / Decline (R2 L2)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${OPEN_TOKEN_DESKTOP}",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-flip",
+      "label": "/friend/[token] open, mid-flip (R2 the flip)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${OPEN_NOFACE_TOKEN}",
+          "wait": "h1",
+          "settle": 420
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-noface",
+      "label": "Open, sender with no commander: initials, grey frame (R2 L2b)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${OPEN_NOFACE_TOKEN}",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-self",
+      "label": "Your own link (R2 L5)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${SELF_TOKEN}",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-friends",
+      "label": "Already friends: spends the link (R2 L6, G4)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${FRIENDS_TOKEN_PHONE}",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-friends-d",
+      "label": "Already friends: spends the link (R2 L6, G4)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${FRIENDS_TOKEN_DESKTOP}",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-expired",
+      "label": "Expired: face down, faded (R2 L3)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${EXPIRED_TOKEN}",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-revoked",
+      "label": "Ended (revoked): face down, no name (R2 L4)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${REVOKED_TOKEN}",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-notfound",
+      "label": "Not found (forged token): reads as ended (R2 L4)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/AAAAAAAAAAAAAAAAAAAAAA",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-declined",
+      "label": "After Decline: turned back, Request declined (R2 L7)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${DECLINE_TOKEN_PHONE}",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Decline$",
+          "settle": 1500
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "phase": "pods",
+      "id": "landing-declined-d",
+      "label": "After Decline: turned back, Request declined (R2 L7)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${DECLINE_TOKEN_DESKTOP}",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Decline$",
+          "settle": 1500
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "phase": "accept",
+      "id": "landing-accept",
+      "label": "Accept: lands on /friends with the receipt (R1 decision 9, E10)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${ACCEPT_TOKEN_PHONE}",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Accept$",
+          "wait": "[role=status]",
+          "settle": 2500
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "phase": "accept",
+      "id": "landing-accept-d",
+      "label": "Accept: lands on /friends with the receipt (R1 decision 9, E10)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/${ACCEPT_TOKEN_DESKTOP}",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Accept$",
+          "wait": "[role=status]",
+          "settle": 2500
+        }
+      ],
+      "widths": [
+        "desktop"
       ]
     }
   ]

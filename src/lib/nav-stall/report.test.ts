@@ -12,6 +12,9 @@ describe("pathPattern", () => {
     expect(pathPattern("/decks/0b49cb44-8ae2-4c19-b558-633344a2f4ed/import")).toBe("/decks/[x]/import");
     expect(pathPattern("/commanders/atraxa-praetors-voice")).toBe("/commanders/[x]");
     expect(pathPattern("/collection/sets/fdn")).toBe("/collection/sets/[x]");
+    // Social R1: /friends and a friend link, whose token is an id like any other.
+    expect(pathPattern("/friends?accepted=p-1")).toBe("/friends");
+    expect(pathPattern("/friend/AbCdEfGhIjKlMnOpQrStUv")).toBe("/friend/[x]");
   });
   it("drops the query and the hash", () => {
     expect(pathPattern("/decks/shopping?d=a,b#top")).toBe("/decks/shopping");

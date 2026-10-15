@@ -26,6 +26,7 @@ import { OpenLinks } from "./open-links";
 import { AddFriendDialog } from "./add-friend-dialog";
 import { CommanderPicker } from "./commander-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
+import { FriendInviteContext } from "./invite-context";
 
 const p = socialCopy.page;
 const CLOCK_TICK_MS = 60_000;
@@ -231,7 +232,7 @@ export function FriendsView({
   }
 
   return (
-    <>
+    <FriendInviteContext.Provider value={{ invite: () => void makeLink(), pending: making, held }}>
       {receipt ? (
         <div role="status" className="flex min-h-[52px] items-center gap-[10px] bg-[color:var(--surface-rail)] pl-[16px] pr-[6px] text-[13px] text-[color:var(--fg)] [border-bottom:1px_solid_var(--border)] md:gap-[11px] md:py-[4px] md:pl-[30px] md:pr-[18px] md:text-[13.5px]">
           <span aria-hidden className="text-[14px] text-[color:var(--success)]">✓</span>
@@ -284,6 +285,6 @@ export function FriendsView({
       {shown ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
       {picking ? <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} /> : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
-    </>
+    </FriendInviteContext.Provider>
   );
 }

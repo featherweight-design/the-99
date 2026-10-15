@@ -55,8 +55,13 @@ describe("faceInitials", () => {
 
 describe("the dates", () => {
   const now = new Date("2026-10-15T21:41:00Z");
-  it("says today, then a month and a day", () => {
+  it("says today, yesterday, then a month and a day", () => {
     expect(sinceDay(new Date("2026-10-15T01:00:00Z"), now, "UTC")).toBe("today");
+    expect(sinceDay(new Date("2026-10-14T00:30:00Z"), now, "UTC")).toBe("yesterday");
+    expect(sinceDay(new Date("2026-10-13T23:30:00Z"), now, "UTC")).toBe("Oct 13");
+    // Days the clocks change in New York: Nov 1 is 25 hours, Mar 14 is 23. Yesterday is still the day before.
+    expect(sinceDay(new Date("2026-10-31T16:00:00Z"), new Date("2026-11-02T04:30:00Z"), "America/New_York")).toBe("yesterday");
+    expect(sinceDay(new Date("2027-03-14T16:00:00Z"), new Date("2027-03-15T04:30:00Z"), "America/New_York")).toBe("yesterday");
     expect(sinceDay(new Date("2026-10-02T12:00:00Z"), now, "UTC")).toBe("Oct 2");
   });
 
