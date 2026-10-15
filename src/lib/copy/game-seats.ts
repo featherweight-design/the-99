@@ -26,8 +26,8 @@ export const gameSeatsCopy = {
     wonAria: (name: string) => `${name} won`,
     wonPill: "Won",
     wonLine: "won this game",
-    /** A pod size pressed below the filled seats. */
-    held: (seats: number) => `All ${seats} seats are filled. Clear a seat to make the pod smaller.`,
+    /** A pod size pressed below the filled seats; `filled` is how many are. The handoff said "All N seats", false while the pod has room left. */
+    held: (filled: number) => `${filled} seats are filled. Clear a seat to make the pod smaller.`,
   },
   picker: {
     /** The sheet's heading, and the panel's name. */

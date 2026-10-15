@@ -43,8 +43,22 @@ export function seatWith(seats: readonly Seat[], at: string | null, commander: S
 
 export const seatWithout = (seats: readonly Seat[], key: string): Seat[] => seats.filter((s) => s.key !== key);
 
+/**
+ * What a typed or pasted label may hold while it is being typed: no control or format character but the
+ * zero-width joiner (composed emoji need it), the way `cleanName` refuses them. A pasted zero-width space or
+ * bidi mark would otherwise pass the counter and make the server refuse the WHOLE game, result and notes
+ * included. Whitespace is left alone here, so a space can be typed between two words; `cleanLabel` collapses it.
+ */
+const stripUnsendable = (text: string) => text.replace(/[\p{Cc}\p{Cf}]/gu, (c) => (c === "\u200D" ? c : ""));
+
+/** The label as it is sent: the server's own cleaning (NFC, trimmed, spaces collapsed), or none when nothing is left. */
+export function cleanLabel(text: string): string {
+  return stripUnsendable(text).normalize("NFC").replace(/\s+/gu, " ").trim();
+}
+
 export function seatLabelled(seats: readonly Seat[], key: string, label: string): Seat[] {
-  return seats.map((s) => (s.key === key ? { ...s, label: Array.from(label).slice(0, SEAT_LABEL_MAX).join("") } : s));
+  const typed = Array.from(stripUnsendable(label)).slice(0, SEAT_LABEL_MAX).join("");
+  return seats.map((s) => (s.key === key ? { ...s, label: typed } : s));
 }
 
 /** Pressing a trophy moves the mark to that seat; pressing the winner again clears it. At most one seat holds it. */
@@ -62,12 +76,12 @@ export function seatsForResult(seats: readonly Seat[], result: string | null): S
 export const shortName = (name: string) => name.split(",")[0].trim();
 
 /** The seat's own name for a screen reader and a heading: the label when there is one, else the commander. */
-export const seatName = (s: Seat) => (s.label.trim() !== "" ? s.label.trim() : shortName(s.commander.name));
+export const seatName = (s: Seat) => cleanLabel(s.label) || shortName(s.commander.name);
 
 /** What `logGame` is sent. A label only when typed, `won` only when set and the game was lost. */
 export function opponentsFor(seats: readonly Seat[], result: string | null): OpponentInput[] {
   return seats.map((s) => {
-    const label = s.label.trim();
+    const label = cleanLabel(s.label);
     return {
       commander: s.commander.oracleId,
       ...(label !== "" ? { label } : {}),

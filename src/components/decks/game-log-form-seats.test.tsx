@@ -176,7 +176,7 @@ describe("the pod", () => {
     expect(screen.getByRole("radio", { name: "4" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: "2" })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByText(seatsCopy.held(2))).toBeInTheDocument();
-    // Three seats fit a pod of 4 and 3 seats would not fit a pod of 3: one seat cleared makes room.
+    // Two filled seats fit a pod of 3 (two seats), so that size is not held.
     pod(3);
     expect(screen.getByRole("radio", { name: "3" })).toHaveAttribute("aria-checked", "true");
   });

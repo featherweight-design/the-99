@@ -4,6 +4,7 @@ import {
   shortName, SEAT_LABEL_MAX, type Seat, type SeatCommander,
 } from "./game-seats";
 import { OPPONENT_LABEL_MAX, parseOpponents } from "./game-opponents";
+import { cleanName } from "../social/rules";
 
 const cmd = (id: string, name = `Cmdr ${id}`): SeatCommander => ({ oracleId: id, name, imageUri: null, colorIdentity: [] });
 const seat = (key: string, over: Partial<Seat> = {}): Seat => ({ key, commander: cmd(key), label: "", won: false, ...over });
@@ -32,6 +33,23 @@ describe("filling and clearing seats", () => {
   });
   it("clears a seat by key, leaving the order of the rest", () => {
     expect(seatWithout([seat("a"), seat("b"), seat("c")], "b").map((s) => s.key)).toEqual(["a", "c"]);
+  });
+  it("strips what the server would refuse, so a pasted zero-width space cannot sink the whole game", () => {
+    const pasted = "Sa\u200Bm\u202E \u00A0 Lee\u0007";
+    expect(seatLabelled([seat("a")], "a", pasted)[0].label).toBe("Sam \u00A0 Lee");
+    const sent = opponentsFor([seat("a", { label: seatLabelled([seat("a")], "a", pasted)[0].label })], "win")[0].label;
+    // The cleaned label is the one `cleanName` accepts unchanged, which is what the parser will check.
+    expect(sent).toBe("Sam Lee");
+    expect(cleanName(sent, 30)).toBe(sent);
+  });
+  it("keeps a zero-width joiner, which composed emoji need", () => {
+    const family = "👨\u200D👩\u200D👧";
+    expect(seatLabelled([seat("a")], "a", family)[0].label).toBe(family);
+    expect(cleanName(family, 30)).toBe(family);
+  });
+  it("lets a space be typed between words, and collapses it only on the way out", () => {
+    expect(seatLabelled([seat("a")], "a", "Sam ")[0].label).toBe("Sam ");
+    expect(opponentsFor([seat("a", { label: "Sam   Lee " })], "win")).toEqual([{ commander: "a", label: "Sam Lee" }]);
   });
   it("caps a label at 30 characters by code point", () => {
     const out = seatLabelled([seat("a")], "a", "😀".repeat(40));
