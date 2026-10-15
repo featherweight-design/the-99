@@ -15,7 +15,8 @@
 //  done      the reading drawn, 2.5s after it landed.
 // Asserted: the hub (`section[data-tuning-hub]`) is drawn in every sampled frame, is the SAME DOM
 // node throughout (a handle taken at idle, compared and `isConnected` every frame), and its top
-// (document coordinates) moves by at most 1px from idle through running. In the done state the
+// (document coordinates) moves by at most 1px from its first idle frame (the credit note's landing
+// included) through running. In the done state the
 // reading is drawn ABOVE the hub, so its top moves by the reading's height by design; what is
 // asserted there is that the hub sits directly under the analysis block (the same gap as at idle)
 // and moved once, at the frame the reading landed, never in between. CLS is read from a
@@ -252,8 +253,10 @@ function summarise(frames: Frame[], pressedAt: number | null) {
     const tops = fs.map((f) => f.top).filter((t): t is number => t !== null);
     return tops.length === 0 ? null : { first: tops[0], min: Math.min(...tops), max: Math.max(...tops) };
   };
-  // The idle frames that count are the settled ones just before the press.
-  const idle = (by.idle ?? []).slice(-30);
+  // EVERY idle frame counts, from the hub's first (Hugh, 2026-10-15): the credit note lands under the
+  // empty state 0.7 to 2s after it (#1465) and, until its frame was reserved, pushed the hub down once
+  // (56px at 1300, 35px at 390) inside the idle span. Only the gap is read from the settled frames.
+  const idle = by.idle ?? [];
   return {
     idle: span(idle), pressing: span((by.pressing ?? []).concat((by.running ?? []).slice(0, 1)).slice(0, 1)),
     running: span(by.running ?? []), done: span((by.done ?? []).slice(-30)),
@@ -315,7 +318,7 @@ async function walk(browser: Browser, width: number, userId: string, deck: strin
   report(at("the hub is never replaced"), replaced.length === 0 && sequence.some((f) => f.same === true), `${replaced.length} frame(s) on another node`);
   const base = s.idle?.first ?? null;
   const within = (sp: Span) => sp === null || (base !== null && Math.abs(sp.min - base) <= 1 && Math.abs(sp.max - base) <= 1);
-  report(at("the hub's top holds from idle to the press"), base !== null && within(s.idle) && within(s.pressing), { idle: s.idle, pressing: s.pressing });
+  report(at("the hub's top holds from its first frame to the press, the credit note's landing included"), base !== null && within(s.idle) && within(s.pressing), { idle: s.idle, pressing: s.pressing });
   if (over) {
     report(at("a refused press moves nothing"), base !== null && within(span3(w.frames, w.pressedAt)), span3(w.frames, w.pressedAt));
   } else {

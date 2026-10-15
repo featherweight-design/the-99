@@ -20,7 +20,8 @@
 // PROPOSED_CUTS_ENABLED): Suggested changes' own section paints with the verdict. ON (two or more of
 // them, MANA_BALANCE_ENABLED among them): the hub stands from the tab's first frame instead (#1809), so that
 // check is replaced by the hub
-// staying put, as the same node, from the press to the frame the verdict lands. See `hubStaysPut`.
+// staying put, as the same node, from its first frame (the credit note landing under the empty state
+// included) through the press to the frame the verdict lands. See `hubStaysPut`.
 // Mana Balance is a PREREQUISITE of ON, not a convenience: it is what lets the hub draw on a deck with no
 // reading yet (`drawn` in builder-shell.tsx). With only Tuning and Proposed cuts on, the hub waits for the
 // reading on the whole, unread deck this probe opens, and the first-frame checks fail on shipped behavior.
@@ -186,9 +187,10 @@ async function reset(id, before) {
 // is that it moves only on a landing frame: the verdict's, and on the fallback the overview's too. Frames
 // are the sampler's own counter, so "the landing frame" is the painted frame the verdict appeared in.
 //
-// Measured 2026-10-15, and printed rather than failed: BEFORE the press, the hub moves once when the
-// credit note lands under the empty state (#1465: the note follows the empty state by about 0.7 to 2s),
-// 56px at 1300 and 35px at 390. #1809 measures from the settled tab, which is after that.
+// AND BEFORE THE PRESS, from the hub's first frame (Hugh, 2026-10-15). The credit note lands under the
+// empty state about 0.7 to 2s after it (#1465), and until its frame was reserved it pushed the hub down
+// once, 56px at 1300 and 35px at 390. The empty state now holds the note's frame from its first frame,
+// so any move here fails.
 function hubStaysPut(at, hub, pressAt, released, landings) {
   report(at("the Tuning hub is drawn from the tab's first frame"),
     // Both are stamped by the same frame sampler, so a hub mounted with its panel shares its frame exactly.
@@ -197,7 +199,10 @@ function hubStaysPut(at, hub, pressAt, released, landings) {
   report(at("it is one node, never missing once drawn"), hub.at !== null && !hub.replaced && hub.missing === 0,
     JSON.stringify({ replaced: hub.replaced, missingFrames: hub.missing }));
   const idle = hub.tops.filter((t) => t.at <= pressAt);
-  console.log(`  info  ${at("the hub before the press")} — ${JSON.stringify({ tops: idle, creditNoteAt: hub.noteAt, pressAt })}`);
+  const first = idle[0]?.top ?? null;
+  report(at("its top stays put from its first frame to the press, the credit note's landing included"),
+    first !== null && hub.noteAt !== null && idle.every((t) => Math.abs(t.top - first) <= 1),
+    JSON.stringify({ tops: idle, creditNoteAt: hub.noteAt, pressAt }));
   const settled = idle.at(-1)?.top ?? null;
   // `released` and `landings` are sampler FRAMES; `pressAt` is a time, stamped by the click itself.
   const held = hub.tops.filter((t) => t.at > pressAt && (released === null || t.frame < released));
@@ -277,7 +282,7 @@ async function run() {
       }
       await page.evaluate(() => { const w = window.__hold; w.seen = {}; w.headings = []; w.tops.verdict.clear(); w.tops.overview.clear(); w.said = []; });
       // The boundary is the click itself, not the moment before Playwright's actionability wait: the sampler
-      // must already hold the credit note's frame (the hub's one allowed drop before the press, #1465), and the
+      // must already hold the credit note's frame (the hub must not move when it lands, #1465), and the
       // press time is stamped in the page by the click's own event.
       if (HUB === "on") await page.waitForFunction(() => window.__hold.hub.noteAt !== null, null, { timeout: 30_000 });
       await page.evaluate(() => {

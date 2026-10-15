@@ -1021,7 +1021,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   paints while it is held, the note does not, and the note arrives once it is released. A frame
   comparison cannot prove the order, since a fast reply lands in the empty state's own frame on a
   correct build. With the empty state hidden in the probe's own page until the note exists, the
-  order check fails at both widths; with a 0.5s bound, the bound check does. It also reads the
+  order check fails at both widths; with a 0.5s bound, the bound check does. On the held load it also
+  samples the Tuning hub's top every frame and FAILS on any move over 1px from the hub's first frame
+  through the note's landing (Hugh, 2026-10-15): the empty state holds the note's frame while its read
+  is out, so the late note moves nothing. The held read makes the landing ~3s late, so a move cannot
+  hide in one frame. `PROBE_HUB=off` (the default is on) skips that check and says so, for a server
+  whose hub waits for a reading. Measured 2026-10-15: 0px at both widths; with the reservation
+  removed it fails with 56px at 1300 and 35.4px at 390. It also reads the
   tab row: one line with Analysis selected, and where five tabs are wider than a phone the ROW
   scrolls rather than the page.
 
@@ -1074,9 +1080,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   counter, and the landings are compared by FRAME, not by time; only the announcements are also read
   on mutations. Measured 2026-10-15: `held` green with the hub on and off, `fallback` green with it
   on. With the landing frame counted in the hold, a hub that waits for the reading, a landing one
-  frame off, or the panel taken out of the page for 200ms, the hub checks fail at both widths. One move is printed rather than failed: BEFORE the press, the hub drops once when the
-  credit note lands under the empty state (#1465), 56px at 1300 and 35px at 390, on the note's own
-  frame.
+  frame off, or the panel taken out of the page for 200ms, the hub checks fail at both widths. **And
+  BEFORE the press, from the hub's first frame** (Hugh, 2026-10-15): the credit note lands under the
+  empty state 0.7 to 2s after it (#1465), and until the empty state reserved the note's frame the hub
+  dropped once on the note's own frame, 56px at 1300 (1027.5 to 1083.5) and 35.4px at 390 (1440 to
+  1475.4). That move was printed; it now fails. Measured 2026-10-15 on local-dev, `held`, hub on: 0px
+  at both widths; with the reservation removed, that check fails at both widths with the same 56 and
+  35.4px.
 
 - `pnpm probe:verdict-findings` walks the Analysis tab's findings and their receipt at
   1300x900 and 390x844 — thirty-four checks, and every one is a fact about layout or about two
@@ -2184,7 +2194,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   cuts (over size; inert at size), Mana Balance and History each open their tool and come back. Then,
   sampled every animation frame from load: idle, the press, running (the empty state's loading phase,
   through the overview write) and done. The hub must be drawn in every frame, be the node first seen
-  (a handle compared every frame), and keep its top within 1px from idle through running; no layout
+  (a handle compared every frame), and keep its top within 1px from its FIRST idle frame through
+  running. Every idle frame counts (2026-10-15; it was the last 30 before the press, which sat after
+  the credit note's landing and so never saw the 56px / 35.4px drop it caused before the note's frame
+  was reserved; with the reservation removed the at-size deck now fails at both widths); no layout
   shift may move it before the reading lands. At done the reading is drawn ABOVE the hub, so its top
   moves by the reading's height by design: the check is that it sits under the reading at the idle
   gap and moved once. CLS is printed per deck and width, with the press's own shifts apart.

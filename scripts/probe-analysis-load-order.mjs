@@ -13,6 +13,8 @@
 //        and the empty state must paint while it is held: it does not wait for the note. A frame
 //        comparison cannot prove that, since a fast response lands in the empty state's own frame on
 //        a correct build. On a second, unheld load the note must arrive within 2.5s of the empty state.
+//        On the held load the Tuning hub under the empty state must not move, from its first frame
+//        through the note's landing (PROBE_HUB=on, the default): the note's frame is reserved.
 //   d.   The tab row stays one line with Analysis selected, on a deck with versions.
 //
 // It WRITES, on the deck it walks, only what the deck lacked: a reading (Analyze) and an overview
@@ -48,6 +50,11 @@ const sql = neon(TARGET);
 // How long after a never-analyzed deck's empty state its credit note may land (#1465: measured at
 // about 0.7 to 2s, the note's own read).
 const NOTE_BOUND_MS = 2_500;
+// Whether the server has the Tuning hub on (two or more of TUNING_ENABLED, MANA_BALANCE_ENABLED and
+// PROPOSED_CUTS_ENABLED, Mana Balance among them, so it draws on a deck with no reading). On by default:
+// the hub must then stay put while the credit note lands. PROBE_HUB=off skips that one check, saying so.
+const HUB = process.env.PROBE_HUB ?? "on";
+if (HUB !== "on" && HUB !== "off") throw new Error("Set PROBE_HUB to on or off, matching the server's Tuning switches.");
 
 let failures = 0;
 function report(label, ok, detail) {
@@ -103,12 +110,20 @@ const OBSERVE = () => {
   };
   const seen = {};
   window.__parts = seen;
+  // Every top the Tuning hub takes, from its first visible frame (a move of more than half a pixel).
+  const hubTops = [];
+  window.__hubTops = hubTops;
   const t0 = performance.now();
   let frame = 0;
   const sample = (ts) => {
     frame += 1;
     const panel = document.querySelector("#panel-analysis");
     if (panel) {
+      const hub = panel.querySelector("section[data-tuning-hub]");
+      if (hub && hub.getClientRects().length > 0) {
+        const top = Math.round((hub.getBoundingClientRect().top + window.scrollY) * 10) / 10;
+        if (hubTops.length === 0 || Math.abs(hubTops.at(-1).top - top) > 0.5) hubTops.push({ at: Math.round(ts - t0), frame, top });
+      }
       for (const [name, sel] of Object.entries(parts)) {
         if (seen[name]) continue;
         const el = [...panel.querySelectorAll(sel)].find((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden");
@@ -276,6 +291,19 @@ async function run() {
       const noteAfter = await held.waitForFunction(() => Boolean(window.__parts.pressNote), null, { timeout: 30_000 })
         .then(() => true, () => false);
       report(at("and the credit note arrives once the read is released"), noteAfter, noteAfter ? "drawn" : "never drawn");
+      // THE HUB DOES NOT MOVE WHEN IT LANDS (Hugh, 2026-10-15): the empty state holds the note's frame from
+      // its first frame. Before, the note pushed the hub down once, 56px at 1300 and 35px at 390. The held
+      // read makes the landing late, well after the hub's first frame, so a move cannot hide in one frame.
+      await held.waitForTimeout(1_000);
+      const hubTops = await held.evaluate(() => window.__hubTops);
+      if (HUB === "on") {
+        const first = hubTops[0]?.top ?? null;
+        report(at("the Tuning hub stays put from its first frame through the credit note's landing"),
+          first !== null && noteAfter && hubTops.every((t) => Math.abs(t.top - first) <= 1),
+          JSON.stringify({ tops: hubTops, noteAt: (await held.evaluate(() => window.__parts.pressNote ?? null)) }));
+      } else {
+        console.log(`  info  ${at("PROBE_HUB=off: the hub's stillness is not checked")} — ${JSON.stringify(hubTops)}`);
+      }
       await held.unrouteAll({ behavior: "ignoreErrors" });
       await held.close();
 

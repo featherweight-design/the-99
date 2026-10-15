@@ -28,6 +28,7 @@ export function AnalysisEmpty({
   onRequest,
   blocked = null,
   note = null,
+  notePending = false,
   see = null,
   description = null,
   onSaveDescription,
@@ -51,6 +52,13 @@ export function AnalysisEmpty({
    * under the full-width button at 390. None over a blocked deck (finding 10b).
    */
   note?: string | null;
+  /**
+   * The note's read has not answered yet, so whether a note comes is not known. The note's frame is
+   * drawn EMPTY meanwhile, at the note's own reserved height, so a note that lands moves nothing under
+   * it (the Tuning hub first: 56px at 1300 and 35px at 390 before, #1465). A read that settles with
+   * no note takes the frame away again, the no-note layout the handoff draws (7d).
+   */
+  notePending?: boolean;
   /** The overview check's *See which →*, after the note (deck notices HANDOFF §6). */
   see?: { label: string; onPress: () => void } | null;
   /** The deck's description, read by this field and by Suggested changes (H35). Null until
@@ -116,6 +124,10 @@ export function AnalysisEmpty({
     return run;
   }
   const shownNote = blocked === null ? note : null;
+  // THE NOTE'S FRAME, drawn from the first frame while its read is out (Hugh, 2026-10-15: nothing below
+  // may move when it lands). The row takes the with-note layout at once, and the frame is the same
+  // element before and after the words arrive. Never over a blocked press, which draws no note.
+  const noteFrame = blocked === null && (shownNote !== null || notePending);
   const text = phase === "loading"
     ? stage === "writing" ? copy.writing : copy.loading
     : phase === "failed" ? copy.failed : copy.idle;
@@ -205,7 +217,7 @@ export function AnalysisEmpty({
           >
             {descriptionAnnounced}
           </span>
-          <div className={`mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-x-[20px] ${shownNote ? "md:gap-y-[12px]" : "md:gap-y-[20px]"}`}>
+          <div className={`mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-x-[20px] ${noteFrame ? "md:gap-y-[12px]" : "md:gap-y-[20px]"}`}>
             {/* A BUTTON, NEVER AUTOMATIC. A silent retry loop is how a wait becomes a bill. */}
             <button
               type="button"
@@ -229,16 +241,23 @@ export function AnalysisEmpty({
             >
               {phase === "failed" ? copy.failed.cta : copy.idle.cta}
             </button>
-            {shownNote ? (
+            {/* RESERVED AT TWO OF THE NOTE'S OWN LINES (`2lh`: its own font size and line height at each
+                width, 29.4px at 390 and 34.1px at 1300), kept once the words land. Measured 2026-10-15: at
+                390 a full allowance is one line and the reset, free, check and used-up notes two, so none
+                moves anything; at 1300 every note but two is two lines, inside the 44px button's row. The
+                used-up note (three lines at 1300) and the paused one (four at 1300, three at 390) grow
+                past it by their extra lines: 7px and 24px at 1300, 15px at 390. */}
+            {noteFrame ? (
               <p
-                data-testid="press-note"
-                className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:max-w-[340px] md:text-left md:text-[11px]"
+                data-testid={shownNote ? "press-note" : "press-note-slot"}
+                aria-hidden={shownNote ? undefined : true}
+                className="m-0 min-h-[2lh] text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:max-w-[340px] md:text-left md:text-[11px]"
               >
                 {/* The button's description is the note's words, so the id sits on them alone and the
                     See which press stays outside it. A spent or paused line's `What uses credits?` link
                     does sit inside, and a description reads a link as its text, which is the line. */}
-                <span id={noteId}><CreditsText text={shownNote} /></span>
-                {see ? (
+                {shownNote ? <span id={noteId}><CreditsText text={shownNote} /></span> : null}
+                {shownNote && see ? (
                   <>
                     {" "}
                     <button
@@ -254,7 +273,7 @@ export function AnalysisEmpty({
               </p>
             ) : null}
             {/* With a note in the row, the opener takes its own line under the pair (7a). */}
-            <div className={shownNote ? "md:basis-full" : "contents"}>
+            <div className={noteFrame ? "md:basis-full" : "contents"}>
               <ProvenanceOpener tone="accent" />
             </div>
             {/* IN the CTA row (the table's placement), on a line of its own under the press. */}
