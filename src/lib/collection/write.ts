@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { and, eq, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
@@ -15,7 +16,12 @@ import { pruneOrphanAssignments } from "../decks/prune-assignments";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
-import { recordUploadTokens, syncPreconTokens, tokenOwnershipTablesExist, type TokenHolding } from "../tokens/ownership";
+import {
+  readTokenState, recordUploadTokens, syncPreconTokens, tokenOwnershipTablesExist, tokenWritePlan,
+  type TokenChange, type TokenHolding, type TokenWriteMode,
+} from "../tokens/ownership";
+import { planSync, staleness, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
+import { readSyncBase } from "./sync-base";
 
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
@@ -74,6 +80,22 @@ export type CollectionChange =
    * (`syncPreconTokens`) and taken back when it is reverted.
    */
   | { kind: "add"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[]; preconTokens?: TokenHolding[] }
+  /**
+   * An upload in Sync mode (plan `2026-10-15-collection-sync.md`): merged against the base, the last file
+   * the collection was reconciled to (`readSyncBase`, read under the lock), by `planSync`. File-only changes
+   * are taken, app-only changes kept, and a conflict is decided by `answers`. `expectedPlan` is the
+   * `planDigest` the preview showed, REQUIRED on a confirm (a dry run may omit it): the write re-plans
+   * under the lock and refuses with `stale` when it differs, or is missing.
+   */
+  | {
+      kind: "sync";
+      items: PendingItem[];
+      uploadId: string;
+      tokens?: TokenHolding[];
+      pick: SyncPick;
+      answers?: SyncAnswers;
+      expectedPlan?: string;
+    }
   /**
    * Per-row new counts: card details, a row removed. `seen` is every holding of the card the
    * editor showed: a holding of that card the player has now and the editor never saw (another tab
@@ -290,6 +312,8 @@ export type ChangeResult =
       receipt?: ReceiptSnapshots;
       /** With `opts.placements`: each raised card a deck claims, by oracle id. */
       raised?: Record<string, RaisedCard>;
+      /** A sync's counts, what its receipt draws. */
+      sync?: SyncCounts;
       /** With `preconTokens`: the token oracle ids this entry marked owned (one already held is not). */
       tokensMarked?: string[];
       /**
@@ -323,8 +347,28 @@ export type ChangeResult =
   | { status: "assignRefused"; reason: AssignRefusal }
   /** The revert target was already reverted, by `by`. */
   | { status: "alreadyReverted"; by: string }
-  /** A `dryRun`: nothing was written. */
-  | { status: "preview"; raised: number; lowered: number; rows: HistoryRow[]; decks: ShortDeck[] };
+  /** A sync with a conflict no answer decides. Nothing was written. */
+  | { status: "undecided"; undecided: number }
+  /** A sync with no base to merge against (`readSyncBase`). Nothing was written. */
+  | { status: "noBase"; reason: "neverUploaded" | "noRecord" }
+  /** A sync that would change no card and no token. Nothing was written, the upload stamp included. */
+  | { status: "nothingToSync" }
+  /** A `dryRun`: nothing was written. A sync's carries what the review draws. */
+  | { status: "preview"; raised: number; lowered: number; rows: HistoryRow[]; decks: ShortDeck[]; sync?: SyncPreview };
+
+/** What a sync's dry run reports beside the rows (plan, PR 1): every list whole; the action caps them. */
+export type SyncPreview = {
+  counts: SyncCounts;
+  conflicts: SyncReviewRow[];
+  kept: SyncReviewRow[];
+  stale: Staleness;
+  /** The token rows the confirm would change; empty when the tokens stand as the file reads them. */
+  tokenChanges: TokenChange[];
+  /** No card and no token would change: the confirm answers `nothingToSync`. */
+  nothing: boolean;
+  /** What the confirm sends back as `expectedPlan`. */
+  planDigest: string;
+};
 
 type EntryKind = (typeof collectionHistory.$inferSelect)["kind"];
 
@@ -570,13 +614,32 @@ const entryKind = (change: CollectionChange): EntryKind => {
   switch (change.kind) {
     case "replace": return "upload_replace";
     case "add": return change.uploadId ? "upload_add" : "add";
+    case "sync": return "upload_sync";
     case "edit": return "edit";
     case "revert": return "revert";
   }
 };
 
 const uploadOf = (change: CollectionChange) =>
-  change.kind === "replace" || change.kind === "add" ? change.uploadId : undefined;
+  change.kind === "replace" || change.kind === "add" || change.kind === "sync" ? change.uploadId : undefined;
+
+/** How a sync records the file's tokens (ruling 2): Replace's rule, except under Only what it adds. */
+const syncTokenMode = (pick: SyncPick): TokenWriteMode => (pick === "additions" ? "additive" : "replace");
+
+/**
+ * The digest of what a sync would write: every planned row's key, before and after, sorted by key, and
+ * the token rows it would change. The preview returns it and the confirm sends it back, so a confirm
+ * whose re-plan under the lock differs from what the player reviewed refuses rather than writing it.
+ */
+export function planDigest(
+  rows: readonly (CollectionItemIdentity & { before: HistoryRowState | null; after: HistoryRowState | null })[],
+  tokens: readonly TokenChange[],
+): string {
+  const state = (s: HistoryRowState | null) => (s ? [s.quantity, s.scryfallId, s.condition] : null);
+  const cards = rows.map((r) => [keyOf(r), state(r.before), state(r.after)] as const)
+    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  return createHash("sha256").update(JSON.stringify({ cards, tokens })).digest("hex");
+}
 
 /**
  * Applies one change to `userId`'s collection, in one transaction, in this order:
@@ -598,7 +661,7 @@ export async function applyCollectionChange(
 ): Promise<ChangeResult> {
   // Normalized before the transaction: a malformed item is the caller's bug, and it throws
   // without having taken the lock.
-  const items = change.kind === "replace" || change.kind === "add" ? normalizeItems(change.items) : [];
+  const items = change.kind === "replace" || change.kind === "add" || change.kind === "sync" ? normalizeItems(change.items) : [];
   const uploadId = uploadOf(change);
   try {
     return await db.transaction(async (tx) => {
@@ -783,7 +846,8 @@ export async function applyCollectionChange(
         change.kind === "edit" ? change.rows
         : change.kind === "revert" ? (target!.rows as CollectionItemIdentity[])
         : items;
-      const current = await readHeld(tx, userId, change.kind === "replace" ? null : named);
+      const current = await readHeld(tx, userId, change.kind === "replace" || change.kind === "sync" ? null : named);
+      let syncPreview: SyncPreview | undefined;
 
       let plan: (Planned & { name?: string })[];
       switch (change.kind) {
@@ -799,6 +863,37 @@ export async function applyCollectionChange(
           plan = planRevert(current, target!.rows!);
           if (change.expected && staleRevert(plan, change.expected)) {
             throw new Refused({ status: "stale", current: currentOf(current, target!.rows as CollectionItemIdentity[]) });
+          }
+          break;
+        }
+        case "sync": {
+          // The base under this write's own lock, so no upload confirmed in between can move it.
+          const base = await readSyncBase(userId, tx);
+          if ("unavailable" in base) throw new Refused({ status: "noBase", reason: base.unavailable });
+          const merged = planSync({ base: base.anchor.items, app: current, file: items, pick: change.pick, answers: change.answers });
+          plan = merged.rows;
+          const tokenState = change.tokens ? await readTokenState(tx, userId) : null;
+          const tokenChanges = tokenState && change.tokens ? tokenWritePlan(syncTokenMode(change.pick), tokenState, change.tokens) : [];
+          const digest = planDigest(plan, tokenChanges);
+          syncPreview = {
+            counts: merged.counts,
+            conflicts: merged.conflicts,
+            kept: merged.kept,
+            stale: staleness(
+              new Map(items.map((i) => [keyOf(i), i.quantity])),
+              base.anchor.items,
+              base.earlier.map((e) => e.items),
+            ),
+            tokenChanges,
+            nothing: plan.length === 0 && tokenChanges.length === 0,
+            planDigest: digest,
+          };
+          if (!opts.dryRun) {
+            if (merged.counts.undecided > 0) throw new Refused({ status: "undecided", undecided: merged.counts.undecided });
+            // Required: a confirm that names no plan, or another one, writes nothing.
+            if (change.expectedPlan !== digest) throw new Refused({ status: "stale", current: currentOf(current, plan) });
+            // Thrown, so the upload stamp and the entry roll back with everything else.
+            if (syncPreview.nothing) throw new Refused({ status: "nothingToSync" });
           }
           break;
         }
@@ -905,6 +1000,8 @@ export async function applyCollectionChange(
       // the Add cards sheet does not. An upload that read no token still writes the marker.
       if (change.kind === "replace" || change.kind === "add") {
         await recordUploadTokens(tx, userId, uploadId, change.kind, change.tokens);
+      } else if (change.kind === "sync") {
+        await recordUploadTokens(tx, userId, uploadId, syncTokenMode(change.pick), change.tokens);
       }
       const tokensMarked = preconTokens
         ? await syncPreconTokens(tx, userId, opts.id)
@@ -924,13 +1021,27 @@ export async function applyCollectionChange(
         const names = new Map(rows.map((r) => [r.oracleId, r.name]));
         const decks = newlyShort(claimsBefore, claimsAfter, lowered, names)
           .filter((d) => !ignoredDecks.has(d.deckId));
-        if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks });
+        if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks, ...(syncPreview ? { sync: syncPreview } : {}) });
         if (decks.length > 0 && !warningCovers(opts.confirmShort ?? [], decks)) {
           throw new Refused({ status: "wouldShort", decks });
         }
         short = decks;
       }
-      if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks: [] });
+      if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks: [], ...(syncPreview ? { sync: syncPreview } : {}) });
+
+      // A sync's summary on its own upload (G9; no column): the pick is what `readSyncBase` reads to decide
+      // whether this upload anchors the next sync, and the rest is what its receipt and History draw.
+      if (change.kind === "sync" && syncPreview) {
+        const summary = {
+          pick: change.pick,
+          kept: syncPreview.counts.kept,
+          decided: syncPreview.counts.conflicts - syncPreview.counts.undecided,
+          answeredFile: syncPreview.counts.answeredFile,
+        };
+        await tx.update(csvUploads)
+          .set({ previewPayload: sql`${csvUploads.previewPayload} || jsonb_build_object('syncSummary', ${JSON.stringify(summary)}::jsonb)` })
+          .where(and(eq(csvUploads.id, change.uploadId), eq(csvUploads.userId, userId)));
+      }
 
       // Where the arriving copies went, read before the entry is written so the entry keeps it (wentTo).
       const raised = opts.placements ? await raisedCards(tx, userId, plan, opts.env, insideBefore) : undefined;
@@ -959,6 +1070,7 @@ export async function applyCollectionChange(
         ...(raised ? { raised } : {}),
         ...(opts.assign ? { assigned } : {}),
         ...(tokensMarked ? { tokensMarked } : {}),
+        ...(syncPreview ? { sync: syncPreview.counts } : {}),
       };
     });
   } catch (error) {

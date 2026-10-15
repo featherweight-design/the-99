@@ -468,6 +468,29 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   a `finally`, and it refuses production and staging by `neon.branch_id`. With the `expected`
   check and the deck check both disabled, five of its checks fail.
 
+- `pnpm probe:collection-sync` proves Collection Sync's write (plan `2026-10-15-collection-sync.md`, PR 1) against
+  a real Postgres, through the real `applyCollectionChange` (kind `sync`), `readSyncBase` and token writes, on a
+  per-run account and three token catalog rows of its own, all purged in a `finally`. Its cases: (a) Hugh's shape,
+  a Replace of a file, three hand entries, then a Sync of the same file with tokens, is 0 taken, 3 kept and the
+  tokens recorded as `upload` rows, and a re-sync of it writes nothing (no entry, the upload unconfirmed); (b) a
+  conflict refuses undecided, a confirm with no digest or another one refuses as stale, answered app keeps the
+  app's count and answered file writes the file's, and a bulk File decides 501 conflicts, past the 500 the review
+  lists; (c) a file-side removal of an untouched holding is taken, after the committed deck it shorts asks first;
+  (d) Revert of a Sync puts back only its taken and file-answered rows and leaves the kept rows and the tokens;
+  (e) after reverting the last Sync the base is the one before it, and an Add does not move it; (f) Only what it
+  adds writes no removal or lowering, takes the greater token count and deletes none, and leaves the base where it
+  was. It prints the staleness thresholds rather than asserting them (G2). It WRITES:
+  `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by id.
+  Point it at a scratch branch from local-dev migrated to 0125. Its header lists the mutations to run against it.
+
+- `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload
+  (`MEASURE_UPLOAD_ID`) or the anchor's own file, under a pick (`MEASURE_PICK`, default `everything`): the
+  buckets, the rows a confirm would write, staleness and the token rows it would change. READ-ONLY by
+  construction: `default_transaction_read_only` on the session, every read in one `repeatable read read only`
+  transaction that it checks is read-only and rolls back. Its URL is `MEASURE_SYNC_URL` through `scripts/lib/env.mjs`,
+  never printed or written. Card names only with `--names`. It may read production (d9's SELECT-only rule): it is
+  the acceptance check for Hugh's case before the flip (0 taken, 40 kept, 0 conflicts, `noNewer`).
+
 - `pnpm measure:collection-revert` times the ledger's worst deck check and the score recompute a
   collection write costs, on the busiest account of a scratch branch of staging (it writes, so it
   refuses production and staging by `neon.branch_id`). Measured 2026-10-09 on 3,393 rows and 23

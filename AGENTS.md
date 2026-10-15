@@ -778,6 +778,26 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
 
+- **Collection Sync** (plan `2026-10-15-collection-sync.md`), behind `COLLECTION_SYNC_ENABLED`, which needs
+  `COLLECTION_EDIT_ENABLED` (staging `'true'` from the plan's PR 2, production unset until Hugh flips it; off, the upload
+  actions refuse `mode: "sync"` as an unknown mode). A Sync merges an upload against a BASE, per holding key: file-only
+  changes are taken, app-only changes kept, and a conflict (both moved, to different counts) is answered app or file,
+  per card or by a bulk rule that decides every conflict, shown or not; nothing is pre-picked, and a confirm with one
+  undecided refuses (`planSync`, `src/lib/collection/sync.ts`, pure). **The base is the last FILE, never the
+  collection after it**: the stored `pendingItems` of the newest confirmed upload that is an ANCHOR (`readSyncBase`,
+  `sync-base.ts`, owner-scoped in its own SQL and read under the write's per-user lock). An anchor is an upload with
+  no ledger entry (pre-ledger, or confirmed with the ledger off: a Replace by construction), an `upload_replace`, or an
+  `upload_sync` whose upload payload says `syncSummary.pick = "everything"`, and its entry is not reverted. Never an
+  Add, and never a partial Sync (**Only what it adds**, **Only its tokens**), which did not take the file's removals.
+  No anchor, or an anchor stored before migration 0008, is `noRecord`; no confirmed upload is `neverUploaded`. It
+  writes through `writeRows` (never Replace's delete-all) as one `upload_sync` entry Revert takes back; the preview
+  returns a `planDigest` over every planned row and the token plan, and the confirm REQUIRES it back and refuses as
+  `stale` when the plan under the lock differs. A Sync that would change no card and no token writes nothing, the
+  upload stamp included (`nothingToSync`). Tokens follow Replace's rule, except under Only what it adds, which is
+  idempotent (`greatest(held, file)`, nothing deleted). `pnpm probe:collection-sync` proves it on a scratch branch;
+  `pnpm measure:sync` prints the buckets for one account inside a read-only, repeatable-read transaction, and is the
+  acceptance check for Hugh's production account before the flip.
+
 - **Social foundation** (plan `boards/plan-social-foundation-2026-10-12.md`, Hugh's rulings 2026-10-12), behind
   `SOCIAL_FRIENDS_ENABLED` (`'true'` on staging, unset on production; dark until the first UI PR). Friends are added
   by a single-use invite link or its QR code and never by search; a friendship is two directed `friend_links` rows,

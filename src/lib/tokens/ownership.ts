@@ -66,6 +66,73 @@ export function printingCounts(holdings: readonly TokenHolding[]): TokenPrinting
     .sort((a, b) => (a.tokenPrintingId < b.tokenPrintingId ? -1 : 1));
 }
 
+/**
+ * How an upload's tokens meet the recorded ones: `replace` (a Replace, and a Sync under Everything or
+ * Only its tokens), `add` (an Add: accumulate), `additive` (a Sync under Only what it adds: the greater).
+ */
+export type TokenWriteMode = "replace" | "add" | "additive";
+
+/** The rows a token write reads before it writes, for `tokenWritePlan`. */
+export type TokenState = {
+  /** Every ownership row the player has, any source. */
+  owned: { tokenOracleId: string; quantity: number; source: string }[];
+  /** The player's `upload` printing rows. */
+  uploadPrintings: TokenPrintingCount[];
+  /** Whether the account has a read marker. */
+  read: boolean;
+};
+
+/** One row a token write would change: `to` null is a removal. */
+export type TokenChange = { kind: "token" | "printing" | "read"; id: string; from: number | null; to: number | null };
+
+/**
+ * What `writeUploadTokens` in `mode` would change, row by row, sorted: empty when it would change nothing
+ * the player can see (the marker's upload id moving is not a change). What a Sync's "nothing to sync" and its
+ * plan digest read, so a re-sync of the same file writes nothing (plan, probe case a).
+ */
+export function tokenWritePlan(mode: TokenWriteMode, state: TokenState, holdings: readonly TokenHolding[]): TokenChange[] {
+  const out: TokenChange[] = [];
+  const owned = new Map(state.owned.map((o) => [o.tokenOracleId, o]));
+  const file = new Map(holdings.map((h) => [h.tokenOracleId, h.quantity]));
+  for (const [id, f] of file) {
+    const o = owned.get(id);
+    const held = o?.source === "upload" ? o.quantity : null;
+    const to = mode === "replace" ? f : mode === "additive" ? Math.max(held ?? 0, f) : (held ?? 0) + f;
+    if (held !== to) out.push({ kind: "token", id, from: o?.quantity ?? null, to });
+  }
+  if (mode === "replace") {
+    for (const o of state.owned) {
+      if (o.source === "upload" && !file.has(o.tokenOracleId)) out.push({ kind: "token", id: o.tokenOracleId, from: o.quantity, to: null });
+    }
+  }
+  const printings = new Map(state.uploadPrintings.map((p) => [p.tokenPrintingId, p.quantity]));
+  const filePrintings = printingCounts(holdings);
+  for (const p of filePrintings) {
+    const held = printings.get(p.tokenPrintingId) ?? null;
+    const to = mode === "replace" ? p.quantity : mode === "additive" ? Math.max(held ?? 0, p.quantity) : (held ?? 0) + p.quantity;
+    if (held !== to) out.push({ kind: "printing", id: p.tokenPrintingId, from: held, to });
+  }
+  if (mode === "replace") {
+    const read = new Set(filePrintings.map((p) => p.tokenPrintingId));
+    for (const [id, q] of printings) if (!read.has(id)) out.push({ kind: "printing", id, from: q, to: null });
+  }
+  if (!state.read) out.push({ kind: "read", id: "", from: null, to: null });
+  const order = { read: 0, token: 1, printing: 2 } as const;
+  return out.sort((a, b) => order[a.kind] - order[b.kind] || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/** The rows `tokenWritePlan` compares against, read inside the caller's transaction. Null where the tables do not exist. */
+export async function readTokenState(runner: Runner, userId: string): Promise<TokenState | null> {
+  if (!(await tokenOwnershipTablesExist(runner))) return null;
+  const owned = await runner.select({ tokenOracleId: tokenOwnership.tokenOracleId, quantity: tokenOwnership.quantity, source: tokenOwnership.source })
+    .from(tokenOwnership).where(eq(tokenOwnership.userId, userId));
+  const uploadPrintings = await runner.select({ tokenPrintingId: tokenPrintingHoldings.tokenPrintingId, quantity: tokenPrintingHoldings.quantity })
+    .from(tokenPrintingHoldings)
+    .where(and(eq(tokenPrintingHoldings.userId, userId), eq(tokenPrintingHoldings.source, "upload")));
+  const read = await runner.select({ userId: tokenReads.userId }).from(tokenReads).where(eq(tokenReads.userId, userId));
+  return { owned, uploadPrintings, read: read.length > 0 };
+}
+
 /** Anything that runs one statement: a transaction or the db. */
 type Runner = Pick<typeof db, "execute" | "insert" | "delete" | "select" | "update">;
 
@@ -99,6 +166,10 @@ export async function tokenOwnershipTablesExist(runner: Pick<Runner, "execute"> 
  *     row is left alone, unless the upload read the same token, in which case it becomes an upload row.
  *   Add: the upload's holdings are added to the upload rows; a manual row the upload also read becomes
  *     an upload row of exactly what the upload read.
+ *   Additive (a Sync under **Only what it adds**, plan `2026-10-15-collection-sync.md`, ruling 2): the
+ *     file is a whole export, so it is IDEMPOTENT rather than Add's accumulate. Each token and each token
+ *     printing the file reads becomes an upload row of `greatest(held, file)`; a manual row it reads becomes
+ *     an upload row of what the file read. Nothing is deleted, and an unchanged re-sync changes nothing.
  *
  * A token the upload read as HELD leaves every deck's Shopping list in the same transaction: owned means
  * owned for every deck, and nothing restores a join if the token is unmarked later (plan PR 5, audit
@@ -110,7 +181,7 @@ export async function writeUploadTokens(
   tx: Runner,
   userId: string,
   uploadId: string,
-  mode: "replace" | "add",
+  mode: TokenWriteMode,
   holdings: TokenHolding[],
 ): Promise<void> {
   // Joins first, for every token read, before any ownership row is touched: the hand mark takes the join
@@ -149,7 +220,9 @@ export async function writeUploadTokens(
         // upload row behind) is replaced by what this upload read.
         quantity: mode === "add"
           ? sql`case when ${tokenOwnership.source} = 'upload' then ${tokenOwnership.quantity} + excluded.quantity else excluded.quantity end`
-          : sql`excluded.quantity`,
+          : mode === "additive"
+            ? sql`case when ${tokenOwnership.source} = 'upload' then greatest(${tokenOwnership.quantity}, excluded.quantity) else excluded.quantity end`
+            : sql`excluded.quantity`,
         source: sql`'upload'`,
         // A precon row the upload reads becomes the upload's, so reverting the precon no longer takes it.
         entryId: sql`null`,
@@ -157,14 +230,20 @@ export async function writeUploadTokens(
       },
     });
   }
-  // The printings beside the tokens, the same way round: Replace starts from none, Add accumulates.
+  // The printings beside the tokens, the same way round: Replace starts from none, Add accumulates, Additive
+  // takes the greater (each row is already the upload's own source, so no case is needed).
   const counts = printingCounts(holdings);
   for (let i = 0; i < counts.length; i += BATCH) {
     await tx.insert(tokenPrintingHoldings)
       .values(counts.slice(i, i + BATCH).map((c) => ({ userId, tokenPrintingId: c.tokenPrintingId, source: "upload" as const, quantity: c.quantity })))
       .onConflictDoUpdate({
         target: [tokenPrintingHoldings.userId, tokenPrintingHoldings.tokenPrintingId, tokenPrintingHoldings.source],
-        set: { quantity: sql`${tokenPrintingHoldings.quantity} + excluded.quantity`, updatedAt: sql`now()` },
+        set: {
+          quantity: mode === "additive"
+            ? sql`greatest(${tokenPrintingHoldings.quantity}, excluded.quantity)`
+            : sql`${tokenPrintingHoldings.quantity} + excluded.quantity`,
+          updatedAt: sql`now()`,
+        },
       });
   }
   await tx.insert(tokenReads).values({ userId, uploadId }).onConflictDoUpdate({
@@ -283,7 +362,7 @@ export async function recordUploadTokens(
   tx: Parameters<typeof writeUploadTokens>[0],
   userId: string,
   uploadId: string | undefined,
-  mode: "replace" | "add",
+  mode: TokenWriteMode,
   tokens: TokenHolding[] | undefined,
 ): Promise<void> {
   if (!uploadId || !tokens || !(await tokenOwnershipTablesExist(tx))) return;

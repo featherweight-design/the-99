@@ -6,8 +6,12 @@ import { cartDecksOf, type CartDecks } from "./deck-line";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { HISTORY_RETENTION_DAYS } from "./write";
 
-/** The anchor and the hand entries after it, shared by the count and the keys below. */
-const handEntriesSince = (userId: string) => sql`
+/**
+ * The anchor and the hand entries after it, shared by the count and the keys below. The anchor is the
+ * newest confirmed upload of ANY kind, so a Sync moves it (collection sync plan, G7): the edits a Sync
+ * kept are behind it afterwards, exactly as a Replace's are. `history.test.ts` pins that.
+ */
+export const handEntriesSince = (userId: string) => sql`
     with last_upload as (
       select u.id, u.confirmed_at from csv_uploads u
       where u.user_id = ${userId} and u.confirmed_at is not null

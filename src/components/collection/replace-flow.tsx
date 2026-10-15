@@ -19,6 +19,9 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import type { ShortDeck } from "../../lib/collection/write";
 import { usePendingPush } from "../shell/pending-push";
 
+/** The modes this flow offers. Sync is drawn by the collection sync plan's PR 2. */
+type FlowMode = Exclude<UploadMode, "sync">;
+
 export function ReplaceFlow({
   currentCardCount,
   embedded,
@@ -86,14 +89,14 @@ export function ReplaceFlow({
   // derivation, with nothing to reset in an effect.
   const [read, setRead] = useState<{
     key: string;
-    datas: Record<UploadMode, UploadChangePreview> | null;
+    datas: Record<FlowMode, UploadChangePreview> | null;
     error: string | null;
     /** The server answered "nothing to compare" (confirmed elsewhere): the shipped review and dialog stand. */
     noRead: boolean;
   } | null>(null);
   const [attempt, setAttempt] = useState(0);
   // Which card the reader has picked (never preselected), and whether the review is open.
-  const [picked, setPicked] = useState<UploadMode | null>(null);
+  const [picked, setPicked] = useState<FlowMode | null>(null);
   const [reviewing, setReviewing] = useState(false);
   // The review's state for the picked mode: the decks as last said, and a failed write's notice.
   const [change, setChange] = useState<ReviewChange | null>(null);
@@ -112,7 +115,7 @@ export function ReplaceFlow({
     if (!deckCheck || !previewedId || firstImport) return;
     let live = true;
     const key = readKey;
-    const settle = (r: { datas: Record<UploadMode, UploadChangePreview> | null; error: string | null; noRead: boolean }) => {
+    const settle = (r: { datas: Record<FlowMode, UploadChangePreview> | null; error: string | null; noRead: boolean }) => {
       if (live) setRead({ key, ...r });
     };
     Promise.all([previewUploadChange(previewedId, "replace"), previewUploadChange(previewedId, "add")])
@@ -131,7 +134,7 @@ export function ReplaceFlow({
     };
   }, [deckCheck, previewedId, firstImport, readKey]);
 
-  function openReview(mode: UploadMode) {
+  function openReview(mode: FlowMode) {
     if (!datas || pending) return;
     const data = datas[mode];
     setPicked(mode);
@@ -321,7 +324,7 @@ export function ReplaceFlow({
         facts={datas.replace}
         overlap={datas.add.detail.overlap}
         picked={picked}
-        onPick={setPicked}
+        onPick={(mode) => { if (mode !== "sync") setPicked(mode); }}
         onContinue={() => picked && openReview(picked)}
         onCancel={cancel}
       />

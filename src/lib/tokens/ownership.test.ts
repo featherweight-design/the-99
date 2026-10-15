@@ -8,7 +8,9 @@ vi.mock("../../db", () => ({
   db: { delete: () => ({ where: (w: unknown) => { dbStub.wheres.push(w); return { returning: async () => [{ id: "x" }] }; } }) },
 }));
 
-import { aggregateTokenRows, recordUploadTokens, tokenOwnershipState, unmarkTokenOwned, writeUploadTokens } from "./ownership";
+import {
+  aggregateTokenRows, recordUploadTokens, tokenOwnershipState, tokenWritePlan, unmarkTokenOwned, writeUploadTokens, type TokenState,
+} from "./ownership";
 
 const T1 = "11111111-1111-4111-8111-111111111111";
 const T2 = "22222222-2222-4222-8222-222222222222";
@@ -169,6 +171,81 @@ describe("writeUploadTokens", () => {
     const holdings = Array.from({ length: 1_100 }, (_, i) => ({ tokenOracleId: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`, quantity: 1 }));
     await writeUploadTokens(tx, "u1", "up1", "replace", holdings);
     expect(log.filter((l) => l.op === "upsert" && l.table === "token_ownership").map((l) => l.rows!.length)).toEqual([500, 500, 100]);
+  });
+});
+
+describe("writeUploadTokens, additive (a Sync under Only what it adds)", () => {
+  const holdings = [{ tokenOracleId: T1, quantity: 2, printings: [{ tokenPrintingId: "pa", quantity: 2 }] }];
+
+  it("deletes nothing: no ownership row, no printing row, and only the joins of the tokens it reads", async () => {
+    const { tx, log } = recorder();
+    await writeUploadTokens(tx, "u1", "up1", "additive", holdings);
+    expect(log.filter((l) => l.op === "delete").map((l) => l.table)).toEqual(["deck_token_joins"]);
+    expect(dialect.sqlToQuery(log.find((l) => l.op === "delete")!.where as SQL).params).toContain(T1);
+  });
+
+  it("takes the greater of what is held and what the file reads, onto an upload row; never accumulates", async () => {
+    const { tx, log } = recorder();
+    await writeUploadTokens(tx, "u1", "up1", "additive", holdings);
+    const own = render(log.find((l) => l.op === "upsert" && l.table === "token_ownership")!.set!.quantity);
+    expect(own).toContain('greatest("token_ownership"."quantity", excluded.quantity)');
+    expect(own).not.toContain("+");
+    const printing = render(log.find((l) => l.op === "upsert" && l.table === "token_printing_holdings")!.set!.quantity);
+    expect(printing).toBe('greatest("token_printing_holdings"."quantity", excluded.quantity)');
+  });
+
+  it("turns a hand mark it reads into an upload row", async () => {
+    const { tx, log } = recorder();
+    await writeUploadTokens(tx, "u1", "up1", "additive", holdings);
+    expect(render(log.find((l) => l.op === "upsert" && l.table === "token_ownership")!.set!.source)).toBe("'upload'");
+  });
+
+  it("does not let a standing precon add re-claim anything: nothing was dropped", async () => {
+    const { tx, log } = recorder();
+    const select = () => ({ from: (table: object) => ({ where: async () => { log.push({ op: "select", table: getTableName(table as never) }); return []; } }) });
+    await recordUploadTokens({ ...(tx as object), execute: async () => ({ rows: [{ ok: true }] }), select } as never, "u1", "up1", "additive", holdings);
+    expect(log.some((l) => l.op === "select")).toBe(false);
+    expect(log.some((l) => l.table === "token_reads")).toBe(true);
+  });
+});
+
+describe("tokenWritePlan", () => {
+  const state = (over: Partial<TokenState> = {}): TokenState => ({ owned: [], uploadPrintings: [], read: true, ...over });
+  const file = [{ tokenOracleId: T1, quantity: 2, printings: [{ tokenPrintingId: "pa", quantity: 2 }] }];
+  const recorded = state({ owned: [{ tokenOracleId: T1, quantity: 2, source: "upload" }], uploadPrintings: [{ tokenPrintingId: "pa", quantity: 2 }] });
+
+  it("an unchanged re-sync changes nothing, in replace and additive alike: 2 recorded and an export of 2 stays 2", () => {
+    expect(tokenWritePlan("replace", recorded, file)).toEqual([]);
+    expect(tokenWritePlan("additive", recorded, file)).toEqual([]);
+  });
+
+  it("Add would accumulate: the same export is a change under Add", () => {
+    expect(tokenWritePlan("add", recorded, file)).toEqual([
+      { kind: "token", id: T1, from: 2, to: 4 },
+      { kind: "printing", id: "pa", from: 2, to: 4 },
+    ]);
+  });
+
+  it("additive raises to the file's count and never lowers or removes", () => {
+    const more = state({ owned: [{ tokenOracleId: T1, quantity: 5, source: "upload" }, { tokenOracleId: T2, quantity: 1, source: "upload" }], uploadPrintings: [{ tokenPrintingId: "pa", quantity: 5 }] });
+    expect(tokenWritePlan("additive", more, file)).toEqual([]);
+    expect(tokenWritePlan("additive", state({ owned: [{ tokenOracleId: T1, quantity: 1, source: "upload" }] }), file)).toEqual([
+      { kind: "token", id: T1, from: 1, to: 2 },
+      { kind: "printing", id: "pa", from: null, to: 2 },
+    ]);
+  });
+
+  it("replace removes an upload row the file does not read, and sets a hand mark the file reads to an upload row", () => {
+    const s = state({ owned: [{ tokenOracleId: T1, quantity: 2, source: "manual" }, { tokenOracleId: T2, quantity: 1, source: "upload" }], uploadPrintings: [{ tokenPrintingId: "pa", quantity: 2 }, { tokenPrintingId: "pb", quantity: 1 }] });
+    expect(tokenWritePlan("replace", s, file)).toEqual([
+      { kind: "token", id: T1, from: 2, to: 2 },
+      { kind: "token", id: T2, from: 1, to: null },
+      { kind: "printing", id: "pb", from: 1, to: null },
+    ]);
+  });
+
+  it("a first read is a change, even of no tokens", () => {
+    expect(tokenWritePlan("replace", state({ read: false }), [])).toEqual([{ kind: "read", id: "", from: null, to: null }]);
   });
 });
 
