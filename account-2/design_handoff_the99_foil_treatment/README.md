@@ -219,8 +219,8 @@ desktop boards, hover the first large card and move across it: it tilts, and the
 Card details, the zoom, the hover preview and the peeks carry R1's film over a foil copy's own art. On the two large
 faces (the details face and the zoom card) the film is R1's, at 80% strength and spread 1.5 times wider. **Every card**
 in details and the zoom tilts up to 6° toward where you point (Hugh, 2026-10-15: subtle tilt, yes; smoothed against
-his reference app the same day): the side under the pointer lifts toward you, a sliver of card edge shows on the far
-sides, and a soft light sits under the pointer. On a foil card the film drifts with it. Three registered, transitioned
+his reference app the same day): the side under the pointer lifts toward you, a hairline of card edge shows on that
+same side, and a soft light sits under the pointer. On a foil card the film drifts with it. Three registered, transitioned
 values drive all of it, so it glides rather than steps. Desktop tilts on hover. A phone tilts once you press
 and hold the card for 300ms and then move your finger, so a quick drag still pages and moves the sheet; the zoom, which
 has no swipe, tilts on any press and move. During a flip the tilt eases flat and waits. The mid-size views (the hover
@@ -231,7 +231,7 @@ exactly as today and never waits: only the film carries an arrival mark.
 
 1. **Intensity at size.** R1’s film, at 80% strength and spread one and a half times wider. Same stops and colours, so a tile and its details read as one material. The wider spread keeps a 264 to 372px face from reading as stripes, and the lower strength keeps pale art from washing out.
 2. **Motion at size.** The film follows the tilt: it slides toward the pointer or finger, up to a quarter of the card’s width each way, and a soft light follows with it. Keyboard focus plays R1’s one 640ms sweep instead. Nothing loops.
-3. **Tilt (Hugh, 2026-10-15: yes, subtle; smoothed against his reference app).** Every card in details and the zoom tilts up to 6° toward where you point: the side under the pointer lifts toward you, and a sliver of card edge shows along the far sides, as a card does in hand. A soft light sits under the pointer. One set of eased values drives the tilt, the edge, the light and the film, so they move as one and never step. During a flip the tilt settles flat and waits.
+3. **Tilt (Hugh, 2026-10-15: yes, subtle; smoothed against his reference app).** Every card in details and the zoom tilts up to 6° toward where you point: the side under the pointer lifts toward you, and a hairline of card edge shows on that same side, as a card does in hand. The perspective does most of the work; the edge is barely there. A soft light sits under the pointer. One set of eased values drives the tilt, the edge, the light and the film, so they move as one and never step. During a flip the tilt settles flat and waits.
 4. **The phone.** Press and hold the card, then move your finger: it tilts the same way. A drag on the card already pages or moves the sheet, so the tilt waits for a 300ms hold inside the 10px swipe slop, then the swipe stands down. In the zoom, which has no swipe, a press and move tilts at once, and a tap still closes. Plus R1’s one band when a card lands. Device tilt stays out (permission prompt).
 5. **Arrival on a background face.** The face never waits; only the film does. One preloaded Image marks the FILM span (the arming ArtLayer already uses). Cached art, which covers most opens, is marked done and the film is there at once. A cold open fades the film in over 300ms when the bytes land.
 6. **Precons in details.** Details keeps the card’s own resolution. Showing the box’s printing changes what details names, which is more than a cosmetic round should move. If you own the Collector’s Edition, your MSC copies resolve and carry the film anyway.
@@ -285,10 +285,10 @@ printing or the oracle-level picture (`identityGradient` fallback included) gets
     transform: perspective(1000px)
       rotateX(calc((var(--tilt-y) - .5) * 12deg))
       rotateY(calc((.5 - var(--tilt-x)) * 12deg));
-    /* the card edge on the far sides, a 1px light rim, then the card's own drop shadow */
+    /* a hairline of card edge on the pointer's sides, a faint rim, then the card's own drop shadow */
     box-shadow:
-      calc((var(--tilt-x) - .5) * -6px) calc((var(--tilt-y) - .5) * -6px) 0 0 rgb(205 210 218 / calc(var(--tilt-lift) * .9)),
-      0 0 0 1px rgb(255 255 255 / calc(var(--tilt-lift) * .22)),
+      calc((var(--tilt-x) - .5) * 3px) calc((var(--tilt-y) - .5) * 3px) 0 0 rgb(205 210 218 / calc(var(--tilt-lift) * .55)),
+      0 0 0 .5px rgb(255 255 255 / calc(var(--tilt-lift) * .12)),
       var(--card-shadow);
     transition: --tilt-x 600ms var(--tilt-ease), --tilt-y 600ms var(--tilt-ease), --tilt-lift 600ms var(--tilt-ease);
   }
@@ -359,7 +359,7 @@ printing or the oracle-level picture (`identityGradient` fallback included) gets
 | Tilt, following | 300ms · cubic-bezier(.22, 1, .36, 1) (ease out) | Each pointermove writes `--tilt-x` / `--tilt-y` (0 to 1). They are registered with `@property` and TRANSITIONED, so every value built from them glides: a moving target is chased, never stepped to. No rAF loop. |
 | Tilt, release | 600ms · same ease out | Pointer leaves or finger lifts: the vars return to .5 and `--tilt-lift` to 0; the card settles flat and the edge and light fade with it. |
 | Tilt, range | ±6° on each axis · perspective 1000px | rotateY((.5 − x) × 12°), rotateX((y − .5) × 12°): the side under the pointer lifts toward you (measured off Hugh’s reference: about 6° at that perspective). |
-| Card edge | up to 3px · card-stock grey · fades in with the lift | An offset shadow on the far sides, (x − .5) × −6px and (y − .5) × −6px, plus a 1px light rim at 22%. At rest: none. |
+| Card edge | up to 1.5px · card-stock grey at 55% · fades in with the lift | A hairline on the sides under the pointer (pointer bottom right: the bottom and right edges), (x − .5) × 3px and (y − .5) × 3px, plus a faint .5px rim. The tilt’s perspective does most of the work. At rest: none. |
 | Light | radial white 20% → 6% at 40% → 0 at 72% | Centred on the pointer; its opacity is `--tilt-lift`, so it fades in and out with the tilt. Every card. |
 | Film travel (foil) | ±25% of the card’s width | translateX((x − .5) × −33.3%) of a film 150% wide: it drifts against the pointer, a parallax against the light. Same eased vars. |
 | Phone pick-up | hold 300ms within 10px (the swipe’s `lockPx`) | Then the card lifts (shadow 0 24 50 → 0 34 70, 200ms) and follows the finger; swipe and sheet stand down; the release opens nothing. |

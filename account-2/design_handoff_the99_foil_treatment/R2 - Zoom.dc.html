@@ -35,7 +35,7 @@ a{color:#5C86C9}a:hover{color:#6C95D8}
 .lg .fl::before{left:-25%;right:-25%;opacity:.8;transform:translateX(calc((var(--tx) - .5) * -33.333%))}
 /* R2 · the tilt (every large card): +-6deg, perspective 1000px, the side under the pointer lifts toward you.
    The three vars are registered and TRANSITIONED, so the tilt, the edge, the light and the film all ease together. */
-.lg{--edge:205 210 218;transform:perspective(1000px) rotateX(calc((var(--ty) - .5) * 12deg)) rotateY(calc((.5 - var(--tx)) * 12deg));transition:--tx 300ms cubic-bezier(.22,1,.36,1),--ty 300ms cubic-bezier(.22,1,.36,1),--lift 300ms cubic-bezier(.22,1,.36,1);box-shadow:calc((var(--tx) - .5) * -6px) calc((var(--ty) - .5) * -6px) 0 0 rgb(var(--edge) / calc(var(--lift) * .9)),0 0 0 1px rgb(255 255 255 / calc(var(--lift) * .22)),var(--depth,0 0 0 transparent)}}
+.lg{--edge:205 210 218;transform:perspective(1000px) rotateX(calc((var(--ty) - .5) * 12deg)) rotateY(calc((.5 - var(--tx)) * 12deg));transition:--tx 300ms cubic-bezier(.22,1,.36,1),--ty 300ms cubic-bezier(.22,1,.36,1),--lift 300ms cubic-bezier(.22,1,.36,1);box-shadow:calc((var(--tx) - .5) * 3px) calc((var(--ty) - .5) * 3px) 0 0 rgb(var(--edge) / calc(var(--lift) * .55)),0 0 0 .5px rgb(255 255 255 / calc(var(--lift) * .12)),var(--depth,0 0 0 transparent)}}
 .lg:not(:hover):not(.on){transition-duration:600ms}
 .lg:hover,.lg.on{--lift:1}
 .gl{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:var(--lift);background:radial-gradient(circle at calc(var(--tx) * 100%) calc(var(--ty) * 100%),rgba(255,255,255,.20),rgba(255,255,255,.06) 40%,rgba(255,255,255,0) 72%)}
