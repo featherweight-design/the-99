@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Games tab with matchups, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.ph{width:390px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.mh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #181C26}
+.wm{display:flex;align-items:flex-end;gap:3px}
+.wm span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A;padding-bottom:4px}
+.wm b{font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0;line-height:1}
+.mav{width:38px;height:38px;border-radius:12px;border:1px solid #FF4D9A;color:#FF4D9A;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;box-sizing:border-box;background:transparent;padding:0}
+.dh{display:flex;align-items:center;gap:12px;padding:14px 16px 0}
+.dh img{width:56px;height:40px;object-fit:cover;border-radius:7px;border:1px solid #262A35}
+.dn{margin:0;font:700 19px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.dsub{font-size:12px;color:#959AAD}
+.tabs{display:flex;gap:16px;padding:10px 16px 0;border-bottom:1px solid #181C26;white-space:nowrap;overflow:hidden}
+.tab{display:flex;gap:6px;min-height:44px;padding:0 0 8px;border:0;border-bottom:2px solid transparent;background:transparent;font:13.5px 'IBM Plex Sans',sans-serif;color:#959AAD;box-sizing:border-box;align-items:flex-end;flex:none}
+.tab small{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.tab.on{border-bottom-color:#FF4D9A;color:#E6E8F0}
+.pane{padding:14px 16px 24px}
+.hl h3{margin:0;font:700 20px 'Chakra Petch',sans-serif;line-height:1.25;color:#E6E8F0}
+.hl p{margin:9px 0 0;font-size:13px;line-height:1.6;color:#B1B6C7}
+.hl p span{font:12px 'IBM Plex Mono',monospace;color:#FF4D9A}
+.logb{width:100%;min-height:44px;margin-top:14px;border-radius:10px;border:1px solid #262A35;background:transparent;color:#E6E8F0;font:500 14px 'IBM Plex Sans',sans-serif}
+.fd{margin-top:18px;border-radius:10px;padding:13px 14px;background:#101219;border:1px solid #181C26;display:flex;flex-direction:column;gap:6px}
+.fd b{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+.cell{display:flex;justify-content:space-between;padding:9px 12px;border-radius:8px;border:1px solid #181C26;background:#16181F;font-size:13px;color:#E6E8F0}
+.cell span{font:11px 'IBM Plex Mono',monospace;color:#959AAD}
+.mu{margin-top:22px}
+.muh{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.hk{margin:0;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.hn{font:10px 'IBM Plex Mono',monospace;color:#606476}
+.seg{display:flex;padding:3px;border-radius:10px;border:1px solid #262A35;background:#101219;gap:2px;margin-bottom:8px}
+.sg{flex:1;height:38px;border-radius:8px;border:0;background:transparent;color:#959AAD;font:500 13px 'IBM Plex Sans',sans-serif}
+.sg.on{background:#20222A;color:#E6E8F0}
+.mue{margin:0;border:1px dashed #343843;border-radius:10px;padding:14px;font-size:13.5px;line-height:1.55;color:#959AAD}
+.mup{border-radius:10px;padding:4px 12px 10px;background:#101219;border:1px solid #181C26}
+.mucap{margin:8px 0 2px;font:10.5px 'IBM Plex Mono',monospace;color:#959AAD;line-height:1.5}
+.mr{display:flex;align-items:center;gap:11px;min-height:62px;border-bottom:1px solid #181C26;padding:6px 0;box-sizing:border-box}
+.mth{width:48px;height:34px;border-radius:6px;overflow:hidden;background:#20222A;display:flex;align-items:center;justify-content:center;font:500 11px 'IBM Plex Mono',monospace;color:#959AAD;flex:none}
+.mth img{width:100%;height:100%;object-fit:cover;display:block}
+.mth.pp{background:transparent;gap:2px}
+.pip{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);display:block;flex:none}
+.mt{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.mn{font-size:14px;color:#E6E8F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mn small{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486;margin-left:6px}
+.sqs{display:flex;gap:4px;flex-wrap:wrap}
+.q{width:20px;height:20px;border-radius:5px;border:1px solid #262A35;display:flex;align-items:center;justify-content:center;font:600 10px 'IBM Plex Mono',monospace;color:#B1B6C7;font-style:normal;box-sizing:border-box}
+.q.w{border-color:#6FA368;color:#6FA368}
+.rt{font:12px 'IBM Plex Mono',monospace;color:#B1B6C7}
+.side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
+.mg{font:10.5px 'IBM Plex Mono',monospace;color:#959AAD}
+.beat{display:flex;align-items:center;gap:4px;font:11px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.muf{margin:10px 0 0;font:10px 'IBM Plex Mono',monospace;color:#6F7486;line-height:1.5}
+.hh{display:flex;align-items:baseline;gap:10px;margin:22px 0 10px}
+.hh b{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.hh span{font:10px 'IBM Plex Mono',monospace;color:#606476}
+.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hr{display:flex;flex-direction:column;gap:6px;min-height:64px;border-radius:9px;padding:8px 6px 10px 12px;background:#16181F;border:1px solid #181C26;box-sizing:border-box}
+.h1{display:flex;align-items:center;gap:12px}
+.rs{flex:none;width:26px;height:26px;border-radius:7px;border:1px solid #262A35;display:flex;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono',monospace;color:#B1B6C7;box-sizing:border-box}
+.rs.w{border-color:#6FA368;color:#6FA368}
+.meta{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.stamp{width:34px;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.del{margin-left:auto;flex:none;width:44px;height:44px;border-radius:7px;border:1px solid #181C26;background:transparent;color:#606476;font:13px 'IBM Plex Mono',monospace;padding:0}
+.marks{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 11px 4px 8px;font:10.5px 'IBM Plex Mono',monospace;background:#20222A;color:#B1B6C7}
+.dot{width:6px;height:6px;border-radius:50%}
+.vs{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding-top:6px;border-top:1px solid #181C26;margin-right:6px}
+.vsk{font:10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#606476}
+.vsc{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#E6E8F0}
+.vth{width:20px;height:20px;border-radius:5px;overflow:hidden;background:#20222A;display:flex;align-items:center;justify-content:center;font:500 8px 'IBM Plex Mono',monospace;color:#959AAD;flex:none}
+.vth img{width:100%;height:100%;object-fit:cover;display:block}
+.vd{color:#6F7486}
+.tb{flex:none;height:74px;display:flex;align-items:center;padding:8px 8px 14px;box-sizing:border-box;background:#12141B;border-top:1px solid #181C26}
+.ts{flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6F7486;font:9px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+.ts.on{color:#FF4D9A}
+</style>
+</helmet>
+<div style="width:2280px;min-height:2400px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">R1 · deck page · Games tab · phone 390 · the shipped tab, Kamigawa theme · long screenshots</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">On the phone a matchup row stacks its squares under the name</h2>
+    <p class="cap" style="max-width:2100px">Same section, same place, same rules. The switch spans the width with 38px segments in a 44px band. A row is art or pips, the name with its squares under it, and the count and trophy at the right. History rows put the vs line on its own line under a hairline, flush, wrapping as the marks do.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,390px);gap:44px 48px;align-items:start">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="ph">
+          <div class="mh"><span class="wm"><span>◆◆◆</span><b>99</b></span><button class="mav" type="button" aria-label="Account">HH</button></div>
+          <div class="dh"><img src="art/hero-master.png" alt=""><div><h1 class="dn">Master of Time</h1><div class="dsub">The Master, Transcendent</div></div></div>
+          <div class="tabs" role="tablist" aria-label="Deck views"><button class="tab" type="button" role="tab" aria-selected="false">Your deck <small>100</small></button><button class="tab" type="button" role="tab" aria-selected="false">Consider</button><button class="tab on" type="button" role="tab" aria-selected="true">Games <small>{{f.n}}</small></button><button class="tab" type="button" role="tab" aria-selected="false">Analysis</button></div>
+          <div class="pane">
+            <header class="hl"><h3>Cards in hand is letting this deck down.</h3><p>{{f.subA}}<span>{{f.rec}}</span>.</p></header>
+            <button class="logb" type="button">Log a game</button>
+            <div class="fd"><b style="color:#E0913C">Fix</b><div class="cell">Cards in hand<span>{{f.c1}}</span></div><b style="color:#6FA368;margin-top:6px">Keep</b><div class="cell">Mana<span>{{f.c3}}</span></div></div>
+            <section class="mu" aria-label="Matchups">
+              <div class="muh"><h2 class="hk">Matchups</h2><span class="hn">{{f.recorded}}</span></div>
+              <sc-if value="{{f.empty}}" hint-placeholder-val="{{false}}"><p class="mue">No opponents recorded yet. Add who sat across the table when you log a game, and this splits your games by commander, colors and friend.</p></sc-if>
+              <sc-if value="{{f.hasRows}}" hint-placeholder-val="{{true}}">
+                <div class="seg" role="radiogroup" aria-label="Split by"><sc-for list="{{f.seg}}" as="s" hint-placeholder-count="3"><button class="{{s.cls}}" type="button" role="radio" aria-checked="{{s.on}}">{{s.label}}</button></sc-for></div>
+                <div class="mup">
+                  <sc-if value="{{f.mucap}}" hint-placeholder-val="{{false}}"><p class="mucap">{{f.mucap}}</p></sc-if>
+                  <sc-for list="{{f.rows}}" as="m" hint-placeholder-count="5">
+                    <div class="mr">
+                      <span class="{{m.thCls}}" aria-hidden="true"><sc-if value="{{m.img}}" hint-placeholder-val="{{true}}"><img src="{{m.img}}" alt=""></sc-if><sc-if value="{{m.ini}}" hint-placeholder-val="{{false}}">{{m.ini}}</sc-if><sc-for list="{{m.pips}}" as="c" hint-placeholder-count="0"><i class="pip" style="background:{{c.bg}}"></i></sc-for></span>
+                      <span class="mt"><span class="mn">{{m.name}}<sc-if value="{{m.sub}}" hint-placeholder-val="{{false}}"><small>{{m.sub}}</small></sc-if></span>
+                        <sc-if value="{{m.squares}}" hint-placeholder-val="{{true}}"><span class="sqs" role="img" aria-label="{{m.aria}}"><sc-for list="{{m.sq}}" as="q" hint-placeholder-count="2"><i class="{{q.cls}}">{{q.g}}</i></sc-for></span></sc-if>
+                        <sc-if value="{{m.text}}" hint-placeholder-val="{{false}}"><span class="rt">{{m.text}}</span></sc-if>
+                      </span>
+                      <span class="side"><span class="mg">{{m.games}}</span><sc-if value="{{m.beat}}" hint-placeholder-val="{{false}}"><span class="beat"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4"/><path d="M12 13v4M9 20h6"/></svg><span aria-label="{{m.beatAria}}">{{m.beat}}</span></span></sc-if></span>
+                    </div>
+                  </sc-for>
+                  <p class="muf">Squares are games: W won, L lost, D drawn. The trophy counts the losses they won.</p>
+                </div>
+              </sc-if>
+            </section>
+            <div class="hh"><b>History</b><span>newest first</span></div>
+            <ul class="hist">
+              <sc-for list="{{f.games}}" as="g" hint-placeholder-count="3">
+                <li class="hr">
+                  <div class="h1"><span class="{{g.rsCls}}">{{g.r}}</span><span class="meta">{{g.meta}}</span><span class="stamp">{{g.v}}</span><button class="del" type="button" aria-label="Delete this game">×</button></div>
+                  <span class="marks"><sc-for list="{{g.marks}}" as="k" hint-placeholder-count="2"><span class="chip"><span class="dot" style="background:{{k.c}}"></span>{{k.l}}</span></sc-for></span>
+                  <sc-if value="{{g.vs}}" hint-placeholder-val="{{false}}">
+                    <div class="vs"><span class="vsk">vs</span>
+                      <sc-for list="{{g.vs}}" as="o" hint-placeholder-count="3">
+                        <span class="vsc"><sc-if value="{{o.won}}" hint-placeholder-val="{{false}}"><span aria-label="won" style="display:inline-flex"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4"/><path d="M12 13v4M9 20h6"/></svg></span></sc-if><span class="vth" aria-hidden="true"><sc-if value="{{o.img}}" hint-placeholder-val="{{true}}"><img src="{{o.img}}" alt=""></sc-if><sc-if value="{{o.ini}}" hint-placeholder-val="{{false}}">{{o.ini}}</sc-if></span><span>{{o.name}}</span><sc-if value="{{o.sub}}" hint-placeholder-val="{{false}}"><span class="vd">· {{o.sub}}</span></sc-if></span>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </li>
+              </sc-for>
+            </ul>
+          </div>
+          <nav class="tb" aria-label="Primary"><span class="ts">HOME</span><span class="ts">COLLECTION</span><span class="ts">COMMANDERS</span><span class="ts">DISCOVER</span><span class="ts on">DECKS</span></nav>
+        </div>
+        <p class="cap">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2280,"height":2400}}'>
+class Component extends DCLogic {
+renderVals() {
+const ART = { master: 'art/hero-master.png', sokka: 'art/hero-sokka.png', aang: 'art/resume-aang.png', omnath: 'art/resume-omnath.png', baral: 'art/resume-wizards.png', kilo: 'art/resume-kilo.png' };
+const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
+const pips = (s) => s.split('').map((k) => ({ bg: C[k] }));
+const GW = '#6FA368', GH = '#E0913C';
+const o = (name, img, sub, won, ini) => ({ name, img: img || '', ini: ini || '', sub: sub || '', won: !!won });
+const g = (r, pod, date, v, marks, vs) => ({ r, rsCls: r === 'W' ? 'rs w' : 'rs', meta: pod + '-player · ' + date, v, marks: marks.map(([l, c]) => ({ l, c })), vs: vs && vs.length ? vs : null });
+const gamesWith = [
+g('L', 4, 'Oct 14', 'v3', [['Cards in hand', GH], ['Answers', GH]], [o('Dave', ART.sokka, 'Sokka Tempo', true), o('Priya', ART.aang, 'Elements'), o('Lee', ART.omnath, 'Omnath')]),
+g('W', 4, 'Oct 12', 'v3', [['Mana', GW], ['Speed', GW]], [o('Alex', ART.baral, 'Baral Counters'), o('Kilo', ART.kilo), o('Jo', '', '', false, 'JO')]),
+g('L', 3, 'Oct 9', 'v2', [['Cards in hand', GH]], [o('Lee', ART.omnath, 'Omnath', true), o('Marcus', ART.kilo, 'Kilo Proliferate')])
+];
+const sq = (s) => s.split('').map((c) => ({ g: c, cls: c === 'W' ? 'q w' : 'q' }));
+const word = { W: 'won', L: 'lost', D: 'drawn' };
+const ariaOf = (s) => { const n = { W: 0, L: 0, D: 0 }; s.split('').forEach((c) => n[c]++); return Object.keys(n).filter((k) => n[k]).map((k) => n[k] + ' ' + word[k]).join(', '); };
+const row = (name, thumb, s, beat, sub) => Object.assign({ name, sub: sub || '', squares: true, sq: sq(s), aria: ariaOf(s), text: '', beat: beat ? String(beat) : '', beatAria: beat ? 'beat you in ' + beat + (beat === 1 ? ' game' : ' games') : '', games: s.length === 1 ? '1 game' : s.length + ' games' }, thumb);
+const art = (img) => ({ thCls: 'mth', img, ini: '', pips: [] });
+const ini = (t) => ({ thCls: 'mth', img: '', ini: t, pips: [] });
+const seg = (on) => ['Commander', 'Colors', 'Friend'].map((l) => ({ label: l, on: l === on ? 'true' : 'false', cls: l === on ? 'sg on' : 'sg' }));
+const byCommander = [row('Kilo, Apogee Mind', art(ART.kilo), 'WL'), row('Omnath, Locus of Creation', art(ART.omnath), 'LL', 1), row('Avatar Aang', art(ART.aang), 'L'), row('Baral, Chief of Compliance', art(ART.baral), 'W'), row('Sokka, Tenacious Tactician', art(ART.sokka), 'L', 1)];
+const byFriend = [row('Alex', art(ART.baral), 'W'), row('Dave', art(ART.sokka), 'L', 1), row('Jo', ini('JO'), 'W'), row('Marcus', art(ART.kilo), 'L'), row('Priya', art(ART.aang), 'L')];
+const later = [Object.assign(row('Kilo, Apogee Mind', art(ART.kilo), 'W', 3), { squares: false, text: '7 W · 5 L', aria: '7 won, 5 lost', games: '12 games' }), row('Omnath, Locus of Creation', art(ART.omnath), 'WWWLLL', 2), row('Sokka, Tenacious Tactician', art(ART.sokka), 'WWDL', 1), row('Avatar Aang', art(ART.aang), 'WLL', 1)];
+const base = { n: '6', subA: 'Marked in 3 of 6 games. Record ', rec: '3–3', c1: '3 of 6 · 3 down', c3: '3 of 6 · 3 up', recorded: 'recorded in 3 of 6 games', empty: false, hasRows: true, seg: seg('Commander'), mucap: 'Most rows are a single game. A row means more each time a name comes back.', rows: byCommander, games: gamesWith };
+const fr = (x) => Object.assign({}, base, x);
+const frames = [
+fr({ label: 'MP1 · no opponents recorded yet', recorded: 'recorded in 0 of 6 games', empty: true, hasRows: false, rows: [], mucap: '', games: gamesWith.map((x) => Object.assign({}, x, { vs: null })), note: 'The heading and its 0 of 6, and one dashed line. No switch until there is something to split.' }),
+fr({ label: 'MP2 · by commander · mostly one-game rows', note: 'Dave’s deck reads Sokka Tempo, its name on Oct 14, though it is Sokka’s Seminar now. Alex, removed as a friend since, still reads Alex · Baral Counters.' }),
+fr({ label: 'MP3 · by friend · every row one game', seg: seg('Friend'), rows: byFriend, mucap: 'Every row so far is a single game.', note: 'Faces come from the commander each friend played, Jo’s initials from a seat with none. Lee is a label, not a friend.' }),
+fr({ label: 'MP4 · later · a row past ten games', n: '28', subA: 'Marked in 15 of 28 games. Record ', rec: '15–12–1', c1: '15 of 28 · 15 down', c3: '13 of 28 · 13 up', recorded: 'recorded in 22 of 28 games', mucap: '', rows: later, games: gamesWith.slice(0, 1), note: 'Past ten games a row reads its counts (7 W · 5 L) beside its total. History is cut to one row here.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>

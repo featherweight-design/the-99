@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Log a game with opponents, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.ph{width:390px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.mh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #181C26;background:#0E0F14}
+.wm{display:flex;align-items:flex-end;gap:3px}
+.wm span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A;padding-bottom:4px}
+.wm b{font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0;line-height:1}
+.mav{width:38px;height:38px;border-radius:12px;border:1px solid #FF4D9A;color:#FF4D9A;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;box-sizing:border-box;background:transparent;padding:0}
+.scrolled{flex:none;padding:6px 16px;font:10px 'IBM Plex Mono',monospace;color:#606476;border-bottom:1px solid #181C26;background:#12141B}
+.body{flex:1;padding:12px 16px 20px;overflow:hidden}
+.tb{flex:none;height:74px;display:flex;align-items:center;padding:8px 8px 14px;box-sizing:border-box;background:#12141B;border-top:1px solid #181C26}
+.ts{flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#6F7486;font:9px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+.ts.on{color:#FF4D9A}
+.form{border-radius:12px;padding:16px;background:#16181F;border:1px solid #262A35}
+.fh{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid #181C26}
+.fh h3{margin:0;font:700 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.date{border:0;border-bottom:1px dashed #343843;background:transparent;font:10px 'IBM Plex Mono',monospace;color:#6F7486;padding:0}
+.date span{color:#B1B6C7}
+.fl{display:block;font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#6F7486;margin-bottom:8px}
+.rg{display:flex;gap:7px}
+.rb{flex:1;height:44px;border-radius:8px;border:1px solid #181C26;background:transparent;color:#B1B6C7;font:500 13.5px 'IBM Plex Sans',sans-serif}
+.rb.on{border-color:#FF4D9A;color:#E6E8F0;font-weight:600}
+.rb.win{background:#6FA368;border-color:#6FA368;color:#0E0F14;font-weight:600}
+.pz{flex:1;height:44px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font:600 14px 'IBM Plex Mono',monospace;padding:0}
+.pz.on{border-color:#FF4D9A;background:rgba(255,77,154,.12);color:#FF4D9A}
+.pz.held{opacity:.36}
+.seats{border-top:1px solid #181C26;padding-top:14px;margin-top:18px}
+.sth{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.sth .fl{margin:0}
+.cnt{font:10px 'IBM Plex Mono',monospace;color:#606476}
+.pods{display:flex;align-items:center;gap:8px;margin:0 0 10px;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486;white-space:nowrap;overflow:hidden}
+.pchip{height:36px;padding:0 13px;border-radius:999px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font:13px 'IBM Plex Sans',sans-serif;flex:none}
+.pchip.on{border-color:#FF4D9A;color:#E6E8F0;background:rgba(255,77,154,.08)}
+.plist{display:flex;flex-direction:column;gap:6px}
+.prow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:58px;padding:0 0 0 6px;border:1px solid #181C26;border-radius:10px;background:#12141B;box-sizing:border-box}
+.prow.won{border-color:#E6E8F0}
+.pa{display:flex;align-items:center;gap:11px;flex:1;min-width:0;border:0;background:transparent;padding:7px 0;text-align:left;color:#E6E8F0;font-family:'IBM Plex Sans',sans-serif}
+.pth{width:58px;height:40px;border-radius:7px;overflow:hidden;flex:none;background:#20222A;display:flex;align-items:center;justify-content:center;font:500 12px 'IBM Plex Mono',monospace;color:#959AAD}
+.pth img{width:100%;height:100%;object-fit:cover;display:block}
+.you .pth img{opacity:.78}
+.pt{display:flex;flex-direction:column;min-width:0}
+.pn{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps.wn{color:#E6E8F0}
+.psb{flex:none;height:44px;border:0;background:transparent;color:#FF4D9A;font:13px 'IBM Plex Sans',sans-serif;padding:0 6px}
+.won-p{flex:none;height:36px;margin:4px 0;padding:0 11px;border-radius:999px;border:1px solid #343843;background:transparent;color:#B1B6C7;display:flex;align-items:center;gap:6px;font:12.5px 'IBM Plex Sans',sans-serif}
+.won-p.on{background:#E6E8F0;border-color:#E6E8F0;color:#0E0F14;font-weight:600}
+.px{flex:none;width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:13px;padding:0}
+.ytag{flex:none;margin-right:12px;font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#6F7486}
+.pin{flex-basis:100%;margin:0 8px 8px 2px;height:40px;border-radius:8px;border:1px solid #FF4D9A;background:#101219;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:14px;color:#E6E8F0;box-sizing:border-box}
+.pin small{font:10px 'IBM Plex Mono',monospace;color:#606476}
+.padd{min-height:52px;border:1.5px dashed #343843;border-radius:10px;background:transparent;color:#B1B6C7;font:13.5px 'IBM Plex Sans',sans-serif;display:flex;align-items:center;gap:10px;padding:0 14px;width:100%;box-sizing:border-box}
+.padd.open{border:1.5px solid #FF4D9A;color:#E6E8F0}
+.padd b{font:400 20px 'IBM Plex Sans',sans-serif}
+.hint{margin:10px 0 0;font:10.5px 'IBM Plex Mono',monospace;color:#959AAD;display:flex;align-items:center;gap:7px;line-height:1.5}
+.held{margin:10px 0 0;font-size:13px;color:#B1B6C7;display:flex;align-items:center;gap:8px;line-height:1.45}
+.held i{width:6px;height:6px;border-radius:50%;background:#E0913C;display:inline-block;flex:none}
+.axh{margin-top:16px;display:flex;flex-direction:column;gap:5px}
+.lg{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
+.ax{display:flex;align-items:center;gap:11px;min-height:48px;border-radius:8px;padding:5px 12px;border:1px solid #181C26;background:#16181F;box-sizing:border-box}
+.bx{width:20px;height:20px;flex:none;border-radius:5px;border:1px solid #262A35;box-sizing:border-box}
+.aln{font-size:13.5px;color:#E6E8F0}
+.alg{font:10px 'IBM Plex Mono',monospace;color:#6F7486}
+.scrim{position:absolute;inset:0;z-index:3;background:rgba(10,11,15,.72)}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:4;background:#16181F;border-top:1px solid #262A35;border-radius:18px 18px 0 0;padding:8px 16px 18px;box-shadow:0 -20px 50px rgba(0,0,0,.5)}
+.grab{width:36px;height:4px;border-radius:2px;background:#343843;margin:0 auto 6px}
+.shh{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.shh h2{margin:0;font:700 18px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.x{width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:15px;margin-right:-10px;padding:0}
+.sf{height:46px;border-radius:8px;border:1px solid #343843;background:#101219;display:flex;align-items:center;gap:10px;padding:0 12px;color:#7D8294;font-size:16px;box-sizing:border-box}
+.sf.on{border-color:#FF4D9A;color:#E6E8F0}
+.pkb{display:flex;align-items:center;gap:10px;min-height:46px}
+.bk{width:44px;height:44px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font-size:17px;padding:0}
+.pkb b{font-size:16px;color:#E6E8F0;font-weight:600}
+.pkb span{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.pkm{margin:8px 2px 4px;font-size:14px;line-height:1.5;color:#959AAD}
+.pkh{margin:12px 2px 4px}
+.pr{display:flex;align-items:center;gap:12px;min-height:54px;border:0;border-radius:8px;background:transparent;padding:4px 6px;text-align:left;color:#E6E8F0;font:15px 'IBM Plex Sans',sans-serif;width:100%;box-sizing:border-box}
+.pr.hl{background:#20222A}
+.pr.dim{opacity:.42}
+.th{width:38px;height:38px;border-radius:9px;overflow:hidden;flex:none;background:#20222A;color:#959AAD;font:500 11px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.th.wide{width:56px;height:40px;border-radius:7px}
+.th.ic{background:transparent;border:1px dashed #343843;box-sizing:border-box}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.pm{font:11px 'IBM Plex Mono',monospace;color:#6F7486;flex:none;margin-left:auto}
+.pips{display:flex;gap:3px;flex:none;margin-left:auto}
+.pip{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);display:block}
+.pkf{margin:8px 4px 0;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</helmet>
+<div style="width:2280px;min-height:2200px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">R1 · deck page · Games tab · Log a game · phone 390 · the shipped form, Kamigawa theme · scrolled to the form</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">On the phone the table is a list of seats, and the picker is a sheet</h2>
+    <p class="cap" style="max-width:2100px">Same row, same place, same rules as desktop. Seats are rows of 58px (art, name, the deck or commander under it), You first; Add opponent is a dashed row; the picker rises as a sheet with the field focused. On a loss each row gains a Won pill. Every frame is the page scrolled to the form, under the shipped header; the mark columns and Save continue below as they ship.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(5,390px);gap:44px 40px;align-items:start">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="8">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="ph" style="height:{{f.h}}">
+          <div class="mh"><span class="wm"><span>◆◆◆</span><b>99</b></span><button class="mav" type="button" aria-label="Account">HH</button></div>
+          <div class="scrolled">Master of Time · Games · scrolled to the form</div>
+          <div class="body">
+            <div class="form">
+              <div class="fh"><h3>Log a game</h3><button class="date" type="button">played <span>tonight</span></button></div>
+              <div style="margin-top:16px"><span class="fl">Result</span><div class="rg" role="radiogroup" aria-label="Result"><sc-for list="{{f.results}}" as="r" hint-placeholder-count="3"><button class="{{r.cls}}" type="button" role="radio" aria-checked="{{r.on}}">{{r.label}}</button></sc-for></div></div>
+              <div style="margin-top:16px"><span class="fl">Pod size</span><div class="rg" role="radiogroup" aria-label="Pod size" style="gap:5px"><sc-for list="{{f.pods}}" as="p" hint-placeholder-count="7"><button class="{{p.cls}}" type="button" role="radio" aria-checked="{{p.on}}" aria-disabled="{{p.held}}">{{p.n}}</button></sc-for></div></div>
+              <sc-if value="{{f.seating}}" hint-placeholder-val="{{true}}">
+                <section class="seats" aria-label="Across the table">
+                  <div class="sth"><span class="fl">Across the table</span><span class="cnt">{{f.count}}</span></div>
+                  <sc-if value="{{f.hasPods}}" hint-placeholder-val="{{false}}"><div class="pods">Seat a pod<sc-for list="{{f.podChips}}" as="c" hint-placeholder-count="2"><button class="{{c.cls}}" type="button" aria-pressed="{{c.on}}">{{c.name}}</button></sc-for></div></sc-if>
+                  <div class="plist">
+                    <sc-for list="{{f.seats}}" as="s" hint-placeholder-count="3">
+                      <div class="{{s.rowCls}}">
+                        <sc-if value="{{s.isYou}}" hint-placeholder-val="{{false}}"><div class="pa"><span class="pth"><img src="{{s.art}}" alt=""></span><span class="pt"><span class="pn">You</span><span class="ps">{{s.sub}}</span></span></div><span class="ytag">YOU</span></sc-if>
+                        <sc-if value="{{s.isOpp}}" hint-placeholder-val="{{true}}">
+                          <button class="pa" type="button" aria-label="Change {{s.name}}"><span class="pth" aria-hidden="true"><sc-if value="{{s.art}}" hint-placeholder-val="{{true}}"><img src="{{s.art}}" alt=""></sc-if><sc-if value="{{s.noArt}}" hint-placeholder-val="{{false}}">{{s.ini}}</sc-if></span><span class="pt"><span class="pn">{{s.name}}</span><sc-if value="{{s.sub}}" hint-placeholder-val="{{true}}"><span class="{{s.subCls}}">{{s.sub}}</span></sc-if></span></button>
+                          <sc-if value="{{s.subBtn}}" hint-placeholder-val="{{false}}"><button class="psb" type="button">{{s.subBtn}}</button></sc-if>
+                          <sc-if value="{{s.trophy}}" hint-placeholder-val="{{false}}"><button class="{{s.trCls}}" type="button" aria-pressed="{{s.won}}" aria-label="{{s.name}} won"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4"/><path d="M12 13v4M9 20h6"/></svg>Won</button></sc-if>
+                          <button class="px" type="button" aria-label="Clear {{s.name}}’s seat">✕</button>
+                          <sc-if value="{{s.input}}" hint-placeholder-val="{{false}}"><span class="pin" role="textbox" aria-label="Who played it">{{s.input}}<small>{{s.inputCount}}</small></span></sc-if>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{f.addTile}}" hint-placeholder-val="{{true}}"><button class="{{f.addCls}}" type="button"><b aria-hidden="true">+</b>Add opponent</button></sc-if>
+                  </div>
+                  <sc-if value="{{f.wonHint}}" hint-placeholder-val="{{false}}"><p class="hint">{{f.wonHint}}</p></sc-if>
+                  <sc-if value="{{f.held}}" hint-placeholder-val="{{false}}"><p class="held" role="status"><i aria-hidden="true"></i>{{f.held}}</p></sc-if>
+                </section>
+              </sc-if>
+              <div class="axh">
+                <span class="lg" style="color:#6FA368">What worked</span>
+                <div class="ax"><span class="bx" aria-hidden="true"></span><span style="display:flex;flex-direction:column;gap:2px"><span class="aln">Speed</span><span class="alg">got going fast</span></span></div>
+                <div class="ax"><span class="bx" aria-hidden="true"></span><span style="display:flex;flex-direction:column;gap:2px"><span class="aln">Cards in hand</span><span class="alg">kept drawing</span></span></div>
+                <div class="ax"><span class="bx" aria-hidden="true"></span><span style="display:flex;flex-direction:column;gap:2px"><span class="aln">Mana</span><span class="alg">hit every land drop</span></span></div>
+              </div>
+            </div>
+          </div>
+          <nav class="tb" aria-label="Primary">
+            <span class="ts">HOME</span><span class="ts">COLLECTION</span><span class="ts">COMMANDERS</span><span class="ts">DISCOVER</span><span class="ts on">DECKS</span>
+          </nav>
+          <sc-if value="{{f.sheet}}" hint-placeholder-val="{{false}}">
+            <div class="scrim" aria-hidden="true"></div>
+            <div class="sheet" role="dialog" aria-modal="true" aria-label="Seat an opponent">
+              <div class="grab" aria-hidden="true"></div>
+              <div class="shh"><h2>Seat an opponent</h2><button class="x" type="button" aria-label="Close">✕</button></div>
+              <sc-if value="{{f.pkSearch}}" hint-placeholder-val="{{true}}"><div class="{{f.sfCls}}" role="searchbox" aria-label="{{f.ph}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><span>{{f.q}}</span></div></sc-if>
+              <sc-if value="{{f.pkBack}}" hint-placeholder-val="{{false}}"><div class="pkb"><button class="bk" type="button" aria-label="Back to friends">‹</button><span class="th"><sc-if value="{{f.backArt}}" hint-placeholder-val="{{true}}"><img src="{{f.backArt}}" alt=""></sc-if><sc-if value="{{f.backIni}}" hint-placeholder-val="{{false}}">{{f.backIni}}</sc-if></span><b>{{f.backName}}</b><span>{{f.backMeta}}</span></div></sc-if>
+              <sc-if value="{{f.pkMsg}}" hint-placeholder-val="{{false}}"><p class="pkm">{{f.pkMsg}}</p></sc-if>
+              <sc-if value="{{f.pkHead}}" hint-placeholder-val="{{true}}"><p class="k pkh">{{f.pkHead}}</p></sc-if>
+              <div role="listbox" aria-label="{{f.pkHead}}" style="display:flex;flex-direction:column">
+                <sc-for list="{{f.rows}}" as="r" hint-placeholder-count="5">
+                  <button class="{{r.cls}}" type="button" role="option" aria-disabled="{{r.dis}}">
+                    <span class="{{r.thCls}}" aria-hidden="true"><sc-if value="{{r.img}}" hint-placeholder-val="{{true}}"><img src="{{r.img}}" alt=""></sc-if><sc-if value="{{r.ini}}" hint-placeholder-val="{{false}}">{{r.ini}}</sc-if><sc-if value="{{r.search}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg></sc-if></span>
+                    <span class="pt"><span class="pn">{{r.name}}</span><sc-if value="{{r.sub}}" hint-placeholder-val="{{false}}"><span class="ps">{{r.sub}}</span></sc-if></span>
+                    <sc-if value="{{r.pips}}" hint-placeholder-val="{{false}}"><span class="pips"><sc-for list="{{r.pips}}" as="c" hint-placeholder-count="2"><i class="pip" style="background:{{c.bg}}"></i></sc-for></span></sc-if>
+                    <sc-if value="{{r.meta}}" hint-placeholder-val="{{false}}"><span class="pm">{{r.meta}}</span></sc-if>
+                  </button>
+                </sc-for>
+              </div>
+              <p class="pkf">{{f.foot}}</p>
+            </div>
+          </sc-if>
+        </div>
+        <p class="cap">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2280,"height":2200}}'>
+class Component extends DCLogic {
+renderVals() {
+const ART = { master: 'art/hero-master.png', sokka: 'art/hero-sokka.png', aang: 'art/resume-aang.png', omnath: 'art/resume-omnath.png', baral: 'art/resume-wizards.png', kilo: 'art/resume-kilo.png' };
+const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
+const pips = (s) => s.split('').map((k) => ({ bg: C[k] }));
+const results = (r) => [['win', 'Won'], ['loss', 'Lost'], ['draw', 'Draw']].map(([v, l]) => ({ label: l, on: r === v ? 'true' : 'false', cls: r === v ? (v === 'win' ? 'rb win' : 'rb on') : 'rb' }));
+const podsOf = (n, heldBelow) => [2, 3, 4, 5, 6, 7, 8].map((p) => ({ n: p, on: p === n ? 'true' : 'false', held: p < (heldBelow || 0) ? 'true' : 'false', cls: p === n ? 'pz on' : (p < (heldBelow || 0) ? 'pz held' : 'pz') }));
+const you = { rowCls: 'prow you', isYou: true, isOpp: false, art: ART.master, name: 'You', sub: 'Master of Time' };
+const opp = (o) => Object.assign({ rowCls: 'prow', isYou: false, isOpp: true, art: '', noArt: false, ini: '', sub: '', subCls: 'ps', subBtn: '', input: '', inputCount: '', trophy: false, trCls: 'won-p', won: 'false' }, o);
+const fd = (name, deck, art) => opp({ name, sub: deck, art });
+const fo = (name, btn) => opp({ name, noArt: true, ini: name.slice(0, 2).toUpperCase(), subBtn: btn });
+const an = (cmd, art, label) => opp({ name: label || cmd, sub: label ? cmd : '', art, subBtn: label ? '' : 'Add a name' });
+const lost = (seats, winner) => seats.map((s) => s.isOpp ? Object.assign({}, s, { trophy: true, subBtn: '', won: s.name === winner ? 'true' : 'false', trCls: s.name === winner ? 'won-p on' : 'won-p', rowCls: s.name === winner ? 'prow won' : 'prow', sub: s.name === winner ? 'won this game' : (s.sub || (s.noArt ? 'no deck' : '')), subCls: s.name === winner ? 'ps wn' : 'ps' }) : s);
+const friendRows = [
+{ name: 'Alex', img: ART.baral, meta: '1 deck' }, { name: 'Dave', img: ART.sokka, meta: '3 decks' }, { name: 'Jo', ini: 'JO', meta: 'no decks' },
+{ name: 'Marcus', img: ART.omnath, meta: '1 deck' }, { name: 'Priya', img: ART.aang, meta: '2 decks' }
+].map((r, i) => Object.assign({ sub: '', ini: '', img: '', search: false, pips: null, thCls: 'th', dis: 'false', cls: i === 0 ? 'pr hl' : 'pr' }, r));
+const cmdRows = [['Avatar Aang', ART.aang, ''], ['Baral, Chief of Compliance', ART.baral, 'U'], ['Kilo, Apogee Mind', ART.kilo, 'UR'], ['Sokka, Tenacious Tactician', ART.sokka, ''], ['The Master, Transcendent', ART.master, '']].map(([n, img, p], i) => ({ name: n, img, sub: '', ini: '', search: false, meta: '', pips: p ? pips(p) : null, thCls: 'th wide', dis: 'false', cls: i === 2 ? 'pr hl' : 'pr' }));
+const deckRows = [
+{ name: 'Sokka’s Seminar', sub: 'Sokka, Tenacious Tactician', img: ART.sokka, cls: 'pr hl' },
+{ name: 'Kilo Spells', sub: 'Kilo, Apogee Mind', img: ART.kilo },
+{ name: 'Aang Airbenders', sub: 'Avatar Aang', img: ART.aang }
+].map((r) => Object.assign({ ini: '', search: false, meta: '', pips: null, thCls: 'th wide', dis: 'false', cls: 'pr' }, r));
+const extra = (who) => [
+{ name: 'Another commander', sub: 'search the catalog', search: true, img: '', ini: '', thCls: 'th wide ic' },
+{ name: 'Just ' + who, sub: 'no deck or commander', img: '', ini: who.slice(0, 2).toUpperCase(), search: false, thCls: 'th wide' }
+].map((r) => Object.assign({ meta: '', pips: null, dis: 'false', cls: 'pr' }, r));
+const pods = (on) => ['Thursday night', 'Store league'].map((n) => ({ name: n, on: n === on ? 'true' : 'false', cls: n === on ? 'pchip on' : 'pchip' }));
+const base = { h: '844px', results: results(null), pods: podsOf(4), seating: true, count: '', hasPods: false, podChips: [], seats: [you], addTile: true, addCls: 'padd', sheet: false, pkSearch: true, sfCls: 'sf', ph: 'Friend or any commander', q: 'Friend or any commander', pkBack: false, backArt: '', backIni: '', backName: '', backMeta: '', pkMsg: '', pkHead: '', rows: [], foot: '', wonHint: '', held: '' };
+const fr = (o) => Object.assign({}, base, o);
+const frames = [
+fr({ label: 'P1 · no friends · the sheet searching', results: results('win'), count: '1 of 3', seats: [you, an('Omnath, Locus of Creation', ART.omnath, 'Lee')], addCls: 'padd open', sheet: true, sfCls: 'sf on', ph: 'Any commander', q: 'a|', pkHead: 'Commanders', rows: cmdRows, foot: 'Any commander. Name who played it on the seat.', note: 'The sheet rises over the form with the field focused and the keyboard up (not drawn). Commanders only: no friends, no pods. One tap seats; the sheet closes.' }),
+fr({ label: 'P2 · with friends · before typing', count: '0 of 3', hasPods: true, podChips: pods(''), addCls: 'padd open', sheet: true, sfCls: 'sf on', pkHead: 'Friends', rows: friendRows, foot: 'Type to search every commander too.', note: 'Friends by face and name, with their deck count. Typing filters them and adds Commanders under them. Seat a pod scrolls sideways on its own line above the seats.' }),
+fr({ label: 'P3 · a friend picked · their decks', count: '0 of 3', hasPods: true, podChips: pods(''), addCls: 'padd open', sheet: true, pkSearch: false, pkBack: true, backArt: ART.sokka, backName: 'Dave', backMeta: '3 decks', pkHead: 'Dave’s decks', rows: deckRows.concat(extra('Dave')), foot: 'Name and commander only.', note: 'The same step as desktop, in the sheet: Dave’s decks by today’s names, then Another commander and Just Dave. Back returns to friends; ✕ closes with the seat still empty. A friend with no decks reads “Jo has no decks in The 99.” over the last two rows (desktop F4).' }),
+fr({ label: 'P4 · seated three ways · a name being typed', results: results('win'), count: '3 of 3', seats: [you, fd('Dave', 'Sokka’s Seminar', ART.sokka), fo('Jo', 'Add a commander'), opp({ name: 'Kilo, Apogee Mind', art: ART.kilo, input: 'Le|', inputCount: '2 / 30' })], addTile: false, note: 'Add a name opens the label field under the seat, full width, 16px text so the phone does not zoom. Jo, a friend alone, offers Add a commander on the row. The dashed row is gone with every seat filled.' }),
+fr({ label: 'P5 · lost · who won', results: results('loss'), count: '3 of 3', seats: lost([you, fd('Dave', 'Sokka’s Seminar', ART.sokka), fo('Jo', ''), an('Kilo, Apogee Mind', ART.kilo, 'Lee')], 'Dave'), addTile: false, wonHint: 'Lost. If one of them won, press their Won. Optional.', note: 'On a loss each opponent row gains a Won pill, 36px inside a 44px row. Dave’s is pressed: bone fill, his row’s border lifts, and his line says won this game. The row’s own deck and name actions step aside for the pill while the result is Lost.' }),
+fr({ label: 'P6 · pod quick-seat · Thursday night', count: '3 of 3', hasPods: true, podChips: pods('Thursday night'), seats: [you, fo('Dave', 'Which deck?'), fo('Priya', 'Which deck?'), fo('Sam', 'Which deck?')], addTile: false, note: 'One tap seats Dave, Priya and Sam and sets the pod to 4. Which deck? on each row opens that friend’s decks in the sheet (P3).' }),
+fr({ label: 'P7 · a full pod of 8 · smaller pod held', h: '1180px', results: results('draw'), pods: podsOf(8, 8), count: '7 of 7', seats: [you, fd('Dave', 'Sokka’s Seminar', ART.sokka), fd('Priya', 'Elements', ART.aang), fd('Marcus', 'Omnath Lands', ART.omnath), fd('Alex', 'Baral Counters', ART.baral), fo('Jo', 'Add a commander'), an('Kilo, Apogee Mind', ART.kilo, 'Lee'), an('Kilo, Apogee Mind', ART.kilo, '')], addTile: false, held: 'All 7 seats are filled. Clear a seat to make the pod smaller.', note: 'A longer screenshot: eight rows. Pod sizes under 8 are held; a press on one says why under the list. Nothing is cleared for you.' }),
+fr({ label: 'P8 · games off · the shipped form', results: results('win'), seating: false, note: 'Switch off: no row, no space kept for it. The form is today’s.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>
