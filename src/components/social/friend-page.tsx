@@ -66,9 +66,10 @@ export function FriendPage({ friend, lines, nowMs }: { friend: Friend; lines: Fr
       </div>
 
       <h2 className="m-0 mt-[22px] flex items-baseline gap-[10px] pb-[10px] [border-bottom:1px_solid_var(--border)] md:mt-[28px]">
-        <span className="font-sans text-[16px] font-semibold text-[color:var(--fg)] md:text-[19px]">{p.head(friend.displayName)}</span>
-        <span className="font-mono text-[13px] font-normal text-[color:var(--fg-faint)]">{lines.length}</span>
-        <span className="ml-auto font-mono text-[13px] font-normal text-[color:var(--fg-faint)]">{p.viewOnly}</span>
+        {/* A name may be 30 unbroken characters: the title shrinks and truncates, and the count and `view only` keep their place. */}
+        <span className="min-w-0 truncate font-sans text-[16px] font-semibold text-[color:var(--fg)] md:text-[19px]">{p.head(friend.displayName)}</span>
+        <span className="flex-none font-mono text-[13px] font-normal text-[color:var(--fg-faint)]">{lines.length}</span>
+        <span className="ml-auto flex-none font-mono text-[13px] font-normal text-[color:var(--fg-faint)]">{p.viewOnly}</span>
       </h2>
 
       {lines.length === 0 ? (
@@ -77,9 +78,9 @@ export function FriendPage({ friend, lines, nowMs }: { friend: Friend; lines: Fr
             <span className="absolute left-0 top-0 h-[103px] w-[74px] rounded-[7px] [border:1px_dashed_var(--border-dashed)]" />
             <span className="absolute left-[30px] top-0 h-[103px] w-[74px] rotate-[4deg] rounded-[7px] [border:1px_dashed_var(--border-dashed)]" />
           </div>
-          <div className="flex flex-col gap-[6px]">
-            <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)] md:text-[19px]">{p.emptyTitle(friend.displayName)}</p>
-            <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)]">{p.emptyBody(friend.displayName)}</p>
+          <div className="flex min-w-0 flex-col gap-[6px]">
+            <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[19px]">{p.emptyTitle(friend.displayName)}</p>
+            <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{p.emptyBody(friend.displayName)}</p>
           </div>
         </div>
       ) : (

@@ -164,7 +164,9 @@ export function FriendMenu({
   }
 
   return (
-      <div ref={wrap} className={`relative flex-none ${className}`}>
+      // While open, the wrapper rises above the rows after it: each row's own z-10 is a stacking context, so the panel's
+      // z-30 alone could not escape it and a later row's … would paint over the panel and take its presses.
+      <div ref={wrap} className={`relative flex-none ${className}`} style={menu !== "closed" ? { zIndex: 40 } : undefined}>
         <button
           ref={trigger}
           type="button"

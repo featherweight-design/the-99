@@ -1,6 +1,6 @@
 // The friends list's rows (R2 P1, PP1; G9): with the wishlist on, a row is a link to the friend's page with a ›
 // before its … menu, and drops its since date at phone width; off, it is Round 1's row, with no link.
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FriendsList } from "./friends-list";
 import { socialCopy } from "../../lib/copy/social";
@@ -28,6 +28,15 @@ describe("FriendsList rows", () => {
     const chevron = within(row).getByText("›");
     expect(chevron.compareDocumentPosition(menu) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(row).getByText(f.since("Oct 2")).className).toContain("hidden md:inline");
+  });
+
+  it("raises an open … menu above the rows after it", async () => {
+    draw(true);
+    const button = screen.getByRole("button", { name: f.menuAria("Colin") });
+    const wrapper = button.parentElement as HTMLElement;
+    expect(wrapper.style.zIndex).toBe("");
+    fireEvent.click(button);
+    expect(wrapper.style.zIndex).toBe("40");
   });
 
   it("are Round 1's rows, with no link and no ›, while the wishlist is off", () => {
