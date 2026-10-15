@@ -2,7 +2,7 @@
 // as the row: the chip carries a number and never a deck name. The fixtures are
 // deliberately a copy of rows-view.test.tsx's — the two files are read side by
 // side, and a shared module for six lines would cost more than it saves.
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseListCard } from "../../lib/collection/browse";
@@ -301,6 +301,9 @@ describe("GridView price clause", () => {
 // with no date draws nothing (days are read in UTC, so the draw is the same on any machine).
 describe("GridView Date added figure", () => {
   const open = () => {};
+  // The year is shown only for a date outside the current UTC year, so the clock is pinned.
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(Date.UTC(2026, 9, 15)); });
+  afterEach(() => { vi.useRealTimers(); });
   it("draws an exact day and since for an inexact one, spoken after the set and rarity", () => {
     const exact = { ...card, added: Date.UTC(2026, 9, 12, 15) / 60_000 };
     const since = { ...card, oracleId: "since", name: "Since Card", printedName: "Since Card", since: Date.UTC(2026, 8, 2) / 86_400_000 };
