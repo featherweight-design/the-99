@@ -801,7 +801,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 @media (min-width: 48rem) {
   .anim-stack-rise { animation: none; }
 }
-.anim-backdrop-in { animation: backdrop-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+/* The account menu's scrim, which moves with ITS sheet (`anim-sheet-up`, no beat), not the filter sheet's: a scrim held back 100ms
+   behind a menu that is already opening would leave the menu over an unshaded page. */
+.anim-backdrop-in { animation: backdrop-in var(--motion-duration) var(--motion-ease) both; }
 .anim-quickadd-in { animation: quickadd-in var(--motion-quick) var(--motion-ease) both; }
 /* A new overview replacing the held one in place (addendum_overview_loading, 1c): 150ms, and
    instant under reduced motion. */

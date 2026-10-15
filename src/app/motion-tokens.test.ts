@@ -10,6 +10,8 @@ const CSS = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "globals.
 
 const read = (...parts: string[]) => readFileSync(join(dirname(fileURLToPath(import.meta.url)), ...parts), "utf8");
 const REDUCED_AT = CSS.indexOf("@media (prefers-reduced-motion: reduce)");
+// The block ends at the first closing brace in column 0 after it opens.
+const REDUCED_END = CSS.indexOf("\n}\n", REDUCED_AT);
 
 /** The declaration of one class, outside the reduced-motion block (the first rule of that selector). */
 const rule = (selector: string): string => {
@@ -43,9 +45,10 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     [".anim-overlay-in", `overlay-in ${QUICK} ${EASE} both`],
     [".anim-overlay-out", `overlay-out var(--motion-exit-quick) ${EASE} both`],
     [".anim-quickadd-in", `quickadd-in ${QUICK} ${EASE} both`],
+    // The account menu's scrim moves with its sheet (`anim-sheet-up`), which waits for nothing.
+    [".anim-backdrop-in", `backdrop-in ${DURATION} ${EASE} both`],
     // Arrivals wait a beat.
     [".anim-sheet-in", `filter-sheet-in ${DURATION} ${EASE} ${DELAY} both`],
-    [".anim-backdrop-in", `backdrop-in ${DURATION} ${EASE} ${DELAY} both`],
     // The kept curves, on token lengths: the stacked card and the phone card keep the sheet's snap curve.
     [".anim-stack-rise", `stack-rise ${DURATION} ${OUT} ${DELAY} both`],
     [".anim-phone-card-enter", `phone-card-enter ${DURATION} ${OUT} ${DELAY} both`],
@@ -71,7 +74,7 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
       const re = new RegExp(`^\\s*${selector.replace(/[.[\]]/g, "\\$&")}\\s*\\{([^}]*)\\}`, "gm");
       for (const m of CSS.matchAll(re)) {
         // Only the reduced-motion block may state a literal (its fades are 100ms with no wait).
-        if (m.index! > REDUCED_AT && REDUCED_AT !== -1) continue;
+        if (m.index! > REDUCED_AT && m.index! < REDUCED_END) continue;
         expect(m[1], selector).not.toMatch(/cubic-bezier|\d(ms|s)\b/);
       }
     }
