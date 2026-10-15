@@ -371,6 +371,10 @@ describe("VersionRail on a deck started from its precon", () => {
     const open = await screen.findByRole("link", { name: historyOriginCopy.originOpen("Eldrazi Unbound") });
     expect(open.getAttribute("href")).toBe("/decks/precons/EldraziUnbound_CMM");
     expect(open.closest("[data-origin-actions]")).not.toBeNull();
+    // The panel names the precon's note too, never `no note` under a row that has one.
+    const panel = document.getElementById(screen.getAllByRole("button", { expanded: true })[0].getAttribute("aria-controls")!)!;
+    expect(within(panel).queryByText(copy.noNote)).toBeNull();
+    expect(panel.textContent).toContain(historyOriginCopy.originNote("Eldrazi Unbound"));
     // Not v0's own panel: the start's version opens its committed list, with nothing to diff against.
     expect(document.querySelector("[data-origin-panel]")).toBeNull();
     expect(screen.queryByText(historyOriginCopy.originHeading)).toBeNull();

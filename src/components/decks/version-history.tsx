@@ -425,15 +425,13 @@ export function VersionRail({
           const previous = versions[i + 1] ?? null;
           const open = openId === version.id;
           const isStart = origin !== null && version.id === startId;
+          // The start's version reads the precon's note wherever its own is drawn: the row and its panel.
+          const shown = isStart && version.note === null ? { ...version, note: historyOriginCopy.originNote(origin.name) } : version;
           return (
             <div key={version.id} className="flex flex-col gap-[6px]">
               <RailRow
                 // Over COMMITTED rows only: v0 is never in `versions` (lock 4).
-                version={{
-                  ...version,
-                  current: i === 0,
-                  note: version.note ?? (isStart ? historyOriginCopy.originNote(origin.name) : null),
-                }}
+                version={{ ...shown, current: i === 0 }}
                 // A v1 with v0 drawn before it shows its delta against the precon.
                 initial={previous === null && apart === null}
                 open={open}
@@ -444,7 +442,7 @@ export function VersionRail({
                 <VersionDiff
                   key={diffCacheKey(version, previous, apart)}
                   deckId={deckId}
-                  version={version}
+                  version={shown}
                   previous={previous}
                   origin={apart}
                   panelId={panelId}
