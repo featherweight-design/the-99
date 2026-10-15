@@ -164,6 +164,13 @@ export function sharedPodsQuery(viewerId: string, q: Reader = db) {
     .orderBy(asc(pods.name), asc(pods.id));
 }
 
+export type SharedPod = { podId: string; name: string };
+
+/** The pods the viewer shares spares with, for each pod's checkbox (E5). Only pods they are still in. */
+export async function listSharedPods(viewerId: string, q: Reader = db): Promise<SharedPod[]> {
+  return sharedPodsQuery(viewerId, q);
+}
+
 /**
  * A cache key part for any cached page that draws friends' spares (scope §5, option 3): each granting
  * friend's id, data stamp and display name, hashed. A friend's collection or deck write moves their stamp,
