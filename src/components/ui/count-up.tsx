@@ -9,8 +9,10 @@
 //
 // The real figure is in the text from the first render: the moving digits are `aria-hidden` and an `sr-only` twin carries the
 // final string, so assistive tech hears one value and never the count in between. The server renders the real figure too
-// (no script, no zero); on the client the digits drop to the start in a layout effect, before the first paint of the page
-// that hydrated. Reduced motion shows the final figure and never animates.
+// (no script, no zero); once the page hydrates the digits drop to the start and count, so a first load shows the real figure
+// for the moments before hydration and then counts from 0: an accepted flash, since the alternative is a 0 with no script.
+// The digits sit in a box as wide as the final figure, so the neighbours do not shift as it grows. Reduced motion shows the
+// final figure and never animates.
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
@@ -51,8 +53,8 @@ export function CountUp({ value, text = String }: { value: number; text?: (n: nu
   useLayoutEffect(() => {
     stop();
     const from = last.current === null ? 0 : last.current;
-    last.current = value;
     if (value < COUNT_UP_MIN || reduced() || from === value) {
+      last.current = value;
       setShown(value);
       return stop;
     }
@@ -90,7 +92,10 @@ export function CountUp({ value, text = String }: { value: number; text?: (n: nu
   return (
     <>
       <span className="sr-only">{text(value)}</span>
-      <span aria-hidden="true" className="tabular-nums" data-count-up>{text(shown)}</span>
+      <span aria-hidden="true" className="inline-grid tabular-nums">
+        <span className="invisible col-start-1 row-start-1">{text(value)}</span>
+        <span className="col-start-1 row-start-1" data-count-up>{text(shown)}</span>
+      </span>
     </>
   );
 }

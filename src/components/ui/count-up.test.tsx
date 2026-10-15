@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { StrictMode } from "react";
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { COUNT_UP_DELAY_MS, COUNT_UP_MS, CountUp, easeInOut } from "./count-up";
 
+const source = readFileSync(join(process.cwd(), "src/components/ui/count-up.tsx"), "utf8");
 const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 const visible = (c: HTMLElement) => c.querySelector("[data-count-up]")?.textContent;
 const twin = (c: HTMLElement) => c.querySelector(".sr-only")?.textContent;
@@ -28,6 +30,8 @@ describe("CountUp", () => {
     expect(css).toContain(`--motion-delay: ${COUNT_UP_DELAY_MS}ms;`);
     expect(css).toContain(`--motion-duration: ${COUNT_UP_MS}ms;`);
     expect(css).toContain("--motion-ease: cubic-bezier(0.45, 0, 0.55, 1);");
+    expect(source).toContain("}, COUNT_UP_DELAY_MS)");
+    expect(source).toContain("/ COUNT_UP_MS");
     expect(easeInOut(0)).toBeCloseTo(0, 3);
     expect(easeInOut(1)).toBeCloseTo(1, 3);
     expect(easeInOut(0.5)).toBeCloseTo(0.5, 2);
@@ -50,7 +54,7 @@ describe("CountUp", () => {
 
   it("hides the moving digits from assistive tech", () => {
     const { container } = render(<CountUp value={40} />);
-    expect(container.querySelector("[data-count-up]")?.getAttribute("aria-hidden")).toBe("true");
+    expect(container.querySelector("[data-count-up]")?.closest("[aria-hidden]")?.getAttribute("aria-hidden")).toBe("true");
     expect(container.querySelector(".sr-only")?.hasAttribute("aria-hidden")).toBe(false);
   });
 
@@ -78,5 +82,23 @@ describe("CountUp", () => {
     reduce(true);
     const { container } = render(<CountUp value={312} />);
     expect(visible(container)).toBe("312");
+  });
+
+  it("still plays under StrictMode's double effect", () => {
+    const { container } = render(<StrictMode><CountUp value={312} /></StrictMode>);
+    expect(visible(container)).toBe("0");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + COUNT_UP_MS / 2));
+    expect(Number.parseInt(visible(container) ?? "", 10)).toBeGreaterThan(0);
+    act(() => void vi.advanceTimersByTime(COUNT_UP_MS));
+    expect(visible(container)).toBe("312");
+  });
+
+  it("settles on the figure when the tab is hidden mid-count", () => {
+    const { container } = render(<CountUp value={312} />);
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + 50));
+    Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+    act(() => void document.dispatchEvent(new Event("visibilitychange")));
+    expect(visible(container)).toBe("312");
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
   });
 });
