@@ -80,15 +80,18 @@ const ROW_SHELL_SHOPPING = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] lg:m
 // the shells above, because a second `min-h` or `py` at the same variant has no defined winner.
 const TWO_PAD_MD = "pl-[8px] pr-[4px] md:px-[9px] md:py-[3px]";
 const TWO_PAD_LG = "pl-[8px] pr-[4px] md:px-[9px] md:py-[7px] lg:py-[3px]";
-// A row with no meta line on the phone (a land) keeps its 44px there, and a Shopping land its 34px from `md`.
+// A row with no meta line on the phone (a land) keeps its 44px there, and a Shopping land its 34px from `md`. The live shell and
+// the receipt's slot carry the SAME minimum (58px for a row with a second line, 34px for a land's one), because a plain card's
+// first line is only about 20px and its two lines come to 56px: a live row shorter than its receipt would move the rows below
+// when the receipt arrives and again on Undo.
 const TWO_SHELLS = {
   md: {
-    meta: { live: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[52px] md:min-h-0`, slot: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[52px] md:min-h-[58px]` },
-    land: { live: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[44px] md:min-h-0`, slot: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[44px] md:min-h-[58px]` },
+    meta: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[52px] md:min-h-[58px]`,
+    land: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[44px] md:min-h-[34px]`,
   },
   lg: {
-    meta: { live: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[52px] lg:min-h-0`, slot: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[52px] lg:min-h-[58px]` },
-    land: { live: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[44px] md:min-h-[34px] lg:min-h-0`, slot: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[44px] md:min-h-[34px] lg:min-h-[58px]` },
+    meta: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[52px] lg:min-h-[58px]`,
+    land: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[44px] md:min-h-[34px]`,
   },
 };
 
@@ -398,7 +401,7 @@ export function DecklistRow({
   const legacyShell = shellHasMeta ? (inShopping ? ROW_SHELL_SHOPPING : ROW_SHELL_META) : ROW_SHELL;
   const twoShell = twoMd ? TWO_SHELLS.md : twoLg ? TWO_SHELLS.lg : null;
   const twoShellRow = twoShell ? (shellHasMeta ? twoShell.meta : twoShell.land) : null;
-  const rowShell = twoShellRow ? twoShellRow.live : legacyShell;
+  const rowShell = twoShellRow ?? legacyShell;
   // The whole row is the preview's trigger (#351), so the handlers go on the
   // shell rather than on the name — the name is the modal's trigger, and a
   // preview that only opened over it would be a second, smaller target for a
@@ -559,7 +562,7 @@ export function DecklistRow({
   // drift) — the one thing a bare `<UndoRow>` cannot know on its own.
   // The receipts keep the live row's height: option B's row is 96px below `md` (two 44px lines), and a one-line
   // receipt at 52px would shift every row under it, and shift them back on Undo.
-  const slotShell = `${twoShellRow ? twoShellRow.slot : legacyShell}${rowB ? " max-md:min-h-[96px]" : ""}`;
+  const slotShell = `${rowShell}${rowB ? " max-md:min-h-[96px]" : ""}`;
   if (spent) return <UndoRow deckId={deckId} card={card} rowShell={slotShell} />;
   if (held) return <HeldSlot card={card} rowShell={slotShell} />;
 

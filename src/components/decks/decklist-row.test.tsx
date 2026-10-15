@@ -989,7 +989,7 @@ describe("DecklistRow in Shopping, md to lg", () => {
     expect(meta.className).toContain("lg:order-5");
     expect(document.querySelector(".hidden.lg\\:flex > span")).toBeNull();
     // md to lg is the shipped shell, and lg takes the two-line one.
-    expect(rowShell().className).toContain("lg:min-h-0");
+    expect(rowShell().className).toContain("lg:min-h-[58px]");
     expect(rowShell().className.split(/\s+/)).not.toContain("md:flex-wrap");
     expect(rowShell().className.split(/\s+/)).toContain("lg:flex-wrap");
   });
@@ -997,7 +997,7 @@ describe("DecklistRow in Shopping, md to lg", () => {
   it("makes the All tab's row two lines from md", () => {
     renderRow(<DecklistRow deckId="d1" card={withCost} newestAsOf={null} />);
     expect(document.querySelector(".hidden.md\\:flex > span")).toBeNull();
-    expect(rowShell().className).toContain("md:min-h-0");
+    expect(rowShell().className).toContain("md:min-h-[58px]");
     expect(rowShell().className.split(/\s+/)).toContain("md:flex-wrap");
     expect(rowShell().className.split(/\s+/)).not.toContain("lg:flex-wrap");
     // The phone is the shipped row: no max-md line classes on an All row.
@@ -1846,6 +1846,19 @@ describe("DecklistRow, the two-line row and the foil glint", () => {
     expect(tokens(slot)).toContain("max-md:-ml-[16px]");
     expect(tokens(slot)).toContain("lg:-ml-[18px]");
     expect(tokens(slot)).not.toContain("md:-ml-[18px]");
+  });
+
+  it("gives a live row and its receipt the same minimum height, so the rows below do not move on Undo", () => {
+    const mins = (el: Element) => el.className.split(/\s+/).filter((c) => c.includes("min-h-") && !c.startsWith("max-md:")).sort();
+    for (const [name, c] of [["card", foiled()], ["land", foiled({ cardTypeGroup: "Lands", typeLine: "Land", manaCost: null, name: "Sunken Ruins" })]] as const) {
+      renderRow(<DecklistRow deckId="d1" card={c} newestAsOf={null} />);
+      const live = mins(row());
+      cleanup();
+      renderRow(<DecklistRow deckId="d1" card={c} spent newestAsOf={null} />);
+      const slot = mins(document.querySelector("[class*='rounded-[7px]'][class*='min-h-']")!);
+      expect({ name, slot }).toEqual({ name, slot: live });
+      cleanup();
+    }
   });
 
   it("keeps the auto tag between the name and the ✕ on an All row, ordered with the name rather than ahead of it", () => {
