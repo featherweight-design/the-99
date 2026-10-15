@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { RevealedCommander } from "../../../lib/precons/revealed";
@@ -23,6 +23,17 @@ vi.mock("../../cards/card-detail-provider", async (importOriginal) => {
     },
   };
 });
+// Card details' read, held open by the test so it can land after the group closed. A prefetch never runs: no test
+// rests a pointer or focuses from the keyboard.
+const details = vi.hoisted(() => ({ resolve: null as null | ((card: unknown) => void) }));
+vi.mock("../../../app/card-detail-action", () => ({
+  getCardDetail: vi.fn(() => new Promise((resolve) => { details.resolve = resolve; })),
+}));
+vi.mock("../../../lib/cards/fetch-card-detail", () => ({ fetchCardDetail: vi.fn(async () => null) }));
+vi.mock("../../../app/collection/actions", () => ({
+  setCardArtPreference: vi.fn(async () => true),
+  clearCardArtPreference: vi.fn(async () => {}),
+}));
 vi.mock("../hover-preview", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../hover-preview")>();
   return {
@@ -182,6 +193,35 @@ describe("AnnouncedGroup", () => {
       expect(chapel).toMatchObject({ preview: true, imageUri: "https://img/normal/78.jpg", name: "Christine Chapel, Combat Medic" });
       // Prev/Next pages the set's own commanders.
       expect(chapel.siblings).toEqual(trcCards.map((c) => c.oracleId));
+    });
+
+    it("draws card details where the reader can use it when the read lands after the group closed", async () => {
+      const { warmCardModal } = await import("../../cards/card-detail-provider");
+      await warmCardModal();
+      const { container } = draw({ opensByItself: true });
+      const chapel = screen.getByRole("button", { name: "View details for Christine Chapel, Combat Medic, White. Revealed commander." });
+      chapel.focus();
+      await act(async () => { fireEvent.click(chapel); });
+      // The reader closes the group before the details arrive.
+      fireEvent.click(head());
+      expect(region(container)).toHaveAttribute("inert");
+      await act(async () => {
+        details.resolve!({
+          oracleId: "o78", name: "Christine Chapel, Combat Medic", typeLine: "Legendary Creature — Human Doctor",
+          manaCost: "{2}{W}", cmc: 3, oracleText: null, keywords: [], rarity: "rare", colorIdentity: ["W"], imageUri: null,
+          printedName: null, quantity: 0, printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
+        });
+      });
+      const dialog = await screen.findByRole("dialog", { name: /Christine Chapel, Combat Medic/ });
+      // Outside the closed region: not inert, not hidden, and it holds focus.
+      expect(region(container)).not.toContainElement(dialog);
+      expect(dialog.closest("[inert]")).toBeNull();
+      expect(dialog.closest(".invisible")).toBeNull();
+      await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+      expect(document.body.style.overflow).toBe("hidden");
+      await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: /Christine Chapel/ })).toBeNull());
+      expect(document.body.style.overflow).not.toBe("hidden");
     });
 
     it("draws each one with the shared trigger in rows, at the strip's unchanged size", () => {

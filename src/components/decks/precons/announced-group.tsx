@@ -100,6 +100,11 @@ export function AnnouncedGroup({
   const count = open || !next ? copy.count(matches.length) : copy.countNext(matches.length, preconDay(next.set.releasesOn));
 
   return (
+    // Card details and the hover preview sit OUTSIDE the collapsible region: a details read that lands after the
+    // reader closed the group would otherwise draw its dialog inside a hidden, inert region while it locks the page's
+    // scroll, a dialog nobody can see or leave.
+    <CardDetailProvider>
+    <HoverPreviewProvider>
     <section id="announced" aria-labelledby="announced-head" className="flex flex-col" data-testid="announced-group">
       <h2 id="announced-head" className="m-0 font-normal">
         <button
@@ -127,9 +132,6 @@ export function AnnouncedGroup({
         {/* The clip the collapse needs, widened 4px past the rows on each side and below (padding, taken back by a
             matching negative margin), so a row's 2px ring at its 2px offset draws whole. */}
         <div className={`-mx-[4px] min-h-0 overflow-hidden px-[4px] ${open ? "-mb-[4px] pb-[4px]" : ""}`}>
-          {/* A revealed commander opens its card details and previews on hover, as every card thumb does. */}
-          <CardDetailProvider>
-          <HoverPreviewProvider>
           {view === "tiles" ? (
             <ul className="m-0 flex list-none flex-col gap-[10px] p-0 pt-[10px]">
               {matches.map((m) => (
@@ -143,10 +145,10 @@ export function AnnouncedGroup({
               ))}
             </ul>
           )}
-          </HoverPreviewProvider>
-          </CardDetailProvider>
         </div>
       </div>
     </section>
+    </HoverPreviewProvider>
+    </CardDetailProvider>
   );
 }
