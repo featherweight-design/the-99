@@ -21,7 +21,7 @@ import {
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
 import { collectionEditEnabled, collectionSyncEnabled } from "../../lib/collection/edit-flag";
-import { parseSyncOptions, SYNC_REVIEW_CAP, changedTokenCount, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
+import { keptForReview, parseSyncOptions, SYNC_REVIEW_CAP, changedTokenCount, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
 import { summarizeUploadPreview, type UploadPreviewDetail } from "../../lib/collection/upload-preview";
 import { randomUUID } from "node:crypto";
@@ -48,6 +48,13 @@ export type UploadPreview = {
    * that dropped 113 cards on the floor.
    */
   skippedByDesignCount: number;
+  /**
+   * The rows of `skippedByDesignCount` that are emblems (not tokens, and not art-series cards), so a Sync's
+   * issues panel can count emblems alone (collection sync README G4). Null when no token lookup ran (a paste, or
+   * no token catalog): the file's tokens are then not recorded, and the panel keeps the shipped line. Absent on a
+   * preview built before it existed.
+   */
+  skippedEmblemCount?: number | null;
   parseErrors: { line: number; reason: string }[];
   currentCollectionCount: number;
   filename: string;
@@ -80,7 +87,7 @@ async function buildPreview(args: {
   }
 
   const { catalog, indexes } = await loadMatchInputs(rows);
-  const { matched, skipped, tokenRows, unmatched } = matchRows(rows, catalog, indexes);
+  const { matched, skipped, tokenRows, emblemCount, unmatched } = matchRows(rows, catalog, indexes);
 
   const pendingItems = aggregatePendingItems(matched);
   const matchedCardCount = totalQuantity(pendingItems);
@@ -125,6 +132,7 @@ async function buildPreview(args: {
     matchedCardCount,
     unmatchedRows: unmatchedPayload,
     skippedByDesignCount: skipped.length,
+    skippedEmblemCount: indexes.tokensRead ? emblemCount : null,
     parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
     currentCollectionCount,
     filename,
@@ -196,7 +204,10 @@ export type UploadSyncPreview = {
   counts: SyncCounts;
   /** The first `SYNC_REVIEW_CAP` conflicts by key, and how many there are. */
   conflicts: { rows: SyncReviewRow[]; total: number };
-  /** The first `SYNC_REVIEW_CAP` kept holdings by key, and how many there are. */
+  /**
+   * The first `SYNC_REVIEW_CAP` holdings kept at the app's count, by key, and how many there are: the app-only
+   * changes and the conflicts answered App, merged before the cap.
+   */
   kept: { rows: SyncReviewRow[]; total: number };
   stale: Staleness;
   /** ISO time the anchor (the upload this file is compared with) was confirmed; null when unavailable. */
@@ -308,7 +319,8 @@ export async function previewUploadChange(
       { id: randomUUID(), dryRun: true, env },
     ),
     editsSinceUpload(userId),
-    // Only a Replace overwrites hand changes, so only it tags rows `edited`.
+    // Only a Replace overwrites hand changes, so only it tags rows `edited` from History. A Sync tags only
+    // the conflicts answered File (below), the one place it overwrites the player's work.
     kind === "replace" ? editedKeysSinceUpload(userId) : Promise.resolve(new Set<string>()),
     collectionTotals(userId),
     lastUploadConfirmedAt(userId),
@@ -340,13 +352,16 @@ export async function previewUploadChange(
     default: throw new Error(`upload preview refused: ${result.status}`);
   }
   const s = result.sync;
+  const tagged = s
+    ? new Set(s.conflicts.filter((r) => r.answer === "file").map((r) => r.key))
+    : editedKeys;
   return {
     raised: result.raised,
     lowered: result.lowered,
     decks: result.decks,
     ...common,
     detail: summarizeUploadPreview({
-      rows: result.rows, holdings: totals.holdings, copies: totals.copies, editedKeys,
+      rows: result.rows, holdings: totals.holdings, copies: totals.copies, editedKeys: tagged,
     }),
     ...(s && sync
       ? {
@@ -355,7 +370,12 @@ export async function previewUploadChange(
             pick: sync.pick,
             counts: s.counts,
             conflicts: { rows: await namedRows(s.conflicts.slice(0, SYNC_REVIEW_CAP)), total: s.conflicts.length },
-            kept: { rows: await namedRows(s.kept.slice(0, SYNC_REVIEW_CAP)), total: s.kept.length },
+            // Kept from The 99 is every holding kept at the app's count: the app-only changes AND the conflicts
+            // answered App. Merged before the cap, so an App answer past the conflicts' 500 still reaches it.
+            kept: await (async () => {
+              const all = keptForReview(s);
+              return { rows: await namedRows(all.slice(0, SYNC_REVIEW_CAP)), total: all.length };
+            })(),
             stale: s.stale,
             anchorConfirmedAt: s.anchorConfirmedAt.toISOString(),
             missingFromAnchor: s.missingFromAnchor,

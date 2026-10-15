@@ -8,7 +8,7 @@
 // the rest are counted behind `and N more`, which opens inline under a 320px cap. Cancel takes
 // focus, and the confirm is the elevated secondary, never red. The shortage figure is --danger ink, as A·E2 draws it.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { ShortDeck } from "../../lib/collection/write";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -40,6 +40,7 @@ export function ShortDeckWarning({
   freshDeckIds,
   onCancel,
   onConfirm,
+  cancelRef: hostCancelRef,
 }: {
   /**
    * `dialog`: the title, body and buttons, hosted in a dialog. `embedded`: just the decks under
@@ -47,7 +48,7 @@ export function ShortDeckWarning({
    */
   variant?: "dialog" | "embedded";
   /** What the decks would be left short by: it words the title and the confirm. */
-  source?: "replace" | "revert" | "save" | "remove" | "undo";
+  source?: "replace" | "sync" | "revert" | "save" | "remove" | "undo";
   /** The card a `save` or `remove` is about: the title of a removal and the body name it. */
   cardName?: string;
   /** The id the host's `aria-labelledby` names. Unused when embedded. */
@@ -62,6 +63,8 @@ export function ShortDeckWarning({
   /** The dialog variant's buttons; the embedded one has none. */
   onCancel?: () => void;
   onConfirm?: () => void;
+  /** The dialog variant's Cancel, for a host that opens straight onto the warning and owns its first focus. */
+  cancelRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const c = collectionEditCopy.shortWarning;
   const rows = useMemo(() => groupShortDecks(decks), [decks]);
@@ -74,23 +77,27 @@ export function ShortDeckWarning({
     : source === "undo" ? gotItCopy.shortWarning.titleUndo(rows.length)
     : source === "remove" ? c.titleRemove(cardName ?? "", rows.length)
     : source === "save" ? c.titleSave(rows.length)
+    // Collection Sync (handoff call 6, Other decisions): never danger red, Cancel still takes focus.
+    : source === "sync" ? c.titleSync(rows.length)
     : c.titleReplace(rows.length);
   const confirmLabel =
     source === "revert" ? c.confirmRevert
     : source === "undo" ? gotItCopy.shortWarning.confirmUndo
     : source === "remove" ? c.confirmRemove
     : source === "save" ? c.confirmSave
+    : source === "sync" ? c.confirmSync
     : c.confirmReplace;
   const body = (source === "remove" || source === "save") && cardName ? c.bodyCard(cardName) : c.body;
   const named = showAll ? rows : rows.slice(0, c.namedCount);
   const hidden = rows.length - c.namedCount;
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  const ownCancelRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = hostCancelRef ?? ownCancelRef;
   const firstRevealed = useRef<HTMLAnchorElement>(null);
   // The warning replaces the confirm inside one dialog, so nothing moves focus here but this.
   // Again for each answer the server sends back: a changed warning keeps this mounted while the
   // host's pending state moved focus to the dialog itself.
   // (The embedded variant draws no Cancel, so there is nothing to focus.)
-  useEffect(() => cancelRef.current?.focus(), [decks]);
+  useEffect(() => cancelRef.current?.focus(), [cancelRef, decks]);
   // `and N more` unmounts the button that had focus: the first row it reveals takes it.
   useEffect(() => {
     if (showAll) firstRevealed.current?.focus();

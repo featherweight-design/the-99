@@ -302,6 +302,45 @@ describe("sync (collection sync plan, PR 1)", () => {
       anchorConfirmedAt: "2026-10-02T12:00:00.000Z", missingFromAnchor: 7, raisingConflicts: 601 } });
   });
 
+  it("lists a conflict answered App in Kept from The 99 even past the conflicts' 500 cap", async () => {
+    // 501 conflicts: the first 500 by key answered File, the 501st App. The conflicts list ships 500 and never
+    // the App one, so Kept is merged from the whole plan before its own cap.
+    const conflicts = Array.from({ length: 501 }, (_, i) => ({ ...review(i), answer: i < 500 ? "file" : "app" }));
+    stub.apply.mockResolvedValue({ status: "preview", raised: 1, lowered: 0, rows: [], decks: [], sync: { ...syncPreview, conflicts, kept: [] } });
+    const got = (await previewUploadChange(UPLOAD, "sync", { pick: "everything", answers: { all: "file", byKey: { k0500: "app" } } })) as {
+      sync: { kept: { rows: { key: string }[]; total: number } };
+    };
+    expect(got.sync.kept.total).toBe(1);
+    expect(got.sync.kept.rows.map((r) => r.key)).toEqual(["k0500"]);
+  });
+
+  it("caps Kept from The 99 at 500 AFTER merging the conflicts answered App, counting every one", async () => {
+    const conflicts = Array.from({ length: 300 }, (_, i) => ({ ...review(i), answer: "app" }));
+    const kept = Array.from({ length: 300 }, (_, i) => review(5000 + i));
+    stub.apply.mockResolvedValue({ status: "preview", raised: 0, lowered: 0, rows: [], decks: [], sync: { ...syncPreview, conflicts, kept } });
+    const got = (await previewUploadChange(UPLOAD, "sync", { pick: "everything", answers: { all: "app" } })) as {
+      sync: { kept: { rows: { key: string }[]; total: number } };
+    };
+    expect(got.sync.kept.total).toBe(600);
+    expect(got.sync.kept.rows).toHaveLength(500);
+    // In key order across both sources: the 300 conflicts (k0000..) then the first 200 kept (k5000..).
+    expect(got.sync.kept.rows[299].key).toBe("k0299");
+    expect(got.sync.kept.rows[300].key).toBe("k5000");
+  });
+
+  it("tags `edited` only the rows of conflicts answered File, never one answered App or left open, nor History's", async () => {
+    const conflictRow = (n: number, answer?: "app" | "file") => ({ ...review(n), key: `${A}|lea|${n}|nonfoil`, ...(answer ? { answer } : {}) });
+    const st = (quantity: number) => ({ quantity, scryfallId: null, condition: null });
+    const moved = (n: number) => ({ oracleId: A, setCode: "lea", collectorNumber: String(n), finish: "nonfoil", name: `Card ${n}`, before: st(3), after: st(2) });
+    stub.apply.mockResolvedValue({
+      status: "preview", raised: 0, lowered: 3, rows: [moved(1), moved(2), moved(3)], decks: [],
+      sync: { ...syncPreview, conflicts: [conflictRow(1, "file"), conflictRow(2, "app"), conflictRow(3)] },
+    });
+    const got = await previewUploadChange(UPLOAD, "sync", { pick: "everything", answers: { byKey: { k: "file" } } });
+    const rows = (got as { detail: { lists: { down: { rows: { collectorNumber: string; edited: boolean }[] } } } }).detail.lists.down.rows;
+    expect(rows.map((r) => [r.collectorNumber, r.edited])).toEqual([["1", true], ["2", false], ["3", false]]);
+  });
+
   it("previews Sync as unavailable, with its reason, when there is no base", async () => {
     stub.apply.mockResolvedValue({ status: "noBase", reason: "noRecord" });
     expect(await previewUploadChange(UPLOAD, "sync")).toMatchObject({ sync: { unavailable: "noRecord", planDigest: "", nothing: true } });

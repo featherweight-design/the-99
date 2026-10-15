@@ -1,5 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
+import type { ShortDeck } from "../../lib/collection/write";
 import { ConfirmModal } from "./confirm-modal";
 import type { UploadPreview } from "../../app/collection/actions";
 
@@ -130,5 +132,66 @@ describe("ConfirmModal", () => {
     render(<ConfirmModal preview={preview} pending={false} error={null} onClose={vi.fn()} onConfirm={onConfirm} />);
     fireEvent.click(screen.getByRole("button", { name: "Replace with 120 cards" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  // Sync's shortage dialog opens STRAIGHT onto the warning (Confirm X1). The warning's Cancel focuses itself in its
+  // own (child) effect, before the dialog hook's: the dialog must still return focus to the control that opened it,
+  // and keep Cancel, never the first deck link, as the first focus.
+  describe("opened straight onto the warning", () => {
+    const decks: ShortDeck[] = [
+      { deckId: "d1", deckName: "Tithe and Tax", oracleId: "o1", cardName: "Smothering Tithe", short: 1 },
+      { deckId: "d2", deckName: "Sram Auras", oracleId: "o2", cardName: "Sol Ring", short: 1 },
+    ];
+    afterEach(() => vi.restoreAllMocks());
+
+    function Host({ decksNow = decks }: { decksNow?: ShortDeck[] }) {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>Sync collection</button>
+          {open && (
+            <ConfirmModal
+              preview={preview}
+              pending={false}
+              error={null}
+              onClose={() => setOpen(false)}
+              onConfirm={vi.fn()}
+              warning={{ decks: decksNow, changed: false, fresh: new Set(), onConfirm: vi.fn(), source: "sync" }}
+            />
+          )}
+        </>
+      );
+    }
+
+    it("returns focus to the control that opened it, never the removed Cancel", () => {
+      render(<Host />);
+      const trigger = screen.getByRole("button", { name: "Sync collection" });
+      trigger.focus();
+      fireEvent.click(trigger);
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it("lands first focus on Cancel even where every control has a box (a browser's layout)", () => {
+      // jsdom draws no boxes, so the dialog hook's first-visible fallback finds nothing and hides the order problem.
+      // A box on every element is what a browser gives it: the fallback then reaches the first deck link.
+      vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+      render(<Host />);
+      const trigger = screen.getByRole("button", { name: "Sync collection" });
+      trigger.focus();
+      fireEvent.click(trigger);
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
+    });
+
+    it("takes Cancel again when a refused confirm redraws the warning with other decks (E6)", () => {
+      const { rerender } = render(<Host />);
+      const trigger = screen.getByRole("button", { name: "Sync collection" });
+      trigger.focus();
+      fireEvent.click(trigger);
+      trigger.focus();
+      rerender(<Host decksNow={[decks[0]]} />);
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
+    });
   });
 });

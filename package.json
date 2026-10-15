@@ -170,6 +170,7 @@
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:collection-sync": "tsx scripts/probe-collection-sync.ts",
     "probe:added-at": "tsx scripts/probe-added-at.ts",
+    "probe:collection-sync-ui": "node scripts/probe-collection-sync-ui.mjs",
     "probe:collection-write": "tsx scripts/probe-collection-write.ts",
     "probe:mark-bought": "tsx scripts/probe-mark-bought.ts",
     "probe:history-went-to": "tsx scripts/probe-history-went-to.ts",

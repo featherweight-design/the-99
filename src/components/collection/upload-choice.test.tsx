@@ -69,10 +69,17 @@ describe("UploadChoice with Sync", () => {
     expect(radios[1].textContent).toContain("The file’s quantities are added to yours.");
   });
 
-  it("names the review it leads to, and holds Continue for Sync until its review ships", () => {
-    render(<UploadChoice {...base} sync={sync()} picked="sync" onPick={noop} />);
+  it("names the review it leads to, and continues to it once the pick's own read is in", () => {
+    const onContinue = vi.fn();
+    const { rerender } = render(<UploadChoice {...base} sync={sync({ figure: null })} picked="sync" onPick={noop} onContinue={onContinue} />);
     expect(screen.getByText("Next: what this sync takes from the file, what it keeps, and anything it needs you to decide.")).toBeTruthy();
+    // Its review is drawn from that read, so Continue waits for it, and for a read that failed.
     expect(screen.getByRole("button", { name: "Review the sync →" })).toBeDisabled();
+    rerender(<UploadChoice {...base} sync={sync({ figure: "failed" })} picked="sync" onPick={noop} onContinue={onContinue} />);
+    expect(screen.getByRole("button", { name: "Review the sync →" })).toBeDisabled();
+    rerender(<UploadChoice {...base} sync={sync()} picked="sync" onPick={noop} onContinue={onContinue} />);
+    fireEvent.click(screen.getByRole("button", { name: "Review the sync →" }));
+    expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
   it("draws the tokens-only note in neutral words, true of an add or a removal alike", () => {

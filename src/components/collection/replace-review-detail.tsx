@@ -3,14 +3,13 @@
 // figures, what the replace overwrites, the decks it leaves short, then the card lists. The
 // shipped matched banner and issue sections draw around it, unchanged.
 
-import { useEffect, useRef, useState } from "react";
 import type { UploadChangePreview, UploadMode } from "../../app/collection/actions";
 import type { ShortDeck } from "../../lib/collection/write";
-import type { PreviewList, PreviewListRow } from "../../lib/collection/upload-preview";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { ShortDeckWarning } from "./short-deck-warning";
+import { Rows, Tile } from "./review-parts";
+import { SyncReviewDetail, type SyncReviewControls } from "./sync-review";
 
-const SHOWN = 8;
 const c = collectionEditCopy.upload;
 
 /** "Jun 2", pinned to en-US and UTC so a server render and a browser agree. */
@@ -23,70 +22,6 @@ export function overwriteLine(change: Pick<UploadChangePreview, "editsSinceUploa
   return change.editsSinceUpload > 0 ? c.overwriteBanner(change.editsSinceUpload, day(change.lastUploadAt)) : null;
 }
 
-function Tile({ n, label, ink }: { n: number; label: string; ink: string }) {
-  return (
-    <div className="rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface)] p-[12px_14px] md:p-[16px_18px]">
-      <div className="font-mono text-[22px] font-semibold leading-none md:text-[26px]" style={{ color: ink }}>
-        {n.toLocaleString("en-US")}
-      </div>
-      <div className="mt-[6px] text-[12px] text-[color:var(--fg-muted)]">{label}</div>
-    </div>
-  );
-}
-
-function Rows({ heading, list, tone }: { heading: string; list: PreviewList; tone: "up" | "other" }) {
-  const [all, setAll] = useState(false);
-  const firstRevealed = useRef<HTMLLIElement>(null);
-  // The button that revealed the rest is gone: the first row it revealed takes focus.
-  useEffect(() => {
-    if (all) firstRevealed.current?.focus();
-  }, [all]);
-  if (list.total === 0) return null;
-  const shown = all ? list.rows : list.rows.slice(0, SHOWN);
-  return (
-    <div className="min-w-0">
-      <h2 className="m-0 mb-[8px] font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">
-        {heading}
-      </h2>
-      <ul className="m-0 flex list-none flex-col gap-[6px] p-0">
-        {shown.map((r: PreviewListRow, i) => (
-          <li
-            ref={all && i === SHOWN ? firstRevealed : undefined}
-            tabIndex={all && i === SHOWN ? -1 : undefined}
-            key={`${r.oracleId}|${r.setCode}|${r.collectorNumber}|${r.finish}`}
-            className="flex min-h-[40px] items-center gap-[10px] rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface)] p-[8px_12px] outline-none"
-          >
-            <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--fg)] md:text-[14px]">{r.name}</span>
-            {r.edited ? (
-              <span className="flex-none rounded-[4px] border border-[color:var(--warning)] px-[5px] font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--warning)]">
-                {c.edited}
-              </span>
-            ) : null}
-            <span
-              className="flex-none font-mono text-[12px]"
-              style={{ color: tone === "up" ? "var(--success)" : "var(--fg-muted)" }}
-            >
-              {r.before === 0 ? c.newBadge : `×${r.before}`} → ×{r.after}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {all && list.total > list.rows.length ? (
-        <p className="m-0 mt-[8px] text-[12.5px] text-[color:var(--fg-muted)]">{c.capNote(list.rows.length, list.total)}</p>
-      ) : null}
-      {!all && list.rows.length > SHOWN ? (
-        <button
-          type="button"
-          onClick={() => setAll(true)}
-          className="mt-[8px] min-h-[44px] text-[13px] text-[color:var(--accent)] underline underline-offset-2"
-        >
-          {c.showAll(list.rows.length)}
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
 /** The ledger path's read of a Replace, as the review draws it. */
 export type ReviewChange = {
   data: UploadChangePreview;
@@ -94,8 +29,12 @@ export type ReviewChange = {
   fresh: ReadonlySet<string>;
   /** A confirm came back with a different answer than the one on screen. */
   changed: boolean;
-  /** A confirm that wrote nothing and could not be answered with a warning: shown as A5. */
-  failure: { body: string } | null;
+  /**
+   * A confirm that wrote nothing and could not be answered with a warning: shown as A5. `read` marks a Sync
+   * re-read that failed instead: nothing was confirmed, the figures on screen are the previous read's, and its
+   * Try again reads again rather than writing.
+   */
+  failure: { body: string; read?: true } | null;
 };
 
 export function ReplaceReviewDetail({
@@ -105,8 +44,11 @@ export function ReplaceReviewDetail({
   changed,
   mode = "replace",
   onSwitchToReplace,
+  sync,
 }: {
   mode?: UploadMode;
+  /** A Sync's answers and what its review needs from the flow; required for `mode="sync"`. */
+  sync?: SyncReviewControls;
   /** An Add that brings in nothing new offers the other way. */
   onSwitchToReplace?: () => void;
   change: UploadChangePreview;
@@ -118,6 +60,8 @@ export function ReplaceReviewDetail({
 }) {
   const d = change.detail;
   if (mode === "add") return <AddReviewDetail detail={d} onSwitchToReplace={onSwitchToReplace} />;
+  if (mode === "sync" && change.sync && sync)
+    return <SyncReviewDetail change={change} syncData={change.sync} decks={decks} freshDeckIds={freshDeckIds} changed={changed} controls={sync} />;
   const overwrite = overwriteLine(change);
   return (
     <div className="mt-[16px] flex flex-col gap-[16px] md:mt-[24px] md:gap-[22px]">

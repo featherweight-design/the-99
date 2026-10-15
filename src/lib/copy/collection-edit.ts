@@ -70,7 +70,11 @@ export const collectionEditCopy = {
     syncKeepsNone: (since: string) => `You haven’t changed anything in the app since your ${since} upload, so this does what Replace does.`,
     /** (reworded, for /copy-review) `t`: the tokens the pick changes by count, either way. */
     syncTokensOnly: (t: number) => `Your cards stay as they are. ${tokensChange(t)}.`,
-    /** (new, for /copy-review) Nothing would change. It claims nothing about the file matching an upload. */
+    /**
+     * (new, for /copy-review) Nothing would change, on the choice's Sync card and as the review's nothing-to-sync
+     * state. It claims nothing about what the file holds: no planned write can also mean Sync keeps an app change
+     * the file disagrees with (a card deleted in the app that the base and the file both hold).
+     */
     syncNoChange: "Nothing in this file changes your collection.",
     /**
      * (new, for /copy-review) No unreverted Replace or full Sync to compare against, or its file is too old to
@@ -148,6 +152,76 @@ export const collectionEditCopy = {
     failedTitle: "We couldn’t import that",
     failedBody: "Your collection is unchanged, and this review is still here.",
     retry: "Try again",
+    // Collection Sync, the review and the confirm (plan `2026-10-15-collection-sync.md` PR 3). The handoff's
+    // `collection-sync · copy strings.ts`, `review` and `bar`, adopted as drawn for /copy-review; lines marked
+    // (new) have no key there.
+    syncReview: {
+      title: "Review before you sync",
+      /** The A5 failure's title on a Sync (copy-review ruling on G6); the body is the shipped `failedBody`. */
+      failedTitleSync: "We couldn’t sync that",
+      titlePhone: "Review sync",
+      /** (new) The matched banner's desktop label on a Sync, as the Review board draws it. */
+      matchedLabel: "matched to the Oracle database: ready to sync",
+      tiles: { decide: "to decide", file: "from the file", kept: "kept from The 99", nothing: "nothing to do" },
+      /** (reworded, for /copy-review) `t` is the tokens this pick changes by count, either way: never "records". */
+      tokensLine: (t: number) => `${tokensChange(t)} to match the file, as an upload sets them. Tokens you marked by hand stay.`,
+      /** The file's own token read, on desktop: how many tokens and copies it holds. */
+      tokensFigure: (t: number, c: number) => `${t === 1 ? "1 token" : `${n(t)} tokens`} · ${copies(c)}`,
+      /** The issues panel's third line on a Sync (README G4). */
+      emblemsSkipped: (k: number) => `emblem ${k === 1 ? "row" : "rows"} skipped`,
+      listKept: (k: number) => `Kept from The 99 · ${n(k)}`,
+      listDecide: (k: number) => `To decide · ${n(k)}`,
+      decideLede: (since: string) => `You and the file both changed these since your ${since} upload. Pick which count to keep.`,
+      decideLeft: (k: number) => (k === 0 ? "All answered." : `${n(k)} left.`),
+      colAt: (since: string) => `AT ${since.toUpperCase()}`,
+      colApp: "IN THE APP",
+      colFile: "IN THE FILE",
+      pickApp: "App",
+      pickFile: "File",
+      // The printing is named too: conflicts are per printing and finish, and two holdings of one card would
+      // otherwise sound the same.
+      rowAria: (card: string, printing: string, since: string, b: string, a: string, f: string) =>
+        `${card}, printing ${printing}, at ${since} ${b}, app ${a}, file ${f}`,
+      rowPrinting: (set: string, number: string, finish: string) => `${set} ${number}, ${finish}`,
+      rowWas: (since: string, b: string) => `at ${since} ${b}`,
+      bulkApp: (k: number) => `Keep the app’s for all ${n(k)}`,
+      bulkFile: (k: number) => `Take the file’s for all ${n(k)}`,
+      bulkDoneApp: (k: number) => `Kept the app’s count for all ${n(k)}. You can still change any one.`,
+      bulkDoneFile: (k: number) => `Took the file’s count for all ${n(k)}. You can still change any one.`,
+      bulkCapNote: (shown: number, total: number) => `Showing the first ${n(shown)} of ${n(total)}. The buttons above apply to all ${n(total)}.`,
+      overwrite: (k: number, since: string) =>
+        `Taking the file’s count overwrites ${cards(k)} you changed in the app since your ${since} upload.`,
+      /** The review's head under a stale pick (E5). */
+      /** (reworded, for /copy-review) `t` is the tokens this pick changes by count, from its own read. */
+      pickedAdds: (since: string, c: number, t: number) =>
+        `This file looks older than your ${since} upload, so this sync takes only what it adds: ${cards(c)}${t ? `, and ${tokenChanges(t)}` : ""}.`,
+      pickedTokens: (since: string) => `This file looks no newer than your ${since} upload, so this sync takes only its tokens.`,
+      /** (new) An older-looking file synced for its tokens alone: the handoff draws only the no-newer form. */
+      pickedOlderTokens: (since: string) => `This file looks older than your ${since} upload, so this sync takes only its tokens.`,
+      change: "Change",
+      bar: {
+        sync: (take: number, keep: number, t: number, decided: number, short: number) =>
+          [
+            `Taking ${cards(take)} from the file and keeping ${n(keep)} of yours${t ? `, with ${tokenChanges(t)}` : ""}.`,
+            decided ? `You decided ${n(decided)}.` : "",
+            short ? `${short === 1 ? "1 deck" : `${n(short)} decks`} will read short.` : "",
+          ].filter(Boolean).join(" "),
+        noneKept: (take: number, t: number) => `Taking ${cards(take)} from the file${t ? `, with ${tokenChanges(t)}` : ""}. Nothing of yours to keep.`,
+        /** (reworded, for /copy-review) The kept clause goes at 0: there is nothing of yours it could name. */
+        tokensOnly: (keep: number, t: number) =>
+          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. ${tokensChange(t)}.`,
+        /** (new, for /copy-review) No card moves and no token COUNT changes, yet the write still records the file's
+         * tokens (a read marker, a printing, an ownership source): the plain confirm, never `Sync 0 token changes`. */
+        tokensRecorded: (keep: number) =>
+          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. The file’s tokens are recorded, and no count changes.`,
+        undecided: (k: number) => `${cards(k)} still to decide.`,
+        nothing: "Nothing will change.",
+        confirm: "Sync collection",
+        confirmTokens: (t: number) => `Sync ${t === 1 ? "1 token change" : `${n(t)} token changes`}`,
+        pending: "Syncing…",
+        back: "Back to Collection",
+      },
+    },
   },
   // §E, the short-deck warning. Replace and Revert are drawn so far; Save and Remove join with the
   // PRs that draw them. Every string is a placeholder for /copy-review.
@@ -171,6 +245,9 @@ export const collectionEditCopy = {
     namedCount: 3,
     cancel: "Cancel",
     confirmReplace: "Replace anyway",
+    /** Collection Sync's title and confirm (handoff `collection-sync · copy strings.ts`, `shortWarning`). */
+    titleSync: (k: number) => `Syncing leaves ${decks(k)} short`,
+    confirmSync: "Sync anyway",
     checking: "Checking decks…",
     saving: "Saving…",
     changed:

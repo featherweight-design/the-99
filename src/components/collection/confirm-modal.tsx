@@ -12,7 +12,7 @@
 //
 // READINESS #5: focus trap + Escape. Initial focus is on Keep current (D9).
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { UploadPreview } from "../../app/collection/actions";
 import { replaceCopy } from "../../lib/copy/replace";
@@ -40,11 +40,19 @@ export function ConfirmModal({
   /** History can revert this replace: say so. Follows `checking` unless a caller turns it on alone (first run). */
   history?: boolean;
   /** The decks the confirm would leave short: the dialog shows §E in place of the confirm. */
-  warning?: { decks: ShortDeck[]; changed: boolean; fresh: ReadonlySet<string>; onConfirm: () => void };
+  warning?: { decks: ShortDeck[]; changed: boolean; fresh: ReadonlySet<string>; onConfirm: () => void; source?: "replace" | "sync" };
 }) {
   const c = replaceCopy.confirm;
   const dialogRef = useRef<HTMLDivElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
+  const warningCancelRef = useRef<HTMLButtonElement>(null);
+  // What had focus when the dialog opened, read in a LAYOUT effect. A dialog that opens straight onto the warning
+  // (Sync's, Confirm X1) mounts a Cancel that focuses itself in its own passive effect, which runs before the
+  // dialog hook's capture would: that capture would read Cancel, and closing would send focus to a removed button.
+  const openedFrom = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    openedFrom.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }, []);
   const isInitialImport = preview.currentCollectionCount === 0;
   const words = isInitialImport
     ? {
@@ -68,8 +76,10 @@ export function ConfirmModal({
   // Focus trap, Escape, focus-return. Escape is refused while pending: the write is already
   // running, and dismissing would only hide it. The backdrop is guarded the same way below.
   // While pending both buttons disable, and the dialog itself holds focus (tabIndex -1).
+  // First focus is Keep current on the confirm and Cancel on the warning (E1): never the first deck link.
   useDialogA11y(dialogRef, onClose, {
-    initialFocusRef: keepRef,
+    initialFocusRef: warning ? warningCancelRef : keepRef,
+    returnFocusRef: openedFrom,
     closeOnEscape: !pending,
   });
   // Pressing Replace disables the button that has focus, which would drop focus to the body and
@@ -108,6 +118,7 @@ export function ConfirmModal({
           <>
             <ShortDeckWarning
               titleId="confirm-title"
+              source={warning.source}
               decks={warning.decks}
               pending={pending}
               error={error}
@@ -115,6 +126,7 @@ export function ConfirmModal({
               freshDeckIds={warning.fresh}
               onCancel={onClose}
               onConfirm={warning.onConfirm}
+              cancelRef={warningCancelRef}
             />
           </>
         ) : (

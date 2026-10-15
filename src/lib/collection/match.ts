@@ -38,6 +38,11 @@ export type MatchIndexes = {
   /** `skipped_printings.scryfall_id` for the token layouts alone — tokens, emblems and art series (§9.1). */
   skippedScryfallIds?: Iterable<string>;
   /**
+   * The ids of `skippedScryfallIds` whose layout is `emblem`, so a Sync's issues panel can count emblems apart
+   * from tokens and art-series cards (collection sync README G4).
+   */
+  emblemScryfallIds?: Iterable<string>;
+  /**
    * `token_printings`, for the ids the upload carries: which TOKEN each one is (any printing of a
    * token is that token). What is a token is decided by this table, never by a printing's layout:
    * `skippedScryfallIds` also holds emblems and art-series cards, which are not tokens (ruling 4).
@@ -67,6 +72,8 @@ export type MatchResult = {
    * meaning. This is what is kept besides.
    */
   tokenRows: { row: CollectionRow; tokenOracleId: string }[];
+  /** How many rows of `skipped` are emblems: not tokens, and not art-series cards. */
+  emblemCount: number;
   unmatched: CollectionRow[];
 };
 
@@ -100,6 +107,7 @@ export function matchRows(
     if (!notCards.has(p.oracleId)) byScryfallId.set(p.scryfallId, p.oracleId);
   }
   const skippedIds = new Set(indexes.skippedScryfallIds ?? []);
+  const emblemIds = new Set(indexes.emblemScryfallIds ?? []);
   const tokenByPrinting = new Map((indexes.tokenPrintings ?? []).map((t) => [t.scryfallId, t.tokenOracleId]));
 
   const byName = new Map<string, string>();
@@ -132,6 +140,7 @@ export function matchRows(
   const skipped: CollectionRow[] = [];
   const tokenRows: MatchResult["tokenRows"] = [];
   const unmatched: CollectionRow[] = [];
+  let emblemCount = 0;
   for (const row of rows) {
     const byId = row.scryfallId ? byScryfallId.get(row.scryfallId) : undefined;
     if (byId) { matched.push({ row, oracleId: byId }); continue; }
@@ -142,10 +151,14 @@ export function matchRows(
     // does not read, and is still a token. It stays counted as skipped, and is kept as well.
     const tokenOracleId = row.scryfallId ? tokenByPrinting.get(row.scryfallId) : undefined;
     if (row.scryfallId && tokenOracleId) { skipped.push(row); tokenRows.push({ row, tokenOracleId }); continue; }
-    if (row.scryfallId && skippedIds.has(row.scryfallId)) { skipped.push(row); continue; }
+    if (row.scryfallId && skippedIds.has(row.scryfallId)) {
+      skipped.push(row);
+      if (emblemIds.has(row.scryfallId)) emblemCount++;
+      continue;
+    }
     const byNameId = byName.get(normalizeCardName(row.name));
     if (byNameId) matched.push({ row, oracleId: byNameId });
     else unmatched.push(row);
   }
-  return { matched, skipped, tokenRows, unmatched };
+  return { matched, skipped, tokenRows, emblemCount, unmatched };
 }
