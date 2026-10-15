@@ -105,8 +105,7 @@ async function main() {
       try {
         await signIn(page);
         await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "networkidle" });
-        const main = onPageRole(page, "button", "Lock cards");
-        await main.click();
+        await onPageRole(page, "button", "Lock cards").filter({ visible: true }).first().click();
         await page.waitForSelector("[data-testid=lock-mode-line]", { state: "visible" });
         const toggle = onPageRole(page, "button", /^Lock .+/).and(page.locator("[aria-pressed=false]")).first();
         await toggle.waitFor({ state: "visible" });
