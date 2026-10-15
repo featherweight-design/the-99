@@ -134,6 +134,26 @@ describe("netHandChanges", () => {
     expect(net.keys.size).toBe(0);
   });
 
+  // A production ledger, 2026-10-15: since the upload, an add of 1 and its revert, hand adds of 16 and 24, then a
+  // 97-card precon added, reverted, added, reverted and added again. Nine entries; 137 holdings differ. A build that
+  // counted entries quoted "9 changes" here.
+  it("counts holdings, not entries, over an add/revert/add/revert/add precon chain", () => {
+    const cards = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => `${prefix}${i}`);
+    const adds = (seq: number, ids: string[]) => entry(seq, ...ids.map((c) => row(c, null, st(1))));
+    const reverts = (seq: number, ids: string[]) => entry(seq, ...ids.map((c) => row(c, st(1), null)));
+    const precon = cards("p", 97);
+    const ledger = [
+      adds(1, ["x"]), reverts(3, ["x"]),
+      adds(11, cards("h", 16)), adds(13, cards("k", 24)),
+      adds(14, precon), reverts(18, precon), adds(19, precon), reverts(21, precon), adds(24, precon),
+    ];
+    expect(ledger).toHaveLength(9);
+    const net = netHandChanges(ledger);
+    expect(net.count).toBe(137);
+    expect(net.keys.has("x|set|1|nonfoil")).toBe(false);
+    expect(net.keys.has("p0|set|1|nonfoil")).toBe(true);
+  });
+
   it("counts a holding once, however many entries touched it", () => {
     expect(netHandChanges([entry(1, row("a", st(1), st(2))), entry(2, row("a", st(2), st(3)))]).count).toBe(1);
     // Added, reverted, added again: it differs from the upload.
