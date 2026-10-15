@@ -3374,10 +3374,11 @@ export const podSpareShares = pgTable("pod_spare_shares", {
 ]);
 
 /**
- * A player's wishlist (scope §2, Hugh's rulings Q7 and Q9, 2026-10-12): cards wanted outside any deck, at
- * CARD level (any printing will do). `quantity` is how many copies the player wants to own in all; a line
- * whose card the collection holds that many of reads as GOT, derived and never stored, and stays until the
- * player clears it. Visible to friends (Q7), read for them only through `src/lib/social/`.
+ * A player's wishlist (scope §2, Hugh's ruling Q7, 2026-10-12): cards wanted outside any deck, at CARD level
+ * (any printing will do). `quantity` is how many copies the player wants to own in all. Once the collection
+ * holds that many the card is COLLECTED and leaves the list (Social R2 G5, Hugh, 2026-10-15, reversing Q9's
+ * "stays until cleared"): the collection write that reaches the want deletes the line in its own transaction
+ * and records it in `wishlist_collected`. Visible to friends (Q7), read for them only through `src/lib/social/`.
  */
 export const wishlistItems = pgTable("wishlist_items", {
   userId: text("user_id").notNull(),
@@ -3387,6 +3388,21 @@ export const wishlistItems = pgTable("wishlist_items", {
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
   check("wishlist_items_quantity_check", sql`${t.quantity} between 1 and 99`),
+]);
+
+/**
+ * Wishlist lines that left because the collection reached their want (Social R2 G5), kept for the wishlist tab's
+ * one-time strip ("Collected since you last looked: …"). Written only beside the delete of the line, in the same
+ * transaction (`sweepCollectedIn`); dismissing the strip deletes them. `quantity` is the want the collection
+ * reached. One row per card: a card collected again re-dates its row. Purged with the account.
+ */
+export const wishlistCollected = pgTable("wishlist_collected", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  quantity: integer("quantity").notNull(),
+  collectedAt: timestamp("collected_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId] }),
 ]);
 
 /**

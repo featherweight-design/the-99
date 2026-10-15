@@ -925,6 +925,13 @@
       "when": 1792081416198,
       "tag": "0131_scan_lab_true_card",
       "breakpoints": true
+    },
+    {
+      "idx": 132,
+      "version": "7",
+      "when": 1792086649127,
+      "tag": "0132_wishlist_collected",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanQuantity, toLines, wishlistLinesQuery } from "./wishlist";
+import { cleanQuantity, wishlistLinesQuery } from "./wishlist";
 import { friendWishlistQuery } from "../social/wishlist";
 import { wishlistEnabled } from "./flag";
 
@@ -12,24 +12,19 @@ describe("cleanQuantity", () => {
   });
 });
 
-describe("toLines", () => {
-  it("reads a line as got once the collection holds as many as wanted, and not before", () => {
-    const at = new Date(0);
-    const lines = toLines([
-      { oracleId: "a", quantity: 2, owned: 1, addedAt: at },
-      { oracleId: "b", quantity: 2, owned: 2, addedAt: at },
-      { oracleId: "c", quantity: 1, owned: 0, addedAt: at },
-    ]);
-    expect(lines.map((l) => l.got)).toEqual([false, true, false]);
-  });
-});
-
 describe("wishlistLinesQuery", () => {
   it("reads one owner's lines and only that owner's collection", () => {
     const { sql, params } = wishlistLinesQuery("owner").toSQL();
-    expect(sql).toContain(`where "wishlist_items"."user_id" = $`);
+    expect(sql).toContain(`where ("wishlist_items"."user_id" = $`);
     expect(sql).toContain(`where "collection_items"."user_id" = $`);
     expect(params.filter((p) => p === "owner")).toHaveLength(2);
+  });
+
+  it("leaves out a line the collection already reaches, rather than deleting it (G5)", () => {
+    const { sql } = wishlistLinesQuery("owner").toSQL();
+    // `n` is the owned subquery's alone: `wishlist_items` has no such column, so the bare name cannot collide.
+    expect(sql).toContain(`and coalesce("n", 0) < "wishlist_items"."quantity")`);
+    expect(sql).not.toMatch(/delete/i);
   });
 });
 
