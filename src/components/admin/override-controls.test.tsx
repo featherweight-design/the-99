@@ -12,7 +12,7 @@ const set = vi.fn<(input: object) => Promise<WriteResult>>();
 const clear = vi.fn<(input: object) => Promise<WriteResult>>();
 vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: (i: object) => set(i), clearSwitchOverride: (i: object) => clear(i) }));
 
-const { AppWideControl, RowControls } = await import("./override-controls");
+const { AppWideControl, RowControls, Seg } = await import("./override-controls");
 
 const PREVIEW = { names: ["Mara", "Theo"], count: 2, costs: [{ key: "intake" as const, reserveMicroUsd: 240_000, meanMicroUsd: null }], credits: [5], whatsNew: 2 };
 function deferred() {
@@ -171,5 +171,30 @@ describe("RowControls", () => {
     await act(async () => fireEvent.click(radio("Off")));
     expect(screen.getByRole("alert").textContent).toBe("The server refused that change. Reload the page and try again.");
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+});
+
+describe("Seg keys", () => {
+  const OPTIONS = [{ key: "on", text: "On" }, { key: "off", text: "Off" }, { key: "unset", text: "Not set" }] as const;
+
+  // A pick saves an override at once, so the keys move focus and never pick: Enter or Space does.
+  it("is one tab stop on the chosen option; the arrows, Home and End move focus past a locked one and pick nothing", () => {
+    const pick = vi.fn();
+    render(<Seg label="Notes" options={OPTIONS} selected="off" pressed={null} disabled={false} locked={["on"]} onPick={pick} />);
+    expect(screen.getAllByRole("radio").map((r) => r.tabIndex)).toEqual([-1, 0, -1]);
+    fireEvent.keyDown(radio("Off"), { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(radio("Not set"));
+    fireEvent.keyDown(radio("Not set"), { key: "Home" });
+    expect(document.activeElement).toBe(radio("Off"));
+    fireEvent.keyDown(radio("Off"), { key: "End" });
+    expect(document.activeElement).toBe(radio("Not set"));
+    expect(pick).not.toHaveBeenCalled();
+    fireEvent.click(radio("Not set"));
+    expect(pick).toHaveBeenCalledWith("unset");
+  });
+
+  it("puts the tab stop on the first option that can take focus when the chosen one cannot", () => {
+    render(<Seg label="Notes" options={OPTIONS} selected="on" pressed={null} disabled={false} locked={["on"]} onPick={() => {}} />);
+    expect(screen.getAllByRole("radio").map((r) => r.tabIndex)).toEqual([-1, 0, -1]);
   });
 });

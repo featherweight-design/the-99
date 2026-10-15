@@ -209,7 +209,7 @@ describe("CartView", () => {
     expect(controls.className).toContain("top-0");
     expect(controls.className).toContain("md:static");
     // The switch and the heading are the pinned block's members.
-    expect(within(controls).getByRole("group", { name: copy.view.label })).toBeTruthy();
+    expect(within(controls).getByRole("radiogroup", { name: copy.view.label })).toBeTruthy();
     expect(within(controls).getByRole("heading", { level: 2 })).toBeTruthy();
     const box = screen.getByRole("region", { name: copy.list.regionAria });
     // Desktop keeps what the phone gave up: positive assertions first, so dropping a class outright fails too.
@@ -241,8 +241,8 @@ describe("CartView", () => {
 describe("CartView by deck (A5)", () => {
   it("switches to one group per deck, largest first, every group folded", () => {
     render(<CartView cart={cart()} provenance={provenance} />);
-    fireEvent.click(screen.getByRole("button", { name: copy.view.byDeck }));
-    expect(screen.getByRole("button", { name: copy.view.byDeck }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byDeck }));
+    expect(screen.getByRole("radio", { name: copy.view.byDeck }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getByText(copy.list.headByDeck(3, 4))).toBeTruthy();
     const groups = screen.getAllByRole("region", { name: /HD - / });
     expect(groups.map((g) => g.getAttribute("aria-labelledby") && g.textContent?.match(/HD - [A-Za-z]+/)?.[0])).toEqual(["HD - Gishath", "HD - Omnath", "HD - Kratos"]);
@@ -282,9 +282,9 @@ describe("CartView by deck (A5)", () => {
   it("keeps every parameter it does not own when the view changes, and drops the one-time ?deck=", () => {
     window.history.replaceState(null, "", "/?deck=gishath&utm=x");
     render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
-    fireEvent.click(screen.getByRole("button", { name: copy.view.byCard }));
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byCard }));
     expect(window.location.search).toBe("?utm=x");
-    fireEvent.click(screen.getByRole("button", { name: copy.view.byDeck }));
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byDeck }));
     expect(window.location.search).toBe("?utm=x&view=deck");
     window.history.replaceState(null, "", "/");
   });

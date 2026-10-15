@@ -149,7 +149,7 @@ export const refreshCopy = {
        * nothing, so no "unchanged" clause (`src/lib/copy/README.md`), and the tile names the deck. Short because the
        * menu is 186px wide and the row one line: "We couldn’t load that deck. Try again." would wrap and clip.
        */
-      exportFailed: 'Couldn’t load. Try again.',
+      exportFailed: 'Export failed. Try again.',
       trigger: (deckName: string) => `Actions for ${deckName}`,
     },
 

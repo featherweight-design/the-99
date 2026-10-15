@@ -1,0 +1,29 @@
+{
+  "feature": "Segmented switch, PR 2: the controls that take the shared keys only",
+  "note": "Admin Seg and Build from keep their own markup (d9's ruling, 2026-10-15) and gain the shared segment keys: these rows show the markup unchanged. Needs ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL on the server.",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "admin-seg",
+      "label": "/admin/switches/[name]: the Seg, unchanged markup",
+      "steps": [
+        {
+          "goto": "/admin/switches/DECK_NOTES_ENABLED",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "build-from",
+      "label": "/commanders: Build from, unchanged markup",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "main, [role=main], h1",
+          "settle": 4000
+        }
+      ]
+    }
+  ]
+}

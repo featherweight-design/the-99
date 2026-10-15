@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/switches/actions";
 import type { ConfirmPreview, WriteResult } from "../../lib/admin/switch-writes";
@@ -9,6 +9,7 @@ import { adminCopy } from "../../lib/copy/admin";
 import type { OverrideValue } from "../../lib/switches/resolve";
 import { ALL_FEATURES } from "../../lib/switches/registry";
 import { ModelConfirm, type ConfirmContext } from "./model-confirm";
+import { onSegmentKeys } from "../ui/segment-keys";
 
 // The switch page's writes (admin STATES F3, F5, F9 to F12; design table, Switch page): the App-wide
 // segment, On and Off on each override row, and Clear. Each control runs its own write: the option
@@ -98,7 +99,10 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
 
 /**
  * A segmented control (design table: seg), a `radiogroup`. While a write is in flight its option
- * shows pressed and every other option is disabled (F10).
+ * shows pressed and every other option is disabled (F10). One tab stop, and the app's segment keys (arrows,
+ * Home, End) move the FOCUS over the options that are not disabled; Enter or Space picks. Unlike the app's
+ * segmented switch the choice does not follow focus here, because a pick saves an override at once and an
+ * arrow must not write one. Its markup stays its own (segmented-switch plan, PR 2).
  */
 export function Seg<K extends string>({
   label,
@@ -125,19 +129,28 @@ export function Seg<K extends string>({
   onPick: (key: K) => void;
 }) {
   const shown = pressed ?? selected;
+  const base = useId();
+  const idOf = (k: K) => `${base}-${k}`;
+  const keys = options.map((o) => o.key);
+  const isOff = (k: K) => disabled || locked.includes(k) || (pressed !== null && k !== shown);
+  // The tab stop: the shown option while it can take focus, else the first that can.
+  const stop = shown !== null && !isOff(shown) ? shown : keys.find((k) => !isOff(k)) ?? null;
   return (
     <div
       role="radiogroup"
       aria-label={label}
+      onKeyDown={(e) => onSegmentKeys(e, keys, idOf, () => {}, isOff)}
       className={`gap-[3px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] p-[3px] ${fill ? "flex md:inline-flex md:self-start" : "inline-flex flex-none self-start md:self-center"}`}
     >
       {options.map((o) => {
         const on = o.key === shown;
-        const off = disabled || locked.includes(o.key) || (pressed !== null && !on);
+        const off = isOff(o.key);
         return (
           <button
             key={o.key}
             type="button"
+            id={idOf(o.key)}
+            tabIndex={o.key === stop ? 0 : -1}
             role="radio"
             aria-checked={on}
             disabled={off}

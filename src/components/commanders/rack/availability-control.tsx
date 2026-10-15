@@ -12,9 +12,10 @@
 // The roving tab stop is `ScoreAgainst`'s from `filter-bar.tsx`, carried across
 // rather than redesigned.
 
-import { useId, useRef } from "react";
+import { useId } from "react";
 import type { Avail } from "../../../lib/commanders/lane-params";
 import { commandersCopy } from "../../../lib/copy/lanes";
+import { onSegmentKeys } from "../../ui/segment-keys";
 
 const copy = commandersCopy.availability;
 
@@ -34,19 +35,11 @@ export function AvailabilityControl({
     { mode: "free" as const, label: wide ? copy.freeShort : copy.free, aria: copy.free },
   ];
 
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
   // Generated: both lanes may mount a rack and a sheet across a session, and a
   // literal id would put two of them in the document.
   const labelId = useId();
-
-  // A radiogroup is one tab stop and the arrows move within it. Selection
-  // follows focus, which is the shipped behaviour for a group this small and
-  // matches what a click already does.
-  const step = (from: number, dir: 1 | -1) => {
-    const next = (from + dir + segments.length) % segments.length;
-    refs.current[next]?.focus();
-    onChange(segments[next].mode);
-  };
+  const idOf = (mode: Avail) => `${labelId}-${mode}`;
+  const modes = segments.map((s) => s.mode);
 
   const off = value !== "all";
 
@@ -61,6 +54,10 @@ export function AvailabilityControl({
       <div
         role="radiogroup"
         aria-labelledby={labelId}
+        // A radiogroup is one tab stop, and the app's segment keys (arrows, Home, End) move the choice and the
+        // focus together. Selection follows focus, the shipped behaviour for a group this small. The markup stays
+        // its own (segmented-switch plan, PR 2).
+        onKeyDown={(e) => onSegmentKeys(e, modes, idOf, onChange)}
         className={[
           "flex",
           // One capsule with the segments butted inside it, so the pair reads as
@@ -84,9 +81,7 @@ export function AvailabilityControl({
           return (
             <button
               key={s.mode}
-              ref={(node) => {
-                refs.current[i] = node;
-              }}
+              id={idOf(s.mode)}
               type="button"
               role="radio"
               aria-checked={selected}
@@ -94,17 +89,6 @@ export function AvailabilityControl({
               // Roving: the checked segment is the group's single tab stop.
               tabIndex={selected ? 0 : -1}
               onClick={() => onChange(s.mode)}
-              onKeyDown={(e) => {
-                const dir =
-                  e.key === "ArrowRight" || e.key === "ArrowDown"
-                    ? 1
-                    : e.key === "ArrowLeft" || e.key === "ArrowUp"
-                      ? -1
-                      : 0;
-                if (dir === 0) return;
-                e.preventDefault();
-                step(i, dir);
-              }}
               className={[
                 "flex items-center justify-center cursor-pointer",
                 wide

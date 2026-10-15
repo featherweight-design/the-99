@@ -6,16 +6,33 @@ import type { KeyboardEvent } from "react";
  * the keys move the selection and the focus together, the pattern `builder-tabs.tsx` follows. Only a key from
  * one of the group's own segments is acted on.
  */
-export function onSegmentKeys<T extends string>(e: KeyboardEvent<HTMLElement>, values: readonly T[], idOf: (v: T) => string, select: (v: T) => void): void {
+export function onSegmentKeys<T extends string>(
+  e: KeyboardEvent<HTMLElement>,
+  values: readonly T[],
+  idOf: (v: T) => string,
+  select: (v: T) => void,
+  /** A segment the keys pass over, as a disabled button cannot take focus. */
+  isDisabled: (v: T) => boolean = () => false,
+): void {
   const from = values.findIndex((v) => idOf(v) === (e.target as HTMLElement).id);
   if (from < 0) return;
+  const n = values.length;
+  // Walks from `start` in `step` direction to the first enabled segment, wrapping; -1 when none is.
+  const walk = (start: number, step: 1 | -1) => {
+    for (let i = 0; i < n; i++) {
+      const at = (((start + step * i) % n) + n) % n;
+      if (!isDisabled(values[at])) return at;
+    }
+    return -1;
+  };
   let to: number;
-  if (e.key === "ArrowRight" || e.key === "ArrowDown") to = (from + 1) % values.length;
-  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = (from - 1 + values.length) % values.length;
-  else if (e.key === "Home") to = 0;
-  else if (e.key === "End") to = values.length - 1;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") to = walk(from + 1, 1);
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = walk(from - 1, -1);
+  else if (e.key === "Home") to = walk(0, 1);
+  else if (e.key === "End") to = walk(n - 1, -1);
   else return;
   e.preventDefault();
+  if (to < 0 || to === from) return;
   select(values[to]);
   document.getElementById(idOf(values[to]))?.focus();
 }

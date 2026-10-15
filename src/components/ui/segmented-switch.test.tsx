@@ -74,3 +74,45 @@ describe("SegmentedSwitch", () => {
     expect(list.children[2]).toBe(divider);
   });
 });
+
+describe("SegmentedSwitch, compact and pending", () => {
+  const TWO = [{ value: "x", label: "Ex" }, { value: "y", label: "Why" }] as const;
+
+  it("draws the compact segment: 40px at phone, 30px from md, a 2px well and normal weight at rest", () => {
+    render(<SegmentedSwitch kind="radio" size="compact" ariaLabel="Two" segments={TWO} value="x" onChange={() => {}} />);
+    const [x, y] = screen.getAllByRole("radio");
+    expect(x).toHaveClass("h-[40px]", "md:h-[30px]", "font-semibold", "bg-[color:var(--elevated)]");
+    expect(y).toHaveClass("font-normal");
+    expect(y).not.toHaveClass("min-h-[44px]");
+    expect(screen.getByRole("radiogroup")).toHaveClass("p-[2px]");
+  });
+
+  it("fills a segment it is told to draw before its value moves, while the selected state follows the value", () => {
+    render(<SegmentedSwitch kind="tabs" size="compact" ariaLabel="Two" segments={TWO} value="x" drawn="y" onChange={() => {}} />);
+    const [x, y] = screen.getAllByRole("tab");
+    expect(y).toHaveClass("bg-[color:var(--elevated)]");
+    expect(x).not.toHaveClass("bg-[color:var(--elevated)]");
+    expect(x.getAttribute("aria-selected")).toBe("true");
+    expect(x.tabIndex).toBe(0);
+  });
+
+  it("marks a busy segment and draws the pending pip on it alone", () => {
+    render(<SegmentedSwitch kind="tabs" ariaLabel="Two" segments={[TWO[0], { ...TWO[1], busy: true }]} value="x" onChange={() => {}} />);
+    const [x, y] = screen.getAllByRole("tab");
+    expect(y.getAttribute("aria-busy")).toBe("true");
+    expect(y.querySelector("[data-pending]")).not.toBeNull();
+    expect(x.hasAttribute("aria-busy")).toBe(false);
+    expect(x.querySelector("[data-pending]")).toBeNull();
+  });
+
+  it("names the chosen tab's panel only when a panel id is given, and keeps the stable tab ids either way", () => {
+    const { unmount } = render(
+      <SegmentedSwitch kind="tabs" ariaLabel="Two" segments={TWO} value="x" onChange={() => {}} ids={{ tab: (v) => `t-${v}` }} />,
+    );
+    expect(screen.getAllByRole("tab").map((t) => t.id)).toEqual(["t-x", "t-y"]);
+    expect(screen.getAllByRole("tab")[0].hasAttribute("aria-controls")).toBe(false);
+    unmount();
+    render(<SegmentedSwitch kind="tabs" ariaLabel="Two" segments={TWO} value="x" onChange={() => {}} ids={{ tab: (v) => `t-${v}`, panel: (v) => `p-${v}` }} />);
+    expect(screen.getAllByRole("tab")[0].getAttribute("aria-controls")).toBe("p-x");
+  });
+});
