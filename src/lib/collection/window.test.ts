@@ -106,3 +106,15 @@ describe("the Price sort's first window", () => {
     expect(decoded.map((c) => c.price)).toEqual(cards.map((c) => c.price));
   });
 });
+
+describe("the Date added sort's first window", () => {
+  it("parses sort=added as newest first and keeps the cards drawn first", () => {
+    const cards = Array.from({ length: PAGE_SIZE + 40 }, (_, i) => card(i, i % 4 === 0 ? {} : { added: i * 10 }));
+    const p = params("sort=added");
+    expect(p.sort).toBe("added");
+    expect(p.direction).toBe("desc");
+    const keep = firstWindowIds(cards, p);
+    const drawnFirst = sortCards(filterCards(cards, p.filters), "added", "desc").slice(0, PAGE_SIZE).map((c) => c.oracleId);
+    expect([...keep].sort()).toEqual([...drawnFirst].sort());
+  });
+});

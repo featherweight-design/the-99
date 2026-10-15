@@ -50,6 +50,9 @@ export async function selectCollectionRows(
     .select({
       oracleId: collectionItems.oracleId,
       quantity: collectionItems.quantity,
+      // When the holding arrived, for the Date added sort (`aggregateCollection` folds it per card).
+      addedAt: collectionItems.addedAt,
+      addedExact: collectionItems.addedExact,
       setCode: collectionItems.setCode,
       collectorNumber: collectionItems.collectorNumber,
       finish: collectionItems.finish,
