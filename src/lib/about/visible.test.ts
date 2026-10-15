@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION, aboutEntries, type AboutEntry } from "../copy/about";
 import { sheetCookieValue, sheetDecision } from "./gate";
+import { aboutNotice } from "./notice";
 import { readSheetState } from "./sheet-state";
-import { isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
+import { isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
 const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
@@ -78,8 +79,8 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
       ["decks-stats", "LINEUP_ENABLED"],
       ["notes", "DECK_NOTES_ENABLED"],
     ]);
-    // Versions 12 (collection edit), 13 (evidence benchmarks), 14 (deck printings and I got it) and 15 (a way in
-    // without a collection) added only switched entries, so
+    // Versions 12 (collection edit), 13 (evidence benchmarks) and 14 (deck printings and I got it, and later every
+    // switched entry since, a way in without a collection included) added only switched entries, so
     // the newest UNSWITCHED entry is still 11's: a version no unswitched entry carries moves the cookie and nothing else. Pinned
     // exactly, so an unswitched entry added (or since moved) without a deliberate edit here fails.
     expect(Math.max(...unswitched.map((e) => e.since))).toBe(11);
@@ -131,8 +132,8 @@ describe("an entry tied to a switch", () => {
     // `deck-benchmarks` (2026-10-10) is since: 13, the evidence line's one bump, and
     // `shopping-got-it` and `deck-printings` (2026-10-11) since: 14, the collection home epic's, and
     // `mana-balance`, `all-decks-cart`, `precons`, `upcoming-precons`, `deck-tokens`, `notes`, `added-copy`, `decks-stats`, `find-a-deck-read` and `proposed-cuts` since: 14 too, the current
-    // version, with no bump of their own. `start-without-a-collection` (2026-10-15) is since: 15, the no-collection
-    // entry line's one bump.
+    // version, with no bump of their own. `start-without-a-collection` (2026-10-15) is since: 14 too: it briefly
+    // bumped to 15 (#1840), and went back, since a switched entry is announced by its id.
     const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts", "start-without-a-collection"];
     const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts, startWithout] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
@@ -141,7 +142,7 @@ describe("an entry tied to a switch", () => {
     expect(deckStats.map((e) => e.since)).toEqual([11]);
     expect(deckBenchmarks.map((e) => e.since)).toEqual([13]);
     expect([...gotIt, ...deckPrintings, ...manaBalance, ...cart, ...precons, ...upcoming, ...deckTokens, ...notes, ...addedCopy, ...decksStats, ...fitsRead, ...proposedCuts].map((e) => e.since)).toEqual([14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14]);
-    expect(startWithout.map((e) => e.since)).toEqual([15]);
+    expect(startWithout.map((e) => e.since)).toEqual([14]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "collection-add",
       "start-without-a-collection",
@@ -417,19 +418,55 @@ describe("the collection home epic’s two entries (one bump, 14)", () => {
   });
 });
 
-describe("a way in without a collection (no-collection entry PR 6: one bump, 15)", () => {
+describe("a way in without a collection (no-collection entry PR 6: a switched entry, no bump)", () => {
   const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
   const LINE = { COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
   const drawn = (o: Record<string, string>, id: string) => visibleEntries(env(o)).find((e) => e.id === id);
   const PRECON_LINE = "Pick the precons you own and their cards go into your Collection at the box’s printings, tokens too.";
   const PRECON_KEY = "Each precon box is its own change in History, and Revert takes it back. Adding a box twice stacks its copies.";
 
-  it("is the line's one bump, in chapter 01 straight after import", () => {
+  it("bumps nothing, as a switched entry, and sits in chapter 01 straight after import", () => {
     const entry = aboutEntries.find((e) => e.id === "start-without-a-collection")!;
-    expect(entry.since).toBe(ABOUT_VERSION);
-    expect(ABOUT_VERSION).toBe(15);
+    expect(entry.switch).toBe("NO_COLLECTION_ENTRY_ENABLED");
+    expect(entry.since).toBe(14);
+    expect(ABOUT_VERSION).toBe(14);
     const ids = visibleEntries(env(LINE)).map((e) => e.id);
     expect(ids[ids.indexOf("import") + 1]).toBe("start-without-a-collection");
+  });
+
+  // What the proxy decides on the redirect path: it sends a reader to /about only when they are `behind` by this
+  // rule (`proxy.ts`, `seen: behind ? 0 : ABOUT_VERSION`), never on the version alone.
+  const behind = (visible: readonly AboutEntry[], s: SeenState) => isFirstRun(s) || unseenEntries(visible, s).length > 0;
+
+  // With the switch off (production), a reader current at 14 is told nothing on any path: no Home line, no sheet,
+  // and no redirect.
+  it("announces nothing to a current reader while its switch is off", () => {
+    const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }));
+    // Current: has met every entry it can see, the switched ones by id.
+    const current: SeenState = { version: 14, ids: switchedIds(visible) };
+    expect(unseenEntries(visible, current)).toEqual([]);
+    expect(aboutNotice(current, visible, false)).toBeNull();
+    expect(sheetDecision({ userId: "u", seen: current, visible }).show).toBe(false);
+    expect(behind(visible, current)).toBe(false);
+  });
+
+  // #1840 briefly shipped ABOUT_VERSION 15, so a reader may hold 15 as their seen version, ahead of 14. That state is
+  // "nothing new": every unswitched entry reads seen, nothing errors and nothing redirects.
+  it("reads a reader ahead of the version (seen 15 against 14) as having nothing new", () => {
+    const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }));
+    const ahead: SeenState = { version: 15, ids: switchedIds(visible) };
+    expect(unseenEntries(visible, ahead)).toEqual([]);
+    expect(aboutNotice(ahead, visible, false)).toBeNull();
+    expect(sheetDecision({ userId: "u", seen: ahead, visible }).show).toBe(false);
+    expect(behind(visible, ahead)).toBe(false);
+  });
+
+  // Flipped on, it is announced by its own id to everyone current, the way a switched entry always is.
+  it("is announced by its id, alone, when its switch flips on, to a reader current at 14 or ahead at 15", () => {
+    const before = switchedIds(visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true" })));
+    const visible = visibleEntries(env(LINE));
+    expect(unseenEntries(visible, { version: 14, ids: before }).map((e) => e.id)).toEqual(["start-without-a-collection"]);
+    expect(unseenEntries(visible, { version: 15, ids: before }).map((e) => e.id)).toEqual(["start-without-a-collection"]);
   });
 
   it("draws only with the line's switch, which needs collection editing", () => {
