@@ -3,7 +3,8 @@
 // The Announced group on `/decks/precons` (handoff `design_handoff_the99_upcoming_precons`, R2 C1–C3 over R1's
 // T and L rows; design table: Announced group, Set block, Revealed card, None plate, `new` tag, Jump). Commander
 // sets on the way, above the newest year, in Newest order only. An announced set is never a precon (STATES
-// rule 1): a dashed block with no tile shell, no figure, no link and no Start.
+// rule 1): a dashed block with no figure, no link and no Start. Its revealed commanders are cards, and open their
+// card details (Hugh, 2026-10-15): in tiles they are drawn in the decklists' own tile shell and grid.
 //
 // The head is a disclosure, CLOSED by default (rule 9: the group never pushes the decklists down unasked). It
 // opens by itself when it holds a set this reader has not been shown, or when the address names `#announced`
@@ -11,10 +12,12 @@
 // last press holds (`the99:precons:announced`, mirrored into a cookie so the server draws it).
 
 import { Chevron } from "../../ui/chevron";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { preconDay, preconsCopy } from "../../../lib/copy/precons";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { PreconView } from "../../../lib/precons/list";
+import { CardDetailProvider, type ViewPrinting } from "../../cards/card-detail-provider";
+import { HoverPreviewProvider } from "../hover-preview";
 import { useStoredView } from "../../ui/use-stored-view";
 import { PRECONS_ANNOUNCED_COOKIE } from "../../ui/view-cookie";
 import { AnnouncedSet, FOCUS_RING, NEW_TAG, setIdentity, type ListedJump } from "./announced-parts";
@@ -69,6 +72,27 @@ export type AnnouncedGroupProps = {
   serverPress?: Press | null;
 };
 
+/**
+ * The printing card details views each revealed commander at, on a press and on Prev/Next: the announced set's own,
+ * whatever the reader holds, so the modal pictures the card the tile does. One provider serves every set, so a card
+ * revealed in two announced sets views the first set's printing (the sooner release, in `matches` order).
+ */
+export function announcedPrintings(matches: readonly AnnouncedMatch[]): Record<string, ViewPrinting> {
+  const out: Record<string, ViewPrinting> = {};
+  for (const m of matches) {
+    for (const c of m.commanders) {
+      // Upper case, as card details' printings carry it (`matchesPreference` compares exactly; `sets.code` is lower),
+      // and the printing's own id and back face, so an unowned announced printing is drawn whole, never paired
+      // with another printing's back.
+      out[c.oracleId] ??= {
+        setCode: m.set.code.toUpperCase(), collectorNumber: c.collectorNumber, scryfallId: c.scryfallId,
+        imageUri: c.imageUri ?? c.imageUriSmall, backImageUri: c.backImageUri,
+      };
+    }
+  }
+  return out;
+}
+
 export function AnnouncedGroup({
   visit, matches, today, newCodes, opensByItself, view, listed, filtering = false, serverPress = null,
 }: AnnouncedGroupProps) {
@@ -91,12 +115,18 @@ export function AnnouncedGroup({
     store(next ? "open" : "closed");
   }, [open, store, setPressed]);
 
+  const viewPrintings = useMemo(() => announcedPrintings(matches), [matches]);
   if (matches.length === 0) return null;
   const hasNew = matches.some((m) => newCodes.includes(m.set.code));
   const next = matches.find((m) => !m.set.released);
   const count = open || !next ? copy.count(matches.length) : copy.countNext(matches.length, preconDay(next.set.releasesOn));
 
   return (
+    // Card details and the hover preview sit OUTSIDE the collapsible region: a details read that lands after the
+    // reader closed the group would otherwise draw its dialog inside a hidden, inert region while it locks the page's
+    // scroll, a dialog nobody can see or leave.
+    <CardDetailProvider viewPrintings={viewPrintings}>
+    <HoverPreviewProvider>
     <section id="announced" aria-labelledby="announced-head" className="flex flex-col" data-testid="announced-group">
       <h2 id="announced-head" className="m-0 font-normal">
         <button
@@ -140,5 +170,7 @@ export function AnnouncedGroup({
         </div>
       </div>
     </section>
+    </HoverPreviewProvider>
+    </CardDetailProvider>
   );
 }

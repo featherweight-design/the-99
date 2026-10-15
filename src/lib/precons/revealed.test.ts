@@ -17,7 +17,10 @@ const p = (over: Partial<RevealedPrinting>): RevealedPrinting => ({
   colorIdentity: [],
   typeLine: "Legendary Creature — Human",
   imageUriSmall: null,
+  imageUri: null,
+  backImageUri: null,
   collectorNumber: "1",
+  scryfallId: "s-1",
   ...over,
 });
 
@@ -62,7 +65,7 @@ describe("revealedCommanders", () => {
       p({ oracleId: "chapel", name: "Christine Chapel", collectorNumber: "300", imageUriSmall: "s300" }),
       p({ oracleId: "chapel", name: "Christine Chapel", collectorNumber: "78", imageUriSmall: "s78" }),
     ]);
-    expect(out.trc).toEqual([{ oracleId: "chapel", name: "Christine Chapel", colorIdentity: [], imageUriSmall: "s78", collectorNumber: "78" }]);
+    expect(out.trc).toEqual([{ oracleId: "chapel", name: "Christine Chapel", colorIdentity: [], imageUriSmall: "s78", imageUri: null, backImageUri: null, collectorNumber: "78", scryfallId: "s-1" }]);
   });
 
   it("keeps 78 over 78a and over a later 300, whatever order the read gives", () => {
@@ -132,5 +135,13 @@ describe("loadRevealedCommanders", () => {
     const chain = { from: () => chain, innerJoin: () => chain, where: async () => rows };
     const out = await loadRevealedCommanders(["trc"], { select: () => chain } as never);
     expect(out.trc[0].imageUriSmall).toBe("big");
+    expect(out.trc[0].imageUri).toBe("big");
+  });
+
+  it("carries the normal render beside the small one, for the tile art and the hover preview", async () => {
+    const rows = [{ setCode: "trc", oracleId: "a", name: "A", colorIdentity: ["W"], typeLine: "Legendary Creature — Human", imageUriSmall: "small", imageUri: "normal", collectorNumber: "1" }];
+    const chain = { from: () => chain, innerJoin: () => chain, where: async () => rows };
+    const out = await loadRevealedCommanders(["trc"], { select: () => chain } as never);
+    expect(out.trc[0]).toMatchObject({ imageUriSmall: "small", imageUri: "normal" });
   });
 });

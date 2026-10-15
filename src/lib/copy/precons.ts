@@ -323,6 +323,8 @@ export const preconsCopy = {
     resultSets: (sets: number) => ` · ${plural(sets, "announced set", "announced sets")}`,
     /** A revealed card, spoken: its full name (the printed one is clamped to two lines) and its colors. */
     cardAria: (name: string, colors: string) => `${name}, ${colors}. Revealed commander.`,
+    /** The same card as the control that opens its details: the press's whole name, so nothing beside it is spoken. */
+    pressAria: (name: string, colors: string) => `View details for ${name}, ${colors}. Revealed commander.`,
   },
   down: {
     head: "The precons couldn’t be read just now",
