@@ -8,8 +8,10 @@
 //   - The two layouts: one arrival (sentence, link, ✕) and several (heading, lines, one link), each at both widths,
 //     with ✕ at 44 at 390 and 32 at 1300, and the link's focus ring (2px accent, 2px offset).
 //   - Each link lands on Precons with Most owned SAVED first (`the99:precons:order`), which is why it names
-//     `sort=newest`. Its target (`#announced`, `#precons-<year>`) is checked only when the Announced group is on the
-//     server (plan PR 2); without it the landing is reported and the target check is SKIPPED, by name.
+//     `sort=newest`, and its target is drawn: `#announced` with the Announced group open, `#precons-<year>` the
+//     year's head.
+//   - A Precons visit marks the arrivals seen (rule 6; the page's `after()` write), so the next Home load draws no
+//     banner.
 //   - A first-run account gets no banner and nothing is marked seen (H7).
 //   - The About entry `upcoming-precons` draws with the switch on, and neither it nor the banner draws with it off.
 //
@@ -58,7 +60,6 @@ const check = (ok, label, saw) => {
   if (!ok) failures += 1;
   console.log(`${ok ? "PASS" : "FAIL"}  ${label}  (${saw})`);
 };
-const skip = (label, why) => console.log(`SKIP  ${label}  (${why})`);
 
 async function signIn(page, email, password) {
   await setupClerkTestingToken({ page });
@@ -143,14 +144,29 @@ async function follow(page, w, label, target) {
   await onPage(page, "h1").first().waitFor({ timeout: 30_000 });
   const url = new URL(page.url());
   check(url.search === "?sort=newest" && url.hash === `#${target}`, `${w.name} ${label}: lands on Precons with sort=newest#${target}`, `${url.pathname}${url.search}${url.hash}, href ${href}`);
-  const group = await onPage(page, "#announced").count();
-  if (group === 0) {
-    skip(`${w.name} ${label}: #${target} drawn under a saved Most owned`, "no Announced group on this server: plan PR 2 is not merged here");
-  } else {
-    const found = await onPage(page, `#${target}`).first().isVisible().catch(() => false);
-    check(found, `${w.name} ${label}: #${target} drawn under a saved Most owned`, `visible ${found}`);
+  const found = await onPage(page, `#${target}`).first().waitFor({ state: "visible", timeout: 15_000 }).then(() => true, () => false);
+  check(found, `${w.name} ${label}: #${target} drawn under a saved Most owned`, `visible ${found}`);
+  if (target === "announced") {
+    // Hydrated before reading the head's state: the group opens by itself on `#announced`.
+    await page.waitForTimeout(1_000);
+    const expanded = await onPage(page, "#announced-head button").first().getAttribute("aria-expanded").catch(() => null);
+    const sets = await onPage(page, "[data-testid=announced-set]").count();
+    check(expanded === "true" && sets > 0, `${w.name} ${label}: the Announced group arrives open`, `aria-expanded ${expanded}, ${sets} set blocks`);
   }
   await page.evaluate(() => localStorage.removeItem("the99:precons:order"));
+}
+
+/** Rule 6: the visit just made marks the arrivals seen, so the next Home load draws no banner. */
+async function visitMarksSeen(page, w, userId, label, want) {
+  let keys = [];
+  for (let i = 0; i < 20 && !want.every((k) => keys.includes(k)); i += 1) {
+    await page.waitForTimeout(250);
+    keys = await seenKeys(userId);
+  }
+  check(want.every((k) => keys.includes(k)), `${w.name} ${label}: the Precons visit wrote the seen keys`, JSON.stringify(keys.filter((k) => KEYS.includes(k))));
+  await home(page);
+  const n = await onPage(page, REGION).count();
+  check(n === 0, `${w.name} ${label}: the next Home load draws no banner (rule 6)`, `${n} regions`);
 }
 
 async function focusedIsH1(page) {
@@ -206,9 +222,12 @@ async function widthRun(browser, w, userId) {
     `${w.name} H8: the link's focus ring is 2px --accent at a 2px offset`, JSON.stringify(r));
 
   await follow(page, w, "several (a set among them)", "announced");
+  await visitMarksSeen(page, w, userId, "several", KEYS);
 
+  // ✕ by click, over the same two arrivals made unseen again.
+  await unsee(userId);
   await home(page);
-  check(await region.count() === 1, `${w.name}: the banner is still there after a Precons visit on this server`, "seen on a visit is plan PR 2's");
+  check(await region.count() === 1, `${w.name}: the banner is back once its keys are unseen`, `${await region.count()} regions`);
   await onPage(page, `${REGION} button[aria-label="Dismiss"]`).first().click();
   await region.waitFor({ state: "detached", timeout: 2_000 }).catch(() => {});
   check(await region.count() === 0, `${w.name} H6: ✕ closes the banner`, `${await region.count()} regions`);
@@ -228,6 +247,7 @@ async function widthRun(browser, w, userId) {
   const link3 = await onPage(page, `${REGION} a`).first().textContent().catch(() => null);
   check(link3 === "See them in Precons", `${w.name} H3: its link`, link3);
   await follow(page, w, "a lists line", `precons-${day(-3).slice(0, 4)}`);
+  await visitMarksSeen(page, w, userId, "a lists line", [LISTED, `lists:${LISTED}`]);
 
   // H2: one arrival, a set announced; ✕ from the keyboard.
   await stamp({ set: true, lists: false });

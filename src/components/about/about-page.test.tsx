@@ -875,8 +875,10 @@ describe("the figures", () => {
     // page's unit is a figure with a caption, and an empty frame is the way
     // that unit fails quietly.
     const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
+    // An entry's own <li>, never one a specimen draws: `upcoming-precons` draws the Announced group's real set
+    // block, which is an <li> holding an <h3> of its own.
     const entries = [...container.querySelectorAll("li")].filter((li) =>
-      li.querySelector("h3"),
+      li.querySelector("h3") && !li.closest("[data-specimen]"),
     );
     expect(entries).toHaveLength(aboutEntries.length);
     for (const li of entries) {

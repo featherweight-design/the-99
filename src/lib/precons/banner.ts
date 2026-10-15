@@ -4,7 +4,8 @@
  * revealed-commander count for its sentence.
  *
  * It rides in Home's cached payload (E5). `user_prefs`, which holds what the reader has seen, carries the stamp
- * trigger since 0123, so a ✕ (`dismissArrivals`) retires the entry; `check:list-cache` holds that.
+ * trigger since 0123, so either write that marks an arrival seen retires the entry: a ✕ (`dismissArrivals`) or a
+ * Precons visit (the page's `after()`, rule 6). `check:list-cache` holds that.
  */
 import { recordSoftFailure } from "../cache/soft-failure";
 import { loadPreconArrivals } from "./arrivals-read";

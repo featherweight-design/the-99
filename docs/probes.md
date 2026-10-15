@@ -2482,8 +2482,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   at 390x844 and 1300x900: several arrivals draw the count heading, one line each (soonest first), one link and one ✕
   (44 at 390, 32 at 1300), the link on the heading line at 1300 and last at 390; one arrival draws a sentence and its
   link; the link and ✕ take the 2px `--accent` ring at a 2px offset; each link lands on `/decks/precons?sort=newest`
-  with its hash, with Most owned SAVED in the browser first, and its target (`#announced`, `#precons-<year>`) is checked
-  only when the Announced group is on the server (plan PR 2; SKIPPED by name without it); ✕, by click and by Enter,
+  with its hash, with Most owned SAVED in the browser first, and its target is drawn (`#announced` with the Announced
+  group open, `#precons-<year>` the year's head); that visit marks the arrivals seen (rule 6, the page's `after()`
+  write, polled in `user_prefs`) and the next Home load draws no banner; ✕, by click and by Enter,
   closes it, writes the seen keys (read back from `user_prefs`) and focuses Home's `h1`, and a reload draws none with
   `LIST_CACHE_ENABLED=true` (the stamp retiring cached Home, E5); a fresh first-run account gets no banner and no seen
   key (H7); the About entry `upcoming-precons` draws with the switch on, and neither it nor the banner with an account
