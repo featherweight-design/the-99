@@ -142,6 +142,7 @@ export function CommanderPicker({
         ref={search}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onClear={() => setQuery("")}
         onKeyDown={onKeyDown}
         placeholder={c.search}
         aria-label={c.search}
