@@ -1012,9 +1012,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the empty state with the credit note beside Analyze. They must all paint in ONE frame when the
   loader lets go, and nothing may paint at or above a part already on screen. The one exception is
   a deck never analyzed: since #1465 its empty state draws at once and the credit note follows when
-  its own read lands (1.1 to 1.9s measured on 2026-10-15), so that case asserts the ORDER (the empty
-  state first) and a BOUND (the note within 2.5s of it), not one frame. With the lag reversed the
-  order check fails, and with a 0.5s bound the bound check fails, at both widths. It also reads the
+  its own read lands (about 0.7 to 2s; 1.1 to 1.9s measured on 2026-10-15), so that case asserts the
+  ORDER (the empty state in an earlier frame than the note, which sits inside it, so a lag of 0 means
+  the empty state waited for the note again) and a BOUND (the note within 2.5s of it), not one frame.
+  With a 0.5s bound the bound check fails at both widths. It also reads the
   tab row: one line with Analysis selected, and where five tabs are wider than a phone the ROW
   scrolls rather than the page.
 

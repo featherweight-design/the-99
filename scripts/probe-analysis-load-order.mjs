@@ -218,8 +218,10 @@ async function run() {
       await empty.waitForTimeout(4_000);
       const bareParts = await empty.evaluate(() => window.__parts);
       const noteLag = bareParts.empty && bareParts.pressNote ? bareParts.pressNote.at - bareParts.empty.at : null;
-      report(at("before a reading, the empty state paints first, never after the credit note"),
-        noteLag !== null && noteLag >= 0, JSON.stringify(bareParts));
+      // The note sits inside the empty state, so it can never paint first; what #1465 changed is that the empty
+      // state no longer WAITS for it. Painting in the same frame (a lag of 0) is the regression this catches.
+      report(at("before a reading, the empty state paints before the credit note, not with it"),
+        noteLag !== null && noteLag > 0, JSON.stringify(bareParts));
       report(at(`and the credit note follows within ${NOTE_BOUND_MS / 1000}s of it`),
         noteLag !== null && noteLag <= NOTE_BOUND_MS, `${noteLag ?? "no note"}ms after the empty state`);
       await empty.close();
