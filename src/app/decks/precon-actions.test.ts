@@ -219,9 +219,23 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
     expect(state.picks).toEqual([]);
   });
 
-  it("refuses a request outside the catalog's closed set before any add", async () => {
+  // A box the catalog does not hold as asked is that box's own refusal, never the press's throw: a refresh can drop a
+  // box or its Collector's Edition twin between a press and its retry, and the pick must be able to let go of it.
+  it("refuses a box outside the catalog's closed set on its own, adding the rest", async () => {
     state.selects = [CATALOG];
-    await expect(addPrecons([{ fileName: "Revival_CE", edition: "regular", actionId: ID(1) }])).rejects.toThrow("bad pick");
+    const out = await addPrecons([
+      { fileName: "Revival_CE", edition: "regular", actionId: ID(1) }, { fileName: "Abzan", edition: "collector", actionId: ID(2) },
+      { fileName: "Revival", edition: "collector", actionId: ID(3) },
+    ]);
+    expect(state.picks.map((a) => a.slice(0, 3))).toEqual([["user_1", "Revival_CE", ID(3)]]);
+    expect(out).toEqual([{ rowFile: "Revival_CE", ok: false }, { rowFile: "Abzan", ok: false }, { rowFile: "Revival", ok: true, entryId: "entry-Revival_CE" }]);
+  });
+
+  it("refuses a malformed request before anything is read or added", async () => {
+    await expect(addPrecons([{ fileName: 7, edition: "regular", actionId: ID(1) }])).rejects.toThrow("bad pick");
+    await expect(addPrecons([{ fileName: "Abzan", edition: "foil", actionId: ID(1) }])).rejects.toThrow("bad pick");
+    await expect(addPrecons([{ fileName: "Abzan", edition: "regular", actionId: "nope" }])).rejects.toThrow("bad pick");
+    expect(committed.asked).toEqual([]);
     expect(state.picks).toEqual([]);
   });
 

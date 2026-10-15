@@ -82,6 +82,7 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
   // The whole request is held to one box and one id each, and the cap, before anything is recovered or added.
   if (!Array.isArray(requests) || requests.length === 0 || requests.length > PICK_MAX) throw new Error("bad pick");
   const fields = (requests as unknown[]).map((r) => (typeof r === "object" && r !== null ? (r as Record<string, unknown>) : {}));
+  if (fields.some((f) => typeof f.fileName !== "string" || !isUuid(f.actionId) || (f.edition !== "regular" && f.edition !== "collector"))) throw new Error("bad pick");
   if (new Set(fields.map((f) => f.fileName)).size !== fields.length || new Set(fields.map((f) => f.actionId)).size !== fields.length) throw new Error("bad pick");
   const ids = Array.isArray(requests)
     ? (requests as unknown[]).map((r) => (typeof r === "object" && r !== null ? (r as Record<string, unknown>).actionId : null)).filter((id): id is string => isUuid(id))
@@ -90,10 +91,19 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
   if (split === null) throw new Error("bad pick");
   let added: PickOutcome[] = [];
   if (split.rest.length > 0) {
-    const boxes = resolvePick(split.rest, await readPickCatalog());
-    if (boxes === null) throw new Error("bad pick");
+    // Each remaining box against the catalog on its own: one the catalog no longer holds as asked (a refresh dropped
+    // it, or its Collector's Edition twin) is that box's definite refusal, never the whole press's throw, so the pick
+    // can let go of it rather than hold it as unknown. The request's own shape was held above.
+    const catalog = await readPickCatalog();
+    const boxes = [];
+    const refused: PickOutcome[] = [];
+    for (const r of split.rest) {
+      const one = resolvePick([r], catalog);
+      if (one === null) refused.push({ rowFile: String((r as Record<string, unknown>).fileName), ok: false });
+      else boxes.push(...one);
+    }
     const placements = addedCopyEnabled(env);
-    added = await runPickAdds(boxes, (fileName, actionId) => addPreconForUser(userId, fileName, actionId, env, placements));
+    added = [...refused, ...(boxes.length > 0 ? await runPickAdds(boxes, (fileName, actionId) => addPreconForUser(userId, fileName, actionId, env, placements)) : [])];
   }
   const outcomes = [...split.recovered, ...added];
   if (outcomes.some((o) => o.ok)) {
