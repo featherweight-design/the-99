@@ -493,6 +493,32 @@ describe("friend links", () => {
     }
   });
 
+  it("turns a row to its last day on the minute tick, with no redraw", async () => {
+    vi.useFakeTimers({ now: NOW });
+    try {
+      draw({ links: [link(1, new Date(NOW.getTime() + 86_400_000 + 30_000))] });
+      expect(screen.getByText("1 day left")).toBeTruthy();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(screen.getByText("Under a day left").className).toContain("--warning");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("returns focus to Add a friend when a link made from Try again is closed", async () => {
+    a.createInviteAction
+      .mockRejectedValueOnce(new Error("down"))
+      .mockResolvedValueOnce({ ok: true, token: "t", url: "https://the-99.dev/friend/t", expiresAt: new Date("2026-10-22T21:41:00Z") });
+    draw();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.invites.retry })));
+    const dialog = screen.getByRole("dialog", { name: socialCopy.dialog.title });
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: socialCopy.dialog.close })));
+    expect(screen.getByRole("button", { name: socialCopy.page.invite })).toHaveFocus();
+  });
+
   it("clears an earlier Try again when a new make starts, so it cannot make a second link", async () => {
     a.createInviteAction.mockRejectedValueOnce(new Error("down")).mockReturnValueOnce(new Promise(() => {}));
     draw();

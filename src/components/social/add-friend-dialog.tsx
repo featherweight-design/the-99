@@ -6,7 +6,7 @@
 // out by the status line). On a phone `Share link` leads, through the phone's own share sheet, and is absent
 // where there is none. The meta line states the two rules: it works once, and when it stops.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { socialCopy } from "../../lib/copy/social";
 import { qrPath } from "../../lib/social/client-rules";
 import { expiresWhen, underADay } from "../../lib/social/when";
@@ -21,12 +21,15 @@ export function AddFriendDialog({
   now,
   timeZone,
   onClose,
+  returnFocusRef,
 }: {
   url: string;
   expiresAt: Date;
   now: Date;
   timeZone: string | undefined;
   onClose: () => void;
+  /** Where focus goes on close when the opener may be gone (a link made from a toast's Try again). */
+  returnFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
@@ -82,7 +85,7 @@ export function AddFriendDialog({
   );
 
   return (
-    <SocialModal title={d.title} sub={d.sub} closeLabel={d.close} onClose={onClose}>
+    <SocialModal title={d.title} sub={d.sub} closeLabel={d.close} onClose={onClose} returnFocusRef={returnFocusRef}>
       <figure className="m-0 mt-[2px] flex flex-col items-center gap-[8px] md:mt-[4px]">
         {/* The plate is #F4F5F8 in every theme (a camera wants dark on light): 235px at phone, 206 at desktop. */}
         <div className="rounded-[10px] bg-[#F4F5F8] p-[16px]">

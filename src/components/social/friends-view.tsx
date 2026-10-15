@@ -28,6 +28,7 @@ import { CommanderPicker } from "./commander-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
 
 const p = socialCopy.page;
+const CLOCK_TICK_MS = 60_000;
 
 /** What a redraw is compared by: the fields the head draws. */
 function drawnKey(p: OwnProfile): string {
@@ -58,7 +59,7 @@ function useFieldWrite<T>(served: T, show: (v: T) => void) {
   };
 }
 
-type Shown = { url: string; expiresAt: Date };
+type Shown = { url: string; expiresAt: Date; made?: boolean };
 
 export function FriendsView({
   profile,
@@ -87,9 +88,9 @@ export function FriendsView({
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
   const timeZone = hydrated ? undefined : "UTC";
   // From the server's latest draw, so a link made after a redraw is dated against that draw's clock, and moved
-  // on by the client only to the moment an open link expires (below), so a held Add a friend lets go then.
-  const [expiredAt, setExpiredAt] = useState(nowMs);
-  const now = useMemo(() => new Date(Math.max(nowMs, expiredAt)), [nowMs, expiredAt]);
+  // on by the client's minute tick (below).
+  const [tickedAt, setTickedAt] = useState(nowMs);
+  const now = useMemo(() => new Date(Math.max(nowMs, tickedAt)), [nowMs, tickedAt]);
 
   const [name, setName] = useState(profile.displayName);
   const [commander, setCommander] = useState(profile.commander);
@@ -101,6 +102,8 @@ export function FriendsView({
     setCommander(profile.commander);
   }
   const face = useRef<HTMLButtonElement>(null);
+  // Where focus goes when a just-made link's dialog closes: its opener may have been the toast's Try again.
+  const invite = useRef<HTMLButtonElement>(null);
   const [picking, setPicking] = useState(false);
   const [receipt, setReceipt] = useState(accepted);
   // A redraw that resolves a different friend (or none: the friendship ended) replaces the receipt; the same one
@@ -140,20 +143,21 @@ export function FriendsView({
   const listed = friends.filter((f) => !gone.has(f.publicId));
   const open = links.filter((l) => !revoked.has(l.token) && l.expiresAt.getTime() > now.getTime());
   const held = open.length >= maxLinks;
-  // Wake when the soonest open link expires, so it leaves the list and stops counting toward the ten. The clock
-  // runs on from the server's draw by the client's elapsed time, both to schedule and on waking: a link put back
-  // after a failed revoke waits only what is left, and a tab woken late drops every link that expired meanwhile.
+  // While links are open the clock runs on once a minute, from the server's draw plus the client's elapsed time:
+  // each row's time left and its last-day warning stay true between redraws, and a link that expires leaves the
+  // list and stops counting toward the ten. A tab woken late catches up on its first tick.
   const drawnAt = useRef<{ server: number; client: number } | null>(null);
   useEffect(() => {
     drawnAt.current = { server: nowMs, client: Date.now() };
   }, [nowMs]);
-  const nextExpiry = Math.min(...open.map((l) => l.expiresAt.getTime()));
+  const ticking = links.length > 0;
   useEffect(() => {
-    if (!Number.isFinite(nextExpiry)) return;
-    const clock = () => (drawnAt.current ? drawnAt.current.server + Date.now() - drawnAt.current.client : now.getTime());
-    const t = setTimeout(() => setExpiredAt(clock()), Math.max(0, Math.min(nextExpiry - clock(), 2_147_483_647)));
-    return () => clearTimeout(t);
-  }, [nextExpiry, now]);
+    if (!ticking) return;
+    const t = setInterval(() => {
+      if (drawnAt.current) setTickedAt(drawnAt.current.server + Date.now() - drawnAt.current.client);
+    }, CLOCK_TICK_MS);
+    return () => clearInterval(t);
+  }, [ticking]);
   const linkUrl = (token: string) => `${origin ?? window.location.origin}${invitePath(token)}`;
 
   async function rename(next: string) {
@@ -187,7 +191,7 @@ export function FriendsView({
     const out = await createInviteAction().catch(() => null);
     makingNow.current = false;
     setMaking(false);
-    if (out?.ok) setShown({ url: out.url, expiresAt: new Date(out.expiresAt) });
+    if (out?.ok) setShown({ url: out.url, expiresAt: new Date(out.expiresAt), made: true });
     else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
     else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
   }
@@ -240,6 +244,7 @@ export function FriendsView({
           invitePending={making}
           held={held}
           onInvite={makeLink}
+          inviteRef={invite}
         />
         <FriendsList
           friends={listed}
@@ -259,7 +264,7 @@ export function FriendsView({
         />
       </div>
 
-      {shown ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} /> : null}
+      {shown ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={shown.made ? invite : undefined} /> : null}
       {picking ? <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} /> : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </>

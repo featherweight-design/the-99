@@ -33,6 +33,7 @@ export function FriendsHead({
   invitePending,
   held,
   onInvite,
+  inviteRef,
 }: {
   name: string;
   commander: ProfileCommander | null;
@@ -47,6 +48,8 @@ export function FriendsHead({
   /** Ten links open: the button is held, with the reason under it. */
   held: boolean;
   onInvite: () => void;
+  /** The Add a friend press, where focus returns when a link it made is closed. */
+  inviteRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
@@ -200,6 +203,7 @@ export function FriendsHead({
           onClick={() => {
             if (!invitePending && !held) onInvite();
           }}
+          ref={inviteRef}
           aria-disabled={invitePending || held || undefined}
           aria-describedby={held ? `${id}-held` : undefined}
           className={`${ACCENT_BUTTON} min-w-[132px] md:h-[44px] ${held ? "!bg-[color:var(--elevated)] !text-[color:var(--fg-locked)]" : invitePending ? "!bg-[color:var(--accent-strong)]" : ""} max-md:h-[48px] max-md:text-[15px]`}
