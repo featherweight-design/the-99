@@ -1,0 +1,210 @@
+{
+  "feature": "Social R3 PR 2: the game log form's Across the table row (your seat, anyone-by-commander seats, who won, the held pod)",
+  "clearAbout": true,
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true and SOCIAL_GAMES_ENABLED=true on the server, and GAMES_DECK (any deck of the signed-in account). Opens the form, searches the catalog and seats two commanders; it logs nothing (no Save press). Games or friends off: the row is absent, which the component tests hold. The held pod's line (a press on a held size) is drawn by the component tests: Playwright will not click an aria-disabled control.",
+  "rows": [
+    {
+      "id": "seats-empty",
+      "label": "Across the table: your seat, 0 of 3 seats, the dashed Add opponent",
+      "view": "src/components/decks/game-seats.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${GAMES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Games",
+          "wait": "#panel-games",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "Log a game",
+          "wait": "#game-seats-label",
+          "settle": 800
+        },
+        {
+          "scrollTo": "#game-seats-label",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "picker-typed",
+      "label": "The seat picker open with a commander search typed",
+      "view": "src/components/decks/seat-picker.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${GAMES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Games",
+          "wait": "#panel-games",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "Log a game",
+          "wait": "#game-seats-label",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add opponent$",
+          "wait": "[role=dialog] input",
+          "settle": 500
+        },
+        {
+          "fill": "[role=dialog] input",
+          "text": "yuriko",
+          "wait": "[role=dialog] ul button",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "seats-lost-winner",
+      "label": "Two seats filled, Lost, one trophy pressed: won this game",
+      "view": "src/components/decks/game-seats.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${GAMES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Games",
+          "wait": "#panel-games",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "Log a game",
+          "wait": "#game-seats-label",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add opponent$",
+          "wait": "[role=dialog] input",
+          "settle": 500
+        },
+        {
+          "fill": "[role=dialog] input",
+          "text": "yuriko",
+          "wait": "[role=dialog] ul button",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Yuriko, the Tiger",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add opponent$",
+          "wait": "[role=dialog] input",
+          "settle": 500
+        },
+        {
+          "fill": "[role=dialog] input",
+          "text": "tymna",
+          "wait": "[role=dialog] ul button",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Tymna the Weaver",
+          "settle": 800
+        },
+        {
+          "clickRole": "radio",
+          "name": "^Lost$",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Yuriko won$",
+          "settle": 500
+        },
+        {
+          "scrollTo": "#game-seats-label",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "pod-held",
+      "label": "Pod 3 with both seats filled: Add opponent gone, the smaller pod size held (dimmed)",
+      "view": "src/components/decks/game-log-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${GAMES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Games",
+          "wait": "#panel-games",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "Log a game",
+          "wait": "#game-seats-label",
+          "settle": 800
+        },
+        {
+          "clickRole": "radio",
+          "name": "^3$",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add opponent$",
+          "wait": "[role=dialog] input",
+          "settle": 500
+        },
+        {
+          "fill": "[role=dialog] input",
+          "text": "yuriko",
+          "wait": "[role=dialog] ul button",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Yuriko, the Tiger",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add opponent$",
+          "wait": "[role=dialog] input",
+          "settle": 500
+        },
+        {
+          "fill": "[role=dialog] input",
+          "text": "tymna",
+          "wait": "[role=dialog] ul button",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Tymna the Weaver",
+          "settle": 800
+        },
+        {
+          "scrollTo": "#game-seats-label",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}

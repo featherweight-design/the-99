@@ -8,7 +8,7 @@ import type { AxisTally, DeckGame, GameSummary } from "../../lib/decks/games";
 import { deriveHeadline, type Headline } from "../../lib/decks/game-headline";
 import { GameAxisCell } from "./game-axis-cell";
 import { GameHistoryRow } from "./game-history-row";
-import { GameLogForm, type GameResult } from "./game-log-form";
+import { GameLogForm, type GameLogFormProps, type GameResult } from "./game-log-form";
 import { deckTuningGamesCopy } from "../../lib/copy/deck-tuning-games";
 import { PATTERN_MIN, axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 
@@ -20,6 +20,8 @@ export interface GamesPanelProps {
   tuned?: boolean;
   /** Presses the Analysis tab, for the pointer line. */
   onOpenAnalysis?: () => void;
+  /** The log form's "Across the table" row, for a reader with `SOCIAL_GAMES_ENABLED` on. Absent: the shipped form. */
+  opponents?: GameLogFormProps["opponents"];
 }
 
 type GameRecord = GameSummary["record"];
@@ -231,7 +233,7 @@ export function GameHeadlineHeader({ headline, count }: { headline: Headline; co
   );
 }
 
-export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis }: GamesPanelProps) {
+export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
 
@@ -279,6 +281,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
               onSaved={() => setAnnouncement(gameLogCopy.announce.savedFirst)}
               ctaLabel={gameLogCopy.empty.cta}
               ctaSolid
+              opponents={opponents}
             />
           </div>
         </div>
@@ -299,6 +302,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
         deckId={deckId}
         tuned={tuned}
         isFirstGame={games.length === 0}
+        opponents={opponents}
         onAnnounce={setAnnouncement}
         onSaved={(isFirst, result) =>
           isFirst
