@@ -1475,3 +1475,41 @@ html {
 @media (max-width: 767px) {
   html[data-note-focus] [data-hide-on-note-focus] { display: none; }
 }
+
+/* The friend request card's turn (Social R1 PR D; README decision 23). One box holds both faces, the front
+   pre-rotated 180°, so nothing on the page moves: face up is the box at rotateY(180deg). The arrival waits a 200ms
+   beat and turns over 520ms; a decline turns it back at once. With reduced motion there is no turn: the faces swap
+   with a 120ms cross-fade, and the front is not pre-rotated. */
+.friend-card { perspective: 1400px; }
+.friend-card-turn {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 520ms cubic-bezier(.45, .05, .25, 1);
+}
+.friend-card-turn[data-up="true"] { transform: rotateY(180deg); }
+.friend-card-turn[data-arrival="true"] { transition-delay: 200ms; }
+.friend-card-face {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.friend-card-front { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .friend-card-turn,
+  .friend-card-turn[data-up="true"] { transform: none; transition: none; }
+  .friend-card-front { transform: none; }
+  .friend-card-face { transition: opacity 120ms linear; }
+  .friend-card-turn[data-arrival="true"] .friend-card-face { transition-delay: 200ms; }
+  .friend-card-turn[data-up="true"] .friend-card-back,
+  .friend-card-turn[data-up="false"] .friend-card-front { opacity: 0; }
+}
+/* The column's heading and buttons arrive as the card lands (200ms + 520ms), on a card that turns: held while the
+   card waits face down (`wait`), and timed from the render that starts its turn (`in`). */
+@media (prefers-reduced-motion: no-preference) {
+  .friend-land-wait { opacity: 0; }
+  .friend-land-in { animation: friend-land-in 240ms var(--motion-ease) 720ms both; }
+}
+@keyframes friend-land-in { from { opacity: 0; } }

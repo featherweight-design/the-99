@@ -52,6 +52,11 @@ export function invitePath(token: string): string {
   return `/friend/${token}`;
 }
 
+/** Where an accepted request lands: `/friends`, with the new friend's receipt resolved by `publicId` (E10). */
+export function friendsReceiptPath(publicId: string): string {
+  return `/friends?accepted=${encodeURIComponent(publicId)}`;
+}
+
 const first = (v: string | null) => v?.split(",")[0]?.trim() || null;
 
 /**
