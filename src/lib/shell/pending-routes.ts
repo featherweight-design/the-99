@@ -14,7 +14,7 @@ export type LoadingKey = keyof typeof shellCopy.loading;
  */
 export type PendingRoute =
   | { kind: "overlay"; key: LoadingKey }
-  | { kind: "kept"; screen: LoadingKey | "choose" };
+  | { kind: "kept"; screen: LoadingKey | "choose" | "precons" };
 
 /** The path a link or push goes to, without its query or hash. */
 export function pathOf(href: string): string {
@@ -45,7 +45,9 @@ export function pendingRouteFor(href: string): PendingRoute {
       // `/decks/shopping` (the all-decks cart) is a list route like `/decks`, not a deck id.
       if (second === "shopping") return { kind: "overlay", key: "decks" };
       // `/decks/precons` and an open precon are list routes too, never a deck id.
-      if (second === "precons") return { kind: "overlay", key: "decks" };
+      // The LIST keeps its own boundary (`precons/(list)/loading.tsx`: tiles, not the crown) and so gets no overlay; an open
+      // precon sits outside that route group and keeps the decks screen.
+      if (second === "precons") return third === undefined ? { kind: "kept", screen: "precons" } : { kind: "overlay", key: "decks" };
       if (second === "new") return third === "choose" ? { kind: "kept", screen: "choose" } : { kind: "overlay", key: "deckNew" };
       if (third === "import") return { kind: "kept", screen: "deckUpdate" };
       return { kind: "kept", screen: "decks" };
