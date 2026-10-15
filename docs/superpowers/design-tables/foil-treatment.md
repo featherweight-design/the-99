@@ -167,7 +167,7 @@ The tilt (`data-tilt`, `@property`, the glare, the hover rule that plays no band
 | Done / unmarked | drawn at once | same |
 | The face | never carries `data-arrival`, never drawn through `ArtLayer`; computed opacity 1 in every film state (`probe:foil-film`) | same |
 | Cleanup | the effect's cleanup removes the Image's listeners and the mark, on unmount and on a new URL | same |
-| Band | one `foil-sweep` on landing, delay `--motion-duration`, under `(hover: none)` and no-preference | none in PR 1 (R1's band needs a hovered `a`/`button` ancestor, and the face is not inside one); the focus band is PR 2's (G6) |
+| Band | one `foil-sweep` once the film's own mark reads `in` or `done` (never while held), delay `--motion-duration`, under `(hover: none)` and no-preference | none in PR 1 (R1's band needs a hovered `a`/`button` ancestor, and the face is not inside one); the focus band is PR 2's (G6) |
 | Reduced transparency / forced colors | R1's rules: no film; a 2px `--fg-muted` ring under reduced transparency | same |
 
 ### What details reads as foil (G9)

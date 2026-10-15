@@ -1108,7 +1108,7 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 
 /* The band exists only where it can play: a fine pointer, motion welcome. Phones never draw it. It
    is defined under no-preference alone, so the reduced-motion list below needs no entry for it. A
-   large film on a phone plays its own one band on landing (R2, below). */
+   large film on a phone plays its own one band once its art has landed (R2, below). */
 @keyframes foil-sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   [data-foil]::after {
@@ -1145,11 +1145,15 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   :is(a, button):is(:hover, :focus-visible) [data-foil][data-foil-still]::after { animation: none; }
 }
 
-/* Phone: one band when a large card lands (the film mounts), after the card's own entry. */
+/* Phone: one band when a large card's art lands, after the card's own entry. The band waits for the film's own
+   arrival mark (`in`, or `done` for cached art), so a face whose bytes are slow plays it once the film shows, never
+   while it is still held at opacity 0. */
 @media (hover: none) and (prefers-reduced-motion: no-preference) {
   [data-foil][data-foil-size="large"]::after {
-    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    content: ""; position: absolute; inset: 0; border-radius: inherit; transform: translateX(-100%);
     background: linear-gradient(105deg, rgb(255 255 255 / 0) 30%, rgb(255 255 255 / .42) 50%, rgb(255 255 255 / 0) 70%);
+  }
+  [data-foil][data-foil-size="large"]:is([data-arrival="in"], [data-arrival="done"])::after {
     animation: foil-sweep calc(var(--motion-duration) * 2) var(--motion-ease) var(--motion-duration) both;
   }
 }

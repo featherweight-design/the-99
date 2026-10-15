@@ -114,6 +114,11 @@ for (const motion of ["no-preference", "reduce"]) {
     return { name: a.animationName, delay: a.animationDelay, count: a.animationIterationCount };
   });
   check("phone: a large film plays one band on landing", band.name === "foil-sweep" && band.count === "1" && band.delay !== "0s", JSON.stringify(band));
+  // The band waits for the art: a film still held (pending) or broken (failed) plays none, so it is never spent unseen.
+  for (const id of ["face-pending", "face-failed"]) {
+    const held = await page.$eval(`#${id} [data-foil]`, (e) => getComputedStyle(e, "::after").animationName);
+    check(`phone: a ${id.slice(5)} film plays no band yet`, held === "none", held);
+  }
   const peekBand = await pseudo(page, "peek-done", "::after", "content");
   check("phone: a peek's tile film plays no band", peekBand === "none" || peekBand === "normal", peekBand);
   await ctx.close();
