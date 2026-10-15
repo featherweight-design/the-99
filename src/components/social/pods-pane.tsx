@@ -83,13 +83,8 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
       return next;
     });
     try {
-      const r = await removeMemberAction(pod.id, member.publicId);
-      if (off(r)) router.refresh();
-      // `changed: false` is a member already out: done (E12).
-      else if (!r.ok) {
-        back();
-        fail();
-      }
+      // Any answer but off is done: `changed: false` is a member already out (E12).
+      if (off(await removeMemberAction(pod.id, member.publicId))) router.refresh();
     } catch {
       back();
       fail();
