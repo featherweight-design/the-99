@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foil treatment · R1</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.shell{overflow:hidden;border-radius:10px;border:1px solid;display:flex;flex-direction:column}
+.art{position:relative;aspect-ratio:63/88;overflow:hidden;border-radius:0 0 10px 10px}
+.plate{position:absolute;inset:0;background:#0E0E10}
+.face{position:absolute;inset:4.3% 4.8%;border-radius:2.5%;display:flex;flex-direction:column;gap:2.2%;padding:3.2%;box-sizing:border-box}
+.nb{flex:0 0 7%;border-radius:2px;background:rgba(255,255,255,.22)}
+.win{flex:0 0 46%;border-radius:1px}
+.tb{flex:0 0 6%;border-radius:1px;background:rgba(255,255,255,.2)}
+.box{flex:1;border-radius:1px}
+.fl{position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.fl.foil::before,.fl.etched::before,.fl.foil::after,.fl.etched::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.fl.foil::before{background:linear-gradient(115deg,rgba(255,255,255,0) 8%,rgba(255,110,180,.16) 22%,rgba(255,220,120,.16) 32%,rgba(255,255,255,.26) 39%,rgba(130,240,210,.16) 47%,rgba(120,170,255,.16) 60%,rgba(200,130,255,.14) 74%,rgba(255,255,255,0) 90%)}
+.fl.etched::before{background:linear-gradient(115deg,rgba(214,226,240,0) 12%,rgba(214,226,240,.10) 30%,rgba(236,243,250,.22) 42%,rgba(214,226,240,.10) 54%,rgba(214,226,240,0) 74%)}
+.fl.foil::after,.fl.etched::after{background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.42) 50%,rgba(255,255,255,0) 70%);transform:translateX(-100%)}
+.hov:hover .fl::after{animation:sweep 640ms cubic-bezier(.45,0,.55,1)}
+.mid .fl::after{transform:translateX(-6%)}
+.rt .fl::before,.rt .fl::after,.fc .fl::before,.fc .fl::after{display:none}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+pre{margin:0}
+</style>
+</helmet>
+<div style="width:1300px;min-height:1700px;box-sizing:border-box;padding:48px 56px 64px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:40px">
+
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">The 99 · Foil treatment · R1 · 2026-10-15</span>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;line-height:1.2">A still foil film on the art. Light runs across it when you point at it.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.55;color:#95A4A6">One angled rainbow film over every tile whose copies are all foil, drawn by the ring span the tile already has. It never moves on its own, so a 100-foil Collector’s Edition deck is as calm as any other. On desktop, hover or keyboard focus sends one band of light across that tile. Theme drawn: Kaldheim; the other five are on each surface board.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <span class="k">At deck desktop size · hover any tile to play the sweep</span>
+    <ul class="d" style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:24px">
+      <sc-for list="{{hero}}" as="t" hint-placeholder-count="5">
+        <li class="hov" style="display:flex;flex-direction:column;gap:8px">
+          <div class="shell" style="background:#1E1F26;border-color:#1A1F2B">
+            <div class="art {{t.state}}" style="background:#16171D">
+              <div class="plate"><div class="face" style="background:{{t.face}}"><span class="nb"></span><span class="win" style="background:{{t.win}}"></span><span class="tb"></span><span class="box" style="background:{{t.box}}"></span></div></div>
+              <span class="fl {{t.fin}}"></span>
+            </div>
+            <div style="padding:8px 10px 9px;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:12.5px;color:#C6D2D3">{{t.name}}</span>
+              <span class="m" style="font-size:10px;color:#95A4A6">{{t.sub}}</span>
+            </div>
+          </div>
+          <span class="m" style="font-size:11px;font-weight:500;color:#C6D2D3">{{t.label}}</span>
+          <span style="font-size:12px;line-height:1.45;color:#95A4A6">{{t.note}}</span>
+        </li>
+      </sc-for>
+    </ul>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <span class="k">The calls, in the brief’s order (§Open)</span>
+    <ol style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 40px">
+      <sc-for list="{{calls}}" as="c" hint-placeholder-count="8">
+        <li style="display:flex;gap:12px;padding:14px 0;border-top:1px solid #2E3340">
+          <span class="m" style="flex:0 0 22px;font-size:12px;color:#5C86C9">{{c.n}}</span>
+          <span style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:14px;font-weight:600;color:#C6D2D3">{{c.q}}</span>
+            <span style="font-size:13px;line-height:1.5;color:#95A4A6">{{c.a}}</span>
+          </span>
+        </li>
+      </sc-for>
+    </ol>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span class="k">The locks, and how each is met</span>
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{locks}}" as="l" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340">
+            <span style="font-size:12.5px;font-weight:500;color:#C6D2D3">{{l.lock}}</span>
+            <span style="font-size:12.5px;line-height:1.5;color:#95A4A6">{{l.how}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span class="k">Timing · live motion can’t show on a still canvas</span>
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{timing}}" as="r" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340">
+            <span style="font-size:12.5px;font-weight:500;color:#C6D2D3">{{r.when}}</span>
+            <span class="m" style="font-size:11.5px;line-height:1.6;color:#95A4A6">{{r.what}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin:0;font-size:12px;line-height:1.5;color:#7C8A8C">Every value is an existing motion token from globals.css or a multiple of one. The Motion board plays each one on a loop.</p>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = {
+      W: ['#D9D0B4', 'linear-gradient(160deg,#cfd8e6,#e8c98a 60%,#9a7b52)', '#EEE7D3'],
+      U: ['#2D5C93', 'linear-gradient(170deg,#1b2f55,#4f86c4 55%,#c9e0f0)', '#B9CCE0'],
+      R: ['#B2452F', 'linear-gradient(160deg,#2a0f0a,#c2552c 55%,#f2b061)', '#E2C2B0'],
+      Art: ['#8D9298', 'linear-gradient(165deg,#22262c,#6b737d 55%,#c8ccd2)', '#D3D6DA'],
+      Gold: ['#C2A04C', 'linear-gradient(160deg,#3a2a12,#b8873a 50%,#f0d58a)', '#E8DDB8']
+    };
+    const t = (a, o) => ({ face: A[a][0], win: A[a][1], box: A[a][2], ...o });
+    return {
+      hero: [
+        t('W', { name: 'Swords to Plowshares', sub: 'MSC 31', fin: '', state: '', label: 'Plain', note: 'Unchanged: the 1px inner edge only.' }),
+        t('Art', { name: 'Sol Ring', sub: 'MSC 112', fin: 'foil', state: '', label: 'Foil · at rest', note: 'The film, still. Same on phone.' }),
+        t('U', { name: 'Counterspell', sub: 'MSC 46', fin: 'foil', state: 'mid', label: 'Foil · mid-sweep (desktop)', note: 'A frozen frame of the hover band.' }),
+        t('Gold', { name: 'Arcane Signet', sub: 'MSC 108', fin: 'etched', state: '', label: 'Etched · at rest', note: 'Silver, no colour, flatter.' }),
+        t('R', { name: 'Chaos Warp', sub: 'MSC 77', fin: '', state: '', label: 'Mixed, ×3 · 1 foil', note: 'No sheen: not every copy is foil.' })
+      ],
+      calls: [
+        { n: '1', q: 'Static or animated', a: 'Static. A fixed film at 115°, so a full Collector’s Edition grid is still. It fades in with the art (art-in, 300ms) and never moves on its own.' },
+        { n: '2', q: 'Hover on desktop', a: 'Hover or keyboard focus sends one band of light across that tile, 640ms, then stops. No tilt and no pointer-following: one CSS animation on one tile.' },
+        { n: '3', q: 'Phones', a: 'Static only. No sweep on scroll (it would need a watcher per tile) and no device tilt (iOS asks for motion permission).' },
+        { n: '4', q: 'Intensity per theme', a: 'One recipe for all six. The film paints on the art, which is the same in every theme; only the frame around it changes (surface boards). Reduced transparency: the film goes and the inner edge becomes a solid 2px --fg-muted line.' },
+        { n: '5', q: 'Etched against foil', a: 'Drawn differently: a cooler, flatter silver film with no colour, and the same sweep. Staging holds 0 etched copies, so it costs one CSS rule to keep or drop.' },
+        { n: '6', q: 'Mixed finishes', a: 'No sheen. A tile gets it only when every copy is foil, in Collection and in decks alike, as precons already do (printedFoil). Card details’ printing list still says ×3 · 1 foil. Agreed: the deck rule stays “every owned copy”.' },
+        { n: '7', q: 'Large views', a: 'Not this round. Card details, the zoom and the hover preview stay as on main. A full-size sheen is a richer drawing, and a follow-up (gap G4).' },
+        { n: '+', q: 'Tokens and precon boxes', a: 'Tokens get none: a held token printing records no finish (Tokens board). A precon box tile on /precons gets none: a box is not a copy. No About entry.' }
+      ],
+      locks: [
+        { lock: 'Only real foil copies', how: 'data-foil is set from Collection’s finishes (every copy foil or etched), a precon’s printedFoil, or a deck pin the player owns only in foil. Absent everywhere else.' },
+        { lock: 'No new image downloads', how: 'Two CSS gradients on two pseudo-elements. No texture, no mask image.' },
+        { lock: 'On the ring span', how: 'The span that draws the 1px inner edge takes data-foil. Its ::before is the film, its ::after the sweep band. No new element.' },
+        { lock: 'Radius ≥ 3.1% of width', how: 'The span inherits the clip. Shell 9 or 10px, art foot max(9px, 3.4cqw): 5.0% of a 181px tile, 7.8% of a 115px one.' },
+        { lock: 'No per-tile JS or filter', how: 'None. No filter, no backdrop-filter, no blend mode, no will-change. Plain alpha gradients.' },
+        { lock: 'Reduced motion · RT · FC', how: 'Motion: static, no fade, no sweep. Transparency: film off, solid 2px edge. Forced colours: film off; the words stay.' },
+        { lock: '200 tiles stay smooth', how: 'The film rasterises once with its tile and scrolls with it. Only a hovered tile animates, and only transform. Proof is measure:load, slow profile.' },
+        { lock: 'No About entry', how: 'Cosmetic, per the card-captions ruling. Nothing in about.ts moves.' }
+      ],
+      timing: [
+        { when: 'Film arrives', what: 'opacity 0→1 · 300ms · no delay · --motion-fade, --motion-ease · rides the img’s art-in' },
+        { when: 'While art loads', what: 'opacity 0 while the img has no src or data-arrival="pending"' },
+        { when: 'Hover / focus', what: 'transform translateX(-100%→100%) on ::after · 640ms = 2 × --motion-duration · no delay · --motion-ease · once per hover' },
+        { when: 'Leaving mid-sweep', what: 'the band drops back off the tile at once (no reverse)' },
+        { when: 'Reduced motion', what: 'no fade, no sweep · the film is simply there with the art' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

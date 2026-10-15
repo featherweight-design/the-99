@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foil states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.shell{overflow:hidden;border-radius:10px;border:1px solid;display:flex;flex-direction:column}
+.ph .shell{border-radius:9px}
+.art{position:relative;aspect-ratio:63/88;overflow:hidden;border-radius:0 0 10px 10px}
+.ph .art{border-radius:0 0 9px 9px}
+.plate{position:absolute;inset:0;background:#0E0E10}
+.face{position:absolute;inset:4.3% 4.8%;border-radius:2.5%;display:flex;flex-direction:column;gap:2.2%;padding:3.2%;box-sizing:border-box}
+.nb{flex:0 0 7%;border-radius:2px;background:rgba(255,255,255,.22)}
+.win{flex:0 0 46%;border-radius:1px}
+.tb{flex:0 0 6%;border-radius:1px;background:rgba(255,255,255,.2)}
+.box{flex:1;border-radius:1px}
+.fl{position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.fl.foil::before,.fl.etched::before,.fl.foil::after,.fl.etched::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.fl.foil::before{background:linear-gradient(115deg,rgba(255,255,255,0) 8%,rgba(255,110,180,.16) 22%,rgba(255,220,120,.16) 32%,rgba(255,255,255,.26) 39%,rgba(130,240,210,.16) 47%,rgba(120,170,255,.16) 60%,rgba(200,130,255,.14) 74%,rgba(255,255,255,0) 90%)}
+.fl.etched::before{background:linear-gradient(115deg,rgba(214,226,240,0) 12%,rgba(214,226,240,.10) 30%,rgba(236,243,250,.22) 42%,rgba(214,226,240,.10) 54%,rgba(214,226,240,0) 74%)}
+.fl.foil::after,.fl.etched::after{background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.42) 50%,rgba(255,255,255,0) 70%);transform:translateX(-100%)}
+.hov:hover .fl::after{animation:sweep 640ms cubic-bezier(.45,0,.55,1)}
+.mid .fl::after{transform:translateX(-6%)}
+.half .plate,.half .fl{opacity:.5}
+.rt .fl::before,.rt .fl::after,.fc .fl::before,.fc .fl::after{display:none}
+.rm .fl::after{animation:none!important}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+</style>
+</helmet>
+<div style="width:1300px;min-height:1700px;box-sizing:border-box;padding:48px 56px 64px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:36px">
+
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px">
+    <span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">States · R1 · Kaldheim</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">Every state the brief lists</h2>
+    <p style="margin:0;font-size:13px;line-height:1.5;color:#95A4A6">Deck tile size at 1300 (about 181px), then the same set at the phone’s 2-up size. Each cell names the condition engineering keys on. The live tiles here play the hover sweep.</p>
+  </div>
+
+  <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:28px 20px">
+    <sc-for list="{{desk}}" as="t" hint-placeholder-count="14">
+      <li class="{{t.hov}}" style="display:flex;flex-direction:column;gap:8px">
+        <div class="shell" style="background:{{t.surface}};border-color:{{t.border}}">
+          <div class="art {{t.state}}" style="background:{{t.sunken}}">
+            <sc-if value="{{t.drawn}}" hint-placeholder-val="{{true}}"><div class="plate"><div class="face" style="background:{{t.face}}"><span class="nb"></span><span class="win" style="background:{{t.win}}"></span><span class="tb"></span><span class="box" style="background:{{t.box}}"></span></div></div></sc-if>
+            <sc-if value="{{t.noArt}}" hint-placeholder-val="{{false}}"><span class="m" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;line-height:1.4;color:#7C8A8C">no art on file</span></sc-if>
+            <span class="fl {{t.fin}}" style="{{t.flStyle}}"></span>
+          </div>
+          <div style="padding:8px 10px 9px;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:12.5px;color:{{t.fg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.name}}</span>
+            <span class="m" style="font-size:10px;color:{{t.muted}}">{{t.sub}}</span>
+          </div>
+        </div>
+        <span class="m" style="font-size:11px;font-weight:500;color:#C6D2D3">{{t.label}}</span>
+        <span style="font-size:12px;line-height:1.45;color:#95A4A6">{{t.note}}</span>
+        <span class="m" style="font-size:10px;line-height:1.5;color:#5C86C9">{{t.key}}</span>
+      </li>
+    </sc-for>
+  </ul>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <span class="k">Phone · 2-up · static</span>
+    <ul class="ph" style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(6,175px);gap:20px">
+      <sc-for list="{{phone}}" as="t" hint-placeholder-count="6">
+        <li style="display:flex;flex-direction:column;gap:6px">
+          <div class="shell" style="background:{{t.surface}};border-color:{{t.border}}">
+            <div class="art {{t.state}}" style="background:{{t.sunken}}">
+              <sc-if value="{{t.drawn}}" hint-placeholder-val="{{true}}"><div class="plate"><div class="face" style="background:{{t.face}}"><span class="nb"></span><span class="win" style="background:{{t.win}}"></span><span class="tb"></span><span class="box" style="background:{{t.box}}"></span></div></div></sc-if>
+              <span class="fl {{t.fin}}" style="{{t.flStyle}}"></span>
+            </div>
+            <div style="padding:8px 9px 9px;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:12.5px;color:{{t.fg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.name}}</span>
+              <span class="m" style="font-size:10px;color:{{t.muted}}">{{t.sub}}</span>
+            </div>
+          </div>
+          <span class="m" style="font-size:11px;font-weight:500;color:#C6D2D3">{{t.label}}</span>
+        </li>
+      </sc-for>
+    </ul>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const th = { surface: '#1E1F26', sunken: '#16171D', border: '#1A1F2B', fg: '#C6D2D3', muted: '#95A4A6' };
+    const ART = [
+      ['#D9D0B4', 'linear-gradient(160deg,#cfd8e6,#e8c98a 60%,#9a7b52)', '#EEE7D3'],
+      ['#2D5C93', 'linear-gradient(170deg,#1b2f55,#4f86c4 55%,#c9e0f0)', '#B9CCE0'],
+      ['#3A3436', 'linear-gradient(165deg,#120f14,#4b2f4a 60%,#8a5a6e)', '#B7AEAE'],
+      ['#B2452F', 'linear-gradient(160deg,#2a0f0a,#c2552c 55%,#f2b061)', '#E2C2B0'],
+      ['#3F6C3B', 'linear-gradient(170deg,#0f2414,#3f7a3a 55%,#b9d28a)', '#C3D1B5'],
+      ['#C2A04C', 'linear-gradient(160deg,#3a2a12,#b8873a 50%,#f0d58a)', '#E8DDB8'],
+      ['#8D9298', 'linear-gradient(165deg,#22262c,#6b737d 55%,#c8ccd2)', '#D3D6DA'],
+      ['#7E6C57', 'linear-gradient(170deg,#2b2a33,#7b6a8f 50%,#e6b98a)', '#D8CDBE']
+    ];
+    const tile = (o) => {
+      const a = ART[o.a % ART.length];
+      const fc = o.mode === 'fc';
+      const hidden = o.mode === 'pending' || o.mode === 'noart' || o.mode === 'broken';
+      return {
+        name: o.name, sub: o.sub || '', label: o.label || '', note: o.note || '', key: o.key || '',
+        fin: (o.mode === 'pending' || o.mode === 'noart') ? '' : (o.fin || ''),
+        state: (o.mode || '') + (o.mid ? ' mid' : '') + (o.half ? ' half' : ''),
+        hov: o.live ? 'hov' : '',
+        drawn: !hidden, noArt: o.mode === 'noart',
+        face: a[0], win: a[1], box: a[2],
+        surface: fc ? '#000000' : th.surface, border: fc ? '#FFFFFF' : th.border, sunken: fc ? '#000000' : th.sunken,
+        fg: fc ? '#FFFFFF' : th.fg, muted: fc ? '#FFFFFF' : th.muted,
+        flStyle: o.mode === 'rt' ? 'box-shadow:inset 0 0 0 2px ' + th.muted : (fc ? 'box-shadow:none' : '')
+      };
+    };
+    return {
+      desk: [
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', live: true, label: '1 · Foil at rest', note: 'The still film.', key: 'data-foil="foil"' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', mid: true, label: '2 · Foil hovered', note: 'One band crosses in 640ms, then rests.', key: ':hover / :focus-visible, fine pointer' }),
+        tile({ name: 'Arcane Signet', a: 5, sub: 'CMR 297', fin: 'etched', live: true, label: '3 · Etched at rest', note: 'Silver, no colour, flatter.', key: 'data-foil="etched"' }),
+        tile({ name: 'Arcane Signet', a: 5, sub: 'CMR 297', fin: 'etched', mid: true, label: '4 · Etched hovered', note: 'The same band.', key: 'same sweep' }),
+        tile({ name: 'Beast Within', a: 4, sub: 'CMM 281', label: '5 · Mixed finishes', note: 'Collection ×3 · 1 foil, or a deck pin owned in both: plain.', key: 'no data-foil' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', mode: 'pending', label: '6 · Art still arriving', note: 'The film waits; the sunken ground shows.', key: 'img:not([src]), [data-arrival="pending"]' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', half: true, label: '7 · Art landing', note: 'Film and art fade in together, 300ms.', key: '[data-arrival="in"] · art-in' }),
+        tile({ name: '[Token card]', a: 0, sub: 'MSC 410', fin: 'foil', mode: 'noart', label: '8 · No art', note: 'The text tile: no film.', key: 'no img, no data-foil' }),
+        tile({ name: 'Lightning Bolt', a: 3, sub: 'MSC 61', label: '9 · No longer foil-only', note: 'You now own a nonfoil of the pin too: plain.', key: 'rule fails → no data-foil' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', mode: 'broken', label: '10 · Art failed (gap G2)', note: 'Today the film would paint on the bare ground. Proposed: hide it.', key: 'proposed [data-arrival="failed"]' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', mode: 'rm', label: '11 · Reduced motion', note: 'Still. No fade, no sweep.', key: 'prefers-reduced-motion: reduce' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', mode: 'rt', label: '12 · Reduced transparency', note: 'Film off; solid 2px --fg-muted edge.', key: 'prefers-reduced-transparency' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', mode: 'fc', label: '13 · Forced colours', note: 'Film off. The system frame; art stays.', key: 'forced-colors: active' }),
+        tile({ name: 'Soldier', a: 0, sub: 'MSC T3', label: '14 · Token', note: 'Plain: a held token printing has no finish.', key: 'Tokens board' })
+      ],
+      phone: [
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', label: 'Foil' }),
+        tile({ name: 'Arcane Signet', a: 5, sub: 'CMR 297', fin: 'etched', label: 'Etched' }),
+        tile({ name: 'Beast Within', a: 4, sub: 'CMM 281', label: 'Mixed' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', mode: 'pending', label: 'Arriving' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', mode: 'rt', label: 'Reduced transp.' }),
+        tile({ name: 'Sol Ring', a: 6, sub: 'MSC 101', fin: 'foil', mode: 'fc', label: 'Forced colours' })
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
