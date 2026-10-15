@@ -54,6 +54,7 @@ import { NoResults } from "./no-results";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { PAGE_SIZE, parseBrowseParams } from "../../lib/collection/window";
+import { REVEAL_DONE_MS } from "../ui/reveal-from";
 import type { CollectionRow } from "../../lib/collection/list-wire";
 import { useCollectionFields } from "./use-collection-fields";
 
@@ -465,6 +466,13 @@ export function CollectionBrowser({
     },
     [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement],
   );
+  // The reveal is over once the last tile's fade is (the beat, the capped stagger and the 200ms fade, well inside this).
+  // Dropping the boundary then means a view switch or a breakpoint change, which mounts a fresh list, replays nothing.
+  useEffect(() => {
+    if (revealFrom === null) return;
+    const done = setTimeout(() => setRevealFrom(null), REVEAL_DONE_MS);
+    return () => clearTimeout(done);
+  }, [revealFrom]);
   const showMore = useCallback(() => {
     setRevealFrom(shown);
     setShown((s) => s + PAGE_SIZE);

@@ -10,6 +10,8 @@
 import type { CSSProperties } from "react";
 
 export const REVEAL_CAP = 11;
+/** Past the last fade: the 100ms beat + 40ms x the cap + the 200ms fade is 740ms; the owner drops `from` after this. */
+export const REVEAL_DONE_MS = 1000;
 
 /** The class and style an item at `index` takes: none before `from` (or when `from` is null), its place in the batch after it. */
 export function revealOf(index: number, from: number | null | undefined): { className?: string; style?: CSSProperties } {

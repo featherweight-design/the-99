@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { REVEAL_CAP, revealOf } from "./reveal-from";
+import { REVEAL_CAP, REVEAL_DONE_MS, revealOf } from "./reveal-from";
 
 describe("revealOf", () => {
   it("reveals nothing without a press of Show more", () => {
@@ -18,5 +18,11 @@ describe("revealOf", () => {
     expect(revealOf(205, 200).style).toEqual({ "--reveal-n": 5 });
     expect(revealOf(200 + REVEAL_CAP, 200).style).toEqual({ "--reveal-n": REVEAL_CAP });
     expect(revealOf(399, 200).style).toEqual({ "--reveal-n": REVEAL_CAP });
+  });
+});
+
+describe("REVEAL_DONE_MS", () => {
+  it("is past the last fade: the beat, the capped stagger and the fade", () => {
+    expect(REVEAL_DONE_MS).toBeGreaterThan(100 + 40 * REVEAL_CAP + 200);
   });
 });
