@@ -144,8 +144,12 @@ export const refreshCopy = {
       updateFromList: 'Update from a list',
       rename: 'Rename',
       delete: 'Delete',
-      /** The tile menu's Export row when the deck's export could not be read. Placeholder owed to /copy-review. */
-      exportFailed: 'Couldn’t load. Try again',
+      /**
+       * The tile menu's Export row when the deck's export could not be read; pressing it reads again. A read writes
+       * nothing, so no "unchanged" clause (`src/lib/copy/README.md`), and the tile names the deck. Short because the
+       * menu is 186px wide and the row one line: "We couldn’t load that deck. Try again." would wrap and clip.
+       */
+      exportFailed: 'Couldn’t load. Try again.',
       trigger: (deckName: string) => `Actions for ${deckName}`,
     },
 
