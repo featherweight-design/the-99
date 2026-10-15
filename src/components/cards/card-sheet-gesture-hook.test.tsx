@@ -370,6 +370,8 @@ describe("the hold", () => {
   it("lifts the card after 300ms, follows the finger, and pages nothing", () => {
     const onPage = vi.fn();
     render(<Harness onPage={onPage} />);
+    // jsdom lays nothing out: give the card a 400 x 560 box, so the follow writes where the finger is.
+    card().getBoundingClientRect = () => ({ left: 0, top: 0, width: 400, height: 560, right: 400, bottom: 560, x: 0, y: 0, toJSON: () => ({}) });
     down(card());
     wait(299);
     expect(lifted()).toBe(false);
@@ -377,7 +379,11 @@ describe("the hold", () => {
     expect(lifted()).toBe(true);
     // A drag that would page, once the card is held, only tilts it.
     moveTo(800, 210);
+    expect(card().style.getPropertyValue("--tilt-x")).toBe("1");
     moveTo(60, 210);
+    // The card follows the finger: x is where it is across the box, y where it is down it.
+    expect(card().style.getPropertyValue("--tilt-x")).toBe("0.15");
+    expect(card().style.getPropertyValue("--tilt-y")).toBe("0.375");
     expect(card().style.getPropertyValue("--tilt-lift")).toBe("1");
     up(60, 210);
     expect(onPage).not.toHaveBeenCalled();
