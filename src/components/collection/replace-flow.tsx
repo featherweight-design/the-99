@@ -63,7 +63,7 @@ function markBaseGone(setRead: Dispatch<SetStateAction<ChoiceRead | null>>, reas
 /**
  * Every Sync read after the plain one lands through here: a partial pick's read, a review's re-read, the read that
  * decides whether a thrown confirm landed. A read whose base has gone (the anchor went: another tab reverted it)
- * compared nothing, so it is never drawn as a review, `Nothing to sync` included: true, and the base is marked. A
+ * compared nothing, so it is never drawn as a review, the nothing-to-sync state included: true, and the base is marked. A
  * Sync pick or review standing on a marked base is taken back during render, in one place. The plain read needs no
  * call: its own `unavailable` IS the mark.
  */
@@ -413,7 +413,7 @@ export function ReplaceFlow({
         return;
       }
       if (review && outcome && "nothingToSync" in outcome) {
-        // The read that follows draws `Nothing to sync.` and offers only the way back (call 10).
+        // The read that follows draws the nothing-to-sync state and offers only the way back (call 10).
         setSyncNonce((n) => n + 1);
         return;
       }

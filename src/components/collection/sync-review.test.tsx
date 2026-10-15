@@ -410,7 +410,8 @@ describe("Sync review · the bar", () => {
   it("states Nothing to sync and offers only the way back: no confirm, so no History entry (call 10)", () => {
     const onLeave = vi.fn();
     renderReview(data({ counts: { taken: 0 }, tokensChange: false, nothing: true }), controls({ onLeave }));
-    const note = screen.getByText("Nothing to sync. Your collection already has everything in this file, and its tokens are recorded.");
+    // No planned change, never "already has everything": Sync may be keeping an app deletion the file disagrees with.
+    const note = screen.getByText("Nothing in this file changes your collection.");
     expect(note.className).toContain("text-[color:var(--fg-muted)]");
     expect(screen.getByText("Nothing will change.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();

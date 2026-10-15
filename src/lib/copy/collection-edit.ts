@@ -70,7 +70,11 @@ export const collectionEditCopy = {
     syncKeepsNone: (since: string) => `You haven’t changed anything in the app since your ${since} upload, so this does what Replace does.`,
     /** (reworded, for /copy-review) `t`: the tokens the pick changes by count, either way. */
     syncTokensOnly: (t: number) => `Your cards stay as they are. ${tokensChange(t)}.`,
-    /** (new, for /copy-review) Nothing would change. It claims nothing about the file matching an upload. */
+    /**
+     * (new, for /copy-review) Nothing would change, on the choice's Sync card and as the review's nothing-to-sync
+     * state. It claims nothing about what the file holds: no planned write can also mean Sync keeps an app change
+     * the file disagrees with (a card deleted in the app that the base and the file both hold).
+     */
     syncNoChange: "Nothing in this file changes your collection.",
     /**
      * (new, for /copy-review) No unreverted Replace or full Sync to compare against, or its file is too old to
@@ -187,7 +191,6 @@ export const collectionEditCopy = {
       bulkCapNote: (shown: number, total: number) => `Showing the first ${n(shown)} of ${n(total)}. The buttons above apply to all ${n(total)}.`,
       overwrite: (k: number, since: string) =>
         `Taking the file’s count overwrites ${cards(k)} you changed in the app since your ${since} upload.`,
-      nothing: "Nothing to sync. Your collection already has everything in this file, and its tokens are recorded.",
       /** The review's head under a stale pick (E5). */
       /** (reworded, for /copy-review) `t` is the tokens this pick changes by count, from its own read. */
       pickedAdds: (since: string, c: number, t: number) =>

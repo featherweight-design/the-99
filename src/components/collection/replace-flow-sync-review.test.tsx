@@ -184,7 +184,7 @@ describe("ReplaceFlow · the Sync review", () => {
     nothing = true;
     confirmUpload.mockResolvedValueOnce({ nothingToSync: true });
     fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
-    await screen.findByText(/^Nothing to sync\./);
+    await screen.findByText("Nothing in this file changes your collection.");
     fireEvent.click(screen.getByRole("button", { name: "Back to Collection" }));
     expect(go).toHaveBeenCalledWith("/collection");
   });
@@ -262,7 +262,7 @@ describe("ReplaceFlow · the Sync review", () => {
     expect(confirmUpload).toHaveBeenCalledTimes(1);
   });
 
-  it("goes back to the choice when a re-read finds the base gone, never drawing `already has everything`", async () => {
+  it("goes back to the choice when a re-read finds the base gone, never drawing the nothing-to-sync state", async () => {
     let gone = false;
     choiceReads((o) => syncRead(o?.answers, gone ? { unavailable: "noRecord", nothing: true } : {}));
     await reachSyncReview();
@@ -270,7 +270,7 @@ describe("ReplaceFlow · the Sync review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
     const card = await screen.findByRole("radio", { name: "Sync my collection" });
     expect(card.getAttribute("aria-disabled")).toBe("true");
-    expect(screen.queryByText(/already has everything/)).toBeNull();
+    expect(screen.queryByText("Nothing in this file changes your collection.")).toBeNull();
     expect(screen.queryByRole("heading", { name: "Review before you sync" })).toBeNull();
   });
 

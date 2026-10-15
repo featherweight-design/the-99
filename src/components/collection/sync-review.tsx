@@ -206,7 +206,7 @@ export function SyncReviewDetail({
       ) : null}
       {f.nothingToSync ? (
         <p className="m-0 rounded-[10px] bg-[color:var(--surface-sunken)] p-[12px_14px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
-          {s.nothing}
+          {c.syncNoChange}
         </p>
       ) : (
         <>

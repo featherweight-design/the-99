@@ -152,7 +152,7 @@ describe("ReplaceFlow · the Sync choice", () => {
     expect(picks.sort()).toEqual(["additions", "plain", "tokens"]);
   });
 
-  it("takes Sync back to the choice when a pick's own read finds the base gone, never opening `Nothing to sync`", async () => {
+  it("takes Sync back to the choice when a pick's own read finds the base gone, never opening the nothing-to-sync review", async () => {
     let release: (v: unknown) => void = () => {};
     previewChange.mockImplementation(async (_id: string, mode: string, opts?: { pick?: string }) => {
       if (mode !== "sync") return plain(mode === "add" ? 8961 : 4345);
@@ -175,7 +175,7 @@ describe("ReplaceFlow · the Sync choice", () => {
     const go = screen.queryByRole("button", { name: "Review the sync →" });
     if (go) fireEvent.click(go);
     expect(screen.queryByRole("heading", { name: "Review before you sync" })).toBeNull();
-    expect(screen.queryByText(/^Nothing to sync\./)).toBeNull();
+    expect(screen.queryByText("Nothing in this file changes your collection.")).toBeNull();
   });
 
   it("leaves a Replace review standing when a pick's read finds the base gone", async () => {
