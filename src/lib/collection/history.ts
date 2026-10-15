@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import type { HistoryRow } from "../../db/schema";
+import type { HistoryRow, HistoryRowState } from "../../db/schema";
 import { cartSourceDecks } from "../decks/mark-bought";
 import { cartDecksOf, type CartDecks } from "./deck-line";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
@@ -28,7 +28,7 @@ export const handEntriesSince = (userId: string) => sql`
     hand as (
       -- Rows past the retention window are treated as pruned even before the lazy prune has run,
       -- so the keys never name a holding only an aged-out entry touched; the entry still counts.
-      select case when e.created_at > now() - make_interval(days => ${HISTORY_RETENTION_DAYS}) then e.rows end as rows
+      select e.seq as seq, case when e.created_at > now() - make_interval(days => ${HISTORY_RETENTION_DAYS}) then e.rows end as rows
       from collection_history e, anchor a
       where e.user_id = ${userId}
         and e.kind in ('add', 'edit', 'revert')
@@ -39,10 +39,52 @@ export const handEntriesSince = (userId: string) => sql`
         end
     )`;
 
+/** The part of a holding's state a hand change can move: its count, its printing and its condition. */
+const sameState = (a: HistoryRowState | null, b: HistoryRowState | null): boolean =>
+  a === null || b === null
+    ? a === b
+    : a.quantity === b.quantity && a.scryfallId === b.scryfallId && a.condition === b.condition;
+
 /**
- * How many changes the player made by hand since their last confirmed upload: the figure the
- * Replace warning quotes ("in-app edits will be overwritten", brief §A). Adds, edits and reverts
- * all count; an upload does not.
+ * What the hand changes since the last upload come to, NET: a holding counts once, and only when it is
+ * now different from how that upload left it. Each holding's state at the upload is the `before` of the
+ * first entry that touched it, and its state now the `after` of the last, so an add and its revert, or
+ * an edit and its undo, leave nothing. Counting entries instead told a player whose precon add and its
+ * revert had cancelled that Replace would overwrite four changes while Sync, which compares holdings,
+ * found none. An entry whose rows have been pruned names no holding and cannot be netted: it counts as
+ * one change, as it always did. The net is therefore exact only while every entry that touched a holding still
+ * carries its rows, which holds inside the retention window the warning quotes a figure for; past it a holding
+ * whose early entries aged out can still be counted (it never counts less than the entries it can see).
+ */
+export function netHandChanges(entries: { seq: number; rows: HistoryRow[] | null }[]): { count: number; keys: Set<string> } {
+  const first = new Map<string, HistoryRowState | null>();
+  const last = new Map<string, HistoryRowState | null>();
+  let pruned = 0;
+  for (const entry of [...entries].sort((x, y) => x.seq - y.seq)) {
+    if (entry.rows === null) {
+      pruned += 1;
+      continue;
+    }
+    for (const r of entry.rows) {
+      const key = keyOf(r);
+      if (!first.has(key)) first.set(key, r.before);
+      last.set(key, r.after);
+    }
+  }
+  const keys = new Set<string>();
+  for (const [key, before] of first) if (!sameState(before, last.get(key) ?? null)) keys.add(key);
+  return { count: keys.size + pruned, keys };
+}
+
+async function handChangesSinceUpload(userId: string) {
+  const res = await db.execute<{ seq: number | string; rows: HistoryRow[] | null }>(sql`${handEntriesSince(userId)} select seq, rows from hand`);
+  return netHandChanges(res.rows.map((e) => ({ seq: Number(e.seq), rows: e.rows })));
+}
+
+/**
+ * How many holdings the player's hand changes since their last confirmed upload left different: the figure
+ * the Replace warning quotes ("N changes you made in the app ... will be overwritten", brief §A), net (`netHandChanges`).
+ * Adds, edits and reverts all feed it; an upload does not.
  *
  * Anchored on the newest confirmed upload. When that upload wrote a ledger entry, "since" is by
  * the ledger's own order (`seq`), which no clock can disorder. When it did not (confirmed with the
@@ -50,22 +92,17 @@ export const handEntriesSince = (userId: string) => sql`
  * never uploaded counts every change they made.
  */
 export async function editsSinceUpload(userId: string): Promise<number> {
-  const rows = await db.execute<{ n: number }>(sql`${handEntriesSince(userId)} select count(*)::int as n from hand`);
-  return rows.rows[0]?.n ?? 0;
+  return (await handChangesSinceUpload(userId)).count;
 }
 
 /**
- * The holdings those same hand changes touched, as `collectionItemKey`s: what the Replace preview
- * tags `edited`. An entry whose rows have aged out (pruned to null) names nothing, so a holding
- * only that entry touched is not tagged; the count above still includes it.
+ * The holdings those same hand changes left different, as `collectionItemKey`s: what the Replace preview
+ * tags `edited`. A holding whose changes cancelled is not tagged, as it is not counted above. An entry whose
+ * rows have aged out (pruned to null) names nothing, so a holding only that entry touched is not tagged; the
+ * count above still includes it.
  */
 export async function editedKeysSinceUpload(userId: string): Promise<Set<string>> {
-  const res = await db.execute<{ rows: HistoryRow[] | null }>(sql`${handEntriesSince(userId)} select rows from hand`);
-  const keys = new Set<string>();
-  for (const entry of res.rows) {
-    for (const r of entry.rows ?? []) keys.add(collectionItemKey({ ...r, finish: r.finish as CollectionItemIdentity["finish"] }));
-  }
-  return keys;
+  return (await handChangesSinceUpload(userId)).keys;
 }
 
 /** How many entries one page of history holds. */
