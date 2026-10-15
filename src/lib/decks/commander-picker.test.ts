@@ -20,6 +20,8 @@ describe("deckCommandersQuery", () => {
   it("reads only the viewer's own decks, newest first", () => {
     const q = deckCommandersQuery(VIEWER).toSQL();
     expect(q.sql).toContain(`where "decks"."user_id" = $1`);
+    // Every deck, never a window: a run of new decks on one commander must not hide an older commander.
+    expect(q.sql).not.toMatch(/\blimit\b/i);
     expect(q.sql).toContain(`order by "decks"."created_at" desc`);
     expect(q.params[0]).toBe(VIEWER);
   });

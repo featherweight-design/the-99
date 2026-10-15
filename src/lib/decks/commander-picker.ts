@@ -20,15 +20,17 @@ export type CommanderTile = { oracleId: string; name: string; artCropUri: string
 export const DECK_COMMANDER_TILES = 8;
 /** Hits the search offers. */
 export const COMMANDER_SEARCH_HITS = 12;
-/** Decks read for the row: enough that a run of decks sharing a commander still fills it. */
-const DECKS_READ = 48;
 /** Search rows read before `isCommanderCandidate` has the last word (`opponent-commanders.ts`' SCAN). */
 const SEARCH_SCAN = 48;
 
 const lead = alias(cards, "lead_card");
 const partner = alias(cards, "partner_card");
 
-/** The viewer's decks, newest first, each with its commander and partner. Apart so a test can render it. */
+/**
+ * The viewer's decks, newest first, each with its commander and partner. Apart so a test can render it. Every
+ * deck is read, never a window: a run of new decks sharing one commander must not hide an older one, and one
+ * player's decks are few.
+ */
 export function deckCommandersQuery(viewerId: string, q: Pick<typeof db, "select"> = db) {
   return q
     .select({
@@ -42,8 +44,7 @@ export function deckCommandersQuery(viewerId: string, q: Pick<typeof db, "select
     .innerJoin(lead, eq(lead.oracleId, decks.commanderOracleId))
     .leftJoin(partner, eq(partner.oracleId, decks.partnerOracleId))
     .where(eq(decks.userId, viewerId))
-    .orderBy(desc(decks.createdAt), asc(decks.id))
-    .limit(DECKS_READ);
+    .orderBy(desc(decks.createdAt), asc(decks.id));
 }
 
 type DeckCommanderRow = Awaited<ReturnType<typeof deckCommandersQuery>>[number];
