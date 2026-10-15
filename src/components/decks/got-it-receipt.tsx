@@ -24,7 +24,7 @@ import { CopyChooserDialog } from "./copy-chooser-dialog";
 import type { ReceiptFacts } from "../../lib/decks/mark-bought";
 import { ShortDeckWarning } from "../collection/short-deck-warning";
 import { PendingReporter } from "../shell/pending-reporter";
-import { ToastFrame, useToastClock } from "../collection/edit-toast";
+import { DECK_TOAST_CLAIM, ToastFrame, useToastClock } from "../collection/edit-toast";
 
 const c = gotItCopy.receipt;
 
@@ -209,6 +209,8 @@ export function GotItReceipt({
   // A warning closes with its toast; a request out is still the host's, and ends when it settles.
   useEffect(() => {
     mounted.current = true;
+    // The deck slot is this receipt's (it holds an Undo): a token refusal showing there steps aside.
+    window.dispatchEvent(new Event(DECK_TOAST_CLAIM));
     return () => {
       mounted.current = false;
       if (stage.current === "warning") host.end(oracleId);

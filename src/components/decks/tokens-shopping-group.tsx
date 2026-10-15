@@ -14,7 +14,7 @@ import { tokenPT, useTokenPress } from "./token-row";
 const shortType = (typeLine: string) => typeLine.replace(/^Token /, "");
 
 function TokenShoppingRow({ deckId, token, newestAsOf }: { deckId: string; token: DeckToken; newestAsOf: Date | null }) {
-  const { press, pending, refused } = useTokenPress();
+  const { press, pending, toast } = useTokenPress();
   const pt = tokenPT(token);
   const type = pt ? `${shortType(token.typeLine)} · ${pt}` : shortType(token.typeLine);
   const code = token.picture ? `${token.picture.setCode.toUpperCase()} ${token.picture.collectorNumber}` : null;
@@ -39,7 +39,7 @@ function TokenShoppingRow({ deckId, token, newestAsOf }: { deckId: string; token
             disabled={pending}
             aria-busy={pending}
             aria-label={tokensCopy.row.haveAria(token.name)}
-            onClick={() => press(() => setTokenHeld(deckId, token.oracleId, true))}
+            onClick={() => press(() => setTokenHeld(deckId, token.oracleId, true), token.name)}
             className="flex min-h-[44px] flex-none items-center border-0 bg-transparent p-0 disabled:opacity-60 md:min-h-0"
           >
             <BuyTag variant="row" price={token.price} newestAsOf={newestAsOf} reserveSlot />
@@ -55,17 +55,13 @@ function TokenShoppingRow({ deckId, token, newestAsOf }: { deckId: string; token
           type="button"
           disabled={pending}
           aria-label={tokensCopy.shopping.removeAria(token.name)}
-          onClick={() => press(() => setTokenJoined(deckId, token.oracleId, false))}
+          onClick={() => press(() => setTokenJoined(deckId, token.oracleId, false), token.name)}
           className="flex h-[44px] w-[44px] flex-none items-center justify-center border-0 bg-transparent text-[14px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:opacity-60 md:h-[22px] md:w-[22px] transition-colors"
         >
           ✕
         </button>
       </div>
-      {refused ? (
-        <p role="alert" className="m-0 mt-[4px] pl-[9px] font-mono text-[10.5px] text-[color:var(--fg-locked)]">
-          {tokensCopy.row.refused}
-        </p>
-      ) : null}
+      {toast}
     </li>
   );
 }

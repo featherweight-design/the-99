@@ -1,38 +1,35 @@
 "use client";
 
-import { useRef, useState, type MouseEvent } from "react";
+import { useRef, type MouseEvent } from "react";
 import { tokensCopy } from "../../lib/copy/tokens";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckToken } from "../../lib/tokens/read";
 import { cardDetailCopy, useCardDetailIfAny, useCardIntentIfAny, type SiblingCard } from "../cards/card-detail-provider";
 import { CardTileCaption, TILE_ART_CLIP_SCALED, TILE_ART_RATIO, TILE_FIELD, TILE_SHELL_SCALED } from "../ui/card-tile-caption";
-import { Chevron } from "../ui/chevron";
 import { CostPips } from "../ui/cost-pips";
 import { HydratedImg } from "../ui/hydrated-art";
-import { TokenMakers } from "./token-makers";
-import { printingLine, tokenFaceDescription, TokenControls, tokenPips, tokenPT, useTokenPress } from "./token-row";
+import { tokenFaceDescription, tokenPips, tokenPT, useTokenPress } from "./token-row";
+import { setTokenJoined } from "../../app/decks/token-actions";
 
 /**
  * A token of the deck in the Card view: the deck's tile anatomy (`TILE_SHELL_SCALED`, the 63:88 art box with its bottom
- * corners clipped, `CardTileCaption`) with the token's own facts, and the same two presses a row carries beneath
- * it (`TokenControls`). The art opens card details, as every deck tile's does (a tile's caption is text, so the
- * name beside it is not a second trigger), the cards that make it unfold under the tile, and a press that fails says so in the tile's own words. Never a verdict word, never a warning
- * color on ownership.
+ * corners clipped, `CardTileCaption`) with the token's own facts, and ONE foot line inside the frame behind a hairline
+ * (small-polish handoff §5): the Shopping press, or the ownership word. A token tile is that one line taller than a card
+ * tile and no more. The art opens card details, as every deck tile's does, and the details are where the makers and
+ * `I have one` live (`TokenDeckBox`). A press that fails is a deck toast (`useTokenPress`). Never a verdict word, never a
+ * warning color on ownership.
  */
 export function TokenTile({
-  deckId, token, newestAsOf, siblings,
+  deckId, token, siblings,
 }: {
-  deckId: string; token: DeckToken; newestAsOf: Date | null;
+  deckId: string; token: DeckToken;
   /** The deck's tokens in the order the group lists them: what card details' Prev/Next page through. */
   siblings?: readonly SiblingCard[];
 }) {
-  const [open, setOpen] = useState(false);
-  const { press, pending, refused } = useTokenPress();
+  const { press, pending, toast } = useTokenPress();
   const detail = useCardDetailIfAny();
   const intent = useCardIntentIfAny(token.oracleId);
   const artRef = useRef<HTMLButtonElement>(null);
-  const canOpen = token.makers.length > 0;
-  const first = token.makers[0];
   const openDetails = (e: MouseEvent<HTMLElement>) => {
     detail?.open(token.oracleId, siblings, undefined, { opener: artRef.current ?? e.currentTarget });
   };
@@ -49,15 +46,14 @@ export function TokenTile({
   return (
     <li className={`flex min-w-0 flex-col ${TILE_FIELD}`} data-token-tile data-token-state={token.state}>
       <span id={`token-${token.oracleId}-face`} className="sr-only">{tokenFaceDescription(token)}</span>
-      <div className={`${TILE_SHELL_SCALED} relative bg-[color:var(--surface)] [border:1px_solid_var(--border)] transition-colors md:hover:[border:1px_solid_var(--border-strong)]`}>
+      <div className={`${TILE_SHELL_SCALED} relative flex-1 bg-[color:var(--surface)] [border:1px_solid_var(--border)] transition-colors md:hover:[border:1px_solid_var(--border-strong)]`}>
         {detail ? (
           <button
             ref={artRef}
             type="button"
             {...intent}
             onClick={openDetails}
-            // What a press does: the card's details. The makers fold below carries `toggleAria`, so no two
-            // controls share a name.
+            // What a press does: the card's details, where the cards that make it and `I have one` are.
             aria-label={cardDetailCopy.triggerAria(token.name)}
             aria-describedby={`token-${token.oracleId}-face`}
             className={`${artClass} cursor-pointer`}
@@ -90,34 +86,52 @@ export function TokenTile({
           name={token.name}
           nameSub={tokensCopy.row.type(token.typeLine, tokenPT(token))}
         />
+        {/* What tells this token from another of its name, colors and P/T in the deck (only attached then), inside the frame. */}
+        {token.oracleText ? (
+          <p className="m-0 line-clamp-3 px-[10px] pb-[8px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{token.oracleText}</p>
+        ) : null}
+        <TokenFoot deckId={deckId} token={token} press={press} pending={pending} />
       </div>
-
-      {/* What tells this token from another of its name, colors and P/T in the deck (only attached then), as a row draws it. */}
-      {token.oracleText ? (
-        <p className="m-0 px-[2px] pt-[6px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{token.oracleText}</p>
-      ) : null}
-      <div className="flex flex-wrap items-center gap-x-[10px] px-[2px] pt-[4px]">
-        <TokenControls deckId={deckId} token={token} press={press} pending={pending} />
-      </div>
-      {canOpen ? (
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-label={tokensCopy.row.toggleAria(token.name, token.makers.length)}
-          aria-describedby={`token-${token.oracleId}-face`}
-          onClick={() => setOpen((v) => !v)}
-          className="flex min-h-[44px] items-center gap-[6px] px-[2px] text-left font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] md:min-h-[28px]"
-        >
-          <span className="min-w-0 truncate">{tokensCopy.row.from(first.name, token.makers.length)}</span>
-          <Chevron open={open} className="flex-none text-[color:var(--fg-muted)]" />
-        </button>
-      ) : (
-        <p className="m-0 px-[2px] py-[6px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{tokensCopy.row.noMaker}</p>
-      )}
-      {refused ? (
-        <p role="alert" className="m-0 px-[2px] font-mono text-[10.5px] text-[color:var(--fg-locked)]">{tokensCopy.row.refused}</p>
-      ) : null}
-      {open && canOpen ? <TokenMakers makers={token.makers} printingLine={printingLine(token, newestAsOf)} layout="tile" /> : null}
+      {toast}
     </li>
+  );
+}
+
+const FOOT = "mt-auto border-x-0 border-b-0 border-t-[1px] border-solid border-t-[color:var(--border)]";
+/** An ownership fact drawn as a word, not a press: 44 tall on a phone, 30 from md up. */
+const FOOT_WORD = `${FOOT} flex min-h-[44px] items-center px-[10px] font-mono text-[10.5px] md:min-h-[30px]`;
+
+/**
+ * The one line under the caption: `Add to Shopping`, `✓ In Shopping`, `in your collection` or `✓ I have one`. The
+ * Shopping press is the tile's alone (a card's tile has the one tag); the hand mark, and unmarking it, is in the token's
+ * details. A token an upload or a precon holds, or one held by hand, offers no Shopping press: owned means owned for every deck.
+ */
+function TokenFoot({ deckId, token, press, pending }: {
+  deckId: string; token: DeckToken; press: ReturnType<typeof useTokenPress>["press"]; pending: boolean;
+}) {
+  if (token.state === "owned") {
+    const byHand = token.source === "manual";
+    return <span className={`${FOOT_WORD} text-[color:var(--fg-muted)]`} data-token-foot="owned">{byHand ? tokensCopy.row.haveOn : tokensCopy.row.owned}</span>;
+  }
+  return (
+    <div className={`${FOOT} p-[6px_8px] md:p-[3px_8px]`} data-token-foot="shopping">
+      <button
+        type="button"
+        disabled={pending}
+        aria-busy={pending}
+        aria-describedby={`token-${token.oracleId}-face`}
+        aria-pressed={token.joined}
+        aria-label={token.joined ? tokensCopy.row.leaveAria(token.name) : tokensCopy.row.joinAria(token.name)}
+        onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined), token.name)}
+        // 32 tall with a 44 hit area on a phone (the pseudo-element), 24 from md up, the width of the tile.
+        className={`relative h-[32px] w-full rounded-[6px] border text-[12px] font-medium disabled:opacity-60 max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-[6px] max-md:after:content-[''] md:h-[24px] ${
+          token.joined
+            ? "border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_14%,transparent)] text-[color:var(--fg)]"
+            : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"
+        }`}
+      >
+        {token.joined ? tokensCopy.row.joined : tokensCopy.row.join}
+      </button>
+    </div>
   );
 }

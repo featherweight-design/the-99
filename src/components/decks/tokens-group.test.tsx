@@ -154,14 +154,14 @@ describe("pressing", () => {
     stub.joined.mockRejectedValue(new Error("session lapsed"));
     draw(ok([token()]));
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Add the Food token/ })); });
-    expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.");
+    expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.Food token");
   });
 
   it("says so when a press was refused, and the row is unchanged", async () => {
     stub.joined.mockResolvedValue({ ok: false, reason: "notThisDeck" });
     draw(ok([token()]));
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Add the Food token/ })); });
-    expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.");
+    expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.Food token");
   });
 });
 
@@ -399,7 +399,7 @@ describe("the Tokens group on Shopping", () => {
     stub.held.mockRejectedValue(new Error("down"));
     shopping([soldier]);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Mark the Soldier token/ })); });
-    expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.");
+    expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.Soldier token");
   });
   it("on Shopping offers only the remove press: a hand mark on it could not be undone", () => {
     shopping([token({ oracleId: "f1", makers: [], joined: true, name: "Food", price: priced(15) })]);
@@ -556,38 +556,51 @@ describe("the view", () => {
     expect(document.querySelectorAll("[data-token-tile]")).toHaveLength(2);
   });
 
-  it("keeps a tile's two presses and its makers fold", async () => {
+  it("draws one foot line in the frame: the Shopping press, nothing else to press, no makers fold", async () => {
     localStorage.setItem("the99:deck-view", "card");
     draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(3) })]));
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Mark the Goblin token as in your collection" })); });
-    expect(stub.held).toHaveBeenCalledWith(DECK, "g", true);
+    const tile = document.querySelector<HTMLElement>("[data-token-tile]")!;
+    const foot = tile.querySelector<HTMLElement>("[data-token-foot]")!;
+    // Inside the frame (the bordered shell), below the caption, behind a hairline.
+    expect(foot.parentElement!.className).toContain("border");
+    expect(foot.className).toContain("border-t-[color:var(--border)]");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Add the Goblin token to this deck’s Shopping list" })); });
     expect(stub.joined).toHaveBeenCalledWith(DECK, "g", true);
-    const fold = screen.getByRole("button", { name: "Goblin token, made by 3 cards", expanded: false });
-    fireEvent.click(fold);
-    expect(screen.getByText("Maker 01")).toBeTruthy();
+    // The hand mark and the makers moved to the token's details: none of them is on the tile.
+    expect(screen.queryByRole("button", { name: /Mark the Goblin token/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Goblin token, made by 3 cards" })).toBeNull();
+    expect(screen.queryByText("Maker 01")).toBeNull();
+    expect(tile.querySelectorAll("button")).toHaveLength(2); // the art and the Shopping press
   });
 
-  it("names a tile's art for what it does and its makers fold for what it folds, two controls with two names", () => {
+  it("says each state in the one line: Add to Shopping, ✓ In Shopping, in your collection, ✓ I have one", () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([
+      token({ oracleId: "a", name: "Ally" }),
+      token({ oracleId: "b", name: "Food", joined: true }),
+      token({ oracleId: "c", name: "Clue", state: "owned", source: "upload" }),
+      token({ oracleId: "d", name: "Treasure", state: "owned", source: "manual" }),
+    ]));
+    const feet = [...document.querySelectorAll<HTMLElement>("[data-token-foot]")].map((f) => f.textContent);
+    expect(feet).toEqual(["Add to Shopping", "✓ In Shopping", "in your collection", "✓ I have one"]);
+    // An ownership fact is a word, not a control.
+    expect(document.querySelectorAll("[data-token-foot=owned] button")).toHaveLength(0);
+  });
+
+  it("stretches the tiles of a row to one height, so the feet line up", () => {
+    localStorage.setItem("the99:deck-view", "card");
+    draw(ok([token({ oracleId: "a", name: "Ally" }), token({ oracleId: "b", name: "Food" })]));
+    expect(document.querySelector("[data-token-tile]")!.parentElement!.className).toContain("items-stretch");
+    expect(document.querySelector("[data-token-foot]")!.className).toContain("mt-auto");
+  });
+
+  it("names a tile's art for what it does: its card details", () => {
     localStorage.setItem("the99:deck-view", "card");
     draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(3) })]));
     const art = screen.getByRole("button", { name: "View details for Goblin" });
     fireEvent.click(art);
     expect(stub.open.mock.calls[0][0]).toBe("g");
     expect(art.hasAttribute("aria-expanded")).toBe(false);
-    expect(screen.getAllByRole("button", { name: "Goblin token, made by 3 cards" })).toHaveLength(1);
-  });
-
-  it("draws a tile's makers in one column with no row indent, boxed past the one-column cap", () => {
-    localStorage.setItem("the99:deck-view", "card");
-    draw(ok([token({ oracleId: "g", name: "Goblin", makers: makers(7) })]));
-    fireEvent.click(screen.getByRole("button", { name: "Goblin token, made by 7 cards", expanded: false }));
-    const list = screen.getByText("Maker 01").closest("ul")!;
-    // Seven names in a 178px tile are one column (a row's would be two), and seven 30px rows overflow the
-    // 158px cap, so the box scrolls: the row's two-column count would have left it open.
-    expect(list.className).not.toMatch(/md:grid-cols-/);
-    expect(list.className).toContain("md:max-h-[158px]");
-    expect(list.parentElement!.className).not.toContain("md:ml-[54px]");
   });
 
   it("draws the rules text that tells colliding tokens apart, as a row does", () => {

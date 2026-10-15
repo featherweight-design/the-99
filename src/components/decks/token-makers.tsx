@@ -67,11 +67,11 @@ function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] 
  */
 export function TokenMakers({ makers, printingLine, layout = "row" }: {
   makers: TokenMaker[]; printingLine: string | null;
-  /** `tile` is a card tile's width (178px at the floor): no row indent, one column at every width. */
-  layout?: "row" | "tile";
+  /** `box` is the `In this deck` box of a token's details: no row indent, the row's columns. */
+  layout?: "row" | "box";
 }) {
   const n = makers.length;
-  const cols = layout === "tile" ? 1 : makerColumns(n);
+  const cols = makerColumns(n);
   const boxPhone = boxedOnPhone(n);
   const boxDesktop = boxedOnDesktopIn(n, cols);
   const box = [
@@ -80,7 +80,7 @@ export function TokenMakers({ makers, printingLine, layout = "row" }: {
   ].join(" ");
   const columns = cols === 1 ? "" : cols === 2 ? "md:grid-cols-2" : "md:grid-cols-3";
   return (
-    <div className={`mt-[8px] flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[9px] ${layout === "tile" ? "" : "md:ml-[54px]"}`}>
+    <div className={`mt-[8px] flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[9px] ${layout === "box" ? "" : "md:ml-[54px]"}`}>
       <p className="m-0 flex items-baseline gap-[8px] font-mono text-[9.5px] uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
         <span>{tokensCopy.makers.label(n)}</span>
         {boxPhone || boxDesktop ? (

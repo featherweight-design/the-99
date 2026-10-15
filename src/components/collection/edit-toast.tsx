@@ -20,6 +20,9 @@ const r = collectionEditCopy.remove;
 
 /** The toast lasts this long (R2 §D: eight seconds), unless a revert is being decided. */
 export const TOAST_MS = 8000;
+/** A deck-slot toast that must not share the slot (a got-it receipt, which holds an Undo) announces itself with this, and a
+ *  lesser one (a token press's refusal) leaves. */
+export const DECK_TOAST_CLAIM = "the99:deck-toast-claim";
 const TICK_MS = 250;
 const EVENT = "collection-edit-toast";
 const ARM = "collection-edit-toast-arm";
