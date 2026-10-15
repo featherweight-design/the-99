@@ -20,7 +20,7 @@
     {
       "id": "add",
       "label": "Pods: + Add friends open on the reader's pod, the friends not yet in it with their faces, nothing ticked",
-      "view": "src/components/social/pod-add-friends.tsx",
+      "view": "src/components/social/pods-pane.tsx",
       "steps": [
         { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
         { "clickRole": "button", "name": "^\\+ Add friends$", "wait": "[role=dialog]", "settle": 800 }
