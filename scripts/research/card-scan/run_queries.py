@@ -42,7 +42,9 @@ import numpy as np
 
 from common import OUT, img_path, load_json
 
-WORKERS = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+# the worker count is the first positional argument; flags such as --plan are not counts
+_POSITIONAL = [a for a in sys.argv[1:] if not a.startswith("--")]
+WORKERS = int(_POSITIONAL[0]) if _POSITIONAL else 10
 SEV_CONDS = ["perspective", "blur", "low_light", "glare", "sleeve", "occlusion", "low_contrast", "foil"]
 F_CONDS = ["blur", "low_light"]
 N_B, N_D, N_F, N_P, N_NEG = 700, 400, 300, 150, 600
