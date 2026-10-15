@@ -1598,6 +1598,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   20px down, and Back returns; the contents search filters the list and leaves the page's
   sections alone; a legacy `about_v` cookie does not hide the sheet, and a forged
   `x-about-sheet` header summons nothing. Five mutations fail it; the counts are in its header.
+  **Expected to fail from 2026-10-15 until PR B of `2026-10-15-about-on-the-banner.md` (due on or after
+  2026-10-22).** With `ABOUT_SHEET_ENABLED` on, About's notice is a line on Home's banner (#1780) and the sheet never
+  draws, so every sheet step fails. `pnpm probe:about-banner` proves the notice meanwhile; PR B rewrites or retires this
+  probe along with the sheet's code.
 
   It WRITES the account's `user_prefs` row — `about_version_seen` and `about_seen_ids` — HELD ON
   DISK before the first write and restored in a `finally`, the `profile-hold.mjs` rule. "Behind"
