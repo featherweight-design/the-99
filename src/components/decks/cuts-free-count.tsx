@@ -55,7 +55,7 @@ export function CutsFreeCount({
   panel: CutsPanel;
   /** The sentences after the bold over line. Defaults to the count's own. */
   lead?: string;
-  /** Cuts this tool made toward the line (cut, and the card has left the deck), for C8's head once the
+  /** Cuts this tool made toward the line (cut, and still standing: `cutStands`), for C8's head once the
    *  deck is back at its body size. Zero reads the neutral `Back to 99 / 99.` */
   cutCount?: number;
   headingRef?: Ref<HTMLHeadingElement>;

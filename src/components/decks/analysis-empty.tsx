@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
@@ -138,6 +138,16 @@ export function AnalysisEmpty({
       el.style.minHeight = `${idleHeight.current}px`;
     }
   });
+  // AND WHILE IDLE, ON EVERY RESIZE: a phone rotated or a window resized changes the block's height
+  // with no render here, and the press would then hold a stale height and move Tuning after all
+  // (Copilot, PR #1809). Observed only while idle: from the press on, the height is the floor.
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (phase !== "idle" || !el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => { idleHeight.current = el.offsetHeight; });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [phase]);
   return (
     <section ref={sectionRef} className="flex flex-col gap-[7px] md:gap-[8px]" data-testid="analysis-empty" data-phase={phase}>
       <h3 className="m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[10px] md:tracking-[0.16em]">

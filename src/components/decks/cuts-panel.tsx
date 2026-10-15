@@ -17,7 +17,7 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
 import { cutsAsk, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import { cutChips, type Chip } from "../../lib/tuning/cuts-count";
-import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
+import { cutStands, type CutItem, type CutsPanel } from "../../lib/tuning/cuts-state";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { awaitRunSettled } from "./await-run";
 import { MutationError } from "./mutation-error";
@@ -291,12 +291,13 @@ export function CutsPanelView({
     return copy.lead;
   })();
   // C8 COUNTS ONLY WHAT THIS TOOL CUT TOWARD THE LINE: a row of this visit's result (or the run
-  // History reopened) that was cut and whose card has left the deck. A deck that reached the line by
-  // another edit, a cut put back by hand, or an older visit's run says the neutral `Back to 99 / 99.`,
-  // never a count it did not make (pre-open review, 2026-10-15).
+  // History reopened) that was cut and still stands (`cutStands`: the list holds fewer copies than
+  // when it was cut, since a Cut removes one). A deck that reached the line by another edit, a copy
+  // put back by hand, or an older visit's run says the neutral `Back to 99 / 99.`, never a count it
+  // did not make (pre-open review and Copilot, 2026-10-15).
   const madeCuts = priorResult && !reviewing
     ? 0
-    : items.filter((i) => overrides.verdictOf(i) === "accepted" && i.inDeck === false).length;
+    : items.filter((i) => overrides.verdictOf(i) === "accepted" && cutStands(i)).length;
 
   return (
     <VerdictOverridesProvider value={overrides.value}>

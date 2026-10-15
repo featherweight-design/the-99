@@ -239,6 +239,7 @@ export async function readCutsState(
             evidence: deckCutItems.evidence,
             position: deckCutItems.position,
             verdict: deckCutItems.verdict,
+            undoSnapshot: deckCutItems.undoSnapshot,
           })
             .from(deckCutItems)
             .innerJoin(cards, eq(cards.oracleId, deckCutItems.cutOracleId))
@@ -248,13 +249,17 @@ export async function readCutsState(
       // Whether each cut can still be taken, read in the same instant: a card still in the list,
       // not a commander, not locked. Cut re-checks all three under the deck lock.
       // One after the other: a transaction is one connection.
-      const held = rows.length === 0 ? [] : await tx.select({ oracleId: deckCards.oracleId }).from(deckCards).where(eq(deckCards.deckId, deckId));
+      const held = rows.length === 0 ? [] : await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity }).from(deckCards).where(eq(deckCards.deckId, deckId));
       const [deck] = rows.length === 0 ? [] : await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId }).from(decks).where(eq(decks.id, deckId));
       const locks: ReadonlySet<string> = rows.length > 0 && neverCutEnabled(env) ? await liveLockedIds(tx, deckId) : new Set();
       const inList = new Set(held.map((h) => h.oracleId));
+      const copies = new Map(held.map((h) => [h.oracleId, h.quantity]));
       const commanders = new Set([deck?.commander, deck?.partner].filter((x): x is string => !!x));
-      const live = rows.map((r) => ({
+      const live = rows.map(({ undoSnapshot, ...r }) => ({
         ...r,
+        // Whether a cut still stands is the copies it left against the copies now (`cutStands`).
+        quantityBefore: r.verdict === "accepted" ? undoSnapshot?.cut?.quantity ?? null : null,
+        quantityNow: copies.get(r.cutOracleId) ?? 0,
         inDeck: inList.has(r.cutOracleId) && !commanders.has(r.cutOracleId),
         locked: locks.has(r.cutOracleId),
       }));
