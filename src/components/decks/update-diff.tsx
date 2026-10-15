@@ -302,7 +302,7 @@ export function UpdateDiff({
                 onClick={() => setKept(new Set(outRows.map((r) => r.oracleId)))}
                 className="flex-none font-mono text-[11.5px] px-[12px] h-[38px] md:h-[32px]"
               >
-                {copy.keepAll(String(outRows.length))}
+                {copy.keepAll(String(outCopies))}
               </GhostButton>
             }
             total={outRows.length}

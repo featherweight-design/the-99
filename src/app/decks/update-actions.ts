@@ -339,8 +339,10 @@ export type ApplyDeckUpdateInput = UpdateDeckInput & {
 };
 
 export type ApplyDeckUpdateResult = {
+  /** Copies in and out, a count change's moved copies included: what the review's button said. */
   in: number;
   out: number;
+  /** Rows the player kept: removals, and drops held at the deck's count. */
   kept: number;
   /** The deck has a version, so the caller declines the arrival param. */
   versioned: boolean;
@@ -396,7 +398,7 @@ export async function updateDeckFromList(
 
   const keep = new Set(input.keep);
 
-  const { plan, removing, kept, versioned } = await db.transaction(async (tx) => {
+  const { plan, removing, lowering, kept, versioned } = await db.transaction(async (tx) => {
     // Lock the deck row and plan inside it, the way every other deck mutation
     // in this file's neighbour does. The plan is a statement about the deck as
     // it stands, and its `out` group is a delete list: a card added by hand in
@@ -430,15 +432,20 @@ export async function updateDeckFromList(
     if ("listCommander" in plan) throw new Error("list names a different commander");
 
     const removing = plan.out.filter((r) => !keep.has(r.oracleId));
-    const kept = plan.out.length - removing.length;
+    // A count the list lowers is copies coming out (Hugh, 2026-10-15), so a drop not kept is held to
+    // every rule a removal is: the lock re-check below, and the copies the result reports.
+    const drops = plan.recounted.filter((r) => r.to < r.from);
+    const lowering = drops.filter((r) => !keep.has(r.oracleId));
+    const kept = plan.out.length - removing.length + (drops.length - lowering.length);
 
     // Locked (never cut), Hugh's Q2: re-checked here, under the deck row lock taken above, never
     // trusted to the preview. A removal of a card locked NOW that the preview did not show locked
     // is refused, and the whole update with it: the refusal leaves the deck exactly as it was.
-    if (neverCutEnabled(env) && removing.length > 0) {
+    const cutting = [...removing.map((r) => r.oracleId), ...lowering.map((r) => r.oracleId)];
+    if (neverCutEnabled(env) && cutting.length > 0) {
       const seen = new Set(input.lockedSeen ?? []);
       const lockedNow = await liveLockedIds(tx, input.deckId);
-      if (removing.some((r) => lockedNow.has(r.oracleId) && !seen.has(r.oracleId))) {
+      if (cutting.some((id) => lockedNow.has(id) && !seen.has(id))) {
         throw new Error("a card was locked after the preview");
       }
     }
@@ -552,9 +559,20 @@ export async function updateDeckFromList(
       plan.unresolved.length > 0;
     if (wrote) await touchDeck(tx, input.deckId);
 
-    return { plan, removing, kept, versioned };
+    return { plan, removing, lowering, kept, versioned };
   });
 
   revalidateClaims(input.deckId, userId);
-  return { in: plan.in.length, out: removing.length, kept, versioned };
+  // Copies, as the review's button counted them, so the arrival line repeats what was pressed.
+  const raised = plan.recounted.filter((r) => r.to > r.from);
+  return {
+    in:
+      plan.in.reduce((n, r) => n + r.quantity, 0) +
+      raised.reduce((n, r) => n + (r.to - r.from), 0),
+    out:
+      removing.reduce((n, r) => n + r.quantity, 0) +
+      lowering.reduce((n, r) => n + (r.from - r.to), 0),
+    kept,
+    versioned,
+  };
 }

@@ -112,6 +112,15 @@ vi.mock("../../lib/collection/import", () => ({
 const newest = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/decks/versions", () => ({ newestVersion: newest }));
 
+// Locked (never cut): off for every test but the ones that turn it on, with the deck's live locks
+// handed back from here, so the apply's re-check can be driven without a database.
+const locks = vi.hoisted(() => ({ on: false, live: new Set<string>() }));
+vi.mock("../../lib/decks/never-cut-flag", () => ({ neverCutEnabled: () => locks.on }));
+vi.mock("../../lib/decks/locks", async (orig) => ({
+  ...(await orig<typeof import("../../lib/decks/locks")>()),
+  liveLockedIds: async () => locks.live,
+}));
+
 const { updateDeckFromList } = await import("./update-actions");
 
 beforeEach(() => {
@@ -119,6 +128,8 @@ beforeEach(() => {
   stub.state.updates.length = 0;
   stub.state.unclaimRows = [{ oracleId: "o-sol-ring" }];
   newest.mockReset();
+  locks.on = false;
+  locks.live = new Set();
 });
 
 /** Whether the apply stamped `decks.last_edited_at` — Home's resume order. */
@@ -270,5 +281,50 @@ describe("updateDeckFromList and a kept count drop", () => {
       deckId: "deck-1", text: "1 Sol Ring\n14 Island", source: "paste", keep: ["o-island"],
     });
     expect(requantified().map((u) => u.values)).toEqual([{ quantity: 14 }]);
+  });
+});
+
+describe("updateDeckFromList's result and a count drop", () => {
+  it("reports copies, with a drop's copies out", async () => {
+    newest.mockResolvedValue(null);
+    const result = await updateDeckFromList({
+      deckId: "deck-1", text: "1 Sol Ring\n9 Island", source: "paste", keep: [],
+    });
+    expect(result).toMatchObject({ in: 0, out: 3, kept: 0 });
+  });
+
+  it("counts a kept drop as kept, and none of its copies out", async () => {
+    newest.mockResolvedValue(null);
+    const result = await updateDeckFromList({
+      deckId: "deck-1", text: "1 Sol Ring\n9 Island", source: "paste", keep: ["o-island"],
+    });
+    expect(result).toMatchObject({ in: 0, out: 0, kept: 1 });
+  });
+
+  it("reports a rise's copies in", async () => {
+    newest.mockResolvedValue(null);
+    const result = await updateDeckFromList({
+      deckId: "deck-1", text: "1 Sol Ring\n14 Island", source: "paste", keep: [],
+    });
+    expect(result).toMatchObject({ in: 2, out: 0 });
+  });
+
+  it("refuses a drop of a card locked after the preview", async () => {
+    newest.mockResolvedValue(null);
+    locks.on = true;
+    locks.live = new Set(["o-island"]);
+    await expect(
+      updateDeckFromList({ deckId: "deck-1", text: "1 Sol Ring\n9 Island", source: "paste", keep: [] }),
+    ).rejects.toThrow("a card was locked after the preview");
+  });
+
+  it("lets a drop through when the preview showed the lock", async () => {
+    newest.mockResolvedValue(null);
+    locks.on = true;
+    locks.live = new Set(["o-island"]);
+    await updateDeckFromList({
+      deckId: "deck-1", text: "1 Sol Ring\n9 Island", source: "paste", keep: [],
+      lockedSeen: ["o-island"],
+    });
   });
 });
