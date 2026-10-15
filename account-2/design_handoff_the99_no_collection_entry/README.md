@@ -1,6 +1,6 @@
-# The 99 — No-collection entry (design handoff, R1)
+# The 99 — No-collection entry (design handoff, R2)
 
-`design_handoff_the99_no_collection_entry/` · 2026-10-15 · account 2 · **R1, for Hugh's audit.**
+`design_handoff_the99_no_collection_entry/` · 2026-10-15 · account 2 · **R2, for Hugh's audit.** R2 changes path (a) only: an import checkbox replaces R1's offer after the import, drawn on the shipped pages.
 
 A stateful first-run addendum: a way into the app for a player with no collection file, or one who can't upload
 theirs. Phone and desktop. It changes `design/design_handoff_the99_first_run_onboarding/` (step 1 and the locked
@@ -17,8 +17,8 @@ first path, and the alternatives sit beside it.
 They are HTML canvases (open them with `support.js` beside them), not code to ship. The same canvas is live as a
 Design artifact in account 2.
 
-**Fidelity:** high for step 1's card and its group, the precon pick rows and foot, the arrival strip's offer line, the
-Shopping head line, the empty states and the lock's words. Scaffolding for the rail and tab glyphs, the dashboard,
+**Fidelity:** high for step 1's card and its group, the precon pick rows and foot, the import's checkbox and arrival
+strip (R2, drawn on the shipped pages in the Kamigawa theme), the empty states and the lock's words. Scaffolding for the rail and tab glyphs, the dashboard,
 the deck page's list and the precon names and counts (G5). Drawn in the dark Kaldheim palette of earlier account-2
 rounds; tokens below are the app's.
 
@@ -48,18 +48,24 @@ Commanders, Discover and Decks wait for a card; every write is an add, one Histo
    - **(c) is not a button.** Starting empty is what happens when the player leaves step 1 with nothing.
    - A "Start empty" press would write nothing and only move the lock, which reads as a skip button. Instead,
      Collection is open at zero cards (call 6) and its empty state holds the same group.
-3. **The own-these offer: a second line on the shipped arrival strip, and again on Shopping.**
-   - **Strip:** `Already own these? Add the deck's 100 cards to your collection.` with `Add 100 cards` (the strip's only
-     fill) and `Not now` (a text press). It is inset to the strip's text column. At 390 it stacks: the sentence, Add
-     full width, Not now under it.
-   - **Shown when** the collection held no cards at the import (G4).
-   - **Every line, no ticks.** A player who owns some of the list uses Shopping's shipped `I got it`, per card. Ticks on
-     a 100-line strip would be the tall control Hugh dislikes, for the less common case.
-   - **Not now** dismisses the strip for good, like its ✕.
-   - **Shopping view:** while the collection is empty, it heads with the same offer on `--surface-sunken`, above the
-     shipped rows. A declined offer can be found again there.
-   - **The write** adds the deck's lines at the printings the import kept, as one History entry (kind `Deck add`, titled
-     by the deck). Revert takes it back. It reserves nothing: an import is not a precon start.
+3. **Owning an imported deck's cards: one checkbox on the import (R2, Hugh 2026-10-15).**
+   - **Where:** `/decks/import`, under Deck name and above the import button, at both widths. It is the precon start's
+     own opt-in (`StartPreconDialog`'s `I own this precon…` checkbox), in the same place and the same anatomy: an 18px
+     box in `--accent`, a 13px label, a 44px row.
+   - **Label:** `I own these cards. Add them to my collection.` Unticked by default, from first run and from `/decks`.
+   - **Shown** whenever collection editing is on, at any collection size (G4). Like a precon box it adds every copy
+     the list names, so a card already owned gains a copy.
+   - **Ticked:** the action adds the cards first, then makes the deck, as `startPreconOwned` does, so a refusal leaves
+     neither. One History entry (kind `Deck add`, titled by the deck), at the printings the import kept; Revert takes it
+     back. Nothing is reserved: an import is not a precon start.
+   - **Arrival:** the shipped clean strip takes the precon start's three-line form (`ArrivalBand` `lines`): head `All 100
+     lines came over clean.`, body `All 100 cards added to your collection.` + `History`, meta `Imported from your list a
+     moment ago`.
+   - **Refused:** the shared toast on the import page with the precon add's `addFailed` / `addUnsure`; the list and the
+     box stay. (S11)
+   - **Unticked:** the import is exactly as shipped (S12). No offer follows it; a player who owns part of the list uses
+     Shopping's shipped buy tag, card by card.
+   - **Withdrawn from R1:** the strip's `Already own these?` line, `Not now`, and the Shopping head line.
 4. **The precon pick: a pick mode of the shipped list, `/decks/precons?pick=own`, in rows.**
    - **Rows, not tiles:** it is a pick from 197, and tiles are tall.
    - **Kept:** the shipped search, colour pips, year groups (Newest) and the twin rule, one row per twin pair.
@@ -103,7 +109,7 @@ Commanders, Discover and Decks wait for a card; every write is an add, one Histo
 
 ## Surfaces
 
-- **Home, outside first run, with decks and no cards** (S12, path (a) declined).
+- **Home, outside first run, with decks and no cards** (S12, path (a) imported unticked).
   - The dashboard's header carries `Add your cards` as its one fill, in place of `Update collection` and `New deck`,
     which need cards.
   - The kicker reads `0 cards · 1 deck`. First run's page line appears on desktop.
@@ -139,7 +145,7 @@ Commanders, Discover and Decks wait for a card; every write is an add, one Histo
 | Upload stays primary | The only fill on step 1 and on the empty Collection; the group is text presses below it. |
 | Precon add reused | `addPreconForUser` per box, as is; no deck, nothing reserved. |
 | Ruling 1's order | Every path ends in owned cards; an unowned deck unlocks nothing. |
-| Switches | Edit off: no group, no offer, no Shopping line, Collection locked, upload alone (S16). Precons off: the Precons row absent everywhere (S15), the other two keep their columns. |
+| Switches | Edit off: no group, no import checkbox, Collection locked, upload alone (S16). Precons off: the Precons row absent everywhere (S15), the other two keep their columns. |
 
 ## About
 
@@ -157,8 +163,8 @@ precon key line on `PRECONS_ENABLED`.
   what makes (c) real without a button. If Hugh keeps Collection locked, (c) needs a press after all.
 - **G3 · Decks stays locked with an unowned deck** (Locked 4). The deck is reached from Home's resume row and the
   note says so. Opening Decks once a deck exists is the alternative.
-- **G4 · Who gets the offer.** Only an import into an empty collection. Widening it to every import would make it
-  "add the N cards you don't own", the shortfall rather than every line, to avoid doubling.
+- **G4 · Who sees the import's checkbox.** R2 shows it at any collection size, adding every copy as a precon box
+  does. Showing it only to an empty collection, or adding only the copies not owned, are the alternatives.
 - **G5 · Placeholder data.** Precon names, years, card and token counts are illustrative. Staging has no empty account,
   so no state here was observed.
 - **G6 · Part-failure.** The pick writes boxes one entry each, so S7 is real; drawn as a toast plus row marks. A
@@ -176,7 +182,7 @@ precon key line on `PRECONS_ENABLED`.
 | `R1 - FirstRun-Desktop.dc.html` / `-Phone` | S1, S15, S16, focus, the lock's note |
 | `R1 - PreconPick-Desktop.dc.html` / `-Phone` | S2, S3 (twin), S4, S17 |
 | `R1 - PreconResult.dc.html` | S5, S6, S7 at both widths |
-| `R1 - Import-Desktop.dc.html` / `-Phone` | S8 to S12 |
+| `R2 - Import-Desktop.dc.html` / `-Phone` | S8, S10, S11, S12 (R2: the checkbox; replaces `R1 - Import-*`) |
 | `R1 - Empty-Desktop.dc.html` / `-Phone` | S12 Home, S13 Collection, the lock outside first run, Open 7 |
 | `R1 - LaterUpload.dc.html` | S14 at both widths |
 | `R1 - About-Entry.dc.html` | The new entry, its phone reduction, the two edits |

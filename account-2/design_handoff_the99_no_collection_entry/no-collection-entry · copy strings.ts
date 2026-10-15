@@ -1,4 +1,4 @@
-// no-collection-entry · copy strings.ts. R1. PLACEHOLDERS: /copy-review sets the words.
+// no-collection-entry · copy strings.ts. R2. PLACEHOLDERS: /copy-review sets the words.
 // Targets: src/lib/copy/refresh.ts (firstRun, lock), collection-edit.ts (empty, firstRun), precons.ts (pick),
 // deck-import.ts (arrival.own, shopping.own), commanders.ts / commander-discovery.ts (empty), collection-edit.ts
 // (upload.replaceBuilt). Unit: "cards" are copies, as the precon arrival counts them.
@@ -21,7 +21,7 @@ export const noCollectionEntryCopy = {
     preconsSub: "Pick the boxes. We know every card in them.",
     preconsSubShort: "Pick the boxes you own.", // the empty Collection's narrower column
     importDeck: "Import a deck", // reuses zero.importDeck
-    importDeckSub: "Paste a list you play, then add its cards.",
+    importDeckSub: "Paste a list you play.",
     importDeckSubShort: "Paste a list you play.",
     addByHand: "Add cards by hand", // first run (collectionEditCopy.firstRun.addByHand, moved)
     addCards: "Add cards", // the empty Collection (collectionEditCopy.empty.addTitle)
@@ -83,18 +83,15 @@ export const noCollectionEntryCopy = {
     dismiss: "Dismiss",
   },
 
-  // Path (a): the offer on the arrival strip and the Shopping head.
+  // Path (a), R2: the import's checkbox (deck-import.ts entry) and its arrival (deck-import.ts arrival).
   own: {
-    offer: (c: number) => `Already own these? Add the deck’s ${cards(c)} to your collection.`,
-    add: (c: number) => `Add ${cards(c)}`,
-    adding: "Adding…",
-    notNow: "Not now",
-    done: (c: number) => `${cards(c)} added to your collection. Nothing left to buy.`,
-    donePhone: (c: number) => `${cards(c)} added to your collection`,
-    shoppingHead: (c: number) => `Own these already? Add all ${n(c)} to your collection, or mark them one at a time with I got it.`,
-    shoppingHeadPhone: (c: number) => `Own these already? Add all ${n(c)} to your collection, or mark them one at a time.`,
+    label: "I own these cards. Add them to my collection.", // mirrors precons.start.owned.label
+    arrivalHead: (lines: number) => `All ${n(lines)} lines came over clean.`,
+    arrivalAdded: (c: number) => `All ${cards(c)} added to your collection.`,
+    arrivalMeta: "Imported from your list a moment ago",
+    history: "History",
     historyKind: "Deck add",
-    // Refusals: the precon add's addFailed / addUnsure sentences.
+    // Refusals: precons.start.owned.addFailed / addUnsure, as a toast on the import page.
   },
 
   // Open 7. Replaces the inline literals in commanders/page.tsx and discover/page.tsx.

@@ -13,7 +13,7 @@ export const startWithoutACollection = {
   // Specimen: the "No file? Start another way" group, drawn from noCollectionEntryCopy.ways at render (rule 2),
   // fixture props: all three rows. Phone reduction: the three 44px rows, caption's first and last sentences, keys 1–2.
   caption:
-    'No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nPick the precons you own and their cards go into your Collection at the box’s printings, tokens too. Import a deck you play and add its cards in one press. Or add cards one at a time. A file can come later.',
+    'No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nPick the precons you own and their cards go into your Collection at the box’s printings, tokens too. Import a deck you play and tick that you own its cards. Or add cards one at a time. A file can come later.',
   keys: [
     'Commanders, Discover and Decks open once your Collection has a card in it.',
     'Each precon box is its own change in History, and Revert takes it back. Adding a box twice stacks its copies.',
@@ -34,4 +34,4 @@ export const preconsCaptionAddition =
 
 // deck-import (about.ts:1043-1064): a fourth key line, on COLLECTION_EDIT_ENABLED via keySwitches.
 export const deckImportKeyAddition =
-  'No cards here yet? After an import, one press adds the deck’s cards to your Collection.';
+  'Own the deck you’re importing? Tick the box and its cards go into your Collection too.';

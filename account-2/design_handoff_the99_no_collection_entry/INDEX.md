@@ -13,7 +13,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-no-collection-entry.
 | `R1 - FirstRun-Desktop.dc.html` / `R1 - FirstRun-Phone.dc.html` | Step 1 with the group; focus; the lock's note; both switches off. |
 | `R1 - PreconPick-Desktop.dc.html` / `R1 - PreconPick-Phone.dc.html` | The pick: open, picked, a twin, adding, a box already added. |
 | `R1 - PreconResult.dc.html` | Done on Home, refused, part-failed, both widths. |
-| `R1 - Import-Desktop.dc.html` / `R1 - Import-Phone.dc.html` | The own-these offer through done, refused, declined. |
+| `R2 - Import-Desktop.dc.html` / `R2 - Import-Phone.dc.html` | R2: the import checkbox, ticked and unticked, done, refused. Replaces the `R1 - Import-*` boards. |
 | `R1 - Empty-Desktop.dc.html` / `R1 - Empty-Phone.dc.html` | The empty Collection, Home with a deck and no cards, the rankers' empties. |
 | `R1 - LaterUpload.dc.html` | The first CSV over a collection built in the app. |
 | `R1 - About-Entry.dc.html` | The new About entry and two edits. |

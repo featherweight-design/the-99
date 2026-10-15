@@ -1,4 +1,4 @@
-# States — no-collection entry R1
+# States — no-collection entry R2
 
 Brief §States, every one at 390 and 1300. The canvas column names the R1 board.
 
@@ -11,15 +11,15 @@ Brief §States, every one at 390 and 1300. The canvas column names the R1 board.
 | S5 | Done | all boxes written | Home dashboard, nav unlocked, receipt strip naming boxes, cards, tokens, History | PreconResult S5 | Animate the unlock; toast a success |
 | S6 | Refused | `notFound` / `failed` | The pick standing, ticks kept, ToastFrame alert `We couldn’t add those. Your collection is unchanged.` + Try again | PreconResult S6 | Draw an inline error; clear the ticks |
 | S7 | Part-failed | one box fails after others land | Landed rows untick with `✓ added just now`; failed stays ticked; toast names both; nav unlocks | PreconResult S7 | Retry silently; leave landed boxes ticked |
-| S8 | Import done, own offer | deck imported, 0 cards | Shipped arrival strip + second line: `Already own these? …` `Add 100 cards` · `Not now` | Import S8 | Show the offer when the collection had cards (R1) |
-| S9 | Own these, pending | press | `Adding…` on the offer only; deck unchanged | Import S9 | Touch the list or rail before it settles |
-| S10 | Own these, done | lines written | Strip: `100 cards added to your collection. Nothing left to buy.` + History; To buy 0; nav unlocks | Import S10 | Reserve copies; keep buy tags |
-| S11 | Own these, refused | failure | Toast alert, offer standing | Import S11 | Inline error; dismiss the strip |
-| S12 | Offer declined | Not now / ✕ | Deck with 100 To buy; Shopping head line keeps the offer; nav still locked; Home: `Add your cards` header, resume row, page line | Import S12, Empty S12 | Unlock Decks; leave the offer unfindable |
+| S8 | Import, box unticked / ticked | (a) entered | Shipped `/decks/import` + `I own these cards. Add them to my collection.` under Deck name, unticked | Import S8 (R2) | Tick it by default; move it off the form |
+| S9 | Import pending | press | Shipped `Reading the list`; nothing new | (shipped) | Make the deck before the add settles |
+| S10 | Ticked, done | add + deck written | Deck page; strip head `All 100 lines came over clean.`, body `All 100 cards added to your collection.` + History; Shopping 0; nav unlocks | Import S10 (R2) | Reserve copies; a second strip |
+| S11 | Ticked, refused | add failed | Import page standing, box ticked, toast alert `addFailed` / `addUnsure` + Try again | Import S11 (R2) | Inline error; make the deck anyway |
+| S12 | Imported unticked | import, box off, 0 cards | Shipped deck page, every row to buy, nav still locked; Home: `Add your cards` header, resume row, page line | Import S12 (R2), Empty S12 | An offer after the import; unlock Decks |
 | S13 | Started empty | (c): left step 1 with nothing | Collection open: one Upload tile + the group; Commanders, Discover empty states `Nothing to rank yet` → `Add your cards` | Empty S13, Open 7 | A "Start empty" button; `No collection yet` |
 | S14 | First CSV over a built collection | upload, ≥1 row | Sync's choice, none picked, Sync disabled (never uploaded); Replace names cards from precons and by hand that would leave | LaterUpload | Preselect Add; redraw Sync's step |
 | S15 | Precons switch off | `PRECONS_ENABLED` off | Precons I own absent on step 1, Collection; the About key line hidden | FirstRun S15 | Draw it disabled |
-| S16 | Edit switch off | `COLLECTION_EDIT_ENABLED` off | Upload + Paste only; four-slot lock; no offer, no Shopping line | FirstRun S16 | Leave Collection open |
+| S16 | Edit switch off | `COLLECTION_EDIT_ENABLED` off | Upload + Paste only; four-slot lock; no import checkbox | FirstRun S16 | Leave Collection open |
 | S17 | A box already owned | the box has a precon History entry | `added Oct 13` on the row, still pickable; ticked: “Adding it again adds a second copy of each card.” | PreconPick S17 | Block the pick; mark boxes owned by card overlap |
 
 ## The lock

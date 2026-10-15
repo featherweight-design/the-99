@@ -1,6 +1,6 @@
-# READINESS — No-collection entry (R1)
+# READINESS — No-collection entry (R2)
 
-**🟡 R1, for Hugh's audit.** Every brief state is drawn at both widths; the seven §Open questions are called. Not green
+**🟡 R2, for Hugh’s audit. R2 replaces path (a)’s offer with a checkbox on the import.** Every brief state is drawn at both widths; the seven §Open questions are called. Not green
 until Hugh rules on G1 (ruling 1 on step 1) and G2 (Collection open at zero cards), which change shipped behaviour.
 
 ## Locks held
