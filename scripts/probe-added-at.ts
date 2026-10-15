@@ -56,10 +56,10 @@ async function main() {
     throw new Error(`refusing branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch`);
   }
   const picked = (await pool.query(
-    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 6",
+    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 7",
   )).rows as { oracle_id: string; name: string }[];
-  if (picked.length < 6) throw new Error("the catalog holds fewer than six cards");
-  const [A, B, C, D, E, F] = picked.map((p) => p.oracle_id);
+  if (picked.length < 6) throw new Error("the catalog holds fewer than seven cards");
+  const [A, B, C, D, E, F, G] = picked.map((p) => p.oracle_id);
   const at = (oracleId: string) => ({ oracleId, setCode: "prb", collectorNumber: "1", finish: "nonfoil" as const });
   const item = (oracleId: string, quantity = 1) => ({ ...at(oracleId), condition: null, quantity });
   console.log(`branch ${branch} · fixture ${USER}`);
@@ -157,24 +157,30 @@ async function main() {
     await pool.query(
       `insert into collection_history (id, user_id, created_at, kind, rows, raised, lowered) values ($1, $2, $3, 'edit', $4::jsonb, 0, 1)`,
       [randomUUID(), USER_BF, day4, JSON.stringify([histRow(F, held, null)])]);
-    for (const o of [A, B, C, D, E, F]) {
+    // G: hand-added between the two files, and the second file (no ledger entry, so a Replace by construction) does not
+    // hold it: the add no longer proves the current ownership began there.
+    await pool.query(
+      `insert into collection_history (id, user_id, created_at, kind, rows, raised, lowered) values ($1, $2, '2026-09-15T12:00:00Z', 'add', $3::jsonb, 1, 0)`,
+      [randomUUID(), USER_BF, JSON.stringify([histRow(G, null, held)])]);
+    for (const o of [A, B, C, D, E, F, G]) {
       await pool.query("insert into collection_items (user_id, oracle_id, quantity, set_code, collector_number, finish) values ($1, $2, 1, 'prb', '1', 'nonfoil')", [USER_BF, o]);
     }
     // The stored instants, as the database reads them back (the column is a plain timestamp).
     const stored = async (table: string, col: string, where: string) =>
       ((await pool.query(`select ${col} as at from ${table} where ${where} order by ${col}`, [USER_BF])).rows as { at: Date }[]).map((r) => r.at.getTime());
     const [up1, up2] = await stored("csv_uploads", "confirmed_at", "user_id = $1");
-    const [led] = await stored("collection_history", "created_at", "user_id = $1");
+    const [led] = await stored("collection_history", "created_at", `user_id = $1 and rows::text like '%${D}%'`);
     const dry = await backfillAddedAt(pool, { userId: USER_BF, dryRun: true });
-    check("a dry run counts and writes nothing", dry.undated === 6 && dry.dated === 4 && (await rowOf(USER_BF, A))?.added_at === null,
+    check("a dry run counts and writes nothing", dry.undated === 7 && dry.dated === 4 && (await rowOf(USER_BF, A))?.added_at === null,
       JSON.stringify(dry));
     const done = await backfillAddedAt(pool, { userId: USER_BF });
-    const [bA, bC, bD, bE, bF] = await Promise.all([A, C, D, E, F].map((o) => rowOf(USER_BF, o)));
+    const [bA, bC, bD, bE, bF, bG] = await Promise.all([A, C, D, E, F, G].map((o) => rowOf(USER_BF, o)));
     check("the first file's holdings are dated to it, inexact", bA?.added_at?.getTime() === up1 && bA.added_exact === false, `${bA?.added_at?.toISOString()} exact ${bA?.added_exact}`);
     check("a holding a later file brought is dated to it, inexact (a snapshot says there by then, not when)", bC?.added_at?.getTime() === up2 && bC.added_exact === false, `${bC?.added_at?.toISOString()} exact ${bC?.added_exact}`);
     check("a holding only the ledger knows is dated to its entry, exact", bD?.added_at?.getTime() === led && bD.added_exact === true, `${bD?.added_at?.toISOString()} exact ${bD?.added_exact}`);
     check("a holding in neither stays unknown", bE?.added_at === null && bE.added_exact === false && done.dated === 4, JSON.stringify(done));
     check("a holding added, then removed, is not dated to its first life", bF?.added_at === null, `${bF?.added_at?.toISOString()}`);
+    check("a hand add before a Replace-capable upload that does not hold it is not trusted", bG?.added_at === null, `${bG?.added_at?.toISOString()}`);
     const again = await backfillAddedAt(pool, { userId: USER_BF });
     check("a second run changes nothing", again.dated === 0, JSON.stringify(again));
   } finally {

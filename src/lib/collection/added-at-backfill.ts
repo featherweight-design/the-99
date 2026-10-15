@@ -5,8 +5,9 @@
  * A holding with a null `added_at` is dated from the best evidence there is, and says how sure it is:
  *  - the ledger, when the holding's CURRENT ownership began with a hand entry (`add`, `edit` or `revert` raising it
  *    from nothing: Add cards, I got it, a precon add): that entry's time, EXACT. Valid only when no entry removed
- *    the holding after that raise, so a holding that was added, removed and brought back some other way is not
- *    dated to its first life. The ledger keeps 90 days, so this reaches recent holdings only. An upload's own
+ *    the holding after that raise and no upload that could have replaced the collection (anything but a pure Add)
+ *    was confirmed after it, so a holding that was added, removed and brought back some other way is not dated
+ *    to its first life. The ledger keeps 90 days, so this reaches recent holdings only. An upload's own
  *    entries are `upload_*` kinds (`kindOf`), so these entries are hand changes by construction;
  *  - else the first confirmed upload whose stored file (`pendingItems`, kept forever) holds it, INEXACT always:
  *    a snapshot says a holding was there by then, not when it arrived, and a Sync can leave a file's card unapplied.
@@ -40,11 +41,23 @@ with from_upload as (
   from collection_history h, jsonb_array_elements(h.rows) r
   where h.rows is not null and ($1::text is null or h.user_id = $1)
   group by 1, 2, 3, 4, 5
+), anchors as (
+  -- Uploads that can have REPLACED the collection: anything but a pure Add (no ledger entry is a Replace by
+  -- construction, the Sync base's rule). One of them after a hand add may have removed the holding without a
+  -- ledger entry (editing off), so the add no longer proves the current ownership began there.
+  select u.user_id, u.confirmed_at from csv_uploads u
+  where u.confirmed_at is not null and ($1::text is null or u.user_id = $1)
+    and not exists (
+      select 1 from collection_history h
+      where h.user_id = u.user_id and h.source = 'csv_uploads:' || u.id::text and h.kind = 'upload_add'
+    )
 ), candidates as (
   select user_id, oracle_id, set_code, collector_number, finish, at, false as exact from from_upload
   union all
   select user_id, oracle_id, set_code, collector_number, finish, raised_at, true
-  from from_ledger where raised_at is not null and (removed_at is null or raised_at > removed_at)
+  from from_ledger l
+  where raised_at is not null and (removed_at is null or raised_at > removed_at)
+    and not exists (select 1 from anchors a where a.user_id = l.user_id and a.confirmed_at > l.raised_at)
 ), chosen as (
   select distinct on (user_id, oracle_id, set_code, collector_number, finish)
          user_id, oracle_id, set_code, collector_number, finish, at, exact
