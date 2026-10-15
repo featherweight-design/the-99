@@ -6,7 +6,7 @@
 // frame ticked (the default). After a ✗ tap, an optional "What card was it?" step under the controls
 // names the card it really was. Unstyled beyond the tokens: it is a measuring page with no design handoff.
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import {
   DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor,
@@ -15,6 +15,7 @@ import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan-lab/reading";
 import { sessionHolder } from "../../lib/scan-lab/sessions";
 import { TrueCardStep } from "./true-card-step";
+import { ScanControls, tensorToImage } from "./scan-controls";
 import {
   AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
 } from "../../lib/scan-lab/models";
@@ -50,22 +51,8 @@ async function loadIndex(base: string): Promise<ScanIndex> {
   return parseIndex(meta, bin);
 }
 
-/** The normalised tensor back to pixels, for the preview and a kept frame. */
-function tensorToImage(t: Float32Array, w: number, h: number): ImageData {
-  const mean = [0.485, 0.456, 0.406];
-  const std = [0.229, 0.224, 0.225];
-  const plane = w * h;
-  const img = new ImageData(w, h);
-  for (let i = 0; i < plane; i++) {
-    for (let c = 0; c < 3; c++) img.data[i * 4 + c] = Math.round((t[c * plane + i] * std[c] + mean[c]) * 255);
-    img.data[i * 4 + 3] = 255;
-  }
-  return img;
-}
-
 export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const previewRef = useRef<HTMLCanvasElement>(null);
   const running = useRef(false);
   const history = useRef<{ oracleId: string; margin: number }[]>([]);
   const stream = useRef(streamHolder<MediaStream>());
@@ -73,15 +60,6 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const [status, setStatus] = useState<"idle" | "loading" | "running" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState<Reading | null>(null);
-  // The preview is painted from the COMMITTED reading, in the same commit as its guess and the tap
-  // handler that saves it, so the three never describe different frames. No card clears it.
-  useLayoutEffect(() => {
-    const ctx = previewRef.current?.getContext("2d");
-    if (!ctx) return;
-    const crop = readingCrop(reading);
-    if (crop) ctx.putImageData(tensorToImage(crop, EMBED_W, EMBED_H), 0, 0);
-    else ctx.clearRect(0, 0, EMBED_W, EMBED_H);
-  }, [reading]);
   // On from the first tap and kept across taps, so a run of photos needs no box ticked. Unticking it, which is
   // also kept, keeps every pixel on the device.
   const [keepFrame, setKeepFrame] = useState(true);
@@ -228,9 +206,9 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     }
   }, [indexBase]);
 
-  const record = useCallback(async (correct: boolean) => {
-    // one reading, the one on screen: its verdict, its timings and its own crop
-    const r = reading;
+  const record = useCallback(async (r: Reading | null, correct: boolean) => {
+    // one reading, the one the player was looking at (`ScanControls` holds it from the press): its verdict, its
+    // timings and its own crop
     const crop = readingCrop(r);
     setMissed(null);
     const mine = ++tapSeq.current;
@@ -258,7 +236,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     } else {
       setNote(copy.saveFailed);
     }
-  }, [reading, keepFrame]);
+  }, [keepFrame]);
 
   return (
     <div className="mx-auto flex w-full max-w-[560px] flex-col gap-[12px] px-[16px] py-[20px] text-[color:var(--fg)]">
@@ -273,43 +251,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       {status === "error" && <p className="m-0 text-[14px]">{error}</p>}
       <video ref={videoRef} playsInline muted autoPlay className="w-full rounded-[8px]" />
       {status === "running" && (
-        <section className="flex flex-col gap-[8px]" aria-live="polite">
-          {/* A FIXED height, the tallest reading at 390 (two lines for each of the name, the figures, the timings and the
-              next guesses): the reading changes length every frame, and the controls under it must
-              never move while the camera runs. Each line is clamped, and the column clips what is left. */}
-          <div className="flex h-[188px] gap-[12px]">
-            <canvas ref={previewRef} width={EMBED_W} height={EMBED_H} className="h-[168px] w-[120px] shrink-0 rounded-[6px]" />
-            <div className="flex min-w-0 flex-col gap-[4px] overflow-hidden text-[14px]">
-              {reading?.kind === "card" ? (
-                <>
-                  <span className="text-[12px] text-[color:var(--fg-muted)]">{copy.guessing}</span>
-                  <strong className="line-clamp-2 text-[18px] leading-[1.25] [overflow-wrap:anywhere]">{reading.guesses[0]?.name}</strong>
-                  <span className="line-clamp-2 text-[12px] text-[color:var(--fg-muted)]">
-                    {reading.guesses[0]?.score.toFixed(3)} · +{reading.margin.toFixed(3)}
-                    {reading.committed ? ` · ${copy.agreed(reading.agreed)}` : ""}
-                  </span>
-                  <span className="line-clamp-2 text-[12px] text-[color:var(--fg-muted)]">{copy.timings(reading.detMs, reading.embMs, reading.matchMs)}</span>
-                  <span className="line-clamp-2 text-[12px] text-[color:var(--fg-muted)]">
-                    {copy.runnersUp}: {reading.guesses.slice(1).map((g) => g.name).join(", ")}
-                  </span>
-                </>
-              ) : (
-                <span>{copy.noCard}</span>
-              )}
-            </div>
-          </div>
-          <label className="flex items-center gap-[8px] text-[14px]">
-            <input type="checkbox" checked={keepFrame} onChange={(e) => setKeepFrame(e.target.checked)} />
-            {copy.keepFrame}
-          </label>
-          <div className="flex gap-[8px]">
-            <button type="button" onClick={() => void record(true)} className="flex-1 rounded-[8px] border px-[12px] py-[10px] text-[15px]">
-              {copy.right}
-            </button>
-            <button type="button" onClick={() => void record(false)} className="flex-1 rounded-[8px] border px-[12px] py-[10px] text-[15px]">
-              {copy.wrong}
-            </button>
-          </div>
+        <ScanControls reading={reading} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record}>
           <span className="text-[12px] text-[color:var(--fg-muted)]">
             {copy.taps(taps.n, taps.right)}
             {note ? ` · ${note}` : ""}
@@ -325,7 +267,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
               }}
             />
           )}
-        </section>
+        </ScanControls>
       )}
     </div>
   );
