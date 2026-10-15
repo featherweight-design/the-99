@@ -13,7 +13,6 @@ import { useSwapTools } from "../../lib/swaps/context";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { formatLimit } from "../../lib/swaps/limit";
 import { OVER_LIMIT_RING } from "./buy-tag";
-import { useDeckPageSwitches } from "./deck-page-switches";
 import { useGotIt } from "./got-it";
 
 const ITEM = "flex items-center gap-[7px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]";
@@ -47,9 +46,8 @@ export function ShoppingKey({ shoppingCount }: { shoppingCount: number }) {
  * `over $N` stacked or after the figure), and only with the swap tools, which are what mark a row over a limit.
  */
 export function ShoppingKeyOver() {
-  const { phoneShoppingRowB } = useDeckPageSwitches();
   const tools = useSwapTools();
-  if (!phoneShoppingRowB || !tools) return null;
+  if (!tools) return null;
   return (
     <span className={`${ITEM} md:hidden`} data-testid="shopping-key-over">
       <span

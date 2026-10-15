@@ -527,7 +527,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   NOTICES_ENABLED: { label: "Notices", description: "Notices on a deck." },
   NO_COLLECTION_ENTRY_ENABLED: { label: "No-collection entry", description: "Start with no collection: own an imported deck’s cards, or pick the precons you own." },
   OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
-  PHONE_SHOPPING_ROW_B_ENABLED: { label: "Phone Shopping row B", description: "On the phone, the name gets its own line and over-limit folds into the buy tag." },
   PRECONS_ENABLED: { label: "Precons", description: "Browse Commander precons and start a deck from one." },
   PROPOSED_CUTS_ENABLED: { label: "Proposed cuts", description: "Cuts proposed for a deck over 99." },
   RATE_LIMIT_ENABLED: { label: "Request counting", description: "Counts each player’s requests and logs what a limit would refuse. Refuses nothing." },

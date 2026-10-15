@@ -52,7 +52,6 @@ import { gotItCopy } from "../../lib/copy/i-got-it";
 import { useSwapTools } from "../../lib/swaps/context";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { useDeckPageSwitches } from "./deck-page-switches";
 import { preconsCopy } from "../../lib/copy/precons";
 import { useLockCards } from "./lock-cards";
 import { useGotIt } from "./got-it";
@@ -75,7 +74,7 @@ const ROW_SHELL_META = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] md:min-h
 const ROW_SHELL_SHOPPING = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] lg:min-h-[34px]`;
 
 /**
- * Option B of the phone Shopping row (Social R2 PR 7; `PHONE_SHOPPING_ROW_B_ENABLED`). Below `md` the shell
+ * Option B of the phone Shopping row (Social R2 PR 7). Below `md` the shell
  * wraps in two lines by `order`: the dot, the name and the ✕ are line 1 (the name takes the width, the ✕ keeps
  * its 44px hit), a zero-height full-width break ends it (its own flex line, so `gap-y` falls on both sides: 4px between the lines, a 96px row), and line 2 is the meta line (which takes the width),
  * the availability marker, ⇄ and the buy tag, each in a 44px line so no two hit areas overlap. The classes are
@@ -300,11 +299,10 @@ export function DecklistRow({
   // cannot cut its commander from a buying list, so neither the ring, the ⇄ nor the door draws.
   const commanderRow = card.commander === true;
   const swapTools = useSwapTools();
-  // Option B of the phone Shopping row (Social R2 PR 7, behind its own switch): below `md`, the name and the ✕
-  // take line 1; pips, the figure, the marker, ⇄ and the buy tag take line 2; `over $N` folds into an outlined
-  // tag. Off, or outside Shopping, none of the `max-md:` classes below is spelled and the row is as shipped.
-  const { phoneShoppingRowB } = useDeckPageSwitches();
-  const rowB = phoneShoppingRowB && inShopping && !readOnly;
+  // Option B of the phone Shopping row (Social R2 PR 7; Hugh made it the row for everyone, 2026-10-15): below `md`,
+  // the name and the ✕ take line 1; pips, the marker, ⇄ and the buy tag take line 2; `over $N` folds into an outlined
+  // tag. Outside Shopping none of the `max-md:` classes below is spelled and the row is as shipped.
+  const rowB = inShopping && !readOnly;
   const overLimit = swapTools !== null && inShopping && !commanderRow && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
   const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
   // I got it (both switches on, mounted by the deck page): a Shopping row's tag is the button that

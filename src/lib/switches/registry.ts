@@ -51,7 +51,6 @@ export const SWITCHES = [
   { name: "NOTICES_ENABLED", kind: "feature" },
   { name: "NO_COLLECTION_ENTRY_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
-  { name: "PHONE_SHOPPING_ROW_B_ENABLED", kind: "feature" },
   { name: "PRECONS_ENABLED", kind: "feature" },
   { name: "PROPOSED_CUTS_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
