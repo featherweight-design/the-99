@@ -12,9 +12,10 @@ const APP = dirname(fileURLToPath(import.meta.url));
 // itself at 120ms and escalates to the route's loading screen at 400ms, drawn by the shell; a
 // direct load streams the same screen from the shell's Suspense fallback. So a route segment owns
 // no `loading.tsx` of its own, because Next shows a boundary at press and would put the screen
-// back on every navigation. These four keep theirs, and with it their screen at press: each is a
-// deck surface whose wait is long enough that the screen is the answer, not a fallback.
-const KEPT = ["decks/[id]", "decks/[id]/changes", "decks/[id]/import", "decks/new/choose"];
+// back on every navigation. These five keep theirs, and with it their screen at press: each is a
+// deck surface whose wait is long enough that the screen is the answer, not a fallback. The precon list's sits in a
+// route group, `(list)`, so the open precon beside it does not inherit it and keeps the shared screen.
+const KEPT = ["decks/[id]", "decks/[id]/changes", "decks/[id]/import", "decks/new/choose", "decks/precons/(list)"];
 
 // Every directory under the app, the root included as `""`.
 function segments(dir: string, segment = ""): { segment: string; hasPage: boolean }[] {
@@ -28,13 +29,13 @@ function segments(dir: string, segment = ""): { segment: string; hasPage: boolea
   return found;
 }
 
-// A segment path as an address: a dynamic part becomes a stand-in value.
+// A segment path as an address: a dynamic part becomes a stand-in value, a route group (which is not in the URL) goes.
 function addressOf(segment: string): string {
-  return "/" + segment.replace(/\[[^\]]+\]/g, "x");
+  return "/" + segment.replace(/\[[^\]]+\]/g, "x").replace(/(^|\/)\([^)]+\)/g, "");
 }
 
 describe("route loading boundaries", () => {
-  it("keeps a loading.tsx on exactly the four kept routes, the root included in the rest", () => {
+  it("keeps a loading.tsx on exactly the five kept routes, the root included in the rest", () => {
     const withBoundary = segments(APP)
       .filter(({ segment }) => readdirSync(join(APP, segment)).includes("loading.tsx"))
       .map(({ segment }) => segment)

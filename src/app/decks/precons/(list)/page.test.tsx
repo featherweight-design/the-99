@@ -19,9 +19,9 @@ vi.mock("next/headers", () => ({
   cookies: async () => ({ get: (name: string) => (name in h.cookies ? { value: h.cookies[name] } : undefined) }),
 }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.afters.push(fn); } }));
-vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => h.env }));
-vi.mock("../../../lib/cache/page-cache", () => ({
+vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
+vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => h.env }));
+vi.mock("../../../../lib/cache/page-cache", () => ({
   cachePageForUser: async (_u: string, _p: string, key: string[], load: (env: unknown) => Promise<{ value: unknown; store: boolean }>, env: unknown) => {
     h.keys.push(key);
     const r = await load(env);
@@ -29,7 +29,7 @@ vi.mock("../../../lib/cache/page-cache", () => ({
     return r.value;
   },
 }));
-vi.mock("../../../lib/precons/list-read", () => ({
+vi.mock("../../../../lib/precons/list-read", () => ({
   loadPreconList: async () => {
     if (h.listFails) throw new Error("list down");
     return {
@@ -39,7 +39,7 @@ vi.mock("../../../lib/precons/list-read", () => ({
   },
 }));
 const recent = new Date(Date.now() - 2 * 86_400_000);
-vi.mock("../../../lib/precons/announced-read", () => ({
+vi.mock("../../../../lib/precons/announced-read", () => ({
   loadUpcomingPayload: async () => {
     if (h.upcomingFails) throw new Error("boom");
     return {
@@ -52,13 +52,13 @@ vi.mock("../../../lib/precons/announced-read", () => ({
     };
   },
 }));
-vi.mock("../../../lib/precons/upcoming", async (orig) => ({
-  ...(await orig<typeof import("../../../lib/precons/upcoming")>()),
+vi.mock("../../../../lib/precons/upcoming", async (orig) => ({
+  ...(await orig<typeof import("../../../../lib/precons/upcoming")>()),
   markUpcomingSeen: async (_u: string, keys: string[]) => { h.marked.push(keys); },
 }));
 
 import PreconsPage from "./page";
-import { PreconsDown } from "../../../components/decks/precons/precons-down";
+import { PreconsDown } from "../../../../components/decks/precons/precons-down";
 
 const visit = async (query: Record<string, string> = {}) =>
   (await PreconsPage({ searchParams: Promise.resolve(query) })) as ReactElement<Record<string, unknown>>;

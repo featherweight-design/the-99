@@ -6,24 +6,24 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
-import { requireUserId } from "../../../lib/auth";
-import { cachePageForUser } from "../../../lib/cache/page-cache";
-import { preconsCopy } from "../../../lib/copy/precons";
-import { preconsEnabled } from "../../../lib/precons/flag";
-import { requestSwitchEnv } from "../../../lib/switches/request";
-import { parsePreconParams } from "../../../lib/precons/list";
-import { loadPreconList, type PreconList } from "../../../lib/precons/list-read";
-import { announcedProps, newPreconFiles, type UpcomingPayload } from "../../../lib/precons/announced";
-import { loadUpcomingPayload } from "../../../lib/precons/announced-read";
-import { visitSeenKeys } from "../../../lib/precons/arrivals";
-import { upcomingPreconsEnabled } from "../../../lib/precons/upcoming-flag";
-import { markUpcomingSeen, utcDay } from "../../../lib/precons/upcoming";
-import { recordSoftFailure } from "../../../lib/cache/soft-failure";
-import { PreconListView } from "../../../components/decks/precons/precon-list-view";
-import { PreconsDown } from "../../../components/decks/precons/precons-down";
+import { requireUserId } from "../../../../lib/auth";
+import { cachePageForUser } from "../../../../lib/cache/page-cache";
+import { preconsCopy } from "../../../../lib/copy/precons";
+import { preconsEnabled } from "../../../../lib/precons/flag";
+import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { parsePreconParams } from "../../../../lib/precons/list";
+import { loadPreconList, type PreconList } from "../../../../lib/precons/list-read";
+import { announcedProps, newPreconFiles, type UpcomingPayload } from "../../../../lib/precons/announced";
+import { loadUpcomingPayload } from "../../../../lib/precons/announced-read";
+import { visitSeenKeys } from "../../../../lib/precons/arrivals";
+import { upcomingPreconsEnabled } from "../../../../lib/precons/upcoming-flag";
+import { markUpcomingSeen, utcDay } from "../../../../lib/precons/upcoming";
+import { recordSoftFailure } from "../../../../lib/cache/soft-failure";
+import { PreconListView } from "../../../../components/decks/precons/precon-list-view";
+import { PreconsDown } from "../../../../components/decks/precons/precons-down";
 import {
   parsePreconsAnnouncedCookie, parsePreconsViewCookie, PRECONS_ANNOUNCED_COOKIE, PRECONS_VIEW_COOKIE,
-} from "../../../components/ui/view-cookie";
+} from "../../../../components/ui/view-cookie";
 
 export const metadata: Metadata = { title: preconsCopy.list.title };
 

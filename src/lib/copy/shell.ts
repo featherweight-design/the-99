@@ -105,3 +105,9 @@ export const shellCopy = {
     fallbackName: "your account",
   },
 } as const;
+
+/** The precon list's loading skeleton says nothing visible: one line for a screen reader, a placeholder for
+ *  `/copy-review` (small-polish handoff §4). */
+export const preconsLoadingCopy = {
+  status: "Loading precons",
+} as const;

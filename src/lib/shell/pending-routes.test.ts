@@ -21,12 +21,14 @@ describe("pendingRouteFor: the screen each route shows while it loads", () => {
     expect(key("/discover")).toBe("discover");
     expect(key("/decks")).toBe("decks");
     expect(key("/decks/import")).toBe("decks");
-    expect(key("/decks/precons")).toBe("decks");
+    // The list keeps its own tile skeleton (kept); an open precon sits outside that route group and keeps the crown.
+    expect(key("/decks/precons")).toBe("kept:precons");
+    expect(key("/decks/precons?view=rows")).toBe("kept:precons");
     expect(key("/decks/precons/EldraziUnbound_CMM")).toBe("decks");
     expect(key("/decks/new")).toBe("deckNew");
   });
 
-  it("names the four kept routes as kept, with their own screen", () => {
+  it("names the kept routes as kept, with their own screen", () => {
     const id = "6ad8011d-3471-4369-9d68-b264cc027487";
     expect(pendingRouteFor(`/decks/${id}`)).toEqual({ kind: "kept", screen: "decks" });
     expect(pendingRouteFor(`/decks/${id}/changes`)).toEqual({ kind: "kept", screen: "decks" });
