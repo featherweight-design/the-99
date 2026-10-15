@@ -1,18 +1,23 @@
 "use client";
-// SeatPicker: fills one seat of the game log's "Across the table" row (Social R3 plan, PR 2). One field and no
-// mode switch: the player types a commander and presses it, and it is seated at once. An anchored panel under
-// the seat at 1300 and a sheet at 390, one body for both. The friends list, a friend's decks and the pod
-// chips arrive with PR 3, which adds to this field rather than replacing it.
+// SeatPicker: fills one seat of the game log's "Across the table" row (Social R3 plan, PR 2 and 3). One field and
+// no mode switch: before typing it lists the reader's friends (face, name, deck count), and typing filters them
+// and adds a Commanders list under. A commander is seated at once. A friend opens their decks in place (read when
+// that friend is picked, G7), then Another commander and Just <name>. An anchored panel under the seat at 1300
+// and a sheet at 390, one body for both. The friends are read when the picker OPENS, so a form nobody opens the
+// picker from reads nothing social.
 //
 // The search is `searchOpponentCommandersAction`: the whole catalog, commander-legal, no owned filter. A reply
 // that arrives after a newer keystroke is dropped, so a slow answer for "yu" never lands over "yuriko".
 
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
-import { searchOpponentCommandersAction } from "../../app/decks/[id]/opponent-actions";
+import { listFriendDecksAction, listPickerFriendsAction, searchOpponentCommandersAction } from "../../app/decks/[id]/opponent-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
+import { shortName, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
 import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
+import type { FriendDeck, PickerFriend } from "../../lib/social/games";
 import { IdentityPips } from "../commanders/commander-art";
+import { Face } from "../social/face";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { ArtLayer } from "../ui/art-layer";
 import { Sheet, SheetHeader } from "../ui/sheet";
@@ -23,91 +28,259 @@ const PANEL_WIDTH = 340;
 const KEYSTROKE_MS = 180;
 const copy = gameSeatsCopy.picker;
 
-type Search = { state: "idle" } | { state: "busy" } | { state: "failed" } | { state: "done"; hits: OpponentCommanderHit[] };
+type Load<T> = { state: "busy" } | { state: "failed" } | { state: "done"; items: T[] };
+type Search = { state: "idle" } | Load<OpponentCommanderHit>;
+type View = { step: "list" } | { step: "decks" | "commander"; friend: PickerFriend };
+
+const ROW = "flex min-h-[52px] w-full cursor-pointer items-center gap-[12px] border-0 bg-transparent px-[14px] py-[6px] text-left hover:bg-[color:var(--surface-raised)]";
+const NOTE = "px-[14px] py-[10px] text-[13px] text-[color:var(--fg-muted)]";
+const HEADING = "m-0 px-[14px] pb-[4px] pt-[10px] font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]";
+
+/** The catalog search for one query: nothing under two letters, and a reply for an older keystroke is dropped. */
+function useCommanderSearch(query: string) {
+  const [search, setSearch] = useState<Search>({ state: "idle" });
+  const asked = useRef(0);
+  useEffect(() => {
+    const q = query.trim();
+    const ticket = ++asked.current;
+    if (q.length < 2) return;
+    const timer = window.setTimeout(() => {
+      setSearch({ state: "busy" });
+      searchOpponentCommandersAction(q)
+        .then((items) => { if (asked.current === ticket) setSearch({ state: "done", items }); })
+        .catch(() => { if (asked.current === ticket) setSearch({ state: "failed" }); });
+    }, KEYSTROKE_MS);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+  // A new query drops the old answer at once and invalidates any still in flight: until the debounce fires,
+  // the previous query's hits would stay on screen, selectable, under a field that no longer names them.
+  const reset = () => { asked.current += 1; setSearch({ state: "idle" }); };
+  return { search, reset };
+}
+
+function CommanderRows({ query, search, onPick }: { query: string; search: Search; onPick: (hit: OpponentCommanderHit) => void }) {
+  if (query.trim().length < 2) return null;
+  if (search.state === "failed") return <li role="alert" className={NOTE}>{copy.failed}</li>;
+  if (search.state === "busy") return <li className="px-[14px] py-[10px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</li>;
+  if (search.state !== "done") return null;
+  if (search.items.length === 0) return <li className={NOTE}>{copy.noMatch}</li>;
+  return search.items.map((hit) => (
+    <li key={hit.oracleId}>
+      <button type="button" onClick={() => onPick(hit)} className={ROW}>
+        <span aria-hidden className="relative block h-[40px] w-[56px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
+          {hit.imageUri && <ArtLayer src={hit.imageUri} style={{ backgroundPosition: "50% 20%" }} />}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{hit.name}</span>
+        <IdentityPips colorIdentity={hit.colorIdentity} size={9} />
+      </button>
+    </li>
+  ));
+}
+
+const asCommander = (hit: OpponentCommanderHit) => ({ oracleId: hit.oracleId, name: hit.name, imageUri: hit.imageUri });
+const asFriend = (f: PickerFriend): SeatFriend => ({ publicId: f.publicId, name: f.displayName });
+
+function Field({ inputRef, value, onChange, placeholder, describedBy }: {
+  inputRef: RefObject<HTMLInputElement | null>;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder: string;
+  describedBy: string;
+}) {
+  return (
+    <div className="px-[12px] pt-[12px] md:pt-[10px]">
+      <SearchField
+        ref={inputRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onClear={() => onChange("")}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        aria-describedby={describedBy}
+        autoComplete="off"
+        // 16px on the phone, or iOS zooms the page when the field takes focus.
+        className="h-[44px] md:h-[38px] text-[16px] md:text-[13.5px]"
+      />
+    </div>
+  );
+}
+
+function Foot({ id, children }: { id: string; children: string }) {
+  return (
+    <p id={id} className="m-0 border-0 border-t border-solid border-t-[color:var(--border)] px-[14px] py-[9px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
+      {children}
+    </p>
+  );
+}
+
+/** A friend's decks, read when the friend is picked, then Another commander and Just <name>. */
+function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
+  friend: PickerFriend;
+  onPick: (pick: SeatPick) => void;
+  onCommander: () => void;
+  onBack: () => void;
+  describedBy: string;
+}) {
+  const [decks, setDecks] = useState<Load<FriendDeck>>({ state: "busy" });
+  useEffect(() => {
+    let live = true;
+    listFriendDecksAction(friend.publicId)
+      .then((items) => { if (live) setDecks({ state: "done", items }); })
+      .catch(() => { if (live) setDecks({ state: "failed" }); });
+    return () => { live = false; };
+  }, [friend.publicId]);
+  const who = asFriend(friend);
+  const none = decks.state === "done" && decks.items.length === 0;
+  return (
+    <div className="flex min-h-0 flex-col">
+      <div className="flex items-center gap-[10px] px-[12px] pt-[12px] md:pt-[10px]">
+        <button type="button" onClick={onBack} aria-label={copy.back} autoFocus className="flex h-[32px] w-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border)] bg-transparent text-[14px] text-[color:var(--fg-muted)]">
+          ‹
+        </button>
+        <Face name={friend.displayName} commander={{ artCropUri: friend.commanderArt }} size={26} />
+        <h3 className="m-0 min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{copy.theirDecks(friend.displayName)}</h3>
+      </div>
+      <ul className="m-0 mt-[8px] min-h-0 list-none overflow-y-auto p-0 pb-[6px]">
+        {decks.state === "busy" && <li className="px-[14px] py-[10px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</li>}
+        {decks.state === "failed" && <li role="alert" className={NOTE}>{copy.decksFailed(friend.displayName)}</li>}
+        {none && <li className={NOTE}>{copy.noDecks(friend.displayName)}</li>}
+        {decks.state === "done" && decks.items.map((d) => (
+          <li key={d.deckId}>
+            <button
+              type="button"
+              onClick={() => onPick({ friend: who, deck: { id: d.deckId, name: d.name }, commander: { oracleId: d.commanderOracleId, name: d.commanderName, imageUri: d.commanderImageUri } })}
+              className={ROW}
+            >
+              <span aria-hidden className="relative block h-[40px] w-[56px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
+                {d.commanderImageUri && <ArtLayer src={d.commanderImageUri} style={{ backgroundPosition: "50% 20%" }} />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{d.name}</span>
+                <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{shortName(d.commanderName)}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+        {decks.state === "done" && (
+          <>
+            <li>
+              <button type="button" onClick={onCommander} className={ROW}>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{none ? copy.pickCommander : copy.anotherCommander}</span>
+                  <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.anotherCommanderSub(friend.displayName)}</span>
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" onClick={() => onPick({ friend: who, deck: null, commander: null })} className={ROW}>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{copy.justFriend(friend.displayName)}</span>
+                  <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.justFriendSub}</span>
+                </span>
+              </button>
+            </li>
+          </>
+        )}
+      </ul>
+      <Foot id={describedBy}>{none ? copy.footNoDecks(friend.displayName) : copy.footDecks(friend.displayName)}</Foot>
+    </div>
+  );
+}
 
 function Body({
   onPick,
   inputRef,
   describedBy,
+  seated,
+  openAt,
 }: {
-  onPick: (hit: OpponentCommanderHit) => void;
+  onPick: (pick: SeatPick) => void;
   inputRef: RefObject<HTMLInputElement | null>;
   describedBy: string;
+  /** Friends already at the table, by `publicId`. */
+  seated: ReadonlySet<string>;
+  /** Open on this friend's decks (a friend seated alone, from a pod, asks Which deck?). */
+  openAt: SeatFriend | null;
 }) {
   const [query, setQuery] = useState("");
-  const [search, setSearch] = useState<Search>({ state: "idle" });
-  const asked = useRef(0);
+  const [view, setView] = useState<View | null>(null);
+  const [friends, setFriends] = useState<Load<PickerFriend>>({ state: "busy" });
+  const { search, reset } = useCommanderSearch(query);
 
+  // The friends are read when the picker opens, never before (G7).
   useEffect(() => {
-    const q = query.trim();
-    const ticket = ++asked.current;
-    if (q.length < 2) {
-      // Under two letters nothing is asked, and an answer still in flight for the previous query is dropped.
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setSearch({ state: "busy" });
-      searchOpponentCommandersAction(q)
-        .then((hits) => { if (asked.current === ticket) setSearch({ state: "done", hits }); })
-        .catch(() => { if (asked.current === ticket) setSearch({ state: "failed" }); });
-    }, KEYSTROKE_MS);
-    return () => window.clearTimeout(timer);
-  }, [query]);
+    let live = true;
+    listPickerFriendsAction()
+      .then((items) => { if (live) setFriends({ state: "done", items }); })
+      .catch(() => { if (live) setFriends({ state: "failed" }); });
+    return () => { live = false; };
+  }, []);
 
-  // A new query drops the old answer at once and invalidates any still in flight: until the debounce fires,
-  // the previous query's hits would stay on screen, selectable, under a field that no longer names them.
+  const list = friends.state === "done" ? friends.items : [];
+  const current: View = view ?? (() => {
+    const named = openAt && list.find((f) => f.publicId === openAt.publicId);
+    return named ? { step: "decks", friend: named } : { step: "list" };
+  })();
+
   function change(next: string) {
-    asked.current += 1;
-    setSearch({ state: "idle" });
+    reset();
     setQuery(next);
   }
+  function go(next: View) {
+    reset();
+    setQuery("");
+    setView(next);
+  }
 
-  const short = query.trim().length < 2;
+  if (current.step === "decks") {
+    const friend = current.friend;
+    return (
+      <Decks
+        friend={friend}
+        onPick={onPick}
+        onCommander={() => go({ step: "commander", friend })}
+        onBack={() => go({ step: "list" })}
+        describedBy={describedBy}
+      />
+    );
+  }
+
+  const friend = current.step === "commander" ? current.friend : null;
+  const q = query.trim().toLocaleLowerCase("en-US");
+  const shown = friend ? [] : q === "" ? list : list.filter((f) => f.displayName.toLocaleLowerCase("en-US").includes(q));
+  const placeholder = friend || list.length === 0 ? copy.placeholder : copy.placeholderFriends;
+  const asking = q.length >= 2;
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="px-[12px] pt-[12px] md:pt-[10px]">
-        <SearchField
-          ref={inputRef}
-          value={query}
-          onChange={(e) => change(e.target.value)}
-          onClear={() => change("")}
-          placeholder={copy.placeholder}
-          aria-label={copy.placeholder}
-          aria-describedby={describedBy}
-          autoComplete="off"
-          // 16px on the phone, or iOS zooms the page when the field takes focus.
-          className="h-[44px] md:h-[38px] text-[16px] md:text-[13.5px]"
-        />
-      </div>
+      <Field inputRef={inputRef} value={query} onChange={change} placeholder={placeholder} describedBy={describedBy} />
       <ul className="m-0 mt-[8px] min-h-0 list-none overflow-y-auto p-0 pb-[6px]">
-        {!short && search.state === "done" && search.hits.length === 0 && (
-          <li className="px-[14px] py-[10px] text-[13px] text-[color:var(--fg-muted)]">{copy.noMatch}</li>
-        )}
-        {!short && search.state === "failed" && (
-          <li role="alert" className="px-[14px] py-[10px] text-[13px] text-[color:var(--fg-muted)]">{copy.failed}</li>
-        )}
-        {!short && search.state === "busy" && (
-          <li className="px-[14px] py-[10px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</li>
-        )}
-        {!short && search.state === "done" && search.hits.map((hit) => (
-          <li key={hit.oracleId}>
-            <button
-              type="button"
-              onClick={() => onPick(hit)}
-              className="flex min-h-[52px] w-full cursor-pointer items-center gap-[12px] border-0 bg-transparent px-[14px] py-[6px] text-left hover:bg-[color:var(--surface-raised)]"
-            >
-              <span aria-hidden className="relative block h-[40px] w-[56px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
-                {hit.imageUri && <ArtLayer src={hit.imageUri} style={{ backgroundPosition: "50% 20%" }} />}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{hit.name}</span>
-              <IdentityPips colorIdentity={hit.colorIdentity} size={9} />
-            </button>
-          </li>
-        ))}
+        {!friend && friends.state === "failed" && <li role="alert" className={NOTE}>{copy.friendsFailed}</li>}
+        {shown.length > 0 && <li role="presentation"><h3 className={HEADING}>{copy.friends}</h3></li>}
+        {shown.map((f) => {
+          const here = seated.has(f.publicId);
+          return (
+            <li key={f.publicId}>
+              <button
+                type="button"
+                aria-disabled={here || undefined}
+                onClick={() => { if (!here) go({ step: "decks", friend: f }); }}
+                className={`${ROW} ${here ? "cursor-default opacity-[.45]" : ""}`}
+              >
+                <Face name={f.displayName} commander={{ artCropUri: f.commanderArt }} size={40} />
+                <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{f.displayName}</span>
+                <span className="shrink-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{here ? copy.seated : copy.deckCount(f.deckCount)}</span>
+              </button>
+            </li>
+          );
+        })}
+        {asking && shown.length > 0 && <li role="presentation"><h3 className={HEADING}>{copy.commanders}</h3></li>}
+        <CommanderRows
+          query={query}
+          search={search}
+          onPick={(hit) => onPick({ friend: friend ? asFriend(friend) : null, deck: null, commander: asCommander(hit) })}
+        />
       </ul>
-      <p id={describedBy} className="m-0 border-0 border-t border-solid border-t-[color:var(--border)] px-[14px] py-[9px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
-        {copy.footAnyone}
-      </p>
+      <Foot id={describedBy}>{!friend && list.length > 0 ? copy.footFriends : copy.footAnyone}</Foot>
     </div>
   );
 }
@@ -117,11 +290,17 @@ export function SeatPicker({
   anchor,
   onClose,
   onPick,
+  seated,
+  openAt = null,
 }: {
   /** The control that opened it: where the panel hangs at 1300, and where focus returns. */
   anchor: HTMLElement;
   onClose: () => void;
-  onPick: (hit: OpponentCommanderHit) => void;
+  /** Seats what was pressed and closes the picker. */
+  onPick: (pick: SeatPick) => void;
+  /** The friends already at the OTHER seats: a friend sits once. */
+  seated: ReadonlySet<string>;
+  openAt?: SeatFriend | null;
 }) {
   const desktop = useIsDesktop();
   const footId = useId();
@@ -156,7 +335,7 @@ export function SeatPicker({
   if (!desktop) {
     return (
       <Sheet open portal onDismiss={onClose} ariaLabel={copy.title} panelRef={panelRef} header={<SheetHeader title={copy.title} closeLabel={copy.close} onDismiss={onClose} />}>
-        <Body onPick={onPick} inputRef={inputRef} describedBy={footId} />
+        <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} />
       </Sheet>
     );
   }
@@ -169,7 +348,7 @@ export function SeatPicker({
       className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col`}
       style={{ width: PANEL_WIDTH, maxHeight: "calc(100dvh - 16px)", top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
     >
-      <Body onPick={onPick} inputRef={inputRef} describedBy={footId} />
+      <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} />
     </div>
   );
 }

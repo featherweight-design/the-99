@@ -468,8 +468,15 @@ export function GameLogForm({
           seats={seats}
           busy={busy}
           held={podHeld}
-          onSeat={(at, commander) => {
-            setSeats((held) => seatWith(held, at, commander, `seat${++seatKeys.current}`));
+          onSeat={(at, pick) => {
+            setSeats((held) => seatWith(held, at, pick, `seat${++seatKeys.current}`));
+            setPodHeld(false);
+          }}
+          onPod={(size, add) => {
+            setPodSize(size);
+            // A seat's key is made here, at press time, never inside the updater: a strict-mode double call must not skip one.
+            const keyed = add.map((friend) => ({ friend, key: `seat${++seatKeys.current}` }));
+            setSeats((held) => keyed.reduce((seats, { friend, key }) => seatWith(seats, null, { friend, deck: null, commander: null }, key), held));
             setPodHeld(false);
           }}
           onClear={(key) => { setSeats((held) => seatWithout(held, key)); setPodHeld(false); }}

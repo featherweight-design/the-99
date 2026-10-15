@@ -8,7 +8,7 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { searchOpponentCommanders, type OpponentCommanderHit } from "../../../lib/decks/opponent-commanders";
-import { listFriendDecks, listPodSeats, type FriendDeck, type PodSeat } from "../../../lib/social/games";
+import { listFriendDecks, listPickerFriends, listPickerPods, listPodSeats, type FriendDeck, type PickerFriend, type PickerPod, type PodSeat } from "../../../lib/social/games";
 import { socialGamesEnabled } from "../../../lib/social/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 
@@ -35,4 +35,18 @@ export async function listPodSeatsAction(podId: string): Promise<PodSeat[]> {
   const userId = await requireUserId();
   if (!(await gamesOn(userId))) return [];
   return listPodSeats(userId, podId);
+}
+
+/** The reader's friends with a deck count each, read when the seat picker OPENS (G7). */
+export async function listPickerFriendsAction(): Promise<PickerFriend[]> {
+  const userId = await requireUserId();
+  if (!(await gamesOn(userId))) return [];
+  return listPickerFriends(userId);
+}
+
+/** The reader's pods, for the Seat a pod chips: names and sizes only. */
+export async function listPickerPodsAction(): Promise<PickerPod[]> {
+  const userId = await requireUserId();
+  if (!(await gamesOn(userId))) return [];
+  return listPickerPods(userId);
 }

@@ -9,9 +9,11 @@
 // are the form's, so what is saved is what is drawn.
 
 import { useEffect, useRef, useState } from "react";
+import { listPickerPodsAction, listPodSeatsAction } from "../../app/decks/[id]/opponent-actions";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
-import { hasRoom, seatCount, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatCommander } from "../../lib/decks/game-seats";
-import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
+import { hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
+import { faceInitials } from "../../lib/social/initials";
+import type { PickerPod } from "../../lib/social/games";
 import { ArtLayer } from "../ui/art-layer";
 import { SeatPicker } from "./seat-picker";
 import { TrophyIcon } from "./trophy-icon";
@@ -24,13 +26,17 @@ export type YouSeat = { name: string; deckName: string; imageUri: string | null 
 const ART = "relative block h-[58px] w-[58px] shrink-0 overflow-hidden rounded-[8px] md:h-[86px] md:w-[124px] md:rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--elevated)]";
 const ART_POSITION = "50% 20%";
 
-function Art({ uri, dim = false }: { uri: string | null; dim?: boolean }) {
+/** A seat's art, or the friend's initials while they were seated with no commander to draw. */
+function Art({ uri, dim = false, initials = null }: { uri: string | null; dim?: boolean; initials?: string | null }) {
   return (
-    <span aria-hidden className={ART} style={dim ? { opacity: 0.78 } : undefined}>
-      {uri && <ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION }} />}
+    <span aria-hidden className={`${ART} ${uri || initials === null ? "" : "flex items-center justify-center font-mono text-[18px] text-[color:var(--fg-muted)]"}`} style={dim ? { opacity: 0.78 } : undefined}>
+      {uri ? <ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION }} /> : initials}
     </span>
   );
 }
+
+/** The line under a seat's name: the friend's deck, the commander a friend played, or nothing. */
+const seatSub = (s: Seat) => (s.deck ? s.deck.name : s.friend && s.commander ? shortName(s.commander.name) : null);
 
 function SeatView({
   seat, lost, busy, editing, onOpen, onClear, onWon, onLabel,
@@ -39,7 +45,8 @@ function SeatView({
   lost: boolean;
   busy: boolean;
   editing: boolean;
-  onOpen: (anchor: HTMLElement) => void;
+  /** `deck` opens the picker straight on this seat's friend, to pick a deck. */
+  onOpen: (anchor: HTMLElement, deck?: boolean) => void;
   onClear: () => void;
   onWon: () => void;
   onLabel: (text: string) => void;
@@ -48,7 +55,8 @@ function SeatView({
   // The name field is drawn in place once asked for, or while the seat already carries a label.
   const [naming, setNaming] = useState(false);
   const labelled = seat.label !== "";
-  const fieldOpen = naming || labelled;
+  const fieldOpen = !seat.friend && (naming || labelled);
+  const sub = seatSub(seat);
   return (
     <li className="relative flex list-none items-center gap-[12px] md:w-[124px] md:flex-col md:items-stretch md:gap-[2px]">
       <button
@@ -60,12 +68,25 @@ function SeatView({
         data-seat-art
         className={`shrink-0 cursor-pointer rounded-[8px] border-0 bg-transparent p-0 md:rounded-[10px] ${seat.won ? "outline outline-2 outline-offset-2 outline-[color:var(--fg)]" : ""}`}
       >
-        <Art uri={seat.commander.imageUri} />
+        <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? faceInitials(seat.friend.name) : null} />
       </button>
       <span className="min-w-0 flex-1 md:flex-none">
         <span className="mt-0 block truncate text-[13px] font-medium text-[color:var(--fg)] md:mt-[6px]">{name}</span>
+        {sub && !seat.won && <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>}
         {seat.won ? (
           <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg)]">{copy.wonLine}</span>
+        ) : seat.friend ? (
+          // A friend has no label: their name is the name. Seated alone, the one thing left to name is the deck.
+          !seat.deck && !seat.commander && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={(e) => onOpen(e.currentTarget, true)}
+              className="block cursor-pointer border-0 border-b border-dashed border-b-[color:var(--border-dashed)] bg-transparent p-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]"
+            >
+              {copy.whichDeck}
+            </button>
+          )
         ) : fieldOpen ? (
           <span className="flex items-center gap-[6px]">
             <input
@@ -128,8 +149,11 @@ function SeatView({
   );
 }
 
+/** "Sam", "Sam and Jo", "Sam, Jo and Lee". */
+const names = (list: readonly string[]) => (list.length < 2 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`);
+
 export function GameSeats({
-  you, podSize, result, seats, busy, held, onSeat, onClear, onWon, onLabel,
+  you, podSize, result, seats, busy, held, onSeat, onPod, onClear, onWon, onLabel,
 }: {
   you: YouSeat;
   podSize: number;
@@ -139,13 +163,26 @@ export function GameSeats({
   /** A pod size below the filled seats was pressed: say why it did not move. */
   held: boolean;
   /** `at` is the seat key being changed, or null for a new seat. */
-  onSeat: (at: string | null, commander: SeatCommander) => void;
+  onSeat: (at: string | null, pick: SeatPick) => void;
+  /** A Seat a pod press: the pod size to set and the friends to seat, in order. */
+  onPod: (podSize: number, add: SeatFriend[]) => void;
   onClear: (key: string) => void;
   onWon: (key: string) => void;
   onLabel: (key: string, text: string) => void;
 }) {
   // Which seat the open picker is for (null: a new seat), and the control it hangs from.
-  const [picking, setPicking] = useState<{ at: string | null; anchor: HTMLElement } | null>(null);
+  const [picking, setPicking] = useState<{ at: string | null; anchor: HTMLElement; openAt: SeatFriend | null } | null>(null);
+  // The reader's pods, for the chips: names and sizes only, read once when the row mounts.
+  const [pods, setPods] = useState<PickerPod[]>([]);
+  useEffect(() => {
+    let live = true;
+    listPickerPodsAction().then((list) => { if (live) setPods(list); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
+  // The friends a chip's press seated, so pressing it again clears them; and what that press could not seat.
+  const [podFilled, setPodFilled] = useState<{ podId: string; friends: string[] } | null>(null);
+  const [podNote, setPodNote] = useState<string | null>(null);
+  const [podBusy, setPodBusy] = useState(false);
   const room = hasRoom(podSize, seats.length);
   const lost = result === "loss" && seats.length > 0;
   const addRef = useRef<HTMLButtonElement>(null);
@@ -154,11 +191,37 @@ export function GameSeats({
   // Set when a pick closes a picker whose opener may now be gone.
   const refocus = useRef<HTMLElement | null>(null);
 
-  function pick(hit: OpponentCommanderHit) {
+  function pick(choice: SeatPick) {
     if (!picking) return;
     refocus.current = picking.anchor;
-    onSeat(picking.at, { oracleId: hit.oracleId, name: hit.name, imageUri: hit.imageUri, colorIdentity: hit.colorIdentity });
+    onSeat(picking.at, choice);
     setPicking(null);
+  }
+
+  const seatedHere = seatedFriends(seats, null);
+  const chipOn = (pod: PickerPod) => podFilled?.podId === pod.id && podFilled.friends.some((id) => seatedHere.has(id));
+  async function seatPod(pod: PickerPod) {
+    if (podBusy) return;
+    setPodNote(null);
+    if (chipOn(pod)) {
+      // Pressed again: take back the seats it filled.
+      const mine = new Set(podFilled!.friends);
+      for (const s of seats) if (s.friend && mine.has(s.friend.publicId)) onClear(s.key);
+      setPodFilled(null);
+      return;
+    }
+    setPodBusy(true);
+    try {
+      const members = await listPodSeatsAction(pod.id);
+      const fill = podFill(seats, pod.memberCount, members.map((m) => ({ publicId: m.publicId, name: m.displayName })));
+      onPod(fill.podSize, fill.add);
+      setPodFilled({ podId: pod.id, friends: fill.add.map((f) => f.publicId) });
+      if (fill.unseated.length > 0) setPodNote(copy.podLeftOut(names(fill.unseated)));
+    } catch {
+      setPodNote(copy.podFailed);
+    } finally {
+      setPodBusy(false);
+    }
   }
 
   // Clearing a seat removes the ✕ that held focus, and always makes room for Add opponent: focus goes there.
@@ -182,10 +245,33 @@ export function GameSeats({
 
   return (
     <section ref={section} aria-labelledby="game-seats-label" className="mb-[18px] mt-[16px] border-0 border-t border-solid border-t-[color:var(--border)] pt-[14px] md:mt-[2px] md:pt-[16px]">
-      <div className="mb-[10px] flex items-baseline justify-between gap-[12px]">
+      <div className="mb-[10px] flex flex-wrap items-baseline justify-between gap-x-[12px] gap-y-[8px]">
         <span id="game-seats-label" className="block font-mono text-[9.5px] uppercase tracking-[0.14em] text-fg-faint md:text-[10px]">
           {copy.label}
         </span>
+        {pods.length > 0 && (
+          // On the section's own line at 1300, above the seats at 390: one element, wrapped by the row.
+          <span role="group" aria-label={copy.seatPod} className="order-3 flex w-full flex-wrap items-center gap-[6px] md:order-none md:w-auto md:flex-1 md:justify-end">
+            <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.seatPod}</span>
+            {pods.map((pod) => (
+              <button
+                key={pod.id}
+                type="button"
+                disabled={busy || podBusy}
+                aria-pressed={chipOn(pod)}
+                onClick={() => void seatPod(pod)}
+                className={
+                  "h-[28px] max-w-[180px] cursor-pointer truncate rounded-full border border-solid px-[12px] text-[12px] " +
+                  (chipOn(pod)
+                    ? "border-[color:var(--fg)] bg-[color:var(--fg)] text-[color:var(--bg)]"
+                    : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg)]")
+                }
+              >
+                {pod.name}
+              </button>
+            ))}
+          </span>
+        )}
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.count(seats.length, seatCount(podSize))}</span>
       </div>
       <ul className="m-0 flex list-none flex-col gap-[10px] p-0 md:flex-row md:flex-wrap md:gap-[12px]">
@@ -206,7 +292,7 @@ export function GameSeats({
             lost={lost}
             busy={busy}
             editing={picking?.at === s.key}
-            onOpen={(anchor) => setPicking({ at: s.key, anchor })}
+            onOpen={(anchor, deck) => setPicking({ at: s.key, anchor, openAt: deck ? s.friend : null })}
             onClear={() => { clearedFocus.current = true; onClear(s.key); }}
             onWon={() => onWon(s.key)}
             onLabel={(text) => onLabel(s.key, text)}
@@ -219,7 +305,7 @@ export function GameSeats({
               type="button"
               disabled={busy}
               aria-expanded={picking?.at === null}
-              onClick={(e) => setPicking({ at: null, anchor: e.currentTarget })}
+              onClick={(e) => setPicking({ at: null, anchor: e.currentTarget, openAt: null })}
               className={
                 "flex h-[58px] w-full cursor-pointer items-center justify-center gap-[8px] rounded-[10px] border-[1.5px] bg-transparent text-[12.5px] text-[color:var(--fg-muted)] " +
                 "md:h-[86px] md:w-[124px] md:flex-col md:gap-[4px] " +
@@ -232,6 +318,7 @@ export function GameSeats({
           </li>
         )}
       </ul>
+      {podNote && <p role="status" className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-muted)]">{podNote}</p>}
       {held && (
         <p role="status" className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-muted)]">{copy.held(seats.length)}</p>
       )}
@@ -241,7 +328,9 @@ export function GameSeats({
           <span className="md:hidden">{copy.wonHintPhone}</span>
         </p>
       )}
-      {picking && <SeatPicker anchor={picking.anchor} onClose={() => setPicking(null)} onPick={pick} />}
+      {picking && (
+        <SeatPicker anchor={picking.anchor} onClose={() => setPicking(null)} onPick={pick} seated={seatedFriends(seats, picking.at)} openAt={picking.openAt} />
+      )}
     </section>
   );
 }

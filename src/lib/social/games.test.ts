@@ -3,7 +3,7 @@
 // precedent); `probe:game-opponents` proves the answers.
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
-import { friendDecksIn, friendDecksQuery, friendshipsIn, listFriendDecks, listPodSeats, podSeatsQuery } from "./games";
+import { friendDeckCountsQuery, friendDecksIn, friendDecksQuery, friendshipsIn, listFriendDecks, listPodSeats, podSeatsQuery } from "./games";
 
 const VIEWER = "user_viewer";
 const FRIEND = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -23,6 +23,28 @@ describe("friendDecksQuery", () => {
     const projection = q.sql.slice(0, q.sql.indexOf(" from "));
     expect(projection).not.toMatch(/user_id/);
     expect(q.sql).not.toMatch(/deck_cards/);
+  });
+});
+
+describe("what the picker draws of a friend's deck", () => {
+  const q = friendDecksQuery(VIEWER, [FRIEND]).toSQL();
+
+  it("lists the newest deck first, so the one a friend is playing now leads", () => {
+    expect(q.sql).toMatch(/order by "social_profiles"\."public_id" asc, "decks"\."created_at" desc, "decks"\."id" asc$/);
+  });
+  it("names the commander and its art through the deck's own commander id", () => {
+    expect(q.sql).toContain(`"commander_card"."oracle_id" = "decks"."commander_oracle_id"`);
+    expect(q.sql.slice(0, q.sql.indexOf(" from "))).toContain(`"commander_card"."image_uri"`);
+  });
+});
+
+describe("friendDeckCountsQuery", () => {
+  const q = friendDeckCountsQuery(VIEWER).toSQL();
+
+  it("counts decks only for friends the viewer's own link row names, one count per friend", () => {
+    expect(q.sql).toMatch(/where "friend_links"\."user_id" = \$1 group by "social_profiles"\."public_id"$/);
+    expect(q.sql).toContain(`"decks"."user_id" = "friend_links"."friend_user_id"`);
+    expect(q.params).toEqual([VIEWER]);
   });
 });
 
