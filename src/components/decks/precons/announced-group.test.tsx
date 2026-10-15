@@ -222,6 +222,8 @@ describe("AnnouncedGroup", () => {
       await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
       await waitFor(() => expect(screen.queryByRole("dialog", { name: /Christine Chapel/ })).toBeNull());
       expect(document.body.style.overflow).not.toBe("hidden");
+      // The opener is inside the closed, inert region, so focus goes back to the group's own disclosure.
+      expect(document.activeElement).toBe(head());
     });
 
     it("draws each one with the shared trigger in rows, at the strip's unchanged size", () => {

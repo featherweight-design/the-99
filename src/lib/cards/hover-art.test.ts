@@ -73,6 +73,9 @@ const FEEDERS: Record<string, string> = {
   // its card details open on (`loadTokenDetail`), so there is no owned-printing chain to apply. Named so the list stays complete.
   "components/decks/token-makers.tsx": "",
   "components/decks/token-row.tsx": "",
+  // An announced set's revealed commander previews that set's printing and hands the same URL as the modal's art
+  // (`art: imageUri`); a card not yet released has no printing the reader could own, so there is no chain to apply.
+  "components/decks/precons/announced-parts.tsx": "",
   "components/decks/lineup/shared-card.tsx": "lib/lineup/load.ts",
   "components/decks/lineup/collection-card.tsx": "lib/lineup/collection-read.ts",
 };

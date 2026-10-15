@@ -1091,7 +1091,14 @@ export function CardDetailProvider({
           return pagingSink.current;
         }
         const el = openerRef.current;
-        return el?.isConnected ? el : null;
+        if (!el?.isConnected) return null;
+        // An opener the page has since made inert (a group the reader collapsed while the card was open) cannot
+        // take focus, and neither can the capture, which is the same control. Focus goes to the disclosure that
+        // controls that region instead, which is where the reader's collapse left them.
+        const region = el.closest<HTMLElement>("[inert]");
+        if (!region) return el;
+        const door = region.id ? document.querySelector<HTMLElement>(`[aria-controls~="${CSS.escape(region.id)}"]`) : null;
+        return door && !door.closest("[inert]") ? door : null;
       },
     }),
     [],
