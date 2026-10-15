@@ -1,6 +1,6 @@
 # The 99 — No-collection entry (design handoff, R2 + R3 addendum)
 
-`design_handoff_the99_no_collection_entry/` · 2026-10-15 · account 2 · **R2, approved by Hugh 2026-10-15.** R2 changes path (a) only: an import checkbox replaces R1's offer after the import, drawn on the shipped pages. **R3 addendum, 2026-10-15, awaiting Hugh's review:** the way into Precons I own for a player who already has cards (below).
+`design_handoff_the99_no_collection_entry/` · 2026-10-15 · account 2 · **R2, approved by Hugh 2026-10-15.** R2 changes path (a) only: an import checkbox replaces R1's offer after the import, drawn on the shipped pages. **R3 addendum, approved by Hugh 2026-10-15:** the way into Precons I own for a player who already has cards (below).
 
 A stateful first-run addendum: a way into the app for a player with no collection file, or one who can't upload
 theirs. Phone and desktop. It changes `design/design_handoff_the99_first_run_onboarding/` (step 1 and the locked

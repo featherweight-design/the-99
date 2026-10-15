@@ -4,7 +4,7 @@
 Hugh's loosened ruling 1 (alternatives beside the upload). G2 (Collection opens at zero cards) is drawn in R2's calls
 board and was approved with R2.
 
-**🟡 R3 addendum, 2026-10-15, awaiting Hugh's review.** It places the way into Precons I own for a player who already has cards (the audit's item 1 on #1788): one row in the Add cards sheet. It also settles G7 by showing `you own N of M` on the pick whenever the collection holds cards, and it redraws S17 on the shipped pages. The rest of R2 stands as approved.
+**🟢 R3 addendum, approved by Hugh 2026-10-15.** It places the way into Precons I own for a player who already has cards (the audit's item 1 on #1788): one row in the Add cards sheet. It also settles G7 by showing `you own N of M` on the pick whenever the collection holds cards, and it redraws S17 on the shipped pages. The rest of R2 stands as approved.
 
 ## Locks held
 
@@ -58,7 +58,7 @@ About edit (`Pick them under Precons I own, from your Collection`) depend on tha
 The prompt has gone to Hugh for Design. Until it is drawn, the build ships the zero-card paths, leaves S17 and the
 precons About edit for the held phase, and words the new About entry so it promises nothing that is not built.
 
-**Design's answer, R3 addendum (2026-10-15, awaiting Hugh's review):** the way in is one row in the Add cards sheet. See README §R3 addendum, S17 to S19, and the reworded About edit.
+**Design's answer, R3 addendum (approved by Hugh 2026-10-15):** the way in is one row in the Add cards sheet. See README §R3 addendum, S17 to S19, and the reworded About edit.
 
 **Engineering-resolvable, decided in the plan.** A History kind, source and title for the deck add; the deck add's
 printing fallback (the list's named printing, then a default) and its commander lines, written in one transaction
