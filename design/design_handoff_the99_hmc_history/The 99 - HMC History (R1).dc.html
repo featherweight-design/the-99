@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Help me choose history · R1 · the calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1040px;box-sizing:border-box;padding:48px 56px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Help me choose · History · R1 · 2026-10-15 · Kaldheim</span>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;color:#C6D2D3">A list of past runs, beside the question</h1>
+    <p style="margin:0;max-width:820px;font-size:14px;line-height:1.55;color:#95A4A6">History lives on the Help me choose route. On a desktop it is a column beside the form; on a phone it is the same list, one press from the form's header. A row is the player's own words, three picks and the date. One press reopens the run as the results page it was, read-only and free.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
+    <sc-for list="{{calls}}" as="c" hint-placeholder-count="9">
+      <div style="display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+        <span class="k">{{c.n}} · {{c.q}}</span>
+        <span style="font-size:15px;font-weight:600;color:#C6D2D3">{{c.a}}</span>
+        <span style="font-size:12.5px;line-height:1.5;color:#95A4A6">{{c.why}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">The row, as drawn at both widths</span>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:14px;background:#16171D;border:1px solid #1A1F2B;border-radius:11px">
+        <a href="#" style="display:flex;flex-direction:column;gap:9px;padding:11px 12px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:9px;text-decoration:none">
+          <span style="font-size:13.5px;line-height:1.45;color:#C6D2D3">Something scary and a little nasty, nothing like my Krenko deck</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span style="display:flex;gap:3px"><span style="width:22px;height:30px;border-radius:3px;background:#3E3446"></span><span style="width:22px;height:30px;border-radius:3px;background:#2E3B30"></span><span style="width:22px;height:30px;border-radius:3px;background:#46323A"></span></span>
+            <span class="m" style="font-size:10.5px;color:#95A4A6">9 picks</span>
+            <span style="flex:1"></span>
+            <span class="m" style="font-size:10.5px;color:#7C8A8C">Oct 13 · 9:40 PM</span>
+            <span aria-hidden="true" style="font-size:16px;color:#7C8A8C">›</span>
+          </span>
+        </a>
+        <a href="#" style="display:flex;flex-direction:column;gap:9px;padding:11px 12px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:9px;text-decoration:none">
+          <span style="font-size:13.5px;line-height:1.45;color:#C6D2D3">Mono-white dragons that care about artifacts</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span class="m" style="font-size:10.5px;color:#95A4A6">found nothing · no credit used</span>
+            <span style="flex:1"></span>
+            <span class="m" style="font-size:10.5px;color:#7C8A8C">Oct 12 · 11:02 AM</span>
+            <span aria-hidden="true" style="font-size:16px;color:#7C8A8C">›</span>
+          </span>
+        </a>
+      </div>
+      <p style="margin:0;font-size:12px;line-height:1.5;color:#95A4A6">No cost on a row: every answered run cost one credit and every nothing-found run cost none, so the tag would say the same thing on every line. No delete, no filter, no second control.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Locks held</span>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px;font-size:12.5px;line-height:1.5;color:#B3C0C2">
+        <span><b style="color:#C6D2D3;font-weight:600">Reopening is free.</b> The past-run note says so, and the list never shows a credit pill or a press that spends.</span>
+        <span><b style="color:#C6D2D3;font-weight:600">Read-only.</b> The opened run has no edit in place. Its <span class="m">Change answers</span> goes to the form, filled, as today: a changed answer is a new ask.</span>
+        <span><b style="color:#C6D2D3;font-weight:600">Per account.</b> The list reads the player's own rows only; no friend, pod or admin view.</span>
+        <span><b style="color:#C6D2D3;font-weight:600">No “still free” badge.</b> Asking again goes through the form's own press, which says its cost as it does today.</span>
+      </div>
+      <p style="margin:0;font-size:12px;line-height:1.5;color:#95A4A6">Boards below: the list at 390 and desktop with every list state; the opened run with opening, aged and failed states; the doors and switch off; the About edit. README.md carries the reasons and the gaps.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      calls: [
+        { n: '1', q: 'List or grid', a: 'A list', why: 'A run is named by a sentence of the player’s own words. A grid would lead with art and cut the words to a line. Three small pick thumbs ride on each row instead.' },
+        { n: '2', q: 'What a row shows', a: 'The words, three picks, the date', why: 'Words clamp at two lines. With no words, a line built from the answers stands in. Nothing found says so in place of the picks.' },
+        { n: '3', q: 'Reopen or ask again', a: 'One press reopens; no Ask again control', why: 'The opened run keeps the shipped Change answers, which opens the form filled. Its press states its own cost, so nothing here guesses whether a repeat is free.' },
+        { n: '4', q: 'Delete', a: 'None', why: 'Runs are the record, as on the deck’s History. A delete would make the same ask cost a credit again and return nothing. The account purge still removes every run.' },
+        { n: '5', q: 'An aged run', a: 'Live, with a count and a quiet group', why: '“7 of its 9 picks are still open to you.” Gone picks collect under Not open to you now, each saying why. A line naming a deleted deck says so. No snapshot needed.' },
+        { n: '6', q: 'Where it lives', a: 'On the route, beside the form', why: 'Desktop: a column beside the form. Phone: History in the form’s header, opening the same list. The New deck door gets a past-runs link; Discover does not.' },
+        { n: '7', q: 'Nothing-found runs', a: 'Listed', why: 'So a player can see they asked it already. The row says found nothing · no credit used, and opens to today’s Nothing fits panel.' },
+        { n: '8', q: 'Order and filter', a: 'Newest first, no filter', why: 'A handful of runs needs no search. Month headings and Show 20 more, as the deck’s History pages.' },
+        { n: '9', q: 'Straight to a deck', a: 'No, through the run', why: 'A row has one press. The opened run’s picks hand off to a new deck exactly as today, with the answers carried.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
