@@ -17,13 +17,20 @@ vi.mock("next/navigation", async (importOriginal) => ({
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: "user_1" }) }));
 let uniqueCards = 5;
 vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards }) }));
-vi.mock("./nav", () => ({ NavRail: () => null, TabBar: () => null, MobileHeader: () => null }));
+// The props each menu's call site is handed, so the Friends row's switch can be read off them.
+const navProps = vi.hoisted(() => [] as Record<string, unknown>[]);
+vi.mock("./nav", () => ({
+  NavRail: (p: Record<string, unknown>) => (navProps.push(p), null),
+  TabBar: () => null,
+  MobileHeader: (p: Record<string, unknown>) => (navProps.push(p), null),
+}));
 vi.mock("./about-sheet", () => ({
   AboutSheet: ({ state }: { state: { kind: string } }) => <div data-testid="about-sheet">{state.kind}</div>,
 }));
 
 const Shell = (await import("./shell")).default;
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
+const { switchBits } = await import("../../lib/switches/resolve");
 
 async function renderShell() {
   render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
@@ -99,5 +106,15 @@ describe("Shell and the locked tab bar height", () => {
     await renderShell();
     const main = screen.getByText("page").closest("main")!;
     expect(main.closest<HTMLElement>("[style*='--tabbar-h']")).toBeNull();
+  });
+});
+
+describe("Shell and the Friends row (Social R1)", () => {
+  it.each([[true], [false]])("hands both menus the reader's own switch (%s)", async (on) => {
+    navProps.length = 0;
+    requestHeaders = new Headers({ "x-switches": switchBits((on ? { SOCIAL_FRIENDS_ENABLED: "true" } : {}) as NodeJS.ProcessEnv) });
+    await renderShell();
+    expect(navProps).toHaveLength(2);
+    for (const p of navProps) expect(p.friends).toBe(on);
   });
 });

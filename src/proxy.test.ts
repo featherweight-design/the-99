@@ -12,12 +12,11 @@ const protect = vi.fn(async () => ({ userId: "user_1" }));
 const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
 const aboutVersionSeen = vi.fn(async (_userId?: string) => 0);
 
-vi.mock("@clerk/nextjs/server", () => ({
+vi.mock("@clerk/nextjs/server", async (importActual) => ({
   // The real one wraps the callback; here it IS the callback, so a test can
-  // call it with an auth double.
+  // call it with an auth double. The route matcher is the real one, so a pattern is matched as Clerk will.
   clerkMiddleware: (fn: unknown) => fn,
-  createRouteMatcher: (routes: string[]) => (req: NextRequest) =>
-    routes.some((r) => r === req.nextUrl.pathname || (r.includes("(") && false)),
+  createRouteMatcher: (await importActual<typeof import("@clerk/nextjs/server")>()).createRouteMatcher,
 }));
 // No overrides: the reader's switches are the environment's, as they were before the resolver.
 const resolveSwitchEnv = vi.hoisted(() => vi.fn(async (): Promise<NodeJS.ProcessEnv> => (await import("@/test/env-view")).ENV_VIEW));
@@ -395,5 +394,15 @@ describe("the proxy's [perf] line", () => {
     expect(log.mock.calls.filter((c) => String(c[0]).startsWith("[perf]"))).toHaveLength(0);
     expect(now).not.toHaveBeenCalled();
     expect(switchSnapshotState).not.toHaveBeenCalled();
+  });
+});
+
+describe("a friend link (Social R1 E8)", () => {
+  it("opens without a session, and /friends does not", async () => {
+    session.mockResolvedValue({ userId: null });
+    await proxy(auth, request("/friend/AbCdEfGhIjKlMnOpQrStUv"));
+    expect(protect).not.toHaveBeenCalled();
+    await proxy(auth, request("/friends"));
+    expect(protect).toHaveBeenCalledTimes(1);
   });
 });
