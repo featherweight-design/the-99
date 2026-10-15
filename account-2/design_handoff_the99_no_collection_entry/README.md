@@ -61,7 +61,7 @@ Commanders, Discover and Decks wait for a card; every write is an add, one Histo
    - **Arrival:** the shipped clean strip takes the precon start's three-line form (`ArrivalBand` `lines`): head `All 100
      lines came over clean.`, body `All 100 cards added to your collection.` + `History`, meta `Imported from your list a
      moment ago`.
-   - **Dismiss:** the arrival strip's dismiss is the ✕ alone at both widths, `aria-label="Dismiss"`, a 32px press (Hugh's
+   - **Dismiss:** the arrival strip's dismiss is the ✕ alone at both widths, `aria-label="Dismiss"`, a 32px press on desktop and 44px on the phone (Hugh's
      R2 audit). This drops the word `Dismiss` the shipped `ArrivalBand` draws beside it on desktop, for every arrival
      strip, the precon receipt (S5) included.
    - **Refused:** the shared toast on the import page with the precon add's `addFailed` / `addUnsure`; the list and the
@@ -108,7 +108,7 @@ Commanders, Discover and Decks wait for a card; every write is an add, one Histo
      shows up here.` `/discover` reads `Discover finds commanders your cards are close to building. Add some and they
      show up here.`
    - **One button,** `Add your cards`, to `/collection`. It moves to copy keys. Edit switch off: `Upload collection` to
-     `/collection/replace`, as today.
+     `/collection`, as today.
 
 ## Surfaces
 
@@ -185,7 +185,7 @@ precon key line on `PRECONS_ENABLED`.
 | `R2 - FirstRun-Desktop.dc.html` / `-Phone` | R2: Import a deck's sub line reads `Paste a list you play.` |
 | `R1 - FirstRun-Desktop.dc.html` / `-Phone` | S1, S15, S16, focus, the lock's note |
 | `R1 - PreconPick-Desktop.dc.html` / `-Phone` | S2, S3 (twin), S4, S17 |
-| `R1 - PreconResult.dc.html` | S5, S6, S7 at both widths (`R2 -` drops the word Dismiss) |
+| `R1 - PreconResult.dc.html` | S5, S6, S7 at both widths (its strip already draws the ✕ alone) |
 | `R2 - Import-Desktop.dc.html` / `-Phone` | S8, S10, S11, S12 (R2: the checkbox; replaces `R1 - Import-*`) |
 | `R1 - Empty-Desktop.dc.html` / `-Phone` | S12 Home, S13 Collection, the lock outside first run, Open 7 |
 | `R1 - LaterUpload.dc.html` | S14 at both widths |
