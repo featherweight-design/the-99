@@ -100,6 +100,9 @@ export function commanderAsRow(c: DeckCommander): DeckDetailCard {
     imageUri: c.imageUri,
     // The decklist row's rule: an unowned card has no copy in hand to print a name.
     printedName: owned ? (c.printedName ?? null) : null,
+    // Not `layout`: that word draws the `//` mark and cuts a printed name to its front face, which a commander's row has
+    // never done. The phone Shopping row's option B reads this one for its front-face name alone.
+    ...(c.layout ? { catalogLayout: c.layout } : {}),
     printedSetCode: null,
     printedCollectorNumber: null,
     commander: true,

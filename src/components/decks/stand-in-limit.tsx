@@ -16,6 +16,7 @@ import { setShoppingLimitAction } from "../../lib/swaps/actions";
 import { useSwapTools } from "../../lib/swaps/context";
 import { DEFAULT_LIMIT_CENTS, formatLimit, parseLimitDollars } from "../../lib/swaps/limit";
 import { useGotIt } from "./got-it";
+import { ShoppingKeyOver } from "./shopping-key";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 
 export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: number; overCount: number }) {
@@ -151,6 +152,8 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
           <span aria-hidden="true" style={{ color: "var(--warning)" }}>⇄</span> {copy.limit.key}
         </p>
       )}
+      {/* Option B's key item, for the deck without I got it (with it, `ShoppingKey` draws the item). */}
+      {gotIt ? null : <ShoppingKeyOver />}
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>
     </div>
   );

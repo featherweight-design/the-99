@@ -116,6 +116,11 @@ export type DeckDetailCard = {
    */
   layout?: string | null;
   /**
+   * A commander row's catalog layout (`commanderAsRow`), read by the phone Shopping row's option B for its
+   * front-face name and by nothing else: `layout` itself would also draw the mark and cut a printed name.
+   */
+  catalogLayout?: string | null;
+  /**
    * This row is the deck's COMMANDER (or partner), not a `deck_cards` row. Only the Shopping
    * list builds one, through `commanderShoppingRows`, so an unowned or spoken-for commander is
    * billed beside the list it leads (H28). Such a row is never removable and offers no swap

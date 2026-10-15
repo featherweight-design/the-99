@@ -783,6 +783,17 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
 
+- **The phone Shopping row's option B** (Social R2 PR 7, plan `2026-10-15-social-r2.md`), behind
+  `PHONE_SHOPPING_ROW_B_ENABLED` (a feature switch of its own, staging `'true'`, production unset until Hugh decides whether B
+  ships to everyone; it changes the row for every reader, social switches off too). `DeckPageSwitches` carries it to
+  `DecklistRow`, which on a Shopping row below `md` (768px: the phone; the md-to-lg band keeps the shipped row) wraps its shell in two lines by `order` (`B_SHELL` and the `B_*` classes, all
+  `max-md:`): the dot, the name (front face alone for a two-face card) and the ✕ are line 1, a zero-height break ends it, and the
+  meta line, the availability marker, ⇄ and the buy tag are line 2, each in its own 44px line so no two hit areas overlap. `over $N`
+  is no longer drawn under the tag: the plate is outlined (`BuyTag`'s `foldOver`: the ring stays, the wash goes), the words stay in
+  its description, and `ShoppingKeyOver` draws the key item `[buy] over $N`. From `md`, and with the switch off, the row is the
+  shipped one (the desktop contact-sheet photograph is byte-identical on and off). `docs/superpowers/inventories/social-r2.json`
+  holds the rows: run it twice against one database, once per switch value.
+
 - **Collection Sync** (plan `2026-10-15-collection-sync.md`), behind `COLLECTION_SYNC_ENABLED`, which needs
   `COLLECTION_EDIT_ENABLED` (staging `'true'` from the plan's PR 2, production unset until Hugh flips it; off, the upload
   actions refuse `mode: "sync"` as an unknown mode). A Sync merges an upload against a BASE, per holding key: file-only
