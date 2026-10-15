@@ -1,6 +1,6 @@
-// /friends drawn (Social R1 PR C): the head, its name field and the picker it opens, and their failure toasts on
-// the shared frame (E15).
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+// /friends drawn (Social R1 PR C): the head and its name field, the friends list and its remove, the open links
+// and the hold at ten, the receipt after Accept (E10), and every write's failure toast on the shared frame (E15).
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const a = vi.hoisted(() => ({
@@ -15,20 +15,42 @@ const a = vi.hoisted(() => ({
 vi.mock("../../app/friends/actions", () => a);
 
 import { FriendsView } from "./friends-view";
+import { SocialToast } from "./social-toast";
 import { socialCopy } from "../../lib/copy/social";
 import { TOAST_MS } from "../collection/edit-toast";
+import type { Friend } from "../../lib/social/access";
 
+const NOW = new Date("2026-10-15T21:41:00Z");
 const SOKKA = { oracleId: "o-sokka", name: "Sokka, Tenacious Tactician", artCropUri: "https://x/sokka.jpg", colorIdentity: ["W", "U"] };
+const DAVE: Friend = { publicId: "p-dave", displayName: "Dave", since: new Date("2026-10-02T12:00:00Z"), commander: SOKKA };
+const JO: Friend = { publicId: "p-jo", displayName: "Jo", since: new Date("2026-09-14T12:00:00Z"), commander: null };
+const link = (i: number, expiresAt = new Date("2026-10-22T21:41:00Z")) => ({
+  token: `tok${String(i).padStart(19, "0")}`, createdAt: new Date("2026-10-15T21:41:00Z"), expiresAt,
+});
+
+function view(over: Partial<Parameters<typeof FriendsView>[0]> = {}) {
+  return (
+    <FriendsView
+      profile={{ publicId: "p-me", displayName: "Hugh", commander: null }}
+      friends={[DAVE, JO]}
+      links={[]}
+      accepted={null}
+      origin="https://the-99.dev"
+      nowMs={NOW.getTime()}
+      maxLinks={10}
+      {...over}
+    />
+  );
+}
 
 function draw(over: Partial<Parameters<typeof FriendsView>[0]> = {}) {
-  return render(
-    <FriendsView profile={{ publicId: "p-me", displayName: "Hugh", commander: null }} {...over} />,
-  );
+  return render(view(over));
 }
 
 beforeEach(() => {
   vi.resetAllMocks();
   a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
+  a.revokeInviteAction.mockResolvedValue({ ok: true, changed: true });
 });
 afterEach(cleanup);
 
@@ -259,7 +281,7 @@ describe("the head", () => {
     fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
     const tile = await screen.findByRole("button", { name: SOKKA.name });
     await act(async () => fireEvent.click(tile));
-    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Hugh", commander: null }} />);
+    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh", commander: null } }));
     await act(async () => answer({ ok: false }));
     expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
     expect(alert().textContent).toContain(socialCopy.commander.failed);
@@ -272,7 +294,7 @@ describe("the head", () => {
     fireEvent.click(screen.getByRole("button", { name: "Change" }));
     fireEvent.change(screen.getByLabelText(socialCopy.page.nameField.label), { target: { value: "First" } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.nameField.save })));
-    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Second", commander: null }} />);
+    rerender(view({ profile: { publicId: "p-me", displayName: "Second", commander: null } }));
     await act(async () => answer({ ok: true, displayName: "First" }));
     expect(screen.getByText("Second").tagName).toBe("B");
     expect(screen.queryByText("First")).toBeNull();
@@ -287,7 +309,7 @@ describe("the head", () => {
     fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
     const tile = await screen.findByRole("button", { name: SOKKA.name });
     await act(async () => fireEvent.click(tile));
-    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Hugh", commander: AANG }} />);
+    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh", commander: AANG } }));
     await act(async () => answer({ ok: true }));
     expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(AANG.name) })).toBeTruthy();
     expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
@@ -301,11 +323,134 @@ describe("the head", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.nameField.save })));
     expect(screen.getByText("New").tagName).toBe("B");
     // The same profile drawn again changes nothing: the pending name stands.
-    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Hugh", commander: null }} />);
+    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh", commander: null } }));
     expect(screen.getByText("New").tagName).toBe("B");
     // The redraw lands, from this write or another tab's: the head takes it.
-    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Hugh H.", commander: SOKKA }} />);
+    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh H.", commander: SOKKA } }));
     expect(screen.getByText("Hugh H.").tagName).toBe("B");
     expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeTruthy();
+  });
+});
+
+describe("the friends list", () => {
+  it("draws each friend by name, with the commander's name and the since", () => {
+    draw();
+    const rows = document.querySelectorAll("[data-friend-row]");
+    expect([...rows].map((r) => r.textContent)).toEqual([
+      expect.stringContaining("DaveSokka, Tenacious Tacticiansince Oct 2"),
+      expect.stringContaining("JOJosince Sep 14"),
+    ]);
+    expect(screen.getByRole("heading", { name: socialCopy.friends.head(2) })).toBeTruthy();
+  });
+
+  it("draws the empty box, with no search, and no open links section", () => {
+    draw({ friends: [] });
+    expect(screen.getByText(socialCopy.friends.emptyTitle)).toBeTruthy();
+    expect(screen.getByText(socialCopy.friends.emptyBody)).toBeTruthy();
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    expect(screen.queryByRole("heading", { name: /Open friend links/ })).toBeNull();
+  });
+
+  it("removes a friend through the menu and the shared pane, Keep it first", async () => {
+    a.unfriendAction.mockResolvedValue({ ok: true });
+    draw();
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria("Dave") }));
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
+    expect(screen.getByText(socialCopy.friends.removeHeading("Dave"))).toBeTruthy();
+    expect(screen.getByText(socialCopy.friends.removeBody("Dave"))).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
+    expect(a.unfriendAction).toHaveBeenCalledWith("p-dave");
+    expect(document.querySelectorAll("[data-friend-row]")).toHaveLength(1);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("toasts a removal that failed, and keeps the row", async () => {
+    a.unfriendAction.mockRejectedValue(new Error("down"));
+    draw();
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria("Jo") }));
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
+    expect(alert().textContent).toContain(socialCopy.friends.removeFailed);
+    expect(document.querySelectorAll("[data-friend-row]")).toHaveLength(2);
+  });
+});
+
+describe("the receipt after Accept (E10)", () => {
+  it("names the friend, marks their since, and closes", () => {
+    draw({ accepted: { ...DAVE, since: NOW } , friends: [{ ...DAVE, since: NOW }, JO] });
+    const strip = screen.getByRole("status");
+    expect(strip.textContent).toContain(socialCopy.page.accepted("Dave"));
+    expect(screen.getByText(socialCopy.friends.since("today")).className).toContain("--success");
+    fireEvent.click(within(strip).getByRole("button", { name: socialCopy.page.close }));
+    expect(screen.queryByText(socialCopy.page.accepted("Dave"))).toBeNull();
+  });
+});
+
+describe("friend links", () => {
+  it("lists the open ones with their time left, under a day in the warning colour", () => {
+    // A link made a moment ago has a minute under seven days: it reads 7, as the boards draw it.
+    draw({ links: [link(1, new Date(NOW.getTime() + 7 * 86_400_000 - 60_000)), link(2, new Date("2026-10-16T09:00:00Z"))] });
+    expect(screen.getByRole("heading", { name: socialCopy.invites.head(2) })).toBeTruthy();
+    expect(screen.getByText("7 days left")).toBeTruthy();
+    expect(screen.getByText("Under a day left").className).toContain("--warning");
+  });
+
+  it("revokes at once, with no confirm, and the row leaves", async () => {
+    draw({ links: [link(1)] });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Revoke the link made/ })));
+    expect(a.revokeInviteAction).toHaveBeenCalledWith(link(1).token);
+    expect(document.querySelectorAll("[data-link-row]")).toHaveLength(0);
+  });
+
+  it("holds Add a friend at ten, with the reason joined to it", () => {
+    draw({ links: Array.from({ length: 10 }, (_, i) => link(i)) });
+    const button = screen.getByRole("button", { name: socialCopy.page.invite });
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    const reason = document.getElementById(button.getAttribute("aria-describedby")!)!;
+    expect(reason.textContent).toBe(socialCopy.page.held);
+    fireEvent.click(button);
+    expect(a.createInviteAction).not.toHaveBeenCalled();
+  });
+
+  it("reads Making a link… while the call is out, ignores a second press, and opens the dialog on the token", async () => {
+    let answer!: (v: unknown) => void;
+    a.createInviteAction.mockReturnValue(new Promise((r) => (answer = r)));
+    draw();
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite }));
+    const pending = screen.getByRole("button", { name: socialCopy.page.invitePending });
+    fireEvent.click(pending);
+    expect(a.createInviteAction).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => answer({ ok: true, token: "t", url: "https://the-99.dev/friend/t", expiresAt: new Date("2026-10-22T21:41:00Z") }));
+    expect(screen.getByRole("dialog", { name: socialCopy.dialog.title })).toBeTruthy();
+    expect((screen.getByRole("textbox", { name: socialCopy.dialog.linkAria }) as HTMLInputElement).value).toBe("https://the-99.dev/friend/t");
+  });
+
+  it("toasts tooMany with no retry, and a failed make with Try again", async () => {
+    a.createInviteAction.mockResolvedValueOnce({ ok: false, reason: "tooMany" });
+    draw();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite })));
+    expect(alert().textContent).toBe(socialCopy.invites.tooMany);
+    a.createInviteAction.mockRejectedValueOnce(new Error("down"));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite })));
+    expect(alert().textContent).toContain(socialCopy.invites.createFailed);
+    a.createInviteAction.mockResolvedValueOnce({ ok: true, token: "t", url: "https://x/friend/t", expiresAt: new Date("2026-10-22T21:41:00Z") });
+    await act(async () => fireEvent.click(within(alert()).getByRole("button", { name: socialCopy.invites.retry })));
+    expect(a.createInviteAction).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole("dialog", { name: socialCopy.dialog.title })).toBeTruthy();
+  });
+
+  it("shows an open link's own address from the request's origin", () => {
+    draw({ links: [link(1)] });
+    fireEvent.click(screen.getByRole("button", { name: /^Show the link made/ }));
+    expect((screen.getByRole("textbox", { name: socialCopy.dialog.linkAria }) as HTMLInputElement).value).toBe(`https://the-99.dev/friend/${link(1).token}`);
+  });
+});
+
+describe("the shared failure toast", () => {
+  it("draws the decline failure on the same frame, as an alert", () => {
+    render(<SocialToast toast={{ id: 1, text: socialCopy.landing.declineFailed }} onDone={() => {}} />);
+    expect(alert().textContent).toBe(socialCopy.landing.declineFailed);
   });
 });

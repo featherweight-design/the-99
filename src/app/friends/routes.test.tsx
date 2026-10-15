@@ -53,6 +53,7 @@ import { SpendFriendLink } from "../../components/social/spend-friend-link";
 const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const PUB = "00000000-0000-4000-8000-000000000001";
 const DAVE = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Dave", since: new Date("2026-10-02T12:00:00Z"), commander: null };
+const query = (q: Record<string, string> = {}) => Promise.resolve(q);
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
 const params = (token = TOKEN) => Promise.resolve({ token });
 const open = (over: Record<string, unknown> = {}) => ({
@@ -77,21 +78,31 @@ afterEach(cleanup);
 describe("/friends", () => {
   it("is not found while the switch is off for the reader", async () => {
     m.requestSwitchEnv.mockResolvedValue({});
-    await expect(FriendsPage()).rejects.toThrow("NOT_FOUND");
+    await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("NOT_FOUND");
     expect(m.requestSwitchEnv).toHaveBeenCalledWith("user_1");
     expect(m.ensureProfile).not.toHaveBeenCalled();
   });
 
   it("draws with it on, starting a first visit's name from the Clerk first name", async () => {
-    render(await FriendsPage());
+    render(await FriendsPage({ searchParams: query() }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.page.title);
     expect(m.ensureProfile).toHaveBeenCalledWith("user_1", "Hugh");
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  it("draws the receipt after Accept for a friend the reader has, by public id (E10)", async () => {
+    render(await FriendsPage({ searchParams: query({ accepted: DAVE.publicId }) }));
+    expect(screen.getByRole("status").textContent).toContain(socialCopy.page.accepted("Dave"));
+  });
+
+  it("draws no receipt for an id that is not the reader's friend", async () => {
+    render(await FriendsPage({ searchParams: query({ accepted: "00000000-0000-4000-8000-000000000009" }) }));
+    expect(screen.queryByText(socialCopy.page.accepted("Dave"))).toBeNull();
+  });
+
   it("lets a read that throws reach the error boundary (E16)", async () => {
-    m.ensureProfile.mockRejectedValue(new Error("db down"));
-    await expect(FriendsPage()).rejects.toThrow("db down");
+    m.listFriends.mockRejectedValue(new Error("db down"));
+    await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("db down");
   });
 });
 

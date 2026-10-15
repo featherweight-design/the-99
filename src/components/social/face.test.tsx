@@ -1,7 +1,8 @@
-// The face (Social R1 decision 22).
+// The face (Social R1 decision 22) and the dates /friends draws.
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Face, faceInitials } from "./face";
+import { expiresWhen, madeWhen, sinceDay, underADay } from "../../lib/social/when";
 
 afterEach(cleanup);
 
@@ -41,5 +42,27 @@ describe("faceInitials", () => {
     expect(faceInitials("R2")).toBe("R2");
     expect(faceInitials("🐉 Dragon")).toBe("D");
     expect(faceInitials("")).toBe("");
+  });
+});
+
+describe("the dates", () => {
+  const now = new Date("2026-10-15T21:41:00Z");
+  it("says today, then a month and a day", () => {
+    expect(sinceDay(new Date("2026-10-15T01:00:00Z"), now, "UTC")).toBe("today");
+    expect(sinceDay(new Date("2026-10-02T12:00:00Z"), now, "UTC")).toBe("Oct 2");
+  });
+
+  it("says when a link was made, with its time today", () => {
+    expect(madeWhen(new Date("2026-10-15T21:41:00Z"), now, "UTC").replace(/\s/gu, " ")).toBe("today, 9:41 PM");
+    expect(madeWhen(new Date("2026-10-09T08:00:00Z"), now, "UTC")).toBe("Oct 9");
+  });
+
+  it("carries the time in the expiry under a day, and only then", () => {
+    const week = new Date("2026-10-22T21:41:00Z");
+    const soon = new Date("2026-10-16T21:12:00Z");
+    expect(underADay(week, now)).toBe(false);
+    expect(underADay(soon, now)).toBe(true);
+    expect(expiresWhen(week, now, "UTC")).toBe("Thu, Oct 22");
+    expect(expiresWhen(soon, now, "UTC").replace(/\s/gu, " ")).toBe("Fri, Oct 16, 9:12 PM");
   });
 });
