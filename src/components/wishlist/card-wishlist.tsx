@@ -9,7 +9,10 @@
 // list (R3 G5), so there is no collected state here: a want the collection reaches simply stops being a line.
 //
 // The caller (the modal) hands the card's want as it read it; every write goes through the PR 3 actions, which decide
-// the reader's switch again. A step shows at once and is put back, with the toast, if the save fails.
+// the reader's switch again. Writes run ONE AT A TIME and the line shows what the server answered: a press made while a
+// write is out is ignored, and a failed one leaves the line as it was, with the toast. (Steps were once optimistic, with
+// a ticket and a rollback; three review rounds went to the ways two overlapping writes can answer, so there is only ever
+// one.)
 
 import { useEffect, useRef, useState } from "react";
 import { addToWishlistAction, removeFromWishlistAction, setWishlistWantAction, type WantOutcome } from "../../app/collection/wishlist/actions";
@@ -45,22 +48,18 @@ export function CardWishlist({
   const [want, setWant] = useState(initial);
   const [have, setHave] = useState(owned);
   const [toast, setToast] = useState<SocialToastState | null>(null);
-  // Only a press of Add moves focus (to the stepper it turns into); the section as it opens never takes it.
+  // Only a press of Add that still owns focus when its answer lands moves focus (to the stepper it turns into); the
+  // section as it opens never takes it, and a reader who has tabbed away is left where they are.
   const [arrived, setArrived] = useState(false);
   const addRef = useRef<HTMLButtonElement>(null);
-  // The last count the server confirmed, which a failed step goes back to; and the step in flight that may answer.
-  const confirmed = useRef(initial);
-  const latest = useRef(0);
-  // Add and Remove run alone: each is ignored while any write is in flight, and a step is ignored while either is,
-  // so no two writes ever answer over one another and a failure always has one confirmed count to go back to.
-  const exclusive = useRef(false);
-  // Writes in flight, mirrored in state so a render can tell whether a refreshed server snapshot may be adopted.
-  const inflight = useRef(0);
+  const toasts = useRef(0);
+  const fail = (text: string) => setToast({ id: ++toasts.current, text });
+
+  // One write at a time: the ref refuses a second press at once, the state tells a render whether a write is out.
+  const writing = useRef(false);
   const [busy, setBusy] = useState(false);
-  const open = () => { inflight.current += 1; setBusy(true); };
-  const close = () => { inflight.current -= 1; if (inflight.current === 0) setBusy(false); };
-  // The provider paints a cached card and then refreshes it under the same key, so the props can move after mount.
-  // A refreshed snapshot is adopted only while no write is out, and an edit in flight keeps the screen it made.
+  // The provider paints a cached card and then refreshes it under the same key, so the props can move after mount. A
+  // refreshed snapshot is adopted while no write is out; one that lands during a write waits for that write's answer.
   const [snap, setSnap] = useState({ want: initial, owned });
   if (snap.want !== initial || snap.owned !== owned) {
     setSnap({ want: initial, owned });
@@ -69,11 +68,6 @@ export function CardWishlist({
       setHave(owned);
     }
   }
-  useEffect(() => {
-    if (inflight.current === 0) confirmed.current = snap.want;
-  }, [snap]);
-  const toasts = useRef(0);
-  const fail = (text: string) => setToast({ id: ++toasts.current, text });
 
   // When the line goes (Remove, or a step down to what the collection already holds) while the stepper held focus, the
   // button that replaces it takes focus; focus anywhere else stays where it is.
@@ -84,79 +78,39 @@ export function CardWishlist({
     if (was && want === null && document.activeElement === document.body) addRef.current?.focus();
   }, [want]);
 
-  function settle(out: WantOutcome) {
-    if (!out.ok) return false;
-    setHave(out.have);
-    // `held`: the collection already holds what was wanted, so no line stands.
-    const next = out.status === "wanted" ? out.want : null;
-    confirmed.current = next;
-    setWant(next);
-    onWrite();
-    return true;
-  }
-
-  async function add() {
-    if (exclusive.current || pending.current > 0) return;
-    exclusive.current = true;
-    open();
+  async function write(run: () => Promise<WantOutcome>, failure: string) {
+    if (writing.current) return;
+    writing.current = true;
+    setBusy(true);
     try {
-      const out = await addToWishlistAction(oracleId);
-      if (!out.ok) return fail(copy.failedAdd);
-      if (out.status === "wanted") setArrived(true);
-      settle(out);
-    } catch {
-      fail(copy.failedAdd);
-    } finally {
-      exclusive.current = false;
-      close();
-    }
-  }
-
-  // Steps still waiting on the server. The display goes back to what the server confirmed only once none is, so a
-  // later step that failed does not strand the view on a count an earlier one has since moved.
-  const pending = useRef(0);
-
-  async function step(next: number) {
-    if (exclusive.current) return;
-    const ticket = ++latest.current;
-    pending.current += 1;
-    open();
-    setWant(next);
-    let out: WantOutcome | null = null;
-    try {
-      out = await setWishlistWantAction(oracleId, next);
-    } catch {
-      out = null;
-    }
-    pending.current -= 1;
-    close();
-    if (out?.ok) {
-      confirmed.current = out.status === "wanted" ? out.want : null;
-      if (ticket === latest.current) settle(out);
-      else onWrite();
-    } else if (ticket === latest.current) {
-      fail(copy.failedSet);
-    }
-    if (pending.current === 0) setWant(confirmed.current);
-  }
-
-  async function remove() {
-    if (exclusive.current || pending.current > 0) return;
-    exclusive.current = true;
-    open();
-    try {
-      const out = await removeFromWishlistAction(oracleId);
-      if (!out.ok) return fail(copy.failedSet);
-      confirmed.current = null;
-      setWant(null);
+      const out = await run();
+      if (!out.ok) return fail(failure);
+      setHave(out.have);
+      // `held`: the collection already holds what was wanted, so no line stands.
+      setWant(out.status === "wanted" ? out.want : null);
       onWrite();
     } catch {
-      fail(copy.failedSet);
+      fail(failure);
     } finally {
-      exclusive.current = false;
-      close();
+      writing.current = false;
+      setBusy(false);
     }
   }
+
+  const add = () =>
+    write(async () => {
+      const out = await addToWishlistAction(oracleId);
+      if (out.ok && out.status === "wanted" && document.activeElement === addRef.current) setArrived(true);
+      return out;
+    }, copy.failedAdd);
+  const step = (next: number) => write(() => setWishlistWantAction(oracleId, next), copy.failedSet);
+  // A removal answers with no count: it reads as the collection holding what was wanted, so no line stands, and
+  // `have` is what the line already showed.
+  const remove = () =>
+    write(async () => {
+      const out = await removeFromWishlistAction(oracleId);
+      return out.ok ? { ok: true as const, status: "held" as const, want: 0, have } : out;
+    }, copy.failedSet);
 
   return (
     <section

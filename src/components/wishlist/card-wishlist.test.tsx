@@ -41,7 +41,9 @@ describe("not on the list", () => {
   it("Add turns the button into the line in place, at one more than held, and focus follows to the stepper", async () => {
     add.mockResolvedValue(wanted(2, 1));
     const onWrite = mount(null);
-    fireEvent.click(screen.getByRole("button", { name: c.add }));
+    const addButton = screen.getByRole("button", { name: c.add });
+    addButton.focus();
+    fireEvent.click(addButton);
     await waitFor(() => expect(screen.getByTestId("want-stepper")).toBeInTheDocument());
     expect(add).toHaveBeenCalledWith(CARD);
     expect(screen.getByTestId("card-wishlist")).toHaveAccessibleName(c.section);
@@ -76,13 +78,13 @@ describe("on the list", () => {
     expect(screen.getByRole("button", { name: c.more })).not.toHaveFocus();
   });
 
-  it("a step shows at once, writes the count, and takes the server's answer", async () => {
+  it("a step writes the count and shows the server's answer, not its own guess", async () => {
     let answer!: (v: unknown) => void;
     set.mockReturnValue(new Promise((r) => { answer = r; }));
     const onWrite = mount(2, 1);
     fireEvent.click(screen.getByRole("button", { name: c.more }));
-    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
     expect(set).toHaveBeenCalledWith(CARD, 3);
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("2");
     await act(async () => answer(wanted(3, 1)));
     expect(onWrite).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
@@ -112,16 +114,15 @@ describe("on the list", () => {
     expect(screen.queryByTestId("want-stepper")).toBeNull();
   });
 
-  it("when the last of two quick steps fails it goes back to what the first one saved", async () => {
-    const first = { resolve: (_: unknown) => {} };
-    set.mockImplementationOnce(() => new Promise((r) => { first.resolve = r; }));
-    set.mockResolvedValueOnce({ ok: false, reason: "invalid" });
+  it("ignores a second step while one is out", async () => {
+    let answer!: (v: unknown) => void;
+    set.mockReturnValue(new Promise((r) => { answer = r; }));
     mount(2, 1);
     fireEvent.click(screen.getByRole("button", { name: c.more }));
     fireEvent.click(screen.getByRole("button", { name: c.more }));
-    await screen.findByRole("alert");
-    await act(async () => first.resolve(wanted(3, 1)));
-    await waitFor(() => expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3"));
+    expect(set).toHaveBeenCalledTimes(1);
+    await act(async () => answer(wanted(3, 1)));
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
   });
 
   it("Remove takes the card off the list and puts focus on the Add button", async () => {
@@ -205,6 +206,22 @@ describe("focus when the line goes", () => {
   });
 });
 
+describe("focus after Add", () => {
+  it("stays where the reader moved it while the Add was out", async () => {
+    let answer!: (v: unknown) => void;
+    add.mockReturnValue(new Promise((r) => { answer = r; }));
+    render(<><CardWishlist oracleId={CARD} want={null} owned={1} onWrite={vi.fn()} /><button type="button">elsewhere</button></>);
+    const addButton = screen.getByRole("button", { name: c.add });
+    addButton.focus();
+    fireEvent.click(addButton);
+    const elsewhere = screen.getByRole("button", { name: "elsewhere" });
+    elsewhere.focus();
+    await act(async () => answer(wanted(2, 1)));
+    expect(await screen.findByTestId("want-stepper")).toBeInTheDocument();
+    expect(elsewhere).toHaveFocus();
+  });
+});
+
 describe("a refreshed snapshot", () => {
   const view = (want: number | null, owned: number, onWrite = vi.fn()) => (
     <CardWishlist oracleId={CARD} want={want} owned={owned} onWrite={onWrite} />
@@ -225,7 +242,7 @@ describe("a refreshed snapshot", () => {
     fireEvent.click(screen.getByRole("button", { name: c.more }));
     rerender(view(2, 1));
     rerender(view(5, 1));
-    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("2");
     await act(async () => { answer(wanted(3, 1)); });
     expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
   });

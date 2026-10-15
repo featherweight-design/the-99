@@ -32,9 +32,9 @@ function Open({ id }: { id: string }) {
   const { open } = useCardDetail();
   return <button type="button" onClick={() => open(id)}>open {id}</button>;
 }
-const mount = (fetchCard: (id: string) => Promise<BrowseCard | null>, deck = false) =>
+const mount = (fetchCard: (id: string) => Promise<BrowseCard | null>, deck = false, onWishlistWrite?: () => void) =>
   render(
-    <CardDetailProvider fetchCard={fetchCard} {...(deck ? { deckId: "d1", deckName: "HD Gods", deckOracleIds: new Set(["held"]) } : {})}>
+    <CardDetailProvider fetchCard={fetchCard} onWishlistWrite={onWishlistWrite} {...(deck ? { deckId: "d1", deckName: "HD Gods", deckOracleIds: new Set(["held"]) } : {})}>
       <Open id="held" />
     </CardDetailProvider>,
   );
@@ -80,5 +80,14 @@ describe("the Wishlist section in card details", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: c.add })); });
     expect(addToWishlist).toHaveBeenCalled();
     expect(fetchCard.mock.calls.length).toBeGreaterThan(before);
+  });
+
+  it("tells the list that owns the provider (the Wishlist tab) after a write, so it refreshes", async () => {
+    const onWishlistWrite = vi.fn();
+    mount(async (id) => card({ oracleId: id, wishlist: { want: null } }), false, onWishlistWrite);
+    await openCard();
+    expect(onWishlistWrite).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: c.add })); });
+    expect(onWishlistWrite).toHaveBeenCalledTimes(1);
   });
 });

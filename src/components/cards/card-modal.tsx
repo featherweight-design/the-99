@@ -726,6 +726,7 @@ export function CardModal({
   onShowTokens = null,
   deckPrinting,
   onProxyWrite,
+  onWishlistWrite,
   onSelectCard,
   stacked = false,
   backLabel,
@@ -847,6 +848,8 @@ export function CardModal({
   /** Invalidates this card in the provider's cache after a proxy or wishlist write, so the
    *  receipt beside the control stops describing the state before the tap. */
   onProxyWrite?: () => void;
+  /** The Wishlist section wrote: the list that owns the provider refreshes (the Wishlist tab). */
+  onWishlistWrite?: () => void;
   /**
    * Opens another card IN PLACE of this one — the combo block's partner name is its only
    * caller, and it REPLACES rather than stacks, which the addendum refuses by name.
@@ -2727,7 +2730,7 @@ export function CardModal({
                   oracleId={card.oracleId}
                   want={card.wishlist.want}
                   owned={card.quantity}
-                  onWrite={onProxyWrite ?? (() => {})}
+                  onWrite={() => { onProxyWrite?.(); onWishlistWrite?.(); }}
                 />
               )}
 
