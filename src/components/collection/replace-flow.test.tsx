@@ -476,6 +476,17 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(stretches(confirm.closest("section"))).toBe(true);
   });
 
+  // The phone's scrolling body is a stop of its own: a short review has no control inside it, and Safari does not
+  // focus a scroll container, so without one a keyboard reader could not scroll it.
+  it("makes the review's and the choice's scrolling body a named, focusable region", async () => {
+    serve(data());
+    const group = await reachChoice();
+    const choiceBody = group.closest("[role=region]") as HTMLElement;
+    expect(choiceBody.getAttribute("aria-label")).toBe("This step");
+    expect(choiceBody.getAttribute("tabindex")).toBe("0");
+    expect(choiceBody.className).toMatch(/max-md:overflow-y-auto/);
+  });
+
   it("draws the choice with nothing picked, each card's after-figure, and Continue held", async () => {
     serve(data());
     await reachChoice();

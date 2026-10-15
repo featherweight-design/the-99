@@ -18,6 +18,8 @@ export const SHOWN = 8;
 // `flex-none` below `md`: `flex-1` sets a zero flex basis in the page's column, which would override the height.
 export const STEP_FRAME = "flex flex-col md:flex-1 max-md:h-[calc(100dvh-var(--tabbar-h)-var(--mobile-header-h))] max-md:flex-none max-md:min-h-0";
 export const STEP_BODY = "max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:overscroll-contain";
+/** The body's scroll box is a stop of its own: a step with no control inside it would otherwise leave a keyboard reader no way to scroll it (Safari does not focus a scroll container). */
+export const STEP_BODY_ARIA = { role: "region", "aria-label": collectionEditCopy.upload.stepBody, tabIndex: 0 } as const;
 export const STEP_FOOT = "max-md:flex-none md:sticky md:bottom-0";
 const c = collectionEditCopy.upload;
 

@@ -90,6 +90,8 @@ export const collectionEditCopy = {
     continueAdd: "Review the add →",
     /** (new) The desktop foot's lead-in. */
     nextReplace: "Next: a review of every card this replace moves.",
+    /** The phone's scrolling body of a step, named so a keyboard reader can scroll it (it holds no control on a short step). */
+    stepBody: "This step",
     nextAdd: "Next: a review of every card this add raises.",
     cancel: "Cancel",
     // Collection Sync, the choice step (plan `2026-10-15-collection-sync.md` PR 2). The handoff's

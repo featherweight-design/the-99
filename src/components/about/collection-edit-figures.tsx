@@ -89,6 +89,7 @@ export function UploadChoiceFigureBody({ sync = false }: { sync?: boolean } = {}
       onPick={noop}
       onContinue={noop}
       onCancel={noop}
+      framed={false}
     />
   );
 }
