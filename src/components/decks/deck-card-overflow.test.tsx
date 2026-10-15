@@ -356,7 +356,7 @@ describe("DeckCardOverflow · Export", () => {
     render(<DeckCardOverflow deckId="d1" deckName="Atraxa Counters" built={99} placement="tile" />);
     fireEvent.click(trigger("Atraxa Counters"));
     fireEvent.click(screen.getByRole("button", { name: "Export" }));
-    await screen.findByRole("button", { name: "Couldn’t load. Try again" });
+    await screen.findByRole("button", { name: "Couldn’t load. Try again." });
     expect(screen.queryByRole("dialog", { name: "Export deck" })).toBeNull();
   });
 
