@@ -5,7 +5,8 @@
 // oracle id onto that tap's row (`labelScanLabResult`).
 
 import { useEffect, useRef, useState } from "react";
-import { labelScanLabResult, searchScanLabCards, type ScanLabCardHit } from "../../app/lab/scan/actions";
+import { labelScanLabResult, searchScanLabCards } from "../../app/lab/scan/actions";
+import type { ScanLabCardHit } from "../../lib/scan-lab/search";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import { ArtLayer } from "../ui/art-layer";
 import { SearchField } from "../ui/text-field";

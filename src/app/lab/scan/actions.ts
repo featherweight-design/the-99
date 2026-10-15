@@ -4,13 +4,11 @@
 // the write that saves the pick. Both re-check the session and `SCAN_LAB_ENABLED` for the reader.
 
 import { requireUserId } from "../../../lib/auth";
-import { searchCollectionCatalog } from "../../../lib/collection/catalog-read";
 import { labelResult } from "../../../lib/scan-lab/label";
+import { searchLabCards, type ScanLabCardHit } from "../../../lib/scan-lab/search";
 import { scanLabEnabled } from "../../../lib/scan-lab/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { isUuid } from "../../../lib/uuid";
-
-export type ScanLabCardHit = { oracleId: string; name: string; flavorName: string | null; imageUri: string | null };
 
 async function labReader(): Promise<string | null> {
   const userId = await requireUserId();
@@ -21,8 +19,7 @@ async function labReader(): Promise<string | null> {
 export async function searchScanLabCards(query: unknown): Promise<ScanLabCardHit[]> {
   const userId = await labReader();
   if (!userId || typeof query !== "string" || query.length > 100) return [];
-  const hits = await searchCollectionCatalog(userId, query);
-  return hits.map(({ oracleId, name, flavorName, imageUri }) => ({ oracleId, name, flavorName, imageUri }));
+  return searchLabCards(query);
 }
 
 /** Saves the card a ✗ tap really showed onto that tap's row. */
