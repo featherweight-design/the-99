@@ -54,7 +54,7 @@ const HATCH = {
   row: "repeating-linear-gradient(135deg, var(--elevated) 0 3px, var(--border) 3px 6px)",
 } as const;
 
-function Thumb({ imageUri, side }: { imageUri: string | null; side: keyof typeof HATCH }) {
+export function Thumb({ imageUri, side }: { imageUri: string | null; side: keyof typeof HATCH }) {
   const border = side === "head" ? "var(--border-strong)" : "var(--border-dashed)";
   return (
     <span
@@ -152,7 +152,7 @@ export type RowTake = {
  * renders that provider itself. A press puts the box away, as a stand-in row's does: the card it opens
  * stacks under the preview, and a pointer held still fires no leave.
  */
-function ReplacingLine({ imageUri, children }: { imageUri: string | null; children: React.ReactNode }) {
+export function ReplacingLine({ imageUri, children }: { imageUri: string | null; children: React.ReactNode }) {
   const preview = usePreviewRow(imageUri);
   return (
     <div

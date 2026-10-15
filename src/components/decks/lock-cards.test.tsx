@@ -401,11 +401,12 @@ describe("DecklistRow's lock", () => {
       expect(swap()).not.toBeNull();
     });
 
-    it("drops the ⇄ on a locked row and keeps its slot", () => {
+    it("drops the ⇄ on a locked row, keeping no slot", () => {
       const { container } = inTools({ ...over, locked: true });
       expect(swap()).toBeNull();
-      // The desktop slot the ⇄ would have filled, empty, so every ✕ stays in one column.
-      expect(container.querySelector("span.hidden.md\\:block.w-\\[22px\\]")).not.toBeNull();
+      // #1875: the other-ways press keeps no slot when it draws nothing (no spare is read here either).
+      expect(container.querySelector("[data-testid=other-ways]")).toBeNull();
+      expect(container.querySelector("span.hidden.md\\:block.w-\\[22px\\]")).toBeNull();
     });
   });
 });

@@ -27,6 +27,8 @@ import { printedNameOf } from "../../lib/collection/browse";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { labelRolesOf } from "../../lib/decks/label-role-counts";
 import { useLabelRows, useRoleCounter } from "./label-rows-context";
+import { useDeckPageSwitches } from "./deck-page-switches";
+import { FriendSparesProvider } from "../social/spare-markers";
 import { commanderAsRow, commanderShoppingRows, isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import type { DeckCommander } from "../../lib/decks/read";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -649,6 +651,13 @@ export function Decklist({
   const listShoppingCards = useMemo(() => cards.filter(isShoppingCard), [cards]);
   const shoppingCards = useMemo(() => [...commanderShopping, ...listShoppingCards], [commanderShopping, listShoppingCards]);
   const visibleCards = filter === "shopping" ? listShoppingCards : cards;
+  // Friends' spares (Social R2 PR 8b), read once for every card the deck is buying. The list rows alone: a commander's
+  // row carries no marker, as it carries no ⇄ (H28). Both views share one provider, so a switch between them reads
+  // nothing again.
+  const { socialFriends } = useDeckPageSwitches();
+  const spareIds = useMemo(() => listShoppingCards.map((c) => c.oracleId), [listShoppingCards]);
+  const withSpares = (node: React.ReactNode) =>
+    socialFriends ? <FriendSparesProvider oracleIds={spareIds} newestAsOf={newestAsOf}>{node}</FriendSparesProvider> : node;
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.
   // Those differ by any unowned basic land — the filter drops basics, and a
@@ -784,12 +793,13 @@ export function Decklist({
   ];
 
   // Every branch below draws the bar as `key="deck-bar"` in a column `div`, so moving between the list, Stats and
-  // Notes keeps the same mounted bar and the tab an arrow key just focused.
+  // Notes keeps the same mounted bar and the tab an arrow key just focused. Every branch is also `withSpares`, so the
+  // root stays one element type either way and neither the bar nor the spares read remounts.
   if (notesOpen) {
     // The picker's "In this deck" group: this deck's cards and its commanders, by the name the deck draws.
     const noteCards = [...cards.map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, imageUri: c.imageUri ?? null })),
       ...[commander, partner].flatMap((c) => (c ? [{ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, imageUri: c.imageUri ?? null }] : []))];
-    return (
+    return withSpares(
       <div className="flex flex-col">
         <GroupToggle
           key="deck-bar"
@@ -819,7 +829,7 @@ export function Decklist({
   }
 
   if (statsOpen) {
-    return (
+    return withSpares(
       <div className="flex flex-col">
         <GroupToggle
           key="deck-bar"
@@ -1049,7 +1059,7 @@ export function Decklist({
     // for the same reason: a take can empty the list, and Undo swap lives in
     // the receipt.
     if (n === 0 && spentCards.length === 0 && heldCards.length === 0 && !swapTools?.standIns && !swapTools?.receipts.length) {
-      return (
+      return withSpares(
         <div className="flex flex-col">
           <GroupToggle
             key="deck-bar"
@@ -1147,7 +1157,7 @@ export function Decklist({
       .filter((c) => !spentOracleIds.has(c.oracleId) && !heldOracleIds.has(c.oracleId))
       .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri }));
 
-    return (
+    return withSpares(
       <div className="flex flex-col">
         {/* The header's commander pages on into the list this view draws, in its order. */}
         <PublishDeckSiblings list={shoppingOrderedIds} />
@@ -1295,7 +1305,7 @@ export function Decklist({
     );
   }
 
-  return (
+  return withSpares(
     <div className="flex flex-col">
       {/* The header's commander pages on into the list this view draws, in its order. A view that
           draws no list (notes, stats, an empty Shopping) publishes none, so it pages alone. */}

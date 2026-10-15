@@ -49,6 +49,7 @@ import { ProxyTag } from "./proxy-tag";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { gotItCopy } from "../../lib/copy/i-got-it";
+import { OtherWaysPress } from "../social/spare-markers";
 import { useSwapTools } from "../../lib/swaps/context";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -943,27 +944,18 @@ export function DecklistRow({
           </span>
         )}
 
-        {/* The ⇄ (swap tools, R2): on an over-limit Shopping row only, opening its cheaper
-            stand-ins. A row under the limit keeps an empty 22px slot on desktop so every ✕ stays
-            in one column; the phone gives those 44px back to the name. */}
-        {/* A LOCKED row's ⇄ is absent with its slot kept (STATES, Shopping): the stand-ins sheet
-            exists to cut this card, and the player said it is never cut. */}
-        {swapTools && inShopping ? (
-          overLimit && !locked ? (
-            <button
-              type="button"
-              aria-label={swapToolsCopy.row.swapOverAria(displayName, formatLimit(swapTools.limitCents))}
-              onClick={() => swapTools.openStandIns(card)}
-              className={`flex flex-none items-center justify-center w-[44px] h-[44px] -mr-[9px] md:mr-0 md:w-[22px] md:h-[20px] rounded-[6px] font-mono text-[13px] leading-none bg-transparent border-0 p-0 cursor-pointer text-[color:var(--warning)]${rowB ? " max-md:mr-0" : ""}${withAt("swap")}`}
-            >
-              {/* Option B draws it as an outlined 40x36 press inside its 44px hit (the phone's marker size). */}
-              {rowB ? (
-                <span aria-hidden="true" className="flex items-center justify-center max-md:h-[36px] max-md:w-[40px] max-md:rounded-[9px] max-md:border max-md:border-[color:var(--border)] max-md:text-[16px]">⇄</span>
-              ) : "⇄"}
-            </button>
-          ) : (
-            <span aria-hidden="true" className={`hidden md:block flex-none w-[22px]${withAt("swap")}`} />
-          )
+        {/* The other-ways press (#1875, Social R2 PR A): ⇄ on an over-limit Shopping row, opening its cheaper
+            stand-ins, and the spare glyph on any row the deck is buying that a friend holds a spare of. One press
+            holds whichever apply, and neither draws nothing, with no slot kept. A LOCKED row has no ⇄ (STATES,
+            Shopping: the stand-ins sheet exists to cut this card, and the player said it is never cut). */}
+        {tag === "buy" && !readOnly ? (
+          <OtherWaysPress
+            card={card}
+            standIn={overLimit && !locked}
+            standInAria={swapTools ? swapToolsCopy.row.swapOverAria(displayName, formatLimit(swapTools.limitCents)) : ""}
+            limitFigure={swapTools ? formatLimit(swapTools.limitCents) : ""}
+            className={withAt("swap")}
+          />
         ) : null}
 
         {/* THE LOCK MARK (Locked), left of the ✕, on a LOCKED row only and outside the mode. It is a

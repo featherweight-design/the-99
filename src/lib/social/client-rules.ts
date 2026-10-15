@@ -98,3 +98,6 @@ export const ACCEPTED_PARAM = "accepted";
 export function friendsReceiptPath(publicId: string): string {
   return `/friends?${ACCEPTED_PARAM}=${encodeURIComponent(publicId)}`;
 }
+
+/** The most cards one spares read asks about (`GET /api/friend-spares`): a request past it is refused rather than cut. */
+export const MAX_SPARES_BATCH = 200;

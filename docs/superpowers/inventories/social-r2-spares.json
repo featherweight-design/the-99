@@ -1,36 +1,261 @@
 {
-  "feature": "Social R2 PR 8a: friends with a spare in the stand-ins modal (handoff design_handoff_the99_social_r2 R3, Option B opened O1 to O3 and Spares S3; plan 2026-10-15-social-r2.md, PR 8)",
-  "note": "Needs SOCIAL_FRIENDS_ENABLED and SWAP_TOOLS_ENABLED on for the reader, SPARES_DECK naming a deck whose Shopping list holds Polyraptor, Shatterskull Smashing and Growing Rites of Itlimoc over its limit, and fixtures: two friends sharing spares with pods the reader is in, both holding Polyraptor (one through two pods), one holding Shatterskull, neither holding Growing Rites. The rows write nothing, but the fixtures are social and collection rows: plant them on a scratch branch off local-dev ONLY. The title's wait, a failed read and O2 (nothing cheaper) are held by stand-ins-spares.test.tsx.",
+  "feature": "Social R2 PR 8a and PR A: friends with a spare in the stand-ins modal, and the card row's other-ways press with the Shopping key's spare item (handoff design_handoff_the99_social_r2 R3; foil addendum #1875, the press on line 2)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SWAP_TOOLS_ENABLED on for the reader, SPARES_DECK naming a deck whose Shopping list holds Polyraptor, Shatterskull Smashing and Growing Rites of Itlimoc over its limit and Pantlaza under it, and fixtures: two friends sharing spares with pods the reader is in, both holding Polyraptor (one through two pods), one holding Shatterskull and Pantlaza, neither holding Growing Rites. The rows write nothing, but the fixtures are social and collection rows: plant them on a scratch branch off local-dev ONLY. The first cell of a run lands on the Welcome page, so each row opens with a throwaway visit. The title's wait, a failed read and O2 (nothing cheaper) are held by stand-ins-spares.test.tsx; the spares-only modal (SWAP_TOOLS_ENABLED off) by spare-markers.test.tsx.",
   "out": "contact-sheets/social-r2-spares",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "md-900",
+      "width": 900,
+      "height": 1000
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
   "rows": [
     {
       "id": "both",
-      "label": "O1 Before you buy: the Replacing box, Friends with a spare (the pods each share reaches you through, view only, the foot line), then the stand-ins",
+      "label": "O1 Before you buy: Shatterskull's press holds ⇄ and the spare glyph, and opens the Replacing box, Friends with a spare, then the stand-ins",
       "view": "src/components/decks/stand-ins-sheet.tsx",
       "steps": [
-        { "goto": "/decks/${SPARES_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 600 },
-        { "clickRole": "button", "name": "^Cheaper stand-ins for Shatterskull", "wait": "[data-testid=friend-spares]", "settle": 2500 }
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins and friends with a spare of Shatterskull",
+          "wait": "[data-testid=friend-spares]",
+          "settle": 2500
+        }
       ]
     },
     {
       "id": "spares-only",
-      "label": "O2 / S3 Friends with a spare: no stand-in to offer, so no nothing-cheaper sentence; most spares first",
+      "label": "O2 / S3 Polyraptor: no stand-in to offer, so no nothing-cheaper sentence; most spares first",
       "view": "src/components/decks/stand-ins-sheet.tsx",
       "steps": [
-        { "goto": "/decks/${SPARES_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 600 },
-        { "clickRole": "button", "name": "^Cheaper stand-ins for Polyraptor", "wait": "[data-testid=friend-spares]", "settle": 2500 }
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins and friends with a spare of Polyraptor",
+          "wait": "[data-testid=friend-spares]",
+          "settle": 2500
+        }
       ]
     },
     {
       "id": "only-stand-ins",
-      "label": "O3 Cheaper stand-ins: no friend has a spare, the shipped modal word for word",
+      "label": "O3 Growing Rites: no friend has a spare, ⇄ alone and the shipped modal word for word",
       "view": "src/components/decks/stand-ins-sheet.tsx",
       "steps": [
-        { "goto": "/decks/${SPARES_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 600 },
-        { "clickRole": "button", "name": "^Cheaper stand-ins for Growing Rites", "wait": "[data-testid=stand-ins-sheet]", "settle": 2500 }
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Growing Rites",
+          "wait": "[data-testid=stand-ins-sheet]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "key",
+      "label": "S2 the Shopping key: cheaper stand-ins, friend has a spare, press to add, over $N",
+      "view": "src/components/decks/shopping-key.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-key]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-testid=shopping-key]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "shopping-press",
+      "label": "S2 Shopping line 2: the other-ways press before the buy tag (⇄ and the glyph on Polyraptor, the glyph alone on Pantlaza, nothing on a row with neither)",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has([data-testid=spare-glyph])",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "press-opens",
+      "label": "S3 the glyph alone on Pantlaza opens the stand-ins modal with its friends, the press drawn pressed",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Friends with a spare of Pantlaza",
+          "wait": "[data-testid=friend-spares]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "all-view",
+      "label": "S4 All: the glyph on a missing card's line 2, nothing on an owned row",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has([data-testid=spare-glyph])",
+          "settle": 400
+        }
+      ],
+      "widths": [
+        "md-900",
+        "desktop"
+      ]
+    },
+    {
+      "id": "all-view-phone",
+      "label": "S4 All, List view on the phone: the glyph on a missing card's row",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "List view",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has([data-testid=spare-glyph])",
+          "settle": 400
+        }
+      ],
+      "widths": [
+        "phone"
       ]
     }
   ]
