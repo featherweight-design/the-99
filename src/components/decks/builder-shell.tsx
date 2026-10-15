@@ -464,6 +464,9 @@ export function BuilderShell({
     keepAllOptimisticAuto,
     setOptimisticQuantity,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
+  // Whether the import arrived with unresolved lines, fixed at arrival: the owned strip's head is a claim about what
+  // the import brought over, which resolving a line while the strip is up must not revise.
+  const [arrivedUnresolved] = useState(() => deck.unresolvedRows.length > 0);
   // The basics stepper's save queue, one for the deck (`basic-counts.tsx`): it outlives a List ↔ Card switch,
   // and Clear auto and the Add panel flush it before writing the rows it would race. Built once, and handed
   // this render's prediction and router after each commit; a press always comes after one.
@@ -1707,7 +1710,7 @@ export function BuilderShell({
                 importedLineCount={deck.cards.length}
                 printings={arrivalPrintings}
                 added={importAddReceipt}
-                unresolved={unresolvedRows.length > 0}
+                unresolved={arrivedUnresolved}
               />
             )}
 

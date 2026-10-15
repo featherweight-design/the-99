@@ -421,10 +421,11 @@ export function ImportEntry({ compact = false, canOwn = false }: {
           failure={failure}
           onAction={() => {
             setFailure(null);
-            // Try again repeats the refused press, with the same id.
+            // Try again repeats the refused press, with the same id and the name as it stands now: a name edit
+            // keeps the id, since a retry may rename.
             if ((failure.kind === "addFailed" || failure.kind === "addUnsure") && lastSubmit.current) {
               const last = lastSubmit.current;
-              submit(last.commanderOracleId, last.name, last.partnerOracleId);
+              submit(last.commanderOracleId, deckName, last.partnerOracleId);
               return;
             }
             if (failure.kind === "fileRejected") fileInputRef.current?.click();

@@ -122,6 +122,33 @@ describe("S11: the add refused", () => {
     expect(second.own).toBe(true);
   });
 
+  // A retry may rename: the name in the field now is the one sent, under the same id, and the field keeps it.
+  it("Try again sends the name as edited since the refusal, with the same id", async () => {
+    importDeck.mockResolvedValueOnce({ ok: false, reason: "addFailed", notes: [] });
+    render(<ImportEntry canOwn />);
+    fillPaste();
+    fireEvent.click(tick());
+    submit();
+    await screen.findByRole("alert");
+    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Renamed deck" } });
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
+    const [first, second] = importDeck.mock.calls.map((c) => c[0]);
+    expect(second.name).toBe("Renamed deck");
+    expect(second.actionId).toBe(first.actionId);
+    expect((screen.getByLabelText("Deck name") as HTMLInputElement).value).toBe("Renamed deck");
+  });
+
+  // The row is centred on the phone as drawn: the caller's alignment beats the box's own.
+  it("centres the box's row on the phone", () => {
+    render(<ImportEntry canOwn />);
+    const row = tick().closest("label")!;
+    const classes = row.className.split(" ");
+    expect(classes).toContain("items-center");
+    expect(classes).not.toContain("items-start");
+    expect(classes).toContain("md:items-start");
+  });
+
   it("a press that threw makes no claim of a rollback, and its retry carries the same id", async () => {
     importDeck.mockRejectedValueOnce(new Error("network"));
     render(<ImportEntry canOwn />);

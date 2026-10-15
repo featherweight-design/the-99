@@ -128,6 +128,32 @@ describe("Arrival strip (state 13)", () => {
     expect(screen.getByText(copy.arrival.cleanMobile("99"))).toBeInTheDocument();
   });
 
+  // The ticked strip's head is a claim about what the import brought over: resolving its lines while the strip is up
+  // (the page redraws with none left) must not turn it into `All N lines came over clean`.
+  it("keeps a ticked import's unresolved head once its lines are resolved", async () => {
+    const receipt = { entryId: "entry-1", copies: 97 };
+    let view!: ReturnType<typeof renderBuilder>;
+    await act(async () => {
+      view = renderBuilder(shortDeck(), true, receipt);
+    });
+    expect(screen.getAllByText(copy.arrival.own.headUnresolved(97)).length).toBeGreaterThan(0);
+    await act(async () => {
+      view.rerender(
+        <BuilderShell mix={TEST_MIX}
+          deck={shortDeck({ unresolvedRows: [] })}
+          suggestions={[]}
+          degraded={false}
+          firstRun={false}
+          commanderIdentity={["B", "R", "G"]}
+          arrivedFromImport
+          importAddReceipt={receipt}
+         newestAsOf={null}/>,
+      );
+    });
+    expect(screen.getAllByText(copy.arrival.own.headUnresolved(97)).length).toBeGreaterThan(0);
+    expect(screen.queryByText(copy.arrival.own.head("97"))).toBeNull();
+  });
+
   it("is absent on an ordinary visit to the same deck", async () => {
     await act(async () => {
       renderBuilder(makeDeck(), false);
