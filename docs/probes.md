@@ -505,6 +505,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by id.
   Point it at a scratch branch from local-dev migrated to 0125. Its header lists the mutations to run against it.
 
+- `pnpm probe:collection-sync-ui` presses Collection Sync's review and confirm in a real browser at 390 and 1300
+  (plan PR 3): from a CSV uploaded through `/collection/replace`, Sync picked and continued, it reads the three
+  conflicts and their accessible names, presses the held confirm (`aria-disabled`, still focusable) and checks focus
+  lands in the first unanswered row with no alert, answers one row App and watches the tiles follow the server's
+  re-read, presses `Take the file’s for all 3` as a rule, then confirms and checks the collection holds the merge
+  the review drew and one `upload_sync` entry. It WRITES the signed-in account's collection and a base upload, so it
+  refuses staging and production by `neon.branch_id`, and puts back every table the confirm can write from a
+  snapshot in a `finally`. Run against `next start` with `COLLECTION_EDIT_ENABLED=true COLLECTION_SYNC_ENABLED=true`.
+
 - `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload
   (`MEASURE_UPLOAD_ID`) or the anchor's own file, under a pick (`MEASURE_PICK`, default `everything`): the
   buckets, the rows a confirm would write, staleness and the token rows it would change. READ-ONLY by
