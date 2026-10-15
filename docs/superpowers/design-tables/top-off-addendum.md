@@ -238,7 +238,7 @@ base rule would have used on a box nobody can see.
 
 | Property | Mobile (390px) | Desktop |
 |----------|----------------|---------|
-| element | `<button>` (a third `GhostButton`, right of `Clear all ticks`) | same |
+| element | `<button>` (a third `GhostButton`, right of `Clear all selections`) | same |
 | visible label | `list.restoreAll(declined)` → `Show all 38 again` | same |
 | aria-label | `list.restoreAllAria(declined)` → `Put all 38 declined candidates back on the list` | same |
 | display | `flex` | `inline-flex` |
@@ -286,7 +286,7 @@ base rule would have used on a box nobody can see.
 | padding-bottom | — | `11px` |
 | border-bottom | — | `1px solid var(--border)` |
 
-### Selection head fixtures — `Tick the N I own` / `Clear all ticks`, disabled in S25
+### Selection head fixtures — `Tick the N I own` / `Clear all selections`, disabled in S25
 
 | Property | Mobile (390px) | Desktop |
 |----------|----------------|---------|
@@ -378,7 +378,7 @@ base rule would have used on a box nobody can see.
 
 | Rung | Condition | Copy key | Longest measured form |
 |---|---|---|---|
-| 1 | `atCap` | `list.cap` — `Untick one to swap another in` | — |
+| 1 | `atCap` | `list.cap` — `Deselect one to swap another in` | — |
 | 2 | `openSlots - tickedCount > 0` | `commit.slotsStayOpen` | `31 slots stay open: you can come back to them`, 45 chars ≈ 281px inside 366px |
 
 Rungs 1 and 2 partition the whole space by arithmetic: `atCap` is
@@ -428,7 +428,7 @@ reader through `dock.retiredAnnounce` on open.
 | mechanism | **AMENDMENT 2** — rendered once, home chosen in JS via `src/components/ui/use-min-width.ts`; **not** a `hidden md:block` pair, and the id is never dropped | same single element |
 | id | `capLineId` — kept, single instance | `capLineId` |
 | aria relationship | `aria-describedby` target of every inert tick box (unchanged) | same |
-| copy | `list.cap` — `Untick one to swap another in`, **verbatim**, no count | same |
+| copy | `list.cap` — `Deselect one to swap another in`, **verbatim**, no count | same |
 | count in the string | — (ratified as cut: it repeated `head` / `headMobile`) | — |
 | font-family | `var(--font-mono)` | `var(--font-mono)` |
 | font-size | `10px` | `10.5px` |
@@ -436,7 +436,7 @@ reader through `dock.retiredAnnounce` on open.
 | border-left | — | `1px solid var(--border-strong)` (a divider, **not** a middot) |
 | padding-left | — | `12px` |
 | margin | — | — |
-| position | first line of the bar | after the `N of N slots ticked · N candidates, N untouched` span, before the ghost buttons |
+| position | first line of the bar | after the `N of N slots selected · N candidates, N untouched` span, before the ghost buttons |
 | old home | removed — it no longer renders after all 38 rows | removed |
 
 ### Conditional rendering
@@ -578,7 +578,7 @@ unchanged.
 | `doorNoteMobile` | `topOffCopy.strip` | `'0'` → `You own none of these. Nothing is added until you say so.` · `'1'` → `1 arrives ticked. Nothing is added until you say so.` · else → `` `${seeded} arrive ticked. Nothing is added until you say so.` `` | `seeded: string` |
 | `doorNoteAgainMobile` | `topOffCopy.strip` | `Reopens where you left it, declines and all.` | — (not parameterised) |
 | `nothingTickedAllDeclined` | `topOffCopy.commit` | `` `you've set all ${cand} aside: show any of them again to pick it up` `` | `cand: string` |
-| `restoredAll` | `topOffCopy.announce` | `` `${declined} candidates back on the list. ${ticked} of ${n} ticked.` `` | `declined: string, ticked: string, n: string` |
+| `restoredAll` | `topOffCopy.announce` | `` `${declined} candidates back on the list. ${ticked} of ${n} selected.` `` | `declined: string, ticked: string, n: string` |
 
 ### New — four for the ratified keep-all confirm
 
@@ -593,7 +593,7 @@ unchanged.
 
 | Key | Change | Detail |
 |---|---|---|
-| `list.cap` | **string verbatim, home moved** | `Untick one to swap another in`. Phone → the pinned bar (rung 1). Desktop → the selection head, after the counts, behind a `border-left: 1px var(--border-strong)` divider. Renders at both widths; `capLineId` never dropped. Amendment 2: one element, home selected by `use-min-width.ts`. |
+| `list.cap` | **string verbatim, home moved** | `Deselect one to swap another in`. Phone → the pinned bar (rung 1). Desktop → the selection head, after the counts, behind a `border-left: 1px var(--border-strong)` divider. Renders at both widths; `capLineId` never dropped. Amendment 2: one element, home selected by `use-min-width.ts`. |
 | `commit.slotsStayOpen` | **string unchanged by this amendment, one class deleted** | `hidden md:block` removed; joins the phone ladder at rung 2. Desktop keeps `md:ml-auto` in the commit row. No new string. |
 
 ### Ratifications — three, adopted without change
@@ -633,10 +633,10 @@ div.row[declined]
   button[aria-label="Put {name} back on the list"]
 
 div.head
-  span  "N of N slots ticked · N candidates, N untouched"
-  p#top-off-cap  "Untick one to swap another in"   ← aria-describedby target (desktop home)
+  span  "N of N slots selected · N candidates, N untouched"
+  p#top-off-cap  "Deselect one to swap another in"   ← aria-describedby target (desktop home)
   button[aria-label="Tick all N candidates you already own"]
-  button "Clear all ticks"
+  button "Clear all selections"
   button[aria-label="Put all N declined candidates back on the list"]
 
 div.bar (phone)

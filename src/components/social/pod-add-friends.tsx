@@ -14,6 +14,7 @@ import { Face } from "./face";
 import { SocialModal } from "./social-modal";
 import { useFriendInvite } from "./invite-context";
 import { ACCENT_BUTTON } from "./friends-head";
+import { Checkbox } from "../ui/checkbox";
 
 const copy = socialCopy.pods;
 
@@ -86,13 +87,7 @@ export function PodAddFriends({
                 key={f.publicId}
                 className="flex h-[56px] cursor-pointer items-center gap-[12px] font-sans text-[14.5px] text-[color:var(--fg)] [border-bottom:1px_solid_var(--elevated)]"
               >
-                <input type="checkbox" checked={ticked.has(f.publicId)} onChange={() => toggle(f.publicId)} className="peer sr-only" />
-                <span
-                  aria-hidden
-                  className="flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[4px] text-[12px] font-bold text-[color:var(--bg)] [border:1.5px_solid_var(--fg-faint)] peer-checked:bg-[color:var(--accent)] peer-checked:[border-color:var(--accent)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[color:var(--accent)]"
-                >
-                  {ticked.has(f.publicId) ? "✓" : ""}
-                </span>
+                <Checkbox checked={ticked.has(f.publicId)} onChange={() => toggle(f.publicId)} />
                 <Face name={f.displayName} commander={f.commander} size={40} />
                 <span className="flex min-w-0 flex-col gap-[1px]">
                   <span className="truncate">{f.displayName}</span>

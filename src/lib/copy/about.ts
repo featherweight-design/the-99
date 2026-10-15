@@ -317,7 +317,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the empty Collection',
     width: 'plate',
     caption:
-      'No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nPick the precons you own and their cards go into your Collection at the box’s printings, tokens too.\nImport a deck you play and tick that you own its cards. Or add cards one at a time. A file can come later.',
+      'No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nPick the precons you own and their cards go into your Collection at the box’s printings, tokens too.\nImport a deck you play and select that you own its cards. Or add cards one at a time. A file can come later.',
     captionLineSwitches: {
       'Pick the precons you own and their cards go into your Collection at the box’s printings, tokens too.': 'PRECONS_ENABLED',
     },
@@ -843,7 +843,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Pick a commander and The 99 builds the deck for you, like a precon built from your own binder.\n\nIt starts with staples, fills from your Collection, and only reaches for cards to buy where you run short.',
     keys: [
       'Up to ten staples go in first. Cards you’d need to buy are the ones the commander’s decks play most.',
-      'Slots still open? “Choose the last” lets you pick them, with cards you own pre-ticked.',
+      'Slots still open? “Choose the last” lets you pick them, with cards you own preselected.',
       'The “auto” tag marks cards The 99 added for you, so you can tell them from your own picks.',
       '“Clear all auto” removes all auto-added cards, except any you’ve locked.',
     ],
@@ -1160,10 +1160,10 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Updating shows what the new list changes, and lets you keep cards it leaves out.',
       'A line we can’t match still comes over, flagged for you to fix.',
       // No-collection entry, an ordinary edit riding the line's bump: the tick is drawn only with its switch.
-      'Own the deck you’re importing? Tick the box and its cards go into your Collection too.',
+      'Own the deck you’re importing? Select “I own these cards” and its cards go into your Collection too.',
     ],
     keySwitches: {
-      'Own the deck you’re importing? Tick the box and its cards go into your Collection too.': 'NO_COLLECTION_ENTRY_ENABLED',
+      'Own the deck you’re importing? Select “I own these cards” and its cards go into your Collection too.': 'NO_COLLECTION_ENTRY_ENABLED',
     },
     marksPending: true,
     since: 1,

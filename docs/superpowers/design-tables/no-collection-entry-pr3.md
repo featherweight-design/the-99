@@ -28,7 +28,7 @@ named; — not built here, with where it is.
 | 9 | Row | whole row the label, checkbox first; 56px / checkbox 22 phone, 52px / checkbox 20 desktop | `<label>` with the native box first, `min-h-[56px] md:min-h-[52px]`, 22/20px | ✓ |
 | 10 | Row content | pips, name 14/600, mono `SET · Mon YYYY`, then `100 cards` (`100` at 390) | as drawn; the ownership figure dropped | ✓ |
 | 11 | Desktop meta, twin | `· also sold as a Collector's Edition` | the shipped `row.twin` clause, desktop only | ✓ |
-| 12 | Foot lead | `Tick the boxes you own.` | `pick.leadNone` | ✓ |
+| 12 | Foot lead | `Select the decks you own.` | `pick.leadNone` | ✓ |
 | 13 | Add held | `Add boxes`, `aria-disabled`, .4, never removed; the press moves focus to the search | `aria-disabled`, `opacity-40`; the press focuses the search input | ✓ |
 
 ### S3 · some picked

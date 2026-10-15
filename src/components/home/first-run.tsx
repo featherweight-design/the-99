@@ -145,7 +145,7 @@ export function FirstRunChecklist({
           first-run surface itself, and the line goes once About is opened. */}
       {about && <ArrivalsBanner data={null} about={about} closable={false} gutter="checklist" />}
 
-      <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px] max-md:group-has-[[data-reviewing]]/first-run:pt-[8px]">
+      <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_20px] sm:gap-[12px] sm:p-[20px_28px_26px] max-md:group-has-[[data-reviewing]]/first-run:pt-[8px]">
         {/* Step 1 — live. A client component, because the card changes while its review is
             open (D11, 5a); the fan is drawn here and handed in. */}
         <FirstRunStepOne fan={<CardFan />} addByHand={addByHand} ways={ways} />

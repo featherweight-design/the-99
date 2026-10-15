@@ -11,6 +11,7 @@ import { BuyTag } from "../buy-tag";
 import { lineFact } from "./cart-line";
 import { Chevron } from "../../ui/chevron";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
+import { Checkbox } from "../../ui/checkbox";
 
 export function CartDeckGroup({
   deck,
@@ -43,14 +44,7 @@ export function CartDeckGroup({
     <section aria-labelledby={labelId} className="border-t border-[color:var(--border)]">
       <div className="flex min-h-[52px] items-center gap-[10px]">
         <label className="-m-[13px] flex cursor-pointer p-[13px]">
-          <input type="checkbox" checked={on} onChange={onToggle} aria-label={copy.selections.aria(deck.name, on)} className="peer sr-only" />
-          <span
-            aria-hidden
-            className="mt-[1px] flex h-[18px] w-[18px] items-center justify-center rounded-[4px] text-[12px] font-bold peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[color:var(--accent)]"
-            style={on ? { background: "var(--accent)", color: "var(--bg)" } : { border: "1.5px solid var(--border-strong)" }}
-          >
-            {on ? "✓" : null}
-          </span>
+          <Checkbox checked={on} onChange={onToggle} ariaLabel={copy.selections.aria(deck.name, on)} />
         </label>
         <h3 className="m-0 min-w-0 flex-1">
           <button

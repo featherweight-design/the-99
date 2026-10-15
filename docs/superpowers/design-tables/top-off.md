@@ -168,11 +168,11 @@ Unchanged from shipped. Same position under the provenance ledger, above the dec
 |---|---|---|
 | font-family | `var(--font-mono)` | `var(--font-mono)` |
 | font-size | `10px` (canvas draws `38 candidates · ranked by synergy` in the phone head) | `11px` |
-| color — live figure (`{t} of {n} slots ticked`) | `var(--fg-body)` | `var(--fg-body)` |
+| color — live figure (`{t} of {n} slots selected`) | `var(--fg-body)` | `var(--fg-body)` |
 | color — static figures (`{c} candidates, {u} untouched`) | `var(--fg-locked)` | `var(--fg-locked)` |
 | copy | `list.headMobile` | `list.head` |
 
-## 2b · `Tick the {owned} I own` / `Clear all ticks` (ghost controls, two)
+## 2b · `Tick the {owned} I own` / `Clear all selections` (ghost controls, two)
 
 | Property | Mobile | Desktop |
 |---|---|---|
@@ -560,7 +560,7 @@ Neither occupant **gates the tick**. Availability is a label.
 | line-height | `1.6` | (default) |
 | color — `{total} of 99 when added` | `var(--fg-body)` | `var(--fg-locked)` (phone puts it right-aligned as `95 of 99`) |
 | color — `{b} to buy · {money}` | `var(--warning)` | `var(--warning)` |
-| color — ticked count `{t} of {n} ticked` | (in the head) | `var(--fg-body)` |
+| color — ticked count `{t} of {n} selected` | (in the head) | `var(--fg-body)` |
 | Money said | **once**, here, in `var(--warning)` — never on a button face | once |
 
 ## 9f · Slots-stay-open note
@@ -607,7 +607,7 @@ Three lines, in order:
 | display / align-items / gap | `flex` / `baseline` / `8px` | — |
 | font-family | `var(--font-mono)` | — |
 | font-size | `10.5px` | — |
-| `{t} of {n} ticked` colour | `var(--fg-body)` | — |
+| `{t} of {n} selected` colour | `var(--fg-body)` | — |
 | `{b} to buy · {money}` colour | `var(--warning)` | — |
 | `{total} of 99` colour | `var(--fg-locked)`, `margin-left: auto` | — |
 
@@ -675,7 +675,7 @@ Three lines, in order:
 | padding | `0 10px` | `0 10px` |
 | reason — font | `var(--font-mono)` `9.5px`, `letter-spacing:0.1em`, `uppercase`, `var(--fg-locked)` | same |
 | name — font | `var(--font-sans)` `13px`, `var(--fg-faint)`, `flex:auto; min-width:0` | same |
-| `untickable` — font | `var(--font-mono)` `10.5px`, `var(--fg-locked)` | same |
+| `can’t be selected` — font | `var(--font-mono)` `10.5px`, `var(--fg-locked)` | same |
 | Behaviour | **unticks itself, states why, keeps its slot, recounts** | same |
 
 ---
@@ -930,7 +930,7 @@ card's auto flag **and** its pass membership.
 | The door | `44px`, full width | — |
 | `Close the list` | `44px` hit area | — |
 | `Tick the {owned} I own` | `44px` | `30px` |
-| `Clear all ticks` | `44px` | `30px` |
+| `Clear all selections` | `44px` | `30px` |
 | Commit primary | `44px`, `flex:auto` | — |
 | `Cancel` | `44px`, `flex:none` | — |
 | `Show these {n}` (ledger) | `44px` | — |
@@ -1005,17 +1005,17 @@ capped at `n`.
 
 | Event | Copy key | Text |
 |---|---|---|
-| List opens | `announce.opened(cand,n,ticked)` | `{cand} candidates for {n} slots. {ticked} already ticked.` |
-| Ticking settles (debounced), with money | `announce.ticked(ticked,n,buy)` | `{ticked} of {n} ticked, {buy} to buy.` |
-| Ticking settles, no money | `announce.tickedNoBuy(ticked,n)` | `{ticked} of {n} ticked.` |
-| Cap reached | `announce.capped(n)` | `{n} of {n} slots ticked.` |
+| List opens | `announce.opened(cand,n,ticked)` | `{cand} candidates for {n} slots. {ticked} already selected.` |
+| Ticking settles (debounced), with money | `announce.ticked(ticked,n,buy)` | `{ticked} of {n} selected, {buy} to buy.` |
+| Ticking settles, no money | `announce.tickedNoBuy(ticked,n)` | `{ticked} of {n} selected.` |
+| Cap reached | `announce.capped(n)` | `{n} of {n} slots selected.` |
 | Commit settles, with money | `announce.added(added,total,buy)` | `{added} cards added. {total} of 99, {buy} to buy.` |
 | Commit settles, no money | `announce.addedNoBuy(added,total)` | `{added} cards added. {total} of 99.` |
 | Commit refused | `commit.refused` | the refusal sentence, once |
 | Undo settles | `announce.undone(added,total)` | `{added} cards put back. {total} of 99.` |
 | A pass marked | `announce.marked(n,pass)` | `{n} cards from {pass} marked in the deck.` |
 | A mark cleared | `announce.markCleared` | `Mark cleared.` |
-| A decline | `announce.declined(name,ticked,n)` | `{name} set aside. {ticked} of {n} ticked.` |
+| A decline | `announce.declined(name,ticked,n)` | `{name} set aside. {ticked} of {n} selected.` |
 | List opens, phone | `dock.retiredAnnounce` | `Quick-add hidden while the list is open.` |
 | A card kept | shipped `autoCopy.keptAnnounce` | **unchanged**; the ledger recount is not announced separately |
 | Sweep | shipped `autoCopy.sweptAnnounce` | **unchanged** |
@@ -1055,8 +1055,8 @@ chose from · `{placed}` the pass's original row count · `{kept}` rows graduate
 | Key | Exact text |
 |---|---|
 | `list.groupAria(cand, n)` | `{cand} candidates for the last {n} slots` |
-| `list.head(ticked, n, cand, untouched)` | `{ticked} of {n} slots ticked · {cand} candidates, {untouched} untouched` |
-| `list.headMobile(ticked, n)` | `{ticked} of {n} ticked` |
+| `list.head(ticked, n, cand, untouched)` | `{ticked} of {n} slots selected · {cand} candidates, {untouched} untouched` |
+| `list.headMobile(ticked, n)` | `{ticked} of {n} selected` |
 | `bulk.collection(n)` | `Select {n} from my collection` |
 | `bulk.best(n)` | `Select the {n} this deck needs` |
 | `bulk.collectionAria(n, concession)` | `Select {n} cards from your collection: {concession}` |
@@ -1074,7 +1074,7 @@ chose from · `{placed}` the pass's original row count · `{kept}` rows graduate
 The single `list.tickOwned` / `list.tickOwnedAria` control these replaced was retired with the
 pair (PR 9b). Its wording was correct about its pool and silent about its concession, which is
 the reported failure in one string.
-| `list.clearTicks` | `Clear all ticks` |
+| `list.clearTicks` | `Clear all selections` |
 | `list.colCard` | `Card` |
 | `list.colSynergy` | `Synergy` |
 | `list.colDecks` | `Decks` |
@@ -1086,7 +1086,7 @@ the reported failure in one string.
 | `list.unownedClause(price)` | `Not in your collection, {price}.` |
 | `list.illegalInDeck` | `already in the deck` |
 | `list.illegalColour` | `not in these colors` |
-| `list.illegalUntickable` | `untickable` |
+| `list.illegalUntickable` | `can’t be selected` |
 | `list.declined` | `not this one` |
 | `list.restore` | `Show it again` |
 | `list.restoreAria(name)` | `Put {name} back on the list` |
@@ -1105,8 +1105,8 @@ The cost is spoken from the **shipped** `manaCopy.costAria`, read **before** the
 | `commit.consequence(total)` | `{total} of 99 when added` |
 | `commit.toBuy(b, money)` | `{b} to buy · {money}` |
 | `commit.slotsStayOpen(n)` | `{n} slots stay open: you can come back to them` |
-| `commit.nothingTicked` | `nothing ticked: the list arrives with what you own already ticked` |
-| `commit.nothingTickedUnowned(cand)` | `nothing ticked: you own none of these {cand}, so every tick is one to buy` |
+| `commit.nothingTicked` | `nothing selected: the list arrives with what you own already selected` |
+| `commit.nothingTickedUnowned(cand)` | `nothing selected: you own none of these {cand}, so every card you select is one to buy` |
 | `commit.inFlight(ticked)` | `Sleeving {ticked} cards…` — **UNCHANGED**, `recommendationsCopy.fill.fillingRows` |
 | `commit.refused` | `We couldn’t add those. The deck is unchanged.` — **UNCHANGED**, `synergyCopy.lastSlots.topUpFailed` (note the curly apostrophe `’`) |
 
@@ -1149,13 +1149,13 @@ The cost is spoken from the **shipped** `manaCopy.costAria`, read **before** the
 
 | Key | Exact text |
 |---|---|
-| `announce.opened(cand, n, ticked)` | `{cand} candidates for {n} slots. {ticked} already ticked.` |
-| `announce.ticked(ticked, n, buy)` | `{ticked} of {n} ticked, {buy} to buy.` |
-| `announce.tickedNoBuy(ticked, n)` | `{ticked} of {n} ticked.` |
-| `announce.capped(n)` | `{n} of {n} slots ticked.` |
+| `announce.opened(cand, n, ticked)` | `{cand} candidates for {n} slots. {ticked} already selected.` |
+| `announce.ticked(ticked, n, buy)` | `{ticked} of {n} selected, {buy} to buy.` |
+| `announce.tickedNoBuy(ticked, n)` | `{ticked} of {n} selected.` |
+| `announce.capped(n)` | `{n} of {n} slots selected.` |
 | `announce.added(added, total, buy)` | `{added} cards added. {total} of 99, {buy} to buy.` |
 | `announce.addedNoBuy(added, total)` | `{added} cards added. {total} of 99.` |
-| `announce.declined(name, ticked, n)` | `{name} set aside. {ticked} of {n} ticked.` |
+| `announce.declined(name, ticked, n)` | `{name} set aside. {ticked} of {n} selected.` |
 | `announce.undone(added, total)` | `{added} cards put back. {total} of 99.` |
 | `announce.marked(n, pass)` | `{n} cards from {pass} marked in the deck.` |
 | `announce.markCleared` | `Mark cleared.` |
