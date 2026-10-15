@@ -10,6 +10,10 @@
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { useSwapTools } from "../../lib/swaps/context";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { formatLimit } from "../../lib/swaps/limit";
+import { OVER_LIMIT_RING } from "./buy-tag";
+import { useDeckPageSwitches } from "./deck-page-switches";
 import { useGotIt } from "./got-it";
 
 const ITEM = "flex items-center gap-[7px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]";
@@ -32,7 +36,30 @@ export function ShoppingKey({ shoppingCount }: { shoppingCount: number }) {
         </span>
       ) : null}
       <ShoppingKeyBuy />
+      <ShoppingKeyOver />
     </div>
+  );
+}
+
+/**
+ * The phone Shopping row's option B key item (Social R2 PR 7): an outlined buy plate and `over $N`, the one
+ * place the limit is drawn now that it no longer stacks on the tag. Phone only (the desktop row still writes
+ * `over $N` after the figure), and only with the swap tools, which are what mark a row over a limit.
+ */
+export function ShoppingKeyOver() {
+  const { phoneShoppingRowB } = useDeckPageSwitches();
+  const tools = useSwapTools();
+  if (!phoneShoppingRowB || !tools) return null;
+  return (
+    <span className={`${ITEM} lg:hidden`} data-testid="shopping-key-over">
+      <span
+        className="rounded-[3px] px-[4px] text-[color:var(--warning)]"
+        style={{ boxShadow: OVER_LIMIT_RING }}
+      >
+        {addPanelCopy.unowned.tag}
+      </span>
+      {swapToolsCopy.row.over(formatLimit(tools.limitCents))}
+    </span>
   );
 }
 

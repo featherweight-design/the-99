@@ -189,6 +189,7 @@ export function BuyTag({
   reserveSlot = false,
   density = "full",
   overLimit = false,
+  foldOver = false,
   plate = true,
   corner = "right",
   press,
@@ -220,6 +221,12 @@ export function BuyTag({
    * and nothing else about it changes. No new token.
    */
   overLimit?: boolean;
+  /**
+   * Phone Shopping row option B (Social R2 PR 7): below `lg` an over-limit plate is OUTLINED, with no wash, and
+   * the `over $N` that used to stack under it is spoken but not drawn (the key says what the outline means).
+   * From `lg` the plate and the stack are the ones they were.
+   */
+  foldOver?: boolean;
   /**
    * Tile variant only. `false` drops the scrim, the inset ring and the absolute
    * positioning, leaving the glyph in the shared caption box.
@@ -288,9 +295,10 @@ export function BuyTag({
   // The caption draws its own plate, so the tag drops its scrim and takes the
   // box the availability chip and the proxy mark also take there.
   const captionBox = variant === "tile" && !plate;
+  const folded = foldOver && overLimit && variant === "row";
 
   if (press && variant === "row" && density === "full") {
-    return <PressableTag press={press} overLimit={overLimit}>{content}</PressableTag>;
+    return <PressableTag press={press} overLimit={overLimit} foldOver={foldOver && overLimit}>{content}</PressableTag>;
   }
 
   return (
@@ -301,10 +309,11 @@ export function BuyTag({
           : `font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]} ${
               variant === "tile" ? TILE_CORNER[corner] : ""
             }`
-      }`}
+      }${folded ? " bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] max-lg:bg-transparent" : ""}`}
       style={{
         color: "var(--warning)",
-        ...(captionBox ? {} : PLATE[variant]),
+        // A folded plate takes its wash from a class instead, so `max-lg:` can lift it.
+        ...(captionBox ? {} : folded ? { ...PLATE[variant], background: undefined } : PLATE[variant]),
         ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
       }}
     >
@@ -336,7 +345,7 @@ export function BuyTag({
  * The row tag as I got it's button. Its own component so the ids it mints are only asked for where
  * a Shopping row draws it: the inert tag is also drawn by server-rendered figures.
  */
-function PressableTag({ press, overLimit, children }: { press: BuyTagPress; overLimit: boolean; children: ReactNode }) {
+function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagPress; overLimit: boolean; foldOver: boolean; children: ReactNode }) {
   const descriptionId = useId();
   const underId = useId();
   const { state: pressState, onPress, cardName, under } = press;
@@ -370,7 +379,7 @@ function PressableTag({ press, overLimit, children }: { press: BuyTagPress; over
         id={descriptionId}
         className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT.row} group-focus-visible/buy:outline-2 group-focus-visible/buy:outline-offset-2 group-focus-visible/buy:[outline-style:solid] group-focus-visible/buy:outline-[color:var(--accent)] ${
           pressState === "rest" ? WASH.rest : pressState === "open" ? WASH.open : WASH.idle
-        }`}
+        }${foldOver ? " max-lg:bg-transparent" : ""}`}
         style={{
           color: "var(--warning)",
           ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
@@ -380,7 +389,7 @@ function PressableTag({ press, overLimit, children }: { press: BuyTagPress; over
         {children}
       </span>
       {under ? (
-        <span id={underId} className="block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
+        <span id={underId} className={`${foldOver ? "sr-only" : "block"} lg:hidden font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
           {under}
         </span>
       ) : null}

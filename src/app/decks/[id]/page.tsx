@@ -82,6 +82,7 @@ import { printedNameOf } from "../../../lib/collection/browse";
 import { loadDeckTokens } from "../../../lib/tokens/read";
 import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
 import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
+import { phoneShoppingRowBEnabled } from "../../../lib/decks/phone-shopping-row-flag";
 import { GotItProvider } from "../../../components/decks/got-it";
 import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 import { changeCommanderEnabled } from "../../../lib/commander-change/flag";
@@ -736,8 +737,15 @@ export default async function DeckBuilderPage({
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
   // `socialFriends`: the stand-ins modal reads friends' spares from the uncached route (Social R2 PR 8a).
+  // `phoneShoppingRowB`: the phone Shopping row's option B (Social R2 PR 7).
   const switched = (
-    <DeckPageSwitches howItWorks={howItWorksEnabled(env)} socialFriends={socialFriendsEnabled(env)}>{shell}</DeckPageSwitches>
+    <DeckPageSwitches
+      howItWorks={howItWorksEnabled(env)}
+      socialFriends={socialFriendsEnabled(env)}
+      phoneShoppingRowB={phoneShoppingRowBEnabled(env)}
+    >
+      {shell}
+    </DeckPageSwitches>
   );
   // I got it (both switches): the Shopping rows' tags open its confirm. Without it every row is
   // main's (E1). Keyed per deck, so an open confirm never carries to another deck's page.

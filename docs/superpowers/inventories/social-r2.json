@@ -1,0 +1,55 @@
+{
+  "feature": "Social R2 (wishlist and friends' spares): the surfaces each PR adds. PR 7: the phone Shopping row's option B and the `over $N` key (handoff design_handoff_the99_social_r2, R3 - Rows-Phone options; plan 2026-10-15-social-r2.md)",
+  "clearAbout": true,
+  "note": "PR 7 needs a deck with a Shopping list, SWAP_TOOLS_ENABLED=true and SHOPPING_MARK_BOUGHT_ENABLED=true (the tag is a button and the key draws both items), and SHEET_DECK naming it, with OVER_CARD a card in it over the deck's limit. Run it TWICE against the same data, once with PHONE_SHOPPING_ROW_B_ENABLED unset (the shipped row) and once with it 'true' (option B): the switch is the server's, so it is the server that changes between runs, and the sheet is written to the same `out`, so move contact-sheets/social-r2 aside between runs. The first row scrolls to the ⇄ on Plateau (named literally, since `scrollTo` takes no `${VAR}`: change it with OVER_CARD), so the rows' second line is in the photograph. Read-only: it presses the ⇄ and nothing else. Later R2 PRs add their rows here.",
+  "out": "contact-sheets/social-r2",
+  "rows": [
+    {
+      "id": "pr7-shopping",
+      "label": "/decks/[id] Shopping: the phone row (switch on: name and ✕ on line 1, figure, ⇄ and tag on line 2, `over $N` in the key; off: the shipped row), the desktop row unchanged either way",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 800
+        },
+        {
+          "scrollTo": "button[aria-label^='Cheaper stand-ins for Plateau,']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "pr7-shopping-standins",
+      "label": "/decks/[id] Shopping: the ⇄ on an over-limit row, pressed (the same stand-ins sheet from the new press)",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for ${OVER_CARD},",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

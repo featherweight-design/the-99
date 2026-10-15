@@ -60,6 +60,7 @@ vi.mock("../../app/collection/history-actions", () => ({ previewRevert: vi.fn(),
 
 const { DecklistRow } = await import("./decklist-row");
 const { GotItProvider } = await import("./got-it");
+const { DeckPageSwitches } = await import("./deck-page-switches");
 const { BuilderShell } = await import("./builder-shell");
 
 // Several tests hold a mutation mid-flight on purpose, since the optimistic
@@ -1620,5 +1621,96 @@ describe("DecklistRow readOnly count", () => {
   it("leaves it to the remove control in a deck", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 3 }} newestAsOf={null} />);
     expect(screen.queryByText(addPanelCopy.row.quantitySpoken(3))).toBeNull();
+  });
+});
+
+// Social R2 PR 7: the phone Shopping row's option B, behind PHONE_SHOPPING_ROW_B_ENABLED. Off, the row is the
+// shipped one; on, below lg the name and the ✕ take line 1 and `over $N` folds into the outlined tag. Every
+// phone class is `max-lg:`, so from lg the row is the one it was.
+describe("DecklistRow, phone Shopping row option B", () => {
+  const asOf = new Date("2026-09-20T00:00:00Z");
+  const priced = (cents: number, extra: Partial<DeckDetailCard> = {}) =>
+    ({ ...(card as DeckDetailCard), owned: false, price: { cents, foilCents: null, etchedCents: null, asOf }, ...extra }) as DeckDetailCard;
+  const inB = (ui: React.ReactNode, on: boolean) =>
+    renderRow(
+      <DeckPageSwitches howItWorks={false} phoneShoppingRowB={on}>
+        <SwapToolsProvider deckId="d1" deckName="Test deck" storedLimitCents={null}>
+          <GotItProvider deckId="d1">{ui}</GotItProvider>
+        </SwapToolsProvider>
+      </DeckPageSwitches>,
+    );
+  const row = () => document.querySelector<HTMLElement>("[data-decklist-row]")!;
+  const overStack = () => screen.getAllByText(swapToolsCopy.row.over("$10")).filter((el) => el.className.includes("block lg:hidden"));
+
+  it("is the shipped row with the switch off: no phone line classes, `over $10` stacked under the tag, the 44px ⇄", () => {
+    inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />, false);
+    expect(row().className).not.toContain("max-lg:");
+    expect(row().innerHTML).not.toContain("max-lg:order");
+    expect(overStack()).toHaveLength(1);
+    const swap = screen.getByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") });
+    expect(swap.className).toContain("w-[44px] h-[44px] -mr-[9px]");
+    expect(swap.className).not.toContain("max-lg:");
+  });
+
+  it("puts the name and ✕ on line 1 and the figure, ⇄ and tag on line 2 with it on", () => {
+    inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />, true);
+    expect(row().className).toContain("max-lg:flex-wrap");
+    // The break between the lines is an empty aria-hidden element.
+    const br = row().querySelector<HTMLElement>("[aria-hidden='true'].max-lg\\:basis-full");
+    expect(br).not.toBeNull();
+    expect(br!.textContent).toBe("");
+    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
+    expect(remove.className).toContain("max-lg:order-2");
+    const swap = screen.getByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") });
+    expect(swap.className).toContain("max-lg:order-7");
+    // The 44px hit is kept; the drawn press inside it is 40x36.
+    expect(swap.className).toContain("w-[44px] h-[44px]");
+    expect(swap.firstElementChild!.className).toContain("max-lg:w-[40px]");
+    const tag = screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") });
+    expect(tag.parentElement!.className).toContain("max-lg:order-8");
+    expect(tag.parentElement!.className).toContain("max-lg:min-h-[44px]");
+    expect(tag.parentElement!.className).toContain("lg:contents");
+  });
+
+  it("folds `over $10` into the outlined tag: spoken, no longer drawn under it", () => {
+    inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />, true);
+    // No visible stack: the copy beside the tag is screen-reader text, gone from lg where the desktop copy draws.
+    expect(overStack()).toHaveLength(0);
+    const tag = screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") });
+    const under = screen.getAllByText(swapToolsCopy.row.over("$10")).find((el) => el.className.includes("sr-only"))!;
+    expect(under.className).toContain("lg:hidden");
+    expect(tag.getAttribute("aria-describedby")).toContain(under.id);
+    // The plate keeps its ring and drops its wash below lg.
+    const plate = tag.firstElementChild as HTMLElement;
+    expect(plate.style.boxShadow).toBe(OVER_LIMIT_RING);
+    expect(plate.className).toContain("max-lg:bg-transparent");
+  });
+
+  it("leaves a row under the limit with its wash and no ⇄", () => {
+    inB(<DecklistRow deckId="d1" card={priced(900)} shoppingFigure={24} inShopping newestAsOf={asOf} />, true);
+    const tag = screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") });
+    expect((tag.firstElementChild as HTMLElement).className).not.toContain("max-lg:bg-transparent");
+    expect(screen.queryByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") })).toBeNull();
+    // The 22px desktop spacer is not drawn below lg, where it would be a stray flex item.
+    expect(row().querySelector(".max-lg\\:hidden")).not.toBeNull();
+  });
+
+  it("shows a two-face card's front face on the phone and the whole name from lg", () => {
+    const dfc = priced(1500, { name: "Delver of Secrets // Insectile Aberration", layout: "transform" } as Partial<DeckDetailCard>);
+    inB(<DecklistRow deckId="d1" card={dfc} shoppingFigure={24} inShopping newestAsOf={asOf} />, true);
+    const front = screen.getByText("Delver of Secrets", { selector: "span.lg\\:hidden" });
+    const whole = screen.getByText("Delver of Secrets // Insectile Aberration", { selector: "span.hidden" });
+    expect(front).toBeInTheDocument();
+    expect(whole.className).toContain("lg:inline");
+    // The trigger's accessible name stays the whole card.
+    expect(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Delver of Secrets // Insectile Aberration") })).toBeInTheDocument();
+    cleanup();
+    inB(<DecklistRow deckId="d1" card={dfc} shoppingFigure={24} inShopping newestAsOf={asOf} />, false);
+    expect(screen.queryByText("Delver of Secrets", { selector: "span.lg\\:hidden" })).toBeNull();
+  });
+
+  it("changes nothing outside Shopping", () => {
+    inB(<DecklistRow deckId="d1" card={priced(1500)} newestAsOf={asOf} />, true);
+    expect(row().className).not.toContain("max-lg:");
   });
 });
