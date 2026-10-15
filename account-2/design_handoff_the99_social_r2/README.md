@@ -27,6 +27,21 @@ sheet, the deck's Shopping view and key, `ModalChrome`). New parts carry a dashe
 
 ---
 
+## Round 3 changes (Hugh's notes on round 2, 2026-10-15)
+
+Boards: `The 99 - Social R2 (R3).dc.html` and `R3 - *.dc.html` (start here; `R2 - *` is superseded).
+
+- **Bookmark and Collected are locked.**
+- **Setting the count from the tab:** Add to wishlist in the search results turns into the want stepper in place (W2, WP2).
+- **One control in card details:** the footer link is gone. The box gains a Wishlist section whose `Add to wishlist` button becomes `In your wishlist`, the stepper, have and Remove in the same spot (D1, D2).
+- **A collected card leaves the list.** No Collected group and no Clear collected. The tab shows a one-time receipt strip naming what left (W4, WP4). This reverses Q9's "stays until cleared" (G5). A friend's tiles read `wants N` only.
+- **Mobile friend rows:** › and … sit at the right edge (PP1).
+- **Spare marker beside the buy tag**, 32px outlined press on desktop, 40px on phone; off wishlist tiles; empty space kept on rows without one so buy tags line up (S2, SP2).
+- **Foot line:** `Reach out to offer a trade or bargain your prized family goat, and it's yours!`
+- **G5 (Eng):** delete the line in the same transaction as the collection write that reaches the want (upload, Add cards, edit copies, precon add) and keep what left for the strip; a read never deletes.
+
+---
+
 ## Decisions (round 2)
 
 **1. The wishlist is Collection › Wishlist**, a fifth tab after History (`CollectionPlaceHead`). Nothing is added to the

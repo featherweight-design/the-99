@@ -1,6 +1,6 @@
 # READINESS — Social R2 (the wishlist, and friends' spares)
 
-**🟡 Round 2, for Hugh's audit.** Every R2 state is drawn at both widths, empty states first, over the shipped pages Hugh
+**🟡 Round 3, for Hugh's audit** (round 3 boards are `R3 - *`). Every R2 state is drawn at both widths, empty states first, over the shipped pages Hugh
 sent, with every board rendered and measured so none is cut off. Not green until Hugh approves (and picks the icon and
 the word) and engineering confirms G1 to G4 and G7 are in the plan.
 
@@ -10,7 +10,7 @@ the word) and engineering confirms G1 to G4 and G7 are in the plan.
 |---|---|
 | Card level, any printing | Tiles name the card; no printing chosen anywhere; one tile per card. |
 | Wanted = copies in all | The stepper is the total; `want N · have N` reads against it. |
-| Collected derived, stays until cleared | Owned ≥ wanted on each read; the tile moves to Collected and waits for Remove or Clear collected. |
+| Collected | Changed in round 3 at Hugh's direction: a collected card leaves the list, with a one-time strip (G5). |
 | Works with no friends | Own switch and tab; no friends line, markers or friend pages (W1, WP1). |
 | A friend's wishlist always visible | One quiet line says so; no toggle anywhere. |
 | A friend sees card, wanted, collected; never owned | Friend tiles read `wants N` / `✓ collected`. |

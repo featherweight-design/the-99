@@ -8,15 +8,15 @@ export const wishlistCopy = {
   tab: "Wishlist", // Collection place strip, after History
 
   page: {
-    meta: (wanted: number, collected: number) => `${wanted} wanted · ${collected} collected`,
+    meta: (wanted: number) => `${wanted} wanted`,
     friendsLine: "Your friends can see this list", // only with at least one friend
     search: { placeholder: "Add a card to your wishlist…", add: "Add to wishlist", addShort: "Add", added: "Added", onList: "On your wishlist" },
     emptyTitle: "Nothing on your wishlist yet",
     emptyBody:
-      "Cards you want that no deck is asking for. Search for one above, or press Add to wishlist in any card’s details. Any printing counts. Once your collection holds as many as you want, the card moves to Collected.",
-    collectedHead: "Collected",
-    clearCollected: "Clear collected",
-    clearedCollected: (n: number) => `Cleared ${n} collected ${n === 1 ? "card" : "cards"} from your wishlist.`, // role status
+      "Cards you want that no deck is asking for. Search for one above, or press Add to wishlist in any card’s details. Any printing counts. Once your collection holds as many as you want, the card leaves the list, and this tab tells you once.",
+    // Round 3: one-time receipt strip (role status, bare ✕) for cards that left because you collected them.
+    collectedLeft: (names: string) => `Collected since you last looked: ${names}. They’ve left your wishlist.`,
+    collectedLeftShort: (names: string) => `Collected: ${names}. They’ve left your wishlist.`, // phone, first names
   },
 
   tile: {
@@ -26,7 +26,7 @@ export const wishlistCopy = {
 
   details: {
     add: "Add to wishlist",
-    onList: "On your wishlist ›", // opens Collection › Wishlist
+    section0: "Wishlist", // box label before the card is added
     section: "In your wishlist",
     remove: "Remove",
     want: "want",
@@ -46,7 +46,7 @@ export const wishlistCopy = {
     wants: (n: number) => `wants ${n}`,
     collected: "✓ collected",
     emptyTitle: (name: string) => `${name}’s wishlist is empty`,
-    emptyBody: (name: string) => `When ${name} adds a card, it shows here with how many they want, and reads collected once they have them.`,
+    emptyBody: (name: string) => `When ${name} adds a card, it shows here with how many they want until they have them.`,
   },
 };
 
@@ -56,6 +56,6 @@ export const spareCopy = {
   title: (card: string) => `Spares of ${card}`,
   via: (pod: string) => `shares with ${pod}`,
   count: (n: number) => spares(n),
-  foot: "A spare is a copy none of their decks uses, drafts included. View only: sort it out with them at the table.",
+  foot: "A spare is a copy none of their decks uses, drafts included. Reach out to offer a trade or bargain your prized family goat, and it’s yours!",
   close: "Close",
 };

@@ -11,7 +11,8 @@ Builds on Round 1: `design_handoff_the99_social_r1/` (PR #1796).
 
 | Read | For |
 |---|---|
-| **`The 99 - Social R2 (R2).dc.html`** | **Start here: Hugh's twelve notes answered, icon and word options, gaps.** |
+| **`The 99 - Social R2 (R3).dc.html`** and `R3 - *.dc.html` | **Start here: round 3, Hugh's notes on round 2 answered.** |
+| `The 99 - Social R2 (R2).dc.html`, `R2 - *.dc.html` | Round 2, superseded. |
 | `R2 - Wishlist-Desktop.dc.html` / `R2 - Wishlist-Phone.dc.html` | Collection › Wishlist, empty first, through Collected. |
 | `R2 - Details-Desktop.dc.html` / `R2 - Details-Phone.dc.html` | Card details' Add to wishlist and In your wishlist. |
 | `R2 - Friend-Desktop.dc.html` / `R2 - Friend-Phone.dc.html` | A friend's page and their wishlist, view only. |
