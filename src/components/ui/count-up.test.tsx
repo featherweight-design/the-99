@@ -11,6 +11,7 @@ const source = readFileSync(join(process.cwd(), "src/components/ui/count-up.tsx"
 const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 const visible = (c: HTMLElement) => c.querySelector("[data-count-up]")?.textContent;
 const twin = (c: HTMLElement) => c.querySelector(".sr-only")?.textContent;
+const whole = (c: HTMLElement) => c.querySelector("[aria-hidden]")?.textContent;
 
 function reduce(on: boolean) {
   window.matchMedia = ((q: string) => ({ matches: on && q.includes("reduce"), addEventListener() {}, removeEventListener() {}, media: q })) as never;
@@ -38,18 +39,18 @@ describe("CountUp", () => {
   });
 
   it("starts at 0, waits the beat, counts to the figure, and the real value is in the twin throughout", () => {
-    const { container } = render(<CountUp value={312} text={(n) => `${n} cards`} />);
+    const { container } = render(<CountUp value={312} after=" cards" />);
     expect(twin(container)).toBe("312 cards");
-    expect(visible(container)).toBe("0 cards");
+    expect(whole(container)).toBe("0 cards");
     act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS - 10));
-    expect(visible(container)).toBe("0 cards");
+    expect(whole(container)).toBe("0 cards");
     act(() => void vi.advanceTimersByTime(COUNT_UP_MS / 2 + 10));
     const mid = Number.parseInt(visible(container) ?? "", 10);
     expect(mid).toBeGreaterThan(0);
     expect(mid).toBeLessThan(312);
     expect(twin(container)).toBe("312 cards");
     act(() => void vi.advanceTimersByTime(COUNT_UP_MS));
-    expect(visible(container)).toBe("312 cards");
+    expect(whole(container)).toBe("312 cards");
   });
 
   it("hides the moving digits from assistive tech", () => {
@@ -59,7 +60,7 @@ describe("CountUp", () => {
   });
 
   it("does not count a figure under 10", () => {
-    const { container } = render(<CountUp value={7} text={(n) => `${n} cards`} />);
+    const { container } = render(<CountUp value={7} after=" cards" />);
     expect(container.textContent).toBe("7 cards");
     expect(container.querySelector("[data-count-up]")).toBeNull();
   });
@@ -100,5 +101,15 @@ describe("CountUp", () => {
     act(() => void document.dispatchEvent(new Event("visibilitychange")));
     expect(visible(container)).toBe("312");
     Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+  });
+});
+
+describe("CountUp around its words", () => {
+  it("moves the number alone and leaves the text and a figure beside it still", () => {
+    const { container } = render(<CountUp value={1284} before="" after=" of 5,000 · $94.80" />);
+    expect(twin(container)).toBe("1,284 of 5,000 · $94.80");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + COUNT_UP_MS / 2));
+    expect(whole(container)?.endsWith(" of 5,000 · $94.80")).toBe(true);
+    expect(container.querySelector("[data-count-up]")?.getAttribute("style")).toContain("min-width: 5ch");
   });
 });

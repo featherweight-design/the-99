@@ -4,14 +4,16 @@
 // changes; it waits `--motion-delay` (100ms), runs `--motion-duration` (320ms) on `--motion-ease`'s curve, in whole numbers.
 //
 // Only COUNTS. Never money (a ticking price reads as a meter) and never a percentage: the caller passes the number alone and
-// `text` builds the string around it, so the copy stays the copy's and a figure beside the count (the money after the copies)
-// stays still. A figure under 10 does not count, since there is nothing to watch.
+// the words around it as `before` and `after` (plain strings, so a server component can render this: no function crosses
+// the boundary; `countParts` in `lib/ui/count-parts.ts` cuts a copy string around its number). The number alone moves and the
+// text around it, the money after the copies included, stays still. A figure under 10 does not count.
 //
 // The real figure is in the text from the first render: the moving digits are `aria-hidden` and an `sr-only` twin carries the
 // final string, so assistive tech hears one value and never the count in between. The server renders the real figure too
 // (no script, no zero); once the page hydrates the digits drop to the start and count, so a first load shows the real figure
 // for the moments before hydration and then counts from 0: an accepted flash, since the alternative is a 0 with no script.
-// The digits sit in a box as wide as the final figure, so the neighbours do not shift as it grows. Reduced motion shows the
+// The digits sit in a box as wide as the final figure (in `ch`, which tabular digits make exact), right-aligned, so the
+// words around them do not shift as it grows. Reduced motion shows the
 // final figure and never animates.
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -36,9 +38,12 @@ export function easeInOut(t: number): number {
   return bez(y1, y2, Math.min(1, Math.max(0, s)));
 }
 
+/** The figure as the app writes a count: thousands separators, en-US. */
+const format = (n: number) => n.toLocaleString("en-US");
+
 const reduced = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export function CountUp({ value, text = String }: { value: number; text?: (n: number) => string }) {
+export function CountUp({ value, before = "", after = "" }: { value: number; before?: string; after?: string }) {
   const [shown, setShown] = useState(value);
   // What the digits showed last, so a change counts from it (and a first draw from 0).
   const last = useRef<number | null>(null);
@@ -88,13 +93,17 @@ export function CountUp({ value, text = String }: { value: number; text?: (n: nu
     return () => document.removeEventListener("visibilitychange", settle);
   }, [value]);
 
-  if (value < COUNT_UP_MIN) return <>{text(value)}</>;
+  const whole = `${before}${format(value)}${after}`;
+  if (value < COUNT_UP_MIN) return <>{whole}</>;
   return (
     <>
-      <span className="sr-only">{text(value)}</span>
-      <span aria-hidden="true" className="inline-grid tabular-nums">
-        <span className="invisible col-start-1 row-start-1">{text(value)}</span>
-        <span className="col-start-1 row-start-1" data-count-up>{text(shown)}</span>
+      <span className="sr-only">{whole}</span>
+      <span aria-hidden="true" className="tabular-nums">
+        {before}
+        <span className="inline-block text-end" style={{ minWidth: `${format(value).length}ch` }} data-count-up>
+          {format(shown)}
+        </span>
+        {after}
       </span>
     </>
   );

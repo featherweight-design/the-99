@@ -21,6 +21,7 @@
 
 import { GhostButton } from "@/components/ui/button";
 import { CountUp } from "@/components/ui/count-up";
+import { countParts } from "../../lib/ui/count-parts";
 import type { ReactNode } from "react";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
@@ -65,6 +66,10 @@ export function CommitmentsCard({
   cartEnabled?: boolean;
 }) {
   const c = refreshCopy.home;
+  // Each value as the copy module writes it; `CountUp` moves the number inside it and leaves the words and the money.
+  const inUse = c.inUseValue(commitments.inUse.toLocaleString("en-US"), totalCards.toLocaleString("en-US"));
+  const overCommitted = c.overCommittedValue(commitments.overCommitted);
+  const toBuy = c.toBuyValue(shopping.total.copies, formatCents(shopping.total.cents));
   return (
     <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
       {/* §SectionLabel, with this instance's own `margin-top: 4`. */}
@@ -78,17 +83,12 @@ export function CommitmentsCard({
           // Thousands separators at the call site: `n` in commander-explained.ts
           // is that file's own private helper, and the rest of Home formats
           // here rather than exporting it.
-          value={
-            <CountUp
-              value={commitments.inUse}
-              text={(n) => c.inUseValue(n.toLocaleString("en-US"), totalCards.toLocaleString("en-US"))}
-            />
-          }
+          value={<CountUp value={commitments.inUse} {...countParts(inUse, commitments.inUse)} />}
           color="var(--accent)"
         />
         <Row
           label={c.overCommittedRow}
-          value={<CountUp value={commitments.overCommitted} text={c.overCommittedValue} />}
+          value={<CountUp value={commitments.overCommitted} {...countParts(overCommitted, commitments.overCommitted)} />}
           color="var(--danger)"
         />
         <Row
@@ -97,12 +97,7 @@ export function CommitmentsCard({
           // reads. An unpriced copy still counts in the left figure and not in
           // the right: the feed omits an out-of-stock card rather than pricing
           // it at zero, and nothing here is free.
-          value={
-            <CountUp
-              value={shopping.total.copies}
-              text={(n) => c.toBuyValue(n, formatCents(shopping.total.cents))}
-            />
-          }
+          value={<CountUp value={shopping.total.copies} {...countParts(toBuy, shopping.total.copies)} />}
           color="var(--fg)"
         />
 
