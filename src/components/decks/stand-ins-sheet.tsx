@@ -33,6 +33,9 @@ import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { BuyTag } from "./buy-tag";
 import { MutationError } from "./mutation-error";
 import { ModalChrome } from "./receipt-modal";
+import { useDeckPageSwitches } from "./deck-page-switches";
+import { FriendSpareSection, useCardSpares } from "../social/friend-spares";
+import { spareCopy } from "../../lib/copy/social";
 import { landOnReceipt } from "./swap-receipt";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
@@ -382,6 +385,9 @@ export function StandInsSheet({
   const tools = useSwapTools();
   const { close: closeCard } = useCardDetail();
   const [load, setLoad] = useState<Load>({ state: "loading" });
+  // Friends' spares of this card (Social R2 PR 8a), read beside the stand-ins when the reader's friends switch is on.
+  const { socialFriends } = useDeckPageSwitches();
+  const spareRead = useCardSpares(card.oracleId, socialFriends);
 
   const deckId = tools?.deckId;
   // Whether the list in hand is every stand-in (`Show all` asked for it) or the capped first read. A ref
@@ -482,6 +488,19 @@ export function StandInsSheet({
 
   if (!tools) return null;
   const model = load.state === "ready" ? sheetModel(load.read) : null;
+  const spares = spareRead === "loading" ? [] : spareRead;
+  const hasSpares = spares.length > 0;
+  // The title waits for both reads (plan, "Stand-ins modal"), so it never names one thing and then another:
+  // `Before you buy` with spares and stand-ins, `Friends with a spare` with spares alone (a failed stand-ins read
+  // included), and the shipped title otherwise. Off, it is the shipped title from the first frame.
+  const settled = spareRead !== "loading" && load.state !== "loading";
+  // The body waits with the title: until both reads are in it holds the loading block, so neither answer draws
+  // and then has the other land above or beside it. Off, `settled` is the stand-ins read alone, as shipped.
+  const shown = settled ? model : null;
+  const title = !socialFriends ? copy.title
+    : !settled ? ""
+    : hasSpares ? (model && model.groups.length > 0 ? spareCopy.modalTitleBoth : spareCopy.modalTitleSpares)
+    : copy.title;
   const over = isOverLimit(card.price, newestAsOf, tools.limitCents);
   const status = loadingStatus(card.role);
   const name = printedFaceName(card);
@@ -639,11 +658,14 @@ export function StandInsSheet({
     // It opens under the pointer that pressed its ⇄, often right over a row: a preview waits for a move.
     <HoverPreviewProvider waitForMove>
     <ModalChrome
-      title={copy.title}
-      closeLabel={copy.closeAria}
+      title={title}
+      closeLabel={hasSpares ? spareCopy.close : copy.closeAria}
       onClose={onClose}
       width={640}
+      // Fixed: a label that moved when the spares landed would re-register the sheet under an open card.
       backLabel={copy.backLabel}
+      // Named while the title waits, or the dialog would open with no accessible name.
+      pendingName={copy.title}
       stackFooter={stackFooter}
       overCard={fromCard ? { name, backAria: copy.backToCardAria(name) } : undefined}
     >
@@ -678,7 +700,10 @@ export function StandInsSheet({
           ) : null}
         </section>
 
-        {load.state === "loading" ? (
+        {/* Friends first (O1): the copy a friend could hand over comes before any card to buy instead. */}
+        {settled && hasSpares ? <FriendSpareSection spares={spares} /> : null}
+
+        {!settled ? (
           <div
             role="status"
             className="flex flex-col items-center justify-center text-center min-h-[250px] px-[20px] py-[28px] rounded-[10px]"
@@ -694,7 +719,7 @@ export function StandInsSheet({
           </div>
         ) : null}
 
-        {load.state === "failed" ? (
+        {settled && load.state === "failed" ? (
           <div
             role="alert"
             className="flex flex-col items-center text-center px-[20px] pt-[30px] pb-[26px] rounded-[10px] border border-[color:var(--border)]"
@@ -727,17 +752,18 @@ export function StandInsSheet({
         {taken ? (
           <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>{copy.takenNote(name)}</p>
         ) : null}
-        {model?.lead && !taken ? (
-          <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}>{model.lead}</p>
+        {shown?.lead && !taken ? (
+          <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}>{shown.lead}</p>
         ) : null}
 
-        {model?.sentence ? (
+        {/* O2: with a friend's spare in hand, the sentence saying nothing cheaper exists is not drawn. */}
+        {shown?.sentence && !hasSpares ? (
           <p className="m-0 pt-[12px] border-t border-[color:var(--border)] text-[13px] leading-[1.6] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}>
-            {model.sentence}
+            {shown.sentence}
           </p>
         ) : null}
 
-        <ArrivalOrder>{model?.groups.map((group) => (
+        <ArrivalOrder>{shown?.groups.map((group) => (
           <StandInGroup
             key={group.heading}
             group={group}
@@ -762,7 +788,7 @@ export function StandInsSheet({
           </StandInGroup>
         ))}</ArrivalOrder>
 
-        {model?.foot && provenance ? (
+        {shown?.foot && provenance ? (
           <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>{copy.foot(provenance.when)}</p>
         ) : null}
       </div>

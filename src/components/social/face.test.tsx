@@ -10,7 +10,7 @@ const SOKKA = { artCropUri: "https://cards.scryfall.io/art_crop/sokka.jpg" };
 
 describe("Face", () => {
   it("draws the commander's art at each size, and no initials", () => {
-    for (const size of [64, 40, 26] as const) {
+    for (const size of [64, 40, 30, 26] as const) {
       const { container } = render(<Face name="Dave" commander={SOKKA} size={size} />);
       const face = container.querySelector("[data-face]")!;
       expect(face.getAttribute("data-face")).toBe("art");
@@ -19,6 +19,14 @@ describe("Face", () => {
       expect(face.textContent).toBe("");
       cleanup();
     }
+  });
+
+  it("draws the 30 as the modal's friend row: 8px corners and the bordered tile, not the disc", () => {
+    const { container } = render(<Face name="Jo" commander={null} size={30} />);
+    const face = container.querySelector("[data-face]")!;
+    expect(face.className).toContain("w-[30px]");
+    expect(face.className).toContain("rounded-[8px]");
+    expect(face.className).toContain("[border:1px_solid_var(--border-strong)]");
   });
 
   it("draws initials while no commander is chosen, or one has no art", () => {

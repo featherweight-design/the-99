@@ -120,10 +120,13 @@ export function ModalChrome({
   titleClassName = "truncate leading-tight text-[15px] md:text-[16px]",
   stackFooter,
   overCard,
+  pendingName,
   children,
 }: {
   mark?: React.ReactNode;
   title: string;
+  /** The dialog's name while `title` is empty (a sheet whose title waits on its reads): read, never drawn. */
+  pendingName?: string;
   aside?: React.ReactNode;
   closeLabel: string;
   onClose: () => void;
@@ -241,7 +244,7 @@ export function ModalChrome({
             className={"m-0 min-w-0 font-display font-bold outline-none " + titleClassName}
             style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
           >
-            {title}
+            {title || (pendingName ? <span className="sr-only">{pendingName}</span> : null)}
           </h2>
           {aside != null ? (
             <span className="min-w-0 truncate font-mono text-[11.5px] md:text-[12px]" style={{ color: "var(--fg-faint)" }}>

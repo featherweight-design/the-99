@@ -195,3 +195,24 @@ export const socialCopy = {
     delConfirm: "Delete pod",
   },
 } as const;
+
+const spares = (x: number) => (x === 1 ? "1 spare" : `${x} spares`);
+
+/**
+ * Friends' spares in the stand-ins modal (Social R2 PR 8a; handoff `social-r2 · copy strings.ts` `spareCopy`,
+ * frames S3 and O1 to O3). The modal's title is `modalTitleBoth` with spares and stand-ins, `modalTitleSpares`
+ * with spares alone, and the shipped `Cheaper stand-ins` otherwise.
+ */
+export const spareCopy = {
+  modalTitleBoth: "Before you buy",
+  modalTitleSpares: "Friends with a spare",
+  close: "Close",
+  /** The section's head: the title's words and how many friends have one. */
+  section: (n: number) => `Friends with a spare · ${n}`,
+  /** Beside the head: nothing here can be taken or asked for in the app (Q3). */
+  viewOnly: "view only",
+  /** The pods a friend's share reaches the reader through, listed as `shares with A and B`. */
+  via: (pods: readonly string[]) => `shares with ${new Intl.ListFormat("en-US", { type: "conjunction" }).format(pods)}`,
+  count: (n: number) => spares(n),
+  foot: "A spare is a copy none of their decks uses, drafts included. Reach out to offer a trade or bargain your prized family goat, and it’s yours!",
+} as const;

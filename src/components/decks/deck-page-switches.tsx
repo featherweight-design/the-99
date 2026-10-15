@@ -5,19 +5,27 @@ import { createContext, useContext } from "react";
 /**
  * Feature switches the deck page reads on the server and hands to client components that sit
  * several layers down, where drilling a prop would thread it through every component between.
- * Holds only `howItWorks` for now; the deck page's older switches are still passed as props.
+ * Holds `howItWorks` and `socialFriends`; the deck page's older switches are still passed as props.
  *
  * The default is every switch OFF, so a component rendered outside the provider (a test, a
  * specimen on /about) draws exactly what it drew before the switch existed.
  */
-export type DeckPageSwitchState = { howItWorks: boolean };
+export type DeckPageSwitchState = {
+  howItWorks: boolean;
+  /** `SOCIAL_FRIENDS_ENABLED` for the reader: the stand-ins modal reads friends' spares (Social R2 PR 8a). */
+  socialFriends: boolean;
+};
 
-const OFF: DeckPageSwitchState = { howItWorks: false };
+const OFF: DeckPageSwitchState = { howItWorks: false, socialFriends: false };
 
 const DeckPageSwitchContext = createContext<DeckPageSwitchState>(OFF);
 
-export function DeckPageSwitches({ howItWorks, children }: DeckPageSwitchState & { children: React.ReactNode }) {
-  return <DeckPageSwitchContext.Provider value={{ howItWorks }}>{children}</DeckPageSwitchContext.Provider>;
+export function DeckPageSwitches({
+  howItWorks,
+  socialFriends = false,
+  children,
+}: Omit<DeckPageSwitchState, "socialFriends"> & { socialFriends?: boolean; children: React.ReactNode }) {
+  return <DeckPageSwitchContext.Provider value={{ howItWorks, socialFriends }}>{children}</DeckPageSwitchContext.Provider>;
 }
 
 export function useDeckPageSwitches(): DeckPageSwitchState {

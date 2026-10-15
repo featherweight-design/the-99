@@ -49,6 +49,8 @@ describe("the deck page hands DeckPageSwitches the how-it-works flag", () => {
     const els = switchElements();
     expect(els).toHaveLength(1);
     expect(els[0].attrs.howItWorks).toBe("howItWorksEnabled(env)");
+    // Social R2 PR 8a: the stand-ins modal's spares follow the reader's own friends switch.
+    expect(els[0].attrs.socialFriends).toBe("socialFriendsEnabled(env)");
     expect(els[0].children).toBe("{shell}");
   });
 
