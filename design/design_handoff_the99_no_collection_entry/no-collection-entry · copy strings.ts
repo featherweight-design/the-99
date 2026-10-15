@@ -99,7 +99,7 @@ export const noCollectionEntryCopy = {
     title: "Nothing to rank yet",
     commandersBody: "We rank commanders from the cards you own. Add some and every one you can build shows up here.",
     discoverBody: "Discover finds commanders your cards are close to building. Add some and they show up here.",
-    button: "Add your cards", // → /collection; switch off: the shipped "Upload collection" → /collection/replace
+    button: "Add your cards", // → /collection; switch off: the shipped "Upload collection" → /collection
   },
 
   // S14: Replace's warning for a collection built without an upload (replaces choiceOverwriteNoUpload's count there).

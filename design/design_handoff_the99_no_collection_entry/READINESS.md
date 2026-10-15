@@ -1,7 +1,8 @@
 # READINESS — No-collection entry (R2)
 
-**🟢 R2, approved by Hugh 2026-10-15. R2 replaces path (a)’s offer with a checkbox on the import.** Every brief state is drawn at both widths; the seven §Open questions are called. Not green
-until Hugh rules on G1 (ruling 1 on step 1) and G2 (Collection open at zero cards), which change shipped behaviour.
+**🟢 R2, approved by Hugh 2026-10-15. R2 replaces path (a)’s offer with a checkbox on the import.** Every brief state is drawn at both widths; the seven §Open questions are called. G1 is settled by
+Hugh's loosened ruling 1 (alternatives beside the upload). G2 (Collection opens at zero cards) is drawn in R2's calls
+board and was approved with R2.
 
 ## Locks held
 

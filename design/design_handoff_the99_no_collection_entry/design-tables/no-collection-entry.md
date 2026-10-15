@@ -15,6 +15,6 @@ Handoff: `design/design_handoff_the99_no_collection_entry/`. Boards drawn in Kal
 | Precon receipt (Home) | Shipped arrival band, one line mono 10.5px, `✕` only. | Shipped arrival band, 13.5px with names and History; `✕` only. |
 | Import checkbox (R2) | `/decks/import`, under Deck name, margin-top 16; 18px box, radius 4, 1.5px `--fg-faint`, ticked `--accent` with `--bg` ✓; label 13px/1.45 `--fg-body`, the whole label the press; row centred, no extra height. | Same, inside the 760 column. |
 | Import arrival, ticked (R2) | `ArrivalBand` lines: head 13.5/600 `--fg`, body 12.5 `--fg-body` + `History` `--accent` underlined, meta mono 10.5 `--fg-faint`; ✓ `--success`. | Same. |
-| Arrival dismiss (R2) | `✕` alone, `aria-label="Dismiss"`, 32px press, `--fg-faint`. | Same: the word `Dismiss` is dropped at every width. |
+| Arrival dismiss (R2) | `✕` alone, `aria-label="Dismiss"`, 44px press, `--fg-faint`. | `✕` alone, 32px press: the word `Dismiss` is dropped at every width. |
 | Refusals | Shared `ToastFrame`, above the tab bar, `role="alert"`, `Try again` `--accent` underlined. | Centre placement, bottom 24. |
 | Rankers’ empty | Shipped empty state: `Nothing to rank yet`, body, one button `Add your cards`. | Same. |

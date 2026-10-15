@@ -9,22 +9,23 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-no-collection-entry.
 
 | Read | For |
 |---|---|
-| **`The 99 - No-Collection Entry (R1).dc.html`** | **The seven calls, the locks and the gaps, in one board.** |
-| `R1 - FirstRun-Desktop.dc.html` / `R1 - FirstRun-Phone.dc.html` | Step 1 with the group; focus; the lock's note; both switches off. |
+| **`The 99 - No-Collection Entry (R2).dc.html`** | **The seven calls, the locks and the gaps, in one board.** (R1's is kept as history.) |
+| `R2 - FirstRun-Desktop.dc.html` / `R2 - FirstRun-Phone.dc.html` | Step 1 with the group; focus; the lock's note; both switches off. |
 | `R1 - PreconPick-Desktop.dc.html` / `R1 - PreconPick-Phone.dc.html` | The pick: open, picked, a twin, adding, a box already added. |
 | `R1 - PreconResult.dc.html` | Done on Home, refused, part-failed, both widths. |
 | `R2 - Import-Desktop.dc.html` / `R2 - Import-Phone.dc.html` | R2: the import checkbox, ticked and unticked, done, refused. Replaces the `R1 - Import-*` boards. |
 | `R1 - Empty-Desktop.dc.html` / `R1 - Empty-Phone.dc.html` | The empty Collection, Home with a deck and no cards, the rankers' empties. |
 | `R1 - LaterUpload.dc.html` | The first CSV over a collection built in the app. |
-| `R1 - About-Entry.dc.html` | The new About entry and two edits. |
+| `R2 - About-Entry.dc.html` | The new About entry and two edits. |
 | `README.md` | Each open question answered, with reasons; the gap report. |
 | `STATES-no-collection-entry.md` | The matrix. |
-| `READINESS.md` | R1's verdict and what engineering needs. |
+| `READINESS.md` | R2's verdict and what engineering needs. |
 | `no-collection-entry · copy strings.ts` | Every new string, for `/copy-review`. |
 | `about · start without a collection.ts` | The About entry and edits as code. |
+| `design-tables/no-collection-entry.md` | The property table. |
 | `brand/` | The locked brand sheet. |
 
-The same canvas is live as a Design artifact in account 2. Open the `.dc.html` files with `support.js` beside them.
+Where an `R2 -` board exists it replaces its `R1 -` namesake, which is kept as history. The same canvas is live as a Design artifact in account 2. Open the `.dc.html` files with `support.js` beside them.
 
 ## The answer in one line
 
