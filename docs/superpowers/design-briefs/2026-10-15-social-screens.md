@@ -125,7 +125,7 @@ Hugh answered sixteen questions on 2026-10-12. Each is given here as it was aske
   - **the wishlist**: visible (Q7).
 - **Who sees what with spares.** I see "Dave has 1 spare" on a card I need. I never see Dave's collection, his other spares, or why a copy is spare. Dave sees nothing about what I need.
 - **"Spare" reuses the app's own claim model**, the one every deck's availability is drawn from. A spare is a copy no deck of the friend's asks for: committed decks and drafts both count, so a copy only a draft wants is not spare (Q12). Nothing restates it.
-- **A pod is a quick-pick for game night** (who you play with) and the scope spares are shared with. It grants no visibility beyond friendship. A member who is not your friend, which can happen after an ownership hand-on, shows by display name only.
+- **A pod is a quick-pick for game night** (who you play with), and the group your spares are shared with. It grants no visibility beyond friendship. A member who is not your friend, which can happen after an ownership hand-on, shows by display name only.
 - **Opponent seats snapshot the friend's name and deck at log time.** History reads the same even after a rename, an unfriending or an account deletion.
 
 ## Locked (do not reopen)
