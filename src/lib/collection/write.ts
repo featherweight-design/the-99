@@ -1060,8 +1060,8 @@ async function raisedCards(
   const brought = broughtBy(plan);
   if (brought.size === 0) return {};
   const ids = [...brought.keys()].sort();
-  const current = await readRaisedReservations(tx, userId, ids);
-  const reservations = prior ?? current;
+  // `prior` was read under these same cards' claim locks, which this transaction still holds.
+  const reservations = prior ?? await readRaisedReservations(tx, userId, ids);
   const availability = await loadAvailability(userId, { oracleIds: ids, env }, tx);
   const out: Record<string, RaisedCard> = {};
   for (const [oracleId, after] of availability) {

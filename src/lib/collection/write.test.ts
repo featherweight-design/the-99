@@ -346,6 +346,6 @@ describe("the order a precon start's readouts are read in", () => {
     const placed = at("raisedCards(tx, userId, plan, opts.env, insideBefore)");
     expect(read).toBeLessThan(inside);
     expect(inside).toBeLessThan(placed);
-    expect(src).toContain("const reservations = prior ?? current;");
+    expect(src).toContain("const reservations = prior ?? await readRaisedReservations(tx, userId, ids);");
   });
 });
