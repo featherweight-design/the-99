@@ -51,6 +51,9 @@ export function CardWishlist({
   // The last count the server confirmed, which a failed step goes back to; and the step in flight that may answer.
   const confirmed = useRef(initial);
   const latest = useRef(0);
+  // Bumped by Add and Remove, which replace the line outright: a step that began before one answers into a line
+  // that is no longer its own, and moves nothing on screen.
+  const epoch = useRef(0);
   const toasts = useRef(0);
   const fail = (text: string) => setToast({ id: ++toasts.current, text });
 
@@ -76,6 +79,7 @@ export function CardWishlist({
 
   async function add() {
     const ticket = ++latest.current;
+    epoch.current += 1;
     try {
       const out = await addToWishlistAction(oracleId);
       if (ticket !== latest.current) return;
@@ -93,6 +97,7 @@ export function CardWishlist({
 
   async function step(next: number) {
     const ticket = ++latest.current;
+    const born = epoch.current;
     pending.current += 1;
     setWant(next);
     let out: WantOutcome | null = null;
@@ -102,6 +107,10 @@ export function CardWishlist({
       out = null;
     }
     pending.current -= 1;
+    if (born !== epoch.current) {
+      if (out?.ok) onWrite();
+      return;
+    }
     if (out?.ok) {
       confirmed.current = out.status === "wanted" ? out.want : null;
       if (ticket === latest.current) settle(out);
@@ -114,6 +123,7 @@ export function CardWishlist({
 
   async function remove() {
     const ticket = ++latest.current;
+    epoch.current += 1;
     try {
       const out = await removeFromWishlistAction(oracleId);
       if (ticket !== latest.current) return;

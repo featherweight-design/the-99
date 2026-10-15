@@ -142,3 +142,19 @@ describe("on the list", () => {
     expect(screen.getByTestId("want-stepper")).toBeInTheDocument();
   });
 });
+
+describe("Remove while a step is in flight", () => {
+  it("leaves the Add button standing when the earlier step answers after Remove", async () => {
+    let answerStep: (v: unknown) => void = () => {};
+    set.mockReturnValue(new Promise((r) => { answerStep = r; }));
+    remove.mockResolvedValue({ ok: true, status: "removed", have: 1 });
+    const onWrite = mount(2);
+    fireEvent.click(screen.getByRole("button", { name: c.more }));
+    fireEvent.click(screen.getByRole("button", { name: c.remove }));
+    expect(await screen.findByRole("button", { name: c.add })).toBeInTheDocument();
+    await act(async () => { answerStep(wanted(3, 1)); });
+    expect(screen.getByRole("button", { name: c.add })).toBeInTheDocument();
+    expect(screen.queryByTestId("want-stepper")).toBeNull();
+    expect(onWrite).toHaveBeenCalled();
+  });
+});
