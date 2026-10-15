@@ -1,0 +1,9 @@
+{
+  "feature": "Chevrons, PR 2: disclosures (right closed, turning down open, on the quick motion)",
+  "note": "Needs ABOUT_SHEET_ENABLED=true and HOW_IT_WORKS_ENABLED=true on the server. The only real disclosure controls a local account reaches without a token catalog or a stored analysis are /about's contents rows, which exist at phone width only (the desktop contents are a rail of links); /about's figures draw inert copies of other disclosures. A deck's Tokens group, Announced and the stats rows need that data.",
+  "out": "contact-sheets/chevrons-disclosures",
+  "rows": [
+    { "id": "about-contents-closed", "label": "/about — contents rows, closed", "view": "src/components/about/contents-r6.tsx", "widths": ["phone"], "steps": [ { "goto": "/about", "wait": "button[aria-expanded=false]:visible", "settle": 1200 } ] },
+    { "id": "about-contents-open", "label": "/about — first contents row, open", "view": "src/components/about/contents-r6.tsx", "widths": ["phone"], "steps": [ { "goto": "/about", "wait": "button[aria-expanded=false]:visible", "settle": 1200 }, { "click": "button[aria-expanded=false]:visible", "settle": 600 } ] }
+  ]
+}
