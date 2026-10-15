@@ -1,7 +1,7 @@
-import { and, desc, eq, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
-import { intakeReads } from "../../db/schema";
+import { cards, intakeReads } from "../../db/schema";
 import {
   CHOOSE_HISTORY_PAGE, decodeKey, encodeKey, shapeRun,
   type ChooseHistoryPage, type ChooseHistoryRow, type HistoryKey,
@@ -63,9 +63,22 @@ export async function loadChooseHistory(
   });
   const last = page[page.length - 1];
   return {
-    rows,
+    rows: await withArt(rows),
     nextCursor: more && last ? encodeKey({ at: last.createdAt.toISOString(), id: last.id }) : null,
   };
+}
+
+/**
+ * The art behind each row's thumbs: the catalog's crop, or its image where it has no crop. A
+ * decoration, so a failed read draws the thumbs bare rather than taking the list down.
+ */
+async function withArt(rows: ChooseHistoryRow[]): Promise<ChooseHistoryRow[]> {
+  const ids = [...new Set(rows.flatMap((r) => r.thumbs))];
+  if (ids.length === 0) return rows;
+  const art = await db.select({ id: cards.oracleId, crop: cards.artCropUri, image: cards.imageUri }).from(cards)
+    .where(inArray(cards.oracleId, ids)).catch(() => []);
+  const byId = new Map(art.map((a) => [a.id, a.crop ?? a.image ?? null]));
+  return rows.map((r) => ({ ...r, thumbArt: r.thumbs.map((id) => byId.get(id) ?? null) }));
 }
 
 /**

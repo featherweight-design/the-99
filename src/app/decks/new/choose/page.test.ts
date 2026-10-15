@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
 
-const stub = vi.hoisted(() => ({ themes: vi.fn(), chip: vi.fn(), allowance: vi.fn(), read: vi.fn(), decks: vi.fn(), page: vi.fn(), env: null as NodeJS.ProcessEnv | null }));
+const stub = vi.hoisted(() => ({ history: vi.fn(), themes: vi.fn(), chip: vi.fn(), allowance: vi.fn(), read: vi.fn(), decks: vi.fn(), page: vi.fn(), env: null as NodeJS.ProcessEnv | null }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
 vi.mock("../../../../lib/switches/request", async () => {
@@ -21,6 +21,7 @@ vi.mock("../../../../lib/intake/run-store", async (actual) => ({
   loadTheRead: stub.read,
 }));
 vi.mock("../../../../lib/intake/the-read-load", () => ({ loadReadDecks: stub.decks }));
+vi.mock("../../../../lib/intake/history-read", () => ({ loadChooseHistory: stub.history }));
 
 const { default: ChoosePage } = await import("./page");
 const { ReadPanel, ReadScope } = await import("../../../../components/intake/read-panel");
@@ -28,6 +29,7 @@ const { ReadAsBar } = await import("../../../../components/intake/read-as-bar");
 const { DimWhileReading } = await import("../../../../components/intake/read-panel");
 const { Suspense } = await import("react");
 const { IntakeForm } = await import("../../../../components/intake/intake-form");
+const { ChooseHistory } = await import("../../../../components/intake/choose-history");
 
 /** The first element of `type` anywhere in a rendered tree, props included (the look is a prop). */
 function find(node: unknown, type: unknown): { props: Record<string, unknown> } | null {
@@ -50,6 +52,7 @@ describe("the choose page", () => {
     stub.allowance.mockResolvedValue(STANDING);
     stub.read.mockResolvedValue({ kind: "none" });
     stub.decks.mockResolvedValue([]);
+    stub.history.mockReset().mockResolvedValue({ rows: [], nextCursor: null });
   });
 
   it("draws the results when the vocabulary and the card chip both fail to read", async () => {
@@ -185,6 +188,52 @@ describe("the choose page", () => {
       expect(digest).toContain("/decks/new/choose?");
       expect(digest).not.toContain("v=results");
     }
+  });
+
+  describe("History (Help me choose history PR 2)", () => {
+    const layouts = (tree: unknown) => {
+      const out: unknown[] = [];
+      const walk = (n: unknown): void => {
+        if (Array.isArray(n)) return n.forEach(walk);
+        if (!n || typeof n !== "object" || !("props" in n)) return;
+        const el = n as { type: unknown; props: Record<string, unknown> };
+        if (el.type === ChooseHistory) out.push(el.props);
+        for (const v of Object.values(el.props ?? {})) walk(v);
+      };
+      walk(tree);
+      return out as { layout: string; initial: unknown }[];
+    };
+
+    it("draws the column beside the form, handed the first page the route read", async () => {
+      stub.themes.mockResolvedValue([]);
+      const page = { rows: [{ id: "r1" }], nextCursor: null };
+      stub.history.mockResolvedValue(page);
+      const tree = await ChoosePage({ searchParams: Promise.resolve({}) });
+      expect(layouts(tree).map((l) => l.layout)).toEqual(["column"]);
+      expect(layouts(tree)[0].initial).toBe(page);
+      expect(stub.history).toHaveBeenCalledWith("user_1", expect.anything());
+    });
+
+    it("draws the phone's view as well on v=history, and the form still draws", async () => {
+      stub.themes.mockResolvedValue([]);
+      const tree = await ChoosePage({ searchParams: Promise.resolve({ v: "history" }) });
+      expect(layouts(tree).map((l) => l.layout)).toEqual(["column", "view"]);
+      expect(find(tree, IntakeForm)).toBeTruthy();
+    });
+
+    it("draws the form with History's own retry when the runs fail to read, never a broken form", async () => {
+      stub.themes.mockResolvedValue([]);
+      stub.history.mockRejectedValue(new Error("db down"));
+      const tree = await ChoosePage({ searchParams: Promise.resolve({}) });
+      expect(layouts(tree)[0].initial).toBeNull();
+      expect(find(tree, IntakeForm)).toBeTruthy();
+    });
+
+    it("reads no runs on a results address", async () => {
+      stub.themes.mockResolvedValue([]);
+      await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "x" }) });
+      expect(stub.history).not.toHaveBeenCalled();
+    });
   });
 
   it("still fails the form, which cannot draw its picker without the vocabulary", async () => {

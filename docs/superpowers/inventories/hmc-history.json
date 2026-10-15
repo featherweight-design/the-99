@@ -1,0 +1,54 @@
+{
+  "feature": "Help me choose history (handoff design_handoff_the99_hmc_history, R1; plan 2026-10-14-hmc-history.md)",
+  "note": "PR 2 rows: the list. The column beside the form (desktop), the phone's History view and its entry link. Needs HELP_ME_CHOOSE_ENABLED=true and fixture runs for the signed-in account on local-dev (a temporary script writes them; none is checked in). PR 3 adds the opened run, the door and About.",
+  "out": "contact-sheets/hmc-history",
+  "shares": {
+    "module": "src/components/intake/choose-history.tsx",
+    "binding": "ChooseHistory",
+    "note": "The route draws the column and the phone's view from the same component, directly in page.tsx."
+  },
+  "rows": [
+    {
+      "id": "form-phone",
+      "label": "/decks/new/choose at 390: the form with History's way in on its back line",
+      "view": "src/app/decks/new/choose/page.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/new/choose",
+          "wait": "a[href*=\"v=history\"]:visible",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "form-desktop",
+      "label": "/decks/new/choose at 1300: the form with the column beside it",
+      "view": "src/app/decks/new/choose/page.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/new/choose",
+          "wait": "[data-testid^=choose-history]:visible",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "view",
+      "label": "/decks/new/choose?v=history: the phone's History view (desktop keeps the form and the column)",
+      "view": "src/app/decks/new/choose/page.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=history",
+          "wait": "[data-testid^=choose-history]:visible",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

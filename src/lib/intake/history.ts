@@ -27,6 +27,8 @@ export type ChooseHistoryRow = {
   words: string;
   /** The first picks' oracle ids, in the run's order. */
   thumbs: string[];
+  /** Each thumb's art crop (or the card's image), by position; null where the catalog has none. Filled by the read. */
+  thumbArt: (string | null)[];
   picks: number;
   /** The commanders the player's pool held when it ran (a run that found nothing says it). */
   pool: number | null;
@@ -64,6 +66,7 @@ export function shapeRun(raw: RawRun): ChooseHistoryRow | null {
     state,
     words,
     thumbs: state === "ok" ? picks.slice(0, HISTORY_THUMBS).map((x) => x.oracleId) : [],
+    thumbArt: [],
     picks: state === "ok" ? picks.length : 0,
     pool: typeof result?.pool === "number" ? result.pool : null,
     href: pastRunHref(raw.ask, raw.id),
@@ -89,4 +92,23 @@ export function decodeKey(cursor: string | null | undefined): HistoryKey | null 
   const id = cursor.slice(i + 1);
   if (!/^\d{1,15}$/.test(ms) || !UUID.test(id)) return null;
   return { at: new Date(Number(ms)).toISOString(), id: id.toLowerCase() };
+}
+
+/**
+ * Folds a freshly read first page into the rows already drawn (the poll while a run is in flight).
+ * A row the page returns replaces its drawn twin, an unseen one joins in order, and a drawn
+ * `reading` row the page no longer returns is gone (it settled into a failure the list does not
+ * keep, or was reaped). Settled rows older than the page are left as they are.
+ */
+export function mergeFirstPage(drawn: readonly ChooseHistoryRow[], fresh: readonly ChooseHistoryRow[]): ChooseHistoryRow[] {
+  const freshIds = new Set(fresh.map((r) => r.id));
+  const kept = drawn.filter((r) => !freshIds.has(r.id) && r.state !== "reading");
+  return [...fresh, ...kept].sort(compareRows);
+}
+
+/** Newest first; a tie on the millisecond falls to the uuid, descending, the order the read pages on. */
+export function compareRows(a: Pick<ChooseHistoryRow, "at" | "id">, b: Pick<ChooseHistoryRow, "at" | "id">): number {
+  const t = Date.parse(b.at) - Date.parse(a.at);
+  if (t !== 0) return t;
+  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
 }

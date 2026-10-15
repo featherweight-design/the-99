@@ -19,12 +19,15 @@ export function ChooseHeader({
   sub,
   subPhone,
   centered = false,
+  trailing,
 }: {
   back: { href: string; label: string };
   title: string;
   sub: string;
   subPhone: string;
   centered?: boolean;
+  /** Drawn at the back line's far end (the form's phone-only way into History). */
+  trailing?: React.ReactNode;
 }) {
   return (
     <header
@@ -36,10 +39,20 @@ export function ChooseHeader({
             "md:w-full md:max-w-[1160px] md:mx-auto md:p-[34px_40px_26px]",
       ].join(" ")}
     >
-      <Link href={back.href} className="self-start font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
-        {back.label}
-        <PendingReporter href={back.href} />
-      </Link>
+      {trailing ? (
+        <div className="flex min-h-[44px] items-center justify-between md:min-h-0">
+          <Link href={back.href} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+            {back.label}
+            <PendingReporter href={back.href} />
+          </Link>
+          {trailing}
+        </div>
+      ) : (
+        <Link href={back.href} className="self-start font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+          {back.label}
+          <PendingReporter href={back.href} />
+        </Link>
+      )}
       <h1 className="m-0 font-display font-bold text-[20px] md:text-[28px] text-[color:var(--fg)]">{title}</h1>
       <p className="m-0 md:hidden font-mono text-[10px] text-[color:var(--fg-faint)]">{subPhone}</p>
       <p className="m-0 hidden md:block max-w-[640px] text-[14px] text-[color:var(--fg-muted)]">{sub}</p>

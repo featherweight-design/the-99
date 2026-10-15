@@ -3,7 +3,9 @@
 //  - no `v`: the form, pre-filled from the URL (*Change answers* lands here; bare is *Start over*);
 //  - `v=submit`: the retired GET submit. It lands on the form with its answers, never charging:
 //    the submit is a Server Action now (`submitChoose`, rework plan PR 3), which starts the read;
-//  - `v=results`: the results. The bar is drawn at once, and the search streams in under it.
+//  - `v=results`: the results. The bar is drawn at once, and the search streams in under it;
+//  - `v=history`: the phone's History view (Help me choose history, PR 2). From `md` up History is a
+//    column beside the form, so there the form draws as ever.
 //
 // Behind `HELP_ME_CHOOSE_ENABLED` (F3): off, the route is not found, before any read.
 import { plainText } from "../../../../lib/decks/notes-body";
@@ -13,11 +15,15 @@ import { Suspense } from "react";
 import { CardDetailProvider } from "../../../../components/cards/card-detail-provider";
 import { ChooseResults, HeldResults, ResultsSkeleton } from "../../../../components/intake/choose-results";
 import { ChooseHeader, RESULTS_COLUMN } from "../../../../components/intake/choose-header";
+import { ChooseHistory } from "../../../../components/intake/choose-history";
+import { HistoryLink } from "../../../../components/intake/history-link";
 import { IntakeForm } from "../../../../components/intake/intake-form";
 import { ReadAsBar } from "../../../../components/intake/read-as-bar";
 import { SearchFailed } from "../../../../components/intake/search-failed";
 import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
+import { helpMeChooseHistoryCopy as historyCopy } from "../../../../lib/copy/help-me-choose-history";
+import { loadChooseHistory } from "../../../../lib/intake/history-read";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { answersOf, parseLiveParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
@@ -75,17 +81,36 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   if (!p.results) {
     // The press's credit standing (F7). A failed read draws the plain button: the submit re-checks.
     const now = new Date();
-    const allowance = await readAllowance(userId, now, "intake").catch(() => null);
+    // The runs are a decoration beside the form: a failed read draws History's own retry, never a broken form.
+    const [allowance, history] = await Promise.all([
+      readAllowance(userId, now, "intake").catch(() => null),
+      loadChooseHistory(userId, { now }).catch(() => null),
+    ]);
+    const historyView = sp.get("v") === "history";
     return (
       <div className="flex flex-col pb-[24px] md:px-[40px] md:pb-[48px]">
-        <ChooseHeader
-          back={{ href: "/decks/new", label: copy.intake.back }}
-          title={copy.intake.title}
-          sub={copy.intake.sub}
-          subPhone={copy.intake.subPhone}
-          centered
-        />
-        <IntakeForm themes={themes} sets={sets} initial={p} standing={allowance && toStanding(allowance, now)} />
+        <div className="md:mx-auto md:flex md:w-full md:max-w-[1100px] md:items-start md:justify-center md:gap-[40px]">
+          <div className={`min-w-0 md:w-[680px] md:max-w-full md:shrink ${historyView ? "hidden md:block" : ""}`}>
+            <ChooseHeader
+              back={{ href: "/decks/new", label: copy.intake.back }}
+              title={copy.intake.title}
+              sub={copy.intake.sub}
+              subPhone={copy.intake.subPhone}
+              centered
+              trailing={<HistoryLink href={`${CHOOSE_PATH}?v=history`} label={historyCopy.link} />}
+            />
+            <IntakeForm themes={themes} sets={sets} initial={p} standing={allowance && toStanding(allowance, now)} />
+          </div>
+          <aside className="hidden md:sticky md:top-[24px] md:block md:w-[320px] md:shrink-0 min-[1100px]:w-[380px]">
+            <ChooseHistory initial={history} layout="column" />
+          </aside>
+          {historyView ? (
+            <div className="md:hidden">
+              <HistoryLink href={CHOOSE_PATH} label={historyCopy.back} back />
+              <ChooseHistory initial={history} layout="view" />
+            </div>
+          ) : null}
+        </div>
       </div>
     );
   }
