@@ -5,6 +5,7 @@
 // from md.
 
 import type { LineupDeck } from "../../../lib/lineup/types";
+import { Chevron } from "../../ui/chevron";
 import { IdentityMark } from "./identity-mark";
 
 export function DeckSelect({ decks, value, onChange, label, allLabel }: {
@@ -30,7 +31,7 @@ export function DeckSelect({ decks, value, onChange, label, allLabel }: {
         {allLabel ? <option value="">{allLabel}</option> : null}
         {decks.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
       </select>
-      <span aria-hidden="true" className="pointer-events-none absolute right-[12px] text-[10px] text-[color:var(--fg-muted)]">▾</span>
+      <Chevron className="pointer-events-none absolute right-[12px] text-[color:var(--fg-muted)]" />
     </label>
   );
 }

@@ -238,7 +238,7 @@ export function ShelfTrigger({
         <span className="font-mono text-[11px] font-normal text-[color:var(--fg-faint)]">
           {count}
         </span>
-        <Chevron className="flex-none text-[color:var(--fg-faint)]" />
+        <Chevron open={open} className="text-[color:var(--fg-faint)]" />
       </button>
       {/* `flex-none`, so the label yields before the action does. */}
       {menu && <span className="flex-none">{menu}</span>}

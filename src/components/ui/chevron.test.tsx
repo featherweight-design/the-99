@@ -5,16 +5,34 @@ import { describe, expect, it } from "vitest";
 import { Chevron, CHEVRON_CLASS } from "./chevron";
 
 describe("Chevron", () => {
-  it("draws ▾ closed and ▴ open at the shared 13px size, hidden from the accessibility tree", () => {
+  it("draws a menu as ▾, turned 180 degrees when open, at the shared 13px size, hidden from the accessibility tree", () => {
     const { container, rerender } = render(<Chevron />);
     const span = container.firstElementChild!;
     expect(span.textContent).toBe("▾");
     expect(span.getAttribute("aria-hidden")).toBe("true");
-    expect(span.className).toBe(CHEVRON_CLASS);
+    expect(span.className).toContain(CHEVRON_CLASS);
+    expect(span.className).not.toContain("rotate-180");
     expect(CHEVRON_CLASS).toContain("text-[13px]");
     rerender(<Chevron open className="ml-auto" />);
-    expect(container.firstElementChild!.textContent).toBe("▴");
-    expect(container.firstElementChild!.className).toBe(`${CHEVRON_CLASS} ml-auto`);
+    const open = container.firstElementChild!;
+    expect(open.textContent).toBe("▾");
+    expect(open.className).toContain("rotate-180");
+    expect(open.className).toContain("ml-auto");
+    expect(open.getAttribute("data-open")).toBe("true");
+  });
+
+  it("draws a disclosure as ▸, turned 90 degrees to ▾ when open", () => {
+    const { container, rerender } = render(<Chevron kind="disclosure" />);
+    expect(container.firstElementChild!.textContent).toBe("▸");
+    expect(container.firstElementChild!.className).not.toContain("rotate-90");
+    rerender(<Chevron kind="disclosure" open />);
+    expect(container.firstElementChild!.className).toContain("rotate-90");
+  });
+
+  it("animates the turn on the quick motion and snaps under reduced motion", () => {
+    const { container } = render(<Chevron />);
+    expect(container.firstElementChild!.className).toContain("transition-transform");
+    expect(container.firstElementChild!.className).toContain("motion-reduce:transition-none");
   });
 });
 

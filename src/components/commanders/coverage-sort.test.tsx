@@ -150,4 +150,13 @@ describe("CoverageSortMenu", () => {
     fireEvent.keyDown(options[1], { key: "ArrowDown" });
     expect(options[0]).toHaveFocus();
   });
+
+  it("turns its chevron up while the menu is open", () => {
+    mount();
+    const trigger = screen.getByRole("button", { name: explainedCopy.coverageSort.triggerAria });
+    expect(trigger.querySelector("[data-chevron]")?.getAttribute("data-open")).toBe("false");
+    openMenu();
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(trigger.querySelector("[data-chevron]")?.getAttribute("data-open")).toBe("true");
+  });
 });

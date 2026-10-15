@@ -52,7 +52,7 @@ export function SheetGroupToggle({ all, onToggle, label, fewer, className, busy 
       }
     >
       <span>{all ? fewer : label}</span>
-      <Chevron open={all} style={{ color: "var(--fg-faint)" }} />
+      <Chevron kind="disclosure" open={all} style={{ color: "var(--fg-faint)" }} />
     </button>
   );
 }

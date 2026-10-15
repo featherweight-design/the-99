@@ -117,6 +117,14 @@ describe("ShelfTrigger", () => {
       .toContain("text-[15px]");
   });
 
+  it("turns its chevron with the trigger's own expanded state", () => {
+    const { rerender } = render(<ShelfTrigger label="Cube night" count={3} open={false} onOpen={() => {}} />);
+    const chevron = () => screen.getByRole("button", { name: /Folder: Cube night/ }).querySelector("[data-chevron]");
+    expect(chevron()?.getAttribute("data-open")).toBe("false");
+    rerender(<ShelfTrigger label="Cube night" count={3} open onOpen={() => {}} />);
+    expect(chevron()?.getAttribute("data-open")).toBe("true");
+  });
+
   it("carries no shelf menu beside it", () => {
     render(<ShelfTrigger label="All decks" count={12} open={false} onOpen={() => {}} />);
     expect(screen.getAllByRole("button")).toHaveLength(1);
