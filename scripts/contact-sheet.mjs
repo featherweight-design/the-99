@@ -177,11 +177,6 @@ async function run(page, steps) {
     if (step.hover !== undefined) {
       await onPage(page, step.hover).first().hover({ timeout: 15_000, ...(step.at ? { position: step.at } : {}) });
     }
-    // A surface below the fold, brought to the middle of the page without a pointer: a hover on a row under the
-    // phone's fixed tab bar waits for a point the bar does not cover, and times out.
-    if (step.scrollTo !== undefined) {
-      await onPage(page, step.scrollTo).first().evaluate((el) => el.scrollIntoView({ block: "center" }), undefined, { timeout: 15_000 });
-    }
     // The desktop rail's name tag is drawn under a resting pointer, and the rail is shell rather
     // than page, so it is the one step reached outside `onPage`: named by the slot's own
     // `aria-label` inside the rail, never by a free selector, so it cannot wander into the page.
