@@ -20,7 +20,8 @@
 // PROPOSED_CUTS_ENABLED): Suggested changes' own section paints with the verdict. ON (two or more of
 // them, MANA_BALANCE_ENABLED among them): the hub stands from the tab's first frame instead (#1809), so that
 // check is replaced by the hub
-// staying put, as the same node, from the press to the frame the verdict lands. See `hubStaysPut`.
+// staying put, as the same node, from its first frame (the credit note landing under the empty state
+// included) through the press to the frame the verdict lands. See `hubStaysPut`.
 // Mana Balance is a PREREQUISITE of ON, not a convenience: it is what lets the hub draw on a deck with no
 // reading yet (`drawn` in builder-shell.tsx). With only Tuning and Proposed cuts on, the hub waits for the
 // reading on the whole, unread deck this probe opens, and the first-frame checks fail on shipped behavior.
@@ -39,6 +40,7 @@ import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
+import { judgeHubMove, NOTE_SHAPE } from "./lib/note-variant.mjs";
 
 const { E2E_AUDIT_USER_EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const TARGET = process.env.PROBE_TARGET_URL;
@@ -186,10 +188,13 @@ async function reset(id, before) {
 // is that it moves only on a landing frame: the verdict's, and on the fallback the overview's too. Frames
 // are the sampler's own counter, so "the landing frame" is the painted frame the verdict appeared in.
 //
-// Measured 2026-10-15, and printed rather than failed: BEFORE the press, the hub moves once when the
-// credit note lands under the empty state (#1465: the note follows the empty state by about 0.7 to 2s),
-// 56px at 1300 and 35px at 390. #1809 measures from the settled tab, which is after that.
-function hubStaysPut(at, hub, pressAt, released, landings) {
+// AND BEFORE THE PRESS, from the hub's first frame (Hugh, 2026-10-15). The credit note lands under the
+// empty state about 0.7 to 2s after it (#1465), and until its frame was reserved it pushed the hub down
+// once, 56px at 1300 and 35px at 390. The empty state now holds two of the note's lines from its first
+// frame, so a note of up to two lines (the credit, free and check notes) must move nothing; a longer one
+// (used up, paused, owner share) may move it by its extra lines and no more, and is named in the line. A
+// note the probe does not recognise fails (`scripts/lib/note-variant.mjs`).
+function hubStaysPut(at, hub, pressAt, released, landings, shape) {
   report(at("the Tuning hub is drawn from the tab's first frame"),
     // Both are stamped by the same frame sampler, so a hub mounted with its panel shares its frame exactly.
     hub.at !== null && hub.panelAt !== null && hub.at === hub.panelAt,
@@ -197,7 +202,12 @@ function hubStaysPut(at, hub, pressAt, released, landings) {
   report(at("it is one node, never missing once drawn"), hub.at !== null && !hub.replaced && hub.missing === 0,
     JSON.stringify({ replaced: hub.replaced, missingFrames: hub.missing }));
   const idle = hub.tops.filter((t) => t.at <= pressAt);
-  console.log(`  info  ${at("the hub before the press")} — ${JSON.stringify({ tops: idle, creditNoteAt: hub.noteAt, pressAt })}`);
+  const judged = judgeHubMove(idle.map((t) => t.top), shape);
+  report(at(judged.strict
+    ? `its top stays put from its first frame to the press, the ${judged.variant} note's landing included`
+    : `its top moves by at most the ${judged.variant} note's lines past the reserved two, before the press`),
+    hub.noteAt !== null && judged.ok,
+    JSON.stringify({ variant: judged.variant, moved: judged.moved, allowed: judged.allowed, lines: shape?.lines ?? null, tops: idle, creditNoteAt: hub.noteAt, pressAt }));
   const settled = idle.at(-1)?.top ?? null;
   // `released` and `landings` are sampler FRAMES; `pressAt` is a time, stamped by the click itself.
   const held = hub.tops.filter((t) => t.at > pressAt && (released === null || t.frame < released));
@@ -223,7 +233,13 @@ async function run() {
   // Set once the deck's own reading is held on disk; called last in the `finally`.
   let restoreProfile = null;
   try {
-    for (const width of [1300, 390]) {
+    // 1024, 900 and 800 are the desktop layout narrower than 1300 (PR #1844, round 1). At 800 Analyze, the
+    // 20px gap and the note's 340px do not fit one row (measured: the row is 440px), so the note wraps under
+    // the button; before its frame took the note's width as well, the empty frame fit beside the button and
+    // the hub dropped 46px when the note landed. 1024 and 900 keep the note beside the button. PROBE_WIDTHS
+    // narrows the list.
+    const widths = (process.env.PROBE_WIDTHS ?? "1300,1024,900,800,390").split(",").map(Number);
+    for (const width of widths) {
       const at = (s) => `${s} @ ${width}`;
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
       const page = await context.newPage();
@@ -277,9 +293,10 @@ async function run() {
       }
       await page.evaluate(() => { const w = window.__hold; w.seen = {}; w.headings = []; w.tops.verdict.clear(); w.tops.overview.clear(); w.said = []; });
       // The boundary is the click itself, not the moment before Playwright's actionability wait: the sampler
-      // must already hold the credit note's frame (the hub's one allowed drop before the press, #1465), and the
+      // must already hold the credit note's frame (the hub must not move when it lands, #1465), and the
       // press time is stamped in the page by the click's own event.
       if (HUB === "on") await page.waitForFunction(() => window.__hold.hub.noteAt !== null, null, { timeout: 30_000 });
+      const shape = await page.evaluate(NOTE_SHAPE, PAGE);
       await page.evaluate(() => {
         const w = window.__hold;
         w.pressAt = null;
@@ -310,7 +327,7 @@ async function run() {
         // the hub may move on that frame too.
         const landed = w.seen.verdict?.frame ?? null;
         const landings = MODE === "fallback" && w.seen.written ? [landed, w.seen.written.frame] : [landed];
-        hubStaysPut(at, w.hub, pressAt, landed, landings);
+        hubStaysPut(at, w.hub, pressAt, landed, landings, shape);
       } else {
         report(at("no Tuning hub, as PROBE_HUB says"), w.hub.at === null, w.hub.at === null ? "absent" : `drawn at ${w.hub.at}ms`);
       }

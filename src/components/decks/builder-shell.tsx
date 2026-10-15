@@ -1805,6 +1805,7 @@ export function BuilderShell({
                   hold={hold}
                   overviewReady={synopsis.view.kind === "ready" && !synopsis.view.busy && !synopsis.view.state.stale && !!synopsis.view.state.synopsis?.content?.overview}
                   pressNote={{ analyze: analyzeNote?.text ?? null, reanalyze: reanalyzeNote?.text ?? null }}
+                  pressNotePending={analysisEnabled && !synopsis.settled}
                   pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}
                   description={deck.intent ?? null}
                   onSaveDescription={saveDescription}

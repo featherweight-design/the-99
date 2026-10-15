@@ -57,6 +57,7 @@ export function AnalysisPanel({
   hold = null,
   overviewReady = false,
   pressNote,
+  pressNotePending = false,
   pressSee,
   description = null,
   onSaveDescription,
@@ -116,6 +117,8 @@ export function AnalysisPanel({
   /** The credit note beside Analyze (the empty state) and Re-analyze (the banner), when the press
    *  also writes the overview; null where it writes nothing (`synopsis-note.ts`). */
   pressNote?: { analyze: string | null; reanalyze: string | null };
+  /** The read that prices `pressNote` has not answered yet: the empty state holds the note's frame. */
+  pressNotePending?: boolean;
   /** The overview check's *See which →* after that note, opening Notices (deck notices HANDOFF §6);
    *  null when the note is the credit note, which carries none. */
   pressSee?: { label: string; onPress: () => void } | null;
@@ -215,6 +218,7 @@ export function AnalysisPanel({
           onRequest={onRequest}
           blocked={blocked}
           note={pressNote?.analyze ?? null}
+          notePending={pressNotePending}
           see={pressSee ?? null}
           description={description}
           onSaveDescription={onSaveDescription}

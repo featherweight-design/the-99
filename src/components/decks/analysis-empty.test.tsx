@@ -31,6 +31,45 @@ describe("AnalysisEmpty's check note", () => {
   });
 });
 
+// THE NOTE'S FRAME IS RESERVED WHILE ITS READ IS OUT (Hugh, 2026-10-15): the note landing moved the
+// Tuning hub under the block 56px at 1300 and 35px at 390. jsdom computes no layout, so this pins the
+// reservation's two halves: the frame is drawn, with its height class, before the note arrives, and it
+// is the SAME element the note's words land in. `probe:overview-hold` measures the hub in a browser.
+describe("AnalysisEmpty's credit note frame", () => {
+  const CREDIT = "Also writes the overview, using a credit. 4 of 5 left · reset at 3:45 PM.";
+
+  it("holds the note's frame, at two of its lines, before the note arrives, and the note lands in it", () => {
+    const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} notePending />);
+    const slot = screen.getByTestId("press-note-slot");
+    expect(slot.className).toContain("min-h-[2lh]");
+    // Its width too, from md up: an empty frame with none fit beside Analyze where the note wraps (#1844).
+    expect(slot.className).toContain("md:w-[340px]");
+    expect(slot.getAttribute("aria-hidden")).toBe("true");
+    expect(slot.textContent).toBe("");
+    // The row already takes the with-note layout: the opener on its own line under the pair.
+    expect(slot.nextElementSibling?.className).toContain("md:basis-full");
+    expect(screen.getByRole("button", { name: "Analyze" }).getAttribute("aria-describedby")).toBeNull();
+
+    rerender(<AnalysisEmpty phase="idle" onRequest={() => {}} note={CREDIT} />);
+    const note = screen.getByTestId("press-note");
+    expect(note).toBe(slot);
+    expect(note.className).toContain("min-h-[2lh]");
+    expect(note.className).toContain("md:w-[340px]");
+    expect(note.hasAttribute("aria-hidden")).toBe(false);
+    expect(note.textContent).toBe(CREDIT);
+    expect(note.nextElementSibling?.className).toContain("md:basis-full");
+  });
+
+  it("takes the frame away when the read settles with no note (2a), and draws none over a blocked press", () => {
+    const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} notePending />);
+    rerender(<AnalysisEmpty phase="idle" onRequest={() => {}} />);
+    expect(screen.queryByTestId("press-note-slot")).toBeNull();
+    expect(screen.queryByTestId("press-note")).toBeNull();
+    rerender(<AnalysisEmpty phase="idle" onRequest={() => {}} blocked="Add 3 cards to analyze this deck." notePending />);
+    expect(screen.queryByTestId("press-note-slot")).toBeNull();
+  });
+});
+
 describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
   // Round 6: giving this span `role="status"` unconditionally planted a second, always-present
   // status region beside `AnalysisPanel`'s own (for the reading-settled announcement) on every

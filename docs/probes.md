@@ -1021,7 +1021,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   paints while it is held, the note does not, and the note arrives once it is released. A frame
   comparison cannot prove the order, since a fast reply lands in the empty state's own frame on a
   correct build. With the empty state hidden in the probe's own page until the note exists, the
-  order check fails at both widths; with a 0.5s bound, the bound check does. It also reads the
+  order check fails at both widths; with a 0.5s bound, the bound check does. On the held load it also
+  samples the Tuning hub's top every frame from its first through the note's landing (Hugh,
+  2026-10-15). The empty state holds two of the note's own lines while its read is out, so a note of up
+  to two lines (the credit, free and check notes) must move the hub by no more than 1px. A longer note
+  (used up, paused, owner share) still grows past the frame, so it may move the hub by its lines past
+  two and no more, and the line names the variant. The variant is read from the note's words
+  (`scripts/lib/note-variant.mjs`, pinned against the shipped copy by its test), and a note it does not
+  recognise fails. The held read makes the landing ~3s late, so a move cannot hide in one frame. `PROBE_HUB=off` (the default is on) skips that check and says so, for a server
+  whose hub waits for a reading. Measured 2026-10-15: 0px at both widths; with the reservation
+  removed it fails with 56px at 1300 and 35.4px at 390. It also reads the
   tab row: one line with Analysis selected, and where five tabs are wider than a phone the ROW
   scrolls rather than the page.
 
@@ -1074,9 +1083,21 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   counter, and the landings are compared by FRAME, not by time; only the announcements are also read
   on mutations. Measured 2026-10-15: `held` green with the hub on and off, `fallback` green with it
   on. With the landing frame counted in the hold, a hub that waits for the reading, a landing one
-  frame off, or the panel taken out of the page for 200ms, the hub checks fail at both widths. One move is printed rather than failed: BEFORE the press, the hub drops once when the
-  credit note lands under the empty state (#1465), 56px at 1300 and 35px at 390, on the note's own
-  frame.
+  frame off, or the panel taken out of the page for 200ms, the hub checks fail at both widths. **And
+  BEFORE the press, from the hub's first frame** (Hugh, 2026-10-15): the credit note lands under the
+  empty state 0.7 to 2s after it (#1465), and until the empty state reserved the note's frame the hub
+  dropped once on the note's own frame, 56px at 1300 (1027.5 to 1083.5) and 35.4px at 390 (1440 to
+  1475.4). That move was printed; it now fails for a note of up to two lines (credit, free, check: two
+  lines are reserved). A longer note (used up, paused, owner share) may move it by its lines past two,
+  named in the line, and an unrecognised note fails (`scripts/lib/note-variant.mjs`). The probe already
+  stops on a note that does not write the overview, so in practice it walks the credit and free notes. Measured 2026-10-15 on local-dev, `held`, hub on: 0px
+  at both widths; with the reservation removed, that check fails at both widths with the same 56 and
+  35.4px. **It walks five widths by default** (`PROBE_WIDTHS`, default `1300,1024,900,800,390`; PR
+  #1844 round 1): the reserved frame also takes the note's width, 340px from md up, because an empty
+  frame with no width fit beside Analyze where the note itself did not. At 800 the row is 440px, under
+  the button, the 20px gap and 340px, so the note wraps to a row of its own, and before the width was
+  reserved the hub dropped 46.1px there (1196.9 to 1243) while 1024 and 900 held. Measured 2026-10-15:
+  0px at all five; with the width reservation removed, 800 fails with that 46.1px and 1024 and 900 pass.
 
 - `pnpm probe:verdict-findings` walks the Analysis tab's findings and their receipt at
   1300x900 and 390x844 — thirty-four checks, and every one is a fact about layout or about two
@@ -2184,7 +2205,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   cuts (over size; inert at size), Mana Balance and History each open their tool and come back. Then,
   sampled every animation frame from load: idle, the press, running (the empty state's loading phase,
   through the overview write) and done. The hub must be drawn in every frame, be the node first seen
-  (a handle compared every frame), and keep its top within 1px from idle through running; no layout
+  (a handle compared every frame). Its top must hold within 1px from its FIRST idle frame to the press
+  for a credit note of up to two lines (a longer note, used up, paused or owner share, may move it by
+  its lines past the reserved two, named; an unrecognised note fails: `scripts/lib/note-variant.mjs`),
+  and within 1px of the settled tab from the press through running. Every idle frame counts (2026-10-15; it was the last 30 before the press, which sat after
+  the credit note's landing and so never saw the 56px / 35.4px drop it caused before the note's frame
+  was reserved; with the reservation removed the at-size deck now fails at both widths); no layout
   shift may move it before the reading lands. At done the reading is drawn ABOVE the hub, so its top
   moves by the reading's height by design: the check is that it sits under the reading at the idle
   gap and moved once. CLS is printed per deck and width, with the press's own shifts apart.
