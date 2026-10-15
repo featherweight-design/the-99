@@ -81,7 +81,9 @@ Each stays under about 20 files and 800 lines. No stacking: each opens after the
    page's payload delta is in the PR body.
 5. **About entry 4 and the close-out.** Design draws entry 4 (and the line's entries 1 to 3 if they are still open) on the per-entry
    artboard; this PR adds it behind `SOCIAL_GAMES_ENABLED` (`AboutSwitch`), re-pins the content hash, and bumps nothing (a switched
-   entry is announced by its switch). `feature-acceptance`: the route by viewport walk of the log form, the Games tab and
+   entry is announced by its switch). **Status (2026-10-15):** Design has drawn neither entry 4 nor the line's entry 1 (friends and pods), so
+   this PR waits on them and writes no entry text of its own; entries 2 and 3 (Wishlist, a friend has a spare) belong to R2's last PR, because
+   an entry must never describe a surface that has not shipped. The picker's seeded sheet and the Matchups tablet look are done. `feature-acceptance`: the route by viewport walk of the log form, the Games tab and
    History at both widths with opponents of every kind, against `staging`'s data shape.
 
 ## Not in this build

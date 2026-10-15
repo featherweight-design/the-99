@@ -2482,6 +2482,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   read answers null instead of throwing). Mutation-checked: dropping `isCommanderCandidate` from the search fails the
   legendary-land check (a land the SQL narrowing lets through and only that rule refuses; an Instant would not, the SQL
   already drops it), and dropping the SQL narrowing fails the "goblin" broad-query check (0 commanders in the window).
+- `scripts/seed-r3-picker-fixture.mts` seeds the audit account's friends for the seat picker's contact sheet (Social R3 PR 3):
+  Dave (two decks), Jo (none), Samantha Rivers (one) and a pod, Thursday. It names its target (`R3_FIXTURE_BRANCH`, `R3_FIXTURE_USER`),
+  checks it against `neon.branch_id`, and refuses production, staging and local-dev: run it on a scratch branch made from local-dev,
+  then photograph `docs/superpowers/inventories/social-r3-picker.json` (`GAMES_DECK`, both switches on).
 - `pnpm probe:social` proves the social foundation's queries (plan `boards/plan-social-foundation-2026-10-12.md`,
   PR 1): three made-up accounts plus a fourth, where the stranger gets nothing from any read or write; a token that
   is spent, declined, revoked or expired cannot be accepted, and two accepts at once let exactly one through; the

@@ -1,0 +1,143 @@
+{
+  "feature": "Social R3 PR 3: the seat picker's friends, a friend's decks and Seat a pod",
+  "clearAbout": true,
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true and SOCIAL_GAMES_ENABLED=true, GAMES_DECK, and a SCRATCH branch seeded with scripts/seed-r3-picker-fixture.mts (Dave with 2 decks, Jo with none, Samantha Rivers with 1, a pod Thursday). Logs nothing.",
+  "rows": [
+    {
+      "id": "picker-friends",
+      "label": "The seat picker before typing: the friends by face, name and deck count",
+      "view": "src/components/decks/seat-picker.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${GAMES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Games",
+          "wait": "#panel-games",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "Log a game",
+          "wait": "#game-seats-label",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add opponent$",
+          "wait": "[role=dialog] ul button",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "picker-friend-decks",
+      "label": "A friend's decks opened in place, then Another commander and Just <name>",
+      "view": "src/components/decks/seat-picker.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${GAMES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Games",
+          "wait": "#panel-games",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "Log a game",
+          "wait": "#game-seats-label",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add opponent$",
+          "wait": "[role=dialog] ul button",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Dave",
+          "wait": "[role=dialog] h3",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "picker-no-decks",
+      "label": "A friend with no decks: one sentence, Pick a commander, Just Jo",
+      "view": "src/components/decks/seat-picker.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${GAMES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Games",
+          "wait": "#panel-games",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "Log a game",
+          "wait": "#game-seats-label",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add opponent$",
+          "wait": "[role=dialog] ul button",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Jo",
+          "wait": "[role=dialog] h3",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "pod-seated",
+      "label": "Seat a pod pressed: three friends seated alone, Which deck? under each, the pod size set",
+      "view": "src/components/decks/game-seats.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${GAMES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Games",
+          "wait": "#panel-games",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "Log a game",
+          "wait": "#game-seats-label",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Thursday$",
+          "wait": "[data-seat-art]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "#game-seats-label",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}
