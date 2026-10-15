@@ -76,9 +76,18 @@ export function CutsPanelView({
   onSettled,
   revision,
   freshEachVisit = false,
+  finishInPlace = false,
 }: {
   deckId: string;
   deps?: CutsDeps;
+  /** Inside the Tuning hub, where the tool is mounted only while it is open under the hub's tab
+   *  row: at the line it always finishes in place (C8, STATES-tuning-hub "Back to 99: finishes in
+   *  place in one line; must not vanish mid-view"), whatever retired the result that took it there.
+   *  The first analysis writes the overview's Key cards into the result's fingerprint, so a result
+   *  cut to 99 stops being current the moment the deck is analyzed; drawing nothing then left the
+   *  hub's tab row over an empty panel (Hugh, 2026-10-14). Mounted on its own, a deck at the line
+   *  still draws nothing, as before. */
+  finishInPlace?: boolean;
   /** Hide a prior visit's result and open on the offer (`lib/decks/visit.ts`). Only where the
    *  prior is still reachable: inside the Tuning hub, beside History. Mounted on its own, the tool
    *  keeps showing its stored result, as it did before the hub. */
@@ -215,7 +224,7 @@ export function CutsPanelView({
   const reviewing = !!panel.review;
   const resultShown = reviewing ? items.length > 0 : panel.resultCurrent && items.length > 0 && !priorResult;
   // Back to 99: the cuts made from a result took the deck to the line, and it finishes in place.
-  if (over === 0 && !(resultShown && (cutCount > 0 || reviewing))) return null;
+  if (over === 0 && !finishInPlace && !(resultShown && (cutCount > 0 || reviewing))) return null;
 
   const failed = !running && !priorRun && !panel.review && run?.status === "failed";
   const refusedRun = failed && run.errorClass === "ungrounded";

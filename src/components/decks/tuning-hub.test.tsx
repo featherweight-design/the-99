@@ -11,8 +11,17 @@ import { useReviewRun } from "./review-run";
 import { historyDate, summaryText } from "./tuning-history";
 import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 import { reveal } from "../../lib/ui/reveal";
+import { CutsPanelView, type CutsDeps } from "./cuts-panel";
+import type { CutsPanel } from "../../lib/tuning/cuts-state";
+import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 
 vi.mock("../../app/decks/tuning-hub-actions", () => ({ readTuningHub: vi.fn(), readTuningHistory: vi.fn(), readTuningPastRun: vi.fn() }));
+// The real Proposed cuts panel is mounted below with injected reads; its server actions never load.
+vi.mock("../../app/decks/cuts-actions", () => ({
+  cutProposed: vi.fn(), keepProposedCut: vi.fn(), readCutsPanel: vi.fn(),
+  restoreProposedCut: vi.fn(), runProposedCuts: vi.fn(), undoProposedCut: vi.fn(),
+}));
+vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
 const read = vi.mocked(readTuningHub);
 const readHistoryPage = vi.mocked(readTuningHistory);
 const readPast = vi.mocked(readTuningPastRun);
@@ -683,5 +692,66 @@ describe("TuningHub: History reopens a run in its own tool (re-review)", () => {
     fireEvent.click(screen.getByRole("tab", { name: copy.tools.cuts.name }));
     await waitFor(() => expect(probe()).toBe("ordinary"));
     expect(document.querySelector("[data-review-note]")).toBeNull();
+  });
+});
+
+// THE TAB ROW NEVER STANDS OVER AN EMPTY PANEL (Hugh, 2026-10-14). The repro: Proposed cuts run and
+// cut down to 99, then the deck analyzed; the analysis writes the overview's Key cards into the cuts
+// fingerprint, so the panel's next read finds its result no longer current, and at the line it drew
+// nothing under a tab row that still had Proposed cuts selected. The real panel is mounted here.
+describe("the tab row and its panel", () => {
+  const countAt = (over: number, extra: Partial<CutsPanel> = {}): CutsPanel => ({
+    run: null, items: [], itemsReport: null, lastOkFingerprint: null, lastOkAt: null, modelVersionMoved: false,
+    allowance: { used: 1, limit: 3, reopensAt: null, nextAt: null },
+    total: 100 + over, bodySize: 99, over, commander: "Gishath", allLocked: false, lockedCount: 4, keyCount: 6,
+    declaredBracket: 3, edhrecDecks: 2140, thin: false,
+    rows: [{ key: "role:ramp", source: "role", label: "Ramp", figure: 14, note: "rec 10 · 4 over" }],
+    chips: { medianPct: 38, flagCounts: {}, declared: 3 },
+    resultCurrent: false, asked: over, ...extra,
+  });
+  const deps = (read: CutsDeps["read"]): CutsDeps => ({
+    read, run: vi.fn(async () => ({ ok: true as const })), cut: vi.fn(async () => ({ ok: true as const })),
+    undo: vi.fn(async () => ({ ok: true as const })), keep: vi.fn(async () => ({ ok: true as const })),
+    restore: vi.fn(async () => ({ ok: true as const })),
+  });
+  const realCuts = (d: CutsDeps, over: number, revision: string): HubToolSpec => ({
+    tool: "cuts", over, total: 100 + over,
+    panel: <CutsPanelView deckId="d" deps={d} freshEachVisit finishInPlace revision={revision} />,
+  });
+  const panelText = () => (document.querySelector("#tuning-tool-panel")?.textContent ?? "").trim();
+
+  beforeEach(() => {
+    resetDeckVisitForTests();
+    readHistoryPage.mockResolvedValue({ rows: [], nextCursor: null });
+  });
+
+  it("keeps Proposed cuts drawn under its tab once a re-read at the line finds the result gone", async () => {
+    const cutsRead = vi.fn<CutsDeps["read"]>().mockResolvedValueOnce(countAt(3)).mockResolvedValue(countAt(0, { total: 99 }));
+    const d = deps(cutsRead);
+    const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(false), realCuts(d, 3, "a"), { tool: "history" }]} />);
+    await waitFor(() => expect(read).toHaveBeenCalledWith("d"));
+    await act(async () => {});
+    fireEvent.click(tile("cuts"));
+    await screen.findByRole("heading", { name: deckCutsCopy.panel.heading });
+    // The deck reaches the line and the page's revision moves: the panel reads again.
+    rerender(<TuningHub deckId="d" drawn tools={[suggested(false), realCuts(d, 0, "b"), { tool: "history" }]} />);
+    await waitFor(() => expect(cutsRead).toHaveBeenCalledTimes(2));
+    await act(async () => {});
+    expect(screen.getByRole("tablist")).toBeTruthy();
+    expect(screen.getByRole("tab", { name: copy.tools.cuts.name }).getAttribute("aria-selected")).toBe("true");
+    expect(panelText()).not.toBe("");
+    expect(panelText()).toContain(deckCutsCopy.panel.done.body);
+  });
+
+  it("never draws the tab row over an empty panel, for every tool, once its read has landed", async () => {
+    const d = deps(vi.fn(async () => countAt(0, { total: 99 })));
+    for (const tool of ["cuts", "history"] as const) {
+      const { unmount } = render(
+        <TuningHub deckId="d" drawn request={{ tool, nonce: 1 }} tools={[suggested(false), realCuts(d, 0, "a"), { tool: "history" }]} />,
+      );
+      await waitFor(() => expect(document.querySelector("#tuning-tool-panel")).not.toBeNull());
+      await waitFor(() => expect(panelText()).not.toBe(""));
+      unmount();
+    }
   });
 });

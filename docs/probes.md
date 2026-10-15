@@ -2081,6 +2081,35 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   line, and that a Cut collapses its row without the offer returning. The same flags must be given
   to the server and the probe (locks are in the fingerprint).
 
+- `pnpm probe:tuning-hub-stays-put` proves the Analysis tab's Tuning hub stays where it is, as the same
+  node, before, during and after an analysis, at 1300x900 and 390x844 (Hugh, 2026-10-14). Two cases,
+  each on decks it clones under the audit account and deletes in a `finally`, with every ledger row
+  their runs and overviews made; the account's About row is captured and put back.
+  **The walk** (`PROBE_CASES=walk`): a deck over its size (Analyze refused) and a legal deck at exactly
+  its size, never analyzed. Before the first analysis Suggested changes' tile is dimmed and Proposed
+  cuts (over size; inert at size), Mana Balance and History each open their tool and come back. Then,
+  sampled every animation frame from load: idle, the press, running (the empty state's loading phase,
+  through the overview write) and done. The hub must be drawn in every frame, be the node first seen
+  (a handle compared every frame), and keep its top within 1px from idle through running; no layout
+  shift may move it before the reading lands. At done the reading is drawn ABOVE the hub, so its top
+  moves by the reading's height by design: the check is that it sits under the reading at the idle
+  gap and moved once. CLS is printed per deck and width, with the press's own shifts apart.
+  **The second repro** (`PROBE_CASES=cuts`): an over-size deck with Proposed cuts open, a result naming
+  exactly the overage written through the real run store after the visit began (Look deeper's
+  stand-in: no model call), every cut pressed through the real Cut button down to the line, then the
+  deck analyzed. The hub must be drawn in every frame, Proposed cuts must stay the open tool, and the
+  panel under the tab row must never be empty: at the line it finishes in place (C8).
+  Before the fix it failed 10 checks: the hub was hidden for every frame of the overview write
+  (~650 at both widths) and jumped 196px up at 1300 (284px at 390) when Analyze was pressed. Step 5 of
+  the second repro (an empty panel) did not show on local-dev: the panel re-reads only when the list,
+  description, declared bracket or locks move, and none did; `tuning-hub.test.tsx` pins that re-read.
+  **Run it against `next dev`, never `next start`**: the overview's model stand-in answers only
+  outside production (`synopsisLive`), so a production server makes a REAL model call on the first
+  press. Start the server with `ANALYSIS_TAB_ENABLED`, `TUNING_ENABLED`, `MANA_BALANCE_ENABLED` and
+  `PROPOSED_CUTS_ENABLED` all `true`, `SYNOPSIS_STUB_DELAY_MS=3000`, and `ANTHROPIC_API_KEY` set to a
+  dummy value so a mistake fails instead of spending. Loopback `PROBE_BASE` only; it refuses staging
+  and production by `neon.branch_id`. `PROBE_WIDTH=390` runs one width.
+
 - `pnpm probe:purge` proves the account purge (`purgeAccount`, run by the Clerk `user.deleted` webhook) against a real
   database. It builds an account with friends (as inviter and as redeemer), a pod it owns with two members, a
   membership of a friend's pod, spare grants, a folder, a deck with cards, a version, a game and a note, a

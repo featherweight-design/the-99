@@ -310,6 +310,23 @@ describe("CutsPanelView", () => {
     await waitFor(() => expect(d.read).toHaveBeenCalledTimes(2));
   });
 
+  // Hugh, 2026-10-14: in the hub the tool is mounted only while open under its tab row, so at the line
+  // it finishes in place (C8) even once the result has stopped being current (the first analysis
+  // writes the overview's Key cards into the fingerprint), never an empty panel under the tabs.
+  it("in the hub, finishes in place at the line over a result that is no longer current", async () => {
+    const atTheLine = withResult(1, 1, { over: 0, total: 99, resultCurrent: false });
+    atTheLine.items = [item(1, { verdict: "accepted" })];
+    render(<CutsPanelView deckId="d1" deps={deps(atTheLine)} finishInPlace />);
+    expect(await screen.findByText(copy.done.head(99, 1))).toBeTruthy();
+    expect(screen.getByText(copy.done.body)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
+  });
+
+  it("in the hub, finishes in place at the line with no result at all", async () => {
+    render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 99 }))} finishInPlace />);
+    expect(await screen.findByText(copy.done.body)).toBeTruthy();
+  });
+
   it("draws nothing for a deck that is not over", async () => {
     const { container } = render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 99 }))} />);
     await waitFor(() => expect(container.querySelector("section")).toBeNull());

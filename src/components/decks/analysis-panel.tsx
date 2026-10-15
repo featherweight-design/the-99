@@ -223,9 +223,12 @@ export function AnalysisPanel({
       ) : null) : null}
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
           the same flag, and the page around it has already answered for a missing deck. */}
-      {hub ? (
-        <div hidden={behind} className="contents">{hub(held ? slotDeck(held.profile).permits : null)}</div>
-      ) : null}
+      {/* THE HUB IS NEVER HIDDEN (Hugh, 2026-10-14): it stays drawn, as the same node and in the same
+          place, before, during and after an analysis. While the overview is written the reading is in
+          but not yet shown, so the hub is handed no reading until the verdict paints: Suggested changes
+          stays dimmed until then, and wakes in the same frame as the verdict. The tools below the
+          reading (Proposed cuts, Mana Balance) need none, so they are never hidden either. */}
+      {hub ? hub(held && !behind ? slotDeck(held.profile).permits : null) : null}
       {!hub && held && tuning ? (
         <div hidden={behind} className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
           {tuning(slotDeck(held.profile).permits)}
@@ -235,8 +238,8 @@ export function AnalysisPanel({
           size), and the tool exists for a deck that is over it, so the two preconditions exclude each
           other: a deck built long was never read. Its facts come from the profile it builds for itself
           and it draws nothing for a deck that is not over 100. */}
-      {!hub && cuts ? <div hidden={behind} className="contents">{cuts}</div> : null}
-      {!hub && mana ? <div hidden={behind} className="contents">{mana}</div> : null}
+      {!hub && cuts ? cuts : null}
+      {!hub && mana ? mana : null}
       <p role="status" className="sr-only">{announced}</p>
     </div>
     </>
