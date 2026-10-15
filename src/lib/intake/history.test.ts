@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decodeKey, encodeKey, shapeRun, type RawRun } from "./history";
+import { decodeKey, encodeKey, mergeFirstPage, shapeRun, type ChooseHistoryRow, type RawRun } from "./history";
 import { parseChooseParams, type ChooseParams } from "./params";
 import { askOf, pastRunHref } from "./submit";
 
@@ -82,5 +82,24 @@ describe("the stored ask", () => {
     expect(sp.get("h")).toBe("1");
     expect(sp.get("v")).toBe("results");
     expect(parseChooseParams(sp).words).toBe("spooky");
+  });
+});
+
+describe("mergeFirstPage", () => {
+  const row = (id: string, at: string, state: "ok" | "nothing" | "reading" = "ok"): ChooseHistoryRow =>
+    ({ id, at, state, words: id, thumbs: [], thumbArt: [], picks: 0, pool: null, href: `/${id}` });
+  const A = row("a", "2026-10-13T10:00:00.000Z");
+  const B = row("b", "2026-10-12T10:00:00.000Z");
+  const C = row("c", "2026-10-11T10:00:00.000Z");
+
+  it("replaces a drawn row with its fresh twin and keeps older settled rows the page did not reach", () => {
+    const reading = row("a", "2026-10-13T10:00:00.000Z", "reading");
+    expect(mergeFirstPage([reading, B, C], [A, B]).map((r) => [r.id, r.state])).toEqual([["a", "ok"], ["b", "ok"], ["c", "ok"]]);
+  });
+
+  it("drops a reading row the page no longer returns, and joins a new one in order", () => {
+    const gone = row("z", "2026-10-13T11:00:00.000Z", "reading");
+    expect(mergeFirstPage([gone, B], [A, B]).map((r) => r.id)).toEqual(["a", "b"]);
+    expect(mergeFirstPage([B], [A, B]).map((r) => r.id)).toEqual(["a", "b"]);
   });
 });

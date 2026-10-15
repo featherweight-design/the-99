@@ -37,7 +37,9 @@ const EXEMPT: Record<string, string> = {
   "components/home/resume-decks.tsx :: `/decks/${deck.id}`": KEPT,
   "components/ui/intent-prefetch-link.tsx :: href":
     "forwards its caller's children; each call site is swept as a Link with its own href",
+  "components/intake/choose-history.tsx :: row.href": KEPT,
   "components/intake/hand-off-answers.tsx :: changeHref": KEPT,
+  "components/intake/history-link.tsx :: href": KEPT,
   "components/intake/help-me-choose-door.tsx :: CHOOSE_PATH": KEPT,
   "components/intake/help-me-choose-door.tsx :: qs ? `${CHOOSE_PATH}?${qs}` : CHOOSE_PATH": KEPT,
   "components/intake/narrow-note.tsx :: changeHref": KEPT,
