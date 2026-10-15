@@ -46,3 +46,17 @@ describe("the collection layout: the sheet's precon row (S18)", () => {
     expect((await head()).props.preconPick).toBe(false);
   });
 });
+
+describe("the collection layout: the Wishlist tab (Social R2)", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is drawn with the reader's SOCIAL_WISHLIST_ENABLED on", async () => {
+    vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "true");
+    expect((await head()).props.wishlistEnabled).toBe(true);
+  });
+
+  it("is not drawn with it off", async () => {
+    vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "");
+    expect((await head()).props.wishlistEnabled).toBe(false);
+  });
+});

@@ -47,28 +47,37 @@ import { ReplaceIcon } from "./replace-icon";
 import { PendingReporter } from "../shell/pending-reporter";
 import { collectionTabsCopy } from "../../lib/copy/collection";
 import { refreshCollectionHeader } from "../../app/collection/actions";
+import { wishlistCopy } from "../../lib/copy/wishlist";
 
-export type CollectionPlace = "cards" | "sets" | "proxies" | "history";
+export type CollectionPlace = "cards" | "sets" | "proxies" | "history" | "wishlist";
 
 const TABS: { place: CollectionPlace; href: string; label: string }[] = [
   { place: "cards", href: "/collection", label: collectionTabsCopy.cards },
   { place: "sets", href: "/collection/sets", label: collectionTabsCopy.sets },
   { place: "proxies", href: "/collection/proxies", label: collectionTabsCopy.proxies },
   { place: "history", href: "/collection/history", label: collectionEditCopy.head.historyTab },
+  { place: "wishlist", href: "/collection/wishlist", label: wishlistCopy.tab },
 ];
 
 /**
  * Which tabs the strip draws. Sets is ABSENT, not disabled, on an empty collection, as the
  * `By set` pill was. The one exception is the route the reader is on: no page is missing
  * from its own strip (E10), so an empty collection that lands on /collection/sets still
- * sees Sets, lit. Proxies is never gated.
+ * sees Sets, lit. Proxies is never gated. Wishlist (Social R2) follows `SOCIAL_WISHLIST_ENABLED` alone: a wishlist is
+ * wanted cards, so it works on an empty collection.
  */
-export function visibleTabs(current: CollectionPlace, hasCollection: boolean, history: { enabled: boolean; hasEntries: boolean } = { enabled: false, hasEntries: false }) {
+export function visibleTabs(
+  current: CollectionPlace,
+  hasCollection: boolean,
+  history: { enabled: boolean; hasEntries: boolean } = { enabled: false, hasEntries: false },
+  wishlist = false,
+) {
   return TABS.filter((tab) => {
     if (tab.place === "sets") return hasCollection || current === "sets";
     // History is the ledger's page: absent with the switch off, and, like Sets, absent on an empty
     // collection with nothing in the ledger (a removal back to nothing still leaves an entry).
     if (tab.place === "history") return history.enabled && (hasCollection || history.hasEntries || current === "history");
+    if (tab.place === "wishlist") return wishlist;
     return true;
   });
 }
@@ -84,6 +93,7 @@ export function placeFromPathname(pathname: string): CollectionPlace | null {
   if (pathname === "/collection/sets") return "sets";
   if (pathname === "/collection/proxies") return "proxies";
   if (pathname === "/collection/history") return "history";
+  if (pathname === "/collection/wishlist") return "wishlist";
   return null;
 }
 
@@ -93,6 +103,7 @@ export function CollectionPlaceHead({
   editEnabled = false,
   historyHasEntries = false,
   preconPick = false,
+  wishlistEnabled = false,
 }: {
   stats: { totalCards: number; uniqueCards: number };
   // Pre-formatted on the server ("today", "yesterday", or a dated string) rather than a raw
@@ -110,6 +121,8 @@ export function CollectionPlaceHead({
   historyHasEntries?: boolean;
   /** The Add cards sheet's way into Precons I own (no-collection entry S18), decided by the layout from the switches. */
   preconPick?: boolean;
+  /** `SOCIAL_WISHLIST_ENABLED` for the reader, read by the layout: the Wishlist tab, fifth. */
+  wishlistEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const current = placeFromPathname(pathname);
@@ -272,7 +285,7 @@ export function CollectionPlaceHead({
         aria-label={collectionTabsCopy.regionAria}
         className="flex h-[48px] items-stretch gap-[2px] pl-[8px] pr-[4px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
       >
-        {visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyShows }).map((tab) => {
+        {visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyShows }, wishlistEnabled).map((tab) => {
           const on = tab.place === effective;
           return (
             <Link

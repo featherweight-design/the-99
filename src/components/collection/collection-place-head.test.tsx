@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { CollectionPlaceHead, placeFromPathname, visibleTabs, type CollectionPlace } from "./collection-place-head";
 import { collectionTabsCopy } from "../../lib/copy/collection";
+import { wishlistCopy } from "../../lib/copy/wishlist";
 
 let pathname = "/collection";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn() }) }));
@@ -56,6 +57,7 @@ const PATH_FOR: Record<CollectionPlace, string> = {
   sets: "/collection/sets",
   proxies: "/collection/proxies",
   history: "/collection/history",
+  wishlist: "/collection/wishlist",
 };
 
 function head(current: CollectionPlace, stats = OWNED, lastUpdatedLabel: string | null = null) {
@@ -381,5 +383,39 @@ describe("History tab", () => {
   it("is a place of its own, matched exactly", () => {
     expect(placeFromPathname("/collection/history")).toBe("history");
     expect(placeFromPathname("/collection/history/x")).toBeNull();
+  });
+});
+
+describe("Wishlist tab (Social R2)", () => {
+  it("shows, last and linked to its route, when the wishlist is on", () => {
+    pathname = "/collection";
+    render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} wishlistEnabled />);
+    const tab = within(strip()).getByTestId("collection-tab-wishlist");
+    expect(tab).toHaveAttribute("href", "/collection/wishlist");
+    expect(tab).toHaveTextContent(wishlistCopy.tab);
+    expect(tabNames().at(-1)).toBe(wishlistCopy.tab);
+  });
+
+  it("is absent with the wishlist off", () => {
+    head("cards");
+    expect(screen.queryByTestId("collection-tab-wishlist")).toBeNull();
+  });
+
+  it("shows over an empty collection too: a wishlist is cards wanted", () => {
+    expect(visibleTabs("cards", false, undefined, true).map((t) => t.place)).toContain("wishlist");
+  });
+
+  it("is lit, and the only tab lit, on /collection/wishlist", () => {
+    pathname = "/collection/wishlist";
+    render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel={null} wishlistEnabled />);
+    const current = within(strip())
+      .getAllByRole("link")
+      .filter((a) => a.getAttribute("aria-current") === "page");
+    expect(current.map((a) => a.textContent)).toEqual([wishlistCopy.tab]);
+  });
+
+  it("is a place of its own, matched exactly", () => {
+    expect(placeFromPathname("/collection/wishlist")).toBe("wishlist");
+    expect(placeFromPathname("/collection/wishlist/x")).toBeNull();
   });
 });

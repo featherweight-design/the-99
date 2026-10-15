@@ -19,7 +19,7 @@ export const MAX_STALL_BYTES = 2_048;
 const KNOWN_SEGMENTS = new Set([
   "about", "accounts", "admin", "changes", "choose", "collection", "commanders", "decks", "discover",
   "friend", "friends", "groups", "history", "import", "models", "new", "precons", "proxies", "replace", "sets", "shopping",
-  "summary", "switches",
+  "summary", "switches", "wishlist",
 ]);
 
 const MAX_SEGMENTS = 6;

@@ -1,9 +1,93 @@
 {
-  "feature": "Social R2 (wishlist and friends' spares): the surfaces each PR adds. PR 7: the phone Shopping row's option B and the `over $N` key (handoff design_handoff_the99_social_r2, R3 - Rows-Phone options; plan 2026-10-15-social-r2.md)",
+  "feature": "Social R2 (wishlist and friends' spares): the surfaces each PR adds. PR 4: the Collection › Wishlist tab (W1–W4, WP1–WP4). PR 7: the phone Shopping row's option B and the `over $N` key (handoff design_handoff_the99_social_r2, R3 - Rows-Phone options; plan 2026-10-15-social-r2.md)",
   "clearAbout": true,
-  "note": "PR 7 needs a deck with a Shopping list, SWAP_TOOLS_ENABLED=true and SHOPPING_MARK_BOUGHT_ENABLED=true (the tag is a button and the key draws both items), and SHEET_DECK naming it, with OVER_CARD a card in it over the deck's limit. Run it TWICE against the same data, once with PHONE_SHOPPING_ROW_B_ENABLED unset (the shipped row) and once with it 'true' (option B): the switch is the server's, so it is the server that changes between runs, and the sheet is written to the same `out`, so move contact-sheets/social-r2 aside between runs. The first row scrolls to the ⇄ on Plateau (named literally, since the `scrollTo` step takes no `${VAR}`: change it with OVER_CARD), so the rows' second line is in the photograph. Read-only: it presses the ⇄ and nothing else. Later R2 PRs add their rows here.",
+  "note": "PR 7 needs a deck with a Shopping list, SWAP_TOOLS_ENABLED=true and SHOPPING_MARK_BOUGHT_ENABLED=true (the tag is a button and the key draws both items), and SHEET_DECK naming it, with OVER_CARD a card in it over the deck's limit. Run it TWICE against the same data, once with PHONE_SHOPPING_ROW_B_ENABLED unset (the shipped row) and once with it 'true' (option B): the switch is the server's, so it is the server that changes between runs, and the sheet is written to the same `out`, so move contact-sheets/social-r2 aside between runs. The first row scrolls to the ⇄ on Plateau (named literally, since the `scrollTo` step takes no `${VAR}`: change it with OVER_CARD), so the rows' second line is in the photograph. Read-only: it presses the ⇄ and nothing else. Later R2 PRs add their rows here. PR 4's rows (wishlist-*): Needs SOCIAL_WISHLIST_ENABLED=true. For the populated rows, the signed-in account needs wishlist_items lines its collection does not reach and two wishlist_collected rows; seed them on a scratch branch. The empty row needs an account with no lines. The search rows press Add, which writes a line. Each width's stepper row adds a different card, so a run needs both cards off the list beforehand.",
   "out": "contact-sheets/social-r2",
   "rows": [
+    {
+      "id": "wishlist-collected",
+      "label": "/collection/wishlist: the collected strip, meta row and grid (W3, W4)",
+      "view": "src/app/collection/(list)/wishlist/page.tsx",
+      "steps": [
+        {
+          "goto": "/collection/wishlist",
+          "wait": "[data-testid=wishlist-tile]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "wishlist-search",
+      "label": "/collection/wishlist: search results over the grid, Add to wishlist (W2)",
+      "view": "src/app/collection/(list)/wishlist/page.tsx",
+      "steps": [
+        {
+          "goto": "/collection/wishlist",
+          "wait": "[data-testid=wishlist-tile]",
+          "settle": 2000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "Sol Ri",
+          "wait": "[data-testid=wishlist-results]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "wishlist-stepper-phone",
+      "label": "/collection/wishlist: Add pressed, the row's stepper in place (W2), phone",
+      "view": "src/app/collection/(list)/wishlist/page.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection/wishlist",
+          "wait": "[data-testid=wishlist-tile]",
+          "settle": 2000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "Mystic Rem",
+          "wait": "[data-testid=wishlist-results]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add to wishlist$",
+          "wait": "[data-testid=want-stepper]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "wishlist-stepper-desktop",
+      "label": "/collection/wishlist: Add pressed, the row's stepper in place (W2), desktop",
+      "view": "src/app/collection/(list)/wishlist/page.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection/wishlist",
+          "wait": "[data-testid=wishlist-tile]",
+          "settle": 2000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "Arcane Sig",
+          "wait": "[data-testid=wishlist-results]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add to wishlist$",
+          "wait": "[data-testid=want-stepper]",
+          "settle": 1500
+        }
+      ]
+    },
     {
       "id": "pr7-shopping",
       "label": "/decks/[id] Shopping: the phone row (switch on: name and ✕ on line 1, figure, ⇄ and tag on line 2, `over $N` in the key; off: the shipped row), the desktop row unchanged either way",

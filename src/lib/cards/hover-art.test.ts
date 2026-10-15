@@ -259,6 +259,8 @@ const TILE_VIEWS = [
   "components/decks/read-only-card-tile.tsx",
   // A token in the deck's Card view: its art opens card details and it draws no hover, as every tile here.
   "components/decks/token-tile.tsx",
+  // The wishlist's grid (Social R2): the collection's own tile, whose art opens card details.
+  "components/wishlist/wishlist-view.tsx",
   "components/collection/grid-view.tsx",
   "components/sets/set-cell.tsx",
   // The grid that owns the cells: it opens card details for them and mounts no provider.

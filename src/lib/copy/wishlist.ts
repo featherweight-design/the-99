@@ -25,7 +25,7 @@ export const wishlistCopy = {
   page: {
     meta: (wanted: number) => `${wanted} wanted`,
     friendsLine: "Your friends can see this list", // only with at least one friend
-    sort: { label: "Sort", newest: "Newest", name: "Name" }, // desktop only: "Sort: Newest ▾"
+    sort: { label: "Sort", lead: "Sort:", newest: "Newest", name: "Name" }, // desktop only: "Sort: Newest ▾"; `label` names the control
     search: {
       placeholder: "Add a card to your wishlist…",
       add: "Add to wishlist",
