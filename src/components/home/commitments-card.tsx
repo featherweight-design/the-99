@@ -20,6 +20,9 @@
 // draws the section and nothing around it.
 
 import { GhostButton } from "@/components/ui/button";
+import { CountUp } from "@/components/ui/count-up";
+import { countParts } from "../../lib/ui/count-parts";
+import type { ReactNode } from "react";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { formatCents } from "../../lib/decks/price";
@@ -34,7 +37,7 @@ import type { Commitments } from "../../lib/home/commitments";
  * `0 cards` in that colour reads as what it is — the row that would be red if
  * it were not zero.
  */
-function Row({ label, value, color }: { label: string; value: string; color: string }) {
+function Row({ label, value, color }: { label: string; value: ReactNode; color: string }) {
   return (
     <div className="flex items-baseline justify-between">
       <span className="text-[13px] text-[color:var(--fg-body)]">{label}</span>
@@ -63,6 +66,10 @@ export function CommitmentsCard({
   cartEnabled?: boolean;
 }) {
   const c = refreshCopy.home;
+  // Each value as the copy module writes it; `CountUp` moves the number inside it and leaves the words and the money.
+  const inUse = c.inUseValue(commitments.inUse.toLocaleString("en-US"), totalCards.toLocaleString("en-US"));
+  const overCommitted = c.overCommittedValue(commitments.overCommitted);
+  const toBuy = c.toBuyValue(shopping.total.copies, formatCents(shopping.total.cents));
   return (
     <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
       {/* §SectionLabel, with this instance's own `margin-top: 4`. */}
@@ -76,15 +83,12 @@ export function CommitmentsCard({
           // Thousands separators at the call site: `n` in commander-explained.ts
           // is that file's own private helper, and the rest of Home formats
           // here rather than exporting it.
-          value={c.inUseValue(
-            commitments.inUse.toLocaleString("en-US"),
-            totalCards.toLocaleString("en-US"),
-          )}
+          value={<CountUp value={commitments.inUse} {...countParts(inUse, commitments.inUse)} />}
           color="var(--accent)"
         />
         <Row
           label={c.overCommittedRow}
-          value={c.overCommittedValue(commitments.overCommitted)}
+          value={<CountUp value={commitments.overCommitted} {...countParts(overCommitted, commitments.overCommitted)} />}
           color="var(--danger)"
         />
         <Row
@@ -93,7 +97,7 @@ export function CommitmentsCard({
           // reads. An unpriced copy still counts in the left figure and not in
           // the right: the feed omits an out-of-stock card rather than pricing
           // it at zero, and nothing here is free.
-          value={c.toBuyValue(shopping.total.copies, formatCents(shopping.total.cents))}
+          value={<CountUp value={shopping.total.copies} {...countParts(toBuy, shopping.total.copies)} />}
           color="var(--fg)"
         />
 

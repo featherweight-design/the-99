@@ -1,0 +1,130 @@
+// @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { StrictMode } from "react";
+import { act, cleanup, render } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { COUNT_UP_DELAY_MS, COUNT_UP_MS, CountUp, easeInOut } from "./count-up";
+
+const source = readFileSync(join(process.cwd(), "src/components/ui/count-up.tsx"), "utf8");
+const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+const visible = (c: HTMLElement) => c.querySelector("[data-count-up]")?.textContent;
+const twin = (c: HTMLElement) => c.querySelector(".sr-only")?.textContent;
+// What the eye reads: the aria-hidden text without the unseen sizing copy of the final figure.
+const whole = (c: HTMLElement) => {
+  const copy = c.querySelector("[aria-hidden]")?.cloneNode(true) as HTMLElement | undefined;
+  copy?.querySelectorAll(".invisible").forEach((e) => e.remove());
+  return copy?.textContent;
+};
+
+function reduce(on: boolean) {
+  window.matchMedia = ((q: string) => ({ matches: on && q.includes("reduce"), addEventListener() {}, removeEventListener() {}, media: q })) as never;
+}
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "performance"] });
+  reduce(false);
+});
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+
+describe("CountUp", () => {
+  it("holds its timing to the motion tokens", () => {
+    expect(css).toContain(`--motion-delay: ${COUNT_UP_DELAY_MS}ms;`);
+    expect(css).toContain(`--motion-duration: ${COUNT_UP_MS}ms;`);
+    expect(css).toContain("--motion-ease: cubic-bezier(0.45, 0, 0.55, 1);");
+    expect(source).toContain("}, COUNT_UP_DELAY_MS)");
+    expect(source).toContain("/ COUNT_UP_MS");
+    expect(easeInOut(0)).toBeCloseTo(0, 3);
+    expect(easeInOut(1)).toBeCloseTo(1, 3);
+    expect(easeInOut(0.5)).toBeCloseTo(0.5, 2);
+  });
+
+  it("starts at 0, waits the beat, counts to the figure, and the real value is in the twin throughout", () => {
+    const { container } = render(<CountUp value={312} after=" cards" />);
+    expect(twin(container)).toBe("312 cards");
+    expect(whole(container)).toBe("0 cards");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS - 10));
+    expect(whole(container)).toBe("0 cards");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_MS / 2 + 10));
+    const mid = Number.parseInt(visible(container) ?? "", 10);
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(312);
+    expect(twin(container)).toBe("312 cards");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_MS));
+    expect(whole(container)).toBe("312 cards");
+  });
+
+  it("hides the moving digits from assistive tech", () => {
+    const { container } = render(<CountUp value={40} />);
+    expect(container.querySelector("[data-count-up]")?.closest("[aria-hidden]")?.getAttribute("aria-hidden")).toBe("true");
+    expect(container.querySelector(".sr-only")?.hasAttribute("aria-hidden")).toBe(false);
+  });
+
+  it("does not count a figure under 10", () => {
+    const { container } = render(<CountUp value={7} after=" cards" />);
+    expect(container.textContent).toBe("7 cards");
+    expect(container.querySelector("[data-count-up]")).toBeNull();
+  });
+
+  it("counts from the old figure when the value changes", () => {
+    const { container, rerender } = render(<CountUp value={100} />);
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(visible(container)).toBe("100");
+    rerender(<CountUp value={200} />);
+    expect(visible(container)).toBe("100");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + COUNT_UP_MS / 2));
+    const mid = Number.parseInt(visible(container) ?? "", 10);
+    expect(mid).toBeGreaterThan(100);
+    expect(mid).toBeLessThan(200);
+    act(() => void vi.advanceTimersByTime(COUNT_UP_MS));
+    expect(visible(container)).toBe("200");
+  });
+
+  it("shows the final figure at once under reduced motion", () => {
+    reduce(true);
+    const { container } = render(<CountUp value={312} />);
+    expect(visible(container)).toBe("312");
+  });
+
+  it("still plays under StrictMode's double effect", () => {
+    const { container } = render(<StrictMode><CountUp value={312} /></StrictMode>);
+    expect(visible(container)).toBe("0");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + COUNT_UP_MS / 2));
+    expect(Number.parseInt(visible(container) ?? "", 10)).toBeGreaterThan(0);
+    act(() => void vi.advanceTimersByTime(COUNT_UP_MS));
+    expect(visible(container)).toBe("312");
+  });
+
+  it("settles on the figure when the tab is hidden mid-count", () => {
+    const { container } = render(<CountUp value={312} />);
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + 50));
+    Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+    act(() => void document.dispatchEvent(new Event("visibilitychange")));
+    expect(visible(container)).toBe("312");
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+  });
+});
+
+describe("CountUp around its words", () => {
+  it("moves the number alone and leaves the text and a figure beside it still", () => {
+    const { container } = render(<CountUp value={1284} before="" after=" of 5,000 · $94.80" />);
+    expect(twin(container)).toBe("1,284 of 5,000 · $94.80");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + COUNT_UP_MS / 2));
+    expect(whole(container)?.endsWith(" of 5,000 · $94.80")).toBe(true);
+    expect(container.querySelector(".invisible")?.textContent).toBe("1,284");
+  });
+
+  it("keeps the box as wide as the start while a count falls across a digit boundary", () => {
+    const { container, rerender } = render(<CountUp value={1000} after=" cards" />);
+    act(() => void vi.advanceTimersByTime(2000));
+    rerender(<CountUp value={900} after=" cards" />);
+    act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + COUNT_UP_MS / 2));
+    expect(container.querySelector(".invisible")?.textContent).toBe("1,000");
+    act(() => void vi.advanceTimersByTime(COUNT_UP_MS));
+    expect(visible(container)).toBe("900");
+  });
+});

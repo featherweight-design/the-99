@@ -1,5 +1,6 @@
 "use client";
 
+import { CountUp } from "@/components/ui/count-up";
 import { useId, useState } from "react";
 
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
@@ -109,7 +110,7 @@ export function CurveCard({ data, initialLit = null }: { data: DeckStatsSlice; i
                   className="size-[8px] rounded-[2px]"
                   style={{ background: n === 0 ? "var(--border-strong)" : TYPE_VAR[t] }}
                 />
-                {copy.types[t]} <span className="font-mono text-[11px]">{n}</span>
+                {copy.types[t]} <span className="font-mono text-[11px]"><CountUp value={n} /></span>
               </button>
             </li>
           );
@@ -120,7 +121,7 @@ export function CurveCard({ data, initialLit = null }: { data: DeckStatsSlice; i
             className="flex min-h-[44px] items-center gap-[6px] rounded-[6px] border border-dashed border-[color:var(--border-dashed)] px-[9px] text-[12px] text-[color:var(--fg-body)] md:min-h-[28px]"
           >
             <span aria-hidden="true" className="size-[8px] rounded-[2px]" style={{ background: TYPE_VAR.land }} />
-            {copy.types.land} <span className="font-mono text-[11px]">{curve.lands}</span>
+            {copy.types.land} <span className="font-mono text-[11px]"><CountUp value={curve.lands} /></span>
           </span>
         </li>
       </ul>
