@@ -93,7 +93,32 @@ function compare(label, before, after) {
   report(moved.length === 0, label, moved.join("; "));
 }
 
+/** Press the first free lock and say which card it was, once the write has settled. */
+async function lockFirst(page) {
+  const toggle = onPageRole(page, "button", /^Lock .+/).and(page.locator("[aria-pressed=false]")).first();
+  await toggle.waitFor({ state: "visible" });
+  const label = await toggle.getAttribute("aria-label");
+  await toggle.click();
+  await page.waitForFunction(() => document.querySelector("[data-testid=lock-mode-line]")?.textContent?.includes("1 locked"));
+  return label;
+}
+
+/** Press a lock's unlock by its card's name and wait for the write to finish (the count moves before the server answers). */
+async function unlockCard(page, label) {
+  const unlock = onPageRole(page, "button", label).and(page.locator("[aria-pressed=true]")).first();
+  await unlock.click();
+  await page.waitForFunction(() => document.querySelector("[data-testid=lock-mode-line]")?.textContent?.includes("0 locked"));
+  await page.waitForFunction((l) => {
+    const b = [...document.querySelectorAll("main button")].find((x) => x.getAttribute("aria-label") === l);
+    return b && b.getAttribute("aria-busy") !== "true" && b.getAttribute("aria-pressed") === "false";
+  }, label);
+}
+
 async function main() {
+  // The writes go through the server at BASE, so the target is checked as well as the database: a scratch
+  // DATABASE_URL beside a staging BASE would pass the branch guard and lock a card on staging.
+  const host = new URL(BASE).hostname;
+  if (!["localhost", "127.0.0.1", "[::1]", "::1"].includes(host)) throw new Error(`Refusing ${BASE}: the probe writes, so it runs against a local server only.`);
   const branch = (await neon(DATABASE_URL)`select current_setting('neon.branch_id', true) as b`)[0]?.b;
   if (!branch || REFUSED.has(branch)) throw new Error(`Refusing to write to ${branch ?? "an unreadable database"}.`);
   await clerkSetup();
@@ -102,28 +127,28 @@ async function main() {
     for (const w of WIDTHS) {
       const context = await browser.newContext({ viewport: w.viewport });
       const page = await context.newPage();
+      let locked = null;
       try {
         await signIn(page);
         await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "networkidle" });
         await onPageRole(page, "button", "Lock cards").filter({ visible: true }).first().click();
         await page.waitForSelector("[data-testid=lock-mode-line]", { state: "visible" });
-        const toggle = onPageRole(page, "button", /^Lock .+/).and(page.locator("[aria-pressed=false]")).first();
-        await toggle.waitFor({ state: "visible" });
+        await onPageRole(page, "button", /^Lock .+/).and(page.locator("[aria-pressed=false]")).first().waitFor({ state: "visible" });
         await page.waitForTimeout(400);
         const zero = await page.evaluate(read);
-        await toggle.click();
-        await page.waitForFunction(() => document.querySelector("[data-testid=lock-mode-line]")?.textContent?.includes("1 locked"));
+        locked = await lockFirst(page);
         await page.waitForTimeout(600);
         const one = await page.evaluate(read);
         compare(`${w.name}: the first lock moves nothing`, zero, one);
-        const unlock = onPageRole(page, "button", /^Lock .+/).and(page.locator("[aria-pressed=true]")).first();
-        await unlock.click();
-        await page.waitForFunction(() => document.querySelector("[data-testid=lock-mode-line]")?.textContent?.includes("0 locked"));
+        await unlockCard(page, locked);
+        locked = null;
         await page.waitForTimeout(600);
         const back = await page.evaluate(read);
         compare(`${w.name}: the unlock moves nothing`, one, back);
         compare(`${w.name}: and the page is back where it began`, zero, back);
       } finally {
+        // A lock the run made and did not undo is undone, so the fixture deck starts at zero locks next time.
+        if (locked) await unlockCard(page, locked).catch((e) => console.error(`Could not restore the lock on ${locked}: ${e.message}`));
         await context.close();
       }
     }
