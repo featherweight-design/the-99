@@ -27,9 +27,11 @@ export type SyncChoice = {
   unavailable: SyncUnavailable | null;
   /** ISO time the anchor was confirmed (the upload this file is compared with), or null when unavailable. */
   anchorAt: string | null;
-  before: number;
-  /** The collection's copies after the pick's Sync; null while that dry run is read; `failed` when it could not be. */
-  after: number | null | "failed";
+  /**
+   * The collection's copies before and after, BOTH from the selected pick's own dry run (each read is its own
+   * transaction, so they are never mixed); null while that read is in flight; `failed` when it could not be read.
+   */
+  figure: { before: number; after: number } | null | "failed";
   note: SyncNote | null;
   next: SyncNext;
   stale: { kind: "noNewer"; tokens: number | null } | { kind: "older"; missing: number } | null;
@@ -171,7 +173,7 @@ function StaleBanner({ stale, since }: { stale: NonNullable<SyncChoice["stale"]>
   const c = collectionEditCopy.upload;
   const title = stale.kind === "older" ? c.staleOlderTitle(since) : c.staleSameTitle(since);
   const body =
-    stale.kind === "older" ? (stale.missing > 0 ? c.staleOlderBody(stale.missing) : null) : stale.tokens ? c.staleSameBody(stale.tokens) : null;
+    stale.kind === "older" ? (stale.missing > 0 ? c.staleOlderBody(stale.missing) : null) : c.staleSameBody(stale.tokens ?? 0);
   return (
     <div role="note" className="mb-[14px] flex items-start gap-[10px] rounded-[10px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--warning)] bg-[color:var(--elevated-hover)] p-[12px_14px] md:mb-[18px]">
       <span aria-hidden className="text-[15px] leading-[1.3] text-[color:var(--warning)]">
@@ -246,7 +248,6 @@ function syncNoteText(note: SyncNote, since: string | null): string | null {
     case "keeps": return since ? c.syncKeeps(note.cards, since) : null;
     case "keepsNone": return since ? c.syncKeepsNone(since) : null;
     case "tokensOnly": return c.syncTokensOnly(note.tokens);
-    case "nothingNew": return c.syncNothingNew;
     case "noChange": return c.syncNoChange;
   }
 }
@@ -330,7 +331,7 @@ export function UploadChoice({
   const staleShown = Boolean(sync?.stale && since);
   const syncNoteLine = sync && !syncOff && sync.note ? syncNoteText(sync.note, since) : null;
   const syncFigure =
-    sync && sync.after !== null && sync.after !== "failed" ? c.after(sync.before, sync.after) : sync?.after === "failed" ? c.prepareFailed : c.preparing;
+    sync?.figure === "failed" ? c.prepareFailed : sync?.figure ? c.after(sync.figure.before, sync.figure.after) : c.preparing;
 
   return (
     <section className="flex flex-1 flex-col">

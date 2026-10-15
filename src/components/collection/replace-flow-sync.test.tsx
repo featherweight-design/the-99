@@ -24,27 +24,27 @@ const preview: UploadPreview = {
   currentCollectionCount: 10, filename: "The Vault.csv", rowCount: 3,
 };
 const empty = { total: 0, rows: [] };
-const detail = (copiesAfter: number, more: { up?: number; leaving?: number; down?: number } = {}) => ({
-  unchanged: 0, up: more.up ?? 0, down: more.down ?? 0, leaving: more.leaving ?? 0, copiesBefore: 4616, copiesAfter,
+const detail = (copiesAfter: number, more: { up?: number; leaving?: number; down?: number; before?: number } = {}) => ({
+  unchanged: 0, up: more.up ?? 0, down: more.down ?? 0, leaving: more.leaving ?? 0, copiesBefore: more.before ?? 4616, copiesAfter,
   lists: { leaving: empty, down: empty, up: empty }, newHoldings: 0, distinctCards: 0, overlap: { held: 0, of: 0 }, allOwned: false,
 });
 const counts = { taken: 0, kept: 0, agreed: 0, unchanged: 0, conflicts: 0, undecided: 0, answeredFile: 0, ignored: 0 };
 const common = { raised: 0, lowered: 0, decks: [], editsSinceUpload: 4, lastUploadAt: "2026-10-02T12:00:00.000Z", historyReaches: true };
 const plain = (copiesAfter: number) => ({ ...common, detail: detail(copiesAfter) });
-// The file reads 114 tokens; each read says how many it would change (`changed`) and raise above what is held
-// (`incoming`). The anchor (Sep 28) is not the newest upload (Oct 2, an Add): Sync names the anchor's date.
+// The file reads 114 tokens (unless `fileTokens` says otherwise); each read says how many tokens it changes by
+// count (`changed`). The anchor (Sep 28) is not the newest upload (Oct 2, an Add): Sync names the anchor's date.
 type SyncOver = {
   stale?: "older" | "noNewer" | null; unavailable?: "noRecord" | "neverUploaded" | null; kept?: number; taken?: number;
-  changed?: number; incoming?: number; missing?: number;
+  changed?: number; missing?: number; fileTokens?: number;
 };
 const syncData = (copiesAfter: number, more: Parameters<typeof detail>[1], over: SyncOver, digest: string) => ({
   ...common,
   detail: detail(copiesAfter, more),
   sync: {
     unavailable: over.unavailable ?? null, pick: "everything", counts: { ...counts, kept: over.kept ?? 0, taken: over.taken ?? 0 },
-    conflicts: empty, kept: empty, stale: over.stale ?? null, tokens: { count: 114, copies: 313 },
+    conflicts: empty, kept: empty, stale: over.stale ?? null, tokens: { count: over.fileTokens ?? 114, copies: over.fileTokens ?? 313 },
     anchorConfirmedAt: over.unavailable ? null : "2026-09-28T12:00:00.000Z", missingFromAnchor: over.missing ?? 0, raisingConflicts: 0,
-    tokensChange: (over.changed ?? 0) > 0, tokensChanged: over.changed ?? 0, tokensIncoming: over.incoming ?? 0, nothing: false, planDigest: digest,
+    tokensChange: (over.changed ?? 0) > 0, tokensChanged: over.changed ?? 0, nothing: false, planDigest: digest,
   },
 });
 
@@ -112,7 +112,7 @@ describe("ReplaceFlow · the Sync choice", () => {
   it("under an older file, pre-picks what it adds from its own dry run, and reads each other pick once", async () => {
     previewChange.mockImplementation(async (_id: string, mode: string, opts?: { pick?: string }) => {
       if (mode !== "sync") return plain(mode === "add" ? 8961 : 4345);
-      if (opts?.pick === "additions") return syncData(4619, { up: 3 }, { stale: "older", kept: 121, taken: 3, changed: 40 }, "d-adds");
+      if (opts?.pick === "additions") return syncData(4619, { up: 3, before: 4617 }, { stale: "older", kept: 121, taken: 3, changed: 40 }, "d-adds");
       if (opts?.pick === "tokens") return syncData(4616, {}, { stale: "older", kept: 121, changed: 38 }, "d-tokens");
       return syncData(4580, { up: 3, leaving: 16, down: 2 }, { stale: "older", kept: 121, taken: 21, changed: 44, missing: 12 }, "d-all");
     });
@@ -122,17 +122,17 @@ describe("ReplaceFlow · the Sync choice", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
     const group = await screen.findByRole("group", { name: "What should Sync take from this file?" });
     expect((within(group).getByRole("radio", { name: /Only what it adds/ }) as HTMLInputElement).checked).toBe(true);
-    // The card's figure follows the pick: Only what it adds' own dry run.
-    await screen.findByText("4,616 → 4,619 cards");
+    // The card's figure follows the pick: BOTH ends from Only what it adds' own dry run (its before is 4,617).
+    await screen.findByText("4,617 → 4,619 cards");
     // Every option quotes the tokens ITS OWN read changes: 40, 38 and 44, never the file's 114.
-    expect(within(group).getByText("3 cards going up or new, and its 40 tokens. Nothing leaves or goes down.")).toBeTruthy();
-    expect(within(group).getByText("Its 38 tokens. Your cards stay as they are.")).toBeTruthy();
-    expect(within(group).getByText("3 going up or new, 16 leaving, 2 going down, and its 44 tokens.")).toBeTruthy();
+    expect(within(group).getByText("3 cards going up or new, and 40 token changes. Nothing leaves or goes down.")).toBeTruthy();
+    expect(within(group).getByText("38 tokens change. Your cards stay as they are.")).toBeTruthy();
+    expect(within(group).getByText("3 going up or new, 16 leaving, 2 going down, and 44 token changes.")).toBeTruthy();
     // The lead-in is the same figure as the option picked.
-    expect(screen.getByText("Next: the 3 cards and 40 tokens this sync takes. Nothing leaves.")).toBeTruthy();
+    expect(screen.getByText("Next: the 3 cards this sync takes, and 40 token changes. Nothing leaves.")).toBeTruthy();
 
     fireEvent.click(within(group).getByRole("radio", { name: /Only its tokens/ }));
-    await screen.findByText("Your cards stay as they are. Sync records the file’s 38 tokens.");
+    await screen.findByText("Your cards stay as they are. 38 tokens change.");
     expect(screen.getByText("4,616 → 4,616 cards")).toBeTruthy();
     fireEvent.click(within(group).getByRole("radio", { name: /Everything, removals too/ }));
     expect(await screen.findByText("4,616 → 4,580 cards")).toBeTruthy();
@@ -152,16 +152,30 @@ describe("ReplaceFlow · the Sync choice", () => {
 
   it("draws no follow-up for a file whose cards match the last upload (S1)", async () => {
     previewChange.mockImplementation(async (_id: string, mode: string) =>
-      mode === "sync" ? syncData(4616, {}, { stale: "noNewer", kept: 121, changed: 40, incoming: 30 }, "d") : plain(mode === "add" ? 8961 : 4345));
+      mode === "sync" ? syncData(4616, {}, { stale: "noNewer", kept: 121, changed: 40 }, "d") : plain(mode === "add" ? 8961 : 4345));
     await reachChoice(true);
-    // The banner names the tokens the file raises above what is held (30): never a removal, never the file's 114.
+    // The banner names the same figure as the note: the tokens the sync changes by count (40), never the file's 114.
     expect(screen.getByText("This file looks no newer than your Sep 28 upload.").parentElement!.textContent).toContain(
-      "What it does have is 30 tokens your collection hasn’t recorded.",
+      "Its cards match that upload exactly. Syncing it changes 40 tokens.",
     );
     fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
     // The note quotes the tokens the sync changes by count (40).
-    expect(screen.getByText("Your cards stay as they are. Sync records the file’s 40 tokens.")).toBeTruthy();
+    expect(screen.getByText("Your cards stay as they are. 40 tokens change.")).toBeTruthy();
     await waitFor(() => expect(screen.queryByRole("group")).toBeNull());
     expect(previewChange.mock.calls.filter((c) => c[1] === "sync")).toHaveLength(1);
+  });
+
+  it("reads a removal as a change: an EMPTY token file and one upload-owned token", async () => {
+    // The file's cards match the anchor and it reads no token; the one token an earlier upload recorded goes.
+    previewChange.mockImplementation(async (_id: string, mode: string) =>
+      mode === "sync" ? syncData(4616, {}, { stale: "noNewer", changed: 1, fileTokens: 0 }, "d") : plain(mode === "add" ? 8961 : 4345));
+    await reachChoice(true);
+    const banner = screen.getByRole("note");
+    expect(banner.textContent).toContain("Its cards match that upload exactly. Syncing it changes 1 token.");
+    fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
+    expect(screen.getByText("Your cards stay as they are. 1 token changes.")).toBeTruthy();
+    expect(screen.getByText("Next: the tokens this sync changes. Your cards don’t move.")).toBeTruthy();
+    // Nothing on the step reads as recording, or as something unrecorded.
+    expect(document.body.textContent).not.toMatch(/record|unrecorded|its \d+ tokens?/i);
   });
 });

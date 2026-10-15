@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  answerFor, holdingDistance, missingFromAnchor, nothingToSync, tokenChangeCounts, parseSyncOptions, planSync, quantitiesOf, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
+  answerFor, holdingDistance, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
   type SyncAnswers, type SyncHolding, type SyncPick,
 } from "./sync";
+import { planTokenWrite } from "../tokens/ownership";
 
 const oracle = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const id = (n: number): CollectionItemIdentity => ({ oracleId: oracle(n), setCode: "lea", collectorNumber: "1", finish: "nonfoil" });
@@ -306,15 +307,28 @@ describe("missingFromAnchor", () => {
   });
 });
 
-describe("tokenChangeCounts", () => {
-  it("counts distinct tokens whose count moves, and those raised, never a source-only change or a printing row", () => {
-    expect(tokenChangeCounts([
+describe("changedTokenCount", () => {
+  it("counts distinct tokens whose count moves either way, never a source-only change or a printing row", () => {
+    expect(changedTokenCount([
       { kind: "token", id: "a", from: null, to: 2 },
       { kind: "token", id: "b", from: 3, to: 1 },
       { kind: "token", id: "c", from: 2, to: 2 },
       { kind: "printing", id: "p", from: null, to: 4 },
       { kind: "read", id: "", from: null, to: null },
       { kind: "token", id: "d", from: 1, to: null },
-    ])).toEqual({ changed: 3, incoming: 1 });
+    ])).toBe(3);
+  });
+
+  it("counts a removal: an EMPTY token file under Replace's rule takes an upload-owned token away", () => {
+    const state = { owned: [{ tokenOracleId: "t1", quantity: 2, source: "upload" }], uploadPrintings: [], read: true };
+    const { changes } = planTokenWrite("replace", state, []);
+    expect(changedTokenCount(changes)).toBe(1);
+  });
+
+  it("counts nothing for a hand mark the file reads at the same count", () => {
+    // The file reads the hand-marked token at its count: the source moves, the count does not.
+    const same = planTokenWrite("replace", { owned: [{ tokenOracleId: "t1", quantity: 2, source: "manual" }], uploadPrintings: [], read: true },
+      [{ tokenOracleId: "t1", quantity: 2 }]);
+    expect(changedTokenCount(same.changes)).toBe(0);
   });
 });

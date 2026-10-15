@@ -12,8 +12,7 @@ export type SyncNote =
   | { kind: "keeps"; cards: number }
   | { kind: "keepsNone" }
   | { kind: "tokensOnly"; tokens: number }
-  | { kind: "nothingNew" }
-  /** The plan writes nothing, but the file is not the anchor's: nothing is claimed about a match. */
+  /** The plan writes nothing. It claims nothing about the file matching an upload: no check proves that. */
   | { kind: "noChange" };
 
 /**
@@ -44,8 +43,7 @@ export function effectivePick(base: SyncChoiceRead, followPick: SyncPick): SyncP
 /** The note for the read the card's figure is drawn from, under `pick`. */
 export function syncNote(read: SyncChoiceRead, pick: SyncPick): SyncNote | null {
   const s = read.sync;
-  // "It matches your last upload" only when the file's cards ARE the anchor's; any other no-op claims no match.
-  if (s.nothing) return s.stale === "noNewer" ? { kind: "nothingNew" } : { kind: "noChange" };
+  if (s.nothing) return { kind: "noChange" };
   const cardsMove = s.counts.taken > 0 || s.counts.conflicts > 0;
   if (!cardsMove) return s.tokensChanged > 0 ? { kind: "tokensOnly", tokens: s.tokensChanged } : null;
   if (s.counts.kept > 0) return { kind: "keeps", cards: s.counts.kept };

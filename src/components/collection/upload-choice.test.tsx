@@ -18,8 +18,7 @@ const base = {
 const sync = (over: Partial<SyncChoice> = {}): SyncChoice => ({
   unavailable: null,
   anchorAt: "2026-10-02T12:00:00.000Z",
-  before: 4616,
-  after: 4632,
+  figure: { before: 4616, after: 4632 },
   note: { kind: "keeps", cards: 121 },
   next: { kind: "sync" },
   stale: null,
@@ -76,12 +75,12 @@ describe("UploadChoice with Sync", () => {
     expect(screen.getByRole("button", { name: "Review the sync →" })).toBeDisabled();
   });
 
-  it("draws the tokens-only and nothing-new notes", () => {
+  it("draws the tokens-only note in neutral words, true of an add or a removal alike", () => {
     const { unmount } = render(<UploadChoice {...base} sync={sync({ note: { kind: "tokensOnly", tokens: 114 } })} picked={null} onPick={noop} />);
-    expect(screen.getByText("Your cards stay as they are. Sync records the file’s 114 tokens.")).toBeTruthy();
+    expect(screen.getByText("Your cards stay as they are. 114 tokens change.")).toBeTruthy();
     unmount();
-    render(<UploadChoice {...base} sync={sync({ note: { kind: "nothingNew" } })} picked={null} onPick={noop} />);
-    expect(screen.getByText("Nothing new in this file. It matches your last upload, tokens included.")).toBeTruthy();
+    render(<UploadChoice {...base} sync={sync({ note: { kind: "tokensOnly", tokens: 1 } })} picked={null} onPick={noop} />);
+    expect(screen.getByText("Your cards stay as they are. 1 token changes.")).toBeTruthy();
   });
 
   it("keeps an unavailable Sync drawn, focusable and described by its reason, in a box where the figure was", () => {
@@ -173,10 +172,15 @@ describe("UploadChoice · the stale file", () => {
     expect(screen.getByText("Nothing changes until you confirm on the next screen.").className).toContain("mb-[24px]");
   });
 
-  it("draws the no-newer banner with the tokens the file has", () => {
+  it("draws the no-newer banner with no token sentence when no token changes", () => {
+    render(<UploadChoice {...base} sync={sync({ stale: { kind: "noNewer", tokens: null } })} picked={null} onPick={noop} />);
+    expect(screen.getByRole("note").textContent).toBe("⚠This file looks no newer than your Oct 2 upload. Its cards match that upload exactly.");
+  });
+
+  it("draws the no-newer banner with the tokens the sync changes, in neutral words", () => {
     render(<UploadChoice {...base} sync={sync({ stale: { kind: "noNewer", tokens: 114 } })} picked={null} onPick={noop} />);
     const banner = screen.getByText("This file looks no newer than your Oct 2 upload.").parentElement!;
-    expect(banner.textContent).toContain("Its cards match that upload exactly. What it does have is 114 tokens your collection hasn’t recorded.");
+    expect(banner.textContent).toContain("Its cards match that upload exactly. Syncing it changes 114 tokens.");
   });
 
   it("draws the follow-up only with Sync picked, after the cards and never inside one, with what it adds picked", () => {
@@ -195,9 +199,9 @@ describe("UploadChoice · the stale file", () => {
     expect(rings.map((r) => r.childElementCount)).toEqual([1, 0, 0]);
     expect(rings[0].getAttribute("aria-hidden")).toBe("true");
     expect(options[0].closest("label")?.className).toContain("has-[:focus-visible]:shadow-[0_0_0_2px_var(--accent)]");
-    expect(within(group).getByText("3 cards going up or new, and its 40 tokens. Nothing leaves or goes down.")).toBeTruthy();
-    expect(within(group).getByText("Its 38 tokens. Your cards stay as they are.")).toBeTruthy();
-    expect(within(group).getByText("3 going up or new, 16 leaving, 2 going down, and its 44 tokens.")).toBeTruthy();
+    expect(within(group).getByText("3 cards going up or new, and 40 token changes. Nothing leaves or goes down.")).toBeTruthy();
+    expect(within(group).getByText("38 tokens change. Your cards stay as they are.")).toBeTruthy();
+    expect(within(group).getByText("3 going up or new, 16 leaving, 2 going down, and 44 token changes.")).toBeTruthy();
   });
 
   it("waits for an option's own read before drawing its body, and drops a token clause with no tokens to change", () => {

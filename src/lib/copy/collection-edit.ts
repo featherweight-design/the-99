@@ -8,7 +8,10 @@ const decks = (x: number) => (x === 1 ? "a deck" : `${n(x)} decks`);
 export const cards = (x: number) => (x === 1 ? "1 card" : `${n(x)} cards`);
 export const rows = (x: number) => (x === 1 ? "1 row" : `${n(x)} rows`);
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
-const tokens = (x: number) => (x === 1 ? "1 token" : `${n(x)} tokens`);
+// Sync's token figures are the tokens a pick changes by count, whichever way (an add, a removal or a precon
+// restoration), so they read neutrally: never "records", "unrecorded" or "its N tokens".
+const tokensChange = (x: number) => (x === 1 ? "1 token changes" : `${n(x)} tokens change`);
+const tokenChanges = (x: number) => (x === 1 ? "1 token change" : `${n(x)} token changes`);
 
 export const collectionEditCopy = {
   head: {
@@ -65,10 +68,9 @@ export const collectionEditCopy = {
     syncBody: "Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.",
     syncKeeps: (k: number, since: string) => `Keeps the ${cards(k)} you changed in the app since your ${since} upload.`,
     syncKeepsNone: (since: string) => `You haven’t changed anything in the app since your ${since} upload, so this does what Replace does.`,
-    syncTokensOnly: (t: number) => `Your cards stay as they are. Sync records the file’s ${tokens(t)}.`,
-    /** Only when the file's cards equal the upload it is compared with. */
-    syncNothingNew: "Nothing new in this file. It matches your last upload, tokens included.",
-    /** (new, for /copy-review) Nothing would change, and the file is not the last upload's: no match is claimed. */
+    /** (reworded, for /copy-review) `t`: the tokens the pick changes by count, either way. */
+    syncTokensOnly: (t: number) => `Your cards stay as they are. ${tokensChange(t)}.`,
+    /** (new, for /copy-review) Nothing would change. It claims nothing about the file matching an upload. */
     syncNoChange: "Nothing in this file changes your collection.",
     /**
      * (new, for /copy-review) No unreverted Replace or full Sync to compare against, or its file is too old to
@@ -78,26 +80,28 @@ export const collectionEditCopy = {
     syncUnavailableNoUpload: "Sync compares a file with your last upload, and your collection was built in the app without one. Replace or Add will work.",
     continueSync: "Review the sync →",
     nextSync: "Next: what this sync takes from the file, what it keeps, and anything it needs you to decide.",
-    nextSyncTokens: "Next: the tokens this sync records. Your cards don’t move.",
-    /** `t` is the tokens this pick would change; the zero form is (new, for /copy-review). */
-    nextSyncAdds: (c: number, t: number) => `Next: the ${cards(c)}${t ? ` and ${tokens(t)}` : ""} this sync takes. Nothing leaves.`,
+    /** (reworded, for /copy-review) */
+    nextSyncTokens: "Next: the tokens this sync changes. Your cards don’t move.",
+    /** (reworded, for /copy-review) `t` is the tokens this pick changes by count. */
+    nextSyncAdds: (c: number, t: number) => `Next: the ${cards(c)} this sync takes${t ? `, and ${tokenChanges(t)}` : ""}. Nothing leaves.`,
     staleOlderTitle: (since: string) => `This file looks older than your ${since} upload.`,
     staleOlderBody: (k: number) =>
       `It’s missing ${cards(k)} that upload added, which usually means an earlier export. If it’s older, taking everything from it would undo them.`,
     staleSameTitle: (since: string) => `This file looks no newer than your ${since} upload.`,
-    staleSameBody: (t: number) => `Its cards match that upload exactly. What it does have is ${tokens(t)} your collection hasn’t recorded.`,
+    /** (reworded, for /copy-review) `t` is the tokens the plain Sync changes by count; the second sentence goes at 0. */
+    staleSameBody: (t: number) => `Its cards match that upload exactly.${t ? ` Syncing it changes ${t === 1 ? "1 token" : `${n(t)} tokens`}.` : ""}`,
     staleQuestion: "What should Sync take from this file?",
     staleAddsTitle: "Only what it adds",
     /** `c` counts raises as well as new holdings, so it reads as the review's own `going up or new`. */
-    // `t` in these three is the tokens that pick would change, from its own dry run; with none, the clause goes.
+    // `t` in these three is the tokens that pick changes by count, from its own dry run; with none, the clause
+    // goes. All three (reworded, for /copy-review).
     staleAddsBody: (c: number, t: number) =>
-      `${cards(c)} going up or new${t ? `, and its ${tokens(t)}` : ""}. Nothing leaves or goes down.`,
+      `${cards(c)} going up or new${t ? `, and ${tokenChanges(t)}` : ""}. Nothing leaves or goes down.`,
     staleTokensTitle: "Only its tokens",
-    /** The zero form is (new, for /copy-review). */
-    staleTokensBody: (t: number) => (t ? `Its ${tokens(t)}. Your cards stay as they are.` : "No tokens to record. Your cards stay as they are."),
+    staleTokensBody: (t: number) => `${t ? tokensChange(t) : "No tokens change"}. Your cards stay as they are.`,
     staleAllTitle: "Everything, removals too",
     staleAllBody: (up: number, leaving: number, down: number, t: number) =>
-      `${n(up)} going up or new, ${n(leaving)} leaving, ${n(down)} going down${t ? `, and its ${tokens(t)}` : ""}.`,
+      `${n(up)} going up or new, ${n(leaving)} leaving, ${n(down)} going down${t ? `, and ${tokenChanges(t)}` : ""}.`,
     /** (new) The comparison could not be read. */
     /** (new) A confirm failed and so did the read that would say whether it landed. */
     unconfirmed: "We couldn’t confirm whether that went through. Check your collection, then try again if it didn’t.",

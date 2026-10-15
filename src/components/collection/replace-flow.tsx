@@ -396,16 +396,15 @@ export function ReplaceFlow({
         unavailable: base.sync.unavailable,
         // Every "since your <date> upload" names the file this one is compared with, never the newest upload.
         anchorAt: base.sync.anchorConfirmedAt,
-        before: base.detail.copiesBefore,
-        after: own ? own.detail.copiesAfter : pickRead === "failed" ? "failed" : null,
+        figure: own ? { before: own.detail.copiesBefore, after: own.detail.copiesAfter } : pickRead === "failed" ? "failed" : null,
         note: own ? syncNote(own, pickNow) : null,
         next: own ? syncNext(own, pickNow) : { kind: "sync" },
         stale:
           base.sync.stale === "older"
             ? { kind: "older", missing: base.sync.missingFromAnchor }
             : base.sync.stale === "noNewer"
-              ? // The tokens the file raises above what is held: what the collection has not recorded.
-                { kind: "noNewer", tokens: base.sync.tokensIncoming > 0 ? base.sync.tokensIncoming : null }
+              ? // The tokens the plain Sync changes by count, either way: the one token figure the step uses.
+                { kind: "noNewer", tokens: base.sync.tokensChanged > 0 ? base.sync.tokensChanged : null }
               : null,
         followUp: followUpShown(base)
           ? {

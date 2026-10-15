@@ -27,7 +27,7 @@ function read(over: {
       unavailable: null, pick: "everything", counts: { ...counts, ...over.counts },
       conflicts: { rows: conflicts, total: conflicts.length }, kept: { rows: [], total: 0 },
       stale: over.stale ?? null, anchorConfirmedAt: "2026-10-02T12:00:00.000Z", missingFromAnchor: 0,
-      raisingConflicts: over.raising ?? conflicts.filter((c) => c.file > c.app).length, tokensIncoming: 0, tokens: { count: over.tokens ?? 0, copies: over.tokens ?? 0 },
+      raisingConflicts: over.raising ?? conflicts.filter((c) => c.file > c.app).length, tokens: { count: over.tokens ?? 0, copies: over.tokens ?? 0 },
       tokensChange: over.tokensChange ?? false, tokensChanged: over.tokensChanged ?? 0, nothing: over.nothing ?? false, planDigest: "d",
     },
   };
@@ -68,8 +68,8 @@ describe("the follow-up and the pick (S1, S2)", () => {
 });
 
 describe("syncNote and syncNext", () => {
-  it("says nothing new only when the file's cards are the last upload's, and otherwise claims no match", () => {
-    expect(syncNote(read({ nothing: true, stale: "noNewer" }), "everything")).toEqual({ kind: "nothingNew" });
+  it("says the file changes nothing whenever nothing changes, and never claims it matches an upload", () => {
+    expect(syncNote(read({ nothing: true, stale: "noNewer" }), "everything")).toEqual({ kind: "noChange" });
     expect(syncNote(read({ nothing: true }), "everything")).toEqual({ kind: "noChange" });
     expect(syncNote(read({ nothing: true, stale: "older" }), "additions")).toEqual({ kind: "noChange" });
   });

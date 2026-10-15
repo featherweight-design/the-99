@@ -298,7 +298,7 @@ describe("sync (collection sync plan, PR 1)", () => {
     expect(got).toHaveProperty("sync.conflicts.total", 601);
     expect((got as { sync: { conflicts: { rows: unknown[] } } }).sync.conflicts.rows).toHaveLength(500);
     expect(got).toHaveProperty("sync.kept.total", 2);
-    expect(got).toMatchObject({ sync: { unavailable: null, stale: "noNewer", tokens: { count: 2, copies: 5 }, tokensChange: true, tokensChanged: 3, tokensIncoming: 2, nothing: false, planDigest: "digest-1",
+    expect(got).toMatchObject({ sync: { unavailable: null, stale: "noNewer", tokens: { count: 2, copies: 5 }, tokensChange: true, tokensChanged: 3, nothing: false, planDigest: "digest-1",
       anchorConfirmedAt: "2026-10-02T12:00:00.000Z", missingFromAnchor: 7, raisingConflicts: 601 } });
   });
 

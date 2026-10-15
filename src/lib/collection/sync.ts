@@ -106,24 +106,16 @@ export function missingFromAnchor(anchor: ReadonlyMap<string, number>, file: Rea
 }
 
 /**
- * Of a token plan's changes, the distinct tokens whose COUNT moves (`changed`; a source-only change, a hand
- * mark becoming an upload row at the same count, is not one), and those the file raises above what is held
- * (`incoming`: what the collection has not recorded). Printing rows and the read marker are not tokens.
+ * Of a token plan's changes, the distinct tokens whose COUNT moves, either way: an add, a removal or a precon
+ * restoration alike. A source-only change (a hand mark becoming an upload row at the same count), a printing
+ * row and the read marker are not counted.
  */
-export function tokenChangeCounts(
+export function changedTokenCount(
   changes: readonly { kind: string; id: string; from: number | null; to: number | null }[],
-): { changed: number; incoming: number } {
+): number {
   const changed = new Set<string>();
-  const incoming = new Set<string>();
-  for (const c of changes) {
-    if (c.kind !== "token") continue;
-    const from = c.from ?? 0;
-    const to = c.to ?? 0;
-    if (from === to) continue;
-    changed.add(c.id);
-    if (to > from) incoming.add(c.id);
-  }
-  return { changed: changed.size, incoming: incoming.size };
+  for (const c of changes) if (c.kind === "token" && (c.from ?? 0) !== (c.to ?? 0)) changed.add(c.id);
+  return changed.size;
 }
 
 export function nothingToSync(plan: Pick<SyncPlan, "rows" | "counts">, tokenChanges: number): boolean {
