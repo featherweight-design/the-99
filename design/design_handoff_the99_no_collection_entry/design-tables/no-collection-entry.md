@@ -18,3 +18,8 @@ Handoff: `design/design_handoff_the99_no_collection_entry/`. Boards drawn in Kal
 | Arrival dismiss (R2) | `✕` alone, `aria-label="Dismiss"`, 44px press, `--fg-faint`. | `✕` alone, 32px press: the word `Dismiss` is dropped at every width. |
 | Refusals | Shared `ToastFrame`, above the tab bar, `role="alert"`, `Try again` `--accent` underlined. | Centre placement, bottom 24. |
 | Rankers’ empty | Shipped empty state: `Nothing to rank yet`, body, one button `Add your cards`. | Same. |
+| Sheet precon row (R3) | Add cards sheet, empty list: 52px, radius 10, 1px `--border`, `--bg`; box glyph 16 `--accent`; `Own precon boxes?` 14 `--fg`, `Pick them` `--accent`; `›` `--fg-faint`; under the upload row, 10px gap. | The same row, the only one (the upload is in the head). |
+| Pick row with cards (R3) | Name line: name left, `you own` 10 `--fg-faint` + `61 of 88` mono 12/500 `--fg` right; meta line: pips, `SET · Mon YYYY`, then the added mark. | One line: checkbox, pips, name, meta, mark, then the figure right (mono 13). |
+| Added mark (R3) | Mono 10, `--success` on `--success` 12%, radius 4, `✓ added Jun 30`. | Mono 11. |
+| S17 note (R3) | Full width under the row, 12.5/1.5 `--fg-body` on `--surface-sunken`, 1px `--border`, radius 8. | Inset to the name (49px). |
+| Receipt on Collection (R3) | Under the tabs, 12px from the edge; the S5 strip; `✕` 44px. | Under the tabs, 34px gutters; `✕` 32px. |

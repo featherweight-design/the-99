@@ -17,6 +17,8 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-no-collection-entry.
 | `R1 - Empty-Desktop.dc.html` / `R1 - Empty-Phone.dc.html` | The empty Collection, Home with a deck and no cards, the rankers' empties. |
 | `R1 - LaterUpload.dc.html` | The first CSV over a collection built in the app. |
 | `R2 - About-Entry.dc.html` | The new About entry and two edits. |
+| **`R3 - AddPrecons-Desktop.dc.html` / `R3 - AddPrecons-Phone.dc.html`** | **R3 addendum: the way into Precons I own once the player has cards, the pick with owned boxes marked, S17.** |
+| `R3 - About-Entry.dc.html` | R3: the precons edit names Add cards. Replaces `R2 - About-Entry`. |
 | `README.md` | Each open question answered, with reasons; the gap report. |
 | `STATES-no-collection-entry.md` | The matrix. |
 | `READINESS.md` | R2's verdict and what engineering needs. |
@@ -25,7 +27,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-no-collection-entry.
 | `design-tables/no-collection-entry.md` | The property table. |
 | `brand/` | The locked brand sheet. |
 
-Where an `R2 -` board exists it replaces its `R1 -` namesake, which is kept as history. The same canvas is live as a Design artifact in account 2. Open the `.dc.html` files with `support.js` beside them.
+Where an `R3 -` or `R2 -` board exists it replaces its earlier namesake, which is kept as history. The same canvas is live as a Design artifact in account 2. Open the `.dc.html` files with `support.js` beside them.
 
 ## The answer in one line
 

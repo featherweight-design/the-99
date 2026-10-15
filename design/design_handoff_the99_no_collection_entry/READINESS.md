@@ -1,8 +1,10 @@
-# READINESS — No-collection entry (R2)
+# READINESS — No-collection entry (R2, R3 addendum)
 
 **🟢 R2, approved by Hugh 2026-10-15. R2 replaces path (a)’s offer with a checkbox on the import.** Every brief state is drawn at both widths; the seven §Open questions are called. G1 is settled by
 Hugh's loosened ruling 1 (alternatives beside the upload). G2 (Collection opens at zero cards) is drawn in R2's calls
 board and was approved with R2.
+
+**🟡 R3 addendum, 2026-10-15, awaiting Hugh's review.** It places the way into Precons I own for a player who already has cards (the audit's item 1 on #1788): one row in the Add cards sheet. It also settles G7 by showing `you own N of M` on the pick whenever the collection holds cards, and it redraws S17 on the shipped pages. The rest of R2 stands as approved.
 
 ## Locks held
 
@@ -23,6 +25,8 @@ named clause · 6 Collection open, three locked, `Add your cards` outside first 
 `Add your cards`.
 
 ## Engineering needs
+
+- R3: the Add cards sheet's empty state gains the precon row at both widths (`add-cards-sheet.tsx`, beside the phone's upload row, on `PRECONS_ENABLED`); the pick takes `from=collection` for its back link and returns there; Collection draws the S5 receipt under its tabs; the pick rows show the shipped `you own N of M` when the collection is not empty.
 
 - The deck-to-collection add (one entry, kind `Deck add`, titled by the deck), with an idempotency id.
 - A caller for `addPreconForUser`: the pick's multi-add, one call per box, each with its own id, reporting per box.

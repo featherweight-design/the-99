@@ -30,7 +30,7 @@ export const startWithoutACollection = {
 
 // precons (about.ts:1103-1121): caption, second paragraph, one sentence appended after "…into your collection too.":
 export const preconsCaptionAddition =
-  'Own a few boxes and don’t want decks from them yet? Pick them under Precons I own, from your Collection, and they’re added without starting anything.';
+  'Own a few boxes and don’t want decks from them yet? Press Add cards in your Collection, then Pick them, and they’re added without starting anything.';
 
 // deck-import (about.ts:1043-1064): a fourth key line, on COLLECTION_EDIT_ENABLED via keySwitches.
 export const deckImportKeyAddition =

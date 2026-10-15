@@ -1,4 +1,4 @@
-# States — no-collection entry R2
+# States — no-collection entry R2, with the R3 addendum
 
 Brief §States, every one at 390 and 1300. The canvas column names the R1 board.
 
@@ -20,7 +20,9 @@ Brief §States, every one at 390 and 1300. The canvas column names the R1 board.
 | S14 | First CSV over a built collection | upload, ≥1 row | Sync's choice, none picked, Sync disabled (never uploaded); Replace names cards from precons and by hand that would leave | LaterUpload | Preselect Add; redraw Sync's step |
 | S15 | Precons switch off | `PRECONS_ENABLED` off | Precons I own absent on step 1, Collection; the About key line hidden | FirstRun S15 | Draw it disabled |
 | S16 | Edit switch off | `COLLECTION_EDIT_ENABLED` off | Upload + Paste only; four-slot lock; no import checkbox | FirstRun S16 | Leave Collection open |
-| S17 | A box already owned | the box has a precon History entry | `added Oct 13` on the row, still pickable; ticked: “Adding it again adds a second copy of each card.” | PreconPick S17 | Block the pick; mark boxes owned by card overlap |
+| S17 | A box already owned (R3) | the box has a precon History entry | `--success` mark `✓ added Jun 30` after the meta, still pickable; ticked: “You added this box on Jun 30. Adding it again adds a second copy of each card.” as a plain note under the row. With cards in the collection every row also shows `you own 61 of 88` | AddPrecons S17 (R3); PreconPick S17 (R1, zero cards) | Block or disable the pick; mark boxes owned by card overlap; tint the note as a warning |
+| S18 | The way in with cards (R3) | Add cards sheet open, nothing on the list, `PRECONS_ENABLED` on | One 52px row `Own precon boxes? Pick them ›` at both widths; on the phone under `Have a file? Upload it instead` | AddPrecons E1 (R3) | A head button; show it once the list has lines |
+| S19 | Pick from Collection, done (R3) | every box written, entered from Collection | Back on Collection; the S5 receipt strip under the tabs, `✕` alone | AddPrecons E3 (R3) | Send the player to Home |
 
 ## The lock
 
