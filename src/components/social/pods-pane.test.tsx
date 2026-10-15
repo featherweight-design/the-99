@@ -294,6 +294,28 @@ describe("round 1: races and edges", () => {
     expect((screen.getByRole("checkbox", { name: P.share }) as HTMLInputElement).checked).toBe(true);
   });
 
+  it("lets a redraw equal to the last one retire a held box all the same", async () => {
+    const shared = ["pod-1"];
+    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={shared} friends={FRIENDS} />);
+    await press(screen.getByRole("checkbox", { name: P.share }));
+    expect(m.share).toHaveBeenCalledWith("pod-1", false);
+    // Another tab shared it again before this page's revalidation read it: a fresh payload with the same values.
+    rerender(<PodsPane pods={[mine()]} sharedIds={["pod-1"]} friends={FRIENDS} />);
+    expect((screen.getByRole("checkbox", { name: P.share }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("neither counts nor sends a ticked friend who left the list while it was open", async () => {
+    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    await press(screen.getByRole("button", { name: P.addFriends }));
+    const [alex, zed] = within(screen.getByRole("dialog")).getAllByRole("checkbox");
+    fireEvent.click(alex);
+    fireEvent.click(zed);
+    // The friendship with Alex ended: the redraw drops him from the offer.
+    rerender(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS.filter((f) => f.displayName !== "Alex")} />);
+    await press(screen.getByRole("button", { name: P.addConfirm(1) }));
+    expect(m.add).toHaveBeenCalledWith("pod-1", ["p-Zed"]);
+  });
+
   it("closes only the Add dialog that started a write, not one reopened since", async () => {
     let done: (v: unknown) => void = () => {};
     m.add.mockReturnValueOnce(new Promise((res) => { done = res; }));

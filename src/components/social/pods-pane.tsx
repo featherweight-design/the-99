@@ -22,21 +22,17 @@ import { SocialToast, type SocialToastState } from "./social-toast";
 const copy = socialCopy.pods;
 const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "en-US", { sensitivity: "base" });
 
-/** What a redraw is compared by: everything a held press could have changed. */
-function servedKey(pods: readonly Pod[], sharedIds: readonly string[]): string {
-  // A member's join time too: one removed and re-added before the redraw has the same id and a new join.
-  return JSON.stringify([pods.map((p) => [p.id, p.members.map((m) => [m.publicId, new Date(m.joinedAt).getTime()])]), [...sharedIds].sort()]);
-}
-
 export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds: string[]; friends: Friend[] }) {
   const router = useRouter();
   // Seats removed and boxes flipped, held until the server's redraw carries them (or a failure puts them back).
   const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
   const [sharing, setSharing] = useState<Readonly<Record<string, boolean>>>({});
-  const [served, setServed] = useState(() => servedKey(pods, sharedIds));
-  const key = servedKey(pods, sharedIds);
-  if (key !== served) {
-    setServed(key);
+  // Every payload the server sends retires them, even one equal to the last: a fresh read is the truth, whatever
+  // the held value says (another tab may have put back what this one changed). The page's payload is decoded once
+  // per redraw, so a new array is a new read and the same array is a render of the same one.
+  const [served, setServed] = useState({ pods, sharedIds });
+  if (served.pods !== pods || served.sharedIds !== sharedIds) {
+    setServed({ pods, sharedIds });
     setRemoved(new Set());
     setSharing({});
   }

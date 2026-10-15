@@ -36,7 +36,10 @@ export function PodAddFriends({
 }) {
   const [ticked, setTicked] = useState<ReadonlySet<string>>(() => new Set());
   const groupId = useId();
-  const n = ticked.size;
+  // Only friends still on offer count: one who left the list while it was open (a friendship ended) is neither
+  // counted nor sent, or the whole batch would be refused for a row the reader can no longer see.
+  const live = [...ticked].filter((id) => candidates.some((f) => f.publicId === id));
+  const n = live.length;
   // Past the batch cap the button holds and says why, so a press never meets a refusal it could not see (E11).
   const over = n > ADD_MEMBERS_MAX;
   const held = n === 0 || over || busy;
@@ -84,7 +87,7 @@ export function PodAddFriends({
               aria-disabled={held || undefined}
               aria-busy={busy || undefined}
               onClick={() => {
-                if (!held) onAdd([...ticked]);
+                if (!held) onAdd(live);
               }}
               className="h-[48px] w-full cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] px-[18px] font-sans text-[14px] font-semibold text-[color:var(--bg)] aria-disabled:cursor-default aria-disabled:opacity-50 md:h-[40px] md:w-auto"
             >
