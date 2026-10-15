@@ -1426,6 +1426,10 @@ export function CardModal({
   const closeZoom = useCallback(() => {
     setZoomed(false);
     setZoomTurning(false);
+    // The layer unmounts with any press still down (Escape mid-drag), so its release never arrives: drop the press
+    // here, or a later open would read plain mouse movement as that press and tilt with no button held.
+    zoomPress.current = null;
+    zoomDragged.current = false;
     // The layer's own announcements go with it. Reopening shows the front, and a live
     // region still reading "Showing <back face>" would describe a card that is no
     // longer there.
@@ -2962,6 +2966,9 @@ export function CardModal({
               style={{ perspective: "1400px" }}
               onPointerDown={(e) => {
                 if (e.pointerType === "mouse" && e.button !== 0) return;
+                // One press at a time, as the sheet gesture does: a second finger would overwrite the first, whose
+                // release or cancel is then ignored and leaves the card tilted with no gesture behind it.
+                if (zoomPress.current) return;
                 zoomPress.current = { id: e.pointerId, x: e.clientX, y: e.clientY, tilting: false };
                 try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* already released */ }
               }}

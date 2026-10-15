@@ -265,6 +265,28 @@ describe("the zoom (G5)", () => {
       vi.useRealTimers();
     }
   });
+
+  it("drops a press the layer closed under, so a reopen does not tilt to a bare mouse move", () => {
+    mount();
+    let host = open();
+    fireEvent.pointerDown(host, { pointerId: 3, pointerType: "mouse", button: 0, clientX: 100, clientY: 100 });
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(screen.queryByTestId("card-zoom")).toBeNull();
+    host = open();
+    fireEvent.pointerMove(host, { pointerId: 3, pointerType: "mouse", clientX: 160, clientY: 160 });
+    expect(tiltValues(host)).toEqual(FLAT);
+  });
+
+  it("takes one press at a time: a second finger cannot strand the card tilted", () => {
+    mount();
+    const host = open();
+    fireEvent.pointerDown(host, { pointerId: 5, pointerType: "touch", clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(host, { pointerId: 5, pointerType: "touch", clientX: 140, clientY: 120 });
+    expect(tiltValues(host).tilting).toBe(true);
+    fireEvent.pointerDown(host, { pointerId: 6, pointerType: "touch", clientX: 50, clientY: 50 });
+    fireEvent.pointerCancel(host, { pointerId: 5, pointerType: "touch" });
+    expect(tiltValues(host)).toEqual(FLAT);
+  });
 });
 
 describe("the phone hold, wired to the card", () => {
