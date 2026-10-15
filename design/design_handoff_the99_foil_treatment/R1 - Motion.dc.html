@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foil motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.shell{overflow:hidden;border-radius:10px;border:1px solid #1A1F2B;background:#1E1F26;display:flex;flex-direction:column}
+.art{position:relative;aspect-ratio:63/88;overflow:hidden;border-radius:0 0 10px 10px;background:#16171D}
+.plate{position:absolute;inset:0;background:#0E0E10}
+.face{position:absolute;inset:4.3% 4.8%;border-radius:2.5%;display:flex;flex-direction:column;gap:2.2%;padding:3.2%;box-sizing:border-box}
+.nb{flex:0 0 7%;border-radius:2px;background:rgba(255,255,255,.22)}
+.win{flex:0 0 46%;border-radius:1px}
+.tb{flex:0 0 6%;border-radius:1px;background:rgba(255,255,255,.2)}
+.box{flex:1;border-radius:1px}
+.fl{position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.fl.foil::before,.fl.etched::before,.fl.foil::after,.fl.etched::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.fl.foil::before{background:linear-gradient(115deg,rgba(255,255,255,0) 8%,rgba(255,110,180,.16) 22%,rgba(255,220,120,.16) 32%,rgba(255,255,255,.26) 39%,rgba(130,240,210,.16) 47%,rgba(120,170,255,.16) 60%,rgba(200,130,255,.14) 74%,rgba(255,255,255,0) 90%)}
+.fl.etched::before{background:linear-gradient(115deg,rgba(214,226,240,0) 12%,rgba(214,226,240,.10) 30%,rgba(236,243,250,.22) 42%,rgba(214,226,240,.10) 54%,rgba(214,226,240,0) 74%)}
+.fl.foil::after,.fl.etched::after{background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.42) 50%,rgba(255,255,255,0) 70%);transform:translateX(-100%)}
+.arr .plate,.arr .fl{animation:arriveLoop 2600ms infinite}
+.swp .fl::after{animation:sweepLoop 2600ms infinite}
+.row .fl::after{animation:rowLoop 3600ms infinite}
+.d1 .fl::after{animation-delay:600ms}.d2 .fl::after{animation-delay:1200ms}.d3 .fl::after{animation-delay:1800ms}.d4 .fl::after{animation-delay:2400ms}.d5 .fl::after{animation-delay:3000ms}
+@keyframes arriveLoop{0%,20%{opacity:0;animation-timing-function:cubic-bezier(.45,0,.55,1)}31.5%,100%{opacity:1}}
+@keyframes sweepLoop{0%{transform:translateX(-100%);animation-timing-function:cubic-bezier(.45,0,.55,1)}24.6%,100%{transform:translateX(100%)}}
+@keyframes rowLoop{0%{transform:translateX(-100%);animation-timing-function:cubic-bezier(.45,0,.55,1)}17.8%,100%{transform:translateX(100%)}}
+</style>
+</helmet>
+<div style="width:1300px;min-height:1000px;box-sizing:border-box;padding:48px 56px 64px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:36px">
+
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px">
+    <span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Motion · R1 · plays on a loop here only</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">Two motions, both short, neither on its own</h2>
+    <p style="margin:0;font-size:13px;line-height:1.5;color:#95A4A6">These specimens repeat so you can watch them; the app plays each once. The canvas thumbnail is still: open the board to see them move.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px">
+    <sc-for list="{{specs}}" as="t" hint-placeholder-count="4">
+      <div class="{{t.cls}}" style="display:flex;flex-direction:column;gap:10px">
+        <div class="shell">
+          <div class="art"><div class="plate"><div class="face" style="background:{{t.face}}"><span class="nb"></span><span class="win" style="background:{{t.win}}"></span><span class="tb"></span><span class="box" style="background:{{t.box}}"></span></div></div><span class="fl {{t.fin}}"></span></div>
+          <div style="padding:8px 10px 9px"><span style="font-size:12.5px">{{t.name}}</span></div>
+        </div>
+        <span class="m" style="font-size:11px;font-weight:500;color:#C6D2D3">{{t.label}}</span>
+        <span class="m" style="font-size:11px;line-height:1.6;color:#95A4A6">{{t.spec}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <span class="k">A pointer crossing a row of a CE deck: only the tile under it moves</span>
+    <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:20px">
+      <sc-for list="{{row}}" as="t" hint-placeholder-count="6">
+        <div class="row {{t.d}}">
+          <div class="shell">
+            <div class="art"><div class="plate"><div class="face" style="background:{{t.face}}"><span class="nb"></span><span class="win" style="background:{{t.win}}"></span><span class="tb"></span><span class="box" style="background:{{t.box}}"></span></div></div><span class="fl foil"></span></div>
+            <div style="padding:8px 10px 9px"><span style="font-size:12.5px">{{t.name}}</span></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ART = [
+      ['#D9D0B4', 'linear-gradient(160deg,#cfd8e6,#e8c98a 60%,#9a7b52)', '#EEE7D3'],
+      ['#2D5C93', 'linear-gradient(170deg,#1b2f55,#4f86c4 55%,#c9e0f0)', '#B9CCE0'],
+      ['#3A3436', 'linear-gradient(165deg,#120f14,#4b2f4a 60%,#8a5a6e)', '#B7AEAE'],
+      ['#B2452F', 'linear-gradient(160deg,#2a0f0a,#c2552c 55%,#f2b061)', '#E2C2B0'],
+      ['#3F6C3B', 'linear-gradient(170deg,#0f2414,#3f7a3a 55%,#b9d28a)', '#C3D1B5'],
+      ['#C2A04C', 'linear-gradient(160deg,#3a2a12,#b8873a 50%,#f0d58a)', '#E8DDB8'],
+      ['#8D9298', 'linear-gradient(165deg,#22262c,#6b737d 55%,#c8ccd2)', '#D3D6DA']
+    ];
+    const s = (a, o) => ({ face: ART[a][0], win: ART[a][1], box: ART[a][2], ...o });
+    return {
+      specs: [
+        s(6, { cls: 'arr', fin: 'foil', name: 'Sol Ring', label: 'Arrival · both widths', spec: 'opacity 0→1 · 300ms (--motion-fade) · --motion-ease · no delay. Film and art fade as one; held at 0 while pending.' }),
+        s(1, { cls: 'swp', fin: 'foil', name: 'Counterspell', label: 'Hover or focus · desktop', spec: '::after translateX(-100%→100%) · 640ms (2 × --motion-duration) · --motion-ease · no delay · once per hover.' }),
+        s(5, { cls: 'swp', fin: 'etched', name: 'Arcane Signet', label: 'Etched · same sweep', spec: 'Same timing. Only the film under it differs.' }),
+        s(3, { cls: '', fin: 'foil', name: 'Chaos Warp', label: 'Reduced motion · phones at rest', spec: 'Nothing moves. Under reduced motion the film appears with the art, no fade.' })
+      ],
+      row: [6, 5, 1, 3, 0, 4].map((a, i) => s(a, { d: 'd' + i, name: ['Sol Ring', 'Arcane Signet', 'Counterspell', 'Chaos Warp', 'Swords to Plowshares', 'Beast Within'][i] }))
+    };
+  }
+}
+</script>
+</body>
+</html>
