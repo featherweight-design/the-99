@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Motion retune · 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+@keyframes upA{from{transform:translateY(100%)}to{transform:none}}
+@keyframes upB{from{transform:translateY(100%)}to{transform:none}}
+@keyframes riseA{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes riseB{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes fadeA{from{opacity:0}to{opacity:1}}
+@keyframes fadeB{from{opacity:0}to{opacity:1}}
+@keyframes snapA{from{transform:translateY(38%)}to{transform:none}}
+@keyframes snapB{from{transform:translateY(38%)}to{transform:none}}
+@keyframes slideA{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes slideB{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+.runA .k-up{animation-name:upA}.runB .k-up{animation-name:upB}
+.runA .k-rise{animation-name:riseA}.runB .k-rise{animation-name:riseB}
+.runA .k-fade{animation-name:fadeA}.runB .k-fade{animation-name:fadeB}
+.runA .k-snap{animation-name:snapA}.runB .k-snap{animation-name:snapB}
+.runA .k-slide{animation-name:slideA}.runB .k-slide{animation-name:slideB}
+.ease{animation-timing-function:cubic-bezier(.45,0,.55,1);animation-fill-mode:both}
+.out{animation-timing-function:cubic-bezier(.2,.7,.2,1);animation-fill-mode:both}
+</style>
+</helmet>
+<div class="{{run}}" style="width:390px;min-height:1700px;box-sizing:border-box;padding:28px 16px 40px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Motion · 390 · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:22px">The phone's sheets and lists</h2>
+    <p style="margin:0;font-size:12px;line-height:1.5;color:#95A4A6">The rows that matter most at 390, at R1 timing. The full table is on the desktop board. No hover on a phone, so E7 does not apply here.</p>
+    <button type="button" onClick="{{play}}" style="align-self:flex-start;margin-top:6px;height:44px;padding:0 18px;background:#5C86C9;border:0;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;color:#121217;cursor:pointer">Play all</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="position:relative;height:220px;overflow:hidden;background:#121217;border:1px solid #2E3340;border-radius:12px">
+        <span style="position:absolute;left:10px;right:10px;top:12px;height:8px;border-radius:4px;background:#22232B"></span>
+        <span style="position:absolute;left:10px;right:40px;top:28px;height:8px;border-radius:4px;background:#22232B"></span>
+        <div class="k-up ease" style="position:absolute;left:0;right:0;bottom:0;height:120px;background:#22232B;border-radius:12px 12px 0 0;animation-duration:320ms;animation-delay:0ms;display:flex;flex-direction:column;gap:8px;padding:12px">
+          <span style="align-self:center;width:30px;height:4px;border-radius:2px;background:#424755"></span>
+          <span style="height:8px;width:70%;border-radius:4px;background:#2E3340"></span>
+          <span style="height:8px;width:50%;border-radius:4px;background:#2E3340"></span>
+        </div>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6D2D3">Account sheet · answer</span>
+      <span style="font-size:11px;line-height:1.4;color:#95A4A6">A menu: no wait, 320ms on --motion-ease.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="position:relative;height:220px;overflow:hidden;background:#121217;border:1px solid #2E3340;border-radius:12px">
+        <span style="position:absolute;left:10px;right:10px;top:12px;height:8px;border-radius:4px;background:#22232B"></span>
+        <span class="k-fade ease" style="position:absolute;inset:0;background:rgba(8,8,12,.55);animation-duration:320ms;animation-delay:100ms"></span>
+        <div class="k-rise ease" style="position:absolute;left:0;right:0;bottom:0;height:150px;background:#1E1F26;border-radius:12px 12px 0 0;animation-duration:320ms;animation-delay:100ms;display:flex;flex-direction:column;gap:8px;padding:12px">
+          <span style="height:8px;width:40%;border-radius:4px;background:#2E3340"></span>
+          <span style="display:flex;gap:6px"><span style="width:24px;height:24px;border-radius:50%;background:#2E3340"></span><span style="width:24px;height:24px;border-radius:50%;background:#2E3340"></span><span style="width:24px;height:24px;border-radius:50%;background:#2E3340"></span></span>
+        </div>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6D2D3">Filter sheet · arrival</span>
+      <span style="font-size:11px;line-height:1.4;color:#95A4A6">Sheet and backdrop wait 100ms, then 320ms together.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="position:relative;height:220px;overflow:hidden;background:#121217;border:1px solid #2E3340;border-radius:12px">
+        <div style="position:absolute;left:0;right:0;bottom:0;height:170px;background:#1E1F26;border-radius:12px 12px 0 0"></div>
+        <div class="k-rise ease" style="position:absolute;left:30px;right:30px;top:30px;bottom:0;background:#2D2E35;border-radius:10px 10px 0 0;animation-duration:320ms;animation-delay:100ms;display:flex;flex-direction:column;gap:8px;padding:10px">
+          <span style="aspect-ratio:63/88;width:60%;align-self:center;border-radius:5px;background:#4A5266"></span>
+        </div>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6D2D3">Card over a sheet · arrival</span>
+      <span style="font-size:11px;line-height:1.4;color:#95A4A6">stack-rise and phone-card-enter: 100 + 320 on --motion-ease.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="position:relative;height:220px;overflow:hidden;background:#121217;border:1px solid #2E3340;border-radius:12px">
+        <div class="k-snap out" style="position:absolute;left:0;right:0;bottom:0;height:150px;background:#1E1F26;border-radius:12px 12px 0 0;animation-duration:200ms;animation-delay:0ms;display:flex;flex-direction:column;gap:8px;padding:12px">
+          <span style="align-self:center;width:30px;height:4px;border-radius:2px;background:#424755"></span>
+          <span style="height:8px;width:60%;border-radius:4px;background:#2E3340"></span>
+        </div>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6D2D3">Sheet snap · kept curve</span>
+      <span style="font-size:11px;line-height:1.4;color:#95A4A6">After the finger lifts: no wait, 200ms on --motion-ease-out. The drag itself is never animated.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="position:relative;height:220px;overflow:hidden;background:#16171D;border:1px solid #2E3340;border-radius:12px;display:flex;align-items:center;justify-content:center">
+        <span class="k-slide out" style="width:100px;aspect-ratio:63/88;border-radius:6px;background:#5A4A3E;animation-duration:200ms;animation-delay:0ms"></span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6D2D3">Carousel Next · kept curve</span>
+      <span style="font-size:11px;line-height:1.4;color:#95A4A6">Repeated presses: no wait, 200ms on --motion-ease-out, so each press answers at once.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="height:220px;box-sizing:border-box;padding:16px 12px;background:#121217;border:1px solid #2E3340;border-radius:12px;display:flex;flex-direction:column;gap:6px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">Home</span>
+        <span aria-hidden="true" style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:500;font-variant-numeric:tabular-nums;color:#C6D2D3">{{count}}</span>
+        <span style="font-size:11px;color:#95A4A6">cards in your collection</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6D2D3">E8 · count up</span>
+      <span style="font-size:11px;line-height:1.4;color:#95A4A6">100 + 320ms; the final figure is in the text from the start.</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">E9 · Show more on a phone list</span>
+    <div style="display:flex;flex-direction:column;gap:6px;padding:12px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="height:40px;border-radius:6px;background:#22232B"></span>
+      <span style="height:40px;border-radius:6px;background:#22232B"></span>
+      <sc-for list="{{stagger}}" as="s" hint-placeholder-count="14">
+        <span class="k-fade ease" style="height:40px;border-radius:6px;background:{{s.ink}};animation-duration:200ms;animation-delay:{{s.delay}}ms"></span>
+      </sc-for>
+    </div>
+    <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">The two rows above were already there. The new batch fades in 40ms apart after a 100ms wait; the last two (grey) arrive with the 12th.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1700}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { run: '', count: 1418 };
+  }
+  play() {
+    const run = this.state.run === 'runA' ? 'runB' : 'runA';
+    this.setState({ run: run, count: 0 });
+    const start = performance.now() + 100;
+    const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+    const tick = (now) => {
+      const t = Math.max(0, Math.min(1, (now - start) / 320));
+      this.setState({ count: Math.round(1418 * ease(t)) });
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  renderVals() {
+    const stagger = [];
+    for (let i = 0; i < 14; i++) {
+      stagger.push({ delay: 100 + 40 * Math.min(i, 11), ink: i < 12 ? '#2D2E35' : '#2E3340' });
+    }
+    return {
+      run: this.state.run,
+      count: this.state.count.toLocaleString('en-US'),
+      stagger: stagger,
+      play: () => this.play()
+    };
+  }
+}
+</script>
+</body>
+</html>
