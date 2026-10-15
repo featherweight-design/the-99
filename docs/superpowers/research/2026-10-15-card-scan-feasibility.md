@@ -562,7 +562,7 @@ The lab page matches on the phone only because a staging lab with no server inde
   margin, latency and agreement in `scan_lab_results`. A frame (the warped 320x448 card, JPEG,
   capped at 400 KB) is stored only when "Keep this frame" is ticked. The table is purged with the
   account.
-- **Files** (in the separate lab PR, branch `feat/scan-lab`, not in this one):
+- **Files** (the lab page, merged in #1814):
   - `src/lib/scan-lab/*` (pure geometry, matching and result parsing, all unit tested);
   - `src/components/scan-lab/scan-lab.tsx`;
   - migration `0129_scan_lab` (the new table, plus the switch added to `flag_overrides`' check);
