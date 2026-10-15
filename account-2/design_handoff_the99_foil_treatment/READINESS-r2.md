@@ -12,14 +12,14 @@
 | Reduced motion is static | The tilt, the light, the follow, the sweeps and the fade all sit under no-preference. The film still draws, centred. |
 | Reduced transparency and forced colours | R1’s rules cover every `[data-foil]`: a 2px `--fg-muted` ring, and no film. The light is dropped under both; the tilt stays. |
 | No change to what details says | No strings. The finish line, the picker captions and the zoom caption are untouched. |
-| No per-frame JavaScript | Two custom properties per pointermove on one element; a CSS transition does the rest. A 300ms hold timer on the phone. Nothing runs while idle. |
+| No per-frame JavaScript | Three registered custom properties written on pointer events on one element; the browser transitions them. A 300ms hold timer on the phone. Nothing runs while idle. |
 | No About entry | None, no bump. |
 
 ## Open questions, called
 
 1. Intensity at size: R1’s film, at 80% strength and spread one and a half times wider.
 2. Motion at size: The film follows the tilt: it slides toward the pointer or finger, up to a quarter of the card’s width each way, and a soft light follows with it.
-3. Tilt (Hugh, 2026-10-15: yes, subtle): Every card in details and the zoom tilts up to 4° toward where you point, the edge under the pointer dipping away, with a soft light following.
+3. Tilt (Hugh, 2026-10-15: yes, subtle; smoothed against his reference app): Every card in details and the zoom tilts up to 6° toward where you point: the side under the pointer lifts toward you, and a sliver of card edge shows along the far sides, as a card does in hand.
 4. The phone: Press and hold the card, then move your finger: it tilts the same way.
 5. Arrival on a background face: The face never waits; only the film does.
 6. Precons in details: Details keeps the card’s own resolution.
@@ -29,7 +29,8 @@
 
 ## For the audit
 
-- The tilt (added at Hugh's request): 4°, on every card, light following; desktop on hover, phone after a 300ms hold.
+- The tilt (added at Hugh's request, smoothed against his reference): 6°, the side under the pointer lifting, a card edge
+  on the far sides, a soft light, all on one set of eased values; every card; desktop on hover, phone after a 300ms hold.
   Hover the first card on `The 99 - Foil Treatment (R2)`; the phone hold is drawn on `R2 - Details-Phone`.
 - R2-G4: tilt on every card, not only foil.
 - Call 5: the film's own arrival mark on a background face.

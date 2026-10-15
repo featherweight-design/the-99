@@ -47,7 +47,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-foil-treatment.md` (
 
 1. Intensity: R1's film at 80%, spread 1.5x.
 2. The film slides with the tilt; focus plays one sweep.
-3. Tilt: yes, subtle (4°), every card, a soft light following. Desktop on hover.
+3. Tilt: yes, 6°, the side under the pointer lifting, a card edge and a soft light, eased as one. Desktop on hover.
 4. Phone: hold 300ms then move to tilt; one band when a card lands.
 5. Cold face: the face never waits; the film fades in when the bytes land.
 6. Precons: details keeps the card's own resolution.
