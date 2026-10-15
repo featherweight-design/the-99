@@ -16,7 +16,7 @@ import { ArrivalDismiss } from "../decks/arrival-strip";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
 import { GRID_EAGER_TILES } from "../collection/grid-view";
 import { dismissCollectedAction } from "../../app/collection/wishlist/actions";
-import { WishlistSearch, type WantChange } from "./wishlist-search";
+import { WishlistSearch } from "./wishlist-search";
 
 const copy = wishlistCopy;
 
@@ -54,11 +54,12 @@ export function WishlistView({
   hasFriend: boolean;
 }) {
   const router = useRouter();
-  // This visit's writes, by card: the line as it now stands, or null when it no longer stands.
-  const [changed, setChanged] = useState<Map<string, WishlistViewTile | null>>(new Map());
   const [sort, setSort] = useState<Sort>("newest");
   const [searching, setSearching] = useState(false);
-  const [stripShown, setStripShown] = useState(notices.length > 0);
+  // The notices this visit's ✕ dismissed, by card and time, so a notice a later refresh brings is still drawn.
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const noticeKey = (n: WishlistViewNotice) => `${n.oracleId}|${n.collectedAt}`;
+  const shownNotices = notices.filter((n) => !dismissed.has(noticeKey(n)));
   const [toast, setToast] = useState<"add" | "set" | null>(null);
   const toastRef = useRef<HTMLDivElement>(null);
   // Hover and focus hold the toast's window separately, as the other alert toasts do. The frame stays mounted while a
@@ -67,36 +68,14 @@ export function WishlistView({
   const [toastFocus, setToastFocus] = useState(false);
   const { restart } = useToastClock(toastRef, toast !== null && !toastHover && !toastFocus, () => setToast(null));
 
+  // The server's list is the only source of tiles: a settled write refreshes it, so a card collected elsewhere, or a
+  // count moved elsewhere, is never held over by a copy this view kept.
   const tiles = useMemo(() => {
-    const byId = new Set(served.map((t) => t.oracleId));
-    const added = [...changed.values()].filter((t): t is WishlistViewTile => t !== null && !byId.has(t.oracleId));
-    const merged = [
-      ...added.reverse(),
-      ...served.flatMap((t) => {
-        if (!changed.has(t.oracleId)) return [t];
-        const c = changed.get(t.oracleId);
-        return c ? [{ ...t, want: c.want, have: c.have }] : [];
-      }),
-    ];
-    if (sort === "name") return [...merged].sort((a, b) => a.name.localeCompare(b.name));
-    return merged.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
-  }, [served, changed, sort]);
+    if (sort === "name") return [...served].sort((a, b) => a.name.localeCompare(b.name));
+    return [...served].sort((a, b) => b.addedAt.localeCompare(a.addedAt));
+  }, [served, sort]);
 
-  const onWant = useCallback(
-    ({ card, want, have }: WantChange) => {
-      setChanged((prev) => {
-        const next = new Map(prev);
-        const was = prev.get(card.oracleId) ?? served.find((t) => t.oracleId === card.oracleId);
-        next.set(
-          card.oracleId,
-          want === null ? null : { oracleId: card.oracleId, name: card.name, imageUri: card.imageUri, want, have, addedAt: was?.addedAt ?? new Date().toISOString() },
-        );
-        return next;
-      });
-      router.refresh();
-    },
-    [served, router],
-  );
+  const onWant = useCallback(() => router.refresh(), [router]);
 
   const onFailure = useCallback(
     (kind: "add" | "set") => {
@@ -108,12 +87,13 @@ export function WishlistView({
   );
 
   function dismissStrip() {
-    setStripShown(false);
-    void dismissCollectedAction(notices.map((n) => ({ oracleId: n.oracleId, collectedAt: n.collectedAt }))).catch(() => {});
+    const drawn = shownNotices;
+    setDismissed((prev) => new Set([...prev, ...drawn.map(noticeKey)]));
+    void dismissCollectedAction(drawn.map((n) => ({ oracleId: n.oracleId, collectedAt: n.collectedAt }))).catch(() => {});
   }
 
   const siblings: SiblingCard[] = tiles.map((t) => ({ oracleId: t.oracleId, name: t.name, imageUri: t.imageUri }));
-  const names = notices.map((n) => n.name);
+  const names = shownNotices.map((n) => n.name);
   const strongStrip = "font-medium text-[color:var(--fg)]";
 
   return (
@@ -142,7 +122,7 @@ export function WishlistView({
         </div>
 
         <div>
-          {stripShown && (
+          {shownNotices.length > 0 && (
             <div
               role="status"
               className="mx-[14px] mt-[12px] flex items-start gap-[12px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] px-[16px] py-[12px] text-[13.5px] text-[color:var(--fg-body)] md:mx-[34px] md:mt-[14px] md:items-center md:text-[14px]"

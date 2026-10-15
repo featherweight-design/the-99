@@ -44,8 +44,14 @@ export function WishlistSearch({
   const [results, setResults] = useState<WishlistSearchResult[]>([]);
   const [searched, setSearched] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  // A row's want as this visit has moved it, over the want the search answered with (null: not on the list).
-  const [wants, setWants] = useState<Map<string, number | null>>(new Map());
+  // A row's want, in two layers over the want the search answered with (null: not on the list). `confirmed` is the
+  // last count a write settled at, and a fresh search answer retires it: the answer is newer. `pending` is the count a
+  // write in flight is drawn at, tagged with that write's sequence, so only the newest write for a card clears it and a
+  // failure falls back to the last confirmed count, never to a count no write saved.
+  const [confirmed, setConfirmed] = useState<Map<string, number | null>>(new Map());
+  const [pending, setPending] = useState<Map<string, { seq: number; want: number }>>(new Map());
+  const seqs = useRef(new Map<string, number>());
+  const inputRef = useRef<HTMLInputElement>(null);
   // Rows whose Add press just turned into the stepper: theirs takes focus as it draws.
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null);
@@ -64,6 +70,7 @@ export function WishlistSearch({
         .then((r) => {
           if (mine !== ticket.current) return;
           setResults(r.ok ? r.results : []);
+          setConfirmed(new Map());
           setFailed(!r.ok);
           setSearched(trimmed);
         })
@@ -84,8 +91,9 @@ export function WishlistSearch({
 
   const { ref: rootRef, onEscape } = useSearchDismiss<HTMLDivElement>(trimmed !== "", () => setQuery(""));
 
-  const wantOf = (r: WishlistSearchResult) => (wants.has(r.oracleId) ? wants.get(r.oracleId)! : r.want);
-  const setWant = (oracleId: string, want: number | null) => setWants((prev) => new Map(prev).set(oracleId, want));
+  const wantOf = (r: WishlistSearchResult) =>
+    pending.get(r.oracleId)?.want ?? (confirmed.has(r.oracleId) ? confirmed.get(r.oracleId)! : r.want);
+  const confirm = (oracleId: string, want: number | null) => setConfirmed((prev) => new Map(prev).set(oracleId, want));
 
   async function add(r: WishlistSearchResult) {
     if (adding === r.oracleId || wantOf(r) !== null) return;
@@ -96,7 +104,7 @@ export function WishlistSearch({
       // `held`: the collection already reaches the want, so no line stands and the press stays as it was.
       if (out.status === "wanted") {
         setFresh((prev) => new Set(prev).add(r.oracleId));
-        setWant(r.oracleId, out.want);
+        confirm(r.oracleId, out.want);
         onWant({ card: r, want: out.want, have: out.have });
       }
     } catch {
@@ -107,24 +115,38 @@ export function WishlistSearch({
   }
 
   async function step(r: WishlistSearchResult, next: number) {
-    const before = wantOf(r);
-    setWant(r.oracleId, next);
+    const id = r.oracleId;
+    const seq = (seqs.current.get(id) ?? 0) + 1;
+    seqs.current.set(id, seq);
+    setPending((prev) => new Map(prev).set(id, { seq, want: next }));
     try {
-      const out = await setWishlistWantAction(r.oracleId, next);
+      const out = await setWishlistWantAction(id, next);
       if (!out.ok) throw new Error(out.reason);
       const want = out.status === "wanted" ? out.want : null;
-      setWant(r.oracleId, want);
+      confirm(id, want);
       onWant({ card: r, want, have: out.have });
     } catch {
-      setWant(r.oracleId, before);
       onFailure("set");
+    } finally {
+      // Only the newest write for the card stops drawing its count: an older one settling leaves the newer in view.
+      setPending((prev) => {
+        if (prev.get(id)?.seq !== seq) return prev;
+        const rest = new Map(prev);
+        rest.delete(id);
+        return rest;
+      });
     }
   }
 
   // The results are a plain list of rows, each with its own press (Add, or the stepper), reached by Tab: a listbox's
-  // options may not hold controls of their own. Escape closes the panel.
+  // options may not hold controls of their own. Escape closes the panel from anywhere inside the search, the field
+  // or a row's press, and puts focus back in the field first so it is not lost with the row.
+  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Escape" && trimmed !== "" && e.target !== inputRef.current) inputRef.current?.focus();
+    onEscape(e);
+  }
   return (
-    <div ref={rootRef} className="relative w-full md:w-[560px]">
+    <div ref={rootRef} onKeyDown={onKeyDown} className="relative w-full md:w-[560px]">
       <SearchField
         aria-label={collectionEditCopy.add.searchAria}
         placeholder={copy.page.search.placeholder}
@@ -133,7 +155,7 @@ export function WishlistSearch({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onClear={() => setQuery("")}
-        onKeyDown={onEscape}
+        ref={inputRef}
         containerClassName="h-[44px] md:h-[46px] py-0 rounded-[10px] md:bg-[color:var(--bg)]"
         className="text-[16px] md:text-[15px]"
       />

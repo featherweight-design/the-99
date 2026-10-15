@@ -77,6 +77,15 @@ describe("the list", () => {
     expect(screen.getByText(wishlistCopy.page.friendsLine)).toBeInTheDocument();
   });
 
+  it("draws the server's list as it stands after a refresh, with nothing held over", () => {
+    const { rerender } = view({ tiles: [tile(), tile({ oracleId: ARCANE, name: "Arcane Signet" })] });
+    expect(screen.getAllByTestId("wishlist-tile")).toHaveLength(2);
+    rerender(<WishlistView tiles={[tile({ want: 4 })]} notices={[]} hasFriend={false} />);
+    const tiles = screen.getAllByTestId("wishlist-tile");
+    expect(tiles).toHaveLength(1);
+    expect(within(tiles[0]!).getByTestId("wishlist-tile-caption")).toHaveTextContent("want 4 · have 1");
+  });
+
   it("sorts by name on request, newest first otherwise", () => {
     view({ tiles: [tile(), tile({ oracleId: ARCANE, name: "Arcane Signet", addedAt: "2026-10-01T00:00:00.000Z" })] });
     const names = () => screen.getAllByTestId("wishlist-tile").map((t) => within(t).getByRole("button").getAttribute("aria-label"));
@@ -104,6 +113,14 @@ describe("the collected strip", () => {
     ]);
   });
 
+  it("draws a notice a later refresh brings, after an earlier strip was dismissed", () => {
+    const { rerender } = view({ notices: notices.slice(0, 1) });
+    fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: wishlistCopy.page.dismiss }));
+    expect(screen.queryByRole("status")).toBeNull();
+    rerender(<WishlistView tiles={[]} notices={notices} hasFriend={false} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Collected since you last looked: Arcane Signet. It’s left your wishlist.");
+  });
+
   it("is not drawn with nothing collected", () => {
     view();
     expect(screen.queryByRole("status")).toBeNull();
@@ -111,7 +128,7 @@ describe("the collected strip", () => {
 });
 
 describe("the search", () => {
-  it("turns Add to wishlist into the stepper in place, and the new line shows as a tile", async () => {
+  it("turns Add to wishlist into the stepper in place, and refreshes the list from the server", async () => {
     m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: null }] });
     m.add.mockResolvedValue({ ok: true, status: "wanted", want: 2, have: 1 });
     view();
@@ -125,10 +142,45 @@ describe("the search", () => {
     expect(within(stepper).getByRole("button", { name: wishlistCopy.details.more })).toHaveFocus();
     expect(within(list).queryByRole("button", { name: wishlistCopy.page.search.add })).toBeNull();
     expect(m.refresh).toHaveBeenCalled();
-    // Escape closes the panel, and the grid behind holds the new line.
-    fireEvent.keyDown(screen.getByRole("searchbox", { name: /search/i }), { key: "Escape" });
+    // Escape from the stepper's press (where Add left focus) closes the panel and puts focus back in the field.
+    fireEvent.keyDown(within(stepper).getByRole("button", { name: wishlistCopy.details.more }), { key: "Escape" });
     await waitFor(() => expect(screen.queryByTestId("wishlist-results")).toBeNull());
-    expect(screen.getAllByTestId("wishlist-tile")).toHaveLength(1);
+    expect(screen.getByRole("searchbox", { name: /search/i })).toHaveFocus();
+  });
+
+  it("never draws a count no write saved when two steps overlap and both fail", async () => {
+    m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 2 }] });
+    const settles: ((v: unknown) => void)[] = [];
+    m.setWant.mockImplementation(() => new Promise((resolve) => settles.push(resolve)));
+    view({ tiles: [tile()] });
+    const list = await search("sol");
+    const stepper = within(list).getByTestId("want-stepper");
+    const more = within(stepper).getByRole("button", { name: wishlistCopy.details.more });
+    fireEvent.click(more);
+    fireEvent.click(more);
+    expect(m.setWant.mock.calls).toEqual([[SOL, 3], [SOL, 4]]);
+    expect(within(stepper).getByLabelText(wishlistCopy.details.want)).toHaveTextContent("4");
+    await act(async () => settles[0]!({ ok: false, reason: "invalid" }));
+    // The older write failing leaves the newer one in view.
+    expect(within(stepper).getByLabelText(wishlistCopy.details.want)).toHaveTextContent("4");
+    await act(async () => settles[1]!({ ok: false, reason: "invalid" }));
+    expect(within(stepper).getByLabelText(wishlistCopy.details.want)).toHaveTextContent("2");
+  });
+
+  it("lets a fresh search answer stand over a count an earlier write settled", async () => {
+    m.search.mockResolvedValueOnce({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 2 }] });
+    m.setWant.mockResolvedValue({ ok: true, status: "wanted", want: 3, have: 1 });
+    view({ tiles: [tile()] });
+    let list = await search("sol");
+    await act(async () => fireEvent.click(within(list).getByRole("button", { name: wishlistCopy.details.more })));
+    expect(within(list).getByLabelText(wishlistCopy.details.want)).toHaveTextContent("3");
+    // The card was collected elsewhere since: the next answer says it is off the list.
+    m.search.mockResolvedValueOnce({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 3, want: null }] });
+    fireEvent.change(screen.getByRole("searchbox", { name: /search/i }), { target: { value: "sol r" } });
+    await waitFor(() => expect(m.search).toHaveBeenCalledTimes(2));
+    list = await screen.findByRole("list", { name: /./ });
+    await waitFor(() => expect(within(list).getByRole("button", { name: wishlistCopy.page.search.add })).toBeInTheDocument());
+    expect(within(list).queryByTestId("want-stepper")).toBeNull();
   });
 
   it("draws the stepper straight away for a card already on the list", async () => {
