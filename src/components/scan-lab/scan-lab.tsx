@@ -80,8 +80,8 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     if (crop) ctx.putImageData(tensorToImage(crop, EMBED_W, EMBED_H), 0, 0);
     else ctx.clearRect(0, 0, EMBED_W, EMBED_H);
   }, [reading]);
-  // On by default and kept across taps: a player shooting a run of photos ticks it once. Unticking it keeps
-  // every pixel on the device.
+  // On from the first tap and kept across taps, so a run of photos needs no box ticked. Unticking it, which is
+  // also kept, keeps every pixel on the device.
   const [keepFrame, setKeepFrame] = useState(true);
   const [note, setNote] = useState<string | null>(null);
   const [taps, setTaps] = useState({ n: 0, right: 0 });
