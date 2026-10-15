@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doors and switch off</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1300px;box-sizing:border-box;padding:40px 48px 56px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:34px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Doors · switch off · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">One way in from New deck; none from Discover</h2>
+    <p style="margin:0;max-width:880px;font-size:13px;line-height:1.55;color:#95A4A6">The New deck door gains one quiet link under its sentence, drawn only when the player has a run to list. It goes to the route with History open (the column on desktop, the view on a phone). The Discover link carries colors into a new ask and stays as it is: a list of past runs is not what a player browsing commanders is after, and it would crowd the rack's one line.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:390px minmax(0,1fr);gap:40px;align-items:start">
+    <!-- phone door -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">New deck door · 390</span>
+      <div style="display:flex;flex-direction:column;gap:14px;padding:16px;border:1px solid #1A1F2B;border-radius:12px">
+        <div style="display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:13px 14px;background:#16171D;border:1px solid #2E3340;border-radius:10px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <p style="margin:0;font-family:'Metamorphous',serif;font-size:14.5px;font-weight:600;color:#C6D2D3">Not sure what to build?</p>
+            <p style="margin:0;font-size:12.5px;line-height:1.55;color:#B3C0C2">Say what you want, and we’ll rank commanders by how well they fit it, owned or not.</p>
+          </div>
+          <a href="#" style="display:flex;align-items:center;justify-content:center;height:44px;border:1px solid #5C86C9;border-radius:8px;font-size:13.5px;font-weight:600;color:#5C86C9;text-decoration:none">Help me choose →</a>
+          <a href="#" style="display:flex;align-items:center;justify-content:center;gap:6px;height:44px;margin-top:-6px;font-size:12.5px;font-weight:500;color:#95A4A6;text-decoration:none">Your past runs ›</a>
+        </div>
+        <div style="display:flex;align-items:center;height:40px;padding:0 12px;background:#16171D;border:1px solid #2E3340;border-radius:8px;font-size:13px;color:#7C8A8C">Search commanders…</div>
+      </div>
+      <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">A text link on its own 44px line under the press, in <span class="m">--fg-muted</span> so the door still has one call to action. No count: the picker would need a read for a number nobody acts on.</p>
+    </div>
+
+    <!-- desktop door -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">New deck door · desktop</span>
+      <div style="display:flex;flex-direction:column;gap:16px;padding:20px 24px;border:1px solid #1A1F2B;border-radius:12px">
+        <div style="display:flex;align-items:center;gap:18px;padding:15px 18px;background:#16171D;border:1px solid #2E3340;border-radius:11px">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+            <p style="margin:0;font-family:'Metamorphous',serif;font-size:16px;font-weight:600;color:#C6D2D3">Not sure what to build?</p>
+            <p style="margin:0;font-size:13px;line-height:1.55;color:#B3C0C2">Say what you want, and we’ll rank commanders by how well they fit it, owned or not. <a href="#" style="color:#95A4A6;text-decoration:underline;text-decoration-color:#424755;text-underline-offset:3px">Your past runs ›</a></p>
+          </div>
+          <a href="#" style="flex:none;display:flex;align-items:center;justify-content:center;height:38px;padding:0 16px;border:1px solid #5C86C9;border-radius:8px;font-size:13.5px;font-weight:600;color:#5C86C9;text-decoration:none">Help me choose →</a>
+        </div>
+        <div style="display:flex;align-items:center;height:38px;max-width:520px;padding:0 12px;background:#16171D;border:1px solid #2E3340;border-radius:8px;font-size:13px;color:#7C8A8C">Search commanders…</div>
+      </div>
+      <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">On desktop the link closes the door's sentence, so the box keeps its height. Both widths render the one door component with a <span class="m">hasRuns</span> prop; with none, the door is today's, byte for byte.</p>
+
+      <span class="k" style="margin-top:14px">Discover · unchanged</span>
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid #1A1F2B;border-radius:12px">
+        <span class="m" style="font-size:11px;color:#95A4A6">412 commanders</span>
+        <span style="flex:1"></span>
+        <span style="font-size:12.5px;color:#95A4A6">Not sure what you want? <a href="#" style="color:#5C86C9;text-decoration:none;border-bottom:1px solid #3B5070">Help me choose →</a></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">A read in flight · the door</span>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:15px 18px;background:#16171D;border:1px solid #2E3340;border-radius:11px">
+        <p style="margin:0;font-family:'Metamorphous',serif;font-size:16px;font-weight:600">Not sure what to build?</p>
+        <p style="margin:0;font-size:13px;line-height:1.55;color:#B3C0C2">Say what you want, and we’ll rank commanders by how well they fit it, owned or not. <a href="#" style="color:#95A4A6;text-decoration:underline;text-decoration-color:#424755;text-underline-offset:3px">Your past runs ›</a></p>
+      </div>
+      <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">Unchanged while a read is pending. The pending run counts as a run, so the link shows for a player whose first read is still going, and leads to the reading row (List boards, state H).</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Switch off · nothing drawn, nothing linked</span>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:16px 18px;border:1px solid #1A1F2B;border-radius:12px">
+        <div style="display:flex;align-items:center;height:38px;max-width:520px;padding:0 12px;background:#16171D;border:1px solid #2E3340;border-radius:8px;font-size:13px;color:#7C8A8C">Search commanders…</div>
+        <span class="m" style="font-size:10.5px;color:#7C8A8C">New deck: no door, so no past-runs link. Discover: no link. /decks/new/choose and ?view=history: not found. About: the entry is hidden with its switch.</span>
+      </div>
+      <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">Runs stay stored while the switch is off; turning it back on lists them again. The list read checks the switch itself, so a stale tab cannot fetch it.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
