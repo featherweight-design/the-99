@@ -312,6 +312,10 @@ describe("GridView Date added figure", () => {
     expect(exactName.endsWith("added Oct 12")).toBe(true);
     expect(exactName.indexOf("RVR")).toBeLessThan(exactName.indexOf("added Oct 12"));
     expect(screen.getByRole("button", { name: /Since Card/ }).textContent).toMatch(/in your collection since Sep 2$/);
+    // The drawn figures are their own aria-hidden spans, so the test fails if `DateFigure` is not rendered.
+    const drawn = [...document.querySelectorAll("span[aria-hidden]")].map((e) => e.textContent);
+    expect(drawn).toContain("Oct 12");
+    expect(drawn).toContain("since Sep 2");
   });
   it("is silent for a card with no date and off the sort", () => {
     const { rerender } = render(<GridView cards={[card]} totalCards={1} onShowMore={() => {}} onOpen={open} showAdded />);
