@@ -14,6 +14,7 @@ vi.mock("../../app/collection/actions", () => ({
 }));
 
 const { CardModal } = await import("./card-modal");
+const { TILT_SETTLE_MS } = await import("./card-tilt");
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
 const CSS = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/globals.css"), "utf8");
@@ -89,6 +90,9 @@ describe("the stylesheet", () => {
     expect(MOTION).toMatch(/\[data-tilt\] \{\s*--tilt-ease: cubic-bezier\(\.22, 1, \.36, 1\);/);
     expect(MOTION).toContain("transition: --tilt-x 600ms var(--tilt-ease), --tilt-y 600ms var(--tilt-ease), --tilt-lift 600ms var(--tilt-ease);");
     expect(MOTION).toContain("[data-tilt][data-turning] { --tilt-x: .5; --tilt-y: .5; --tilt-lift: 0; transition-duration: 300ms; }");
+    // Once settled the card follows: no transition on where it points, and the lift keeps its ease.
+    expect(MOTION).toContain("[data-tilt][data-tilting][data-tilt-follow] { transition: --tilt-lift 300ms var(--tilt-ease); }");
+    expect(MOTION).toContain("[data-tilt][data-tilting] { transition-duration: 300ms; }");
     expect(MOTION).toMatch(/\[data-tilt\] \[data-glare\] \{\s*opacity: var\(--tilt-lift\);/);
     expect(MOTION).toContain('[data-tilt] [data-foil-size="large"]::before { transform: translateX(calc((var(--tilt-x) - .5) * -33.333%)); }');
   });
@@ -186,6 +190,35 @@ describe("desktop hover", () => {
     expect(tiltValues(host)).toMatchObject({ x: "0", y: "0.25" });
   });
 
+  it("eases in for TILT_SETTLE_MS, then follows the pointer, and settles again from the next lift", () => {
+    vi.useFakeTimers();
+    try {
+      mount();
+      const host = sized(desktopHost());
+      const follows = () => host.hasAttribute("data-tilt-follow");
+      fireEvent.pointerEnter(host, { pointerType: "mouse", clientX: 66, clientY: 92 });
+      fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 70, clientY: 92 });
+      expect(follows()).toBe(false);
+      vi.advanceTimersByTime(TILT_SETTLE_MS - 1);
+      fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 80, clientY: 92 });
+      expect(follows()).toBe(false);
+      vi.advanceTimersByTime(1);
+      fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 90, clientY: 92 });
+      expect(follows()).toBe(true);
+      // Leaving takes the mark off with the values, so the card settles flat over the stylesheet's 600ms.
+      fireEvent.pointerLeave(host, { pointerType: "mouse" });
+      expect(follows()).toBe(false);
+      expect(tiltValues(host)).toEqual(FLAT);
+      // A lift long after the last one eases in again: the clock starts at the new lift.
+      vi.advanceTimersByTime(5000);
+      fireEvent.pointerEnter(host, { pointerType: "mouse", clientX: 66, clientY: 92 });
+      fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 70, clientY: 92 });
+      expect(follows()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("does nothing for touch at a desktop width (G12)", () => {
     mount();
     const host = sized(desktopHost());
@@ -268,24 +301,42 @@ describe("the zoom (G5)", () => {
     return sized(screen.getByTestId("card-zoom-tilt"));
   };
 
-  it("tilts on a press that moves, and its release closes nothing", () => {
+  it("tilts on hover for a mouse or a pen, as details does, and a click still closes", () => {
+    mount();
+    const host = open();
+    fireEvent.pointerEnter(host, { pointerType: "mouse", clientX: 66, clientY: 92 });
+    expect(tiltValues(host)).toEqual({ x: "0.25", y: "0.25", lift: "1", tilting: true });
+    fireEvent.pointerMove(host, { pointerType: "pen", clientX: 264, clientY: 368 });
+    expect(tiltValues(host)).toMatchObject({ x: "1", y: "1" });
+    fireEvent.pointerLeave(host, { pointerType: "mouse" });
+    expect(tiltValues(host)).toEqual(FLAT);
+    // A mouse press is a click, never a tilting press: it closes the zoom.
+    fireEvent.pointerEnter(host, { pointerType: "mouse", clientX: 66, clientY: 92 });
+    fireEvent.pointerDown(host, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 66, clientY: 92 });
+    fireEvent.pointerMove(host, { pointerId: 1, pointerType: "mouse", clientX: 132, clientY: 92 });
+    fireEvent.pointerUp(host, { pointerId: 1, pointerType: "mouse", clientX: 132, clientY: 92 });
+    fireEvent.click(host);
+    expect(screen.queryByTestId("card-zoom")).toBeNull();
+  });
+
+  it("tilts a touch on a press that moves, and its release closes nothing", () => {
     vi.useFakeTimers();
     try {
       mount();
       const host = open();
-      fireEvent.pointerDown(host, { pointerId: 3, pointerType: "mouse", button: 0, clientX: 100, clientY: 100 });
-      fireEvent.pointerMove(host, { pointerId: 3, pointerType: "mouse", clientX: 104, clientY: 100 });
+      fireEvent.pointerDown(host, { pointerId: 3, pointerType: "touch", clientX: 100, clientY: 100 });
+      fireEvent.pointerMove(host, { pointerId: 3, pointerType: "touch", clientX: 104, clientY: 100 });
       expect(tiltValues(host)).toEqual(FLAT);
-      fireEvent.pointerMove(host, { pointerId: 3, pointerType: "mouse", clientX: 132, clientY: 92 });
+      fireEvent.pointerMove(host, { pointerId: 3, pointerType: "touch", clientX: 132, clientY: 92 });
       expect(tiltValues(host)).toMatchObject({ x: "0.5", y: "0.25", lift: "1", tilting: true });
-      fireEvent.pointerUp(host, { pointerId: 3, pointerType: "mouse", clientX: 132, clientY: 92 });
+      fireEvent.pointerUp(host, { pointerId: 3, pointerType: "touch", clientX: 132, clientY: 92 });
       fireEvent.click(host);
       expect(screen.getByTestId("card-zoom")).toBeInTheDocument();
       expect(tiltValues(host)).toEqual(FLAT);
       // The swallow is the release's own click: a later tap still closes.
       act(() => { vi.advanceTimersByTime(1); });
-      fireEvent.pointerDown(host, { pointerId: 4, pointerType: "mouse", button: 0, clientX: 100, clientY: 100 });
-      fireEvent.pointerUp(host, { pointerId: 4, pointerType: "mouse", clientX: 100, clientY: 100 });
+      fireEvent.pointerDown(host, { pointerId: 4, pointerType: "touch", clientX: 100, clientY: 100 });
+      fireEvent.pointerUp(host, { pointerId: 4, pointerType: "touch", clientX: 100, clientY: 100 });
       fireEvent.click(host);
       expect(screen.queryByTestId("card-zoom")).toBeNull();
     } finally {
@@ -293,14 +344,26 @@ describe("the zoom (G5)", () => {
     }
   });
 
-  it("drops a press the layer closed under, so a reopen does not tilt to a bare mouse move", () => {
+  it("drops a press the layer closed under, so a reopen does not tilt to a bare touch move", () => {
     mount();
     let host = open();
-    fireEvent.pointerDown(host, { pointerId: 3, pointerType: "mouse", button: 0, clientX: 100, clientY: 100 });
+    fireEvent.pointerDown(host, { pointerId: 3, pointerType: "touch", clientX: 100, clientY: 100 });
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     expect(screen.queryByTestId("card-zoom")).toBeNull();
     host = open();
-    fireEvent.pointerMove(host, { pointerId: 3, pointerType: "mouse", clientX: 160, clientY: 160 });
+    fireEvent.pointerMove(host, { pointerId: 3, pointerType: "touch", clientX: 160, clientY: 160 });
+    expect(tiltValues(host)).toEqual(FLAT);
+  });
+
+  it("keeps a touch's tilt when a second finger leaves the card", () => {
+    mount();
+    const host = open();
+    fireEvent.pointerDown(host, { pointerId: 5, pointerType: "touch", clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(host, { pointerId: 5, pointerType: "touch", clientX: 140, clientY: 120 });
+    expect(tiltValues(host).tilting).toBe(true);
+    fireEvent.pointerLeave(host, { pointerId: 6, pointerType: "touch" });
+    expect(tiltValues(host).tilting).toBe(true);
+    fireEvent.pointerUp(host, { pointerId: 5, pointerType: "touch", clientX: 140, clientY: 120 });
     expect(tiltValues(host)).toEqual(FLAT);
   });
 

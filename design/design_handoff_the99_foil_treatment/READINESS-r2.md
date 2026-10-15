@@ -30,7 +30,7 @@
 ## For the audit
 
 - The tilt (added at Hugh's request, smoothed against his reference): 6°, the side under the pointer lifting, a hairline card
-  edge on the pointer's side, a soft light, all on one set of eased values; every card; desktop on hover, phone after a 300ms hold.
+  edge on the pointer's side, a soft light, all on one set of values (eased in and out, following the pointer between: the lag fix, 2026-10-15); every card; desktop on hover, phone after a 300ms hold.
   Hover the first card on `The 99 - Foil Treatment (R2)`; the phone hold is drawn on `R2 - Details-Phone`.
 - R2-G4: tilt on every card, not only foil.
 - Call 5: the film's own arrival mark on a background face.

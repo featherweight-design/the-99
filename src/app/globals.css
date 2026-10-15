@@ -1160,7 +1160,8 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 
 /* The tilt (foil handoff R2, PR 2), on every card in details and the zoom. The host sits OUTSIDE the box that turns and
    inside any box an entry or paging animation moves (audit G1, G2). JS writes the target values inline (`card-tilt.ts`);
-   registered, they interpolate, so the rotation, the edge, the light and the film all ease together. */
+   registered, they interpolate, so the rotation, the edge, the light and the film all move together: eased on the way in
+   and out, and following the pointer frame by frame once the lift has settled (`data-tilt-follow`, below). */
 @property --tilt-x { syntax: "<number>"; inherits: true; initial-value: .5; }
 @property --tilt-y { syntax: "<number>"; inherits: true; initial-value: .5; }
 @property --tilt-lift { syntax: "<number>"; inherits: true; initial-value: 0; }
@@ -1187,6 +1188,9 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
     transition: --tilt-x 600ms var(--tilt-ease), --tilt-y 600ms var(--tilt-ease), --tilt-lift 600ms var(--tilt-ease);
   }
   [data-tilt][data-tilting] { transition-duration: 300ms; }
+  /* Once the lift has settled the card FOLLOWS the pointer (`card-tilt.ts`): a transition restarted by every move kept it
+     a beat behind. The lift keeps its ease; leaving takes the mark off, so the card still settles flat over 600ms. */
+  [data-tilt][data-tilting][data-tilt-follow] { transition: --tilt-lift 300ms var(--tilt-ease); }
   /* A flip holds it flat until the turn settles. The turn takes the inline values off first, or they would win (G4). */
   [data-tilt][data-turning] { --tilt-x: .5; --tilt-y: .5; --tilt-lift: 0; transition-duration: 300ms; }
 

@@ -2962,8 +2962,9 @@ export function CardModal({
             {/* The whole card, at the largest 63/88 the rect allows — 372x520 desktop,
                 318x444 phone. Clicking it closes too: three doors, one stage. */}
             <div className="relative flex flex-col items-center" data-testid="card-zoom-stage">
-            {/* THE TILT HOST round the zoom card, which turns itself (desktop only, G5): a press that moves past the
-                swipe's slop tilts it and closes nothing. Its own transform flattens, so it carries the perspective. */}
+            {/* THE TILT HOST round the zoom card, which turns itself (desktop only, G5). A mouse or a pen tilts it on hover,
+                as details does (README R2 "Desktop"); touch, which has no hover, tilts on a press that moves past the
+                swipe's slop and closes nothing. Its own transform flattens, so it carries the perspective. */}
             <div
               ref={zoomTiltRef}
               data-testid="card-zoom-tilt"
@@ -2971,8 +2972,13 @@ export function CardModal({
               data-turning={zoomTurning && twoFaced ? "" : undefined}
               className="relative rounded-[13px] md:rounded-[14px]"
               style={{ perspective: "1400px" }}
+              onPointerEnter={tiltHover}
+              // A hovering pointer's leave only: a touch's tilt is ended by its own release (`endZoomPress`, by pointer
+              // id), so a second finger leaving cannot drop the first finger's tilt.
+              onPointerLeave={(e) => { if (tiltsOnHover(e.pointerType)) tiltLeave(e); }}
               onPointerDown={(e) => {
-                if (e.pointerType === "mouse" && e.button !== 0) return;
+                // A hovering pointer is already tilting the card, and its click closes the zoom as any click does.
+                if (tiltsOnHover(e.pointerType)) return;
                 // One press at a time, as the sheet gesture does: a second finger would overwrite the first, whose
                 // release or cancel is then ignored and leaves the card tilted with no gesture behind it.
                 if (zoomPress.current) return;
@@ -2980,6 +2986,7 @@ export function CardModal({
                 try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* already released */ }
               }}
               onPointerMove={(e) => {
+                if (tiltsOnHover(e.pointerType)) { tiltHover(e); return; }
                 const p = zoomPress.current;
                 if (!p || p.id !== e.pointerId) return;
                 if (!p.tilting && Math.hypot(e.clientX - p.x, e.clientY - p.y) < SWIPE.lockPx) return;
