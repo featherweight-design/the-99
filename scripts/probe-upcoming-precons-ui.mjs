@@ -358,28 +358,30 @@ async function walk(browser, vp, userIdHolder) {
         report(`${holder.many.name}: Show all ${nm}, collapsed, controlling the grid`,
           (await toggle.textContent())?.includes(`Show all ${nm}`) === true && (await toggle.getAttribute("aria-expanded")) === "false"
             && (await toggle.getAttribute("aria-controls")) === (await grid.getAttribute("id")));
-        // The SERVER's paint, before any script runs: the document as the server sent it, drawn with scripts off, already
-        // shows one row (CSS keyed on the grid's width), so hydration measuring the columns moves nothing.
-        const sent = await (await page.context().request.get(`${BASE}/decks/precons`)).text();
-        const bare = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, javaScriptEnabled: false });
+        // The SERVER's paint: the real page with the app's own scripts blocked, so React never hydrates and only the HTML
+        // and the stylesheet decide what is drawn. (Not `javaScriptEnabled: false`: Next streams a page's suspended
+        // content into a hidden container and moves it into place with an inline script, so with every script off the
+        // page is never laid out and nothing measures.) It already shows one row, so hydration measuring the columns
+        // moves nothing.
+        const bare = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, storageState: await page.context().storageState() });
         try {
           const bp = await bare.newPage();
-          await bp.setContent(sent.replace("<head>", `<head><base href="${BASE}/">`), { waitUntil: "load" }).catch(() => {});
-          await bp.waitForTimeout(800);
+          await bp.route("**/_next/static/**/*.js", (route) => route.abort());
+          await bp.goto(`${BASE}/decks/precons#announced`, { waitUntil: "load" });
+          await bp.waitForSelector("[data-testid=announced-set]", { state: "attached", timeout: 15_000 });
+          await bp.waitForTimeout(500);
           const seen = await bp.evaluate((name) => {
             const block = [...document.querySelectorAll("[data-testid=announced-set]")].find((b) => b.textContent.includes(name));
             const ul = block?.querySelector("[data-testid=revealed-tiles]");
             if (!ul) return null;
-            const wrap = ul.parentElement;
             return {
-              shown: [...ul.children].filter((li) => getComputedStyle(li).display !== "none").length, toggle: block.textContent.includes("Show all"),
-              // For a failure to be read: the container's own type and width, and whether the rules reached the page.
-              containerType: getComputedStyle(wrap).containerType, containerWidth: Math.round(wrap.getBoundingClientRect().width),
-              rules: [...document.querySelectorAll("style")].some((st) => st.textContent.includes("@container")),
-              chain: (() => { const out = []; for (let e = wrap; e && e !== document.body; e = e.parentElement) out.push(`${e.tagName.toLowerCase()}:${Math.round(e.getBoundingClientRect().width)}`); return out.join(" < "); })(),
+              hydrated: Object.keys(ul).some((k) => k.startsWith("__react")),
+              shown: [...ul.children].filter((li) => getComputedStyle(li).display !== "none").length,
+              toggle: block.textContent.includes("Show all"),
+              containerWidth: Math.round(ul.parentElement.getBoundingClientRect().width),
             };
           }, holder.many.name);
-          report(`${holder.many.name}: the server's paint already shows one row (${columns})`, seen !== null && seen.shown === columns && !seen.toggle, JSON.stringify(seen));
+          report(`${holder.many.name}: the server's paint already shows one row (${columns})`, seen !== null && !seen.hydrated && seen.shown === columns && !seen.toggle, JSON.stringify(seen));
         } finally {
           await bare.close();
         }

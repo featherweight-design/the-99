@@ -107,15 +107,7 @@
       "view": "src/components/decks/precons/announced-parts.tsx",
       "steps": [
         {
-          "goto": "/decks/precons",
-          "wait": "#announced",
-          "settle": 1000
-        },
-        {
-          "clickRole": "button",
-          "name": "^Announced"
-        },
-        {
+          "goto": "/decks/precons#announced",
           "wait": "[data-testid=announced-set]",
           "settle": 1500
         },
@@ -130,15 +122,7 @@
       "view": "src/components/decks/precons/announced-parts.tsx",
       "steps": [
         {
-          "goto": "/decks/precons",
-          "wait": "#announced",
-          "settle": 1000
-        },
-        {
-          "clickRole": "button",
-          "name": "^Announced"
-        },
-        {
+          "goto": "/decks/precons#announced",
           "wait": "[data-testid=announced-set]",
           "settle": 1500
         },
@@ -158,15 +142,7 @@
       "view": "src/components/decks/precons/announced-parts.tsx",
       "steps": [
         {
-          "goto": "/decks/precons",
-          "wait": "#announced",
-          "settle": 1000
-        },
-        {
-          "clickRole": "button",
-          "name": "^Announced"
-        },
-        {
+          "goto": "/decks/precons#announced",
           "wait": "[data-testid=announced-set]",
           "settle": 1500
         },
