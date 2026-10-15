@@ -740,7 +740,10 @@ describe("the tab row and its panel", () => {
     expect(screen.getByRole("tablist")).toBeTruthy();
     expect(screen.getByRole("tab", { name: copy.tools.cuts.name }).getAttribute("aria-selected")).toBe("true");
     expect(panelText()).not.toBe("");
-    expect(panelText()).toContain(deckCutsCopy.panel.done.body);
+    // Nothing was cut from a result here: the neutral head, exactly, then the body.
+    const done = screen.getByTestId("cuts-done");
+    expect(done.children[0].textContent).toBe("Back to 99 / 99.");
+    expect(done.children[1].textContent).toBe(deckCutsCopy.panel.done.body);
   });
 
   it("never draws the tab row over an empty panel, for every tool, once its read has landed", async () => {
@@ -751,6 +754,7 @@ describe("the tab row and its panel", () => {
       );
       await waitFor(() => expect(document.querySelector("#tuning-tool-panel")).not.toBeNull());
       await waitFor(() => expect(panelText()).not.toBe(""));
+      if (tool === "cuts") expect(screen.getByTestId("cuts-done").children[0].textContent).toBe("Back to 99 / 99.");
       unmount();
     }
   });

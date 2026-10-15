@@ -290,6 +290,13 @@ export function CutsPanelView({
     if (failed || refusedRun) return copy.leadBare;
     return copy.lead;
   })();
+  // C8 COUNTS ONLY WHAT THIS TOOL CUT TOWARD THE LINE: a row of this visit's result (or the run
+  // History reopened) that was cut and whose card has left the deck. A deck that reached the line by
+  // another edit, a cut put back by hand, or an older visit's run says the neutral `Back to 99 / 99.`,
+  // never a count it did not make (pre-open review, 2026-10-15).
+  const madeCuts = priorResult && !reviewing
+    ? 0
+    : items.filter((i) => overrides.verdictOf(i) === "accepted" && i.inDeck === false).length;
 
   return (
     <VerdictOverridesProvider value={overrides.value}>
@@ -301,7 +308,7 @@ export function CutsPanelView({
       <CutsFreeCount
         panel={panel}
         lead={lead}
-        cutCount={cutCount}
+        cutCount={madeCuts}
         headingRef={headingRef}
         onPress={() => void press()}
         band={running ? (

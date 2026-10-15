@@ -12,6 +12,23 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   comparisons on staging.
 - Never `pkill` or `killall` by pattern. Stop a dev server only by the exact PID you
   started, checked first with `ps -o pid=,comm= -p <pid>`.
+- **A probe that presses anything model-backed calls `assertModelStandIn` before it can
+  press** (`scripts/lib/model-stand-in.mjs`; orchestrator's ruling, 2026-10-15, after a probe
+  pointed at `next start` made real overview calls). It fails closed unless the SERVER proves
+  every path the probe presses is free: Next's dev pages manifest
+  (`/_next/static/development/_devPagesManifest.json`) answers only from `next dev` (`next start`
+  404s it), and the dev-only `/api/dev/model-stand-in` (404 from a production build) reports
+  each path's mode as the paths themselves decide it. A dev build is not enough alone:
+  Suggested changes and Look deeper call the real model in development unless the server has
+  `TUNING_STUB_DELAY_MS`, and each other path has a `*_LIVE` opt-in. A live path passes only
+  when the server holds no real key (start it with a dummy `ANTHROPIC_API_KEY`) and no
+  `ANTHROPIC_BASE_URL`. The guarded probes wrap their own `signIn`, so every signed-in page is
+  checked: `ai-sweep`, `run-after` (tuning), `analysis-load-order`, `analysis-tab`,
+  `banner-busy`, `bracket-chip`, `brackets-sheet`, `verdict-lean`, `verdict-findings`,
+  `verdict-block`, `overview-hold`, `synopsis-ui`, `tuning-hub-stays-put` (the overview),
+  `help-me-choose-screens` and `help-me-choose-one-loading` (the read). `probe:synopsis --live`
+  and `probe:tuning-owned` make real calls in-process on purpose, under their own caps, and are
+  not guarded.
 
 ---
 - `pnpm probe:precon-notice` walks the one-suggestion precon notice on a deck page at 390 and 1300 (Hugh's walk,
@@ -2105,7 +2122,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   description, declared bracket or locks move, and none did; `tuning-hub.test.tsx` pins that re-read.
   **Run it against `next dev`, never `next start`**: the overview's model stand-in answers only
   outside production (`synopsisLive`), so a production server makes a REAL model call on the first
-  press. Start the server with `ANALYSIS_TAB_ENABLED`, `TUNING_ENABLED`, `MANA_BALANCE_ENABLED` and
+  press; the spend guard (above) refuses before any press otherwise. At the line it also reads
+  C8's box head, `Back to 99 / 99. You cut N.` for the N cuts it pressed. Start the server with `ANALYSIS_TAB_ENABLED`, `TUNING_ENABLED`, `MANA_BALANCE_ENABLED` and
   `PROPOSED_CUTS_ENABLED` all `true`, `SYNOPSIS_STUB_DELAY_MS=3000`, and `ANTHROPIC_API_KEY` set to a
   dummy value so a mistake fails instead of spending. Loopback `PROBE_BASE` only; it refuses staging
   and production by `neon.branch_id`. `PROBE_WIDTH=390` runs one width.

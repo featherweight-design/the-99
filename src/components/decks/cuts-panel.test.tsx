@@ -253,7 +253,7 @@ describe("CutsPanelView", () => {
 
   it("C8: the last cut finishes the tool in place", async () => {
     const p = withResult(1, 1, { over: 0, total: 99 });
-    p.items = [item(1, { verdict: "accepted" })];
+    p.items = [item(1, { verdict: "accepted", inDeck: false })];
     await mount(deps(p));
     expect(screen.getByText(copy.done.head(99, 1))).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
@@ -315,16 +315,46 @@ describe("CutsPanelView", () => {
   // writes the overview's Key cards into the fingerprint), never an empty panel under the tabs.
   it("in the hub, finishes in place at the line over a result that is no longer current", async () => {
     const atTheLine = withResult(1, 1, { over: 0, total: 99, resultCurrent: false });
-    atTheLine.items = [item(1, { verdict: "accepted" })];
+    atTheLine.items = [item(1, { verdict: "accepted", inDeck: false })];
     render(<CutsPanelView deckId="d1" deps={deps(atTheLine)} finishInPlace />);
-    expect(await screen.findByText(copy.done.head(99, 1))).toBeTruthy();
+    expect(await screen.findByText("Back to 99 / 99. You cut 1.")).toBeTruthy();
     expect(screen.getByText(copy.done.body)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
   });
 
-  it("in the hub, finishes in place at the line with no result at all", async () => {
+  it("in the hub, finishes in place at the line with no result at all, and counts no cuts", async () => {
     render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 99 }))} finishInPlace />);
-    expect(await screen.findByText(copy.done.body)).toBeTruthy();
+    const done = await screen.findByTestId("cuts-done");
+    expect(done.children[0].textContent).toBe("Back to 99 / 99.");
+    expect(done.children[1].textContent).toBe(copy.done.body);
+  });
+
+  it("in the hub, a deck that reached the line by another edit says the neutral form", async () => {
+    // One row never answered, and one cut whose card was put back by hand: the tool cut nothing that stands.
+    const p = withResult(2, 2, { over: 0, total: 99, resultCurrent: false });
+    p.items = [item(1), item(2, { verdict: "accepted", inDeck: true })];
+    render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
+    expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99.");
+  });
+
+  it("C8 is the drawn box: surface, a success border, radius 10, head and body on their own lines", async () => {
+    const p = withResult(1, 1, { over: 0, total: 99 });
+    p.items = [item(1, { verdict: "accepted", inDeck: false })];
+    render(<CutsPanelView deckId="d1" deps={deps(p)} finishInPlace />);
+    const done = await screen.findByTestId("cuts-done");
+    expect(done.style.background).toBe("var(--surface)");
+    expect(done.style.border).toBe("1px solid var(--success)");
+    expect(done.className).toContain("rounded-[10px]");
+    expect(done.className).toContain("px-[14px]");
+    expect(done.className).toContain("py-[12px]");
+    expect(done.className).toContain("gap-[4px]");
+    const [head, body] = [...done.children] as HTMLElement[];
+    expect(head.className).toContain("text-[13.5px]");
+    expect(head.className).toContain("font-semibold");
+    expect(head.style.color).toBe("var(--fg)");
+    expect(body.className).toContain("text-[12.5px]");
+    expect(body.className).toContain("leading-[1.55]");
+    expect(body.style.color).toBe("var(--fg-body)");
   });
 
   it("draws nothing for a deck that is not over", async () => {
@@ -351,6 +381,13 @@ describe("CutsPanelView: a visit to the deck", () => {
     await mountOn(deps(withResult(6, 6)));
     expect(screen.queryAllByRole("article")).toHaveLength(0);
     expect(screen.getByRole("button", { name: offer })).toBeTruthy();
+  });
+
+  it("at the line, a previous visit's cuts are not counted as this tool's", async () => {
+    const p = withResult(1, 1, { over: 0, total: 99 });
+    p.items = [item(1, { verdict: "accepted", inDeck: false })];
+    render(<CutsPanelView deckId={D1} deps={deps(p)} freshEachVisit finishInPlace />);
+    expect((await screen.findByTestId("cuts-done")).children[0].textContent).toBe("Back to 99 / 99.");
   });
 
   it("on its own, outside the hub (no History to reach it from), still shows the stored result", async () => {

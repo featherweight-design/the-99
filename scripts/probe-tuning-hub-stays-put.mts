@@ -31,10 +31,11 @@
 // hub is drawn in every frame, Proposed cuts stays the open tool, and the tool panel under the tab
 // row is never empty once its first read has landed (it finishes in place, C8).
 //
-// RUN IT AGAINST \`next dev\`, NEVER \`next start\`: the overview's model stand-in answers only
-// outside production (\`synopsisLive\`), so a production server would make a REAL model call on the
-// first press. Start the server with ANTHROPIC_API_KEY set to a dummy value as well, so a mistake
-// fails instead of spending.
+// RUN IT AGAINST `next dev`, NEVER `next start`: the overview's model stand-in answers only
+// outside production (`synopsisLive`), so a production server would make a REAL model call on the
+// first press. `assertModelStandIn` refuses before any press unless the server proves the overview
+// is a stand-in (`scripts/lib/model-stand-in.mjs`). A dummy ANTHROPIC_API_KEY on the server as well
+// makes a mistake fail instead of spending.
 //
 // The same switches must be given to the server: ANALYSIS_TAB_ENABLED, TUNING_ENABLED,
 // MANA_BALANCE_ENABLED and PROPOSED_CUTS_ENABLED all `true`, and SYNOPSIS_STUB_DELAY_MS=3000 so the
@@ -52,6 +53,7 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -379,7 +381,13 @@ async function cutsToTheLine(browser: Browser, width: number, userId: string, de
   await page.waitForTimeout(1_500);
   const toolText = async () => ((await toolPanel.innerText().catch(() => "")) ?? "").trim();
   const beforeText = await toolText();
-  report(at("at the line the tool finishes in place before the analysis"), /^Proposed cuts/.test(beforeText) && /Back to/.test(beforeText), beforeText.slice(0, 120));
+  // C8's box, counting the cuts pressed here.
+  const [{ body }] = await sql`select case when partner_oracle_id is null then 99 else 98 end as body from decks where id = ${deck}`;
+  const doneHead = `Back to ${body} / ${body}. You cut ${over}.`;
+  const doneBox = toolPanel.locator("[data-testid='cuts-done']");
+  const head = async () => ((await doneBox.locator("span").first().textContent().catch(() => null)) ?? "").trim();
+  const beforeHead = await head();
+  report(at("at the line the tool finishes in place before the analysis (C8's box)"), /^Proposed cuts/.test(beforeText) && beforeHead === doneHead, { head: beforeHead, want: doneHead });
 
   // The analysis, from the empty state above the hub.
   const press = page.locator(`${PAGE} [data-testid='analysis-empty']`).first().getByRole("button", { name: "Analyze" });
@@ -399,7 +407,8 @@ async function cutsToTheLine(browser: Browser, width: number, userId: string, de
   report(at("the open tool's panel is never empty"), empty.length === 0, `${empty.length} frame(s) with the tab row over an empty panel`);
   const selected = await page.evaluate(() => document.querySelector("#tuning-tool-panel")?.getAttribute("data-tuning-tool") ?? null);
   const afterText = await toolText();
-  report(at("after the analysis Proposed cuts is still open, finished in place"), selected === "cuts" && /Back to/.test(afterText), { selected, text: afterText.slice(0, 120) });
+  const afterHead = await head();
+  report(at("after the analysis Proposed cuts is still open, finished in place"), selected === "cuts" && afterHead === doneHead, { selected, head: afterHead, text: afterText.slice(0, 80) });
   const headings = [...new Set(w.frames.map((f) => f.heading).filter(Boolean))];
   console.log(`  info  ${at("loader headings")} — ${JSON.stringify(headings)}`);
   await context.close();
@@ -438,6 +447,8 @@ async function run() {
       const probe = await browser.newContext();
       const p = await probe.newPage();
       const userId = await signIn(p);
+      // THE SPEND GUARD, before any press: every Analyze here may write the overview.
+      await assertModelStandIn(BASE, ["synopsis"], { get: pageGet(p) });
       await probe.close();
       if (!about) about = await captureAboutSeen(userId, sql);
       const overId = await clone(userId, over, (id) => created.push(id));
