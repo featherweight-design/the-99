@@ -29,7 +29,8 @@ import {
 } from "../../../components/ui/empty-state";
 import { PrimaryButton } from "../../../components/ui/button";
 import { CollectionEmptyDoors } from "../../../components/collection/collection-empty-doors";
-import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
+import { collectionEditEnabled, noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
+import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 
@@ -102,6 +103,9 @@ export default async function CollectionPage({
   // was built for, whose cards are all printed.
   if (stats.uniqueCards === 0) {
     const editEnabled = collectionEditEnabled(env);
+    // The no-collection entry (S13): one Upload tile and the ways group, which opens the precon pick with
+    // `PRECONS_ENABLED` on. It needs collection editing, so it never draws without the doors' own switch.
+    const ways = noCollectionEntryEnabled(env) ? { precons: preconsEnabled(env) } : null;
     return (
       <section className="flex flex-col">
         <EmptyState className="md:p-[48px]">
@@ -111,12 +115,14 @@ export default async function CollectionPage({
             Your collection is empty
           </EmptyStateTitle>
           <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
-            {editEnabled
+            {ways
+              ? collectionEditCopy.ways.emptyBody
+              : editEnabled
               ? collectionEditCopy.empty.body
               : "A pile of possibilities waiting for a commander. Upload a CSV and the table fills. Commanders and decks follow."}
           </EmptyStateBody>
           {editEnabled ? (
-            <CollectionEmptyDoors />
+            <CollectionEmptyDoors ways={ways} />
           ) : (
             <div className="mt-[26px]">
               <PrimaryButton

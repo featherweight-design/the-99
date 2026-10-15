@@ -1,7 +1,8 @@
 // First run — collection unread, no decks. The three-step checklist is the
-// whole page: step 1 live, steps 2 and 3 stated and locked, and an import
-// escape hatch under both so arriving with a decklist and no CSV is not a dead
-// end.
+// whole page: step 1 live, steps 2 and 3 stated and locked. The import foot
+// that once sat under them is gone (first-run ruling 1, 2026-09-28); with
+// NO_COLLECTION_ENTRY_ENABLED, step 1's ways group is how a player with no file
+// reaches Precons I own, Import a deck and Add cards by hand.
 //
 // Property table: docs/superpowers/design-tables/ui-refresh-home.md
 // §HomeFirstRun. Where the plan and that table disagree on a value the table
@@ -91,7 +92,16 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
   );
 }
 
-export function FirstRunChecklist({ addByHand = false, about = null }: { addByHand?: boolean; about?: AboutLine | null }) {
+export function FirstRunChecklist({
+  addByHand = false,
+  about = null,
+  ways = null,
+}: {
+  addByHand?: boolean;
+  about?: AboutLine | null;
+  /** The no-collection entry (S1): step 1's ways group, and Collection open in the nav. Null: as shipped. */
+  ways?: { precons: boolean } | null;
+}) {
   const c = refreshCopy.firstRun;
 
   return (
@@ -125,7 +135,8 @@ export function FirstRunChecklist({ addByHand = false, about = null }: { addByHa
           className="m-0 mt-[12px] hidden items-center gap-[8px] text-[12.5px] text-[color:var(--fg-muted)] md:flex"
         >
           <Lock size="lg" ink="var(--fg-locked)" className="flex-none" />
-          {c.lock.pageLine}
+          {/* Three names while Collection is open at zero cards (no-collection entry, call 6). */}
+          {ways ? c.lock.pageLineOpen : c.lock.pageLine}
         </p>
       </div>
 
@@ -137,7 +148,7 @@ export function FirstRunChecklist({ addByHand = false, about = null }: { addByHa
       <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px] max-md:group-has-[[data-reviewing]]/first-run:pt-[8px]">
         {/* Step 1 — live. A client component, because the card changes while its review is
             open (D11, 5a); the fan is drawn here and handed in. */}
-        <FirstRunStepOne fan={<CardFan />} addByHand={addByHand} />
+        <FirstRunStepOne fan={<CardFan />} addByHand={addByHand} ways={ways} />
 
         <LockedStep n={2} title={c.step2Title} reason={c.step2Locked} />
         <LockedStep n={3} title={c.step3Title} reason={c.step3Locked} />

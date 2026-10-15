@@ -6,6 +6,22 @@
 // "EDHREC doesn't track this commander" note on rec-card.tsx / detail.tsx.
 
 export const commandersCopy = {
+  /**
+   * `/commanders` at zero cards. `on` is the no-collection entry's (Open 7, NO_COLLECTION_ENTRY_ENABLED): one button
+   * to /collection, where every way in is. `off` is the shipped empty state, word for word, kept for the switch off.
+   */
+  noCards: {
+    on: {
+      title: "Nothing to rank yet",
+      body: "We rank commanders from the cards you own. Add some and every one you can build shows up here.",
+      button: "Add your cards",
+    },
+    off: {
+      title: "No collection yet",
+      body: "Upload your cards and we’ll rank every commander you can build.",
+      button: "Upload collection",
+    },
+  },
   /** The first-run guide's banner on the commanders page. */
   guidedBanner: {
     step: "Step 2 of 3",

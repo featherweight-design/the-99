@@ -31,6 +31,7 @@ import { aboutLine, aboutNotice } from "../lib/about/notice";
 import { aboutSeen } from "../lib/about/read";
 import { visibleEntries, type SeenState } from "../lib/about/visible";
 import { noCollectionEntryEnabled } from "../lib/collection/edit-flag";
+import { preconsEnabled } from "../lib/precons/flag";
 import { PICK_RECEIPT_PARAM } from "../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../lib/precons/pick-receipt-read";
 import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
@@ -130,8 +131,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // The decks are read here rather than below because first run is "no
   // collection read AND no decks", both halves. A player who imported a deck
   // before reading a collection is not a new player, and that state is
-  // reachable by design: the checklist's own escape hatch links to
-  // /decks/import. Showing them the three steps would hide the deck they have.
+  // reachable by design: `/decks/import` has no collection gate, and with
+  // NO_COLLECTION_ENTRY_ENABLED step 1's ways group links to it. Showing them
+  // the three steps would hide the deck they have.
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/");
   // The reader's resolved switches, once for the whole render: the cached payload's key, its load
@@ -242,12 +244,23 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     const shown = sheetCookieIsCurrent((await cookies()).get(SHEET_COOKIE)?.value, userId, visible);
     about = aboutLine(aboutNotice(data.aboutSeen, visible, shown), visible);
   }
-  if (data.firstRun) return <FirstRunChecklist addByHand={collectionEditEnabled(env)} about={about} />;
+  // The no-collection entry (S1, S12): step 1's ways group, and the dashboard's zero-card header for an account with
+  // decks and no cards. Decided per request from the resolved switches, outside the cached payload.
+  const noCollectionEntry = noCollectionEntryEnabled(env);
+  if (data.firstRun) {
+    return (
+      <FirstRunChecklist
+        addByHand={collectionEditEnabled(env)}
+        about={about}
+        ways={noCollectionEntry ? { precons: preconsEnabled(env) } : null}
+      />
+    );
+  }
 
   // A precon pick's receipt (no-collection entry S5): read per request from the ledger, outside the cached payload,
   // and only when the address claims one. A failed read draws no strip.
   let receipt: PickReceipt | null = null;
-  const claim = noCollectionEntryEnabled(env) ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
+  const claim = noCollectionEntry ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
   if (claim !== undefined) {
     try {
       receipt = await readPickReceipt(userId, claim);
@@ -269,6 +282,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       arrivals={data.arrivals}
       about={about}
       cartEnabled={allDecksCartEnabled(env)}
+      noCards={noCollectionEntry && data.stats.uniqueCards === 0}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
       now={now.toISOString()}

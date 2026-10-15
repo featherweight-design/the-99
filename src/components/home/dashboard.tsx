@@ -21,6 +21,7 @@ import { ArrivalsBanner, HOME_HEADING_ID } from "./arrivals-banner";
 import { CommitmentsCard } from "./commitments-card";
 import { HomeDecksZero } from "./home-decks-zero";
 import { ReadyToBuild } from "./ready-to-build";
+import { Lock } from "../ui/lock";
 import { ResumeDecks, resumeDecks } from "./resume-decks";
 
 export type DashboardProps = {
@@ -47,6 +48,12 @@ export type DashboardProps = {
   about?: AboutLine | null;
   /** `ALL_DECKS_CART_ENABLED`, resolved for this reader: the card links to /decks/shopping only when it is on. */
   cartEnabled?: boolean;
+  /**
+   * Decks and no cards, with NO_COLLECTION_ENTRY_ENABLED (no-collection entry S12): the kicker counts the decks, the
+   * header's one action is `Add your cards` (Update collection and New deck both need cards), the lock's page line
+   * shows on desktop as it does on first run. Ready to build is absent at zero cards either way. Off: as shipped.
+   */
+  noCards?: boolean;
   /**
    * The server's clock, as an ISO string. A `Date` does not survive the
    * server/client boundary intact, and every relative date on this page has to
@@ -81,6 +88,7 @@ export function Dashboard(props: DashboardProps) {
   const noDecks = props.decks.length === 0;
   const when = formatWhen(props.lastUpdated, new Date(props.now));
   const kicker = refreshCopy.home.kicker(props.stats.totalCards.toLocaleString("en-US"), when);
+  const noCards = props.noCards === true;
 
   return (
     <div className="flex min-h-0 min-w-0 flex-auto flex-col bg-[color:var(--bg)] font-sans text-[color:var(--fg)]">
@@ -89,7 +97,11 @@ export function Dashboard(props: DashboardProps) {
           {/* Kicker above the greeting: the greeting is a hello, and the claim
               the page is actually making is the collection's size and age. */}
           <p className="m-0 mb-[6px] font-mono text-[10px] tracking-[0.16em] text-[color:var(--fg-faint)] uppercase sm:mb-[7px] sm:tracking-[0.18em]">
-            <CountUp value={props.stats.totalCards} {...countParts(kicker, props.stats.totalCards)} />
+            {noCards ? (
+              refreshCopy.home.kickerNoCards(props.decks.length)
+            ) : (
+              <CountUp value={props.stats.totalCards} {...countParts(kicker, props.stats.totalCards)} />
+            )}
           </p>
           {/* Focusable by script only: the arrivals banner's ✕ moves focus here once it has closed (H8). */}
           <h1 id={HOME_HEADING_ID} tabIndex={-1} className="m-0 font-display outline-none text-[23px] leading-[1.15] font-bold text-[color:var(--fg)] sm:text-[28px] sm:leading-[1]">
@@ -103,6 +115,16 @@ export function Dashboard(props: DashboardProps) {
             there so New deck leads, which is the order the Decks header uses.
             The 390px frame draws neither button; dropping them would cost a
             phone reader both of the page's actions (table §Ambiguities 1). */}
+        {noCards ? (
+          <div className="flex gap-[8px] px-[16px] pt-[14px] pb-0 sm:contents">
+            <PrimaryButton
+              href="/collection"
+              className="flex h-[44px] flex-auto items-center justify-center rounded-[10px] text-[14px] sm:h-[32px] sm:flex-none sm:justify-start sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]"
+            >
+              {refreshCopy.home.addYourCards}
+            </PrimaryButton>
+          </div>
+        ) : (
         <div className="flex flex-row-reverse gap-[8px] px-[16px] pt-[12px] pb-0 sm:contents">
           <GhostButton
             href="/collection/replace"
@@ -132,7 +154,20 @@ export function Dashboard(props: DashboardProps) {
             </PrimaryButton>
           )}
         </div>
+        )}
       </header>
+
+      {/* The lock's page line, as first run draws it (desktop only; the phone's bracket carries it): the three
+          slots still locked while this account has decks and no cards. */}
+      {noCards && (
+        <p
+          data-lock-page-line
+          className="m-0 mt-[12px] hidden items-center gap-[8px] px-[26px] text-[12.5px] text-[color:var(--fg-muted)] md:flex"
+        >
+          <Lock size="lg" ink="var(--fg-locked)" className="flex-none" />
+          {refreshCopy.firstRun.lock.pageLineOpen}
+        </p>
+      )}
 
       {/* Between the header and Ready to build, in the flow and spanning both columns (handoff call 4). */}
       {/* Keyed by what it draws, so a new batch is a new banner and never inherits an earlier one's dismissal. */}
@@ -158,6 +193,7 @@ export function Dashboard(props: DashboardProps) {
           third layout, one column wide with desktop padding. */}
       <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         <div className="flex min-w-0 flex-col gap-[12px] min-[1180px]:flex-auto min-[1180px]:gap-[11px]">
+          {/* At zero cards it ranks nothing and leaves on its own (S12: absent, not empty). */}
           <ReadyToBuild ready={props.ready} inUse={props.inUse} />
           {/* Sliced here rather than inside the section, so the section draws
               what it is handed and the ordering stays testable without a DOM.

@@ -2,7 +2,9 @@ import { requireUserId } from "../../lib/auth";
 import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { getCollectionStats } from "../../lib/home/summary";
-import { CardFan } from "../../components/marks";
+import { NoCardsEmpty } from "../../components/commanders/no-cards-empty";
+import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
+import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { DiscoveryView } from "../../components/commanders/discovery-view";
 import { cutToWindow, decodeDiscovery } from "../../lib/discovery/encode";
 import { loadDiscoveryPayload } from "../../lib/discovery/payload";
@@ -12,12 +14,6 @@ import { filePrintedIn } from "../../lib/sets/printed-in";
 import { lanePrintedInFor } from "../../lib/sets/lane-printed-in";
 import { discoverSort, parseLaneParams } from "../../lib/commanders/lane-params";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
-import { PrimaryButton } from "../../components/ui/button";
-import {
-  EmptyState,
-  EmptyStateBody,
-  EmptyStateTitle,
-} from "../../components/ui/empty-state";
 
 /**
  * The discover lane: every commander-legal card the player does not own.
@@ -39,30 +35,9 @@ export default async function DiscoverPage({
   const stats = await getCollectionStats(userId);
 
   if (stats.uniqueCards === 0) {
-    // No cards → collection-empty analog: send the user to upload. Nothing here
-    // can be ranked without a collection to rank it against.
-    return (
-      <EmptyState>
-        {/* Card-fan mark: same construction as collection empty state */}
-        <CardFan variant="mobile" className="mb-[22px] sm:hidden" />
-        <CardFan variant="desktop" className="mb-[26px] hidden sm:block" />
-
-        <EmptyStateTitle className="text-[28px]">
-          No collection yet
-        </EmptyStateTitle>
-
-        <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
-          Upload your cards and we’ll rank every commander you can build.
-        </EmptyStateBody>
-
-        <PrimaryButton
-          href="/collection"
-          className="mt-6 px-[24px] py-[12px] text-[14px]"
-        >
-          Upload collection
-        </PrimaryButton>
-      </EmptyState>
-    );
+    // No cards: nothing here can be ranked without a collection to rank it against. The words follow the
+    // no-collection entry's switch (its copy key's `on` form) and keep the shipped ones without it.
+    return <NoCardsEmpty copy={noCollectionEntryEnabled(env) ? discoveryCopy.noCards.on : discoveryCopy.noCards.off} />;
   }
 
   // Discovery does NOT call getRankedList, rankFree or receiptCountsByCommander:

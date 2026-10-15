@@ -5,7 +5,9 @@ import { commanderRankingsKey, loadCommanderRankings } from "../../lib/commander
 import { readCommandersAvail } from "../../lib/commanders/avail-pref";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { permanentRedirect } from "next/navigation";
-import { CardFan } from "../../components/marks";
+import { NoCardsEmpty } from "../../components/commanders/no-cards-empty";
+import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
+import { commandersCopy } from "../../lib/copy/commanders";
 import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
 import { scopeRedirectTarget } from "./scope-redirect";
@@ -15,11 +17,6 @@ import { lanePrintedInFor, loadCommanderPrintings } from "../../lib/sets/lane-pr
 import { perfRead } from "../../lib/perf/timing";
 import { RetryGhost } from "../../components/commanders/retry-submit";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
-import {
-  EmptyState,
-  EmptyStateBody,
-  EmptyStateTitle,
-} from "../../components/ui/empty-state";
 
 export default async function CommandersPage({
   searchParams,
@@ -38,29 +35,10 @@ export default async function CommandersPage({
   const stats = await getCollectionStats(userId);
 
   if (stats.uniqueCards === 0) {
-    // No cards → collection-empty analog: send the user to upload.
-    return (
-      <EmptyState>
-        {/* Card-fan mark: same construction as collection empty state */}
-        <CardFan variant="mobile" className="mb-[22px] sm:hidden" />
-        <CardFan variant="desktop" className="mb-[26px] hidden sm:block" />
-
-        <EmptyStateTitle className="text-[28px]">
-          No collection yet
-        </EmptyStateTitle>
-
-        <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
-          Upload your cards and we’ll rank every commander you can build.
-        </EmptyStateBody>
-
-        <PrimaryButton
-          href="/collection"
-          className="mt-6 px-[24px] py-[12px] text-[14px]"
-        >
-          Upload collection
-        </PrimaryButton>
-      </EmptyState>
-    );
+    // No cards: nothing can be ranked without a collection to rank it against. The words follow the no-collection
+    // entry's switch (its copy key's `on` form) and keep the shipped ones without it.
+    const env = await requestSwitchEnv(userId);
+    return <NoCardsEmpty copy={noCollectionEntryEnabled(env) ? commandersCopy.noCards.on : commandersCopy.noCards.off} />;
   }
 
   // Fetch recommendations, recent decks and the saved mode in parallel.

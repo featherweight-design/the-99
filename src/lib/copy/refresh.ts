@@ -22,6 +22,11 @@ export const refreshCopy = {
     kicker: (cards: string, when: string) => `${cards} cards · read ${when}`,
     updateCollection: 'Update collection',
     newDeck: 'New deck',
+    // Home with decks and no cards (no-collection entry S12, NO_COLLECTION_ENTRY_ENABLED): the kicker counts the
+    // decks, since a read time would be a claim about a collection that was never read, and the header's one
+    // action replaces Update collection and New deck, which both need cards.
+    kickerNoCards: (decks: number) => `0 cards · ${decks === 1 ? '1 deck' : `${decks.toLocaleString('en-US')} decks`}`,
+    addYourCards: 'Add your cards',
 
     readyHeading: 'Ready to build',
     // Card figures. `fit` prints the denominator because the detail hero does.
@@ -271,6 +276,13 @@ export const refreshCopy = {
       tabBracket: 'Open once your cards are in',
       railLabel: 'Locked',
       goToStep1: 'Go to step 1',
+      // With Collection open at zero cards (no-collection entry, call 6; NO_COLLECTION_ENTRY_ENABLED): the page
+      // line names the three slots still locked. The four-name `pageLine` stays for the switch off.
+      pageLineOpen: 'Commanders, Discover and Decks open once your cards are in.',
+      // Outside first run there is no step 1, so the note's button names where the cards go (to /collection).
+      addYourCards: 'Add your cards',
+      // Appended to the note's sentence when the account has a deck: Decks is locked, Home's resume row is not.
+      withDecks: 'Your decks are on Home until then.',
     },
   },
 

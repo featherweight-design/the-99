@@ -196,3 +196,34 @@ describe("Dashboard at zero decks", () => {
     expect(screen.queryByRole("heading", { name: "No decks yet" })).toBeNull();
   });
 });
+
+// Home with decks and no cards, with the no-collection entry on (S12). The page decides `noCards` from the line's
+// switch and the cached figures; off, the dashboard is as shipped (every case above).
+describe("Dashboard at zero cards with decks (no-collection entry S12)", () => {
+  const ZERO = { ...BASE, stats: { totalCards: 0, uniqueCards: 0 }, lastUpdated: null, decks: [deck()] };
+
+  it("counts the decks in the kicker, and makes Add your cards the header's one action", () => {
+    render(<Dashboard {...ZERO} noCards />);
+    expect(screen.getByText("0 cards · 1 deck")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Add your cards" })).toHaveAttribute("href", "/collection");
+    expect(screen.queryByRole("link", { name: "Update collection" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "New deck" })).toBeNull();
+  });
+
+  it("draws the lock's page line on desktop, and keeps the resume row that reaches the decks", () => {
+    const { container } = render(<Dashboard {...ZERO} decks={[deck(), deck({ id: "d2", name: "Breya" })]} noCards />);
+    expect(screen.getByText("0 cards · 2 decks")).toBeInTheDocument();
+    const line = container.querySelector("[data-lock-page-line]")!;
+    expect(line).toHaveTextContent("Commanders, Discover and Decks open once your cards are in.");
+    expect(line.className.split(/\s+/)).toEqual(expect.arrayContaining(["hidden", "md:flex"]));
+    expect(screen.queryByRole("heading", { name: "Ready to build" })).toBeNull();
+    expect(screen.getAllByRole("link", { name: /Atraxa/ }).length).toBeGreaterThan(0);
+  });
+
+  it("is the shipped header without the flag, at zero cards too", () => {
+    const { container } = render(<Dashboard {...ZERO} />);
+    expect(screen.getByRole("link", { name: "Update collection" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Add your cards" })).toBeNull();
+    expect(container.querySelector("[data-lock-page-line]")).toBeNull();
+  });
+});

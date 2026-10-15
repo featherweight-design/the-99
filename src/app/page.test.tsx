@@ -116,3 +116,46 @@ describe("Home's precon pick receipt (no-collection entry S5)", () => {
     expect((await visit({})).type).toBe(Dashboard);
   });
 });
+
+describe("Home's ways in at zero cards (no-collection entry S1, S12)", () => {
+  const LINE = { COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
+  const visit = async () =>
+    (await HomePage({ searchParams: Promise.resolve({}) })) as ReactElement<{
+      ways?: { precons: boolean } | null;
+      noCards?: boolean;
+    }>;
+
+  it("hands first run the ways group, with Precons I own only under PRECONS_ENABLED", async () => {
+    stub.uniqueCards = 0;
+    stub.env = { ...LINE, PRECONS_ENABLED: "true" };
+    let page = await visit();
+    expect(page.type).toBe(FirstRunChecklist);
+    expect(page.props.ways).toEqual({ precons: true });
+    stub.env = { ...LINE };
+    page = await visit();
+    expect(page.props.ways).toEqual({ precons: false });
+  });
+
+  it("hands first run no group with the line's switch off, editing on or not", async () => {
+    stub.uniqueCards = 0;
+    const offs: Record<string, string>[] = [{ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }, { NO_COLLECTION_ENTRY_ENABLED: "true" }];
+    for (const env of offs) {
+      stub.env = env;
+      const page = await visit();
+      expect(page.type).toBe(FirstRunChecklist);
+      expect(page.props.ways).toBeNull();
+    }
+  });
+
+  it("marks the dashboard as having no cards when the account has decks and none, with the switch on", async () => {
+    stub.uniqueCards = 0;
+    stub.decks = [{ id: "d1" }];
+    stub.env = { ...LINE };
+    expect((await visit()).props.noCards).toBe(true);
+    stub.env = {};
+    expect((await visit()).props.noCards).toBe(false);
+    stub.env = { ...LINE };
+    stub.uniqueCards = 4;
+    expect((await visit()).props.noCards).toBe(false);
+  });
+});
