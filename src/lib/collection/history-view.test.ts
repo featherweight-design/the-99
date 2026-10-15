@@ -6,7 +6,7 @@ import { entryTitle, groupByDay, groupRows, historyReachesBack, rowGroup, timeLa
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e", seq: 1, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
   copiesUp: 1, copiesDown: 0, removesOnly: false, revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false,
-  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, preconName: null, cartDecks: null, wentTo: null, ...over,
+  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, preconName: null, addedFromDeck: null, cartDecks: null, wentTo: null, ...over,
 });
 const row = (before: number | null, after: number | null): HistoryRow => ({
   oracleId: "o", setCode: "lea", collectorNumber: "1", finish: "nonfoil", name: "X",
@@ -71,6 +71,11 @@ describe("entryTitle", () => {
     // A precon since dropped from the feed has no name to give, so the entry reads as any add does.
     expect(entryTitle(entry({ rowCount: 100, source: "precon:Gone", preconName: null }), none, reach)).toBe("Sol Ring and 99 more");
     expect(entryTitle(entry({ rowCount: 1 }), none, reach)).toBe("Sol Ring");
+    // An import's own-these-cards add is titled by its deck, by the deck's current name; a deck since
+    // deleted reads as any add does.
+    const DECK = "7284ff0a-6e76-4dc0-8af5-fc630a403b2b";
+    expect(entryTitle(entry({ rowCount: 100, source: `deck:${DECK}`, addedFromDeck: { id: DECK, name: "Father and son" } }), none, reach)).toBe("Added from Father and son");
+    expect(entryTitle(entry({ rowCount: 100, source: `deck:${DECK}`, addedFromDeck: { id: DECK, name: null } }), none, reach)).toBe("Sol Ring and 99 more");
     expect(entryTitle(entry({ rowCount: 3 }), none, reach)).toBe("Sol Ring and 2 more");
   });
   it("titles a revert by what it undid: the entry when on the page, else the aged or earlier wording", () => {

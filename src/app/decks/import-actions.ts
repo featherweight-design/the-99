@@ -2,12 +2,17 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 import { loadMatchInputs } from "../../lib/collection/import";
+import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
+import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
+import { importDeckOwned, readDeckOwnLines } from "../../lib/decks/import-own";
+import { warmCommanderScores } from "../../lib/recs/warm";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import {
   buildDeckImport, resolveDeckListInput, type DeckImport, type ImportNote,
@@ -42,6 +47,14 @@ export type ImportDeckInput = {
   commanderOracleId?: string;
   /** The second commander of a pair, when the picker offered one and it was taken. */
   partnerOracleId?: string | null;
+  /**
+   * `I own these cards. Add them to my collection.` (no-collection entry): add every card the list
+   * names, commanders included, to the collection in the same transaction as the deck. Honoured only
+   * with `NO_COLLECTION_ENTRY_ENABLED` on; off, or false, the import is exactly as shipped.
+   */
+  own?: boolean;
+  /** The press's idempotency id, a uuid minted once and reused on a retry. Required with `own`. */
+  actionId?: string;
 };
 
 /**
@@ -94,6 +107,11 @@ export type ImportDeckResult =
     }
   /** State 10: nothing parsed at all. */
   | { ok: false; reason: "noRows"; notes: ImportNote[] }
+  /**
+   * S11: `own` was ticked and the add was refused or failed, so neither the cards nor the deck were
+   * written. The list stays for another press.
+   */
+  | { ok: false; reason: "addFailed"; notes: ImportNote[] }
   /** State 9: lines parsed, none of them matched a card. */
   | { ok: false; reason: "noneMatched"; lineCount: number; notes: ImportNote[] }
   /**
@@ -304,26 +322,30 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   let printingPicks: ImportPrintingPick[] = [];
   let printingsKept = 0;
   let printingsNotOwned = 0;
-  if (deckPrintingsEnabled(env) && result.printings.length > 0) {
-    const members = new Set([
-      ...deckCardValues.map((c) => c.oracleId),
-      commanderOracleId,
-      ...(partnerOracleId !== null ? [partnerOracleId] : []),
-    ]);
-    const held = await heldPrintingKeys(userId, [...new Set(result.printings.map((p) => p.oracleId))]);
+  const pickPrintings = deckPrintingsEnabled(env) && result.printings.length > 0;
+  const members = new Set([
+    ...deckCardValues.map((c) => c.oracleId),
+    commanderOracleId,
+    ...(partnerOracleId !== null ? [partnerOracleId] : []),
+  ]);
+  const body = new Set(deckCardValues.map((c) => c.oracleId));
+  let held: Set<string> = new Set();
+  /** The deck's picks and the strip's two clauses, from the printings the player holds. */
+  const choosePrintings = () => {
     const chosen = importPicks(result.printings, held, members);
     printingPicks = chosen.picks;
     // The strip's clauses count what its headline counts, the body's lines, so a commander's pick
     // is written but not counted: `All 99 lines … 100 with the printing you own` would contradict
     // itself.
-    const body = new Set(deckCardValues.map((c) => c.oracleId));
     printingsKept = chosen.picks.filter((p) => body.has(p.oracleId)).length;
     printingsNotOwned = chosen.notOwned.filter((id) => body.has(id)).length;
+  };
+  if (pickPrintings) {
+    held = new Set(await heldPrintingKeys(userId, [...new Set(result.printings.map((p) => p.oracleId))]));
+    choosePrintings();
   }
 
-  // One transaction: a deck that exists without its unresolved rows is a deck that
-  // silently lost the player's data, and there is no second chance to write them.
-  const deckId = await db.transaction((tx) => writeImportedDeck(tx, {
+  const deck = {
     userId,
     name,
     commanderOracleId,
@@ -331,7 +353,46 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     cards: deckCardValues.map((c) => ({ oracleId: c.oracleId, quantity: c.quantity })),
     unresolved: result.unresolved,
     printings: printingPicks,
-  }));
+  };
+
+  let deckId: string;
+  if (input.own === true && noCollectionEntryEnabled(env)) {
+    if (!isUuid(input.actionId)) throw new Error("bad action id");
+    // The cards first, then the deck inside the add's own transaction: a refusal leaves neither.
+    const items = await readDeckOwnLines({
+      cards: deck.cards,
+      commanderOracleIds: partnerOracleId !== null ? [commanderOracleId, partnerOracleId] : [commanderOracleId],
+      picks: printingPicks,
+      named: result.printings,
+    });
+    // The add makes the player hold every printing it names, so the deck's picks and the strip's
+    // clauses are chosen again as of after it: a named printing the add brings in is the deck's
+    // pick and is not counted as missing from the collection.
+    if (pickPrintings) {
+      for (const i of items) if (i.setCode && i.collectorNumber) held.add(heldKey(i.oracleId, i.setCode, i.collectorNumber));
+      choosePrintings();
+      deck.printings = printingPicks;
+    }
+    let owned: Awaited<ReturnType<typeof importDeckOwned>>;
+    try {
+      owned = await importDeckOwned(userId, deck, items, input.actionId as string, env);
+    } catch {
+      // A write that throws has rolled back with its transaction, so it is the same refusal as one
+      // that returns: the deck and the cards are both absent.
+      owned = { ok: false };
+    }
+    if (!owned.ok) return { ok: false, reason: "addFailed", notes };
+    deckId = owned.deckId;
+    // After the response, as every collection write does (`edit-actions.ts`, `settled`).
+    after(async () => {
+      invalidateCollectionReaders(userId);
+      await warmCommanderScores(userId, env);
+    });
+  } else {
+    // One transaction: a deck that exists without its unresolved rows is a deck that
+    // silently lost the player's data, and there is no second chance to write them.
+    deckId = await db.transaction((tx) => writeImportedDeck(tx, deck));
+  }
 
   revalidateClaims(deckId, userId);
   return {

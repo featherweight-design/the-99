@@ -221,6 +221,8 @@ export const collectionEditCopy = {
       edit: "Edited in details",
       /** A card marked bought from a deck's Shopping list (I got it); its deck line is in i-got-it.ts. */
       shopping: "From Shopping",
+      /** An import's `I own these cards` add (no-collection entry, handoff `own.historyKind`). */
+      deckAdd: "Deck add",
       remove: "Removed",
       revert: "Revert",
     },
@@ -229,6 +231,8 @@ export const collectionEditCopy = {
     /** (new) An entry's title when the ledger holds no filename or card name for it. */
     untitled: "Untitled change",
     addedFromPrecon: (name: string) => `Added from ${name}`,
+    /** An import's own-these-cards add, titled by the deck it made (handoff: `titled by the deck`). */
+    addedFromDeck: (deckName: string) => `Added from ${deckName}`,
     figures: (up: number, down: number, cards: number) =>
       // A change that moved no copies (a printing or condition swap, or a Replace that matched the
       // collection exactly) states its zero rather than leaving the figure blank.

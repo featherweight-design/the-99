@@ -798,6 +798,18 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `pnpm measure:sync` prints the buckets for one account inside a read-only, repeatable-read transaction, and is the
   acceptance check for Hugh's production account before the flip.
 
+- **A way in without a collection** (plan `2026-10-15-no-collection-entry.md`), behind `NO_COLLECTION_ENTRY_ENABLED`,
+  which needs `COLLECTION_EDIT_ENABLED` (staging `'true'` from PR 1, production unset until the line closes; off, every
+  route is as shipped). PR 1 is the write, dark: `importDeck` with `own: true` and a uuid `actionId` adds the list's
+  cards to the collection and writes the deck in ONE transaction (`importDeckOwned`, `src/lib/decks/import-own.ts`):
+  the add first, the deck inside its `inside` hook, so a refusal leaves neither. The lines are `deckOwnLines`, pure:
+  every body line and each commander at the printing the import kept, else the list's first named printing, else none;
+  an unresolved line adds nothing, and nothing is reserved. The deck's id is minted first so the ledger entry (kind
+  `add`) carries source `deck:<deck id>`: History lists it as `Deck add` titled `Added from <deck>` by the deck's
+  current name, Revert takes it back like any add and leaves the deck, and a retry with the same `actionId` finds the
+  deck through that source (no `decks` column). Off, or with `own` unset, the import is exactly as shipped.
+  `pnpm probe:deck-own` proves it on a scratch branch.
+
 - **Social foundation** (plan `boards/plan-social-foundation-2026-10-12.md`, Hugh's rulings 2026-10-12), behind
   `SOCIAL_FRIENDS_ENABLED` (`'true'` on staging, unset on production; dark until the first UI PR). Friends are added
   by a single-use invite link or its QR code and never by search; a friendship is two directed `friend_links` rows,

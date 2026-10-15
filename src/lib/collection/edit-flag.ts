@@ -21,3 +21,13 @@ export function collectionEditEnabled(env: NodeJS.ProcessEnv): boolean {
 export function collectionSyncEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.COLLECTION_SYNC_ENABLED === "true" && collectionEditEnabled(env);
 }
+
+/**
+ * Whether a player can start without a collection (plan `2026-10-15-no-collection-entry.md`): the
+ * import's `I own these cards` add, and the surfaces the line's later PRs draw. On only when
+ * `NO_COLLECTION_ENTRY_ENABLED` AND `COLLECTION_EDIT_ENABLED` are both `'true'`, because every write
+ * it makes goes through the ledger. Off, the import is exactly as shipped and ignores `own`.
+ */
+export function noCollectionEntryEnabled(env: NodeJS.ProcessEnv): boolean {
+  return env.NO_COLLECTION_ENTRY_ENABLED === "true" && collectionEditEnabled(env);
+}

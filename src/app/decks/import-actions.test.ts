@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
@@ -164,6 +164,16 @@ vi.mock("../../lib/collection/import", () => ({
   loadMatchInputs: async () => ({ catalog, indexes: {} }),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+// The own-these-cards add (no-collection entry): its write is `import-own.ts`'s, tested there; here the
+// action's choice of path is what is held, so the two calls are recorded and answered by the test.
+const own = vi.hoisted(() => ({
+  importDeckOwned: vi.fn(),
+  readDeckOwnLines: vi.fn(),
+}));
+vi.mock("../../lib/decks/import-own", () => own);
+vi.mock("next/server", () => ({ after: vi.fn() }));
+vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: vi.fn() }));
+vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: vi.fn() }));
 vi.mock("next/cache", () => ({
   revalidatePath: (p: string) => {
     stub.state.revalidated.push(p);
@@ -578,5 +588,120 @@ describe("deleteUnresolvedRow", () => {
     seed({ deckOwned: false });
     await expect(deleteUnresolvedRow(DECK, ROW)).rejects.toThrow("deck not found");
     expect(stub.state.deletedFrom).toEqual([]);
+  });
+});
+
+describe("importDeck — I own these cards (no-collection entry)", () => {
+  const SOL_RING = "a0000000-0000-4000-8000-000000000001";
+  const ATREUS = "a0000000-0000-4000-8000-000000000002";
+  const KRATOS = "a0000000-0000-4000-8000-000000000003";
+  const ACTION = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+  const OWNED_DECK = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+  const LIST = "Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nDeck\n1 Sol Ring (LTC) 284\n1 Not A Card";
+  const run = (over: { own?: boolean; actionId?: string } = {}) =>
+    importDeck({ text: LIST, source: "paste", name: "Father and son", ...over });
+  const deckInserts = () => stub.state.inserts.filter((i) => "commanderOracleId" in i.values);
+
+  beforeEach(() => {
+    stub.state.cards.push(...catalog);
+    own.importDeckOwned.mockReset();
+    own.readDeckOwnLines.mockReset();
+    own.readDeckOwnLines.mockResolvedValue([{ oracleId: SOL_RING, setCode: "", condition: null, quantity: 1 }]);
+    own.importDeckOwned.mockResolvedValue({ ok: true, deckId: OWNED_DECK, entryId: ACTION });
+    delete process.env.NO_COLLECTION_ENTRY_ENABLED;
+    delete process.env.COLLECTION_EDIT_ENABLED;
+  });
+
+  afterEach(() => {
+    delete process.env.NO_COLLECTION_ENTRY_ENABLED;
+    delete process.env.COLLECTION_EDIT_ENABLED;
+  });
+
+  const switchOn = () => {
+    process.env.NO_COLLECTION_ENTRY_ENABLED = "true";
+    process.env.COLLECTION_EDIT_ENABLED = "true";
+  };
+
+  it("with the switch off, ignores own and writes the deck exactly as shipped", async () => {
+    const result = await run({ own: true, actionId: ACTION });
+    expect(result).toMatchObject({ ok: true, deckId: stub.DECK_ID, unresolvedCount: 1 });
+    expect(own.readDeckOwnLines).not.toHaveBeenCalled();
+    expect(own.importDeckOwned).not.toHaveBeenCalled();
+    expect(deckInserts()).toHaveLength(1);
+  });
+
+  it("with collection editing off, the switch alone does not turn the add on", async () => {
+    process.env.NO_COLLECTION_ENTRY_ENABLED = "true";
+    await run({ own: true, actionId: ACTION });
+    expect(own.importDeckOwned).not.toHaveBeenCalled();
+    expect(deckInserts()).toHaveLength(1);
+  });
+
+  it("with the switch on and own unticked, writes the deck exactly as shipped", async () => {
+    switchOn();
+    const result = await run({ own: false });
+    expect(result).toMatchObject({ ok: true, deckId: stub.DECK_ID });
+    expect(own.importDeckOwned).not.toHaveBeenCalled();
+    expect(deckInserts()).toHaveLength(1);
+  });
+
+  it("ticked, adds the body and both commanders and writes the deck only through the add", async () => {
+    switchOn();
+    const result = await run({ own: true, actionId: ACTION });
+    expect(result).toMatchObject({ ok: true, deckId: OWNED_DECK, unresolvedCount: 1 });
+    // The plain transaction never ran: the deck is the add's to write, inside its own transaction.
+    expect(deckInserts()).toHaveLength(0);
+    expect(own.readDeckOwnLines).toHaveBeenCalledWith(expect.objectContaining({
+      cards: [{ oracleId: SOL_RING, quantity: 1 }],
+      commanderOracleIds: [ATREUS, KRATOS],
+      named: [expect.objectContaining({ oracleId: SOL_RING, setCode: "ltc", collectorNumber: "284" })],
+    }));
+    const [userId, deck, items, actionId] = own.importDeckOwned.mock.calls[0];
+    expect([userId, actionId]).toEqual(["user_1", ACTION]);
+    expect(deck).toMatchObject({ commanderOracleId: ATREUS, partnerOracleId: KRATOS, unresolved: [expect.objectContaining({ rawName: "Not A Card" })] });
+    expect(items).toEqual([{ oracleId: SOL_RING, setCode: "", condition: null, quantity: 1 }]);
+  });
+
+  it("ticked and refused, answers addFailed and writes no deck", async () => {
+    switchOn();
+    own.importDeckOwned.mockResolvedValue({ ok: false });
+    const result = await run({ own: true, actionId: ACTION });
+    expect(result).toMatchObject({ ok: false, reason: "addFailed" });
+    expect(deckInserts()).toHaveLength(0);
+    expect(stub.state.revalidated).toEqual([]);
+  });
+
+  // A write that throws has rolled back, so it is the same refusal: never an exception at the caller.
+  it("ticked and the write throws, answers addFailed", async () => {
+    switchOn();
+    own.importDeckOwned.mockRejectedValue(new Error("deadlock"));
+    const result = await run({ own: true, actionId: ACTION });
+    expect(result).toMatchObject({ ok: false, reason: "addFailed" });
+    expect(stub.state.revalidated).toEqual([]);
+  });
+
+  // With deck printings on and nothing held, the named Sol Ring LTC 284 is one the add brings in: it is the
+  // deck's pick and the strip does not call it missing from the collection.
+  it("with deck printings on, takes a named printing the add brings in as the pick, not as missing", async () => {
+    switchOn();
+    process.env.DECK_PRINTINGS_ENABLED = "true";
+    own.readDeckOwnLines.mockResolvedValue([
+      { oracleId: SOL_RING, setCode: "ltc", collectorNumber: "284", scryfallId: "s1", finish: "nonfoil", condition: null, quantity: 1 },
+      { oracleId: ATREUS, setCode: "", scryfallId: null, finish: "nonfoil", condition: null, quantity: 1 },
+    ]);
+    const result = await run({ own: true, actionId: ACTION });
+    if (!result.ok) throw new Error(JSON.stringify(result));
+    expect(result.printingsKept).toBe(1);
+    expect(result.printingsNotOwned).toBe(0);
+    const [, deck] = own.importDeckOwned.mock.calls[0];
+    expect(deck.printings).toEqual([{ oracleId: SOL_RING, setCode: "ltc", collectorNumber: "284" }]);
+  });
+
+  it("ticked, refuses a missing or malformed action id before any write", async () => {
+    switchOn();
+    await expect(run({ own: true })).rejects.toThrow(/action id/);
+    await expect(run({ own: true, actionId: "nope" })).rejects.toThrow(/action id/);
+    expect(own.importDeckOwned).not.toHaveBeenCalled();
+    expect(deckInserts()).toHaveLength(0);
   });
 });
