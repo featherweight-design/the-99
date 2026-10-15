@@ -17,19 +17,20 @@ export type GonePick = {
   deck: { id: string; name: string } | null;
 };
 
-export async function loadGonePicks(userId: string, ids: readonly string[]): Promise<GonePick[]> {
+export async function loadGonePicks(userId: string, ids: readonly string[], since: Date): Promise<GonePick[]> {
   if (ids.length === 0) return [];
   const [found, built] = await Promise.all([
     db.select({ id: cards.oracleId, name: cards.name, image: cards.imageUri, crop: cards.artCropUri }).from(cards)
       .where(inArray(cards.oracleId, [...ids])),
-    db.select({ commander: decks.commanderOracleId, id: decks.id, name: decks.name }).from(decks)
+    db.select({ commander: decks.commanderOracleId, id: decks.id, name: decks.name, createdAt: decks.createdAt }).from(decks)
       .where(and(eq(decks.userId, userId), inArray(decks.commanderOracleId, [...ids])))
       .orderBy(desc(decks.createdAt)),
   ]);
   const card = new Map(found.map((c) => [c.id, c]));
-  // The query is newest first, so the first deck seen for a commander is its newest.
+  // The query is newest first, so the first deck seen for a commander is its newest. Only a deck made
+  // after the run counts: an older one did not make the pick go, so "you built it since" would be false.
   const deck = new Map<string, { id: string; name: string }>();
-  for (const d of built) if (!deck.has(d.commander)) deck.set(d.commander, { id: d.id, name: d.name });
+  for (const d of built.filter((b) => b.createdAt >= since)) if (!deck.has(d.commander)) deck.set(d.commander, { id: d.id, name: d.name });
   return ids.flatMap((id) => {
     const c = card.get(id);
     // A card the catalog dropped is not drawn: there is nothing to name.

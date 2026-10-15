@@ -26,7 +26,7 @@ export function HelpMeChooseDoor({ pastRuns = false }: { pastRuns?: boolean }) {
           {copy.body}
           {pastRuns && <PastRunsLink className="hidden md:inline md:ml-[6px]" />}
         </p>
-        {pastRuns && <PastRunsLink className="md:hidden" />}
+        {pastRuns && <PastRunsLink className="flex min-h-[44px] items-center md:hidden" />}
       </div>
       <Link
         href={CHOOSE_PATH}
@@ -44,7 +44,7 @@ function PastRunsLink({ className }: { className: string }) {
       href={`${CHOOSE_PATH}?v=history`}
       prefetch={false}
       data-testid="past-runs-link"
-      className={`${className} items-center text-[12.5px] font-medium text-[color:var(--accent)] no-underline max-md:flex max-md:min-h-[44px] md:text-[13px]`}
+      className={`${className} text-[12.5px] font-medium text-[color:var(--accent)] no-underline md:text-[13px]`}
     >
       {helpMeChooseHistoryCopy.doorLink}
     </Link>

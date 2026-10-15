@@ -217,6 +217,11 @@ describe("CreatePicker — Help me choose's door", () => {
     const links = screen.getAllByTestId("past-runs-link");
     // One per width (the wide one closes the sentence, the narrow one has its own line), both to History.
     expect(links).toHaveLength(2);
+    // jsdom computes no styles, so pin the classes: a `max-md:` rule is emitted after `hidden` and would
+    // show the in-sentence link on a phone as well.
+    for (const l of links) expect(l.className).not.toMatch(/max-md:/);
+    expect(links.filter((l) => /(^|\s)hidden(\s|$)/.test(l.className))).toHaveLength(1);
+    expect(links.filter((l) => /md:hidden/.test(l.className))).toHaveLength(1);
     for (const l of links) {
       expect(l.getAttribute("href")).toBe("/decks/new/choose?v=history");
       expect(l.textContent).toBe("Your past runs ›");
