@@ -362,6 +362,21 @@ describe("GridView foil glint", () => {
     const meta = glints()[0].parentElement!.parentElement!;
     expect(meta.firstElementChild!.contains(glints()[0])).toBe(true);
   });
+  const comboPartner = { name: "Thrasios, Triton Hero" };
+  it("gives up one mark's room: three marks beside a glint collapse to one and +2", () => {
+    renderTiles({
+      ...card,
+      imageUri: "https://cards.example/t.jpg",
+      foil: "foil",
+      facts: ["gameChanger", "massLandDenial"],
+      comboPartner,
+    });
+    expect(screen.getByText("+2")).toBeInTheDocument();
+    // The same three marks on a plain tile still draw whole (the cap is three).
+    cleanup();
+    renderTiles({ ...card, imageUri: "https://cards.example/t.jpg", facts: ["gameChanger", "massLandDenial"], comboPartner });
+    expect(screen.queryByText(/^\+\d/)).toBeNull();
+  });
   it("draws nothing for a plain card, part-foil, or a card with no art", () => {
     const { unmount } = renderTiles({ ...card, imageUri: "https://cards.example/t.jpg" });
     expect(glints()).toHaveLength(0);

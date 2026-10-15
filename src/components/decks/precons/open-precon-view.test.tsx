@@ -397,6 +397,12 @@ describe("OpenPreconView foil key", () => {
     expect(key()).toBeNull();
   });
 
+  it("counts a foil basic over art, since Card view draws its tile with the glint", () => {
+    window.localStorage.setItem("the99:precons:openView", "card");
+    render(<OpenPreconView precon={precon({}, [card("Wastes", { typeLine: "Basic Land", basic: true, quantity: 15, foil: 15, imageUri: "https://cards.example/w.jpg" })])} fromNew={false} />);
+    expect(key()).not.toBeNull();
+  });
+
   it("is absent when no card is all foil, or the foil copies have no art", () => {
     window.localStorage.setItem("the99:precons:openView", "card");
     const { unmount } = render(<OpenPreconView precon={precon()} fromNew={false} />);

@@ -130,8 +130,11 @@ export function GridView({
           ...(c.facts ?? []).map((fact) => ({ kind: "fact" as const, fact })),
           ...(c.comboPartner ? [{ kind: "combo" as const }] : []),
         ];
-        const tooMany = allMarks.length > MAX_TILE_MARKS;
-        const shownMarks = tooMany ? allMarks.slice(0, MAX_TILE_MARKS - 1) : allMarks;
+        // The foil glint takes one glyph's room (12px and its gap) on the same line, so a foil tile collapses one
+        // mark sooner: the worst line, glint + two facts + combo, would overrun the 3-up phone tile.
+        const maxMarks = c.imageUri && c.foil ? MAX_TILE_MARKS - 1 : MAX_TILE_MARKS;
+        const tooMany = allMarks.length > maxMarks;
+        const shownMarks = tooMany ? allMarks.slice(0, maxMarks - 1) : allMarks;
         const moreCount = tooMany ? allMarks.length - shownMarks.length : 0;
         return (
         <button

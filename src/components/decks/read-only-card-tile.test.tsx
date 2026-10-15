@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailProvider } from "../cards/card-detail-provider";
@@ -39,6 +39,14 @@ describe("ReadOnlyCardTile", () => {
     expect(screen.getByText("CMM · first of 3 arts")).toBeInTheDocument();
     expect(screen.queryByLabelText("Owned")).toBeNull();
     expect(screen.getByTestId("read-only-basic-tile")).toBeInTheDocument();
+  });
+
+  it("draws the glint on a basic the box holds in foil, with its copies in the tooltip's count", () => {
+    tile(card({ printedFoil: true }), { arts: 1 });
+    expect(within(screen.getByTestId("read-only-basic-tile")).getAllByTestId("foil-mark")).toHaveLength(1);
+    cleanup();
+    tile(card(), { arts: 1 });
+    expect(screen.queryByTestId("foil-mark")).toBeNull();
   });
 
   it("names a basic held in one art by its printing", () => {

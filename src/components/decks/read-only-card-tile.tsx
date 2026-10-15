@@ -99,6 +99,7 @@ export function ReadOnlyCardTile({
             basic ? (
               <>
                 <span className="flex-none" style={{ color: "var(--fg-body)" }}>{copy.open.basicCount(card.quantity)}</span>
+                {foilFinish && <FoilGlint finish={foilFinish} precon={{ quantity: card.quantity }} />}
                 <span className="min-w-0 truncate" style={{ color: "var(--fg-faint)" }}>{copy.group.basicTag}</span>
               </>
             ) : (

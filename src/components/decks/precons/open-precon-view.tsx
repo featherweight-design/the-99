@@ -156,7 +156,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
   ];
   // The foil key follows the cards in view, exactly as the deck's marks do: a precon is a closed set, so the entry says what
   // the tiles below draw (every copy of a card the box holds is foil, and only over art, the film's own rule).
-  const foilInView = [...commanders, ...groups.flatMap(([, g]) => g)].some((c) => c.imageUri && c.foil > 0 && c.foil === c.quantity);
+  const foilInView = [...commanders, ...groups.flatMap(([, g]) => g), ...basics].some((c) => c.imageUri && c.foil > 0 && c.foil === c.quantity);
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
   const linked = row.built.filter((b) => b.linked);
   const linkDeck = (className: string) => (
