@@ -24,7 +24,7 @@ import type { NoteCounts } from "../../lib/bracket/card-note";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { SHELF_CAP } from "../../lib/decks/shelf-cap";
 import { useFoldedShelves } from "./use-folded-shelves";
-import { CHEVRON_CLASS } from "../ui/chevron";
+import { Chevron } from "../ui/chevron";
 
 // Named once, in its own module, so the cap, the `Show all N` count, the server's
 // unowned append and the tests cannot drift apart (#391).
@@ -316,13 +316,7 @@ function ShelfSection({
             onClick={() => { setPressed(true); onToggleFold(); }}
             className="flex items-baseline gap-x-[8px] md:gap-x-[10px] min-h-[52px] md:min-h-[44px] p-0 border-none bg-transparent cursor-pointer text-left"
           >
-            <span
-              aria-hidden
-              className={`inline-block ${CHEVRON_CLASS} transition-transform duration-[var(--motion-duration)] ease-[var(--motion-ease)] motion-reduce:transition-none ${folded ? "" : "rotate-90"}`}
-              style={{ color: "var(--fg-muted)" }}
-            >
-              ▸
-            </span>
+            <Chevron kind="disclosure" open={!folded} style={{ color: "var(--fg-muted)" }} />
             {/* Label and clause share ONE group, not two flex-wrap siblings of the
                 button: a flex-wrap item that wraps starts at the CONTAINER's edge,
                 under the chevron, not under the preceding sibling — which is not

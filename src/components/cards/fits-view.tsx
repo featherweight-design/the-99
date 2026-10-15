@@ -8,6 +8,7 @@
 // The read's rows act on the reader's decks: Swap in is the stand-ins take with the read's cut, and
 // Add only is the free list's add with nothing cut. What the reader did on each row is held by the
 // provider (`memory`), so a card opened from the view and closed again comes back to the same rows.
+import { Chevron } from "../ui/chevron";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -610,7 +611,7 @@ export function FitsView({
               <span className="text-[13px] text-[color:var(--fg-body)]">{read.fold}</span>
               <span className="flex items-center gap-[8px]">
                 <span className="font-mono text-[11px] text-[color:var(--fg-muted)]">{freeRows.length}</span>
-                <span aria-hidden className="text-[10px] text-[color:var(--fg-muted)]">{foldOpen ? "▾" : "▸"}</span>
+                <Chevron kind="disclosure" open={foldOpen} className="text-[color:var(--fg-muted)]" />
               </span>
             </button>
             {foldOpen ? <div className="pt-[10px]">{freeList}</div> : null}

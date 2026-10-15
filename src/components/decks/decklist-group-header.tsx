@@ -90,7 +90,7 @@ export function DecklistGroupHeader({
                 className="inline-flex min-h-[44px] cursor-pointer items-center gap-[8px] border-0 bg-transparent p-0 text-left text-inherit [font:inherit] md:min-h-0"
               >
                 {label}
-                <Chevron open={toggle.open} className="text-[color:var(--fg-muted)]" />
+                <Chevron kind="disclosure" open={toggle.open} className="text-[color:var(--fg-muted)]" />
               </button>
             ) : label}
           </h3>

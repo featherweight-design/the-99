@@ -14,7 +14,7 @@ import type { ManaSupply } from "../../lib/mana/supply";
 import { colorRows } from "../../lib/mana/color-rows";
 import { PIP_STYLE, SourceBar } from "./mana-color-parts";
 import { CARD_TYPES, CURVE_MAX, type CardType, type DeckStatsSlice } from "../../lib/decks/stats";
-import { CHEVRON_CLASS } from "../ui/chevron";
+import { Chevron } from "../ui/chevron";
 
 const CARDS = [
   { key: "curve", title: deckStatsCopy.cards.curve },
@@ -163,8 +163,8 @@ function JobsCard({ tally }: { tally: JobTally }) {
               <span className={`w-[24px] shrink-0 text-right font-mono text-[12px] tabular-nums ${r.copies === 0 ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg)]"}`}>
                 {r.copies}
               </span>
-              <span aria-hidden="true" className={`w-[12px] shrink-0 text-center font-mono ${CHEVRON_CLASS} text-[color:var(--fg-muted)]`}>
-                {r.copies === 0 ? "" : on ? "⌃" : "›"}
+              <span aria-hidden="true" className="w-[12px] shrink-0 text-center font-mono">
+                {r.copies === 0 ? null : <Chevron kind="disclosure" open={on} className="text-[color:var(--fg-muted)]" />}
               </span>
             </>
           );

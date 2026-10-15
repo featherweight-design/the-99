@@ -216,7 +216,7 @@ export function ResolutionExpander({
           onClick={onCollapse}
           className="flex-none font-mono text-[10.5px] md:text-[11px] ml-auto cursor-pointer bg-transparent border-none p-0 text-[color:var(--fg-faint)] hover:text-[color:var(--accent)] transition-colors"
         >
-          {copy.collapse} <Chevron open />
+          {copy.collapse} <Chevron kind="disclosure" open />
         </button>
       </div>
 
