@@ -281,6 +281,43 @@ describe("Seat a pod", () => {
     expect(chipB).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("holds Save, the seats and the pod size while the pod is being read, then seats the pod", async () => {
+    pods.mockResolvedValue([pod]);
+    let land!: (m: unknown[]) => void;
+    podSeats.mockReturnValue(new Promise((r) => { land = r; }));
+    await mount();
+    won();
+    fireEvent.click(await screen.findByRole("button", { name: "Thursday" }));
+    const saveBtn = screen.getByRole("button", { name: gameLogCopy.form.save });
+    expect(saveBtn).toBeDisabled();
+    expect(screen.getByRole("button", { name: seats.add })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "6" })).toBeDisabled();
+    fireEvent.click(saveBtn);
+    expect(logGame).not.toHaveBeenCalled();
+    land([member(DAVE, "Dave")]);
+    await waitFor(() => expect(screen.getByText(seats.count(1, 3))).toBeInTheDocument());
+    expect(saveBtn).toBeEnabled();
+    expect(screen.getByRole("button", { name: seats.add })).toBeEnabled();
+  });
+
+  it("a seat cleared and filled again by hand is no longer the chip's: the chip reads unpressed and leaves it", async () => {
+    pods.mockResolvedValue([pod]);
+    podSeats.mockResolvedValue([member(DAVE, "Dave")]);
+    await mount();
+    const chip = await screen.findByRole("button", { name: "Thursday" });
+    fireEvent.click(chip);
+    await waitFor(() => expect(chip).toHaveAttribute("aria-pressed", "true"));
+    fireEvent.click(screen.getByRole("button", { name: seats.clear("Dave") }));
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    const dialog = await openPicker();
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Dave/ }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: new RegExp(picker.justFriend("Dave")) }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: picker.title })).toBeNull());
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(chip);
+    expect(screen.getByText("Dave")).toBeInTheDocument();
+  });
+
   it("a pod that could not be read says so and seats nothing", async () => {
     pods.mockResolvedValue([pod]);
     podSeats.mockRejectedValue(new Error("x"));

@@ -153,7 +153,7 @@ function SeatView({
 const names = (list: readonly string[]) => (list.length < 2 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`);
 
 export function GameSeats({
-  you, podSize, result, seats, busy, held, onSeat, onPod, onClear, onWon, onLabel,
+  you, podSize, result, seats, busy, held, onSeat, onPod, onPodPending, onClear, onWon, onLabel,
 }: {
   you: YouSeat;
   podSize: number;
@@ -164,8 +164,10 @@ export function GameSeats({
   held: boolean;
   /** `at` is the seat key being changed, or null for a new seat. */
   onSeat: (at: string | null, pick: SeatPick) => void;
-  /** A Seat a pod press: the pod size to set and the friends to seat, in order. */
-  onPod: (podSize: number, add: SeatFriend[]) => void;
+  /** A Seat a pod press: the pod size to set and the friends to seat, in order. Answers the keys of the seats it made. */
+  onPod: (podSize: number, add: SeatFriend[]) => string[];
+  /** The pod read is in flight: the form holds every edit and Save until it lands, so the fill is planned against what stands. */
+  onPodPending: (pending: boolean) => void;
   onClear: (key: string) => void;
   onWon: (key: string) => void;
   onLabel: (key: string, text: string) => void;
@@ -179,8 +181,9 @@ export function GameSeats({
     listPickerPodsAction().then((list) => { if (live) setPods(list); }).catch(() => {});
     return () => { live = false; };
   }, []);
-  // The friends each chip's press seated, by pod, so pressing a chip again clears its own and leaves another pod's.
-  const [podFilled, setPodFilled] = useState<Record<string, string[]>>({});
+  // The seats each chip's press made (key and friend), by pod: a chip undoes only those, and only while the seat still
+  // holds that friend. A seat cleared and filled again by hand, or by another pod, is no longer its.
+  const [podFilled, setPodFilled] = useState<Record<string, { key: string; friend: string }[]>>({});
   // A pod read that lands after the row is gone (the form was cancelled) must not seat anyone into the next one.
   const mounted = useRef(true);
   useEffect(() => {
@@ -188,7 +191,7 @@ export function GameSeats({
     return () => { mounted.current = false; };
   }, []);
   const [podNote, setPodNote] = useState<string | null>(null);
-  const [podBusy, setPodBusy] = useState(false);
+  const reading = useRef(false);
   const room = hasRoom(podSize, seats.length);
   const lost = result === "loss" && seats.length > 0;
   const addRef = useRef<HTMLButtonElement>(null);
@@ -204,30 +207,32 @@ export function GameSeats({
     setPicking(null);
   }
 
-  const seatedHere = seatedFriends(seats, null);
-  const chipOn = (pod: PickerPod) => (podFilled[pod.id] ?? []).some((id) => seatedHere.has(id));
+  const ownSeats = (pod: PickerPod) =>
+    (podFilled[pod.id] ?? []).filter((o) => seats.some((s) => s.key === o.key && s.friend?.publicId === o.friend));
+  const chipOn = (pod: PickerPod) => ownSeats(pod).length > 0;
   async function seatPod(pod: PickerPod) {
-    if (podBusy) return;
+    if (reading.current) return;
     setPodNote(null);
     if (chipOn(pod)) {
       // Pressed again: take back the seats it filled.
-      const mine = new Set(podFilled[pod.id]);
-      for (const s of seats) if (s.friend && mine.has(s.friend.publicId)) onClear(s.key);
+      for (const o of ownSeats(pod)) onClear(o.key);
       setPodFilled((held) => Object.fromEntries(Object.entries(held).filter(([id]) => id !== pod.id)));
       return;
     }
-    setPodBusy(true);
+    reading.current = true;
+    onPodPending(true);
     try {
       const members = await listPodSeatsAction(pod.id);
       if (!mounted.current) return;
       const fill = podFill(seats, pod.memberCount, members.map((m) => ({ publicId: m.publicId, name: m.displayName })));
-      onPod(fill.podSize, fill.add);
-      setPodFilled((held) => ({ ...held, [pod.id]: fill.add.map((f) => f.publicId) }));
+      const keys = onPod(fill.podSize, fill.add);
+      setPodFilled((held) => ({ ...held, [pod.id]: fill.add.map((f, i) => ({ key: keys[i], friend: f.publicId })) }));
       if (fill.unseated.length > 0) setPodNote(copy.podLeftOut(names(fill.unseated)));
     } catch {
       if (mounted.current) setPodNote(copy.podFailed);
     } finally {
-      if (mounted.current) setPodBusy(false);
+      reading.current = false;
+      onPodPending(false);
     }
   }
 
@@ -264,7 +269,7 @@ export function GameSeats({
               <button
                 key={pod.id}
                 type="button"
-                disabled={busy || podBusy}
+                disabled={busy}
                 aria-pressed={chipOn(pod)}
                 onClick={() => void seatPod(pod)}
                 className={

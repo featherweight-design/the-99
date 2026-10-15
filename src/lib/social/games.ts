@@ -85,18 +85,15 @@ export function podSeatsQuery(viewerId: string, podId: string, q: Reader = db) {
     .orderBy(asc(podMembers.joinedAt), asc(podMembers.userId));
 }
 
-export type PodSeat = { publicId: string; displayName: string; decks: FriendDeck[] };
+export type PodSeat = { publicId: string; displayName: string };
 
-/** One tap seats a pod: each friend in it, with the decks they can be seated with. */
+/**
+ * One tap seats a pod: each friend in it, in join order. Members only: a seated friend's decks are read by
+ * `listFriendDecks` when "Which deck?" asks, so a pod's answer does not grow with everyone's deck count.
+ */
 export async function listPodSeats(viewerId: string, podId: unknown): Promise<PodSeat[]> {
   if (!isUuid(podId)) return [];
-  const seats = await podSeatsQuery(viewerId, podId);
-  if (seats.length === 0) return [];
-  const owned = await friendDecksQuery(viewerId, seats.map((s) => s.publicId));
-  return seats.map((s) => ({
-    ...s,
-    decks: owned.filter((d) => d.publicId === s.publicId).map(deckOf),
-  }));
+  return podSeatsQuery(viewerId, podId);
 }
 
 /** A friend seat as the game log asked for it: a friend, and optionally one of their decks. */
