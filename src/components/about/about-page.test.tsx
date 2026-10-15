@@ -62,7 +62,7 @@ import { DECK_VERSIONS,
 // Every feature switch ON for this file, so every entry is drawn, figures included. The page with
 // the switches off is `about-page-r6.test.tsx`'s, and a switched entry's own rules are
 // `about-page-switch.test.tsx`'s.
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "DECK_STATS_ENABLED", "COLLECTION_EDIT_ENABLED", "DECK_BENCHMARKS_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_PRINTINGS_ENABLED", "MANA_BALANCE_ENABLED", "ALL_DECKS_CART_ENABLED", "PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "DECK_NOTES_ENABLED", "ADDED_COPY_ENABLED", "LINEUP_ENABLED", "PROPOSED_CUTS_ENABLED", "FIND_A_DECK_READ_ENABLED"] as const;
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "DECK_STATS_ENABLED", "COLLECTION_EDIT_ENABLED", "DECK_BENCHMARKS_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_PRINTINGS_ENABLED", "MANA_BALANCE_ENABLED", "ALL_DECKS_CART_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "DECK_NOTES_ENABLED", "ADDED_COPY_ENABLED", "LINEUP_ENABLED", "PROPOSED_CUTS_ENABLED", "FIND_A_DECK_READ_ENABLED"] as const;
 beforeAll(() => {
   for (const k of SWITCHES) process.env[k] = "true";
 });
@@ -875,8 +875,10 @@ describe("the figures", () => {
     // page's unit is a figure with a caption, and an empty frame is the way
     // that unit fails quietly.
     const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
+    // An entry's own <li>, never one a specimen draws: `upcoming-precons` draws the Announced group's real set
+    // block, which is an <li> holding an <h3> of its own.
     const entries = [...container.querySelectorAll("li")].filter((li) =>
-      li.querySelector("h3"),
+      li.querySelector("h3") && !li.closest("[data-specimen]"),
     );
     expect(entries).toHaveLength(aboutEntries.length);
     for (const li of entries) {

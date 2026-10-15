@@ -100,6 +100,7 @@ export type AboutSwitch =
   | 'MANA_BALANCE_ENABLED'
   | 'ALL_DECKS_CART_ENABLED'
   | 'PRECONS_ENABLED'
+  | 'UPCOMING_PRECONS_ENABLED'
   | 'DECK_NOTES_ENABLED'
   | 'ADDED_COPY_ENABLED'
   // Not an env var of its own: on when the Tuning hub draws (two or more of its tools on), which
@@ -1114,6 +1115,26 @@ export const aboutEntries: readonly AboutEntry[] = [
       'If one of your decks shares much of a precon’s list, the precon names it and counts what you share.',
       'Link a deck to the precon it came from, and its Versions start at v0, the box’s own list. Nothing in the deck changes.',
       'Precon decklists come from MTGJSON, under the MIT license. Copyright (c) 2018 - Present, Zach Halpern.',
+    ],
+    // The version current when it was written: an entry tied to a switch is announced by the
+    // switch, and nothing bumps the version for it.
+    marksPending: true,
+    since: 14,
+  },
+  {
+    id: 'upcoming-precons',
+    chapter: '03',
+    title: 'Commander sets on the way',
+    route: '/decks/precons',
+    opens: 'opens the precon list',
+    width: 'plate',
+    switch: 'UPCOMING_PRECONS_ENABLED',
+    caption:
+      'When a Commander set is announced, Commander precons lists it under Announced, above this year’s decklists, with its release date and every commander revealed so far. Its decks aren’t listed yet, so there’s nothing to own or start a deck from.\n\nWhen a set is announced, or its decklists arrive, Home says so once, under the header. Close it, or open Commander precons, and it won’t show again on any of your devices.',
+    keys: [
+      'A revealed commander is a legendary creature from the set. Until the decks are listed, nothing says which deck it leads.',
+      'Dates are release days. A set that’s out stays under Announced until its decklists arrive.',
+      'When they arrive, the set’s precons join the list, marked new for two weeks.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.

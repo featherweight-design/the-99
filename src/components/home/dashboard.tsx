@@ -13,6 +13,8 @@ import { formatWhen } from "../../lib/format/when";
 import type { Commitments } from "../../lib/home/commitments";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import type { ReadySlice } from "../../lib/recs/ready-to-build";
+import type { ArrivalsBannerData } from "../../lib/precons/banner";
+import { ArrivalsBanner, HOME_HEADING_ID } from "./arrivals-banner";
 import { CommitmentsCard } from "./commitments-card";
 import { HomeDecksZero } from "./home-decks-zero";
 import { ReadyToBuild } from "./ready-to-build";
@@ -29,6 +31,11 @@ export type DashboardProps = {
   /** Null when the availability read failed. The card renders nothing, not a zero. */
   commitments: Commitments | null;
   shopping: ShoppingRollup;
+  /**
+   * The arrivals banner (upcoming precons), or null: switch off, nothing to show, or the read failed. Part of the
+   * cached payload; a ✕ moves the reader's stamp, which retires it.
+   */
+  arrivals?: ArrivalsBannerData | null;
   /** `ALL_DECKS_CART_ENABLED`, resolved for this reader: the card links to /decks/shopping only when it is on. */
   cartEnabled?: boolean;
   /**
@@ -75,7 +82,8 @@ export function Dashboard(props: DashboardProps) {
           <p className="m-0 mb-[6px] font-mono text-[10px] tracking-[0.16em] text-[color:var(--fg-faint)] uppercase sm:mb-[7px] sm:tracking-[0.18em]">
             {refreshCopy.home.kicker(cards, when)}
           </p>
-          <h1 className="m-0 font-display text-[23px] leading-[1.15] font-bold text-[color:var(--fg)] sm:text-[28px] sm:leading-[1]">
+          {/* Focusable by script only: the arrivals banner's ✕ moves focus here once it has closed (H8). */}
+          <h1 id={HOME_HEADING_ID} tabIndex={-1} className="m-0 font-display outline-none text-[23px] leading-[1.15] font-bold text-[color:var(--fg)] sm:text-[28px] sm:leading-[1]">
             {refreshCopy.home.greeting}
           </h1>
         </div>
@@ -116,6 +124,10 @@ export function Dashboard(props: DashboardProps) {
           )}
         </div>
       </header>
+
+      {/* Between the header and Ready to build, in the flow and spanning both columns (handoff call 4). */}
+      {/* Keyed by its arrivals, so a new batch is a new banner and never inherits an earlier one's dismissal. */}
+      {props.arrivals && <ArrivalsBanner key={props.arrivals.keys.join(",")} data={props.arrivals} />}
 
       {/* §HomeBody. One row of two columns on desktop; on a phone the same two
           columns stack, and nothing drops at either width — that is the whole
