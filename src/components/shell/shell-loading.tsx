@@ -17,7 +17,7 @@ export function ShellLoading() {
   const route = pendingRouteFor(usePathname());
   if (route.kind === "overlay") return <LoadingScreen copy={shellCopy.loading[route.key]} />;
   if (route.screen === "choose") return <ChooseLoading />;
-  // The precon list's own boundary reads the stored view; this fallback cannot (it is drawn before any cookie read), so tiles.
-  if (route.screen === "precons") return <PreconsLoading view="tiles" />;
+  // The precon list's own boundary reads the stored view; this fallback cannot (it is drawn before any cookie read), so the address alone decides, tiles by default.
+  if (route.screen === "precons") return <PreconsLoading />;
   return <LoadingScreen copy={shellCopy.loading[route.screen]} />;
 }

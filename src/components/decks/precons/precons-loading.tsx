@@ -1,14 +1,22 @@
+"use client";
+
 // What `/decks/precons` draws while it loads (small-polish handoff §4): the page's own shape in tiles (or rows, when the
-// reader's stored view is rows), not the crown screen. The header is real, since its back link and title never change;
-// the count line, the chassis and the year heading are still shapes of their real height. Six tiles at 390 (the first
+// address or the reader's stored view says rows), not the crown screen. The header is real, since its title never changes
+// and its back link follows `?from=new` as the list's does; the count line, the chassis and the year heading are still
+// shapes of their real height. Six tiles at 390 (the first
 // screen and one row past it), two rows from `md` on the list's own grid class, so the column count is the page's.
 //
 // Served by the list route's own `loading.tsx` (`(list)/loading.tsx`), so the open precon, which sits outside that
-// route group, keeps the shared decks screen. A server component: no hooks, nothing interactive.
+// route group, keeps the shared decks screen. A client component for `useSearchParams`: the loaded list lets `?view=` beat
+// the stored view and `?from=new` change its back link, so the skeleton reads the same address. It carries `StallWatch`
+// and `data-loading-screen` as `LoadingScreen` does, so a list stuck in it is reported like any other loading screen.
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { preconsCopy } from "../../../lib/copy/precons";
 import { preconsLoadingCopy } from "../../../lib/copy/shell";
+import { parsePreconParams } from "../../../lib/precons/list";
+import { StallWatch } from "../../shell/nav-stall";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { RowSkeleton, TileSkeleton } from "../../ui/tile-skeleton";
 import { PRECON_ROWS_CLASS, PRECON_TILES_COLUMNS } from "./precon-grid";
@@ -23,14 +31,21 @@ const SHAPE = "rounded-[8px] border border-solid border-[color:var(--border)] bg
 const TILES_CLASS = `${PRECON_TILES_COLUMNS} gap-x-[10px] md:gap-x-[12px] grid-rows-[repeat(3,auto)] md:grid-rows-[repeat(2,auto)] [grid-auto-rows:0] overflow-hidden [&>li]:mb-[10px] md:[&>li]:mb-[12px]`;
 const TILE_COUNT = 24;
 
-export function PreconsLoading({ view }: { view: "tiles" | "rows" }) {
+/** `storedView` is the cookie's view where the server could read it (the route's own `loading.tsx`); an explicit `?view=` wins,
+ *  as in the list. */
+export function PreconsLoading({ storedView = null }: { storedView?: "tiles" | "rows" | null }) {
+  const params = useSearchParams();
+  const view = parsePreconParams(new URLSearchParams(params.toString())).view ?? storedView ?? "tiles";
+  const fromNew = params.get("from") === "new";
+  const back = fromNew ? "/decks/new" : "/decks";
   return (
-    <div className="pb-[96px]">
+    <div data-loading-screen className="pb-[96px]">
       <span role="status" className="sr-only">{preconsLoadingCopy.status}</span>
+      <StallWatch />
       <header className="flex flex-col gap-[4px] border-b-[1px] border-solid border-x-0 border-t-0 border-b-[color:var(--border)] p-[12px_16px_12px] md:p-[16px_22px_16px]">
-        <Link href="/decks" className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
-          {copy.back}
-          <PendingReporter href="/decks" />
+        <Link href={back} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+          {fromNew ? copy.backNew : copy.back}
+          <PendingReporter href={back} />
         </Link>
         <h1 className="m-0 font-display text-[24px] font-normal text-[color:var(--fg)]">{copy.title}</h1>
         <span aria-hidden className="flex h-[16px] items-center anim-skeleton"><span className="block h-[11px] w-[55%] max-w-[420px] rounded-[3px] bg-[color:var(--elevated)]" /></span>
