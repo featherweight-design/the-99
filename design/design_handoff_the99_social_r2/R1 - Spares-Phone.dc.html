@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A friend has a spare, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.ph{width:390px;height:844px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.mh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #181C26}
+.wm{display:flex;align-items:flex-end;gap:3px}
+.wm span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A;padding-bottom:4px}
+.wm b{font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0;line-height:1}
+.mav{width:38px;height:38px;border-radius:12px;border:1px solid #FF4D9A;color:#FF4D9A;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;background:#0E0F14;padding:0}
+.scroll{flex:1;overflow:hidden;position:relative}
+.tb{flex:none;height:74px;display:flex;align-items:center;padding:8px 8px 14px;box-sizing:border-box;background:#12141B;border-top:1px solid #181C26}
+.ts{flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#6F7486;font:9px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+.ts.cur{background:#13151C;color:#E6E8F0}
+.dh{display:flex;align-items:center;gap:12px;padding:14px 16px 0}
+.dh img{width:56px;height:40px;object-fit:cover;border-radius:7px;border:1px solid #262A35}
+.dn{margin:0;font:700 19px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.dsub{font-size:12px;color:#959AAD}
+.tabs{display:flex;gap:18px;padding:8px 16px 0;border-bottom:1px solid #181C26;overflow:hidden}
+.tab{min-height:44px;padding:0 0 8px;border:0;border-bottom:2px solid transparent;background:transparent;font:13.5px 'IBM Plex Sans',sans-serif;color:#959AAD;display:flex;align-items:flex-end;white-space:nowrap}
+.tab.on{border-bottom-color:#FF4D9A;color:#E6E8F0}
+.pane{padding:12px 16px 20px}
+.seg{display:flex;border:1px solid #262A35;border-radius:8px;overflow:hidden}
+.sg{flex:1;height:40px;border:0;background:transparent;color:#959AAD;font:13.5px 'IBM Plex Sans',sans-serif}
+.sg.on{background:#20222A;color:#E6E8F0}
+.intro{margin:10px 0 2px;font-size:13px;line-height:1.5;color:#B1B6C7}
+.intro b{font-weight:500;color:#E6E8F0}
+.gh{display:flex;align-items:baseline;gap:8px;margin-top:12px;padding-bottom:5px;border-bottom:1px solid #181C26}
+.gh b{font:600 13px 'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.gh span{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.dr{display:grid;grid-template-columns:10px 1fr auto;column-gap:10px;align-items:center;min-height:52px;padding:7px 10px;background:#12141B;border-bottom:1px solid #0E0F14;box-sizing:border-box}
+.dot{width:8px;height:8px;border-radius:50%;box-sizing:border-box}
+.dot.own{background:#6FA368}
+.dot.no{border:1.5px dashed #6F7486}
+.ln{display:flex;flex-direction:column;gap:3px;min-width:0}
+.nm{border:0;background:transparent;padding:0;text-align:left;font:14.5px 'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.mt{display:flex;align-items:center;gap:6px;font:10px 'IBM Plex Mono',monospace;color:#6F7486}
+.pip{width:9px;height:9px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45)}
+.bt{font:9.5px 'IBM Plex Mono',monospace;color:#B1B6C7;display:flex;align-items:center;gap:4px;align-self:start;padding-top:4px}
+.bt b{font-weight:500;color:#E0913C;background:rgba(224,145,60,.13);border-radius:4px;padding:2px 5px}
+.spc{margin-top:4px;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 11px 0 4px;border-radius:999px;border:1px solid #262A35;background:#16181F;color:#B1B6C7;font:12.5px 'IBM Plex Sans',sans-serif}
+.spc.op{border-color:#959AAD;color:#E6E8F0;background:#20222A}
+.spf{display:flex}
+.spf img{width:22px;height:22px;border-radius:50%;object-fit:cover;border:1.5px solid #16181F;margin-left:-7px;display:block}
+.spf img:first-child{margin-left:0}
+.flag{outline:1.5px dashed rgba(255,77,154,.6);outline-offset:2px}
+.bd{position:absolute;inset:0;background:rgba(14,15,20,.72);z-index:3}
+.sh{position:absolute;left:0;right:0;bottom:0;z-index:4;background:#16181F;border-top:1px solid #262A35;border-radius:20px 20px 0 0;padding:10px 16px 26px}
+.grab{width:40px;height:4px;border-radius:2px;background:#262A35;margin:0 auto 6px}
+.shh{display:flex;align-items:center;justify-content:space-between}
+.shh b{font:700 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.x{width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:15px;padding:0;margin-right:-10px}
+.pr{display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid #20222A}
+.pf{width:36px;height:36px;border-radius:9px;overflow:hidden;border:1px solid #262A35;flex:none}
+.pf img{width:100%;height:100%;object-fit:cover;display:block}
+.pn{font-size:15px;color:#E6E8F0;text-decoration:none}
+.pc{margin-left:auto;font:12px 'IBM Plex Mono',monospace;color:#B1B6C7}
+.pfoot{margin:10px 0 0;font-size:12.5px;line-height:1.5;color:#959AAD}
+.ch{padding:10px 16px 0}
+.back{font-size:13px;color:#959AAD;min-height:36px;display:inline-flex;align-items:center}
+.ct{margin:0;font:700 20px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.cs{font:11px 'IBM Plex Mono',monospace;color:#6F7486;margin-top:2px}
+.lh{margin:14px 16px 0;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486;padding-bottom:6px;border-bottom:1px solid #181C26}
+.cl{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid #181C26;margin:0 16px}
+.cn{font-size:14px;color:#E6E8F0}
+.cm{font:10.5px 'IBM Plex Mono',monospace;color:#959AAD;margin-top:2px}
+.cc{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+</style>
+</helmet>
+<div style="width:1720px;min-height:2260px;box-sizing:border-box;padding:40px 32px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">A friend has a spare · phone 390 · the deck page’s Shopping and All views, the cart · new parts carry a dashed outline</span>
+    <h2 style="margin:0;font:700 24px 'Chakra Petch',sans-serif">On a phone the chip takes a third line under the row’s meta; pressing it opens a sheet</h2>
+    <p class="cap" style="max-width:1500px">The shipped phone row is two lines at 52px: the name, then pips and the EDHREC figure, with the buy tag at the right. The chip joins as a third line, 32px tall so it is a real target, and only on rows a friend has a spare of. The buy tag stays in its column on the first line.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,390px);gap:30px 32px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="ph">
+          <header class="mh"><span class="wm" aria-hidden="true"><b>99</b><span>◆◆◆</span></span><button class="mav" type="button" aria-label="Account">HH</button></header>
+          <div class="scroll">
+            <sc-if value="{{f.deck}}" hint-placeholder-val="{{true}}">
+              <div class="dh"><img src="art/rootha.png" alt=""><div><h1 class="dn">Rootha Spells</h1><div class="dsub">Rootha, Mastering the Moment · 100 of 100</div></div></div>
+              <div class="tabs" role="tablist" aria-label="Deck views"><button class="tab on" type="button" role="tab" aria-selected="true">Your deck</button><button class="tab" type="button" role="tab" aria-selected="false">Consider</button><button class="tab" type="button" role="tab" aria-selected="false">Games</button><button class="tab" type="button" role="tab" aria-selected="false">Analysis</button></div>
+              <div class="pane">
+                <div class="seg" role="radiogroup" aria-label="Show"><button class="{{f.allCls}}" type="button" role="radio">All</button><button class="{{f.shopCls}}" type="button" role="radio">Shopping · 7</button></div>
+                <p class="intro">{{f.intro}}<sc-if value="{{f.introSpare}}" hint-placeholder-val="{{false}}"> <b class="flag">{{f.introSpareText}}</b></sc-if></p>
+                <sc-for list="{{f.groups}}" as="g" hint-placeholder-count="2">
+                  <div>
+                    <div class="gh"><b>{{g.name}}</b><span>{{g.meta}}</span></div>
+                    <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+                      <div class="dr">
+                        <span class="{{r.dot}}" aria-label="{{r.dotLabel}}"></span>
+                        <div class="ln">
+                          <button class="nm" type="button">{{r.name}}</button>
+                          <span class="mt"><sc-for list="{{r.pips}}" as="p" hint-placeholder-count="1"><span class="pip" style="background:{{p.bg}}"></span></sc-for>· edhrec {{r.ed}}</span>
+                          <sc-if value="{{r.spare}}" hint-placeholder-val="{{false}}">
+                            <button class="{{r.spCls}}" type="button" aria-haspopup="dialog"><span class="spf" aria-hidden="true"><sc-for list="{{r.faces}}" as="fc" hint-placeholder-count="1"><img src="{{fc.art}}" alt=""></sc-for></span>{{r.spText}}</button>
+                          </sc-if>
+                        </div>
+                        <span class="bt"><sc-if value="{{r.buy}}" hint-placeholder-val="{{true}}"><b>buy</b>· {{r.price}}</sc-if></span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{f.cartView}}" hint-placeholder-val="{{false}}">
+              <div class="ch"><a class="back" href="#">‹ Decks</a><h1 class="ct">Shopping for all decks</h1><div class="cs">3 of 8 decks are missing cards · brews included</div></div>
+              <div class="lh">9 cards · commanders first, then most decks</div>
+              <sc-for list="{{f.cart}}" as="c" hint-placeholder-count="4">
+                <div class="cl">
+                  <div class="cc"><span class="cn">{{c.name}}</span><span class="cm">{{c.meta}}</span>
+                    <sc-if value="{{c.spare}}" hint-placeholder-val="{{false}}"><button class="spc flag" type="button" aria-haspopup="dialog"><span class="spf" aria-hidden="true"><sc-for list="{{c.faces}}" as="fc" hint-placeholder-count="1"><img src="{{fc.art}}" alt=""></sc-for></span>{{c.spText}}</button></sc-if>
+                  </div>
+                  <span class="bt"><b>buy</b>· {{c.price}}</span>
+                </div>
+              </sc-for>
+            </sc-if>
+          </div>
+          <nav class="tb" aria-label="Primary">
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span>Home</span></span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg><span>Collection</span></span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg><span>Commanders</span></span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg><span>Discover</span></span>
+            <span class="ts cur"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg><span>Decks</span></span>
+          </nav>
+          <sc-if value="{{f.sheet}}" hint-placeholder-val="{{false}}">
+            <div class="bd"></div>
+            <div class="sh" role="dialog" aria-label="Spares of Rhystic Study">
+              <div class="grab"></div>
+              <div class="shh"><b>Spares of Rhystic Study</b><button class="x" type="button" aria-label="Close">✕</button></div>
+              <div class="pr"><span class="pf"><img src="art/resume-aang.png" alt=""></span><a class="pn" href="#">Priya</a><span class="pc">2 spares</span></div>
+              <div class="pr"><span class="pf"><img src="art/hero-sokka.png" alt=""></span><a class="pn" href="#">Dave</a><span class="pc">1 spare</span></div>
+              <p class="pfoot">A spare is a copy none of their decks uses. View only: sort it out with them at the table.</p>
+            </div>
+          </sc-if>
+        </div>
+        <p class="cap">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1720,"height":2260}}'>
+class Component extends DCLogic {
+renderVals() {
+const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
+const pips = (s) => s.split('').map((k) => ({ bg: C[k] }));
+const A = { sokka: 'art/hero-sokka.png', aang: 'art/resume-aang.png', omnath: 'art/resume-omnath.png' };
+const R = (name, p, ed, price, extra) => Object.assign({ name, dot: 'dot no', dotLabel: 'not owned', pips: pips(p), ed, buy: true, price, spare: false, spCls: 'spc flag', faces: [], spText: '' }, extra || {});
+const own = (name, p, ed) => R(name, p, ed, '', { dot: 'dot own', dotLabel: 'owned', buy: false });
+const one = { spare: true, faces: [{ art: A.sokka }], spText: 'Dave has 1 spare' };
+const two = { spare: true, faces: [{ art: A.sokka }, { art: A.aang }], spText: 'Dave and Priya have spares' };
+const three = { spare: true, faces: [{ art: A.sokka }, { art: A.aang }, { art: A.omnath }], spText: '3 friends have spares' };
+const shop = (sp) => [
+{ name: 'Draw', meta: '2 · closes 8→10', rows: [R('Rhystic Study', 'U', '31%', '$38.50', sp ? Object.assign({}, two, sp.open ? { spCls: 'spc op flag' } : {}) : {}), R('Mystic Remora', 'U', '24%', '$6.20')] },
+{ name: 'Ramp', meta: '2 · closes 9→10', rows: [R('Smothering Tithe', 'W', '28%', '$14.80', sp ? one : {}), R('Arcane Signet', '', '62%', '$0.90', sp && sp.three ? three : {})] },
+{ name: 'Removal', meta: '3', rows: [R('Swords to Plowshares', 'W', '41%', '$1.80'), R('Cyclonic Rift', 'U', '33%', '$27.60')] }
+];
+const base = { deck: true, cartView: false, sheet: false, allCls: 'sg', shopCls: 'sg on', intro: '7 cards this deck wants that your collection does not have.', introSpare: false, introSpareText: '', groups: [], cart: [] };
+const F = (o) => Object.assign({}, base, o);
+const cart = [
+{ name: 'Rhystic Study', meta: '2 · Rootha Spells, Quandrix Unlimited', price: '$77.00', spare: true, faces: [{ art: A.sokka }, { art: A.aang }], spText: 'Dave and Priya have spares' },
+{ name: 'Cyclonic Rift', meta: '2 · Rootha Spells, Quandrix Unlimited', price: '$55.20', spare: false },
+{ name: 'Smothering Tithe', meta: '1 · Rootha Spells', price: '$14.80', spare: true, faces: [{ art: A.sokka }], spText: 'Dave has 1 spare' },
+{ name: 'Swords to Plowshares', meta: '1 · Captain’s Table', price: '$1.80', spare: false },
+{ name: 'Arcane Signet', meta: '1 · Captain’s Table', price: '$0.90', spare: false }
+];
+const frames = [
+F({ label: 'SP1 · Shopping · no spares shared', groups: shop(null), note: 'As S1: today’s page, exactly. Absent, never 0, never an error.' }),
+F({ label: 'SP2 · Shopping · one and several friends', groups: shop({ three: true }), introSpare: true, introSpareText: 'Friends have spares of 3.', note: 'As S2. The chip is a third line, so a row with a spare is 88px; the others stay 52px.' }),
+F({ label: 'SP3 · pressed · the sheet', groups: shop({ open: true }), introSpare: true, introSpareText: 'Friends have spares of 2.', sheet: true, note: 'The shipped bottom sheet: grab, title, ✕, a 56px row per friend (face, name to their page, count), the one-line foot. Swipe down or ✕ closes; focus returns to the chip.' }),
+F({ label: 'SP4 · All · a missing card', allCls: 'sg on', shopCls: 'sg', intro: '100 cards · 93 in your collection.', groups: [{ name: 'Draw', meta: '10', rows: [own('Brainstorm', 'U', '44%'), R('Rhystic Study', 'U', '31%', '$38.50', one), own('Ponder', 'U', '39%'), own('Preordain', 'U', '36%')] }], note: 'As S4: only missing rows carry it.' }),
+F({ label: 'SP5 · Shopping for all decks', deck: false, cartView: true, cart, note: 'As S5: the cart’s lines take the chip under the deck line; nothing in the cart moves.' }),
+F({ label: 'SP6 · the next read, after Dave stops sharing', groups: [{ name: 'Draw', meta: '2 · closes 8→10', rows: [R('Rhystic Study', 'U', '31%', '$38.50', { spare: true, faces: [{ art: A.aang }], spText: 'Priya has 2 spares' }), R('Mystic Remora', 'U', '24%', '$6.20')] }, { name: 'Ramp', meta: '2 · closes 9→10', rows: [R('Smothering Tithe', 'W', '28%', '$14.80'), R('Arcane Signet', '', '62%', '$0.90')] }], introSpare: true, introSpareText: 'Friends have spares of 1.', note: 'As S6: silent; the chip simply reads the new answer.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>

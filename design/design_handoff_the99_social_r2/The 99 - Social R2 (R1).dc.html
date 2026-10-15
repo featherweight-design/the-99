@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Social R2, the calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:13px;line-height:1.6;color:#959AAD;margin:0}
+.card{background:#12141B;border:1px solid #262A35;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:10px}
+.call{display:grid;grid-template-columns:40px 250px 1fr;gap:18px;padding:16px 0;border-top:1px solid #181C26}
+.n{font:600 22px 'Chakra Petch',sans-serif;color:#FF4D9A}
+.q{font-size:14px;font-weight:600;color:#E6E8F0;line-height:1.45}
+.a{font-size:13.5px;line-height:1.6;color:#B1B6C7;margin:0}
+.li{font-size:13px;line-height:1.55;color:#B1B6C7;margin:0;padding-left:16px;position:relative}
+.li:before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:#343843}
+.g{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:10px 0;border-top:1px solid #181C26}
+.gid{font:600 12px 'IBM Plex Mono',monospace;color:#E0913C}
+.gid.h{color:#FF4D9A}
+.gid.nt{color:#6F7486}
+.strip{display:flex;gap:10px;align-items:flex-end}
+.tc{position:relative;width:118px;height:82px;border-radius:10px;overflow:hidden;border:1px solid #262A35;transform:rotate(var(--r))}
+.tc img{width:100%;height:100%;object-fit:cover;display:block}
+.stamp{position:absolute;right:6px;bottom:6px;padding:2px 7px;border:1.5px solid #6FA368;border-radius:4px;color:#6FA368;background:rgba(14,15,20,.82);font:700 11px 'Chakra Petch',sans-serif;letter-spacing:.16em;transform:rotate(-8deg)}
+</style>
+</helmet>
+<div style="width:1600px;min-height:2140px;box-sizing:border-box;padding:48px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:1020px">
+      <span class="k">Social line · round 2 of 3 · R1 · SOCIAL_WISHLIST_ENABLED, and spares under SOCIAL_FRIENDS_ENABLED · phone and desktop · 2026-10-15</span>
+      <h1 style="margin:0;font:700 34px 'Chakra Petch',sans-serif;line-height:1.15">The wishlist is a page of its own; a friend’s spare is a face under the card you’re short of</h1>
+      <p class="cap" style="font-size:14.5px;color:#B1B6C7">Your wishlist lives at <b style="color:#E6E8F0">/wishlist</b>, one row under Friends in the account menu, and works with no friends at all. A card gets on it from one place, <b style="color:#E6E8F0">Want it</b> in card details’ footer, which every card in the app opens to, plus the page’s own search. Lines are art rows with a want stepper; when your collection holds enough, the line takes a GOT stamp and moves to Got, where it stays until you clear it. A friend’s page (their row on /friends) shows their wishlist, view only. And where a deck is short of a card, a friend who shares spares with your pod shows as a small chip with their face: <b style="color:#E6E8F0">Dave has 1 spare</b>. Pressing it names who, and how many. Nothing is bought, borrowed or priced.</p>
+    </div>
+    <div class="strip" aria-hidden="true">
+      <div class="tc" style="--r:-3deg"><img src="art/zimone.png" alt=""></div>
+      <div class="tc" style="--r:2deg"><img src="art/sai.png" alt=""><span class="stamp">GOT</span></div>
+      <div class="tc" style="--r:-1deg"><img src="art/rootha.png" alt=""></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 470px;gap:28px;align-items:start">
+    <div class="card">
+      <span class="k">The five open calls (brief §R2 Open, as Hugh listed them), answered</span>
+      <sc-for list="{{calls}}" as="c" hint-placeholder-count="5">
+        <div class="call"><span class="n">{{c.n}}</span><span class="q">{{c.q}}</span><p class="a">{{c.a}}</p></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card">
+        <span class="k">Locks, held as drawn</span>
+        <sc-for list="{{locks}}" as="l" hint-placeholder-count="7"><p class="li">{{l}}</p></sc-for>
+      </div>
+      <div class="card">
+        <span class="k">Boards on this canvas</span>
+        <sc-for list="{{boards}}" as="b" hint-placeholder-count="4"><p class="li"><b style="color:#E6E8F0;font-weight:600">{{b.n}}</b> · {{b.d}}</p></sc-for>
+      </div>
+      <div class="card">
+        <span class="k">About the pictures</span>
+        <p class="cap">Every board is drawn over the shipped pages in the Kamigawa theme: the rail or the phone shell, the account menu, card details, the deck page’s Your deck tab with its All and Shopping views, and Shopping for all decks. Round 1’s friend faces, rows and pods are reused as they were approved and not redrawn. The canvas cannot load Scryfall, so card and commander art are the twelve crops already in the design folder (Round 1’s and Round 3’s art/). Names, counts and prices are placeholders.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="k">Gaps for engineering and Hugh (G1–G12; also in README.md)</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:40px">
+      <sc-for list="{{gaps}}" as="g" hint-placeholder-count="10">
+        <div class="g"><span class="{{g.cls}}">{{g.id}}</span><p class="a">{{g.t}}</p></div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":2140}}'>
+class Component extends DCLogic {
+renderVals() {
+const calls = [
+{ n: '01', q: 'Where your wishlist lives', a: 'One route, /wishlist, reached by a Wishlist row in the account menu: under Friends, or under About when friends are off. Not a sixth nav item, for Round 1’s reasons (the tab bar is full, and the five daily surfaces stay five). The page is a head with the count, an Add a card search, then two groups: Wanted (newest first) and Got. Friends on and at least one friend: one line under the head says friends can see the list and never what you own. Friends off: that line, every spare chip and every friend page are simply absent, and the page is complete without them.' },
+{ n: '02', q: 'How a card gets on it: card details, search, Shopping', a: 'One control, in one place: Want it, in card details’ footer beside the Mana Pool link. Every card in the app already opens card details, so search results, Collection, Discover, Commanders, a deck and Shopping all reach it the same way, with no new button on any row. The page’s own Add a card search is the second door, for a card you haven’t met in the app yet. A new line starts at one more than you own (own 1, want 2), so it is never GOT the moment it lands. Once on, the control becomes the line’s stepper, 1 to 99, with ✕ to take it off.' },
+{ n: '03', q: 'The GOT state and clearing it', a: 'GOT is worked out on every read. A got line takes a GOT stamp across the corner of its art, its have line turns green (have 2 of 2), and it moves from Wanted to Got, where it stays until you clear it. ✕ clears one line, at once, no confirm (adding it back is one press). The Got head carries Clear got, which clears every got line and says so in the receipt band. Raising a got line’s want moves it back to Wanted. Partly owned reads have 1 of 3 with a three-pip meter.' },
+{ n: '04', q: 'A friend’s wishlist, from their profile', a: 'A friend row on /friends gains a › and opens /friends/[id], the friend’s page: their commander art as a banner, their face, name and since date, the row’s same … menu, and their wishlist, view only. Each line shows the card, wants N and GOT, never an owned count. No stepper, no ✕, no share toggle (Q7: always visible). A card opens card details as usual, in your own context. A former friend, a stranger or a forged id reads nothing and gets one card: This person isn’t on your friends list.' },
+{ n: '05', q: '“A friend has a spare”: missing cards, Shopping, and what pressing shows', a: 'A chip under the card’s name with the friend’s face: Dave has 1 spare; Dave and Priya have spares; 3 friends have spares (faces stacked). It sits with the name, never in the price or buy column, in neutral ink (not the accent, which means owned, and not the warning, which means buy), so it never reads as a buy option or moves a figure. Pressing opens a popover (desktop) or sheet (phone): each friend’s face, name (to their page) and count, then View only. Sort it out with them at the table. Drawn on the deck page’s missing rows in All and Shopping, the cart’s lines, and your wishlist’s wanted lines; Shopping’s intro adds Friends have spares of 3. None shared, a read that failed, or a grant gone: the chip is absent, never 0 and never an error.' }
+];
+const locks = [
+'Card level, any printing: lines name the card, never a set; one line per card.',
+'Wanted is the count in all; GOT is owned ≥ wanted, worked out on every read, and stays until cleared.',
+'The wishlist works with friends off: its own switch, its own menu row, nothing missing when friends are absent.',
+'A friend’s wishlist is always visible to them, no toggle; it shows the card, wants N and GOT, never your owned count.',
+'Spares are view-only, per pod, and name the friend: a chip and a list, no ask, no borrow, no cart change, no price moved.',
+'A spare is a copy no deck of theirs uses, drafts included: the chip quotes the read’s count and nothing else.',
+'No model calls; no About entry (batched at launch); Round 1’s friends, pods and faces are reused, not redrawn.'
+];
+const boards = [
+{ n: 'Wishlist · Desktop / Phone', d: 'empty (friends off, then on), one line, many with GOT and spares, Clear got, a ✕, the search adding' },
+{ n: 'Add · Desktop / Phone', d: 'the account menu row; card details’ footer: Want it, wanted, got, opened from Shopping' },
+{ n: 'Friend · Desktop / Phone', d: 'the friend row’s ›, their page with an empty and a full wishlist, GOT lines, no longer a friend' },
+{ n: 'Spares · Desktop / Phone', d: 'no spares, one friend, several, the popover and sheet, Shopping, the cart, gone on the next read' }
+];
+const gaps = [
+{ id: 'G1', cls: 'gid', t: 'Engineering: wishlist reads return oracle ids; the page needs each card’s name and art crop joined from the catalog (the rows draw art).' },
+{ id: 'G2', cls: 'gid', t: 'Engineering: /friends/[publicId] needs one friend’s name, since and commander by public id, joined to the viewer’s friendship (listFriends filtered will do).' },
+{ id: 'G3', cls: 'gid', t: 'Engineering: spare chips load after the page, uncached, for the missing cards’ oracle ids only, and degrade to absent. A cached page that draws them owes friendGeneration and each friend’s switches in its key (AGENTS.md).' },
+{ id: 'G4', cls: 'gid', t: 'Engineering: Want it’s first press writes owned + 1 (capped 99); setWishlistQuantity already takes the count. The details sheet needs the line’s current want and owned.' },
+{ id: 'G5', cls: 'gid h', t: 'Hugh: the wishlist is reached from the account menu only. A Wishlist link on Shopping for all decks’ head would also fit “beside Shopping”; not drawn, to keep one way in.' },
+{ id: 'G6', cls: 'gid h', t: 'Hugh: the phone’s half-snap teaser has no Want it; it is in All details only, so the teaser stays as shipped. One more tap on a phone.' },
+{ id: 'G7', cls: 'gid h', t: 'Hugh: card details shows no spare line this round. The chip lives on rows, where you are short of the card; the brief listed details as a candidate.' },
+{ id: 'G8', cls: 'gid nt', t: 'Note: GOT counts every copy your collection holds, copies your decks use included (the locked definition). A card you own in a deck counts toward got.' },
+{ id: 'G9', cls: 'gid', t: 'Engineering: the friend row’s › and the row-as-link appear only with the wishlist switch on; with it off Round 1’s row is unchanged.' },
+{ id: 'G10', cls: 'gid', t: 'Engineering: commander image focus (Round 3’s G9) applies to every face drawn here: chips, the popover and the friend banner.' },
+{ id: 'G11', cls: 'gid nt', t: 'Note: art is the design folder’s twelve crops; names, counts and prices are placeholders. Staging holds zero wishlist rows.' },
+{ id: 'G12', cls: 'gid nt', t: 'Note: every new string is in social-r2 · copy strings.ts for /copy-review.' }
+];
+return { calls, locks, boards, gaps };
+}
+}
+</script>
+</body>
+</html>
