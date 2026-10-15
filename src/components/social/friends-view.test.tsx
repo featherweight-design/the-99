@@ -396,6 +396,13 @@ describe("friend links", () => {
     expect(screen.getByText("Under a day left").className).toContain("--warning");
   });
 
+  it("dates a link made after a redraw against that redraw's clock, not the first load's", () => {
+    const { rerender } = draw();
+    const later = new Date(NOW.getTime() + 13 * 3_600_000);
+    rerender(view({ nowMs: later.getTime(), links: [link(1, new Date(later.getTime() + 7 * 86_400_000))] }));
+    expect(screen.getByText("7 days left")).toBeTruthy();
+  });
+
   it("revokes at once, with no confirm, and the row leaves", async () => {
     draw({ links: [link(1)] });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Revoke the link made/ })));

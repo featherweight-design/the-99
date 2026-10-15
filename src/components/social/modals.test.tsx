@@ -285,6 +285,8 @@ describe("AddFriendDialog", () => {
     fireEvent.click(await screen.findByRole("button", { name: d.share }));
     expect(share).toHaveBeenCalledWith({ url: URL_, text: d.shareText });
     expect(screen.getByText(d.soon, { exact: false }).className).toContain("--warning");
+    // Share is drawn at phone only, so Copy link is still the filled press at desktop.
+    expect(screen.getByRole("button", { name: d.copy }).className).toContain("md:bg-[color:var(--accent)]");
     delete (navigator as { share?: unknown }).share;
   });
 });

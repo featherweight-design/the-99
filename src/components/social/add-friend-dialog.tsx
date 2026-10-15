@@ -60,11 +60,13 @@ export function AddFriendDialog({
   }
 
   const soon = underADay(expiresAt, now);
+  // `lead`: Copy is the filled press at every width. Otherwise Share leads at phone, and Copy still leads at
+  // desktop, where Share is never drawn.
   const copyButton = (lead: boolean) => (
     <button
       type="button"
       onClick={copy}
-      className={`flex-none cursor-pointer rounded-[8px] font-sans font-semibold ${copied ? "bg-[color:var(--elevated)] text-[color:var(--success)] [border:1px_solid_var(--border-strong)]" : lead ? "border-0 bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"} ${canShare ? "h-[48px] w-full text-[15px] max-md:font-medium md:h-[40px] md:w-auto md:rounded-[6px] md:px-[16px] md:text-[13px]" : "h-[44px] px-[14px] text-[13px] md:h-[40px] md:rounded-[6px] md:px-[16px]"}`}
+      className={`flex-none cursor-pointer rounded-[8px] font-sans font-semibold ${copied ? "bg-[color:var(--elevated)] text-[color:var(--success)] [border:1px_solid_var(--border-strong)]" : lead ? "border-0 bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] md:bg-[color:var(--accent)] md:text-[color:var(--bg)] md:[border:0]"} ${canShare ? "h-[48px] w-full text-[15px] max-md:font-medium md:h-[40px] md:w-auto md:rounded-[6px] md:px-[16px] md:text-[13px]" : "h-[44px] px-[14px] text-[13px] md:h-[40px] md:rounded-[6px] md:px-[16px]"}`}
     >
       {copied ? d.copied : d.copy}
     </button>

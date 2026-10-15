@@ -8,7 +8,7 @@
 // they take it, during render (never in an effect, or the old value paints once first). A press's optimistic value
 // stands only until that redraw lands, or its own write answers.
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ProfileCommander } from "../../lib/social/commander";
 import type { Friend } from "../../lib/social/access";
 import type { OpenInvite, OwnProfile } from "../../lib/social/friends";
@@ -86,7 +86,8 @@ export function FriendsView({
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
   const timeZone = hydrated ? undefined : "UTC";
-  const [now] = useState(() => new Date(nowMs));
+  // From the server's latest draw, so a link made after a redraw is dated against that draw's clock.
+  const now = useMemo(() => new Date(nowMs), [nowMs]);
 
   const [name, setName] = useState(profile.displayName);
   const [commander, setCommander] = useState(profile.commander);
