@@ -1,6 +1,6 @@
 {
   "feature": "The two-line card row (foil addendum R3), the glint under the dot, and the Shopping key",
-  "note": "PR 2 of the foil mark (plan `2026-10-15-foil-mark.md`). The card row is two lines from md in All and from lg in Shopping, and option B below md in Shopping (Hugh made B the row for everyone, 2026-10-15; the phone All row and Shopping from md to lg are the shipped rows). Photographed at 390, 900 and 1300, because 900 is the one width where All is two-line and Shopping is not.\\n\\nPRECONDITION: the sheet account must own a foil card in the deck (`FOIL_CARD`, set to every-copy-foil on a scratch branch) or no glint is drawn and the sheet reads as coverage; `OVER_CARD` must be priced over the deck's limit for the over-limit row. A scratch branch of local-dev is the right database (set the finish on the scratch copy only). The first cell of a run lands on the Welcome page (the About gate marks itself seen on that visit); the first row's two throwaway visits absorb it.",
+  "note": "PR 2 of the foil mark (plan `2026-10-15-foil-mark.md`). The card row is two lines from md in All and from lg in Shopping, and option B below md in Shopping (Hugh made B the row for everyone, 2026-10-15; the phone All row and Shopping from md to lg are the shipped rows). Photographed at 390, 900 and 1300, because 900 is the one width where All is two-line and Shopping is not.\\n\\nPRECONDITION: the sheet account must own a foil card in the deck (`FOIL_CARD`, set to every-copy-foil on a scratch branch) or no glint is drawn and the sheet reads as coverage; The deck must hold a card priced over its limit: the Shopping cell scrolls to a row carrying the stand-ins press, so it fails when none exists. A scratch branch of local-dev is the right database (set the finish on the scratch copy only). The first cell of a run lands on the Welcome page (the About gate marks itself seen on that visit); the first row's two throwaway visits absorb it.",
   "widths": [
     {
       "label": "phone",
@@ -102,7 +102,7 @@
           "settle": 1200
         },
         {
-          "scrollTo": "[data-decklist-row]",
+          "scrollTo": "[data-decklist-row]:has(button[aria-label^='Cheaper stand-ins for'])",
           "settle": 400
         }
       ]
