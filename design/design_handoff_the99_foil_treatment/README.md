@@ -220,10 +220,10 @@ Card details, the zoom, the hover preview and the peeks carry R1's film over a f
 faces (the details face and the zoom card) the film is R1's, at 80% strength and spread 1.5 times wider. **Every card**
 in details and the zoom tilts up to 6° toward where you point (Hugh, 2026-10-15: subtle tilt, yes; smoothed against
 his reference app the same day): the side under the pointer lifts toward you, a hairline of card edge shows on that
-same side, and a soft light sits under the pointer. On a foil card the film drifts with it. Three registered, transitioned
-values drive all of it, so it glides rather than steps. Desktop tilts on hover. A phone tilts once you press
-and hold the card for 300ms and then move your finger, so a quick drag still pages and moves the sheet; the zoom, which
-has no swipe, tilts on any press and move. During a flip the tilt eases flat and waits. The mid-size views (the hover
+same side, and a soft light sits under the pointer. On a foil card the film drifts with it. Three registered values drive all of it,
+so it all moves as one: they ease in for 300ms, then follow the pointer frame by frame (the lag fix, 2026-10-15). Desktop tilts on hover. A phone tilts once you press
+and hold the card for 300ms and then move your finger, so a quick drag still pages and moves the sheet; in the zoom, which
+has no swipe, a touch tilts on any press and move (a mouse or a pen tilts it on hover, as in details). During a flip the tilt eases flat and waits. The mid-size views (the hover
 preview, the phone peek, the desktop neighbour plate) keep R1's tile film, still, with no tilt. The face itself is drawn
 exactly as today and never waits: only the film carries an arrival mark.
 
@@ -231,7 +231,7 @@ exactly as today and never waits: only the film carries an arrival mark.
 
 1. **Intensity at size.** R1’s film, at 80% strength and spread one and a half times wider. Same stops and colours, so a tile and its details read as one material. The wider spread keeps a 264 to 372px face from reading as stripes, and the lower strength keeps pale art from washing out.
 2. **Motion at size.** The film follows the tilt: it slides toward the pointer or finger, up to a quarter of the card’s width each way, and a soft light follows with it. Keyboard focus plays R1’s one 640ms sweep instead. Nothing loops.
-3. **Tilt (Hugh, 2026-10-15: yes, subtle; smoothed against his reference app).** Every card in details and the zoom tilts up to 6° toward where you point: the side under the pointer lifts toward you, and a hairline of card edge shows on that same side, as a card does in hand. The perspective does most of the work; the edge is barely there. A soft light sits under the pointer. One set of eased values drives the tilt, the edge, the light and the film, so they move as one and never step. During a flip the tilt settles flat and waits.
+3. **Tilt (Hugh, 2026-10-15: yes, subtle; smoothed against his reference app).** Every card in details and the zoom tilts up to 6° toward where you point: the side under the pointer lifts toward you, and a hairline of card edge shows on that same side, as a card does in hand. The perspective does most of the work; the edge is barely there. A soft light sits under the pointer. One set of values drives the tilt, the edge, the light and the film, so they move as one: eased on the way in and out, and following the pointer once the card has lifted (the lag fix, 2026-10-15). During a flip the tilt settles flat and waits.
 4. **The phone.** Press and hold the card, then move your finger: it tilts the same way. A drag on the card already pages or moves the sheet, so the tilt waits for a 300ms hold inside the 10px swipe slop, then the swipe stands down. In the zoom, which has no swipe, a press and move tilts at once, and a tap still closes. Plus R1’s one band when a card lands. Device tilt stays out (permission prompt).
 5. **Arrival on a background face.** The face never waits; only the film does. One preloaded Image marks the FILM span (the arming ArtLayer already uses). Cached art, which covers most opens, is marked done and the film is there at once. A cold open fades the film in over 300ms when the bytes land.
 6. **Precons in details.** Details keeps the card’s own resolution. Showing the box’s printing changes what details names, which is more than a cosmetic round should move. If you own the Collector’s Edition, your MSC copies resolve and carry the film anyway.

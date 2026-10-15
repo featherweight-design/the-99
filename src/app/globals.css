@@ -1160,7 +1160,8 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 
 /* The tilt (foil handoff R2, PR 2), on every card in details and the zoom. The host sits OUTSIDE the box that turns and
    inside any box an entry or paging animation moves (audit G1, G2). JS writes the target values inline (`card-tilt.ts`);
-   registered, they interpolate, so the rotation, the edge, the light and the film all ease together. */
+   registered, they interpolate, so the rotation, the edge, the light and the film all move together: eased on the way in
+   and out, and following the pointer frame by frame once the lift has settled (`data-tilt-follow`, below). */
 @property --tilt-x { syntax: "<number>"; inherits: true; initial-value: .5; }
 @property --tilt-y { syntax: "<number>"; inherits: true; initial-value: .5; }
 @property --tilt-lift { syntax: "<number>"; inherits: true; initial-value: 0; }
