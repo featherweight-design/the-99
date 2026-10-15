@@ -116,8 +116,10 @@ def main():
     dropped["ref_fallback_used"] = fallback
     printings = {k: v for k, v in printings.items() if v["oracle_id"] in oracles}
     dump_json(OUT / "catalog.json", {"oracles": oracles, "printings": printings, "dropped": dropped})
-    ills = {(p["oracle_id"], p["ill"]) for p in printings.values()}
-    print(f"oracles {len(oracles)}  paper printings {len(printings)}  distinct (oracle, illustration) {len(ills)}")
+    ills = {(p["oracle_id"], p["ill"]) for p in printings.values() if p["ill"] is not None}
+    unknown = sum(1 for p in printings.values() if p["ill"] is None)
+    print(f"oracles {len(oracles)}  paper printings {len(printings)}  distinct (oracle, illustration) {len(ills)}"
+          f"  printings with no illustration id {unknown}")
     print("dropped", dropped)
 
 

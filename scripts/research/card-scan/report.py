@@ -38,6 +38,16 @@ def main():
     sets = load_json(OUT / "sets.json")
     qs = sets["queries"]
     oracles, pr = cat["oracles"], cat["printings"]
+    # The art fields are re-derived here, not read from sets.json: the cached sets.json was planned
+    # when a missing illustration id compared equal to another missing one, and a None query id
+    # read as "not indexed". Unknown (either id missing) is None, reported as its own row.
+    multi_ills = {(g["oracle_id"], pr[g["sid"]]["ill"]) for g in sets["multi"] if pr[g["sid"]]["ill"] is not None}
+    for c in qs:
+        if not c["query"]:
+            continue
+        qp, refp = pr[c["query"]], pr[oracles[c["oracle_id"]]["ref"]]
+        c["same_art_as_ref"] = None if qp["ill"] is None or refp["ill"] is None else qp["ill"] == refp["ill"]
+        c["query_art_in_multi"] = None if qp["ill"] is None else (c["oracle_id"], qp["ill"]) in multi_ills
     rows = [json.loads(line) for line in open(OUT / "results.jsonl")]
     neg = [r for r in rows if r["kind"] == "negative"]
     rows = [r for r in rows if r["kind"] != "negative"]
@@ -270,7 +280,8 @@ def main():
         print("|---|---|---|---|---|---|---|---|")
         groups = defaultdict(list)
         for r in sel:
-            groups[str(qs[r["qi"]][field])].append(r)
+            v = qs[r["qi"]][field]
+            groups["unknown" if v is None else str(v)].append(r)
         for g in sorted(groups):
             a = groups[g]
             print(f"| {g} | {len(a)} | {pct([detected(r) for r in a])} | {crop(a, 'dhv32/single')} | {pct([e2e(r, 'dhv32/single') for r in a])} | "
@@ -323,7 +334,7 @@ def main():
                 mode = "wrong oracle shares the SAME illustration"
             elif oracles[top]["name"].split(" //")[0] == oracles[t]["name"].split(" //")[0]:
                 mode = "same name, different oracle"
-            elif not q["same_art_as_ref"] and "single" in key:
+            elif q["same_art_as_ref"] is False and "single" in key:
                 mode = "query art differs from the indexed reference's art"
             elif qp["artist"] is not None and qp["artist"] in artists[top]:
                 mode = "same artist, different art"

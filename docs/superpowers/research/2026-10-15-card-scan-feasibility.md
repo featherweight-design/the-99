@@ -314,7 +314,8 @@ point.
 | double-faced (front) | 458 | 73.6 | 18.8 | 20.5 | 59.4 |
 | split / adventure | 446 | 62.8 | 24.4 | 20.0 | 46.9 |
 | same art as the reference | 2,284 | 79.9 | 20.7 | 26.0 | 60.8 |
-| different art from the reference | 2,900 | 56.9 | 2.3 | 18.3 | 45.7 |
+| different art from the reference | 2,898 | 56.9 | 2.3 | 18.4 | 45.7 |
+| art unknown (no illustration id) | 2 | 50.0 | 0.0 | 0.0 | 50.0 |
 | released after the embedder was trained (2026-05-21) | 510 | 37.6 | 5.5 | 8.4 | 27.1 |
 | printing among the embedder's training classes | 1,036 | 72.4 | 8.5 | 21.7 | 55.4 |
 | printing not among them | 4,148 | 65.7 | 10.9 | 21.7 | 51.6 |
@@ -328,7 +329,7 @@ held out (21.7 both).
 From the realistic mix, cross-printing. All of the examples are real rows of the run.
 
 1. **The index has a different printing from the one scanned (the main failure).** With one
-   reference per oracle, 2,806 of 4,537 wrong answers are scans whose art differs from the
+   reference per oracle, 2,804 of 4,537 wrong answers are scans whose art differs from the
    reference's. Examples: Eldrazi Monument [SLD 603, borderless] → Grim Lavamancer; Meteor
    Crater [EOS 26, borderless] → Mortus Strider; Quest for Renewal [SLD 2405] → Haughty Djinn.
    The fix is to index every printing; this is the ManaBox-style bundle.
@@ -343,9 +344,20 @@ From the realistic mix, cross-printing. All of the examples are real rows of the
    oracle sharing the true card's illustration. An earlier version of this report counted one, The
    Colossal Dreadmaw [UNK RG06b] → Dockbreacher: both are playtest printings with no illustration
    id in Scryfall's data, and the report treated the two missing ids as equal. 549 of the
-   catalog's 102,571 printings have no illustration id and 550 no artist; an unknown now matches
-   nothing, so that row moved to "art differs" (single, 2,805 → 2,806) or "other" (held out,
-   3,483 → 3,484 and 2,257 → 2,258). No other figure moved.
+   catalog's 102,571 printings have no illustration id and 550 no artist. An unknown now matches
+   nothing and claims nothing: two missing ids are neither the same art nor different art. Its two
+   frames (one query, two renders) now read as art unknown, in the strata and in the failure modes,
+   so single-gallery "art differs" moves 2,806 → 2,804 and "other" 1,714 → 1,716; the held-out
+   "other" counts (3,484 and 2,258) do not move. The strata moved by those two frames:
+   different art from the reference 2,900 → 2,898 (held out 18.3 → 18.4), query art not in the
+   multi gallery 1,702 → 1,700. The query
+   itself stays in the `different_art` sampling stratum it was drawn from, since the run's sample
+   is fixed; `plan_sets.py` no longer puts a printing with an unknown id in that stratum. The
+   multi gallery the run used also grouped every printing with no illustration id under one key,
+   so 14 printings of 5 oracles (none of them queried) were left out of it as if they repeated an
+   indexed illustration; `plan_sets.py` now keeps each such printing as its own group. Only
+   distractors are missing (14, beside the gallery's 49,492), and the multi figures are from the
+   run as made.
    The Universes Beyond and Secret Lair renames are the SAME oracle with a `flavor_name`, so for
    card-level identification they are not confusions at all. They fail on art instead: flavor-name
    printings scored 0.2% single and 7.1% held out.
@@ -854,13 +866,15 @@ Embedder class map: 82110 printings; catalog paper printings among them: 20703 o
 
 | same_art_as_ref | n | detected | single crop | single e2e | all_heldout crop | all_heldout e2e | all (own present) e2e |
 |---|---|---|---|---|---|---|---|
-| False | 2900 | 56.9 | 3.2 | 2.3 | 26.6 | 18.3 | 45.7 |
+| False | 2898 | 56.9 | 3.2 | 2.3 | 26.6 | 18.4 | 45.7 |
 | True | 2284 | 79.9 | 24.2 | 20.7 | 30.3 | 26.0 | 60.8 |
+| unknown | 2 | 50.0 | 0.0 | 0.0 | 0.0 | 0.0 | 50.0 |
 
 | query_art_in_multi | n | detected | single crop | single e2e | all_heldout crop | all_heldout e2e | all (own present) e2e |
 |---|---|---|---|---|---|---|---|
-| False | 1702 | 49.3 | 4.0 | 2.8 | 9.6 | 4.8 | 39.4 |
+| False | 1700 | 49.3 | 4.0 | 2.8 | 9.6 | 4.8 | 39.4 |
 | True | 3482 | 75.7 | 16.6 | 14.1 | 37.2 | 30.0 | 58.7 |
+| unknown | 2 | 50.0 | 0.0 | 0.0 | 0.0 | 0.0 | 50.0 |
 
 | stratum | n | detected | single crop | single e2e | all_heldout crop | all_heldout e2e | all (own present) e2e |
 |---|---|---|---|---|---|---|---|
@@ -898,7 +912,7 @@ Embedder class map: 82110 printings; catalog paper printings among them: 20703 o
 
 ### Failure modes: realistic, cross-printing, SINGLE gallery, perfect crop
 
-- **query art differs from the indexed reference's art**: 2806 of 4537
+- **query art differs from the indexed reference's art**: 2804 of 4537
   - Eldrazi Monument [sld 603, borderless] -> Grim Lavamancer (truth rank >5)
   - Eldrazi Monument [sld 603, borderless] -> Corpse Dance (truth rank >5)
   - Zurgo and Ojutai [mom 319, showcase] -> Gerrard's Hourglass Pendant (truth rank 5)
@@ -907,15 +921,15 @@ Embedder class map: 82110 printings; catalog paper printings among them: 20703 o
   - Quest for Renewal [sld 2405, borderless] -> Haughty Djinn (truth rank >5)
   - Quest for Renewal [sld 2405, borderless] -> Arguel's Blood Fast // Temple of Aclazotz (truth rank >5)
   - Furycalm Snarl [moc 404, m15] -> Seraph of the Masses (truth rank >5)
-- **other**: 1714 of 4537
+- **other**: 1716 of 4537
+  - The Colossal Dreadmaw [unk RG06b, m15] -> Dockbreacher (truth rank >5)
+  - The Colossal Dreadmaw [unk RG06b, m15] -> Abomination of Gudul (truth rank >5)
   - Wastes [tsr 410, retro_frame_reprint] -> Thermokarst (truth rank >5)
   - Wastes [tsr 410, retro_frame_reprint] -> Howling Gale (truth rank >5)
   - Plargg, Dean of Chaos // Augusta, Dean of Order [stx 328, extended_art] -> Trivia Contest (truth rank 3)
   - Plargg, Dean of Chaos // Augusta, Dean of Order [stx 328, extended_art] -> Wei Night Raiders (truth rank >5)
   - Brisela, Voice of Nightmares [v17 5b, m15] -> Tasigur's Cruelty (truth rank >5)
   - Duskwatch Recruiter // Krallenhorde Howler [soi 203, m15] -> Sawtooth Ogre (truth rank >5)
-  - Duskwatch Recruiter // Krallenhorde Howler [soi 203, m15] -> Bloodfire Enforcers (truth rank >5)
-  - Brutal Cathar // Moonrage Brute [pmid 7s, m15] -> Wall of Nets (truth rank >5)
 - **same artist, different art**: 17 of 4537
   - Garruk Relentless // Garruk, the Veil-Cursed [plst ISD-181, modern_2003] -> Cataclysm (truth rank >5)
   - Kazandu Mammoth // Kazandu Valley [pznr 189s, m15] -> Chaos Dragon (truth rank >5)

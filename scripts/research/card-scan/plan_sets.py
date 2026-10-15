@@ -4,7 +4,8 @@ Galleries (all three cover EVERY oracle in the catalog, so the distractor set is
   single  one image per oracle: the reference printing's front (see build_catalog.py), plus its
           back face for a double-faced layout, both labelled with the oracle.
   multi   one printing per distinct (oracle, illustration_id): the reference for its own
-          illustration, otherwise the newest non-promo paper printing of that illustration.
+          illustration, otherwise the newest non-promo paper printing of that illustration. A
+          printing with no illustration id is its own group: an unknown is shared with nothing.
           A sampled oracle's QUERY printing is never in it: when it is the only printing of its
           illustration, that illustration is left out for this run, so every cross-printing
           query is a printing the index has never seen.
@@ -56,6 +57,19 @@ def era(p) -> str:
     return "pre2003" if y < "2003" else "2003-2014" if y < "2015" else "2015-2019" if y < "2020" else "2020+"
 
 
+def art_key(sid, p):
+    """The key printings share only when they share artwork. Scryfall gives some printings no
+    illustration id; an unknown is not a shared key, so such a printing is its own group."""
+    return ("ill", p["ill"]) if p["ill"] is not None else ("printing", sid)
+
+
+def same_art(a, b):
+    """True or False when both illustration ids are known, None (unknown) otherwise."""
+    if a["ill"] is None or b["ill"] is None:
+        return None
+    return a["ill"] == b["ill"]
+
+
 def layout_group(o) -> str:
     if o["layout"] in DFC:
         return "dfc"
@@ -86,7 +100,7 @@ def main():
             pools["t:" + treatment(printings[s])].append((oid, s))
             if lg != "single_face":
                 pools["l:" + lg].append((oid, s))
-            if printings[s]["ill"] != printings[o["ref"]]["ill"]:
+            if same_art(printings[s], printings[o["ref"]]) is False:
                 pools["different_art"].append((oid, s))
     chosen, used = [], set()
     for stratum in sorted(pools):
@@ -117,8 +131,8 @@ def main():
         for s in by_oracle[oid]:
             if s in query_sids:
                 continue
-            groups[printings[s]["ill"]].append(s)
-        for ill, sids in groups.items():
+            groups[art_key(s, printings[s])].append(s)
+        for sids in groups.values():
             if o["ref"] in sids:
                 pick = o["ref"]
             else:
@@ -134,7 +148,8 @@ def main():
         every.append({"sid": sid, "face": "front", "oracle_id": p["oracle_id"]})
         if oracles[p["oracle_id"]]["layout"] in DFC and p["back_img"]:
             every.append({"sid": sid, "face": "back", "oracle_id": p["oracle_id"]})
-    multi_ills = {(g["oracle_id"], printings[g["sid"]]["ill"]) for g in multi}
+    # only known illustration ids: an unknown on the query side is reported unknown, never "indexed"
+    multi_ills = {(g["oracle_id"], printings[g["sid"]]["ill"]) for g in multi if printings[g["sid"]]["ill"] is not None}
     for c in chosen:
         o = oracles[c["oracle_id"]]
         q = printings[c["query"]] if c["query"] else None
@@ -142,8 +157,9 @@ def main():
             "name": o["name"], "layout_group": layout_group(o),
             "treatment": treatment(q) if q else treatment(printings[o["ref"]]),
             "era": era(q) if q else era(printings[o["ref"]]),
-            "same_art_as_ref": (q["ill"] == printings[o["ref"]]["ill"]) if q else True,
-            "query_art_in_multi": ((c["oracle_id"], q["ill"]) in multi_ills) if q else True,
+            # None = unknown: either illustration id is missing, so neither claim is made
+            "same_art_as_ref": same_art(q, printings[o["ref"]]) if q else True,
+            "query_art_in_multi": (None if q["ill"] is None else (c["oracle_id"], q["ill"]) in multi_ills) if q else True,
         })
     dump_json(OUT / "sets.json", {"queries": chosen, "single": single, "multi": multi, "all": every, "seed": SEED})
     print("query oracles", len(chosen), "cross-printing", len(query_sids),
