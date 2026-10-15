@@ -93,7 +93,7 @@ differently and is not comparable (staging: the July and September-2 uploads).
 An upload is not a hand change: the Replace warning counts `add`, `edit` and `revert` entries after the last confirmed
 upload's own entry (`editsSinceUpload`, `src/lib/collection/history.ts:47`). **That count was entries, not holdings** (one
 precon add was one "change" and 97 holdings; Hugh's "8 changes" was 8 entries). Since the net-count fix it is holdings: a holding counts
-once, and only when it now differs from how the upload left it (`netHandChanges`), so an add and its revert are none.
+once, and only when it now differs from how the upload left it (`netHandChanges`), so an add and its revert are none (exact while the entries still carry their rows, which they do inside the retention window the warning quotes a figure for).
 
 **The base can be rebuilt, per holding.** The collection immediately after the last upload is: today's collection, with
 each holding any later hand entry touched set back to its **earliest `before`** among those entries. A holding no hand

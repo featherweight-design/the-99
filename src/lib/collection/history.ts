@@ -52,7 +52,9 @@ const sameState = (a: HistoryRowState | null, b: HistoryRowState | null): boolea
  * an edit and its undo, leave nothing. Counting entries instead told a player whose precon add and its
  * revert had cancelled that Replace would overwrite four changes while Sync, which compares holdings,
  * found none. An entry whose rows have been pruned names no holding and cannot be netted: it counts as
- * one change, as it always did.
+ * one change, as it always did. The net is therefore exact only while every entry that touched a holding still
+ * carries its rows, which holds inside the retention window the warning quotes a figure for; past it a holding
+ * whose early entries aged out can still be counted (it never counts less than the entries it can see).
  */
 export function netHandChanges(entries: { seq: number; rows: HistoryRow[] | null }[]): { count: number; keys: Set<string> } {
   const first = new Map<string, HistoryRowState | null>();
@@ -81,7 +83,7 @@ async function handChangesSinceUpload(userId: string) {
 
 /**
  * How many holdings the player's hand changes since their last confirmed upload left different: the figure
- * the Replace warning quotes ("in-app changes will be overwritten", brief §A), net (`netHandChanges`).
+ * the Replace warning quotes ("N changes you made in the app ... will be overwritten", brief §A), net (`netHandChanges`).
  * Adds, edits and reverts all feed it; an upload does not.
  *
  * Anchored on the newest confirmed upload. When that upload wrote a ledger entry, "since" is by
