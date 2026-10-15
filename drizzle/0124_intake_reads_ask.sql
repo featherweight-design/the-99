@@ -1,0 +1,1 @@
+ALTER TABLE "intake_reads" ADD COLUMN "ask" text;

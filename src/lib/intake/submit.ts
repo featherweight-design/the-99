@@ -78,19 +78,47 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
 export type Arrival = "repeat" | "busy" | "form";
 
 export function resultsTarget(p: ChooseParams, readId: string | null, arrival: Arrival | null = null): string {
-  const target = `${CHOOSE_PATH}${serializeChooseParams({
-    ...p,
-    words: capBody(p.words, READ_WORDS_MAX_CHARS, WORDS_CAP).trim(),
-    card: null,
-    notUsed: [],
-    readId,
-    results: true,
-  })}`;
+  const target = `${CHOOSE_PATH}${serializeChooseParams({ ...askParams(p), readId })}`;
   if (arrival === "repeat" && readId) return `${target}&${REPEAT_PARAM}=1`;
   if (arrival === "busy" && !readId) return `${target}&${BUSY_PARAM}=1`;
   if (arrival === "form" && readId) return `${target}&${FORM_PARAM}=1`;
   return target;
 }
+
+/** The ask as the results address carries it: the answers and the words, whole, and no read or marks. */
+function askParams(p: ChooseParams): ChooseParams {
+  return {
+    ...p,
+    words: capBody(p.words, READ_WORDS_MAX_CHARS, WORDS_CAP).trim(),
+    card: null,
+    notUsed: [],
+    readId: null,
+    results: true,
+  };
+}
+
+/**
+ * The ask a read is stored with (History): the results address's query without its `?` and without
+ * the read's id, built on the server from the press's parsed, tag-resolved and capped params. Text,
+ * so reopening is `parseChooseParams` and a link, and nothing but the History reads
+ * (`history-read.ts`) ever reads it back: it reaches no prompt. The results page reads the address,
+ * not the column.
+ */
+export function askOf(p: ChooseParams): string {
+  return serializeChooseParams(askParams(p)).slice(1);
+}
+
+/** The address of a stored run: its ask, the run's id, and the past-run mark. */
+export function pastRunHref(ask: string, readId: string): string {
+  return `${CHOOSE_PATH}?${ask}&r=${readId}&${PAST_PARAM}=1`;
+}
+
+/**
+ * Marks a results address the player reached from History. Outside `ChooseParams` like `REPEAT_PARAM`:
+ * it says how the player arrived, not what they asked, so *Change answers* and the paging actions
+ * never carry it.
+ */
+export const PAST_PARAM = "h";
 
 /**
  * Marks a results address whose read `r` was this ask's stored answer, charged nothing (state 7m).

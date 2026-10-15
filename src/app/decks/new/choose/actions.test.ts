@@ -46,6 +46,17 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     return null;
   };
 
+  it("hands the read the ask it is made from: the canonical address, with no read id and no Not used", async () => {
+    stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish: vi.fn() });
+    await landed("?w=spooky&t=landfall&r=0000aaaa-0000-4000-8000-0000000000ff&n=junk&a=0000cccc-0000-4000-8000-000000000001");
+    const ask = stub.begin.mock.calls[0][1].ask as string;
+    const sp = new URLSearchParams(ask);
+    expect(sp.get("w")).toBe("spooky");
+    expect(sp.get("t")).toBe("landfall");
+    expect(sp.get("v")).toBe("results");
+    for (const k of ["r", "n", "a"]) expect(sp.has(k)).toBe(false);
+  });
+
   it("refuses the read for a theme or set the pickers would not offer, or when the vocabulary cannot be read", async () => {
     stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish: vi.fn() });
     for (const q of ["?w=x&t=landfall,ignore-previous-instructions&tj=any", "?w=x&p=mh3,zzz"]) {

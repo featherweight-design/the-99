@@ -167,7 +167,7 @@ export function shortlistPrefix(inputs: Pick<TheReadInputs, "list" | "pool" | "n
 /** One press, end to end: what a probe, the eval and a test call. */
 export async function runTheRead(
   userId: string,
-  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env: NodeJS.ProcessEnv },
+  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env: NodeJS.ProcessEnv; ask?: string },
   deps: TheReadDeps = defaultTheReadDeps(),
   inputs?: TheReadInputs,
 ): Promise<TheReadOutcome> {
@@ -184,7 +184,7 @@ export async function runTheRead(
 export async function beginTheRead(
   userId: string,
   /** `env`: the reader's resolved switches, handed to the pool read (`loadTheReadInputs`). */
-  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env: NodeJS.ProcessEnv },
+  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env: NodeJS.ProcessEnv; ask?: string },
   deps: TheReadDeps = defaultTheReadDeps(),
   /** The inputs, or a loader for them (a test counts its calls); omitted, they are read here. */
   inputs?: TheReadInputs | (() => Promise<TheReadInputs>),
@@ -209,7 +209,7 @@ export async function beginTheRead(
     // running read is looked for again here, before anything is loaded.
     if (await hasRunningRead(userId, new Date(deps.now()))) return "running" as const;
     const facts = await load();
-    const started = await startRead(userId, facts.fingerprint, deps.modelName, { readId: input.readId });
+    const started = await startRead(userId, facts.fingerprint, deps.modelName, { readId: input.readId, ask: input.ask });
     return { facts, started };
   });
   if (admitted === "busy" || admitted === "running") return { kind: "in_flight" };
