@@ -3,7 +3,8 @@
  * deck row reads the viewer's OWN decks, and the search reads the catalog, so both live here rather than in
  * `src/lib/social/` (E2). What a press then saves goes through `setCommander`, which re-checks the card.
  *
- * A tile is the face's own shape: the oracle id, the card's name and the catalog's art crop (G12).
+ * A tile is the face's own shape: the oracle id, the card's name and the catalog's art crop (G12), plus the
+ * colour identity the search rows draw as pips (R2 F3).
  */
 import { and, asc, desc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -14,7 +15,7 @@ import { isCommanderCandidate } from "../recs/score";
 import { canBeFace } from "../social/commander";
 import { commanderSearchOrder, commanderSupersetWhere } from "./opponent-commanders";
 
-export type CommanderTile = { oracleId: string; name: string; artCropUri: string | null };
+export type CommanderTile = { oracleId: string; name: string; artCropUri: string | null; colorIdentity: string[] };
 
 /** Tiles in the deck row (G13). */
 export const DECK_COMMANDER_TILES = 8;
@@ -34,9 +35,9 @@ const partner = alias(cards, "partner_card");
 export function deckCommandersQuery(viewerId: string, q: Pick<typeof db, "select"> = db) {
   return q
     .select({
-      leadId: lead.oracleId, leadName: lead.name, leadArt: lead.artCropUri,
+      leadId: lead.oracleId, leadName: lead.name, leadArt: lead.artCropUri, leadIdentity: lead.colorIdentity,
       leadLegal: lead.commanderLegal, leadType: lead.typeLine, leadText: lead.oracleText, leadCost: lead.manaCost, leadLayout: lead.layout,
-      partnerId: partner.oracleId, partnerName: partner.name, partnerArt: partner.artCropUri,
+      partnerId: partner.oracleId, partnerName: partner.name, partnerArt: partner.artCropUri, partnerIdentity: partner.colorIdentity,
       partnerLegal: partner.commanderLegal, partnerType: partner.typeLine, partnerText: partner.oracleText,
       partnerCost: partner.manaCost, partnerLayout: partner.layout,
     })
@@ -57,15 +58,15 @@ type DeckCommanderRow = Awaited<ReturnType<typeof deckCommandersQuery>>[number];
 export function deckTiles(rows: readonly DeckCommanderRow[]): CommanderTile[] {
   const out: CommanderTile[] = [];
   const seen = new Set<string>();
-  const push = (oracleId: string | null, name: string | null, artCropUri: string | null, eligible: boolean) => {
+  const push = (oracleId: string | null, name: string | null, artCropUri: string | null, colorIdentity: string[] | null, eligible: boolean) => {
     if (oracleId === null || name === null || !eligible || seen.has(oracleId) || out.length >= DECK_COMMANDER_TILES) return;
     seen.add(oracleId);
-    out.push({ oracleId, name, artCropUri });
+    out.push({ oracleId, name, artCropUri, colorIdentity: colorIdentity ?? [] });
   };
   for (const r of rows) {
-    push(r.leadId, r.leadName, r.leadArt,
+    push(r.leadId, r.leadName, r.leadArt, r.leadIdentity,
       canBeFace({ commanderLegal: r.leadLegal, typeLine: r.leadType, oracleText: r.leadText, manaCost: r.leadCost, layout: r.leadLayout }));
-    push(r.partnerId, r.partnerName, r.partnerArt, r.partnerType !== null && canBeFace({
+    push(r.partnerId, r.partnerName, r.partnerArt, r.partnerIdentity, r.partnerType !== null && canBeFace({
       commanderLegal: r.partnerLegal ?? false, typeLine: r.partnerType, oracleText: r.partnerText,
       manaCost: r.partnerCost, layout: r.partnerLayout,
     }));
@@ -92,6 +93,7 @@ export async function searchFaceCommanders(query: unknown): Promise<CommanderTil
       oracleId: cards.oracleId,
       name: cards.name,
       artCropUri: cards.artCropUri,
+      colorIdentity: cards.colorIdentity,
       typeLine: cards.typeLine,
       oracleText: cards.oracleText,
       manaCost: cards.manaCost,
@@ -105,5 +107,5 @@ export async function searchFaceCommanders(query: unknown): Promise<CommanderTil
   return rows
     .filter(isCommanderCandidate)
     .slice(0, COMMANDER_SEARCH_HITS)
-    .map((r) => ({ oracleId: r.oracleId, name: r.name, artCropUri: r.artCropUri }));
+    .map((r) => ({ oracleId: r.oracleId, name: r.name, artCropUri: r.artCropUri, colorIdentity: r.colorIdentity }));
 }
