@@ -13,7 +13,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-social-screens.md` (
 | `R2 - Friends-Desktop.dc.html` / `R2 - Friends-Phone.dc.html` | `/friends` with commander faces and the commander picker. |
 | `R2 - Invite-Desktop.dc.html` / `R2 - Invite-Phone.dc.html` | Add a friend: the friend link dialog and sheet, no name line. |
 | `R2 - Landing-Desktop.dc.html` / `R2 - Landing-Phone.dc.html` | `/friend/[token]`: the friend request drawn as a card, every state. |
-| `R2 - Pods.dc.html` | Pods two ways, A chips with faces or B the table, both widths. Hugh to choose. |
+| `R2 - Pods.dc.html` | Pods as a table of art seats (B, Hugh's pick), both widths; A for reference. |
 | `The 99 - Social R1 (R1).dc.html` | R1: the ten calls, the locks and the gaps. R2 overrides where they differ. |
 | `R1 - Placement.dc.html` | The account menu row; the rejected sixth tab; switch off. |
 | `R1 - Friends-Desktop.dc.html` / `R1 - Friends-Phone.dc.html` | `/friends`, empty first, through remove and the 10-link hold. |

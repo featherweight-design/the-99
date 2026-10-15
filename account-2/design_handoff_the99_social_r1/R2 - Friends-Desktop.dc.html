@@ -127,7 +127,7 @@ a{color:#FF4D9A}
               <div class="hd">
                 <div class="who">
                   <sc-if value="{{f.faceSet}}" hint-placeholder-val="{{true}}">
-                    <button class="{{f.mfCls}}" type="button" aria-label="Your commander: Atraxa, Praetors’ Voice. Change"><img src="{{f.myArt}}" alt=""><span class="pen" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l4-1 10-10-3-3L5 16z"/></svg></span></button>
+                    <button class="{{f.mfCls}}" type="button" aria-label="Your commander: The Master, Transcendent. Change"><img src="{{f.myArt}}" alt=""><span class="pen" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l4-1 10-10-3-3L5 16z"/></svg></span></button>
                   </sc-if>
                   <sc-if value="{{f.faceUnset}}" hint-placeholder-val="{{false}}">
                     <button class="{{f.mfCls}}" type="button" aria-label="Choose your commander"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -237,11 +237,12 @@ a{color:#FF4D9A}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":3100}}'>
 class Component extends DCLogic {
 renderVals() {
-const art = (n) => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=art_crop';
+const ART = { 'The Master, Transcendent': 'art/hero-master.png', 'Sokka, Tenacious Tactician': 'art/hero-sokka.png', 'Avatar Aang': 'art/resume-aang.png', 'Omnath, Locus of Creation': 'art/resume-omnath.png', 'Baral, Chief of Compliance': 'art/resume-wizards.png', 'Kilo, Apogee Mind': 'art/resume-kilo.png' };
+const art = (n) => ART[n] || '';
 const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
-const pips = (s) => s.split('').map((k) => ({ bg: C[k] }));
-const ATRAXA = "Atraxa, Praetors' Voice";
-const CMD = { Hugh: ATRAXA, Dave: 'Krenko, Mob Boss', Priya: 'Edgar Markov', Sam: 'Meren of Clan Nel Toth', Alex: 'Kenrith, the Returned King', Marcus: 'The Ur-Dragon', Rin: "Yuriko, the Tiger's Shadow" };
+const pips = (s) => s.split('').filter(Boolean).map((k) => ({ bg: C[k] }));
+const MINE = "The Master, Transcendent";
+const CMD = { Hugh: MINE, Dave: 'Sokka, Tenacious Tactician', Priya: 'Avatar Aang', Sam: 'Omnath, Locus of Creation', Alex: 'Baral, Chief of Compliance', Marcus: 'Kilo, Apogee Mind' };
 const F = (name, since, extra) => { const c = CMD[name]; return Object.assign({ name, ini: name.slice(0, 2).toUpperCase(), cmd: c ? c.replace(/'/g, '’') : '', art: c ? art(c) : '', noArt: !c, since: 'since ' + since, sinceCls: 'fs' }, extra || {}); };
 const six = [F('Alex', 'Aug 30'), F('Dave', 'Oct 2'), F('Jo', 'Sep 14'), F('Marcus', 'Sep 20'), F('Priya', 'Sep 28'), F('Sam', 'Sep 28')];
 const chip = (name, tag, x) => { const c = CMD[name === 'You' ? 'Hugh' : name]; return { name, tag: tag || '', x: !!x, cls: x ? 'chip hx' : 'chip', art: c ? art(c) : '', noArt: !c, ini: name.slice(0, 2).toUpperCase() }; };
@@ -250,18 +251,18 @@ const pods = [
 { name: 'Store league', meta: '5 members · Marcus owns it', owner: false, share: false, boxCls: 'box', tick: '', chips: [chip('Marcus', 'owner'), chip('You'), chip('Alex'), chip('Jo'), chip('Rin', 'not a friend')] }
 ];
 const inv = (made, left) => ({ made, left });
-const decks = ["Atraxa, Praetors' Voice", 'Kaalia of the Vast', 'Prosper, Tome-Bound', 'Lathril, Blade of the Elves'];
+const decks = ['Avatar Aang', 'Omnath, Locus of Creation', 'Kilo, Apogee Mind', 'Baral, Chief of Compliance'];
 const tiles = (cur) => decks.map((n) => ({ name: n.replace(/'/g, '’').split(',')[0], art: art(n), cur: n === cur ? 'true' : 'false', cls: n === cur ? 'tile cur' : 'tile' }));
-const res = [['The Ur-Dragon', 'WUBRG'], ['Urza, Lord High Artificer', 'U'], ['Urza, Chief Artificer', 'WUB'], ['Uril, the Miststalker', 'RGW'], ['Urabrask the Hidden', 'R']].map(([n, p], i) => ({ name: n, art: art(n), pips: pips(p), cls: i === 0 ? 'rr hl' : 'rr' }));
-const base = { strip: false, stripText: '', faceSet: true, faceUnset: false, mfCls: 'mf', myArt: art(ATRAXA), nameLine: true, editName: false, friendsEmpty: false, friends: [], showPods: false, podsEmpty: false, pods: [], showInvites: false, invites: [], picker: false, sfCls: 'sf', q: 'Search commanders', showDecks: true, tiles: [], showRes: false, res: [], foot: '', canClear: false };
+const res = [['Avatar Aang', ''], ['Baral, Chief of Compliance', ''], ['Kilo, Apogee Mind', ''], ['Sokka, Tenacious Tactician', ''], ['The Master, Transcendent', '']].map(([n, p], i) => ({ name: n, art: art(n), pips: pips(p), cls: i === 0 ? 'rr hl' : 'rr' }));
+const base = { strip: false, stripText: '', faceSet: true, faceUnset: false, mfCls: 'mf', myArt: art(MINE), nameLine: true, editName: false, friendsEmpty: false, friends: [], showPods: false, podsEmpty: false, pods: [], showInvites: false, invites: [], picker: false, sfCls: 'sf', q: 'Search commanders', showDecks: true, tiles: [], showRes: false, res: [], foot: '', canClear: false };
 const fr = (o) => Object.assign({}, base, o, { friendsHead: 'Friends · ' + (o.friends ? o.friends.length : 0), podsHead: 'Pods · ' + (o.pods ? o.pods.length : 0), invitesHead: 'Open friend links · ' + (o.invites ? o.invites.length : 0) });
 const unset = { faceSet: false, faceUnset: true, mfCls: 'mf none' };
 const frames = [
 fr(Object.assign({ label: 'F1 · empty · no commander chosen yet', friendsEmpty: true, note: 'The first screen. The face is a dashed + tile, and the name line gains one more press, Choose your commander, which opens the same picker as the tile. Neither is required: friends see initials until one is chosen, and nothing asks again. The empty sentence now says friend link.' }, unset)),
 fr(Object.assign({ label: 'F2 · the picker, opened · From your decks first', friendsEmpty: true, picker: true, tiles: tiles(''), foot: 'Saved as soon as you pick one.', note: 'A dialog on the shipped shell, focus in the search field. Before anything is typed it offers the commanders of your own decks, newest deck first, up to eight: the likeliest pick is a deck you play. Your decks are yours, so this row shows only to you. One press picks, saves and closes; there is no Save button. No model, no network beyond the catalog read.' }, unset)),
-fr({ label: 'F3 · the picker, searching any commander', friendsEmpty: true, picker: true, mfCls: 'mf ring', sfCls: 'sf on', q: 'ur|', showDecks: false, showRes: true, res: res, foot: 'Any commander in the catalog, owned or not.', canClear: true, note: 'Typing swaps the deck row for results from every commander the catalog knows, the same set /commanders lists, by name, with the colour identity as pips. Arrow keys move, Enter picks. Once a commander is set, the foot offers Use initials instead, which clears it. The current face carries the focus ring behind the dialog.' }),
-fr({ label: 'F4 · one friend · arriving from Accept', strip: true, stripText: 'You and Dave are friends.', friends: [F('Dave', 'today', { sinceCls: 'fs nw' })], showPods: true, podsEmpty: true, note: 'As R1, now with faces. Dave chose Krenko, so his row shows its art and its name under his. The receipt strip is unchanged.' }),
-fr({ label: 'F5 · many friends, two pods, two links open', friends: six, showPods: true, pods: pods, showInvites: true, invites: [inv('today, 9:41 PM', '7 days left'), inv('Oct 12', '4 days left')], note: 'The full page. Jo never chose one, so Jo is initials in the row and in the chip, and the row has no second line. Rin is not Hugh’s friend but is drawn with a face in Store league, because a pod member’s face is part of what the pod shows. Chips put the face first, at 26px. Open friend links reads Friend link on each row.' }),
+fr({ label: 'F3 · the picker, searching any commander', friendsEmpty: true, picker: true, mfCls: 'mf ring', sfCls: 'sf on', q: 'a|', showDecks: false, showRes: true, res: res, foot: 'Any commander in the catalog, owned or not.', canClear: true, note: 'Typing swaps the deck row for results from every commander the catalog knows, the same set /commanders lists, by name, each with its art. Arrow keys move, Enter picks. Once a commander is set, the foot offers Use initials instead, which clears it. The current face carries the focus ring behind the dialog.' }),
+fr({ label: 'F4 · one friend · arriving from Accept', strip: true, stripText: 'You and Dave are friends.', friends: [F('Dave', 'today', { sinceCls: 'fs nw' })], showPods: true, podsEmpty: true, note: 'As R1, now with faces. Dave chose Sokka, so his row shows its art and its name under his. The receipt strip is unchanged.' }),
+fr({ label: 'F5 · many friends, two pods, two links open', friends: six, showPods: true, pods: pods, showInvites: true, invites: [inv('today, 9:41 PM', '7 days left'), inv('Oct 12', '4 days left')], note: 'The full page. Jo never chose one, so Jo is initials in the row and in the chip, and the row has no second line. Rin is not Hugh’s friend and chose no commander, so Rin is initials in Store league; a pod member’s face is part of what the pod shows either way. Chips put the face first, at 26px. Open friend links reads Friend link on each row.' }),
 fr({ label: 'F6 · changing your name, the one place it is set', editName: true, nameLine: false, friends: six, showPods: true, pods: pods, note: 'R1’s field with one word changed in its hint: friends see the name and the commander. The dialog and the friend request card no longer offer Change (Hugh, R1 audit). The face stays pressable while the field is open.' })
 ];
 return { frames };

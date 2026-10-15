@@ -1,9 +1,9 @@
 # READINESS — Social R1 (friends and pods)
 
 **🟡 R2, for Hugh's audit.** R2 answers Hugh's R1 audit (2026-10-15): friend-link wording, the name set in one place,
-a signature commander as each player's face, the friend request as a card, and pods drawn two ways (A chips, B table)
-for Hugh to choose. Hugh ruled G3 (invite-only stays) and G4 (an already-friends open spends the link). Not green until
-Hugh approves R2 and picks A or B, and engineering confirms G1, G2 and G11 to G14 are in the plan.
+a signature commander as each player's face, the friend request as a card that flips, and pods as a table (Hugh's
+pick). Hugh ruled G3 (invite-only stays) and G4 (an already-friends open spends the link). Not green until
+Hugh approves R2 and engineering confirms G1, G2 and G11 to G14 are in the plan.
 
 ## Locks held
 

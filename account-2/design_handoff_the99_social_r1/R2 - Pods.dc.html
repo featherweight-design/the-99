@@ -87,9 +87,9 @@ a{color:#FF4D9A}
 </helmet>
 <div style="width:2760px;min-height:3300px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
   <div style="display:flex;flex-direction:column;gap:6px">
-    <span class="k">R2 · Pods on /friends · two ways to draw the people in a pod, for Hugh to choose · desktop 1300 and phone 390</span>
+    <span class="k">R2 · Pods on /friends · B, the table, is Hugh’s pick (2026-10-15); A kept for reference · desktop 1300 and phone 390</span>
     <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">A · chips with faces, or B · the pod as a table</h2>
-    <p class="cap" style="max-width:2200px">A keeps R1’s chips and puts each member’s commander art in a 26px circle at the front: compact, and a pod stays one or two lines tall. B seats each member as a tile of their commander’s art with their name under it, over a faint blur of the same art, so a pod looks like the table it is. B is about three times as tall per pod and costs nothing new in data: it is the same faces. Everything else is R1 and unchanged: the owner’s ✕ on a seat (no confirm), + Add friends as an empty seat, not a friend, the per-pod spares box, the … menu. Hugh is on the fence about B, so both are drawn on the same pods.</p>
+    <p class="cap" style="max-width:2200px">A keeps R1’s chips and puts each member’s commander art in a 26px circle at the front: compact, and a pod stays one or two lines tall. B seats each member as a tile of their commander’s art with their name under it, over a faint blur of the same art, so a pod looks like the table it is. B is about three times as tall per pod and costs nothing new in data: it is the same faces. Everything else is R1 and unchanged: the owner’s ✕ on a seat (no confirm), + Add friends as an empty seat, not a friend, the per-pod spares box, the … menu. Hugh picked B, the table. A stays on the board for reference only.</p>
   </div>
   <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 48px">
     <sc-for list="{{dframes}}" as="f" hint-placeholder-count="3">
@@ -221,8 +221,9 @@ a{color:#FF4D9A}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":3300}}'>
 class Component extends DCLogic {
 renderVals() {
-const art = (n) => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=art_crop';
-const CMD = { You: "Atraxa, Praetors' Voice", Dave: 'Krenko, Mob Boss', Priya: 'Edgar Markov', Sam: 'Meren of Clan Nel Toth', Alex: 'Kenrith, the Returned King', Marcus: 'The Ur-Dragon', Rin: "Yuriko, the Tiger's Shadow" };
+const ART = { 'The Master, Transcendent': 'art/hero-master.png', 'Sokka, Tenacious Tactician': 'art/hero-sokka.png', 'Avatar Aang': 'art/resume-aang.png', 'Omnath, Locus of Creation': 'art/resume-omnath.png', 'Baral, Chief of Compliance': 'art/resume-wizards.png', 'Kilo, Apogee Mind': 'art/resume-kilo.png' };
+const art = (n) => ART[n] || '';
+const CMD = { You: "The Master, Transcendent", Dave: 'Sokka, Tenacious Tactician', Priya: 'Avatar Aang', Sam: 'Omnath, Locus of Creation', Alex: 'Baral, Chief of Compliance', Marcus: 'Kilo, Apogee Mind' };
 const M = (name, tag, x) => { const c = CMD[name]; return { name, tag: tag || '', x: !!x, art: c ? art(c) : '', noArt: !c, ini: name.slice(0, 2).toUpperCase(), chipCls: x ? 'chip hx' : 'chip', seatCls: name === 'You' ? 'seat me' : 'seat' }; };
 const pod = (name, meta, owner, share, m) => ({ name, meta, owner, share: share ? 'true' : 'false', boxCls: share ? 'box on' : 'box', tick: share ? '✓' : '', m, wash: m.filter((x) => x.art).map((x) => x.art) });
 const thursday = pod('Thursday night', '4 members · yours', true, true, [M('You'), M('Dave', '', true), M('Priya', '', true), M('Sam', '', true)]);

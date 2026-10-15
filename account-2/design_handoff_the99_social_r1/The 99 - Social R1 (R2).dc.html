@@ -33,7 +33,7 @@ code{font:12px 'IBM Plex Mono',monospace;color:#E6E8F0;background:#20222A;paddin
   <div class="col" style="gap:8px">
     <span class="k">Social · round 1 of 3 · design R2 · Hugh’s R1 audit, 2026-10-15</span>
     <h1 style="margin:0;font:700 34px 'Chakra Petch',sans-serif">R2: friend links, one place to be yourself, and your commander as your face</h1>
-    <p class="cap" style="max-width:1500px;font-size:14.5px;color:#B1B6C7">Hugh found R1 sound but plain, and the word invite misleading. R2 keeps every R1 call and lock, and changes four things. The wording now says <b style="color:#E6E8F0">Add a friend</b> and <b style="color:#E6E8F0">friend link</b>, and the route is <code>/friend/[token]</code>. Your name and your commander are set in one place only, the head of <code>/friends</code>. Each player may pick a <b style="color:#E6E8F0">signature commander</b>, and its art becomes their face everywhere a person is drawn. The friend request is drawn as a card. Pods are drawn two ways for Hugh to choose between. R1’s boards stay to the left for comparison, and every frame R2 does not redraw keeps R1’s layout with R2’s words and faces.</p>
+    <p class="cap" style="max-width:1500px;font-size:14.5px;color:#B1B6C7">Hugh found R1 sound but plain, and the word invite misleading. R2 keeps every R1 call and lock, and changes four things. The wording now says <b style="color:#E6E8F0">Add a friend</b> and <b style="color:#E6E8F0">friend link</b>, and the route is <code>/friend/[token]</code>. Your name and your commander are set in one place only, the head of <code>/friends</code>. Each player may pick a <b style="color:#E6E8F0">signature commander</b>, and its art becomes their face everywhere a person is drawn. The friend request is drawn as a card. Pods are drawn as a table of art seats (Hugh’s pick). R1’s boards stay to the left for comparison, and every frame R2 does not redraw keeps R1’s layout with R2’s words and faces.</p>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
     <div class="card">
@@ -43,8 +43,8 @@ code{font:12px 'IBM Plex Mono',monospace;color:#E6E8F0;background:#20222A;paddin
         <i>20</i><span><b>One place to set yourself.</b> The name line is gone from the dialog and the landing card (Hugh: no alias system). The name and the commander are set only in the head of <code>/friends</code>.</span>
         <i>21</i><span><b>A signature commander, chosen, never inferred.</b> Press the face in the head, or Choose your commander while it is unset. The picker shows your own decks’ commanders first, then searches every commander in the catalog. One press picks, saves and closes. <b>Use initials instead</b> clears it. Unchosen, a face is initials, and nothing asks again.</span>
         <i>22</i><span><b>The face is spent everywhere a person is drawn:</b> the head at 64px, friend rows at 40px with the commander’s name under the person’s, pod chips at 26px, the Add friends list, and the friend request card.</span>
-        <i>23</i><span><b>The friend request is a card.</b> Face up when the page may name the sender (open, already friends): the name bar, the art, the colour identity in the frame and pips, the type line, and the rule of friendship in the text box. Face down (the 99’s back) whenever R1 said it names nobody. Your own link shows your own card. Decline flips it face down.</span>
-        <i>24</i><span><b>Pods: A, chips with faces, or B, the pod as a table</b> of art seats over a blur of the same art. Both are drawn on the same pods. Hugh to choose; A is the default if he doesn’t.</span>
+        <i>23</i><span><b>The friend request is a card.</b> Face up when the page may name the sender (open, already friends): the name bar, the art (which also tints the frame), the type line, and the rule of friendship in the text box. Face down (the 99’s back) whenever R1 said it names nobody. Your own link shows your own card. It arrives face down and flips face up when it may name the sender; Decline flips it back. The flip is drawn, looping, on the friend request board.</span>
+        <i>24</i><span><b>Pods: A, chips with faces, or B, the pod as a table</b> of art seats over a blur of the same art. Hugh picked <b>B, the table</b>. A stays on the board for reference.</span>
         <i>25</i><span><b>Already friends spends the link</b> (Hugh, G4), and the app stays invite-only (Hugh, G3).</span>
       </div>
     </div>
@@ -52,7 +52,7 @@ code{font:12px 'IBM Plex Mono',monospace;color:#E6E8F0;background:#20222A;paddin
       <div class="card">
         <span class="k">One lock widens, by Hugh’s go-ahead</span>
         <div class="lk">
-          <span>Name and public id only</span><span><b style="color:#E0913C">Widened:</b> a friend read now also returns the friend’s chosen commander (an oracle id) for its art, name and colour identity. It is chosen on purpose and says nothing about their decks or collection. The picker’s deck row is the viewer’s own data, shown only to them.</span>
+          <span>Name and public id only</span><span><b style="color:#E0913C">Widened:</b> a friend read now also returns the friend’s chosen commander (an oracle id) for its art and name. It is chosen on purpose and says nothing about their decks or collection. The picker’s deck row is the viewer’s own data, shown only to them.</span>
           <span>No model calls</span><span>Unchanged. The picker is a catalog search.</span>
           <span>Everything else</span><span>Unchanged from R1.</span>
         </div>

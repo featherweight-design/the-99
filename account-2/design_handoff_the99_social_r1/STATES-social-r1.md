@@ -87,4 +87,5 @@ Both widths carry every state; where the phone board omits a frame, the desktop 
 | Name edit | R2 Friends F6 | Only here. |
 | Friend link dialog / sheet | R2 Invite I1 to I5, P1 to P5 | `Add a friend`, no name line, `/friend/` path. |
 | Friend request card, every state | R2 Landing L1 to L8 (D, P) | Face up: open, no-commander sender (L2b), your own, already friends. Face down: signed out, expired, ended, after Decline. |
-| Pods, A or B | R2 Pods (D, P) | Both drawn; Hugh to choose. Add friends list with faces. |
+| Pods as a table | R2 Pods B (D, P) | Hugh's pick; A kept for reference. Add friends list with faces. |
+| The flip | R2 Landing, foot of both boards | Arrives face down, turns face up (520ms); Decline turns it back; reduced motion cross-fades. |

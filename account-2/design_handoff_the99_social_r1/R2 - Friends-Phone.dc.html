@@ -99,7 +99,7 @@ a{color:#FF4D9A}
             <div class="pg">
               <div class="who">
                 <sc-if value="{{f.faceSet}}" hint-placeholder-val="{{true}}">
-                  <button class="mf" type="button" aria-label="Your commander: Atraxa, Praetors’ Voice. Change"><img src="{{f.myArt}}" alt=""><span class="pen" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l4-1 10-10-3-3L5 16z"/></svg></span></button>
+                  <button class="mf" type="button" aria-label="Your commander: The Master, Transcendent. Change"><img src="{{f.myArt}}" alt=""><span class="pen" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l4-1 10-10-3-3L5 16z"/></svg></span></button>
                 </sc-if>
                 <sc-if value="{{f.faceUnset}}" hint-placeholder-val="{{false}}">
                   <button class="mf none" type="button" aria-label="Choose your commander"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -184,22 +184,23 @@ a{color:#FF4D9A}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1300}}'>
 class Component extends DCLogic {
 renderVals() {
-const art = (n) => 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(n) + '&format=image&version=art_crop';
+const ART = { 'The Master, Transcendent': 'art/hero-master.png', 'Sokka, Tenacious Tactician': 'art/hero-sokka.png', 'Avatar Aang': 'art/resume-aang.png', 'Omnath, Locus of Creation': 'art/resume-omnath.png', 'Baral, Chief of Compliance': 'art/resume-wizards.png', 'Kilo, Apogee Mind': 'art/resume-kilo.png' };
+const art = (n) => ART[n] || '';
 const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
-const pips = (s) => s.split('').map((k) => ({ bg: C[k] }));
-const ATRAXA = "Atraxa, Praetors' Voice";
-const CMD = { Dave: 'Krenko, Mob Boss', Priya: 'Edgar Markov', Sam: 'Meren of Clan Nel Toth', Alex: 'Kenrith, the Returned King', Marcus: 'The Ur-Dragon' };
+const pips = (s) => s.split('').filter(Boolean).map((k) => ({ bg: C[k] }));
+const MINE = "The Master, Transcendent";
+const CMD = { Dave: 'Sokka, Tenacious Tactician', Priya: 'Avatar Aang', Sam: 'Omnath, Locus of Creation', Alex: 'Baral, Chief of Compliance', Marcus: 'Kilo, Apogee Mind' };
 const F = (name, since) => { const c = CMD[name]; return { name, ini: name.slice(0, 2).toUpperCase(), cmd: c || '', art: c ? art(c) : '', noArt: !c, since: 'since ' + since }; };
 const six = [F('Alex', 'Aug 30'), F('Dave', 'Oct 2'), F('Jo', 'Sep 14'), F('Marcus', 'Sep 20'), F('Priya', 'Sep 28')];
-const chips = [{ name: 'You', art: art(ATRAXA), x: false, cls: 'chip' }, { name: 'Dave', art: art(CMD.Dave), x: true, cls: 'chip hx' }, { name: 'Priya', art: art(CMD.Priya), x: true, cls: 'chip hx' }, { name: 'Sam', art: art(CMD.Sam), x: true, cls: 'chip hx' }];
-const tiles = ["Atraxa, Praetors' Voice", 'Kaalia of the Vast', 'Prosper, Tome-Bound', 'Lathril, Blade of the Elves'].map((n) => ({ name: n.replace(/'/g, '’').split(',')[0], art: art(n) }));
-const res = [['The Ur-Dragon', 'WUBRG'], ['Urza, Lord High Artificer', 'U'], ['Urza, Chief Artificer', 'WUB'], ['Uril, the Miststalker', 'RGW'], ['Urabrask the Hidden', 'R']].map(([n, p]) => ({ name: n, art: art(n), pips: pips(p) }));
-const base = { faceSet: true, faceUnset: false, myArt: art(ATRAXA), friendsEmpty: false, friends: [], showPods: false, picker: false, sfCls: 'sf', q: 'Search commanders', showDecks: true, showRes: false, foot: '', canClear: false };
+const chips = [{ name: 'You', art: art(MINE), x: false, cls: 'chip' }, { name: 'Dave', art: art(CMD.Dave), x: true, cls: 'chip hx' }, { name: 'Priya', art: art(CMD.Priya), x: true, cls: 'chip hx' }, { name: 'Sam', art: art(CMD.Sam), x: true, cls: 'chip hx' }];
+const tiles = ['Avatar Aang', 'Omnath, Locus of Creation', 'Kilo, Apogee Mind', 'Baral, Chief of Compliance'].map((n) => ({ name: n.replace(/'/g, '’').split(',')[0], art: art(n) }));
+const res = [['Avatar Aang', ''], ['Baral, Chief of Compliance', ''], ['Kilo, Apogee Mind', ''], ['Sokka, Tenacious Tactician', ''], ['The Master, Transcendent', '']].map(([n, p]) => ({ name: n, art: art(n), pips: pips(p) }));
+const base = { faceSet: true, faceUnset: false, myArt: art(MINE), friendsEmpty: false, friends: [], showPods: false, picker: false, sfCls: 'sf', q: 'Search commanders', showDecks: true, showRes: false, foot: '', canClear: false };
 const fr = (o) => Object.assign({}, base, o, { friendsHead: 'Friends · ' + (o.friends ? o.friends.length : 0) });
 const frames = [
 fr({ label: 'F1 · empty · no commander yet', faceSet: false, faceUnset: true, friendsEmpty: true, note: 'The dashed tile and one Choose your commander press under the head. Both open the sheet.' }),
 fr({ label: 'F2 · the picker sheet', faceSet: false, faceUnset: true, friendsEmpty: true, picker: true, foot: 'Saved as soon as you pick one.', note: 'Your decks’ commanders first, two wide. One tap picks, saves and closes the sheet.' }),
-fr({ label: 'F3 · searching', friendsEmpty: true, picker: true, sfCls: 'sf on', q: 'ur|', showDecks: false, showRes: true, foot: 'Any commander.', canClear: true, note: 'Results replace the deck row. Use initials instead appears once one is set.' }),
+fr({ label: 'F3 · searching', friendsEmpty: true, picker: true, sfCls: 'sf on', q: 'a|', showDecks: false, showRes: true, foot: 'Any commander.', canClear: true, note: 'Results replace the deck row. Use initials instead appears once one is set.' }),
 fr({ label: 'F4 · friends and a pod, with faces', friends: six, showPods: true, note: 'Rows carry the face and the commander under the name, truncated with an ellipsis at this width. Chips lead with a 28px face.' })
 ];
 return { frames, chips, tiles, res };

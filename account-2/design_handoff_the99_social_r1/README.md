@@ -42,23 +42,26 @@ the sheet and the landing card (Hugh: no alias system).
 **21. A signature commander is each player's face.** Optional, chosen and never inferred. Press the face in the head
 (or `Choose your commander` while it is unset). The picker is a dialog at desktop and a tall sheet at phone. It offers
 your own decks' commanders first (newest deck first, up to eight), and typing searches every commander the catalog
-knows, with colour pips. One press picks, saves and closes; `Use initials instead` clears it. While unset, a face is
+knows, each with its art. One press picks, saves and closes; `Use initials instead` clears it. While unset, a face is
 initials, and nothing asks again.
 
 **22. The face is drawn everywhere a person is**: head 64px, friend rows 40px with the commander's name under the
 person's, chips 26px, the Add friends list, and the friend request card.
 
 **23. The friend request is a card.** Face up only where R1 allowed the sender's name (open, already friends). It shows
-the name bar with colour pips, the commander's art, a frame in its colour identity, the type line (`Friend request`,
+the name bar, the commander's art, the type line (`Friend request`,
 or `Friend · since Oct 2`), the rule of friendship in the text box and an art credit. Face down (the 99's back)
-everywhere else: signed out, expired (faded), used, revoked, not found, and after Decline, which flips it (180ms, none
-under reduced motion). Your own link shows your own card. A sender with no commander gets initials in the art box and
+everywhere else: signed out, expired (faded), used, revoked, not found, and after Decline. **The flip:** a card that
+may name the sender arrives face down, waits 200ms, and turns face up over 520ms on its vertical axis (perspective
+1400px); the column's heading and buttons appear as it lands. Decline turns it back. States that name nobody never
+flip. Reduced motion swaps faces with a 120ms cross-fade. Both faces are the same 300×419 box (63:88), so nothing moves
+when it turns. The frame is a sliver of the commander's own art, so each card is tinted by it. Your own link shows your own card. A sender with no commander gets initials in the art box and
 a grey frame. The card is one image to assistive tech, labelled with name, commander and type line. The heading carries
 the question.
 
-**24. Pods: A or B, for Hugh.** A puts the face in front of each chip. B seats each member as an art tile with the
-name under it, over a 30% blur of the same art; the owner's ✕ is a 28px disc on the seat; + Add friends is an empty
-seat. A is the default if Hugh does not choose.
+**24. Pods are a table (B, Hugh's pick).** Each member sits as an art tile with the name under it, over a 30% blur of
+the same art; you are outlined in the accent; the owner's ✕ is a 28px disc on the seat; + Add friends is an empty seat.
+Five seats a row at desktop, three at phone. Option A (chips with faces) stays on the board for reference only.
 
 **25. Rulings.** The app stays invite-only (G3). Opening a friend link from someone already your friend spends it (G4):
 the page calls `redeemInvite`, which already answers `alreadyFriends` and writes no new friendship.
@@ -180,6 +183,7 @@ removing, every pod write. `false` from a write that is already done (a double s
 | G8 | QR generation needs a library or a small encoder; the boards draw a stand-in matrix. No network call: the code is drawn on the client from the token. | Eng |
 | G9 | The member order (owner, You, then by name) needs `listPods` to return members in that order or the client to sort. | Eng |
 | G11 | `social_profiles` needs a nullable `commander_oracle_id`, a writer (`setCommander`), and every friend and pod read in `src/lib/social/` to return it. The purge already deletes the profile. | Eng |
+| G16 | Board art is six real commander crops from main's `desktop_nav_labels` handoff (`art/`), since the canvas cannot load Scryfall. The app uses the catalog's art. | Note |
 | G12 | Face art is the catalog's representative printing's art crop for that oracle id. No printing choice this round. | Eng |
 | G13 | The picker searches the commander set `/commanders` lists; its deck row reads the viewer's own decks' commanders, newest first, up to eight, a partner pair as two tiles. | Eng |
 | G14 | The route moves from `/invite/[token]` to `/friend/[token]`; G2 applies to the new path. | Eng |
