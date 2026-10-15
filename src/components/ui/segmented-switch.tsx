@@ -42,6 +42,7 @@ export function SegmentedSwitch<T extends string>({
   tone = "neutral",
   fill = false,
   data,
+  ids,
 }: {
   /** `tabs` for a switch that swaps a visible panel or view; `radio` for one that changes a setting. */
   kind: "tabs" | "radio";
@@ -54,9 +55,14 @@ export function SegmentedSwitch<T extends string>({
   /** Full width at phone, the segments sharing it; content width from `md:` either way. */
   fill?: boolean;
   data?: Record<`data-${string}`, string>;
+  /**
+   * Tabs only: stable ids for each tab and the panel it shows. The chosen tab then names its panel in
+   * `aria-controls`, and the caller draws that panel as `role="tabpanel"` labelled by the tab's id.
+   */
+  ids?: { tab: (v: T) => string; panel: (v: T) => string };
 }) {
   const base = useId();
-  const idOf = (v: T) => `${base}-${v}`;
+  const idOf = (v: T) => (ids ? ids.tab(v) : `${base}-${v}`);
   const values = segments.map((s) => s.value);
   const stop = value !== null && values.includes(value) ? value : values[0];
   const pick = (v: T) => {
@@ -93,6 +99,7 @@ export function SegmentedSwitch<T extends string>({
             id={idOf(s.value)}
             role={kind === "tabs" ? "tab" : "radio"}
             aria-selected={kind === "tabs" ? chosen : undefined}
+            aria-controls={kind === "tabs" && chosen && ids ? ids.panel(s.value) : undefined}
             aria-checked={kind === "radio" ? chosen : undefined}
             aria-label={s.ariaLabel}
             tabIndex={s.value === stop ? 0 : -1}

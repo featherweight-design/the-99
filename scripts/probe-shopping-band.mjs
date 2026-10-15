@@ -180,7 +180,7 @@ async function run() {
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${BASE}/decks/${deck.id}`, { waitUntil: "networkidle" });
-      const pill = onPageRole(page, "button", /^Shopping \d+$/).filter({ visible: true }).first();
+      const pill = onPageRole(page, "tab", /^Shopping \d+$/).filter({ visible: true }).first();
       if ((await pill.count()) === 0) {
         report(`${width}px · the Shopping list`, false, "no Shopping pill: the deck buys nothing, so this measured nothing");
         continue;
@@ -295,7 +295,7 @@ async function run() {
         moved(before, after) === 0 && Math.abs(before.firstTop - after.firstTop) < 0.5,
         `${moved(before, after)} rows changed; first row ${before.firstTop} → ${after.firstTop}`);
 
-      const pill = onPageRole(page, "button", /^Shopping \d+$/).filter({ visible: true }).first();
+      const pill = onPageRole(page, "tab", /^Shopping \d+$/).filter({ visible: true }).first();
       await pill.click();
       await page.waitForTimeout(500);
       const shoppingLock = await onPageRole(page, "button", /^Lock cards$/).filter({ visible: true }).count();

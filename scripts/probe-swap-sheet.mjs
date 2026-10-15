@@ -206,7 +206,7 @@ try {
   for (const w of WIDTHS) {
     await page.setViewportSize(w.viewport);
     await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
-    await onPageRole(page, "button", /^Shopping \d+/).first().click();
+    await onPageRole(page, "tab", /^Shopping \d+/).first().click();
     await swapButton(page, fx.picks.land).waitFor({ timeout: 20_000 });
     const tag = `${w.label}`;
 

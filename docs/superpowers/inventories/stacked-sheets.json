@@ -63,7 +63,7 @@
           "settle": 1500
         },
         {
-          "click": "button:has-text('Shopping'):visible",
+          "click": "[role=tab]:has-text('Shopping'):visible",
           "settle": 1200
         },
         {
@@ -91,7 +91,7 @@
           "settle": 1500
         },
         {
-          "click": "button:has-text('Shopping'):visible",
+          "click": "[role=tab]:has-text('Shopping'):visible",
           "settle": 1200
         },
         {

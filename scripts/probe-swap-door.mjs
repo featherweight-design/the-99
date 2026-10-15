@@ -215,7 +215,7 @@ try {
     await card.waitFor({ state: "detached", timeout: 5_000 });
 
     // The door, from a Shopping row: under the limit first, in --fg-faint, with the same link.
-    await onPageRole(page, "button", /^Shopping \d+/).filter({ visible: true }).first().click();
+    await onPageRole(page, "tab", /^Shopping \d+/).filter({ visible: true }).first().click();
     await swapButton(page, cut).waitFor({ timeout: 20_000 });
     const underCard = await openRowCard(page, fx.under);
     const underDoor = underCard.locator('[data-testid="stand-in-door"]').filter({ visible: true });

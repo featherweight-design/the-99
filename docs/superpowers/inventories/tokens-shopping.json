@@ -27,7 +27,7 @@
           "settle": 1200
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 900
         }
@@ -44,7 +44,7 @@
           "settle": 1200
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 900
         }
@@ -61,7 +61,7 @@
           "settle": 1200
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 900
         },
@@ -99,7 +99,7 @@
           "settle": 1200
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 900
         },

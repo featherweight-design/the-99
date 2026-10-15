@@ -417,7 +417,7 @@ async function run() {
       // A missing pill FAILS rather than skipping: a conditional here lets the
       // whole Shopping layout go unexercised, and lets the pill's disappearance
       // read as a pass.
-      const shopping = onPageRole(page, "button", /^Shopping \d+$/).first();
+      const shopping = onPageRole(page, "tab", /^Shopping \d+$/).first();
       if (await shopping.count() === 0) {
         failures += !report(`the toolbar draws a Shopping pill at ${width}`, false, "no pill");
       } else {
@@ -513,7 +513,7 @@ async function run() {
       await page.waitForTimeout(400);
 
       // Shopping offers the third.
-      await onPageRole(page, "button", /^Shopping \d+$/).first().click();
+      await onPageRole(page, "tab", /^Shopping \d+$/).first().click();
       await page.waitForTimeout(1_200);
       await openSortPanel(page);
       const shoppingRows = await onPage(page, "[role=option]").count();

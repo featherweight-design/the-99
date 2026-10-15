@@ -4,7 +4,7 @@
 // By type / By role grouping switch, both `SegmentedSwitch`.
 // §Decklist Group Toggle (design table).
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { BULK_BUTTON_BASE, ClearAutoButton } from "./clear-auto";
 import { LockMark } from "./lock-mark";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -43,6 +43,21 @@ export function isDeckView(value: string): value is DeckView {
 }
 
 export type DeckPanel = "list" | "stats" | "notes";
+
+/** The deck bar's tab and panel ids. One bar per page: the deck page draws one list. */
+const DECK_BAR_IDS = {
+  tab: (v: string) => `deck-bar-tab-${v}`,
+  panel: (v: string) => `deck-bar-panel-${v}`,
+};
+
+/** What the bar's chosen tab shows: the list (All or Shopping), Stats or Notes, as its labelled tabpanel. */
+export function DeckBarPanel({ value, children }: { value: string; children: ReactNode }) {
+  return (
+    <div role="tabpanel" id={DECK_BAR_IDS.panel(value)} aria-labelledby={DECK_BAR_IDS.tab(value)} className="flex flex-col">
+      {children}
+    </div>
+  );
+}
 
 /** Exported for the open precon's Card view switch, which is this well (precons R4 §6). */
 export const DECK_VIEWS: readonly [ViewToggleOption<DeckView>, ViewToggleOption<DeckView>] = [
@@ -222,6 +237,7 @@ export function GroupToggle({
             tone="accent"
             fill={phoneRows}
             data={{ "data-toolbar-group": "" }}
+            ids={DECK_BAR_IDS}
             value={statsOpen ? "stats" : notesOpen ? "notes" : filter}
             onChange={(v) => {
               if (v === "stats") stats?.onChange(true);

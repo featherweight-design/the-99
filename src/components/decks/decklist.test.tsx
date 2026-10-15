@@ -1550,6 +1550,39 @@ describe("the Stats panel", () => {
     expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
   });
 
+  it("ties the chosen tab to the panel it shows, a labelled tabpanel, on the list and on Stats", () => {
+    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] } });
+    const panelOf = (tab: HTMLElement) => {
+      const id = tab.getAttribute("aria-controls");
+      expect(id).toBeTruthy();
+      const panel = document.getElementById(id!)!;
+      expect(panel.getAttribute("role")).toBe("tabpanel");
+      expect(panel.getAttribute("aria-labelledby")).toBe(tab.id);
+      return panel;
+    };
+    const all = screen.getByRole("tab", { name: /^All/ });
+    expect(screen.getByRole("tab", { name: /^Shopping/ }).getAttribute("aria-controls")).toBeNull();
+    expect(panelOf(all).textContent).toContain(rampOwned.name);
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
+    const stats = screen.getByRole("tab", { name: deckStatsCopy.segment.aria });
+    expect(panelOf(stats).querySelector("[data-deck-stats]")).not.toBeNull();
+  });
+
+  it("keeps keyboard focus on the bar when arrowing into Stats and back to the list", () => {
+    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] } });
+    const shopping = screen.getByRole("tab", { name: /^Shopping/ });
+    shopping.focus();
+    fireEvent.keyDown(shopping, { key: "ArrowRight" });
+    expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
+    const stats = screen.getByRole("tab", { name: deckStatsCopy.segment.aria });
+    expect(document.activeElement).toBe(stats);
+    fireEvent.keyDown(stats, { key: "ArrowLeft" });
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: /^Shopping/ }));
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
+  });
+
   it("opens at the card a ledger's Stats link asks for, and scrolls it into view once", () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();

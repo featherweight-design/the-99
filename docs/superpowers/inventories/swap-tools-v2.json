@@ -19,7 +19,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
@@ -45,7 +45,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
@@ -76,7 +76,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
@@ -102,7 +102,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
@@ -133,7 +133,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
@@ -159,7 +159,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
@@ -190,7 +190,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
@@ -216,7 +216,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
@@ -247,7 +247,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
@@ -281,7 +281,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping \\d+",
           "settle": 600
         },
