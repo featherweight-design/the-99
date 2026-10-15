@@ -2973,7 +2973,9 @@ export function CardModal({
               className="relative rounded-[13px] md:rounded-[14px]"
               style={{ perspective: "1400px" }}
               onPointerEnter={tiltHover}
-              onPointerLeave={tiltLeave}
+              // A hovering pointer's leave only: a touch's tilt is ended by its own release (`endZoomPress`, by pointer
+              // id), so a second finger leaving cannot drop the first finger's tilt.
+              onPointerLeave={(e) => { if (tiltsOnHover(e.pointerType)) tiltLeave(e); }}
               onPointerDown={(e) => {
                 // A hovering pointer is already tilting the card, and its click closes the zoom as any click does.
                 if (tiltsOnHover(e.pointerType)) return;

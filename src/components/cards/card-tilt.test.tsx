@@ -355,6 +355,18 @@ describe("the zoom (G5)", () => {
     expect(tiltValues(host)).toEqual(FLAT);
   });
 
+  it("keeps a touch's tilt when a second finger leaves the card", () => {
+    mount();
+    const host = open();
+    fireEvent.pointerDown(host, { pointerId: 5, pointerType: "touch", clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(host, { pointerId: 5, pointerType: "touch", clientX: 140, clientY: 120 });
+    expect(tiltValues(host).tilting).toBe(true);
+    fireEvent.pointerLeave(host, { pointerId: 6, pointerType: "touch" });
+    expect(tiltValues(host).tilting).toBe(true);
+    fireEvent.pointerUp(host, { pointerId: 5, pointerType: "touch", clientX: 140, clientY: 120 });
+    expect(tiltValues(host)).toEqual(FLAT);
+  });
+
   it("takes one press at a time: a second finger cannot strand the card tilted", () => {
     mount();
     const host = open();
