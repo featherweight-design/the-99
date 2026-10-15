@@ -327,16 +327,17 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
     resetArrivalsAcknowledged();
     const initial = { q: "", colours: [], order: null, view: null };
     const quiet = render(<PreconListView rows={rows} hasCollection fromNew={false} initial={initial} query="" />);
-    expect(arrivalsAcknowledged()).toBe(false);
+    expect(arrivalsAcknowledged(["trc"])).toBe(false);
     quiet.unmount();
-    render(<PreconListView rows={rows} hasCollection fromNew={false} initial={initial} query="" acknowledgesArrivals />);
-    expect(arrivalsAcknowledged()).toBe(true);
+    render(<PreconListView rows={rows} hasCollection fromNew={false} initial={initial} query="" acknowledgesArrivals={["trc"]} />);
+    expect(arrivalsAcknowledged(["trc"])).toBe(true);
+    expect(arrivalsAcknowledged(["trc", "lists:trc"])).toBe(false);
     resetArrivalsAcknowledged();
   });
 
   it("never acknowledges from the list's down state, which wrote nothing", () => {
     resetArrivalsAcknowledged();
     render(<PreconsDown />);
-    expect(arrivalsAcknowledged()).toBe(false);
+    expect(arrivalsAcknowledged(["trc"])).toBe(false);
   });
 });

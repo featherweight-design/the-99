@@ -68,14 +68,14 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
   if (!list || list.rows.length === 0) return <PreconsDown />;
   const upcoming = upcomingOn ? payload?.upcoming ?? null : null;
   // Whether this visit writes seen keys, which the view passes on to Home's banner for this document.
-  let acknowledges = false;
+  let acknowledges: string[] = [];
   if (upcoming) {
     // A visit acknowledges every arrival the banner could show, from the UNFILTERED reads: whatever the filters,
     // the order (Most owned hides the group) or the disclosure, and a set whose lists have landed and so left the
     // group. After the response, so the page never waits on it; the write moves the stamp only when it adds a key.
     const keys = visitSeenKeys({ sets: upcoming.sets, preconArrivals: upcoming.arrivals, now });
     if (keys.length > 0) {
-      acknowledges = true;
+      acknowledges = keys;
       after(async () => {
         try {
           await markUpcomingSeen(userId, keys);

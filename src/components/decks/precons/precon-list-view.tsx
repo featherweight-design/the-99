@@ -64,24 +64,26 @@ export type PreconListViewProps = {
   /** The precons that read `new ·` on their tile, decided by the server against its own clock (L2, L3). */
   newFileNames?: readonly string[];
   /**
-   * This visit writes the arrivals' seen keys (the page's `after()`, rule 6): the list drew, the switch is on and the
-   * key set is not empty. The view then tells Home's banner, whose payload the router may restore on Back.
+   * The seen keys this visit writes (the page's `after()`, rule 6): set when the list drew, the switch is on and the
+   * set is not empty. The view hands them to Home's banner, whose payload the router may restore on Back.
    */
-  acknowledgesArrivals?: boolean;
+  acknowledgesArrivals?: readonly string[];
 };
 
+const NO_KEYS: readonly string[] = [];
 const isOrder = (v: string): v is PreconOrder => isPreconOrder(v);
 const isView = (v: string): v is PreconView => isPreconView(v);
 
 export function PreconListView({
   rows, hasCollection, fromNew, initial, query, storedView: cookieView = null, announced = null, newFileNames = [],
-  acknowledgesArrivals = false,
+  acknowledgesArrivals = NO_KEYS,
   storedAnnounced = null,
 }: PreconListViewProps) {
   // After mount, so a prefetch or a server render never counts: the reader is on the page whose visit wrote the keys.
+  const ackKey = acknowledgesArrivals.join(" ");
   useEffect(() => {
-    if (acknowledgesArrivals) acknowledgeArrivals();
-  }, [acknowledgesArrivals]);
+    if (ackKey) acknowledgeArrivals(ackKey.split(" "));
+  }, [ackKey]);
   // `md`, not the chassis's 1000: the table draws the wide form at 900, and this chassis holds
   // three controls where `/decks`' holds six.
   const wide = useMinWidth("(min-width: 768px)");

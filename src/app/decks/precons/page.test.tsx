@@ -114,20 +114,23 @@ describe("/decks/precons, upcoming precons", () => {
   });
 
   it("tells the view its visit acknowledges arrivals exactly when it writes seen keys", async () => {
-    expect((await visit()).props.acknowledgesArrivals).toBe(true);
+    const wrote = await visit();
     await runAfters();
     expect(h.marked).toHaveLength(1);
+    // The very keys the visit writes, so Home hides only what this visit covered.
+    expect(wrote.props.acknowledgesArrivals).toEqual(h.marked[0]);
+    expect((wrote.props.acknowledgesArrivals as string[]).length).toBeGreaterThan(0);
 
     h.marked = [];
     h.allSeen = true;
     const seen = await visit();
     await runAfters();
-    expect(seen.props.acknowledgesArrivals).toBe(false);
+    expect(seen.props.acknowledgesArrivals).toEqual([]);
     expect(h.marked).toEqual([]);
 
     h.allSeen = false;
     h.env = { PRECONS_ENABLED: "true" };
-    expect((await visit()).props.acknowledgesArrivals).toBe(false);
+    expect((await visit()).props.acknowledgesArrivals).toEqual([]);
   });
 
   it("draws PreconsDown and acknowledges nothing when the list cannot be read", async () => {

@@ -185,9 +185,15 @@ describe("ArrivalsBanner, after a Precons visit in this document", () => {
     const first = render(<ArrivalsBanner data={data} />);
     expect(region()).not.toBeNull();
     first.unmount();
-    acknowledgeArrivals();
+    acknowledgeArrivals(["trc", "acknowledged"]);
     render(<ArrivalsBanner data={data} />);
     expect(region()).toBeNull();
+  });
+
+  it("still draws an arrival the visit did not cover: lists landing after the set was acknowledged", () => {
+    acknowledgeArrivals(["trc2"]);
+    render(<ArrivalsBanner data={one(TRC, ["trc2", "lists:trc2"])} />);
+    expect(region()).not.toBeNull();
   });
 
   it("is no acknowledgement by itself: a link press writes nothing, so a re-mount draws it again", () => {

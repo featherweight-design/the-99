@@ -78,7 +78,7 @@ function CloseButton({ onClose, className }: { onClose: () => void; className: s
 export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
   const id = data.keys.join(" ");
   const [phase, setPhase] = useState<"open" | "closing" | "gone">(() =>
-    dismissed.has(id) || arrivalsAcknowledged() ? "gone" : "open");
+    dismissed.has(id) || arrivalsAcknowledged(data.keys) ? "gone" : "open");
 
   useEffect(() => {
     if (phase !== "closing") return;
