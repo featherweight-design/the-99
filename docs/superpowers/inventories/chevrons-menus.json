@@ -1,6 +1,6 @@
 {
   "feature": "Chevrons, PR 1: menus and selects (down closed, up open, turning on the quick motion)",
-  "note": "Any signed-in account with a collection, a deck (DECK_ID) and commanders. Each menu is photographed closed and open: the chevron must point down closed and up open, with no other change to the trigger.",
+  "note": "Any signed-in account with a collection, a deck (DECK_ID) and commanders. Each menu is photographed closed and open: the chevron must point down closed and up open, with no other change to the trigger (the lineup deck select is a native select, so its chevron does not turn; it only takes the shared glyph and 13px size, up from 10px).",
   "out": "contact-sheets/chevrons-menus",
   "rows": [
     { "id": "collection-closed", "label": "/collection — filter triggers, closed", "view": "src/components/ui/filter-panel.tsx", "steps": [ { "goto": "/collection", "wait": "button[aria-expanded]", "settle": 800 } ] },
