@@ -26,38 +26,25 @@ function drawnKey(p: OwnProfile): string {
 }
 
 /**
- * Optimistic writes to one field, any number in flight. Only the newest write's answer draws; a failure puts back the
- * last value a write CONFIRMED (or the server drew), never the optimistic value an earlier, still unanswered write
- * left on screen. An older write answering after the newest has settled draws what is confirmed by then. A write
- * started before the server's latest redraw is superseded by it: its answer, success or failure, draws nothing.
+ * One optimistic write at a time to one field. The new value shows at once; a second write while one is in
+ * flight is refused (the caller says so), so a rollback never lands on another write's unsaved value. Success
+ * draws nothing more: the action's redraw brings the saved value, and a newer redraw is already adopted. A
+ * failure puts back what the server LAST drew, read at the moment it fails, never a value from before a redraw.
  */
-function useFieldWrites<T>(served: T, show: (v: T) => void) {
-  const confirmed = useRef(served);
-  const seq = useRef({ latest: 0, confirmedBy: 0, latestSettled: true });
-  // The server's redraw is the truth a failure falls back to, and it retires every write started before it.
-  const generation = useRef(0);
+function useFieldWrite<T>(served: T, show: (v: T) => void) {
+  const latest = useRef(served);
   useEffect(() => {
-    confirmed.current = served;
-    generation.current += 1;
+    latest.current = served;
   }, [served]);
-  return async function write(next: T, save: () => Promise<{ value: T } | null>): Promise<boolean> {
-    const s = seq.current;
-    const n = ++s.latest;
-    const g = generation.current;
-    s.latestSettled = false;
+  const pending = useRef(false);
+  return async function write(next: T, save: () => Promise<boolean>): Promise<"saved" | "failed" | "busy"> {
+    if (pending.current) return "busy";
+    pending.current = true;
     show(next);
-    const out = await save();
-    if (g !== generation.current) {
-      if (n === s.latest) s.latestSettled = true;
-      return out !== null;
-    }
-    if (out && n > s.confirmedBy) {
-      confirmed.current = out.value;
-      s.confirmedBy = n;
-    }
-    if (n === s.latest) s.latestSettled = true;
-    if (n === s.latest || s.latestSettled) show(confirmed.current);
-    return out !== null;
+    const ok = await save().catch(() => false);
+    pending.current = false;
+    if (!ok) show(latest.current);
+    return ok ? "saved" : "failed";
   };
 }
 
@@ -75,24 +62,19 @@ export function FriendsView({ profile }: { profile: OwnProfile }) {
   const [picking, setPicking] = useState(false);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const say = (text: string) => setToast({ id: Date.now(), text });
-  const writeName = useFieldWrites(profile.displayName, setName);
-  const writeCommander = useFieldWrites<ProfileCommander | null>(profile.commander, setCommander);
+  const writeName = useFieldWrite(profile.displayName, setName);
+  const writeCommander = useFieldWrite<ProfileCommander | null>(profile.commander, setCommander);
 
   async function rename(next: string) {
-    const saved = await writeName(next, async () => {
-      const out = await setDisplayNameAction(next).catch(() => null);
-      return out?.ok ? { value: out.displayName } : null;
-    });
-    if (!saved) say(p.nameField.failed);
+    // A second save while one is in flight is refused and changes nothing on screen.
+    const done = await writeName(next, async () => (await setDisplayNameAction(next)).ok);
+    if (done === "failed") say(p.nameField.failed);
   }
 
   async function pick(tile: CommanderTile | null) {
     setPicking(false);
-    const saved = await writeCommander(tile, async () => {
-      const out = await setCommanderAction(tile?.oracleId ?? null).catch(() => null);
-      return out?.ok ? { value: tile } : null;
-    });
-    if (!saved) say(socialCopy.commander.failed);
+    const done = await writeCommander(tile, async () => (await setCommanderAction(tile?.oracleId ?? null)).ok);
+    if (done === "failed") say(socialCopy.commander.failed);
   }
 
   return (

@@ -137,7 +137,7 @@ describe("the head", () => {
     expect(document.activeElement).toBe(face);
   });
 
-  it("puts back the saved name, not an unsaved one, when two pending renames both fail", async () => {
+  it("refuses a second rename while one is in flight, and a failure puts back the saved name", async () => {
     const answers: ((v: unknown) => void)[] = [];
     a.setDisplayNameAction.mockImplementation(() => new Promise((r) => answers.push(r)));
     draw();
@@ -146,16 +146,15 @@ describe("the head", () => {
       fireEvent.change(screen.getByLabelText(socialCopy.page.nameField.label), { target: { value: next } });
       await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.nameField.save })));
     }
-    expect(screen.getByText("Second").tagName).toBe("B");
+    // The second save is refused while the first is in flight: one write, and the first value stands.
+    expect(a.setDisplayNameAction).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("First").tagName).toBe("B");
     await act(async () => answers[0]({ ok: false, reason: "invalid" }));
-    // The newer write is still in flight: its value stands.
-    expect(screen.getByText("Second").tagName).toBe("B");
-    await act(async () => answers[1]({ ok: false, reason: "invalid" }));
     expect(screen.getByText("Hugh").tagName).toBe("B");
-    expect(screen.queryByText("First")).toBeNull();
+    expect(screen.queryByText("Second")).toBeNull();
   });
 
-  it("puts back the saved face, not an unsaved one, when two pending picks both fail", async () => {
+  it("refuses a second pick while one is in flight, and a failure puts back the saved face", async () => {
     const AANG = { oracleId: "o-aang", name: "Avatar Aang", artCropUri: "https://x/aang.jpg", colorIdentity: ["W", "U", "B", "R", "G"] };
     a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA, AANG] });
     const answers: ((v: unknown) => void)[] = [];
@@ -167,11 +166,11 @@ describe("the head", () => {
     fireEvent.click(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) }));
     const aang = await screen.findByRole("button", { name: AANG.name });
     await act(async () => fireEvent.click(aang));
-    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(AANG.name) })).toBeTruthy();
+    // The second pick is refused while the first is in flight: one write, and Sokka's face stands.
+    expect(a.setCommanderAction).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeTruthy();
     await act(async () => answers[0]({ ok: false }));
-    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(AANG.name) })).toBeTruthy();
-    await act(async () => answers[1]({ ok: false }));
-    // No commander was ever saved: the face is the dashed tile again, not Sokka's.
+    // No commander was ever saved: the face is the dashed tile again.
     expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
     expect(screen.getAllByRole("button", { name: socialCopy.commander.choose })).toHaveLength(3);
   });
@@ -229,6 +228,20 @@ describe("the head", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("an equivalent redraw while a pick is pending still lets a failed pick put back the saved face", async () => {
+    let answer: (v: unknown) => void = () => {};
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA] });
+    a.setCommanderAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    const { rerender } = draw();
+    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
+    const tile = await screen.findByRole("button", { name: SOKKA.name });
+    await act(async () => fireEvent.click(tile));
+    rerender(<FriendsView profile={{ publicId: "p-me", displayName: "Hugh", commander: null }} />);
+    await act(async () => answer({ ok: false }));
+    expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
+    expect(alert().textContent).toContain(socialCopy.commander.failed);
   });
 
   it("a name save that answers after a newer redraw does not overwrite it", async () => {
