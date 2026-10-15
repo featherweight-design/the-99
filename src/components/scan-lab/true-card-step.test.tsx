@@ -85,6 +85,16 @@ describe("TrueCardStep", () => {
     expect(onDone).not.toHaveBeenCalled();
   });
 
+  it("offers no result of an earlier query while the next one is pending", async () => {
+    search.mockResolvedValueOnce([WHIR]).mockReturnValueOnce(new Promise(() => {}));
+    render(<TrueCardStep resultId={ROW} onDone={vi.fn()} />);
+    await type("whir");
+    expect(screen.getByRole("button", { name: /Whir of Invention/ })).toBeTruthy();
+    await type("sol ring");
+    expect(screen.queryByRole("button", { name: /Whir of Invention/ })).toBeNull();
+    expect(screen.getByText("Searching…")).toBeTruthy();
+  });
+
   it("closes on Skip with no write", () => {
     const onDone = vi.fn();
     render(<TrueCardStep resultId={ROW} onDone={onDone} />);

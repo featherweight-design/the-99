@@ -62,8 +62,10 @@ export function TrueCardStep({ resultId, onDone }: { resultId: string; onDone: (
     else setSaveFailed(true);
   };
 
-  const shown = trimmed === "" ? [] : results;
   const pending = trimmed !== "" && trimmed !== searched;
+  // Only the answer to what is typed now: an older query's list is never tappable, or a pick could
+  // save a card the player has already typed past.
+  const shown = trimmed === "" || pending ? [] : results;
 
   return (
     <section aria-label={copy.whatCard} className="flex flex-col gap-[8px] rounded-[8px] border p-[12px]">
