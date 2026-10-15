@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode, Ref } from "react";
+import type { ComponentPropsWithoutRef, ReactNode, Ref } from "react";
 
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
@@ -176,5 +176,25 @@ function CountLine({ row }: { row: CountRow }) {
       {row.figure === null ? <span /> : <span className="text-right font-mono text-[13px] font-semibold" style={{ color: "var(--fg)" }}>{row.figure}</span>}
       <span className="hidden font-mono text-[11px] md:inline" style={{ color: "var(--fg-muted)" }}>{row.note}</span>
     </li>
+  );
+}
+
+/**
+ * The panel's frame: border, sunken fill, radius and padding, everything but its top margin, which stays with
+ * `CutsPanelView`. Shared so About's specimen draws the same frame the panel does, never a copy of its classes.
+ */
+export function CutsFrame({
+  className = "",
+  children,
+  ...rest
+}: { className?: string; children: ReactNode } & Omit<ComponentPropsWithoutRef<"section">, "className" | "style">) {
+  return (
+    <section
+      {...rest}
+      className={`rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px] ${className}`.trim()}
+      style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
+    >
+      {children}
+    </section>
   );
 }

@@ -8,7 +8,7 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { PROPOSED_CUTS } from "../../lib/about/fixtures";
 import { cutsAsk } from "../../lib/tuning/cuts-ask";
-import { CutsFreeCount } from "./cuts-free-count";
+import { CutsFrame, CutsFreeCount } from "./cuts-free-count";
 
 // The panel imports server actions and the card-detail provider; neither runs here.
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
@@ -77,7 +77,7 @@ describe("CutsFreeCount", () => {
 });
 
 describe("one tree, two mounts", () => {
-  it("the About figure renders CutsFreeCount, and draws exactly what the component draws", async () => {
+  it("the About figure renders CutsFreeCount in the panel's own frame, and draws exactly what the two draw", async () => {
     const { FIGURES } = await import("../about/figures");
     const Figure = FIGURES["proposed-cuts"]!;
     const { container } = render(<Figure width="plate" creditLimit={5} />);
@@ -86,12 +86,17 @@ describe("one tree, two mounts", () => {
     expect(figure.hasAttribute("inert")).toBe(true);
     const drawn = figure.innerHTML;
     cleanup();
-    const direct = render(<CutsFreeCount panel={panel} />);
+    const direct = render(<CutsFrame><CutsFreeCount panel={panel} /></CutsFrame>);
+    // The frame is the panel's, without its top margin (handoff: the margin stays with CutsPanelView).
+    const frame = direct.container.firstElementChild!;
+    expect(frame.tagName).toBe("SECTION");
+    expect(frame.className).toContain("rounded-[11px]");
+    expect(frame.className).not.toContain("mt-");
     expect(drawn).toBe(direct.container.innerHTML);
 
     // And by its source: the figure imports the panel's own component, never a copy of it.
     const source = readFileSync(join(process.cwd(), "src/components/about/figures.tsx"), "utf8");
-    expect(source).toMatch(/import \{ CutsFreeCount \} from "\.\.\/decks\/cuts-free-count";/);
+    expect(source).toMatch(/import \{ CutsFrame, CutsFreeCount \} from "\.\.\/decks\/cuts-free-count";/);
     expect(source).toMatch(/<CutsFreeCount panel=/);
   }, 60_000);
 

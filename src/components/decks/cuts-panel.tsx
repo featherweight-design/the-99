@@ -26,7 +26,7 @@ import { useReviewRun } from "./review-run";
 import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { FailMark } from "../ui/credit-button";
-import { CutsBand, CutsFreeCount, CutsOffer, cutsBlocked, cutsStanding } from "./cuts-free-count";
+import { CutsBand, CutsFrame, CutsFreeCount, CutsOffer, cutsBlocked, cutsStanding } from "./cuts-free-count";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
@@ -284,11 +284,10 @@ export function CutsPanelView({
 
   return (
     <VerdictOverridesProvider value={overrides.value}>
-    <section
+    <CutsFrame
       aria-labelledby="cuts-heading"
       aria-busy={running || undefined}
-      className="mt-[18px] rounded-[11px] px-[14px] py-[16px] md:mt-6 md:rounded-[12px] md:px-[20px] md:py-[18px]"
-      style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
+      className="mt-[18px] md:mt-6"
     >
       <CutsFreeCount
         panel={panel}
@@ -334,7 +333,7 @@ export function CutsPanelView({
         divider={resultShown && !running ? (answered > 0 ? copy.facts.dividerPart : copy.facts.dividerResult) : null}
       />
       <p role="status" className="sr-only">{announced}</p>
-    </section>
+    </CutsFrame>
     </VerdictOverridesProvider>
   );
 }

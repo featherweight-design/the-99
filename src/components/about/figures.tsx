@@ -19,7 +19,7 @@ import { RoleGroupHeader } from "../commanders/coverage-section";
 import { CommitmentsCard } from "../home/commitments-card";
 import { CurveCard } from "../decks/deck-stats-view";
 import { ManaEvidenceTable } from "../decks/mana-evidence";
-import { CutsFreeCount } from "../decks/cuts-free-count";
+import { CutsFrame, CutsFreeCount } from "../decks/cuts-free-count";
 import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { PreconTile } from "../decks/precons/precon-tile";
@@ -818,7 +818,9 @@ function ProposedCutsFigure({ width, creditLimit }: { width: AboutWidth; creditL
   const { panel } = PROPOSED_CUTS;
   return (
     <Specimen label="proposed-cuts" width={width}>
-      <CutsFreeCount panel={{ ...panel, allowance: { ...panel.allowance, limit: creditLimit } }} />
+      <CutsFrame>
+        <CutsFreeCount panel={{ ...panel, allowance: { ...panel.allowance, limit: creditLimit } }} />
+      </CutsFrame>
     </Specimen>
   );
 }
