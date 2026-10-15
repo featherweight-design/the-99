@@ -1287,6 +1287,35 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 10,
   },
   {
+    id: 'proposed-cuts',
+    chapter: '04',
+    title: 'Cutting back to 99 with Proposed cuts',
+    route: '/decks',
+    opens: 'opens a deck’s Analysis tab',
+    width: 'plate',
+    // 2026-10-15 (`design_handoff_the99_proposed_cuts_about`, R1, approved): follows PROPOSED_CUTS_ENABLED,
+    // so turning the tool on is what announces it. NO BUMP, as `mana-balance` and `deck-tokens`: a switched
+    // entry is seen by its id, and `since` is the current version. Caption and keys are placeholders owed to
+    // /copy-review. The specimen is the panel's own free count (`CutsFreeCount`) from HD - Zombies.
+    switch: 'PROPOSED_CUTS_ENABLED',
+    caption:
+      'Deck over 100 cards? Proposed cuts, on a deck’s Analysis tab, counts what runs long against the decks EDHREC holds for your commander: roles past their recommended count, the fullest steps of the curve, cards few of those decks run, and anything the bracket you declared doesn’t allow. The count is free, and it names no card.\n\n' +
+      'Look deeper names the cards: as many as the deck is over, in batches when it’s far over, each with a one-line reason. Cut or Keep each one, and when the deck is back to 99 the tool closes.\n\n' +
+      'When a deck is over, its header says so, with a Proposed cuts press that opens the tool. Every run is kept in History, under Tuning, and reopening one checks each cut against the deck as it is now.',
+    // The trim line's Proposed cuts press and History both draw only with the Tuning hub on.
+    captionLineSwitches: {
+      'When a deck is over, its header says so, with a Proposed cuts press that opens the tool. Every run is kept in History, under Tuning, and reopening one checks each cut against the deck as it is now.': 'TUNING_HUB_ENABLED',
+    },
+    keys: [
+      'The count is free. Look deeper uses a credit, and a run that names nothing or doesn’t finish gives it back.',
+      'It never names your commander, a card you locked or a Key card.',
+      'Every reason cites a figure from the count. A reason whose figure doesn’t match is left out, not replaced.',
+      'Cut changes the list straight away, and Undo puts the card back.',
+    ],
+    marksPending: true,
+    since: 14,
+  },
+  {
     id: 'mana-balance',
     chapter: '04',
     title: 'Reading your deck’s mana',

@@ -71,6 +71,7 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
       ["change-commander", "CHANGE_COMMANDER_ENABLED"],
       ["deck-printings", "DECK_PRINTINGS_ENABLED"],
       ["suggested-changes", "TUNING_ENABLED"],
+      ["proposed-cuts", "PROPOSED_CUTS_ENABLED"],
       ["mana-balance", "MANA_BALANCE_ENABLED"],
       ["deck-stats", "DECK_STATS_ENABLED"],
       ["decks-stats", "LINEUP_ENABLED"],
@@ -128,16 +129,16 @@ describe("an entry tied to a switch", () => {
     // `deck-stats` (2026-10-10) is the other: since: 11, the current version, with no bump of its own.
     // `deck-benchmarks` (2026-10-10) is since: 13, the evidence line's one bump, and
     // `shopping-got-it` and `deck-printings` (2026-10-11) since: 14, the collection home epic's, and
-    // `mana-balance`, `all-decks-cart`, `precons`, `upcoming-precons`, `deck-tokens`, `notes`, `added-copy`, `decks-stats` and `find-a-deck-read` since: 14 too, the current
+    // `mana-balance`, `all-decks-cart`, `precons`, `upcoming-precons`, `deck-tokens`, `notes`, `added-copy`, `decks-stats`, `find-a-deck-read` and `proposed-cuts` since: 14 too, the current
     // version, with no bump of their own.
-    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read"];
-    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead] = later.map((id) => launch.filter((e) => e.id === id));
+    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts"];
+    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
     expect(deckStats.map((e) => e.since)).toEqual([11]);
     expect(deckBenchmarks.map((e) => e.since)).toEqual([13]);
-    expect([...gotIt, ...deckPrintings, ...manaBalance, ...cart, ...precons, ...upcoming, ...deckTokens, ...notes, ...addedCopy, ...decksStats, ...fitsRead].map((e) => e.since)).toEqual([14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14]);
+    expect([...gotIt, ...deckPrintings, ...manaBalance, ...cart, ...precons, ...upcoming, ...deckTokens, ...notes, ...addedCopy, ...decksStats, ...fitsRead, ...proposedCuts].map((e) => e.since)).toEqual([14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "collection-add",
       "upload-choice",
@@ -161,6 +162,7 @@ describe("an entry tied to a switch", () => {
       "change-commander",
       "deck-printings",
       "suggested-changes",
+      "proposed-cuts",
       "mana-balance",
       "deck-stats",
       "decks-stats",
@@ -415,5 +417,28 @@ describe("the History lines follow the Tuning hub, not one tool", () => {
   it("keeps them once a second tool draws the hub", () => {
     expect(entry(tools({ tuning: true, cuts: true }), "suggested-changes")?.keys).toContain(HISTORY_KEY);
     expect(entry(tools({ mana: true, cuts: true }), "mana-balance")?.caption).toContain(HISTORY_LINE);
+  });
+});
+
+describe("proposed-cuts follows PROPOSED_CUTS_ENABLED, and its hub paragraph the Tuning hub", () => {
+  const HUB = "When a deck is over, its header says so, with a Proposed cuts press that opens the tool. Every run is kept in History, under Tuning, and reopening one checks each cut against the deck as it is now.";
+  const env = (on: Record<string, string>) => ({ ANALYSIS_TAB_ENABLED: "true", ...on }) as unknown as NodeJS.ProcessEnv;
+  const ids = (e: NodeJS.ProcessEnv) => visibleEntries(e).map((x) => x.id);
+  const caption = (e: NodeJS.ProcessEnv) => visibleEntries(e).find((x) => x.id === "proposed-cuts")?.caption;
+
+  it("is hidden with the switch off, and drawn straight after suggested-changes once it is on", () => {
+    expect(ids(env({ TUNING_ENABLED: "true" }))).not.toContain("proposed-cuts");
+    // The Analysis tab is the switch's parent: on alone, the entry stays hidden.
+    expect(ids({ PROPOSED_CUTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).not.toContain("proposed-cuts");
+    const on = ids(env({ TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }));
+    expect(on[on.indexOf("suggested-changes") + 1]).toBe("proposed-cuts");
+  });
+
+  it("drops the third paragraph while it is the only tool, and keeps it once the hub draws", () => {
+    const alone = caption(env({ PROPOSED_CUTS_ENABLED: "true" }))!;
+    expect(alone).not.toContain(HUB);
+    expect(alone.endsWith("the tool closes.\n")).toBe(true);
+    expect(caption(env({ PROPOSED_CUTS_ENABLED: "true", MANA_BALANCE_ENABLED: "true" }))).toContain(HUB);
+    expect(caption(env({ PROPOSED_CUTS_ENABLED: "true", TUNING_ENABLED: "true" }))).toContain(HUB);
   });
 });
