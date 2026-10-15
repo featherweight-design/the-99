@@ -17,21 +17,23 @@ export function codePointLength(s: string): number {
   return [...s].length;
 }
 
+/** The length `cleanName` measures: NFC, whitespace runs collapsed to one space, trimmed. */
+function cleanLength(s: string): number {
+  return codePointLength(s.normalize("NFC").replace(/\s+/gu, " ").trim());
+}
+
 /**
- * What a name field keeps of `value` as it is typed: the value itself while it fits in `max` code points
- * (measured in NFC, as `cleanName` measures it), else its leading whole characters that fit. Cut by
- * grapheme, so a composed emoji is kept whole or dropped whole, never left as a stray half.
+ * What a name field keeps of `value` as it is typed: the value itself while its cleaned form (what
+ * `cleanName` will store, so collapsed spaces and trimmed ends do not count) fits in `max` code points, else
+ * its leading whole characters whose cleaned form fits. Cut by grapheme, so a composed emoji is kept whole
+ * or dropped whole, never left as a stray half.
  */
 export function capName(value: string, max: number): string {
-  const nfc = value.normalize("NFC");
-  if (codePointLength(nfc) <= max) return value;
+  if (cleanLength(value) <= max) return value;
   let kept = "";
-  let used = 0;
-  for (const { segment } of new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(nfc)) {
-    const n = codePointLength(segment);
-    if (used + n > max) break;
+  for (const { segment } of new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value.normalize("NFC"))) {
+    if (cleanLength(kept + segment) > max) break;
     kept += segment;
-    used += n;
   }
   return kept;
 }

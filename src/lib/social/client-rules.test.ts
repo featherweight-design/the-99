@@ -25,6 +25,14 @@ describe("the name cap", () => {
     expect(capName(`${"a".repeat(27)}${family}`, DISPLAY_NAME_MAX)).toBe("a".repeat(27));
   });
 
+  it("counts what cleanName stores: a run of spaces and the trimmed ends cost nothing extra", () => {
+    const spaced = `Ana${" ".repeat(30)}B`;
+    expect(capName(spaced, DISPLAY_NAME_MAX)).toBe(spaced);
+    expect(cleanDisplayName(spaced)).toBe("Ana B");
+    const padded = `   ${"a".repeat(DISPLAY_NAME_MAX)}   `;
+    expect(capName(padded, DISPLAY_NAME_MAX)).toBe(padded);
+  });
+
   it("leaves a value that fits exactly as typed", () => {
     expect(capName(" a  b ", DISPLAY_NAME_MAX)).toBe(" a  b ");
   });
