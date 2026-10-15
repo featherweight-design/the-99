@@ -269,6 +269,21 @@ describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () =
     expect(screen.getByText(copy.summary.ledeTokensOnly(2))).toBeTruthy();
   });
 
+  // An Everything Sync can change no card row and still have answered conflicts (every one App) or kept the
+  // player's own changes. The tokens-only sentence says neither, so it is not that Sync's (Y1: never drop
+  // the kept clause): the general Sync lede carries both.
+  it("is not tokens-only when a Sync that changed no card row decided a conflict or kept a card", () => {
+    for (const [kept, decided] of [[0, 3], [5, 0]] as const) {
+      const { unmount } = render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept, decided, tokens: 2, cards: 0 })));
+      expect(screen.queryByText(/Your cards are as you left them/)).toBeNull();
+      expect(screen.getByText(copy.summary.ledeNothingToReportSync({ kept, decided, tokens: 2 }))).toBeTruthy();
+      unmount();
+    }
+    // The fallback for a summary stored before `cards` reads the same way.
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 0, decided: 1, tokens: 2 })));
+    expect(screen.getByText(copy.summary.ledeNothingToReportSync({ kept: 0, decided: 1, tokens: 2 }))).toBeTruthy();
+  });
+
   it("drops the decided sentence when nothing was decided, and the kept clause when nothing was kept", () => {
     expect(copy.summary.lede(10, 1, 0, { kept: 4, decided: 0 })).toMatch(/^Was 10\. 1 arrived, 0 left, and the 4 cards you changed in the app stayed as you had them\. Here’s/);
     expect(copy.summary.lede(10, 1, 0, { kept: 0, decided: 2 })).toMatch(/^Was 10\. 1 arrived, 0 left\. You decided 2\. Here’s/);
@@ -285,7 +300,7 @@ describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () =
   });
 
   it("a tokens-only Sync takes the nothing-to-report line with Sync's ending, and claims no card moved", () => {
-    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 40, decided: 0, tokens: 114 })));
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 0, decided: 0, tokens: 114 })));
     expect(screen.getByText(copy.summary.ledeTokensOnly(114))).toBeTruthy();
     expect(copy.summary.ledeTokensOnly(114)).toBe(
       "Nothing your decks care about moved. Your cards are as you left them, and 114 tokens changed.",

@@ -206,8 +206,10 @@ export function ArrivalsSummary({
   // A Sync that changed no card row at all changed only its tokens (Y1b), and says so. Decided by the card
   // ROWS it changed (`sync.cards`), never by the receipt's copy delta: `arrived` and `left` count oracle ids,
   // so a Sync that only moved a printing, a finish or a condition reads 0 and 0 there. A summary stored
-  // before `cards` existed falls back to that delta.
-  const tokensOnly = sync !== null && (sync.cards !== undefined
+  // before `cards` existed falls back to that delta. A Sync that kept a card or had one decided is not
+  // tokens-only even when no row changed (every conflict answered App): its sentence says neither, and Y1
+  // must not drop the kept clause, so it takes the general Sync lede, which carries both.
+  const tokensOnly = sync !== null && sync.kept === 0 && sync.decided === 0 && (sync.cards !== undefined
     ? sync.cards === 0
     : summary !== null && summary.arrived + summary.left === 0);
   const lede = sync ?? undefined;

@@ -209,12 +209,14 @@ export const collectionEditCopy = {
           ].filter(Boolean).join(" "),
         noneKept: (take: number, t: number) => `Taking ${cards(take)} from the file${t ? `, with ${tokenChanges(t)}` : ""}. Nothing of yours to keep.`,
         /** (reworded, for /copy-review) The kept clause goes at 0: there is nothing of yours it could name. */
-        tokensOnly: (keep: number, t: number) =>
-          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. ${tokensChange(t)}.`,
+        tokensOnly: (keep: number, t: number, decided = 0) =>
+          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. ${tokensChange(t)}.` +
+          (decided ? ` You decided ${n(decided)}.` : ""),
         /** (new, for /copy-review) No card moves and no token COUNT changes, yet the write still records the file's
          * tokens (a read marker, a printing, an ownership source): the plain confirm, never `Sync 0 token changes`. */
-        tokensRecorded: (keep: number) =>
-          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. The file’s tokens are recorded, and no count changes.`,
+        tokensRecorded: (keep: number, decided = 0) =>
+          `Your cards stay as they are${keep ? `, including the ${n(keep)} you changed` : ""}. The file’s tokens are recorded, and no count changes.` +
+          (decided ? ` You decided ${n(decided)}.` : ""),
         undecided: (k: number) => `${cards(k)} still to decide.`,
         nothing: "Nothing will change.",
         confirm: "Sync collection",
