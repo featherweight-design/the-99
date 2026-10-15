@@ -29,7 +29,7 @@ const row = (name: string, before: number | null, after: number | null): History
   before: before === null ? null : { quantity: before, scryfallId: null, condition: null },
   after: after === null ? null : { quantity: after, scryfallId: null, condition: null },
 });
-const detail = (e: HistoryListEntry, rows: HistoryRow[], rowDecks: Record<string, string> = {}): HistoryEntry => ({ ...e, rows, rowDecks });
+const detail = (e: HistoryListEntry, rows: HistoryRow[], rowDecks: Record<string, string> = {}, sync: HistoryEntry["sync"] = null): HistoryEntry => ({ ...e, rows, rowDecks, sync });
 
 function draw(entries: HistoryListEntry[], over: Partial<React.ComponentProps<typeof HistoryList>> = {}) {
   return render(
@@ -115,6 +115,36 @@ describe("HistoryList", () => {
     fireEvent.click(screen.getByRole("button", { name: "Revert Sol Ring" }));
     expect(await screen.findByRole("dialog", { name: "Revert “Sol Ring”?" })).toBeTruthy();
     expect(previewRevert).toHaveBeenCalledWith("e1");
+  });
+
+  it("tags a Sync `Sync upload`, titles it by its file, and leads the opened entry with what it kept above the groups (Y2)", async () => {
+    const e = entry({ kind: "upload_sync", uploadFilename: "The Vault 10-14-26.csv", rowCount: 2 });
+    loadEntry.mockResolvedValue(detail(e, [row("Swords to Plowshares", 1, 0), row("Esper Sentinel", 1, 2)], {}, { kept: 119, decided: 3, tokens: 114 }));
+    draw([e]);
+    expect(screen.getByText("Sync upload")).toBeTruthy();
+    expect(screen.getByText("The Vault 10-14-26.csv", { exact: false })).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
+    const lead = await screen.findByText("Kept the 119 cards you’d changed in the app. You decided 3. Recorded 114 tokens.");
+    // Above the rows, never one of them: the kept cards are not the entry's rows.
+    const first = screen.getByText("Swords to Plowshares");
+    expect(lead.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(lead.closest("li")?.querySelectorAll("li")).toHaveLength(2);
+  });
+
+  it("leads with no line for a Replace, which stores no sync summary", async () => {
+    const e = entry({ kind: "upload_replace", uploadFilename: "manabox.csv" });
+    loadEntry.mockResolvedValue(detail(e, [row("Sol Ring", 1, 2)]));
+    draw([e]);
+    await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
+    await screen.findByText("Sol Ring");
+    expect(screen.queryByText(/you’d changed in the app/)).toBeNull();
+  });
+
+  it("titles a Sync's revert `Revert this sync?`, and a Replace's by its file", async () => {
+    previewRevert.mockReturnValue(new Promise(() => {}));
+    draw([entry({ kind: "upload_sync", uploadFilename: "vault.csv" }), entry({ id: "e2", kind: "upload_replace", uploadFilename: "box.csv" })]);
+    fireEvent.click(screen.getByRole("button", { name: "Revert vault.csv" }));
+    expect(await screen.findByRole("dialog", { name: "Revert this sync?" })).toBeTruthy();
   });
 
   it("states a zero figure and an explicit empty panel for an entry that moved no copies", async () => {

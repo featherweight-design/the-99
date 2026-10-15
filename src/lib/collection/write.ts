@@ -20,7 +20,7 @@ import {
   planTokenWrite, readTokenState, recordUploadTokens, syncPreconTokens, tokenFinalEntries, tokenOwnershipTablesExist,
   type TokenChange, type TokenFinal, type TokenHolding, type TokenWriteMode,
 } from "../tokens/ownership";
-import { missingFromAnchor, nothingToSync, planSync, quantitiesOf, staleness, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
+import { missingFromAnchor, nothingToSync, planSync, quantitiesOf, staleness, type StoredSyncSummary, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
 import { readSyncBase } from "./sync-base";
 
 /**
@@ -1063,11 +1063,13 @@ export async function applyCollectionChange(
       // A sync's summary on its own upload (G9; no column): the pick is what `readSyncBase` reads to decide
       // whether this upload anchors the next sync, and the rest is what its receipt and History draw.
       if (change.kind === "sync" && syncPreview) {
-        const summary = {
+        const summary: StoredSyncSummary = {
           pick: change.pick,
           kept: syncPreview.counts.kept,
           decided: syncPreview.counts.conflicts - syncPreview.counts.undecided,
           answeredFile: syncPreview.counts.answeredFile,
+          // The review's own rule for its tokens line: the file's tokens, when any token row moved.
+          tokens: syncPreview.tokenChanges.length > 0 ? (change.tokens?.length ?? 0) : 0,
         };
         await tx.update(csvUploads)
           .set({ previewPayload: sql`${csvUploads.previewPayload} || jsonb_build_object('syncSummary', ${JSON.stringify(summary)}::jsonb)` })

@@ -92,6 +92,7 @@ export type AboutSwitch =
   | 'TUNING_ENABLED'
   | 'DECK_STATS_ENABLED'
   | 'COLLECTION_EDIT_ENABLED'
+  | 'COLLECTION_SYNC_ENABLED'
   | 'OVERVIEW_V2_ENABLED'
   | 'DECK_BENCHMARKS_ENABLED'
   | 'SHOPPING_MARK_BOUGHT_ENABLED'
@@ -148,6 +149,15 @@ export interface AboutEntry {
    * figure's marks are re-pinned; the numeral test then holds that entry to the full contract.
    */
   marksPending?: true;
+  /**
+   * A second form of the entry behind a switch of its own (collection sync, ruling 5): while that
+   * switch is on, and the entry draws at all, it reads this title, caption and keys instead. It is
+   * then seen by `<id>@<switch>` rather than its id, so turning the switch on announces it with no
+   * `ABOUT_VERSION` bump, exactly as a switched entry is announced.
+   */
+  variant?: { switch: AboutSwitch; title: string; caption: string; keys: string[] };
+  /** Set by `visibleEntries` alone, on an entry drawn in its variant: the switch that chose it. */
+  variantOn?: AboutSwitch;
   since: number;
 }
 
@@ -298,6 +308,21 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Adding a full export doubles your copies, and the screen tells you when that’s about to happen.',
       'Your very first upload skips the question, since there’s nothing to replace.',
     ],
+    // Collection sync (handoff `about · collection sync.ts`): the third choice, announced when its
+    // switch flips. Keys stay at four: Sync's line replaces Add's doubling line, since a re-export
+    // is now Sync's job and Add's overlap note still warns on screen.
+    variant: {
+      switch: 'COLLECTION_SYNC_ENABLED',
+      title: 'Replacing, adding or syncing from a file',
+      caption:
+        'Drop in a fresh export from ManaBox, Moxfield or any of the others and The 99 asks what the file is for. “Replace” makes your Collection exactly the file. “Add” stacks its cards on top of what you have, which is what you want for a booster haul or a trade binder. “Sync” takes what changed in the file and keeps what you changed in the app.\n\nWhichever you pick, you see every card that moves before anything changes. Replace also tells you if it’ll overwrite changes you made in the app, and names any decks that will read short.',
+      keys: [
+        'Replace: anything not in the file leaves your Collection.',
+        'Add: quantities go up, nothing leaves, and your art picks stay.',
+        'Sync: keeps what you changed in the app and takes what’s new in the file. If you both changed a card, it asks.',
+        'Your very first upload skips the question, since there’s nothing to replace.',
+      ],
+    },
     marksPending: true,
     since: 12,
   },
@@ -309,7 +334,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the import summary',
     width: 'plate',
     caption:
-      "Cracked a few packs and re-imported? The summary shows what that did for your decks: what you no longer need to buy, what you still do, and where you’re still short.\n\nYour decklists don’t change, just whether you own what’s in them.",
+      "Cracked a few packs and re-imported? The summary shows what that did for your decks: what you no longer need to buy, what you still do, and where you’re still short.\n\nYour decklists don’t change, just whether you own what’s in them.\nAfter a sync it also says how many of your own changes stayed.",
+    // The handoff's half-line, kept only where a sync can happen: an ordinary edit, announced by nothing.
+    captionLineSwitches: {
+      'After a sync it also says how many of your own changes stayed.': 'COLLECTION_SYNC_ENABLED',
+    },
     keys: [
       'Shows your card count before and after.',
       'Rows sort into No longer to buy, Still to buy and Still short.',

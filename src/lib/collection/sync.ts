@@ -27,6 +27,29 @@ import { toCollectionItemValues, type PendingItem } from "./pending";
 export type SyncPick = "everything" | "additions" | "tokens";
 export const SYNC_PICKS: readonly SyncPick[] = ["everything", "additions", "tokens"];
 
+/**
+ * What a Sync stores on its own upload at confirm, as `preview_payload.syncSummary` (G9: kept and
+ * decided are not ledger rows). `pick` is what `readSyncBase` reads to decide whether the upload
+ * anchors the next Sync; the rest is what its receipt and its History entry draw. `tokens` is the
+ * tokens it recorded: the file's tokens when the confirm changed any token row, else 0.
+ */
+export type StoredSyncSummary = { pick: SyncPick; kept: number; decided: number; answeredFile: number; tokens: number };
+
+/** The figures a Sync's receipt and History entry draw. */
+export type SyncEntrySummary = { kept: number; decided: number; tokens: number };
+
+const count = (v: unknown) => (typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : 0);
+
+/**
+ * A stored `syncSummary` read back, or null when there is none (a Replace's or an Add's upload). A
+ * figure missing or malformed reads as 0, which draws no clause rather than a wrong one.
+ */
+export function readSyncSummary(value: unknown): SyncEntrySummary | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  return { kept: count(v.kept), decided: count(v.decided), tokens: count(v.tokens) };
+}
+
 export type SyncSide = "app" | "file";
 
 /** What the review lists at most of each kind of row (conflicts, kept); the counts always cover every row. */

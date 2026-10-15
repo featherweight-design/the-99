@@ -14,6 +14,7 @@ import {
   HISTORY_OPEN_ROWS,
   REMOVE_CARD_DECKS,
   UPLOAD_CHOICE,
+  UPLOAD_CHOICE_SYNC,
 } from "../../lib/about/fixtures";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { AddLine } from "../collection/add-line";
@@ -75,10 +76,20 @@ export function EditCopiesFigureBody() {
   );
 }
 
-export function UploadChoiceFigureBody() {
+export function UploadChoiceFigureBody({ sync = false }: { sync?: boolean } = {}) {
   // The page's choice fills the screen by growing into its route's flex column (`flex-1`); a
-  // figure's plate is no flex column, so here it is drawn at its own height.
-  return <UploadChoice {...UPLOAD_CHOICE} picked="replace" onPick={noop} onContinue={noop} onCancel={noop} />;
+  // figure's plate is no flex column, so here it is drawn at its own height. With Sync on, the
+  // live third card, as the step draws it with nothing stale about the file.
+  return (
+    <UploadChoice
+      {...UPLOAD_CHOICE}
+      sync={sync ? UPLOAD_CHOICE_SYNC : undefined}
+      picked="replace"
+      onPick={noop}
+      onContinue={noop}
+      onCancel={noop}
+    />
+  );
 }
 
 export function RemoveCardFigureBody() {
@@ -97,7 +108,7 @@ export function CollectionHistoryFigureBody() {
           title={entryTitle(e, byId, reachesBack)}
           revertedByEntry={e.revertedBy ? byId.get(e.revertedBy) : undefined}
           isOpen={e.id === "about-h1"}
-          detail={e.id === "about-h1" ? { ...e, rows: HISTORY_OPEN_ROWS, rowDecks: {} } : undefined}
+          detail={e.id === "about-h1" ? { ...e, rows: HISTORY_OPEN_ROWS, rowDecks: {}, sync: null } : undefined}
           onToggle={noop}
           onRevert={noop}
           onRetry={noop}

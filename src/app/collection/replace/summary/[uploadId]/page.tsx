@@ -53,6 +53,7 @@ export default async function ImportSummaryPage({
         contested={view.contested}
         addedCopy={addedCopy}
         chooser={view.chooser}
+        sync={view.sync}
         preview={preview}
         filename={view.filename}
         // Through the app's own formatter, which owns both rules this stamp needs: en-US month

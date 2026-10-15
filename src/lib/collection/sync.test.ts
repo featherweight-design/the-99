@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  answerFor, holdingDistance, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
+  answerFor, holdingDistance, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, readSyncSummary, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
   type SyncAnswers, type SyncHolding, type SyncPick,
 } from "./sync";
 import { planTokenWrite } from "../tokens/ownership";
@@ -345,5 +345,20 @@ describe("changedTokenCount", () => {
     const same = planTokenWrite("replace", { owned: [{ tokenOracleId: "t1", quantity: 2, source: "manual" }], uploadPrintings: [], read: true },
       [{ tokenOracleId: "t1", quantity: 2 }]);
     expect(changedTokenCount(same.changes)).toBe(0);
+  });
+});
+
+describe("readSyncSummary", () => {
+  it("reads the receipt's and History's figures off a stored summary", () => {
+    expect(readSyncSummary({ pick: "everything", kept: 119, decided: 3, answeredFile: 1, tokens: 114 })).toEqual({ kept: 119, decided: 3, tokens: 114 });
+  });
+
+  it("is null for an upload with no summary, a Replace's or an Add's", () => {
+    expect(readSyncSummary(null)).toBeNull();
+    expect(readSyncSummary(undefined)).toBeNull();
+  });
+
+  it("reads a missing or malformed figure as 0, which draws no clause rather than a wrong one", () => {
+    expect(readSyncSummary({ pick: "tokens", kept: 40, decided: "3", answeredFile: 0 })).toEqual({ kept: 40, decided: 0, tokens: 0 });
   });
 });

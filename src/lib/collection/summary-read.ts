@@ -15,13 +15,14 @@
  * nothing.
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, csvUploads } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { withoutUndecided, type ArrivalsSummary } from "./arrivals";
 import { holdsCopy, type Availability } from "../decks/availability";
 import { buildContestedCard } from "../decks/allocate";
+import { readSyncSummary, type SyncEntrySummary } from "./sync";
 
 /** One committed deck's place in a contested card's queue. */
 export type ContestedClaimant = {
@@ -81,6 +82,8 @@ export type SummaryView = {
    * version 2 or 3 receipt, which draws no Change.
    */
   chooser: Record<string, ContestedCard>;
+  /** A Sync's kept, decided and token figures (its upload's `syncSummary`); null for a Replace or an Add. */
+  sync: SyncEntrySummary | null;
 };
 
 
@@ -244,6 +247,9 @@ export async function loadSummaryView(
       createdAt: csvUploads.createdAt,
       confirmedAt: csvUploads.confirmedAt,
       summaryPayload: csvUploads.summaryPayload,
+      // The one key of the preview payload this route reads, extracted in the database so the
+      // aggregated rows beside it never travel.
+      syncSummary: sql<unknown>`${csvUploads.previewPayload} -> 'syncSummary'`,
     })
     .from(csvUploads)
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
@@ -293,6 +299,7 @@ export async function loadSummaryView(
     summary: shown,
     contested,
     chooser: opts.addedCopy && shown?.went ? await chooserFor(shown, contested, userId, opts.env) : {},
+    sync: readSyncSummary(upload.syncSummary),
   };
 }
 

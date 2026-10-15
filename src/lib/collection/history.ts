@@ -5,6 +5,7 @@ import { cartSourceDecks } from "../decks/mark-bought";
 import { cartDecksOf, type CartDecks } from "./deck-line";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { HISTORY_RETENTION_DAYS } from "./write";
+import { readSyncSummary, type SyncEntrySummary } from "./sync";
 
 /**
  * The anchor and the hand entries after it, shared by the count and the keys below. The anchor is the
@@ -176,6 +177,11 @@ async function withDeckLines(
 
 export type HistoryEntry = HistoryListEntry & {
   rows: HistoryRow[];
+  /**
+   * A Sync's kept, decided and token figures, from its upload's `preview_payload.syncSummary`
+   * (G9: they are not ledger rows). The opened entry leads with them; null for any other kind.
+   */
+  sync: SyncEntrySummary | null;
   /** The player's living decks named by the rows' `wentTo`, as id to name: what a row's own line draws. */
   rowDecks: Record<string, string>;
 };
@@ -193,6 +199,7 @@ type ListRow = {
   // The deck ids the rows' `wentTo` name, first appearance first, and whether EVERY placed row is a brew's read (one held row makes it false).
   went_decks: string[] | null; went_soft: boolean;
   rows?: HistoryRow[];
+  sync_summary?: unknown;
 };
 
 /**
@@ -287,6 +294,19 @@ export const listColumns = sql`
   h.rows -> 0 ->> 'name' as first_name
 `;
 
+/**
+ * A Sync's summary, stored on its own upload (G9: kept and decided are not ledger rows), for the
+ * opened entry alone. Scoped to the entry's user and guarded like `upload_filename`; null for any
+ * other kind, so a Replace's upload is never read for it.
+ */
+export const syncSummaryColumn = sql`
+  case when h.kind = 'upload_sync' then (
+    select u.preview_payload -> 'syncSummary' from csv_uploads u
+    where u.user_id = h.user_id
+      and u.id = case when h.source ~ '^csv_uploads:${sql.raw(UUID)}$' then substr(h.source, 13)::uuid end
+  ) end as sync_summary
+`;
+
 const inWindow = (userId: string) => sql`
   h.user_id = ${userId} and h.rows is not null
   and h.created_at >= now() - make_interval(days => ${HISTORY_RETENTION_DAYS})
@@ -339,7 +359,7 @@ export async function listHistory(
 /** One entry with every row it changed, or null when it is not the player's or has aged out. */
 export async function getHistoryEntry(userId: string, id: string): Promise<HistoryEntry | null> {
   const rows = await db.execute<ListRow>(sql`
-    select ${listColumns}, h.rows
+    select ${listColumns}, h.rows, ${syncSummaryColumn}
     from collection_history h
     where ${inWindow(userId)} and h.id = ${id}
   `);
@@ -350,6 +370,7 @@ export async function getHistoryEntry(userId: string, id: string): Promise<Histo
   return {
     ...entry,
     rows: r.rows ?? [],
+    sync: r.kind === "upload_sync" ? readSyncSummary(r.sync_summary) : null,
     rowDecks: Object.fromEntries(rowIds.filter((id) => living.has(id)).map((id) => [id, living.get(id)!])),
   };
 }

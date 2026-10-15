@@ -167,14 +167,14 @@ function Entry({
             <EntryCaption caption={caption} />
           </div>
           <div className="order-1 min-[1000px]:order-1 min-[1000px]:w-[300px] min-[1000px]:flex-none">
-            <Figure width={entry.width} creditLimit={specimenLimit} />
+            <Figure width={entry.width} creditLimit={specimenLimit} variant={entry.variantOn !== undefined} />
           </div>
         </div>
       ) : (
         <EntryCaption caption={caption} className="mt-[6px]" />
       )}
 
-      {Figure && !inset && <Figure width={entry.width} creditLimit={specimenLimit} />}
+      {Figure && !inset && <Figure width={entry.width} creditLimit={specimenLimit} variant={entry.variantOn !== undefined} />}
 
       {/* NUMBERED keys. "Annotation is a numeral and a line" is the handoff's
           grammar, and the lines shipped without the numerals — which is the
