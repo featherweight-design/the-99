@@ -293,6 +293,7 @@ printing or the oracle-level picture (`identityGradient` fallback included) gets
     transition: --tilt-x 600ms var(--tilt-ease), --tilt-y 600ms var(--tilt-ease), --tilt-lift 600ms var(--tilt-ease);
   }
   [data-tilt][data-tilting] { transition-duration: 300ms; }
+  [data-tilt][data-tilting][data-tilt-follow] { transition: --tilt-lift 300ms var(--tilt-ease); } /* the lag fix, 2026-10-15 */
   [data-tilt][data-turning] { --tilt-x: .5; --tilt-y: .5; --tilt-lift: 0; transition-duration: 300ms; }
 
   /* The light: every card, as strong as the lift. */
@@ -356,7 +357,7 @@ printing or the oracle-level picture (`identityGradient` fallback included) gets
 
 | Motion | Value | Notes |
 |---|---|---|
-| Tilt, following | 300ms · cubic-bezier(.22, 1, .36, 1) (ease out) | Each pointermove writes `--tilt-x` / `--tilt-y` (0 to 1). They are registered with `@property` and TRANSITIONED, so every value built from them glides: a moving target is chased, never stepped to. No rAF loop. |
+| Tilt, following | 300ms · cubic-bezier(.22, 1, .36, 1) (ease out), then none | Each pointermove writes `--tilt-x` / `--tilt-y` (0 to 1). They are registered with `@property` and TRANSITIONED for the first 300ms of a lift, so the card eases in. After that the host is marked `data-tilt-follow` and the two values take no transition: each move draws where the pointer is on its own frame (the lag fix, 2026-10-15: a transition restarted by every move kept the card about 67ms behind). The lift keeps its ease, and leaving still settles over 600ms. No rAF loop. |
 | Tilt, release | 600ms · same ease out | Pointer leaves or finger lifts: the vars return to .5 and `--tilt-lift` to 0; the card settles flat and the edge and light fade with it. |
 | Tilt, range | ±6° on each axis · perspective 1000px | rotateY((.5 − x) × 12°), rotateX((y − .5) × 12°): the side under the pointer lifts toward you (measured off Hugh’s reference: about 6° at that perspective). |
 | Card edge | up to 1.5px · card-stock grey at 55% · fades in with the lift | A hairline on the sides under the pointer (pointer bottom right: the bottom and right edges), (x − .5) × 3px and (y − .5) × 3px, plus a faint .5px rim. The tilt’s perspective does most of the work. At rest: none. |

@@ -280,6 +280,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   its layer's mark and never sweeps on hover; a phone plays one delayed band on a large film and none on a peek; and
   reduced transparency and forced colors drop the large film too, the face still drawn. Its failure path was run:
   marking the face itself `pending` reads opacity 0 under no-preference and fails the run.
+- `pnpm probe:tilt-follow` proves the card tilt FOLLOWS the pointer (foil R2 PR 2, #1833, and the lag fix) in card
+  details and the zoom, at 1300x900, against a dev server, signed in as the audit account (`PROBE_CARD` names a card
+  it owns; a foil one also checks the zoom's film drift). A real mouse moves one step per animation frame while the page
+  logs, every frame, the computed `--tilt-*` beside the inline target: past the 300ms settle the host carries
+  `data-tilt-follow` and the drawn value is the target on every frame (before the fix it trailed a restarted
+  transition by ~67ms), the way in still eases and leaving still settles flat, a mouse hover tilts the zoom (it used to
+  tilt only on a press that moved), and under reduced motion a hover tilts nothing. Writes nothing.
 - `pnpm probe:art-layer` proves card art drawn as a CSS background fades in (card-art fades plan), on deployed
   staging only (`MEASURE_DEPLOYED=1`, signed in as `THE_99_E2E_AUDIT_USER_EMAIL` with a ticket from
   `THE_99_CLERK_SECRET_KEY_STAGING`; it reads pages and writes nothing). On a deck (`MEASURE_DECK_ID`, else the first

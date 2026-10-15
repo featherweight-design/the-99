@@ -1187,6 +1187,9 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
     transition: --tilt-x 600ms var(--tilt-ease), --tilt-y 600ms var(--tilt-ease), --tilt-lift 600ms var(--tilt-ease);
   }
   [data-tilt][data-tilting] { transition-duration: 300ms; }
+  /* Once the lift has settled the card FOLLOWS the pointer (`card-tilt.ts`): a transition restarted by every move kept it
+     a beat behind. The lift keeps its ease; leaving takes the mark off, so the card still settles flat over 600ms. */
+  [data-tilt][data-tilting][data-tilt-follow] { transition: --tilt-lift 300ms var(--tilt-ease); }
   /* A flip holds it flat until the turn settles. The turn takes the inline values off first, or they would win (G4). */
   [data-tilt][data-turning] { --tilt-x: .5; --tilt-y: .5; --tilt-lift: 0; transition-duration: 300ms; }
 
