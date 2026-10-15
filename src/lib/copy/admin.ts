@@ -525,6 +525,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   NAV_STALL_LOG_ENABLED: { label: "Stuck-loader reports", description: "Logs a report when a loading screen stays up 8 seconds. Changes nothing on screen." },
   NEVER_CUT_ENABLED: { label: "Never cut", description: "Mark cards a suggestion may not cut." },
   NOTICES_ENABLED: { label: "Notices", description: "Notices on a deck." },
+  NO_COLLECTION_ENTRY_ENABLED: { label: "No-collection entry", description: "Start with no collection: own an imported deck’s cards, or pick the precons you own." },
   OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
   PRECONS_ENABLED: { label: "Precons", description: "Browse Commander precons and start a deck from one." },
   PROPOSED_CUTS_ENABLED: { label: "Proposed cuts", description: "Cuts proposed for a deck over 99." },

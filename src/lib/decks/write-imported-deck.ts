@@ -23,6 +23,12 @@ export type ImportedDeck = {
   printings?: ImportPrintingPick[];
   /** The precon a "Start a deck from this" began with. */
   builtFromPrecon?: string | null;
+  /**
+   * The deck's id, when the caller must name it before the write: the import's own-these-cards add
+   * records `deck:<id>` as its ledger source in the same transaction (`importDeckOwned`). Else the
+   * column's default.
+   */
+  id?: string;
 };
 
 /** Writes the deck and its rows inside `tx`, and returns the new deck's id. */
@@ -30,6 +36,7 @@ export async function writeImportedDeck(tx: Tx, d: ImportedDeck): Promise<string
   const [deck] = await tx
     .insert(decks)
     .values({
+      ...(d.id ? { id: d.id } : {}),
       userId: d.userId,
       name: d.name,
       commanderOracleId: d.commanderOracleId,

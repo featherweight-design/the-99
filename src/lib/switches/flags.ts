@@ -2,7 +2,7 @@ import { aboutSheetEnabled } from "../about/flag";
 import { howItWorksEnabled } from "../about/how-it-works-flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
-import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
+import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
 import { changeCommanderEnabled } from "../commander-change/flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
@@ -59,6 +59,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
   NEVER_CUT_ENABLED: neverCutEnabled,
   NOTICES_ENABLED: noticesEnabled,
+  NO_COLLECTION_ENTRY_ENABLED: noCollectionEntryEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PRECONS_ENABLED: preconsEnabled,
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,

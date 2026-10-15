@@ -31,6 +31,7 @@ const TAG_INK: Record<HistoryKind, string> = {
   uploadAdd: "var(--success)",
   uploadSync: "var(--fg)",
   add: "var(--success)",
+  deckAdd: "var(--success)",
   edit: "var(--accent)",
   shopping: "var(--success)",
   remove: "var(--danger)",

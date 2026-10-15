@@ -119,6 +119,12 @@ export type HistoryListEntry = {
   /** The precon an add came from (source `precon:<file name>`), by its current name; null for any other entry, or a precon since dropped. */
   preconName: string | null;
   /**
+   * The deck an import's `I own these cards` add came from (source `deck:<deck id>`), resolved at read
+   * time like `shoppingDeck`, so a renamed deck reads its new name and a deleted one reads `name` null.
+   * Null for every entry not sourced from a deck import.
+   */
+  addedFromDeck: { id: string; name: string | null } | null;
+  /**
    * The decks a cart purchase was bought for (the ids its source records), resolved at read time: the
    * first `CART_DECKS_NAMED` living decks by name, the living ones past them, and those since deleted.
    * Null for every entry not sourced from the cart.
@@ -183,6 +189,7 @@ type ListRow = {
   reverts_visible: boolean; reverted_by_visible: boolean;
   upload_filename: string | null; first_name: string | null;
   shopping_deck_id: string | null; shopping_deck_name: string | null; precon_name: string | null;
+  deck_add_id: string | null; deck_add_name: string | null;
   // The deck ids the rows' `wentTo` name, first appearance first, and whether EVERY placed row is a brew's read (one held row makes it false).
   went_decks: string[] | null; went_soft: boolean;
   rows?: HistoryRow[];
@@ -253,6 +260,14 @@ export const listColumns = sql`
     select p.name from precons p
     where h.source like 'precon:%' and p.file_name = substr(h.source, 8)
   ) as precon_name,
+  -- The deck an import's own-these-cards add came from: the source is deck:<deck uuid>, written by
+  -- importDeck. Read now like the Shopping deck, scoped to the entry's own user and guarded the same way.
+  case when h.source ~ '^deck:${sql.raw(UUID)}$' then substr(h.source, 6) end as deck_add_id,
+  (
+    select d.name from decks d
+    where d.user_id = h.user_id
+      and d.id = case when h.source ~ '^deck:${sql.raw(UUID)}$' then substr(h.source, 6)::uuid end
+  ) as deck_add_name,
   -- The decks the rows' \`wentTo\` name (add and upload entries), distinct, in order of first appearance. A row
   -- with no \`wentTo\` yields nothing from the lateral set-returning call, so most entries cost one empty scan.
   (
@@ -292,6 +307,7 @@ function toListEntry(r: ListRow): HistoryListEntry {
     shoppingDeck: r.shopping_deck_id ? { id: r.shopping_deck_id, name: r.shopping_deck_name } : null,
     shoppingCart: cartSourceDecks(r.source) !== null,
     preconName: r.precon_name,
+    addedFromDeck: r.deck_add_id ? { id: r.deck_add_id, name: r.deck_add_name } : null,
     cartDecks: null,
     wentTo: null,
   };

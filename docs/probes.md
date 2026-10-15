@@ -2159,6 +2159,22 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   against the reservations the start itself wrote it fails l, and with the reservations dropped before the revert reads
   its "before" it fails m (both Hugh's symptoms on production, 2026-10-14). Case i needs `precon_tokens`, which a
   branch whose precons were ingested before the token columns lacks.
+- `pnpm probe:deck-own` proves the import's `I own these cards. Add them to my collection.` (no-collection entry plan,
+  PR 1) against a real database, through the real `buildDeckImport`, `readDeckOwnLines`, `importDeckOwned`,
+  `listHistory` and `applyCollectionChange` (revert), the steps `importDeck` takes with the box ticked:
+  - one add writes the deck (its lines and its unresolved line) and the copies, as one History entry;
+  - every line is added at the deck's count, at the list's named printing or else the card's default, the commander
+    included and the unresolved line adding nothing; a card already held gains a copy;
+  - History lists it as a Deck add titled `Added from <deck>`, by the deck's current name;
+  - a retry under the same action id lands on the same deck and writes nothing more, and an id another add used is
+    refused;
+  - a deck write that fails inside the add (a commander the catalog lacks) leaves neither the deck, the cards nor an
+    entry;
+  - reverting the add takes back exactly its copies and leaves the deck standing.
+
+  It WRITES under a per-run account it purges, after the same branch guard as `probe:precon-add`, on a scratch branch
+  made from local-dev and migrated to 0127. Its mutation checks (the commander lines dropped, the deck written outside
+  the add's transaction, the source left off) are listed in its header and are to be run on its first run.
 - `pnpm probe:payments-webhook` proves the Stripe webhook's grant transaction (payments K1a) against a real database,
   through the real `fulfilCheckoutSession`, `readAllowance` and `purgeAccount`, with Stripe a stand-in whose
   `checkout.sessions.retrieve` serves a crafted Session and counts its calls: a paid Session for its own account

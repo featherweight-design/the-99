@@ -19,3 +19,18 @@ describe("listColumns: the precon an add came from", () => {
     expect("precon:".length).toBe(7);
   });
 });
+
+// An import's own-these-cards add (no-collection entry) is titled by its deck, read now by the id its
+// `deck:<uuid>` source names and scoped to the entry's own player, as the Shopping deck is.
+describe("listColumns: the deck an import's add came from", () => {
+  const { sql } = new PgDialect().sqlToQuery(listColumns as SQL);
+
+  it("reads the deck's name by the id in the entry's own source, scoped to the entry's player", () => {
+    expect(sql).toContain("then substr(h.source, 6) end as deck_add_id");
+    expect(sql).toMatch(/select d\.name from decks d\s+where d\.user_id = h\.user_id\s+and d\.id = case when h\.source ~ '\^deck:\[0-9a-f\]\{8\}[^']*\$' then substr\(h\.source, 6\)::uuid end\s+\) as deck_add_name/);
+  });
+
+  it("takes the id after the prefix, whose length is five", () => {
+    expect("deck:".length).toBe(5);
+  });
+});
