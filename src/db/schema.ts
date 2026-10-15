@@ -3479,7 +3479,7 @@ export const scanLabResults = pgTable("scan_lab_results", {
   /**
    * How long before the press the guess on screen last changed, and the guess on screen at the press. A change under
    * `CHANGE_GRACE_MS` (700ms) came too soon for the player to react to, so `guess_oracle_id` is the guess shown BEFORE
-   * it and the re-score treats the row as flagged. Null on every row from before they existed.
+   * it. The lab re-score (outside this repo) counts such a row apart as flagged. Null on every row from before they existed.
    */
   changedMsBeforeTap: integer("changed_ms_before_tap"),
   shownOracleId: uuid("shown_oracle_id"),

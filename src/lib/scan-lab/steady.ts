@@ -8,7 +8,8 @@ import type { Reading } from "./reading";
 // nothing supports. A frame with no card is a reading like any other: it too must hold to clear the screen.
 
 /** How long a new top-1 must hold before it replaces the guess on screen. The loop reads a frame every ~150-300ms on a
- * phone (two model runs and a 60ms pause), so this is three or four frames, and never fewer than two. */
+ * phone (two model runs and a 60ms pause), so a change shows on the fourth to sixth frame of an unbroken run, never
+ * sooner than the second. */
 export const DWELL_MS = 700;
 /** How long the guess on screen may go unseen before the screen falls to unsure. */
 export const LOSE_MS = 2 * DWELL_MS;

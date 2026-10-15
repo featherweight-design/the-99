@@ -154,7 +154,7 @@ describe("ScanControls", () => {
   });
 
   it("records a press that came within the change grace against the guess shown before the change, and flags it", async () => {
-    // Grizzled Angler shown, then another card took the screen 300ms before the finger landed on Right.
+    // Zirda shown, then Sol Ring took the screen 300ms before the finger landed on Right (the Grizzled Angler case).
     const now = vi.spyOn(performance, "now").mockReturnValue(10_000);
     const onVerdict = vi.fn(async () => {});
     render(<ScanControls display={at(NEXT, 9_700, ZIRDA)} keepFrame onKeepFrame={vi.fn()} onVerdict={onVerdict} />);
