@@ -143,18 +143,64 @@ describe("on the list", () => {
   });
 });
 
-describe("Remove while a step is in flight", () => {
-  it("leaves the Add button standing when the earlier step answers after Remove", async () => {
+describe("writes never overlap", () => {
+  it("ignores a second press of Add while the first is out, and draws the first's answer", async () => {
+    let answer: (v: unknown) => void = () => {};
+    add.mockReturnValue(new Promise((r) => { answer = r; }));
+    const onWrite = mount(null);
+    const button = screen.getByRole("button", { name: c.add });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(add).toHaveBeenCalledTimes(1);
+    await act(async () => { answer(wanted(2, 1)); });
+    expect(await screen.findByTestId("want-stepper")).toBeInTheDocument();
+    expect(onWrite).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a second press of Remove while the first is out, and draws the first's answer", async () => {
+    let answer: (v: unknown) => void = () => {};
+    remove.mockReturnValue(new Promise((r) => { answer = r; }));
+    const onWrite = mount(2);
+    const button = screen.getByRole("button", { name: c.remove });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(remove).toHaveBeenCalledTimes(1);
+    await act(async () => { answer({ ok: true, status: "removed", have: 1 }); });
+    expect(await screen.findByRole("button", { name: c.add })).toBeInTheDocument();
+    expect(onWrite).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores Remove while a step is out, so a failed step still goes back to what the server holds", async () => {
     let answerStep: (v: unknown) => void = () => {};
     set.mockReturnValue(new Promise((r) => { answerStep = r; }));
-    remove.mockResolvedValue({ ok: true, status: "removed", have: 1 });
-    const onWrite = mount(2);
+    mount(2);
     fireEvent.click(screen.getByRole("button", { name: c.more }));
     fireEvent.click(screen.getByRole("button", { name: c.remove }));
+    expect(remove).not.toHaveBeenCalled();
+    await act(async () => { answerStep({ ok: false, reason: "invalid" }); });
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("2");
+  });
+
+  it("ignores a step while Remove is out", async () => {
+    let answer: (v: unknown) => void = () => {};
+    remove.mockReturnValue(new Promise((r) => { answer = r; }));
+    mount(2);
+    fireEvent.click(screen.getByRole("button", { name: c.remove }));
+    fireEvent.click(screen.getByRole("button", { name: c.more }));
+    expect(set).not.toHaveBeenCalled();
+    await act(async () => { answer({ ok: true, status: "removed", have: 1 }); });
     expect(await screen.findByRole("button", { name: c.add })).toBeInTheDocument();
-    await act(async () => { answerStep(wanted(3, 1)); });
-    expect(screen.getByRole("button", { name: c.add })).toBeInTheDocument();
-    expect(screen.queryByTestId("want-stepper")).toBeNull();
-    expect(onWrite).toHaveBeenCalled();
+  });
+});
+
+describe("focus when the line goes", () => {
+  it("a step down to what the collection holds puts focus on Add", async () => {
+    set.mockResolvedValue({ ok: true, status: "held", have: 1 });
+    mount(2, 1);
+    const fewer = screen.getByRole("button", { name: c.fewer });
+    fewer.focus();
+    fireEvent.click(fewer);
+    const addButton = await screen.findByRole("button", { name: c.add });
+    await waitFor(() => expect(addButton).toHaveFocus());
   });
 });

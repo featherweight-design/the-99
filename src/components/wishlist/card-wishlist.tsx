@@ -51,19 +51,19 @@ export function CardWishlist({
   // The last count the server confirmed, which a failed step goes back to; and the step in flight that may answer.
   const confirmed = useRef(initial);
   const latest = useRef(0);
-  // Bumped by Add and Remove, which replace the line outright: a step that began before one answers into a line
-  // that is no longer its own, and moves nothing on screen.
-  const epoch = useRef(0);
+  // Add and Remove run alone: each is ignored while any write is in flight, and a step is ignored while either is,
+  // so no two writes ever answer over one another and a failure always has one confirmed count to go back to.
+  const exclusive = useRef(false);
   const toasts = useRef(0);
   const fail = (text: string) => setToast({ id: ++toasts.current, text });
 
-  // Remove puts the Add button back where focus was; it takes focus once it is drawn.
-  const focusAdd = useRef(false);
+  // When the line goes (Remove, or a step down to what the collection already holds) while the stepper held focus, the
+  // button that replaces it takes focus; focus anywhere else stays where it is.
+  const listed = useRef(initial !== null);
   useEffect(() => {
-    if (focusAdd.current && want === null) {
-      focusAdd.current = false;
-      addRef.current?.focus();
-    }
+    const was = listed.current;
+    listed.current = want !== null;
+    if (was && want === null && document.activeElement === document.body) addRef.current?.focus();
   }, [want]);
 
   function settle(out: WantOutcome) {
@@ -78,16 +78,17 @@ export function CardWishlist({
   }
 
   async function add() {
-    const ticket = ++latest.current;
-    epoch.current += 1;
+    if (exclusive.current || pending.current > 0) return;
+    exclusive.current = true;
     try {
       const out = await addToWishlistAction(oracleId);
-      if (ticket !== latest.current) return;
       if (!out.ok) return fail(copy.failedAdd);
       if (out.status === "wanted") setArrived(true);
       settle(out);
     } catch {
-      if (ticket === latest.current) fail(copy.failedAdd);
+      fail(copy.failedAdd);
+    } finally {
+      exclusive.current = false;
     }
   }
 
@@ -96,8 +97,8 @@ export function CardWishlist({
   const pending = useRef(0);
 
   async function step(next: number) {
+    if (exclusive.current) return;
     const ticket = ++latest.current;
-    const born = epoch.current;
     pending.current += 1;
     setWant(next);
     let out: WantOutcome | null = null;
@@ -107,10 +108,6 @@ export function CardWishlist({
       out = null;
     }
     pending.current -= 1;
-    if (born !== epoch.current) {
-      if (out?.ok) onWrite();
-      return;
-    }
     if (out?.ok) {
       confirmed.current = out.status === "wanted" ? out.want : null;
       if (ticket === latest.current) settle(out);
@@ -122,18 +119,18 @@ export function CardWishlist({
   }
 
   async function remove() {
-    const ticket = ++latest.current;
-    epoch.current += 1;
+    if (exclusive.current || pending.current > 0) return;
+    exclusive.current = true;
     try {
       const out = await removeFromWishlistAction(oracleId);
-      if (ticket !== latest.current) return;
       if (!out.ok) return fail(copy.failedSet);
       confirmed.current = null;
-      focusAdd.current = true;
       setWant(null);
       onWrite();
     } catch {
-      if (ticket === latest.current) fail(copy.failedSet);
+      fail(copy.failedSet);
+    } finally {
+      exclusive.current = false;
     }
   }
 
