@@ -1852,6 +1852,10 @@ describe("DecklistRow, the two-line row and the foil glint", () => {
     const mins = (el: Element) => el.className.split(/\s+/).filter((c) => c.includes("min-h-") && !c.startsWith("max-md:")).sort();
     for (const [name, c] of [["card", foiled()], ["land", foiled({ cardTypeGroup: "Lands", typeLine: "Land", manaCost: null, name: "Sunken Ruins" })]] as const) {
       renderRow(<DecklistRow deckId="d1" card={c} newestAsOf={null} />);
+      // Both wrap from md at one height: a land's second line carries a marker or a tag as a card's does.
+      expect(mins(row())).toContain("md:min-h-[58px]");
+      cleanup();
+      renderRow(<DecklistRow deckId="d1" card={c} newestAsOf={null} />);
       const live = mins(row());
       cleanup();
       renderRow(<DecklistRow deckId="d1" card={c} spent newestAsOf={null} />);

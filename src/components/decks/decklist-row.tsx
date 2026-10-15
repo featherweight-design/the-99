@@ -80,18 +80,18 @@ const ROW_SHELL_SHOPPING = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] lg:m
 // the shells above, because a second `min-h` or `py` at the same variant has no defined winner.
 const TWO_PAD_MD = "pl-[8px] pr-[4px] md:px-[9px] md:py-[3px]";
 const TWO_PAD_LG = "pl-[8px] pr-[4px] md:px-[9px] md:py-[7px] lg:py-[3px]";
-// A row with no meta line on the phone (a land) keeps its 44px there, and a Shopping land its 34px from `md`. The live shell and
-// the receipt's slot carry the SAME minimum (58px for a row with a second line, 34px for a land's one), because a plain card's
-// first line is only about 20px and its two lines come to 56px: a live row shorter than its receipt would move the rows below
-// when the receipt arrives and again on Undo.
+// A row with no meta line on the phone (a land) keeps its 44px there, and a Shopping land its 34px from `md` to `lg`. Where the
+// row wraps, every row takes the same 58px: a land still carries a marker or a tag on its second line, and a plain card's
+// first line is only about 20px, so two lines come to 56px. The live shell and the receipt's slot are the one string, so a
+// live row is never shorter than its receipt and the rows below do not move when it arrives and again on Undo.
 const TWO_SHELLS = {
   md: {
     meta: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[52px] md:min-h-[58px]`,
-    land: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[44px] md:min-h-[34px]`,
+    land: `${SHARED_ROW_SHELL} ${TWO_PAD_MD} min-h-[44px] md:min-h-[58px]`,
   },
   lg: {
     meta: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[52px] lg:min-h-[58px]`,
-    land: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[44px] md:min-h-[34px]`,
+    land: `${SHARED_ROW_SHELL} ${TWO_PAD_LG} min-h-[44px] md:min-h-[34px] lg:min-h-[58px]`,
   },
 };
 
