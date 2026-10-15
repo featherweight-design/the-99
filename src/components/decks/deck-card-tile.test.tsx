@@ -592,6 +592,16 @@ describe("DeckCardTile foil glint", () => {
     expect(dot).not.toBeNull();
     expect(screen.getAllByRole("button").some((b) => (b.getAttribute("aria-label") ?? "").includes(", etched foil"))).toBe(true);
   });
+  it("draws the chip as a glyph alone below md beside a glint, and leaves a plain tile's chip as it was", () => {
+    const availability: Availability = { owned: 2, hard: 0, soft: 1, free: 1, claims: [] };
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, owned: true, foil: "foil", availability } as DeckDetailCard} />);
+    expect(document.querySelectorAll(".md\\:hidden")).toHaveLength(1);
+    expect(document.querySelectorAll(".max-md\\:hidden")).toHaveLength(1);
+    cleanup();
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, owned: true, availability } as DeckDetailCard} />);
+    expect(document.querySelectorAll(".md\\:hidden")).toHaveLength(0);
+    expect(document.querySelectorAll(".max-md\\:hidden")).toHaveLength(0);
+  });
   it("draws nothing for a plain card, part-foil, or a card with no art", () => {
     renderTile(<DeckCardTile deckId="d1" card={card} />);
     expect(glints()).toHaveLength(0);

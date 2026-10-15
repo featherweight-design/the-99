@@ -438,14 +438,31 @@ export function DeckCardTile({
                 <ProxyTag variant="band" plate={false} />
               ) : card.owned ? (
                 card.availability && (
-                  <AvailabilityMarker bareOne
-                    availability={card.availability}
-                    density="chip"
-                    plate={false}
-                    selfExcluded
-                    // Nothing wraps the chip, so it carries §17's prose itself.
-                    spoken
-                  />
+                  <>
+                    {/* A foil tile below `md` draws the chip's glyph alone, the collection tile's own answer (grid-view):
+                        the glint's 18px, the dot, the lock and a worded chip do not fit a 360px caption, and the lock
+                        would spill into the remove column. The word is back from `md`; the spoken sentence is the same. */}
+                    {foilFinish && (
+                      <AvailabilityMarker
+                        bareOne
+                        availability={card.availability}
+                        density="chip"
+                        plate={false}
+                        selfExcluded
+                        glyphOnly
+                        className="md:hidden"
+                      />
+                    )}
+                    <AvailabilityMarker bareOne
+                      availability={card.availability}
+                      density="chip"
+                      plate={false}
+                      selfExcluded
+                      // Nothing wraps the chip, so it carries §17's prose itself.
+                      spoken
+                      className={foilFinish ? "max-md:hidden" : undefined}
+                    />
+                  </>
                 )
               ) : (
                 <BuyTag
