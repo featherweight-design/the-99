@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Import, own these, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#121217;border:1px solid #2E3340;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box}
+.rail{width:72px;flex:none;background:#16171D;border-right:1px solid #2E3340;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px;box-sizing:border-box}
+.logo{width:36px;height:36px;border-radius:9px;border:1px solid #5C86C9;color:#5C86C9;display:flex;align-items:center;justify-content:center;font:700 14px 'Metamorphous',serif;margin-bottom:10px}
+.slot{width:48px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:500 8.5px 'IBM Plex Mono',monospace;letter-spacing:.04em;color:#95A4A6;text-decoration:none}
+.slot.lk{color:#5F6875}
+.slot.cur{background:#1E1F26;color:#C6D2D3}
+.well{width:52px;background:#0F1014;border:1px solid #2E3340;border-radius:12px;padding:4px 0 9px;display:flex;flex-direction:column;align-items:center;gap:4px;box-sizing:border-box}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.spine{padding:22px 28px 16px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid #2E3340}
+.kick{margin:0;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.h1{margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:#C6D2D3}
+.meta{font:12px 'IBM Plex Mono',monospace;color:#95A4A6}
+.strip{display:flex;flex-direction:column;background:#181920;border-bottom:1px solid #2E3340}
+.sl{display:flex;align-items:center;gap:12px;padding:11px 28px;font-size:13.5px;color:#B3C0C2}
+.ok{color:#6FA368;font-weight:700;width:14px}
+.offer{display:flex;align-items:center;gap:12px;padding:0 28px 12px 54px;font-size:13.5px;color:#C6D2D3}
+.x{width:32px;height:32px;border:0;background:transparent;color:#7C8A8C;font-size:16px;border-radius:8px}
+.bp{height:34px;padding:0 14px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 12.5px 'IBM Plex Sans',sans-serif}
+.bp.held{opacity:.5}
+.bt{height:34px;padding:0 10px;border-radius:8px;background:transparent;color:#B3C0C2;border:0;font:400 12.5px 'IBM Plex Sans',sans-serif}
+.tabs{display:flex;gap:22px;padding:0 28px;border-bottom:1px solid #2E3340}
+.tab{height:42px;display:flex;align-items:center;font-size:13px;color:#95A4A6;border-bottom:2px solid transparent}
+.tab.on{color:#C6D2D3;border-bottom-color:#C6D2D3}
+.body{padding:16px 28px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px}
+.gh{display:flex;justify-content:space-between;padding:10px 0 6px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:#7C8A8C;border-bottom:1px solid #2E3340}
+.cr{display:flex;align-items:center;gap:10px;height:34px;border-bottom:1px solid #1F2129;font-size:13px;color:#C6D2D3}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;box-sizing:border-box}
+.dot.no{border:1px dashed #7C8A8C}
+.dot.yes{background:#6FA368}
+.buy{margin-left:auto;font:10.5px 'IBM Plex Mono',monospace;color:#E0913C;border:1px solid rgba(224,145,60,.45);border-radius:5px;padding:2px 6px}
+.got{margin-left:auto;height:28px;padding:0 10px;border-radius:6px;border:1px solid #424755;background:transparent;color:#C6D2D3;font:400 12px 'IBM Plex Sans',sans-serif}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);width:420px;display:flex;align-items:center;gap:14px;padding:4px 6px 4px 16px;background:#2A2B33;border:1px solid #424755;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.5);box-sizing:border-box}
+.toast .tt{flex:1;padding:8px 0;font-size:13.5px;line-height:1.4;color:#C6D2D3}
+.ta{height:36px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#C6D2D3;font:600 13px 'IBM Plex Sans',sans-serif}
+.shead{display:flex;align-items:center;gap:14px;margin:14px 28px 0;padding:12px 14px;background:#16171D;border-radius:10px;font-size:13.5px;color:#B3C0C2}
+</style>
+</helmet>
+<div style="width:2760px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Path (a) · import a deck, then own its cards · desktop 1300 · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">The offer is a second line on the shipped arrival strip, and again at the head of Shopping</h2>
+    <p class="cap" style="margin:0;max-width:1700px">Shown only when the collection held no cards at the import (G4). One press adds every line, at the printings the import kept, as one History entry Revert takes back. No per-line ticks: a player who owns some of the list uses Shopping’s shipped I got it. The deck page below the strip is scaffolding.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 48px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Main">
+            <span class="logo" aria-hidden="true">99</span>
+            <a class="slot" href="#">HOME</a><a class="slot" href="#">COLL</a>
+            <sc-if value="{{f.locked}}" hint-placeholder-val="{{true}}"><div class="well"><span class="slot lk">CMDRS</span><span class="slot lk">DISC</span><span class="slot lk cur">DECKS</span></div></sc-if>
+            <sc-if value="{{f.open}}" hint-placeholder-val="{{false}}"><a class="slot" href="#">CMDRS</a><a class="slot" href="#">DISC</a><a class="slot cur" href="#" aria-current="page">DECKS</a></sc-if>
+          </nav>
+          <main class="main" aria-busy="{{f.busy}}">
+            <div class="spine"><p class="kick">Deck · Kinnan, Bonder Prodigy</p><h1 class="h1">Kinnan Ramp</h1><span class="meta">{{f.meta}}</span></div>
+            <sc-if value="{{f.strip}}" hint-placeholder-val="{{true}}">
+              <div class="strip" role="status">
+                <div class="sl"><span class="ok" aria-hidden="true">✓</span><span style="flex:1">{{f.stripText}}</span><sc-if value="{{f.history}}" hint-placeholder-val="{{false}}"><a href="#" style="font-size:13px">History</a></sc-if><button class="x" type="button" aria-label="Dismiss">✕</button></div>
+                <sc-if value="{{f.offer}}" hint-placeholder-val="{{true}}"><div class="offer" role="group" aria-label="Add these cards to your collection"><span style="flex:1">Already own these? Add the deck’s 100 cards to your collection.</span><button class="bt" type="button" disabled="{{f.busy}}">Not now</button><button class="bp {{f.btnCls}}" type="button" aria-disabled="{{f.busy}}">{{f.btn}}</button></div></sc-if>
+              </div>
+            </sc-if>
+            <div class="tabs"><span class="tab {{f.listOn}}">List</span><span class="tab">Analysis</span><span class="tab {{f.shopOn}}">{{f.shopLabel}}</span></div>
+            <sc-if value="{{f.shead}}" hint-placeholder-val="{{false}}"><div class="shead"><span style="flex:1">Own these already? Add all 100 to your collection, or mark them one at a time with I got it.</span><button class="bp" type="button">Add 100 cards</button></div></sc-if>
+            <div class="body">
+              <div><div class="gh"><span>CREATURES</span><span>31</span></div>
+                <sc-for list="{{f.rowsA}}" as="r" hint-placeholder-count="8"><div class="cr"><span class="dot {{r.dot}}" aria-hidden="true"></span>{{r.n}}<sc-if value="{{r.buy}}" hint-placeholder-val="{{true}}"><span class="buy">buy</span></sc-if><sc-if value="{{r.got}}" hint-placeholder-val="{{false}}"><button class="got" type="button">I got it</button></sc-if></div></sc-for>
+              </div>
+              <div><div class="gh"><span>ARTIFACTS</span><span>14</span></div>
+                <sc-for list="{{f.rowsB}}" as="r" hint-placeholder-count="8"><div class="cr"><span class="dot {{r.dot}}" aria-hidden="true"></span>{{r.n}}<sc-if value="{{r.buy}}" hint-placeholder-val="{{true}}"><span class="buy">buy</span></sc-if><sc-if value="{{r.got}}" hint-placeholder-val="{{false}}"><button class="got" type="button">I got it</button></sc-if></div></sc-for>
+              </div>
+            </div>
+            <sc-if value="{{f.toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="alert"><span class="tt">We couldn’t add those. Your collection is unchanged.</span><button class="ta" type="button">Try again</button></div></sc-if>
+          </main>
+        </div>
+        <span class="cap" style="max-width:1300px">{{f.cap}}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":2860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = ['Birds of Paradise', 'Bloom Tender', 'Delighted Halfling', 'Elvish Mystic', 'Faeburrow Elder', 'Fyndhorn Elves', 'Incubation Druid', 'Llanowar Elves', 'Priest of Titania', 'Seedborn Muse', 'Thrasios, Triton Hero'];
+    const B = ['Arcane Signet', 'Basalt Monolith', 'Chromatic Orrery', 'Commander’s Sphere', 'Grim Monolith', 'Isochron Scepter', 'Mind Stone', 'Mox Amber', 'Sol Ring', 'Thousand-Year Elixir', 'Unwinding Clock'];
+    const rows = (names, mode) => names.map((n) => ({ n: n, dot: mode === 'own' ? 'yes' : 'no', buy: mode === 'buy', got: mode === 'got' }));
+    const base = { busy: false, btnCls: '', btn: 'Add 100 cards', locked: true, open: false, strip: true, offer: true, history: false, toast: false, shead: false, listOn: 'on', shopOn: '', shopLabel: 'To buy 100' };
+    const frames = [
+      Object.assign({}, base, { label: 'S8 · import done · the offer', meta: '100 cards · 0 owned · imported just now', stripText: 'All 100 lines came over clean. Imported from your list a moment ago.', rowsA: rows(A, 'buy'), rowsB: rows(B, 'buy'),
+        cap: 'The strip’s first line is the shipped clean arrival. The offer is its second line, inset to the text column, with Add 100 cards as the strip’s only fill and Not now as a text press. The count is the deck’s card lines, commander included. Decks shows as current in the well: a locked slot can be the current page, as shipped.' }),
+      Object.assign({}, base, { label: 'S9 · adding · the deck unchanged', meta: '100 cards · 0 owned · imported just now', stripText: 'All 100 lines came over clean. Imported from your list a moment ago.', busy: true, btnCls: 'held', btn: 'Adding…', rowsA: rows(A, 'buy'), rowsB: rows(B, 'buy'),
+        cap: 'Only the offer goes busy: Adding… and Not now disabled. The list, its buy tags and the rail stay exactly as they were until the write settles.' }),
+      Object.assign({}, base, { label: 'S10 · done · To buy empties, the nav unlocks', meta: '100 cards · 100 owned', stripText: '100 cards added to your collection. Nothing left to buy.', offer: false, history: true, locked: false, open: true, shopLabel: 'To buy 0', rowsA: rows(A, 'own'), rowsB: rows(B, 'own'),
+        cap: 'The strip collapses to one line with History (the entry is titled by the deck, kind Deck add). Buy tags turn to owned dots, To buy reads 0, and the rail drops its well with no transition. The deck’s copies are not reserved: an import is not a precon start, so the shipped claim model places them.' }),
+      Object.assign({}, base, { label: 'S11 · refused · nothing added', meta: '100 cards · 0 owned · imported just now', stripText: 'All 100 lines came over clean. Imported from your list a moment ago.', toast: true, rowsA: rows(A, 'buy'), rowsB: rows(B, 'buy'),
+        cap: 'The shared toast, role alert, the precon add’s own refusal sentence. The offer stands with its button live again; Try again is the same press. Thrown with no answer: the unsure sentence, and the retry is safe on the action’s idempotency id.' }),
+      Object.assign({}, base, { label: 'S12 · declined · Shopping keeps the offer', meta: '100 cards · 0 owned', strip: false, offer: false, shead: true, listOn: '', shopOn: 'on', shopLabel: 'To buy 100', rowsA: rows(A, 'got'), rowsB: rows(B, 'got'),
+        cap: 'Not now dismisses the strip for good, like its ✕. While the collection is empty, the Shopping view heads with the same offer on --surface-sunken, above the shipped rows and their I got it. The rail stays locked: an unowned deck unlocks nothing (Locked 4). Home reaches this deck (Empty boards).' }),
+      Object.assign({}, base, { label: 'S12 · one card marked with I got it', meta: '100 cards · 1 owned', strip: false, offer: false, shead: false, locked: false, open: true, listOn: '', shopOn: 'on', shopLabel: 'To buy 99', rowsA: rows(A.slice(1), 'got'), rowsB: rows(B, 'got'),
+        cap: 'Shipped behaviour, drawn for the lock: the first I got it writes a card, so the collection is no longer empty, the rail unlocks and the Shopping head line leaves (it is for an empty collection only). Birds of Paradise has left the list into the shipped receipt toast.' })
+    ];
+    return { frames: frames };
+  }
+}
+</script>
+</body>
+</html>
