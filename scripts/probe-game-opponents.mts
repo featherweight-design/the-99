@@ -133,6 +133,13 @@ async function main() {
       hit !== undefined && Array.isArray(hit.colorIdentity) && "partner" in hit && "manaCost" in hit && "imageUri" in hit);
     const { rows: plainName } = await db.execute<{ name: string }>(sql`select name from cards where oracle_id = ${NOT_A_COMMANDER}`);
     check("a card that cannot lead a deck is never offered", !(await searchOpponentCommanders(plainName[0].name)).some((h) => h.oracleId === NOT_A_COMMANDER));
+    // A legendary land passes the search's SQL narrowing (it is legendary) and fails `isCommanderCandidate` (not a
+    // creature, and no "can be your commander" text): only the final filter keeps it out.
+    const { rows: land } = await db.execute<{ oracle_id: string; name: string }>(sql`
+      select oracle_id, name from cards where commander_legal and type_line like 'Legendary Land%'
+        and oracle_text not ilike '%can be your commander%' order by oracle_id limit 1`);
+    check("a legendary land is found by the SQL and still never offered", land.length === 1
+      && !(await searchOpponentCommanders(land[0].name)).some((h) => h.oracleId === land[0].oracle_id), land[0]?.name);
     check("a one-letter query, a non-string and a LIKE wildcard offer nothing",
       (await searchOpponentCommanders("a")).length === 0 && (await searchOpponentCommanders(42)).length === 0
       && (await searchOpponentCommanders("%%")).length === 0);
