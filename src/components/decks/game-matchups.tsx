@@ -78,7 +78,7 @@ function Row({ row }: { row: MatchupRow }) {
           {row.beat > 0 && (
             <>
               <TrophyIcon size={13} />
-              <span aria-label={copy.beatAria(row.beat)}>{row.beat}</span>
+              <span role="img" aria-label={copy.beatAria(row.beat)}>{row.beat}</span>
             </>
           )}
         </span>

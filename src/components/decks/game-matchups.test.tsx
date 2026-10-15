@@ -147,5 +147,7 @@ describe("the History vs line", () => {
     mount(games, wire(games, by));
     const plain = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes(gameLogCopy.history.meta("4", "")) && !li.textContent?.includes(gameMatchupsCopy.history.vs));
     expect(plain.length).toBeGreaterThan(0);
+    // One game has seats, the other none: exactly one `vs` line exists on the page.
+    expect(screen.getAllByText(gameMatchupsCopy.history.vs)).toHaveLength(1);
   });
 });
