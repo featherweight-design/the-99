@@ -26,10 +26,14 @@
           "settle": 1500
         },
         {
-          "click": "a[href*=\"h=1\"]"
+          "click": "a[href*=\"h=1\"]:visible"
         },
         {
           "wait": "[data-testid=past-run-note]",
+          "settle": 500
+        },
+        {
+          "wait": "[data-testid=order-line]",
           "settle": 2500
         }
       ]
@@ -43,6 +47,44 @@
           "goto": "/decks/new/choose?w=gone&v=results&r=00000000-0000-4000-8000-000000000000&h=1",
           "wait": "[data-testid=past-wont-open]",
           "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "past-aged",
+      "label": "A past run whose picks went: the aged count and the group of picks not open now",
+      "view": "src/app/decks/new/choose/page.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=history",
+          "wait": "a[href*=\"h=1\"]:visible",
+          "settle": 1500
+        },
+        {
+          "click": ":nth-match(a[href*=\"h=1\"]:visible, 2)"
+        },
+        {
+          "wait": "[data-testid=past-run-note]",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "past-nothing",
+      "label": "A past run that found nothing: its note and the empty panel",
+      "view": "src/app/decks/new/choose/page.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=history",
+          "wait": "a[href*=\"h=1\"]:visible",
+          "settle": 1500
+        },
+        {
+          "click": ":nth-match(a[href*=\"h=1\"]:visible, 3)"
+        },
+        {
+          "wait": "[data-testid=past-run-note]",
+          "settle": 4000
         }
       ]
     }
