@@ -68,7 +68,7 @@ import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
-import { socialGamesEnabled } from "../../../lib/social/flag";
+import { socialFriendsEnabled, socialGamesEnabled } from "../../../lib/social/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
@@ -735,7 +735,10 @@ export default async function DeckBuilderPage({
     />
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
-  const switched = <DeckPageSwitches howItWorks={howItWorksEnabled(env)}>{shell}</DeckPageSwitches>;
+  // `socialFriends`: the stand-ins modal reads friends' spares from the uncached route (Social R2 PR 8a).
+  const switched = (
+    <DeckPageSwitches howItWorks={howItWorksEnabled(env)} socialFriends={socialFriendsEnabled(env)}>{shell}</DeckPageSwitches>
+  );
   // I got it (both switches): the Shopping rows' tags open its confirm. Without it every row is
   // main's (E1). Keyed per deck, so an open confirm never carries to another deck's page.
   const bought = shoppingMarkBoughtEnabled(env) ? <GotItProvider key={id} deckId={id}>{switched}</GotItProvider> : switched;

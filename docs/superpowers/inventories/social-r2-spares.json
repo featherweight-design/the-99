@@ -1,0 +1,37 @@
+{
+  "feature": "Social R2 PR 8a: friends with a spare in the stand-ins modal (handoff design_handoff_the99_social_r2 R3, Option B opened O1 to O3 and Spares S3; plan 2026-10-15-social-r2.md, PR 8)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SWAP_TOOLS_ENABLED on for the reader, SPARES_DECK naming a deck whose Shopping list holds Polyraptor, Shatterskull Smashing and Growing Rites of Itlimoc over its limit, and fixtures: two friends sharing spares with pods the reader is in, both holding Polyraptor (one through two pods), one holding Shatterskull, neither holding Growing Rites. The rows write nothing, but the fixtures are social and collection rows: plant them on a scratch branch off local-dev ONLY. The title's wait, a failed read and O2 (nothing cheaper) are held by stand-ins-spares.test.tsx.",
+  "out": "contact-sheets/social-r2-spares",
+  "rows": [
+    {
+      "id": "both",
+      "label": "O1 Before you buy: the Replacing box, Friends with a spare (the pods each share reaches you through, view only, the foot line), then the stand-ins",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/${SPARES_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 600 },
+        { "clickRole": "button", "name": "^Cheaper stand-ins for Shatterskull", "wait": "[data-testid=friend-spares]", "settle": 2500 }
+      ]
+    },
+    {
+      "id": "spares-only",
+      "label": "O2 / S3 Friends with a spare: no stand-in to offer, so no nothing-cheaper sentence; most spares first",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/${SPARES_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 600 },
+        { "clickRole": "button", "name": "^Cheaper stand-ins for Polyraptor", "wait": "[data-testid=friend-spares]", "settle": 2500 }
+      ]
+    },
+    {
+      "id": "only-stand-ins",
+      "label": "O3 Cheaper stand-ins: no friend has a spare, the shipped modal word for word",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/${SPARES_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 600 },
+        { "clickRole": "button", "name": "^Cheaper stand-ins for Growing Rites", "wait": "[data-testid=stand-ins-sheet]", "settle": 2500 }
+      ]
+    }
+  ]
+}
