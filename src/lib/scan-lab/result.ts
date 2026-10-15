@@ -21,6 +21,8 @@ export type ScanLabResult = {
   agreedFrames: number;
   indexVersion: string;
   frame: Buffer | null;
+  changedMsBeforeTap: number | null;
+  shownOracleId: string | null;
 };
 
 const ms = (v: unknown): number | null =>
@@ -39,6 +41,9 @@ export function parseResult(raw: unknown): ScanLabResult | null {
   if (typeof r.indexVersion !== "string" || !/^[\w.-]{1,40}$/.test(r.indexVersion)) return null;
   const agreed = r.agreedFrames;
   if (typeof agreed !== "number" || !Number.isInteger(agreed) || agreed < 0 || agreed > 100) return null;
+  // Both optional, so a tap from a page loaded before they existed still saves (as a row with neither).
+  const shown = r.shownOracleId ?? null;
+  if (shown !== null && !(typeof shown === "string" && isUuid(shown))) return null;
   let frame: Buffer | null = null;
   if (r.frame !== undefined && r.frame !== null) {
     if (typeof r.frame !== "string" || !/^[A-Za-z0-9+/]+={0,2}$/.test(r.frame)) return null;
@@ -58,5 +63,7 @@ export function parseResult(raw: unknown): ScanLabResult | null {
     agreedFrames: agreed,
     indexVersion: r.indexVersion,
     frame,
+    changedMsBeforeTap: ms(r.changedMsBeforeTap),
+    shownOracleId: shown as string | null,
   };
 }

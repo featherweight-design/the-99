@@ -27,4 +27,12 @@ describe("scan-lab result", () => {
     expect(parseResult({ ...ok, indexVersion: "a b" })).toBeNull();
     expect(parseResult({ ...ok, guessOracleId: null })).toMatchObject({ guessOracleId: null });
   });
+
+  it("keeps when the screen last changed and what it showed, and reads both as absent from an older page", () => {
+    const shown = "5c3b7a2f-1d4e-4f60-9b0c-1d2e3f4a5b6c";
+    expect(parseResult({ ...ok, changedMsBeforeTap: 312.4, shownOracleId: shown })).toMatchObject({ changedMsBeforeTap: 312, shownOracleId: shown });
+    expect(parseResult(ok)).toMatchObject({ changedMsBeforeTap: null, shownOracleId: null });
+    expect(parseResult({ ...ok, shownOracleId: "Grizzled Angler" })).toBeNull();
+    expect(parseResult({ ...ok, changedMsBeforeTap: -5 })).toMatchObject({ changedMsBeforeTap: null });
+  });
 });

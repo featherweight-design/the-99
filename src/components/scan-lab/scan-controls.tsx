@@ -4,12 +4,18 @@
 // they reached for the controls, never one that arrived while their finger was coming down (Hugh, 2026-10-15: a
 // Zirda verdict landed on the next frame's guess). A press anywhere in the controls area holds the reading on
 // screen, its guess, figures and preview, while the camera keeps reading behind it; the ✓/✗ press then records
-// that held reading, and the hold lets go once the verdict is saved, or when the press ends without one.
+// that held reading, and the hold lets go once the verdict is saved, or when the press ends without one. The reading
+// on screen is the steady one (`steady.ts`), and a press that comes within `CHANGE_GRACE_MS` of it changing is recorded
+// against the guess shown before the change (`tapTarget`), with how long before the press it changed.
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import { EMBED_H, EMBED_W } from "../../lib/scan-lab/geometry";
-import { readingCrop, type Reading } from "../../lib/scan-lab/reading";
+import { readingCrop } from "../../lib/scan-lab/reading";
+import { tapTarget, type Display } from "../../lib/scan-lab/steady";
+
+/** A verdict's target: the reading it is recorded against, what was on screen at the press, and how long before. */
+export type Tap = ReturnType<typeof tapTarget>;
 
 /** The normalised tensor back to pixels, for the preview and a kept frame. */
 export function tensorToImage(t: Float32Array, w: number, h: number): ImageData {
@@ -27,30 +33,35 @@ export function tensorToImage(t: Float32Array, w: number, h: number): ImageData 
 /** How long a ✓/✗ press waits for its click before letting go of the hold on its own. */
 export const VERDICT_CLICK_WAIT_MS = 1500;
 
+type Held = { tap: Tap };
+
+/** The tap a press makes now, on what the screen says now. Called from the press handlers, never while rendering. */
+const tapNow = (display: Display): Tap => tapTarget(display, performance.now());
+
 export function ScanControls({
-  reading,
+  display,
   keepFrame,
   onKeepFrame,
   onVerdict,
   children,
 }: {
-  /** The newest reading the camera loop published. */
-  reading: Reading | null;
+  /** What the screen says: the steady reading the camera loop published, and when it last changed. */
+  display: Display;
   keepFrame: boolean;
   onKeepFrame: (on: boolean) => void;
-  /** Saves a verdict on THIS reading: the held one when the press began in the controls area. */
-  onVerdict: (reading: Reading | null, correct: boolean) => Promise<void>;
+  /** Saves a verdict on THIS tap: the held display at the press, when the press began in the controls area. */
+  onVerdict: (tap: Tap, correct: boolean) => Promise<void>;
   /** Under the controls: the tap count and the "What card was it?" step. */
   children?: ReactNode;
 }) {
   // Held synchronously in a ref, so the click that follows a pointerdown in the same gesture reads it whatever has
   // rendered in between; the state copy is what draws.
-  const hold = useRef<{ reading: Reading | null } | null>(null);
-  const [held, setHeld] = useState<{ reading: Reading | null } | null>(null);
+  const hold = useRef<Held | null>(null);
+  const [held, setHeld] = useState<Held | null>(null);
   // Verdicts still saving. Each took its OWN press's reading at its click and cleared the hold, so a second tap
   // while the first saves holds the reading in front of it then, never the first press's again.
   const saving = useRef(0);
-  const shown = held ? held.reading : reading;
+  const shown = held ? held.tap.shown : display.reading;
 
   const previewRef = useRef<HTMLCanvasElement>(null);
   // The preview is painted from the reading ON SCREEN, in the same commit as its guess, so the two never
@@ -76,8 +87,9 @@ export function ScanControls({
   function grab(e: React.PointerEvent) {
     if (hold.current && pressing.current) return;
     pressing.current = true;
-    // What the player is LOOKING AT: while an earlier verdict saves, that is still its held reading.
-    hold.current = { reading: shown };
+    // What the player is LOOKING AT: while an earlier verdict saves, that is still its held reading, recorded as it
+    // was then. Otherwise the display now, judged at this press.
+    hold.current = { tap: held ? held.tap : tapNow(display) };
     setHeld(hold.current);
     const which = hold.current;
     const pointer = e.pointerId;
@@ -95,7 +107,7 @@ export function ScanControls({
     window.addEventListener("pointerup", up, true);
     window.addEventListener("pointercancel", cancel, true);
   }
-  function release(which: { reading: Reading | null } | null = hold.current) {
+  function release(which: Held | null = hold.current) {
     // Only the hold this release was for: a newer press keeps its own.
     if (which === null || hold.current !== which) return;
     hold.current = null;
@@ -104,16 +116,16 @@ export function ScanControls({
   // A press that ends with no verdict lets go. Off a ✓/✗ button (Keep this frame) that is the next task. On one, the
   // click that consumes the hold may come a task or more after the pointerup on a phone, so the hold waits for it and
   // lets go on its own only if no click comes at all (a finger slid off the button).
-  function maybeRelease(which: { reading: Reading | null } | null, target: EventTarget | null) {
+  function maybeRelease(which: Held | null, target: EventTarget | null) {
     const onVerdictButton = (target as Element | null)?.closest?.("[data-verdict]") != null;
     setTimeout(() => release(which), onVerdictButton ? VERDICT_CLICK_WAIT_MS : 0);
   }
   async function verdict(correct: boolean) {
-    const r = hold.current ? hold.current.reading : reading;
+    const tap = hold.current ? hold.current.tap : tapNow(display);
     hold.current = null;
     saving.current += 1;
     try {
-      await onVerdict(r, correct);
+      await onVerdict(tap, correct);
     } finally {
       saving.current -= 1;
       // The held reading stays on screen until its verdict is saved, unless a newer press holds another.
@@ -145,7 +157,7 @@ export function ScanControls({
               </span>
             </>
           ) : (
-            <span>{copy.noCard}</span>
+            <span>{shown === null ? copy.unsure : copy.noCard}</span>
           )}
         </div>
       </div>
