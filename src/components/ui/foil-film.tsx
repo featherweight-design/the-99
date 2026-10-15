@@ -16,7 +16,8 @@ import { armArtArrival } from "./hydrated-art";
  * bytes are still travelling. The effect's cleanup takes the Image's listeners off and clears the mark, on unmount
  * and whenever the URL moves (a pick, a page).
  *
- * `size="large"` is the details face and the zoom card (80% strength, 1.5x spread); the hover preview is a tile film.
+ * `size="large"` is the details face and the zoom card, which play the band once on open; a foil one draws the same
+ * wash as a tile, and an etched one keeps R2's 80% strength and 1.5x spread. The hover preview is a tile film.
  * No finish or no art draws nothing.
  */
 export function FoilFilm({ finish, src, size }: {

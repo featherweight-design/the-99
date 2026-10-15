@@ -35,9 +35,9 @@ const html = `<!doctype html><html><head><link rel="stylesheet" href="app.css"><
 ${tile("nosrc", "")}${tile("pending", `src="${img}" data-arrival="pending"`)}${tile("failed", `src="${img}" data-arrival="failed"`)}
 ${tile("done", `src="${img}" data-arrival="done"`)}${tile("white-art", `src="${flat("#fff")}" data-arrival="done"`)}${tile("black-art", `src="${flat("#000")}" data-arrival="done"`)}${tile("unarmed", `src="${img}"`)}${tile("etched", `src="${img}" data-arrival="done"`, "etched")}</body></html>`;
 // R2: a details face (`CardFaces` / the one-faced art box), its film inside it, marked or not.
-const face = (id, mark, finish = "foil") =>
+const face = (id, mark, finish = "foil", size = "large") =>
   `<div id="${id}" class="face" style="position:relative;width:264px;aspect-ratio:63/88;border-radius:12px;background:url('${img}') center/cover">` +
-  `<span aria-hidden="true" data-foil="${finish}" data-foil-size="large" ${mark === null ? "" : `data-arrival="${mark}"`} style="pointer-events:none;position:absolute;inset:0;border-radius:inherit"></span></div>`;
+  `<span aria-hidden="true" data-foil="${finish}" ${size ? `data-foil-size="${size}"` : ""} ${mark === null ? "" : `data-arrival="${mark}"`} style="pointer-events:none;position:absolute;inset:0;border-radius:inherit"></span></div>`;
 // R2: a phone peek / neighbor plate: the ArtLayer (marked by the modal's queue), then the still tile film.
 const peek = (id, mark) =>
   `<button id="${id}" style="position:relative;overflow:hidden;display:block;width:120px;aspect-ratio:63/88;padding:0;border:0;border-radius:11px;background:#222">` +
@@ -55,7 +55,7 @@ const TILTS = tiltHost("tilt-rest", 'data-tilt-seam=""') +
   tiltHost("tilt-zoom", "").replace('data-tilt=""', 'data-tilt="zoom"');
 const FACE_MARKS = [["face-pending", "pending"], ["face-in", "in"], ["face-done", "done"], ["face-failed", "failed"], ["face-unmarked", null]];
 // Its own row, wrapped under R1's: in R1's flex row the tiles would shrink to nothing.
-const r2 = `<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:12px;padding:20px;background:#111">${FACE_MARKS.map(([id, m]) => face(id, m)).join("")}${face("face-etched", "done", "etched")}` +
+const r2 = `<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:12px;padding:20px;background:#111">${FACE_MARKS.map(([id, m]) => face(id, m)).join("")}${face("face-etched", "done", "etched")}${face("preview-in", "in", "foil", null)}` +
   `${peek("peek-pending", "pending")}${peek("peek-failed", "failed")}${peek("peek-done", "done")}${TILTS}</div>`;
 fs.writeFileSync(path.join(dir, "page.html"), html.replace("display:flex;gap:12px", "display:flex;flex-wrap:wrap;gap:12px").replace("</body>", `${r2}</body>`));
 const url = "file://" + path.join(dir, "page.html");
@@ -123,6 +123,10 @@ for (const motion of ["no-preference", "reduce"]) {
   }
   const fadeIn = await page.$eval("#face-in [data-foil]", (e) => getComputedStyle(e).animationName);
   check(`${motion}: the span itself never fades (its opacity would cut the blend off from the art)`, fadeIn !== "art-in", fadeIn);
+  // The hover preview's film is unsized, so no open band outranks the generic `[data-arrival="in"]` fade there: the
+  // film's own `animation: none` is what keeps that fade off the span.
+  const previewFade = (await band(page, "preview-in")).name;
+  check(`${motion}: an unsized film landing (the hover preview) does not fade its span either`, previewFade === "none", previewFade);
   const filmFade = await pseudo(page, "face-in", "::before", "animationName");
   check(`${motion}: a landing face's film ${motion === "reduce" ? "appears unfaded" : "fades in, on its pseudo-elements"}`, motion === "reduce" ? filmFade === "none" : filmFade === "art-in", filmFade);
   const large = await page.$eval("#face-done [data-foil]", (e) => {
@@ -187,7 +191,7 @@ for (const motion of ["no-preference", "reduce"]) {
   }
   await ctx.close();
 }
-{ // a phone: coarse pointer, no hover: no ::after at all
+{ // a phone: coarse pointer, no hover: no hover band, but a large film's band on open
   const ctx = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
   await page.goto(url);

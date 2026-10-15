@@ -190,15 +190,24 @@ describe("desktop hover", () => {
     expect(tiltValues(host)).toMatchObject({ x: "0", y: "0.25" });
   });
 
-  it("follows from the first move: no settle mark, nothing to wait for", () => {
-    mount();
-    const host = sized(desktopHost());
-    fireEvent.pointerEnter(host, { pointerType: "mouse", clientX: 66, clientY: 92 });
-    expect(tiltValues(host)).toEqual({ x: "0.25", y: "0.25", lift: "1", tilting: true });
-    fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 198, clientY: 276 });
-    expect(tiltValues(host)).toMatchObject({ x: "0.75", y: "0.75" });
-    // What draws it is `[data-tilt][data-tilting]`, which transitions the lift alone (the stylesheet test above).
-    expect([...host.attributes].map((a) => a.name).filter((n) => n.startsWith("data-tilt"))).toEqual(["data-tilt", "data-tilt-seam", "data-tilting"]);
+  it("follows from the first move, and stays one state however long the pointer rests: no settle mark", () => {
+    vi.useFakeTimers();
+    try {
+      mount();
+      const host = sized(desktopHost());
+      const marks = () => [...host.attributes].map((a) => a.name).filter((n) => n.startsWith("data-tilt"));
+      fireEvent.pointerEnter(host, { pointerType: "mouse", clientX: 66, clientY: 92 });
+      expect(tiltValues(host)).toEqual({ x: "0.25", y: "0.25", lift: "1", tilting: true });
+      expect(marks()).toEqual(["data-tilt", "data-tilt-seam", "data-tilting"]);
+      // Long past the 300ms the ease on the way in used to hold: the next move changes nothing but the values.
+      vi.advanceTimersByTime(1000);
+      fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 198, clientY: 276 });
+      expect(tiltValues(host)).toMatchObject({ x: "0.75", y: "0.75" });
+      // What draws it is `[data-tilt][data-tilting]`, which transitions the lift alone (the stylesheet test above).
+      expect(marks()).toEqual(["data-tilt", "data-tilt-seam", "data-tilting"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("does nothing for touch at a desktop width (G12)", () => {
