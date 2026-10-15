@@ -3,7 +3,9 @@
 // bundle: the modal is loaded on demand (card-detail-provider.tsx).
 
 /** The phone's drop off a sheet (stacked sheets R1, motion), and how long the provider waits on it. */
-export const STACK_DROP_MS = 200;
+export const STACK_DROP_MS = 210;
+/** The drop leaves on the curve it rose on (`--motion-ease-out`), about two-thirds of its 320ms rise; it was an ease-in, which read as sudden. */
+export const STACK_DROP_EASE = "cubic-bezier(0.2, 0.7, 0.2, 1)";
 
 /**
  * The receipt's link style: the modal's accent underline, right-aligned on the label line. The

@@ -538,6 +538,11 @@ html {
   /* Card art fading in as it lands, wherever it fades (`data-arrival`; Hugh, 2026-10-12: 0.2 to 0.3s). */
   --motion-fade: 300ms;
   --motion-ease: cubic-bezier(0.45, 0, 0.55, 1);
+  /* The decelerating curve three motions argue for (the card's turn, the carousel's art, the sheet's snap: fast out of
+     rest, settling long), and the stacked card's rise, which was ratified on it. Named so none of them restates it. */
+  --motion-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* An exit is about two-thirds of its entrance (small-polish R2 §3): the escalation screen's fade out, against its 200ms in. */
+  --motion-exit-quick: 140ms;
   /* One lap of a running read's border (`.ai-sweep`; Hugh, 2026-10-13: option 1, the conic sweep). */
   --motion-loop: 3200ms;
 }
@@ -778,13 +783,13 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 /* These four were never timed by a handoff, so they take the shared curve at their own short
    lengths and no beat: each answers a press. (`.anim-overview-in` and `.anim-slot-in` below keep
    the timing their handoffs set.) */
-.anim-sheet-in { animation: filter-sheet-in 0.18s var(--motion-ease) both; }
+.anim-sheet-in { animation: filter-sheet-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
 /* A line the Add cards sheet folded a duplicate into: its edge pulses once (240ms). */
 .anim-line-pulse { animation: line-pulse 240ms var(--motion-ease) both; }
-.anim-menu-in { animation: menu-in 0.12s ease-out both; }
-.anim-sheet-up { animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-menu-in { animation: menu-in var(--motion-quick) var(--motion-ease) both; }
+.anim-sheet-up { animation: sheet-up var(--motion-duration) var(--motion-ease) both; }
 /* A card opened from a sheet, on the phone (stacked sheets R1, motion): it rises the whole height
-   over 240ms while the sheet fades beneath, and drops in 200ms on the way back. Never sideways,
+   over `--motion-duration` after the beat while the sheet fades beneath, and drops in about two-thirds of that on the way back. Never sideways,
    which is paging's direction. Phone only: desktop stacks a dialog over a dialog and moves neither.
    The drop is NOT a class: it is started by `card-modal.tsx` with the Web Animations API from the
    card's current transform, so a dismissal mid-rise reverses from where the card is (#1268). */
@@ -792,12 +797,14 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   0% { transform: translateY(100%); }
   100% { transform: none; }
 }
-.anim-stack-rise { animation: stack-rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.anim-stack-rise { animation: stack-rise var(--motion-duration) var(--motion-ease-out) var(--motion-delay) both; }
 @media (min-width: 48rem) {
   .anim-stack-rise { animation: none; }
 }
-.anim-backdrop-in { animation: backdrop-in 0.18s var(--motion-ease) both; }
-.anim-quickadd-in { animation: quickadd-in 0.14s var(--motion-ease) both; }
+/* The account menu's scrim, which moves with ITS sheet (`anim-sheet-up`, no beat), not the filter sheet's: a scrim held back 100ms
+   behind a menu that is already opening would leave the menu over an unshaded page. */
+.anim-backdrop-in { animation: backdrop-in var(--motion-duration) var(--motion-ease) both; }
+.anim-quickadd-in { animation: quickadd-in var(--motion-quick) var(--motion-ease) both; }
 /* A new overview replacing the held one in place (addendum_overview_loading, 1c): 150ms, and
    instant under reduced motion. */
 .anim-overview-in { animation: backdrop-in 0.15s ease-out both; }
@@ -808,7 +815,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    frame before the animation takes it. The blur underneath is set at its final value
    on the first frame and never animated: at 10px it is invisible in motion and
    expensive. */
-.anim-zoom-in { animation: zoom-in 0.2s ease-out both; }
+.anim-zoom-in { animation: zoom-in var(--motion-quick) var(--motion-ease) both; }
 /* THE TURN (card detail R2, §4). `rotateY`, because that is how a hand turns a card
    over: `rotateX` tumbles it end over end, which nobody does with a card, and reads
    as a page turning — the wrong metaphor for an object you are holding.
@@ -824,7 +831,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    wherever the card is rather than restarting or queueing. The faces hide their own
    backs, so the swap happens behind the edge at the midpoint with nothing to
    schedule. */
-.anim-card-turn { transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.anim-card-turn { transition: transform var(--motion-duration) var(--motion-ease-out); }
 
 /* THE RING READING (Analysis tab handoff §2, 2b). Each of the five marks lights in turn,
    1 to 5 clockwise: the stagger is the component's `animation-delay`, 0.16s per mark.
@@ -877,8 +884,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: 1; }
   to { opacity: 0; }
 }
-.anim-overlay-in { animation: overlay-in 150ms ease-out both; }
-.anim-overlay-out { animation: overlay-out 120ms ease-out both; }
+.anim-overlay-in { animation: overlay-in var(--motion-quick) var(--motion-ease) both; }
+.anim-overlay-out { animation: overlay-out var(--motion-exit-quick) var(--motion-ease) both; }
 
 /* The pointer rail's name tag (desktop nav labels H2): opacity in over 100ms, no exit fade, no
    movement. Under reduced motion it appears with no fade (audit E10). */
@@ -886,7 +893,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.anim-rail-tag { animation: rail-tag-in 100ms ease-out both; }
+.anim-rail-tag { animation: rail-tag-in var(--motion-quick) var(--motion-ease) both; }
 
 /* The card carousel's desktop art, entering from the side it paged from (H23 PR 2, handoff
    decision 7): 24px, 200ms. `CardModal` remounts per card, so a `transition` has no prior frame
@@ -900,17 +907,17 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: translateX(0); }
 }
-.anim-carousel-prev { animation: carousel-art-enter-prev 200ms ease-out both; }
-.anim-carousel-next { animation: carousel-art-enter-next 200ms ease-out both; }
+.anim-carousel-prev { animation: carousel-art-enter-prev var(--motion-quick) var(--motion-ease-out) both; }
+.anim-carousel-next { animation: carousel-art-enter-next var(--motion-quick) var(--motion-ease-out) both; }
 
 /* The phone's card, arriving from where its peek stood (H23 PR 3, STATES §Motion "Phone commit"):
    at the peek's 236/320 scale and .5 opacity, from `--enter-x` (the peek's slot plus wherever a
-   swipe let go of the band), settling in 240ms on the flip's curve. Reduced motion: a swap. */
+   swipe let go of the band), settling after the beat on the same curve as the flip and the sheet's snap (`--motion-ease-out`). Reduced motion: a swap. */
 @keyframes phone-card-enter {
   from { opacity: 0.5; transform: translateX(var(--enter-x, 0)) scale(0.7375); }
   to { opacity: 1; transform: none; }
 }
-.anim-phone-card-enter { animation: phone-card-enter 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.anim-phone-card-enter { animation: phone-card-enter var(--motion-duration) var(--motion-ease-out) var(--motion-delay) both; }
 
 /* A chart's bar draws once when it mounts (motion plan E3): it grows from its own baseline on the
    shared tokens, so a figure arriving reads as measured out rather than stamped on. Transform
@@ -1055,15 +1062,15 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-view-out { animation: view-out 160ms var(--motion-ease) both; }
 
 /* The phone card sheet's snap between the teaser and full (H23 PR 3, README R2 "Motion"), and the
-   card band dimming to .35 under it, on the same 240ms. A drag marks the sheet `data-dragging`,
+   card band dimming to .35 under it, on the same length and curve. A drag marks the sheet `data-dragging`,
    and it follows the finger with no transition at all. Here rather than as utilities because the
    reduced-motion override has to win over a breakpoint variant, and Tailwind orders those itself. */
-.sheet-snap { transition: top 240ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+.sheet-snap { transition: top var(--motion-quick) var(--motion-ease-out); }
 .sheet-snap[data-dragging] { transition: none; }
-.band-dim { transition: opacity 240ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+.band-dim { transition: opacity var(--motion-quick) var(--motion-ease-out); }
 /* The min snap (Hugh, 2026-10-13): the shelf shrinks to its title row and the card grows to fill
    the band. A move to or from it is gentle, on the motion rule's beat and ease-in-out, where
-   teaser to full keeps its 240ms snap above. The card's growth rides the same tokens. */
+   teaser to full keeps the quick snap above. The card's growth rides the same tokens. */
 .sheet-snap.sheet-gentle { transition: top var(--motion-duration) var(--motion-ease) var(--motion-delay); }
 .sheet-snap.sheet-gentle[data-dragging] { transition: none; }
 /* While a drag sizes the card it tracks the finger; the ease is for the settle after release. */
@@ -1144,8 +1151,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   /* The escalation screen's fades are KEPT (escalation correction 7), restated here so the choice
      is on record where the others are: an opacity fade moves nothing, and a whole-page screen that
      cuts in and out is the harsher change. */
-  .anim-overlay-in { animation: overlay-in 150ms ease-out both; }
-  .anim-overlay-out { animation: overlay-out 120ms ease-out both; }
+  /* Opacity-only fades shorten to 100ms with no wait (small-polish R2, reduced motion). */
+  .anim-overlay-in { animation: overlay-in 100ms var(--motion-ease) both; }
+  .anim-overlay-out { animation: overlay-out 100ms var(--motion-ease) both; }
 }
 
 /* The wash trades legibility against drama. A reader who has asked for less
