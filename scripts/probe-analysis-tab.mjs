@@ -44,6 +44,7 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
+import { noteVariant } from "./lib/note-variant.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -215,6 +216,22 @@ const tally = (ids) => {
   return Object.entries(n).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}×${v}`).join(", ") || "none";
 };
 
+// Deletes the overview rows a press wrote on the deck (every row not in `before`), with their ledger
+// units, so the account keeps its credits and both widths press the deck from the same state.
+async function dropWritten(sql, deckId, before) {
+  try {
+    const calls = (await sql`
+      delete from deck_synopses where deck_id = ${deckId} and not (id = any(${before}::uuid[]))
+      returning model_call_id`).map((r) => r.model_call_id).filter(Boolean);
+    if (calls.length > 0) await sql`delete from model_calls where id = any(${calls}::uuid[])`;
+    return calls.length;
+  } catch (error) {
+    console.error(`cleanup: the overview written on ${deckId} was left behind:`, error.message);
+    failures += 1;
+    return 0;
+  }
+}
+
 async function run() {
   // Global setup, once, before any page gets a testing token — the bot-protection bypass
   // needs the frontend API URL and throws without it.
@@ -244,6 +261,9 @@ async function run() {
     const sql = neon(DATABASE_URL);
     // On disk before the first delete, so a dead run or a failed restore cannot lose it.
     const restore = await holdProfile(sql, deckId);
+    // The deck's overview rows before the run: whatever a press writes past these is deleted again, in the
+    // `finally` as well as after each width.
+    const baseSynopses = (await sql`select id from deck_synopses where deck_id = ${deckId}`).map((r) => r.id);
     try {
     for (const { label, viewport } of WIDTHS) {
       await sql`delete from deck_profiles where deck_id = ${deckId}`;
@@ -322,18 +342,9 @@ async function run() {
       // a session touch and a token refresh — either landing inside a counted window would
       // break a correct build. `probe-list-payloads.mjs` already filters this way.
       //
-      // THE BODY IS NOT CHECKED, and an earlier version of this comment said it was. Next
-      // serialises an action to a hashed id in the `next-action` header; its NAME appears
-      // nowhere in the request, so matching the body would never fire and the count would read
-      // 0 forever. What identifies the action instead is its OUTCOME, asserted below: a profile
-      // reply replaces the invitation with the re-ask, which no other action would do.
-      // BY ACTION ID, which is what Next actually sends. A server action is serialised to a
-      // hashed id in the `next-action` header — its NAME appears nowhere, so matching the body
-      // on "fetchDeckProfile" would never fire and the count would read 0 forever: a silent
-      // pass on "fetched nothing" and a failure on a working build.
-      //
-      // Each id is then NAMED from the dev server's manifest (`actionName`), so a window's count says
-      // which actions ran, not only how many.
+      // BY ACTION ID, which is what Next sends: a server action is serialised to a hashed id in the
+      // `next-action` header, and its name appears nowhere in the request body. Each id is NAMED from
+      // the dev server's manifest (`actionName`), so a window's count says which actions ran.
       const actions = [];
       p.on("request", (r) => {
         if (r.method() !== "POST") return;
@@ -356,6 +367,21 @@ async function run() {
       report(`${label}px · opening the tab asks for the stored reading and the overview, nothing else`,
         opened === "fetchStoredDeckProfile×1, fetchSynopsis×1", opened);
 
+      // WHAT THE PRESS WILL DO, decided before it is made. A press writes the overview exactly when its
+      // credit note said it would (`pressWrites` in builder-shell, from `pressNote`, #916): the credit and
+      // free notes write; the check, used-up, paused and owner-share notes, and no note at all (the list
+      // already has its overview), write nothing. So the note is waited for (its frame, #1844, gives way
+      // to the note or to nothing once the read answers) and classified by its words (`noteVariant`,
+      // tested against the shipped copy). An unrecognised note fails rather than guessing.
+      await p.waitForFunction((scope) => !document.querySelector(`${scope} #panel-analysis [data-testid='press-note-slot']`), PAGE, { timeout: 15_000 })
+        .catch(() => {});
+      const noteText = await p.evaluate((scope) => document.querySelector(`${scope} #panel-analysis [data-testid='press-note']`)?.textContent ?? "", PAGE);
+      const variant = noteVariant(noteText);
+      const writes = variant === "credit" || variant === "free";
+      report(`${label}px · the press says what it will do (${variant}: ${writes ? "writes the overview" : "writes no overview"})`,
+        variant !== "unknown", JSON.stringify(noteText));
+      const synopsesBefore = (await sql`select id from deck_synopses where deck_id = ${deckId}`).map((r) => r.id);
+
       // ROUND 4 RULING 7: the verdict fires on analyse or commit and nowhere else. The tab draws
       // the invitation instead, and pressing THAT is what costs 630ms.
       const invite = onPageRole(p, "button", /^Analyze$/);
@@ -373,26 +399,29 @@ async function run() {
         .first()
         .waitFor({ state: "visible", timeout: 15_000 })
         .catch(() => {});
-      // The overview's read follows the reading it is keyed on (below), so it is given time to be asked.
-      await p.waitForTimeout(1_500);
+      // A press that writes holds until the stand-in's overview lands (#916's first-press hold); either
+      // way the overview's read follows the reading it is keyed on (below), so it is given time to be asked.
+      if (writes) {
+        await onPage(p, "#panel-analysis [data-testid='synopsis-overview'] button", { hasText: "View full overview" })
+          .first().waitFor({ timeout: 90_000 }).catch(() => {});
+      }
+      await p.waitForTimeout(2_500);
       const afterPress = posts();
       // The press computes the profile ONCE (`fetchDeckProfile`), and the overview is read again
       // (`fetchSynopsis`): its key carries the reading's `analyzedAt` and freshness (#912, `useDeckSynopsis`
       // in builder-shell), so a reading settling re-asks whether a write is due and what it would cost.
       // Designed, not a duplicate: measured 2026-10-15, its `wouldSpend` reads false before the reading and
-      // true after it.
+      // true after it. A press whose note said it writes also calls `writeSynopsis` once (#916), through the
+      // overview's stand-in, and the overview is read again when the write settles.
       const pressed = tally(actions.slice(peeked, afterPress));
-      report(`${label}px · pressing it computes the profile once and re-reads the overview`,
-        pressed === "fetchDeckProfile×1, fetchSynopsis×1", pressed);
+      const pressWant = writes
+        ? "fetchDeckProfile×1, fetchSynopsis×2, writeSynopsis×1"
+        : "fetchDeckProfile×1, fetchSynopsis×1";
+      report(`${label}px · pressing it computes the profile once${writes ? ", writes the overview once" : ""} and re-reads the overview`,
+        pressed === pressWant, `${pressed} (want ${pressWant})`);
 
-      // AND THE ACTION WAS THE PROFILE FETCH, proved by its OUTCOME rather than by its id.
-      //
-      // A count of one distinct opaque id says a single action ran; it cannot say WHICH, so a
-      // regression wiring this control to some other action would satisfy both checks above.
-      // Nothing observable carries the id, so the discriminator is the state only a profile
-      // reply can produce: the empty state is replaced by the bracket box (the consolidated tab
-      // draws no re-ask on a reading). An action that fetched something else would leave the
-      // empty state where it was.
+      // AND THE PROFILE REPLY LANDED: the empty state is replaced by the bracket box (the consolidated tab
+      // draws no re-ask on a reading). The count above names the call; this says its reply was drawn.
       const stillInviting = await onPage(p, '[data-testid="analysis-empty"]').count();
       const box = await onPage(p, 'section[aria-label="Your bracket"]').count();
       report(`${label}px · and it was the PROFILE fetch, not merely an action`,
@@ -416,10 +445,12 @@ async function run() {
         returned === "fetchSynopsis×1", returned);
 
       // THE OVERVIEW SLOT ships (#912, the deck overview on the Analysis tab; sub-project 6). Over a reading
-      // it is drawn in the panel, and what it offers follows the deck's stored overview: a written one opens
-      // through View full overview; none written draws the absent line and Write one.
+      // it is drawn in the panel. A press that wrote (above) leaves a written overview, opened through View
+      // full overview; a press that wrote nothing leaves what the deck had: View full overview over one
+      // written before, and no View full overview over none.
       const [{ written }] = await sql`
-        select exists(select 1 from deck_synopses where deck_id = ${deckId} and status = 'done') as written`;
+        select exists(select 1 from deck_synopses where deck_id = ${deckId} and status = 'done' and id = any(${synopsesBefore}::uuid[])) as written`;
+      const wantView = writes || written;
       const synopsis = await p.evaluate((scope) => {
         const slot = document.querySelector(scope)?.querySelector("#panel-analysis [data-testid='synopsis-overview']");
         const buttons = [...(slot?.querySelectorAll("button") ?? [])].map((b) => b.textContent.trim());
@@ -432,9 +463,10 @@ async function run() {
       }, PAGE);
       report(`${label}px · the overview slot is drawn in the panel`, synopsis.slot,
         synopsis.slot ? "drawn" : "no synopsis-overview in #panel-analysis");
-      report(`${label}px · and offers ${written ? "View full overview" : "Write one, under the absent line"}, as the deck's overview stands`,
-        written ? synopsis.view && !synopsis.write : synopsis.absent && synopsis.write && !synopsis.view,
-        JSON.stringify({ written, ...synopsis }));
+      report(`${label}px · and ${wantView ? "offers View full overview" : "offers no overview to view"} (${writes ? "the press wrote one" : written ? "one was written before" : "none written"})`,
+        wantView ? synopsis.view && !synopsis.write && !synopsis.absent : !synopsis.view,
+        JSON.stringify({ writes, writtenBefore: written, ...synopsis }));
+      await dropWritten(sql, deckId, synopsesBefore);
 
       const panel = await p.evaluate((scope) =>
         Boolean(document.querySelector(scope)?.querySelector("#panel-analysis")), PAGE);
@@ -455,6 +487,7 @@ async function run() {
       await ctx.close();
     }
     } finally {
+      await dropWritten(sql, deckId, baseSynopses);
       await restore();
     }
   } finally {

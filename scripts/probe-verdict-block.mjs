@@ -429,11 +429,14 @@ async function walkEmpty(page, label, width) {
     `${e.marks.length} marks at ${e.marks.map((m) => m.w).join("/")}px, first ${e.marks[0]?.n}`);
   report(`${label}px · the heading is the display face at ${phone ? 21 : 26}px`,
     e.h2.size === `${phone ? 21 : 26}px` && e.h2.family === e.h2.display, `${e.h2.size}, ${e.h2.family.split(",")[0]}`);
-  // At 1300 the opener sits beside Analyze only in the no-note layout: with a credit note in the row it takes its
-  // own line under the pair (frame 7a, #916), and since #1844 the note's frame is drawn from the first paint while
-  // its read is out, so a fresh tab opens in the with-note layout.
-  report(`${label}px · Analyze is a 44px press with the opener ${phone || e.noteFrame ? "under" : "beside"} it${!phone && e.noteFrame ? " (a credit note's row, 7a)" : ""}`,
-    e.cta.text === "Analyze" && e.cta.h >= 44 && (phone || e.noteFrame ? e.below : e.besides),
+  // A fresh, never-analyzed tab draws the credit note's frame from its first paint while the note's read is out
+  // (#1844), and with a note in the row the opener takes its own line under the pair (frame 7a, #916), at 1300
+  // as at 390. So the frame must be THERE, and the opener under Analyze: a build that lost the frame would put
+  // the opener back beside the press at 1300, and fails here.
+  report(`${label}px · a fresh tab draws the credit note's frame (#1844)`, e.noteFrame,
+    e.noteFrame ? "press-note or press-note-slot drawn" : "no note and no frame");
+  report(`${label}px · Analyze is a 44px press with the opener under it`,
+    e.cta.text === "Analyze" && e.cta.h >= 44 && e.below,
     `"${e.cta.text}", ${e.cta.h}px, opener ${e.besides ? "beside" : e.below ? "under" : "elsewhere"}`);
 }
 
