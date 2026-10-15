@@ -11,11 +11,11 @@
 //      collection had content.
 //   5. A REMOVAL AND A RE-ADD IS A NEW DATE; the REVERT of the removal puts the old date and its exactness back.
 //   6. THE LEGACY REPLACE (import.ts) behaves as the ledger's does.
-//   8. A SYNC OR AN ADD AFTER A HAND ADD does not break its chain (production, 2026-10-15: 126 hand adds left unknown
-//      behind one Sync that touched none of them); a REPLACE after it does.
 //   7. THE BACKFILL: a holding whose current ownership began with a hand entry takes that entry's time, exact; else
 //      the first confirmed upload holding it, INEXACT always; a holding added, removed and not brought back by a
 //      hand entry is not dated to its first life; a holding in none stays null; a second run changes nothing.
+//   8. A SYNC OR AN ADD AFTER A HAND ADD does not break its chain (production, 2026-10-15: 126 hand adds left unknown
+//      behind one Sync that touched none of them); a REPLACE after it does.
 //
 // It writes under a per-run user_id and deletes everything that id created in a `finally`. Refused on
 // production and staging; point DATABASE_URL at local-dev or a scratch branch.
@@ -188,8 +188,9 @@ async function main() {
     check("a second run changes nothing", again.dated === 0, JSON.stringify(again));
 
     // ---- 8. A Sync or an Add after a hand add keeps its date; a Replace does not ---------------
-    // H, I and J are hand-added (exact, on day3), then one upload of each kind is confirmed after them. The Sync and
-    // the Add touch none of H or J, so both stay exact. The Replace carries no row for I: it may have removed it.
+    // A, B and C are hand-added (exact, on day3), then a Sync and an Add are confirmed after them, each with an empty
+    // ledger entry: neither touches a holding, so all three stay exact. A Replace confirmed after that may have removed
+    // any of them without a row of its own, so none is trusted.
     const kindUpload = async (kind: string, at: string, rows: unknown[]) => {
       const id = (await pool.query(
         `insert into csv_uploads (user_id, filename, row_count, unmatched_count, preview_payload, created_at, confirmed_at)
