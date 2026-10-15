@@ -5,7 +5,7 @@
 // matched against the card index. Only a ✓/✗ tap sends anything, and a frame only with Keep this
 // frame ticked. Unstyled beyond the tokens: it is a measuring page with no design handoff.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import {
   DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor,
@@ -71,6 +71,15 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const [status, setStatus] = useState<"idle" | "loading" | "running" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState<Reading | null>(null);
+  // The preview is painted from the COMMITTED reading, in the same commit as its guess and the tap
+  // handler that saves it, so the three never describe different frames. No card clears it.
+  useLayoutEffect(() => {
+    const ctx = previewRef.current?.getContext("2d");
+    if (!ctx) return;
+    const crop = readingCrop(reading);
+    if (crop) ctx.putImageData(tensorToImage(crop, EMBED_W, EMBED_H), 0, 0);
+    else ctx.clearRect(0, 0, EMBED_W, EMBED_H);
+  }, [reading]);
   const [keepFrame, setKeepFrame] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [taps, setTaps] = useState({ n: 0, right: 0 });
@@ -152,8 +161,6 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       const noCard = (t0: number, t1: number) => {
         history.current = [];
         setReading({ kind: "none", detMs: Math.round(t1 - t0), totalMs: Math.round(performance.now() - t0) });
-        // the preview shows what a tap would keep, which is now nothing
-        previewRef.current?.getContext("2d")?.clearRect(0, 0, EMBED_W, EMBED_H);
       };
       const loop = async () => {
         if (!running.current) return;
@@ -197,8 +204,6 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
                 kind: "card", crop, guesses, margin, agreed, committed,
                 detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: Math.round(t3 - t2), totalMs: Math.round(t3 - t0),
               });
-              const pctx = previewRef.current?.getContext("2d");
-              pctx?.putImageData(tensorToImage(crop, EMBED_W, EMBED_H), 0, 0);
             } else {
               noCard(t0, t1);
             }
