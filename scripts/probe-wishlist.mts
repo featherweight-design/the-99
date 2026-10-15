@@ -78,11 +78,12 @@ async function main() {
     check("a malformed id reads nothing", (await loadFriendWishlist(A, "nope")).length === 0);
 
     // The tiles (G1) and card details' want.
-    const tiles = await wishlist.loadWishlistTiles(B);
+    const { tiles, newestAsOf } = await wishlist.loadWishlistTiles(B);
     const tileX = tiles.find((t) => t.oracleId === X);
     const { rows: [cardX] } = await db.execute<{ name: string; image_uri: string | null }>(sql`select name, image_uri from cards where oracle_id = ${X}`);
     check("a tile carries the catalog's name and full card image", tileX?.name === cardX.name && tileX.imageUri === cardX.image_uri && tiles.length === 2, JSON.stringify(tileX));
-    check("and the price read's figure, or null", tiles.every((t) => t.price === null || t.price.asOf instanceof Date));
+    check("and the price read's figure, or null, with that read's newest as_of", tiles.every((t) => t.price === null || t.price.asOf instanceof Date)
+      && (tiles.every((t) => t.price === null) || newestAsOf instanceof Date));
     check("card details reads X's want", (await wishlist.loadWishlistWant(B, X)) === 2);
     check("and none for a card not on the list", (await wishlist.loadWishlistWant(B, "00000000-0000-0000-0000-000000000000")) === null);
 
@@ -104,8 +105,14 @@ async function main() {
       notices.length === 2 && notices.find((n) => n.oracleId === X)?.quantity === 2 && notices.every((n) => n.name.length > 0), JSON.stringify(notices));
     check("a friend no longer sees them", (await loadFriendWishlist(A, b.publicId)).length === 0);
 
-    check("the strip's ✕ forgets what it drew", (await collected.dismissCollected(B, notices[0].collectedAt)) === 2
-      && (await collected.loadCollectedNotices(B)).length === 0);
+    // A notice the strip never drew, dated EARLIER than what it did draw (a write that started first and committed
+    // last): the ✕ must leave it.
+    const { rows: [late] } = await db.execute<{ oracle_id: string }>(sql`select oracle_id from cards where oracle_id not in (${X}, ${Y}) order by oracle_id limit 1`);
+    await db.execute(sql`insert into wishlist_collected (user_id, oracle_id, quantity, collected_at) values (${B}, ${late.oracle_id}, 1, now() - interval '1 hour')`);
+    check("the strip's ✕ forgets exactly what it drew", (await collected.dismissCollected(B, notices)) === 2
+      && (await collected.loadCollectedNotices(B)).map((n) => n.oracleId).join() === late.oracle_id);
+    await collected.dismissCollected(B, await collected.loadCollectedNotices(B));
+    check("and nothing is left once that one is drawn and dismissed too", (await collected.loadCollectedNotices(B)).length === 0);
 
     // The want write itself: re-wanted above what is held, then lowered to it.
     check("wanting X again, five, stands", (await wishlist.setWishlistQuantity(B, X, 5)) === "wanted"
@@ -126,7 +133,7 @@ async function main() {
       && (await collected.loadCollectedNotices(B)).some((n) => n.oracleId === Y && n.quantity === 2));
 
     const shown = await collected.loadCollectedNotices(B);
-    await collected.dismissCollected(B, shown[0].collectedAt);
+    await collected.dismissCollected(B, shown);
     check("B clears a line", (await wishlist.setWishlistQuantity(B, X, 9)) === "wanted" && await wishlist.clearWishlistLine(B, X));
     check("clearing a line that is not there says so", (await wishlist.clearWishlistLine(B, X)) === false);
     check("a cleared line is not collected", (await collected.loadCollectedNotices(B)).length === 0);

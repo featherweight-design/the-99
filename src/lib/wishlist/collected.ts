@@ -10,7 +10,7 @@
  * at or below what is held (`setWishlistQuantity`) leaves no line either, but is not recorded here: the player made
  * that change themselves, and the strip names what was collected since they last looked.
  */
-import { and, desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, wishlistCollected } from "../../db/schema";
 
@@ -59,20 +59,26 @@ export async function loadCollectedNotices(viewerId: string): Promise<CollectedN
 }
 
 /**
- * The strip's ✕: forgets what the viewer was shown. `through` is the newest `collectedAt` the strip drew, so a
- * card collected after the read (in another tab, or by an upload still landing) stays for the next strip.
+ * The strip's ✕: forgets EXACTLY the notices the strip drew, each by its card and the `collectedAt` it was read with.
+ * Never "everything up to a time": a collection write that started earlier but committed later dates its notice
+ * before the read, and the strip never showed it. A card collected again since the read has a later `collectedAt`,
+ * so it stays for the next strip too. Compared to the millisecond, the precision a Date carries, in UTC: the column
+ * is a UTC wall clock with no zone, and a raw Date parameter reaches Postgres in the server's local time, so each is
+ * sent as an ISO instant and turned back into a UTC wall clock.
  */
-export async function dismissCollected(viewerId: string, through: Date): Promise<number> {
-  const gone = await db
-    .delete(wishlistCollected)
-    // To the millisecond, in UTC. The column holds microseconds and a Date carries milliseconds, so the row the strip
-    // read as `through` would otherwise compare as later than itself and stay. And the column is a UTC wall clock with
-    // no zone, while a raw Date parameter reaches Postgres in the server process's LOCAL time: sent as an ISO
-    // instant and turned back into a UTC wall clock, the two compare like for like.
-    .where(and(
-      eq(wishlistCollected.userId, viewerId),
-      sql`date_trunc('milliseconds', ${wishlistCollected.collectedAt}) <= (${through.toISOString()}::timestamptz at time zone 'UTC')`,
-    ))
-    .returning({ oracleId: wishlistCollected.oracleId });
-  return gone.length;
+export async function dismissCollected(viewerId: string, shown: readonly Pick<CollectedNotice, "oracleId" | "collectedAt">[]): Promise<number> {
+  if (shown.length === 0) return 0;
+  const drawn = sql.join(
+    shown.map((n) => sql`(${n.oracleId}::uuid, (${n.collectedAt.toISOString()}::timestamptz at time zone 'UTC'))`),
+    sql`, `,
+  );
+  const { rows } = await db.execute<{ oracle_id: string }>(sql`
+    delete from wishlist_collected w
+    using (values ${drawn}) as d(oracle_id, collected_at)
+    where w.user_id = ${viewerId}
+      and w.oracle_id = d.oracle_id
+      and date_trunc('milliseconds', w.collected_at) = d.collected_at
+    returning w.oracle_id
+  `);
+  return rows.length;
 }

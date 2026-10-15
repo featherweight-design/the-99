@@ -65,10 +65,17 @@ export type WishlistTile = WishlistLine & {
   price: PriceFact | null;
 };
 
+/**
+ * The viewer's wanted lines as tiles, and the price read's `newestAsOf`: a fact older than it is a sold-out card's
+ * last figure, which `priceState` tells apart only against the SAME read's newest (a second query could see another
+ * refresh).
+ */
+export type WishlistTiles = { tiles: WishlistTile[]; newestAsOf: Date | null };
+
 /** The viewer's wanted lines as tiles: the catalog's name and full card image, and the price read's figure. */
-export async function loadWishlistTiles(viewerId: string): Promise<WishlistTile[]> {
+export async function loadWishlistTiles(viewerId: string): Promise<WishlistTiles> {
   const lines = await wishlistLinesQuery(viewerId);
-  if (lines.length === 0) return [];
+  if (lines.length === 0) return { tiles: [], newestAsOf: null };
   const ids = lines.map((l) => l.oracleId);
   const [faces, read] = await Promise.all([
     db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri, layout: cards.layout, backImageUri: cards.backImageUri })
@@ -77,10 +84,11 @@ export async function loadWishlistTiles(viewerId: string): Promise<WishlistTile[
     loadPrices(ids),
   ]);
   const byId = new Map(faces.map((f) => [f.oracleId, f]));
-  return lines.flatMap((l) => {
+  const tiles = lines.flatMap((l) => {
     const f = byId.get(l.oracleId);
     return f ? [{ ...l, name: f.name, imageUri: f.imageUri, layout: f.layout, backImageUri: f.backImageUri, price: read.prices.get(l.oracleId) ?? null }] : [];
   });
+  return { tiles, newestAsOf: read.newestAsOf };
 }
 
 /**

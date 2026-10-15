@@ -894,7 +894,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (`setWishlistQuantity`, under the same per-player lock) leaves no line and answers `held`, and is not recorded: the
   strip names what was collected since they last looked. **A read never deletes**: every own read leaves out a line the collection already
   reaches, so a copy that arrived around the chokepoints hides the line until the next write sweeps it. The strip's ✕
-  is `dismissCollected(viewer, through)`, which forgets only what the strip drew. `loadWishlistTiles` adds the
+  is `dismissCollected(viewer, shown)`, which forgets exactly the notices the strip drew (card and timestamp), never
+  everything up to a time. `loadWishlistTiles` adds the
   catalog's name and full card image and the price read's figure (G1); `loadWishlistWant` is card details' want.
   `wishlist_collected` is purged with the account. The owner's own rows are read and written in `src/lib/wishlist/`;
   a FRIEND's wishlist is visible (Q7) and is read only through `src/lib/social/wishlist.ts`, which joins the viewer's
