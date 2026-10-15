@@ -43,7 +43,14 @@ export async function sweepCollectedIn(tx: Executor, userId: string): Promise<st
 
 export type CollectedNotice = { oracleId: string; name: string; quantity: number; collectedAt: Date };
 
-/** What has left the viewer's wishlist as collected since the strip was last dismissed, newest first. */
+/**
+ * The most notices one strip draws. Its ✕ sends back exactly what it drew, and the dismiss action refuses a longer
+ * list, so the read stops here: anything past it is drawn by the next strip, once this one is dismissed.
+ */
+export const MAX_COLLECTED_NOTICES = 200;
+
+/** What has left the viewer's wishlist as collected since the strip was last dismissed, newest first, at most
+    `MAX_COLLECTED_NOTICES`. */
 export async function loadCollectedNotices(viewerId: string): Promise<CollectedNotice[]> {
   return db
     .select({
@@ -55,7 +62,8 @@ export async function loadCollectedNotices(viewerId: string): Promise<CollectedN
     .from(wishlistCollected)
     .innerJoin(cards, eq(cards.oracleId, wishlistCollected.oracleId))
     .where(eq(wishlistCollected.userId, viewerId))
-    .orderBy(desc(wishlistCollected.collectedAt), wishlistCollected.oracleId);
+    .orderBy(desc(wishlistCollected.collectedAt), wishlistCollected.oracleId)
+    .limit(MAX_COLLECTED_NOTICES);
 }
 
 /**

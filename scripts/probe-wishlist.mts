@@ -59,10 +59,10 @@ async function main() {
     // B owns one X; Y not at all.
     await db.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${B}, ${X}, 1, 'prb')`);
     const before = await stamp(B);
-    check("B wants two X", (await wishlist.setWishlistQuantity(B, X, 2)) === "wanted");
-    check("B wants one Y", (await wishlist.setWishlistQuantity(B, Y)) === "wanted");
+    check("B wants two X", (await wishlist.setWishlistQuantity(B, X, 2))?.status === "wanted");
+    check("B wants one Y", (await wishlist.setWishlistQuantity(B, Y, 1))?.status === "wanted");
     check("a wishlist write moves the owner's stamp", (await stamp(B)) > before);
-    check("an unknown card writes nothing", (await wishlist.setWishlistQuantity(B, "00000000-0000-0000-0000-000000000000")) === null);
+    check("an unknown card writes nothing", (await wishlist.setWishlistQuantity(B, "00000000-0000-0000-0000-000000000000", 1)) === null);
     check("a quantity of 0 writes nothing", (await wishlist.setWishlistQuantity(B, X, 0)) === null);
     check("a quantity of 100 writes nothing", (await wishlist.setWishlistQuantity(B, X, 100)) === null);
 
@@ -115,16 +115,16 @@ async function main() {
     check("and nothing is left once that one is drawn and dismissed too", (await collected.loadCollectedNotices(B)).length === 0);
 
     // The want write itself: re-wanted above what is held, then lowered to it.
-    check("wanting X again, five, stands", (await wishlist.setWishlistQuantity(B, X, 5)) === "wanted"
+    check("wanting X again, five, stands", (await wishlist.setWishlistQuantity(B, X, 5))?.status === "wanted"
       && (await wishlist.loadWishlist(B))[0]?.quantity === 5);
-    check("lowering it to the two held drops the line, as held", (await wishlist.setWishlistQuantity(B, X, 2)) === "held"
+    check("lowering it to the two held drops the line, as held", (await wishlist.setWishlistQuantity(B, X, 2))?.status === "held"
       && (await lineCount()) === 0);
     check("and does not put it on the strip: the player did that themselves", (await collected.loadCollectedNotices(B)).length === 0);
-    check("a first want of what is already held writes no line either", (await wishlist.setWishlistQuantity(B, X, 1)) === "held"
+    check("a first want of what is already held writes no line either", (await wishlist.setWishlistQuantity(B, X, 1))?.status === "held"
       && (await lineCount()) === 0 && (await collected.loadCollectedNotices(B)).length === 0);
 
     // An upload's Replace reaches a want too.
-    check("B wants two Y again, more than the one held", (await wishlist.setWishlistQuantity(B, Y, 2)) === "wanted");
+    check("B wants two Y again, more than the one held", (await wishlist.setWishlistQuantity(B, Y, 2))?.status === "wanted");
     await replaceCollection(B, [
       { oracleId: X, setCode: "prb", condition: null, quantity: 1 },
       { oracleId: Y, setCode: "prb", condition: null, quantity: 2 },
@@ -134,12 +134,27 @@ async function main() {
 
     const shown = await collected.loadCollectedNotices(B);
     await collected.dismissCollected(B, shown);
-    check("B clears a line", (await wishlist.setWishlistQuantity(B, X, 9)) === "wanted" && await wishlist.clearWishlistLine(B, X));
+    check("B clears a line", (await wishlist.setWishlistQuantity(B, X, 9))?.status === "wanted" && await wishlist.clearWishlistLine(B, X));
     check("clearing a line that is not there says so", (await wishlist.clearWishlistLine(B, X)) === false);
     check("a cleared line is not collected", (await collected.loadCollectedNotices(B)).length === 0);
 
+    // Add to wishlist's first press (G4): one more than held, so the line lands wanted, never collected.
+    const more = await wishlist.wantOneMore(B, X);
+    check("Add wants one more than the one X held", more?.status === "wanted" && more.quantity === 2 && more.held === 1, JSON.stringify(more));
+    check("and the line stands at that want", (await wishlist.loadWishlistWant(B, X)) === 2);
+    check("an unknown card writes nothing", (await wishlist.wantOneMore(B, "00000000-0000-0000-0000-000000000000")) === null);
+    await replaceCollection(B, [
+      { oracleId: X, setCode: "prb", condition: null, quantity: 99 },
+      { oracleId: Y, setCode: "prb", condition: null, quantity: 2 },
+    ]);
+    await collected.dismissCollected(B, await collected.loadCollectedNotices(B));
+    const capped = await wishlist.wantOneMore(B, X);
+    check("holding 99, Add is answered held and writes no line", capped?.status === "held" && capped.quantity === 99
+      && (await wishlist.loadWishlistWant(B, X)) === null, JSON.stringify(capped));
+    check("and puts nothing on the strip", (await collected.loadCollectedNotices(B)).length === 0);
+
     // Something for a former friend to NOT see: without a standing line the read below is empty whatever unfriend did.
-    check("B wants nine Y", (await wishlist.setWishlistQuantity(B, Y, 9)) === "wanted");
+    check("B wants nine Y", (await wishlist.setWishlistQuantity(B, Y, 9))?.status === "wanted");
     check("which A, still a friend, sees", (await loadFriendWishlist(A, b.publicId)).length === 1);
     await friends.unfriend(A, b.publicId);
     check("a former friend reads nothing", (await loadFriendWishlist(A, b.publicId)).length === 0);
