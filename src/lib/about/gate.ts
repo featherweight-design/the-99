@@ -73,6 +73,8 @@ export function safeNext(raw: string | null | undefined): string {
     return resolved.pathname + resolved.search;
   } catch {
     // `new URL` throws on a value no amount of guarding ahead of it makes safe.
+    // not a fallback: a redirect target, never a cached page's payload (Home imports this module for the sheet
+    // cookie's check alone, About on the banner).
     return "/";
   }
 }

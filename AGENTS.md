@@ -1258,7 +1258,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   database (the pages it loads write what any reader's visit writes, on the measurement account): it signs in with a Clerk sign-in token minted from
   `THE_99_CLERK_SECRET_KEY_STAGING` for the account `THE_99_E2E_AUDIT_USER_EMAIL` names (a testing
   token works only on a development instance; that account holds a copy of Hugh's staging decks and
-  collection, made 2026-10-12), takes the deck as `MEASURE_DECK_ID`, lets the proxy set its own About sheet cookie on one document load after sign-in, reads the
+  collection, made 2026-10-12), takes the deck as `MEASURE_DECK_ID`, loads one document after sign-in (the proxy set its About sheet cookie there until About moved to Home's banner, and sets none since), reads the
   `[perf]` lines from Vercel's runtime logs of `the-99-staging` (which needs `PERF_TIMING=1` there),
   and takes database time from `MEASURE_PGSTAT_URL` as the delta between two `pg_stat_statements`
   snapshots, never a reset (installed on staging 2026-10-12). `MEASURE_SERVER_LOG` and
@@ -1517,11 +1517,11 @@ in one payload when the set of parameters is small enough to precompute.
 - Pipeline state lives in `docs/superpowers/design-pipeline-status.md`; plans in `docs/superpowers/plans/`; gap reports in `docs/superpowers/gap-report-*.md`.
 - **A MULTI-ROUND FEATURE LINE BATCHES ITS ABOUT ENTRIES AT THE END OF THE LAUNCH.** Ruled
   2026-09-21. A line like deck analysis ships five rounds, each a piece of one capability — and
-  an `ABOUT_VERSION` bump puts a one-time sheet in front of every account. For a returning account
-  it names the new entries and offers the page; a brand-new account's sheet introduces the page in
-  one line instead. Until the About rethink ships
-  (`docs/superpowers/design-briefs/2026-09-25-about-rethink.md`, Hugh 2026-09-25), a bump still
-  redirects every account to `/about` instead. Either way, bumping once per round spends that
+  an `ABOUT_VERSION` bump puts a line on Home's banner in front of every account (with
+  `ABOUT_SHEET_ENABLED` on; plan `2026-10-15-about-on-the-banner.md`). For a returning account it
+  names the new entries and offers the page; a brand-new account's line introduces the page in one
+  sentence instead. With the switch off, a bump redirects every account to `/about` instead.
+  Either way, bumping once per round spends that
   attention five times to announce fragments, and the early
   entries describe a surface the reader cannot use yet. One bump at the end describes the thing
   as it works.
@@ -1545,9 +1545,10 @@ in one payload when the set of parameters is small enough to precompute.
   - **The close-out** — `feature-acceptance` does not pass until the entry exists on the page and
     the version moved. A copy edit is not a bump; a new entry always is.
 
-  The version is what makes this matter: a bump shows every account a one-time sheet over whatever
-  page they opened, naming the new entries for a returning account (a brand-new account's sheet
-  introduces the page in one line). Until the About rethink ships, a bump redirects to
+  The version is what makes this matter: a bump puts a line on Home's banner in front of every
+  account until they open `/about` or press ✕, naming the new entries for a returning account (a
+  brand-new account's line introduces the page in one sentence). It reaches Home only (Hugh's Q1,
+  2026-10-14): every other page shows nothing. With `ABOUT_SHEET_ENABLED` off, a bump redirects to
   `/about` instead. Either way, a feature with no entry reaches nobody who is not already
   exploring. The `about.test.ts` content hash does the mechanical half — touching the copy forces
   either a deliberate bump or a deliberate re-pin — but nothing can detect an entry that was never

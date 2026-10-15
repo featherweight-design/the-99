@@ -2488,7 +2488,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   router's held payload), whether Precons was reached by the banner's link or by Home → Decks → Commander precons and
   Back twice (the page tells the client its visit acknowledged the arrivals); ✕, by click and by Enter,
   closes it, writes the seen keys (read back from `user_prefs`) and focuses Home's `h1`, and a reload draws none with
-  `LIST_CACHE_ENABLED=true` (the stamp retiring cached Home, E5); a fresh first-run account gets no banner and no seen
+  `LIST_CACHE_ENABLED=true` (the stamp retiring cached Home, E5); a fresh first-run account gets no arrival line (About's own first-run line may draw there) and no seen
   key (H7); the About entry `upcoming-precons` draws with the switch on, and neither it nor the banner with an account
   override turning `UPCOMING_PRECONS_ENABLED` off (it waits out the resolver's 30-second memo). FIXTURES on local-dev
   only (production and staging refused by branch id): two `commander` sets `pqaset` and `pqalist`, a precon listing
@@ -2504,3 +2504,22 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the press (`readDeckExport`), never from `/decks`' cached payload. A run that finds no tile fails. Its one write is the
   About row `clearAboutSheet` sets, read before and put back in a `finally`. Point it at `local-dev` through a server you started (`PROBE_BASE`), and stop that
   server by its own PID; `PROBE_SHOTS=<dir>` keeps a screenshot per width.
+- `pnpm probe:about-banner` presses About's line on Home's banner (plan `2026-10-15-about-on-the-banner.md`, PR A; handoff
+  `design_handoff_the99_upcoming_precons`, `R2 - Home-About`, A1–A3) at 390x844 and 1300x900. On the Dashboard: A1
+  (`N new in About: {titles}.`, the sheet's cap, Show me to `/about`, ✕ 44 at 390 and 32 at 1300, one line and no
+  heading); no About sheet draws anywhere and the proxy writes no `about_sheet` cookie; `/decks` and `/collection` draw
+  no line for a reader who is behind; a CURRENT `about_sheet` cookie (keyed to the switched entries the server draws,
+  read off `/about`'s anchors) suppresses the line and is never rewritten, and a stale one does not; ✕ closes it, focuses
+  Home's `h1`, writes the version floor (polled in `user_prefs`), a reload draws none with `LIST_CACHE_ENABLED=true`,
+  and `/about` then has no what's-new index; ✕, a client navigation to `/decks` and Back draws no line; Show me lands on
+  `/about`, the visit writes seen, and Back to Home draws no line (the client acknowledgement); A2 (an arrival fixture
+  beside About: `New in the app`, About's line first, each line its own link, one ✕ writing both halves); A3 on the
+  Dashboard for an account with cards and no About history, whose ✕ writes the floor and the switched entries the server
+  draws. On the first-run checklist, a fresh Clerk test user: A3 with no ✕ and no sheet, A1 with no ✕, and nothing for a
+  current reader. The sign-in account's About state is its `user_prefs` row alone (every catalog id seen, the floor one
+  below the newest unswitched entry), read before any page and put back exactly in `finally`, then re-read as a check.
+  FIXTURES on local-dev only (production and staging refused by branch id): a `commander` set `pqbset` with a day-old
+  non-baseline `catalog_first_seen` stamp, and the temporary user (its key must be `sk_test_`), all removed in its
+  `finally` with every row the user wrote. `PROBE_BASE` must be loopback with a port. Needs a `next start` on
+  `PROBE_BASE` over the same database with `PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true
+  ABOUT_SHEET_ENABLED=true`; stop it by its own PID.

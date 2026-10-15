@@ -5,19 +5,29 @@
 // (`ArrivalsBanner`). In Home's flow between the header and Ready to build: never fixed, no modal, no focus grab,
 // no scroll lock and no live region. The server draws it, so it is in the document when the page loads, and a
 // screen reader meets it in reading order and by landmark (a labelled `<section>`).
+//
+// About's line (About on the banner, plan `2026-10-15-about-on-the-banner.md` PR A; `R2 - Home-About`, A1–A3):
+// with `ABOUT_SHEET_ENABLED` on, About's notice is a line here instead of the one-time sheet. Drawn first: alone it
+// takes the one-line shape (A1, or A3 for a first-run reader), and beside arrivals the band takes the heading
+// `New in the app` with each line carrying its own link (A2). One ✕ dismisses both halves. On the first-run
+// checklist the band draws About's line alone, with no ✕ (`closable={false}`): the checklist is itself the
+// first-run surface.
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { dismissArrivals } from "../../app/arrivals-actions";
+import type { AboutLine } from "../../lib/about/notice";
 import { arrivalsCopy as copy } from "../../lib/copy/arrivals";
 import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
 import { sheetTitles } from "../shell/about-sheet";
-import { arrivalsAcknowledged } from "./arrivals-seen";
+import { aboutAcknowledged, arrivalsAcknowledged } from "./arrivals-seen";
 import { PendingReporter } from "../shell/pending-reporter";
 
 /** Home's `<h1>`, where focus goes once ✕ has closed the banner (H8). */
 export const HOME_HEADING_ID = "home-heading";
+/** Where About's Show me goes. The page records the visit itself (`RecordVisit`). */
+export const ABOUT_HREF = "/about";
 /** The close: a height collapse this long, instant under reduced motion. */
 export const COLLAPSE_MS = 160;
 
@@ -38,6 +48,9 @@ const LINK =
 const CLOSE =
   "flex flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[color:var(--fg-faint)] " +
   "hover:text-[color:var(--fg)] rounded-[6px] " + RING;
+/** One line of the A2 band. */
+const LINE =
+  "border-t border-solid border-[color:var(--border)] py-[9px] text-[14px] leading-[1.5] text-[color:var(--fg-body)] sm:py-[8px] sm:text-[13.5px]";
 const SHELL =
   "box-border rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)]";
 
@@ -67,6 +80,25 @@ function Sentence({ line }: { line: BannerLine }) {
   );
 }
 
+/** About's line: the lead in `--fg`, then the titles (A1, A2) or the first-run sentence (A3). */
+function AboutSentence({ line }: { line: AboutLine }) {
+  if (line.kind === "firstRun") {
+    return (
+      <>
+        <span className="text-[color:var(--fg)]">{copy.aboutFirstRunLead}</span>
+        {copy.aboutFirstRunRest}
+      </>
+    );
+  }
+  const { shown, more } = sheetTitles(line.titles.length);
+  return (
+    <>
+      <span className="text-[color:var(--fg)]">{copy.aboutLead(line.titles.length)}</span>
+      {copy.aboutRest(line.titles, shown, more)}
+    </>
+  );
+}
+
 function CloseButton({ onClose, className }: { onClose: () => void; className: string }) {
   return (
     <button type="button" aria-label={copy.dismiss} onClick={onClose} className={`${CLOSE} ${className}`}>
@@ -75,10 +107,30 @@ function CloseButton({ onClose, className }: { onClose: () => void; className: s
   );
 }
 
-export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
-  const id = data.keys.join(" ");
-  const [phase, setPhase] = useState<"open" | "closing" | "gone">(() =>
-    dismissed.has(id) || arrivalsAcknowledged(data.keys) ? "gone" : "open");
+export function ArrivalsBanner({
+  data,
+  about = null,
+  closable = true,
+  gutter = "dashboard",
+}: {
+  /** The arrivals, or null when only About has something to say. */
+  data: ArrivalsBannerData | null;
+  /** About's line, or null. */
+  about?: AboutLine | null;
+  /** False on the first-run checklist: About's line alone, with no ✕. */
+  closable?: boolean;
+  /** The page's own gutter at desktop, so the band lines up with its heading: 26 on the Dashboard, 28 on the checklist. */
+  gutter?: "dashboard" | "checklist";
+}) {
+  const smMx = gutter === "checklist" ? "sm:mx-[28px]" : "sm:mx-[26px]";
+  const keys = data?.keys ?? [];
+  const aboutIds = about?.ids ?? [];
+  const id = [...keys, ...aboutIds.map((a) => `about:${a}`)].join(" ");
+  // Each half on its own: a Precons visit answers the arrivals, a `/about` visit answers About's line, and either
+  // leaves the other half standing.
+  const arrivals = data && data.lines.length > 0 && !arrivalsAcknowledged(data.keys) ? data : null;
+  const aboutShown = about && !aboutAcknowledged(about.ids) ? about : null;
+  const [phase, setPhase] = useState<"open" | "closing" | "gone">(() => (dismissed.has(id) ? "gone" : "open"));
 
   useEffect(() => {
     if (phase !== "closing") return;
@@ -90,21 +142,26 @@ export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
     return () => window.clearTimeout(timer);
   }, [phase]);
 
-  if (phase === "gone" || data.lines.length === 0) return null;
+  if (phase === "gone" || (!arrivals && !aboutShown)) return null;
 
   const close = () => {
     dismissed.add(id);
     setPhase("closing");
-    // The banner closes on the press; a write that fails leaves the arrivals unseen, so the next load shows them
+    // The banner closes on the press; a write that fails leaves both halves unseen, so the next load shows them
     // again (rule 6), and a re-mount in this document draws it again too.
-    void dismissArrivals(data.keys).catch(() => {
+    void dismissArrivals(arrivals?.keys ?? [], aboutShown?.ids ?? []).catch(() => {
       dismissed.delete(id);
     });
   };
 
   const closing = phase === "closing";
-  const one = data.lines.length === 1 ? data.lines[0] : null;
-  const { shown, more } = sheetTitles(data.lines.length);
+  // One line: About's alone (A1, A3), or one arrival alone (H2, H3). Two halves take the heading (A2).
+  const single: "about" | "arrival" | null = aboutShown
+    ? arrivals ? null : "about"
+    : arrivals && arrivals.lines.length === 1 ? "arrival" : null;
+  const lines = arrivals?.lines ?? [];
+  const { shown, more } = sheetTitles(lines.length);
+  const closeButton = (className: string) => (closable ? <CloseButton onClose={close} className={className} /> : null);
 
   return (
     // The collapse: one grid row from its height to none. `overflow-hidden` only while closing, so a focus ring
@@ -117,47 +174,107 @@ export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
       }
     >
       <div className={`min-h-0 ${closing ? "overflow-hidden" : ""}`} inert={closing}>
-        {one ? (
+        {single ? (
           <section
             aria-label={copy.regionLabel}
             className={
-              `${SHELL} mx-[16px] mt-[14px] flex items-start gap-[10px] py-[10px] pr-[4px] pl-[14px] ` +
-              "sm:mx-[26px] sm:mt-[18px] sm:min-h-[46px] sm:items-center sm:gap-[12px] sm:py-[7px] sm:pr-[8px]"
+              `${SHELL} mx-[16px] mt-[14px] flex items-start gap-[10px] py-[10px] pl-[14px] ` +
+              `${smMx} sm:mt-[18px] sm:min-h-[46px] sm:items-center sm:gap-[12px] sm:py-[7px] ` +
+              (closable ? "pr-[4px] sm:pr-[8px]" : "pr-[14px]")
             }
           >
             <Mark className="mt-[2px] sm:mt-0" />
-            <div className="flex min-w-0 flex-1 flex-col gap-[4px] pt-[2px] sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-[14px] sm:gap-y-[2px] sm:pt-0">
+            <div className="flex min-w-0 flex-1 flex-col gap-[4px] pt-[2px] sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-[14px] sm:pt-0">
               <p className="m-0 text-[14px] leading-[1.45] text-[color:var(--fg-body)]">
-                <Sentence line={one} />
+                {single === "about" && aboutShown ? <AboutSentence line={aboutShown} /> : <Sentence line={lines[0]!} />}
               </p>
-              <Link
-                href={data.href}
-                className={`${LINK} min-h-[24px] self-start text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
-              >
-                {one.kind === "set" ? copy.seeOne : copy.seeMany}
-                <PendingReporter href={data.href} />
-              </Link>
+              {single === "about" ? (
+                <Link
+                  href={ABOUT_HREF}
+                  data-about-link
+                  className={`${LINK} min-h-[24px] self-start whitespace-nowrap text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
+                >
+                  {copy.aboutShow}
+                  <PendingReporter href={ABOUT_HREF} />
+                </Link>
+              ) : (
+                <Link
+                  href={arrivals!.href}
+                  className={`${LINK} min-h-[24px] self-start whitespace-nowrap text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
+                >
+                  {lines[0]!.kind === "set" ? copy.seeOne : copy.seeMany}
+                  <PendingReporter href={arrivals!.href} />
+                </Link>
+              )}
             </div>
-            <CloseButton
-              onClose={close}
-              className="-mt-[8px] h-[44px] w-[44px] text-[14px] sm:mt-0 sm:h-[32px] sm:w-[32px] sm:text-[13px]"
-            />
+            {closeButton("h-[44px] w-[44px] text-[14px] sm:mt-0 sm:h-[32px] sm:w-[32px] sm:text-[13px]")}
+          </section>
+        ) : aboutShown && arrivals ? (
+          // About and arrivals (A2): the heading `New in the app` and ✕ on one row, then one line each, About's
+          // first, each with its own link. Several arrivals keep `sheetTitles`' cap, and their one Precons link
+          // closes the last of their lines.
+          <section
+            aria-label={copy.regionLabel}
+            className={
+              `${SHELL} mx-[16px] mt-[14px] flex flex-col pt-[2px] pr-[4px] pb-[6px] pl-[14px] ` +
+              `${smMx} sm:mt-[18px] sm:pt-[6px] sm:pr-[8px]`
+            }
+          >
+            <div className="flex items-center gap-[10px]">
+              <Mark />
+              <h2 className="m-0 min-w-0 flex-1 text-[14.5px] leading-[1.4] font-semibold text-[color:var(--fg)]">
+                {copy.regionLabel}
+              </h2>
+              {closeButton("h-[44px] w-[44px] text-[14px] sm:h-[32px] sm:w-[32px] sm:text-[13px]")}
+            </div>
+            <ul className="m-0 mr-[10px] ml-[32px] list-none p-0 sm:mt-[2px] sm:mr-0">
+              <li className={LINE}>
+                <AboutSentence line={aboutShown} />{" "}
+                <Link href={ABOUT_HREF} data-about-link className={`${LINK} whitespace-nowrap`}>
+                  {copy.aboutShow}
+                  <PendingReporter href={ABOUT_HREF} />
+                </Link>
+              </li>
+              {lines.slice(0, shown).map((l, i) => (
+                <li key={`${l.kind}:${l.code}`} className={LINE}>
+                  <Sentence line={l} />
+                  {i === lines.length - 1 && (
+                    <>
+                      {" "}
+                      <Link href={arrivals.href} className={`${LINK} whitespace-nowrap`}>
+                        {l.kind === "set" ? copy.seeOne : copy.seeMany}
+                        <PendingReporter href={arrivals.href} />
+                      </Link>
+                    </>
+                  )}
+                </li>
+              ))}
+              {more > 0 && (
+                <li className={LINE}>
+                  <span className="font-mono text-[11px] text-[color:var(--fg-muted)]">{copy.more(more)}</span>{" "}
+                  <Link href={arrivals.href} className={`${LINK} whitespace-nowrap`}>
+                    {copy.seeMany}
+                    <PendingReporter href={arrivals.href} />
+                  </Link>
+                </li>
+              )}
+            </ul>
           </section>
         ) : (
-          // Several: the count heading, the lines under `sheetTitles`' cap, one link and one ✕ for all. Placed on a
-          // grid so the DOM reads heading, lines, link, ✕ (Tab: the link, then ✕) while the link sits on the heading
-          // line at desktop and on its own 44px line last at 390.
+          // Several arrivals: the count heading, the lines under `sheetTitles`' cap, one link and one ✕ for all. Placed
+          // on a grid so the DOM reads heading, lines, link, ✕ (Tab: the link, then ✕) while the link sits on the
+          // heading line at desktop and on its own 44px line last at 390.
           <section
             aria-label={copy.regionLabel}
             className={
               `${SHELL} mx-[16px] mt-[14px] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-[10px] pt-[6px] pr-[4px] pb-[4px] pl-[14px] ` +
-              "sm:mx-[26px] sm:mt-[18px] sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-x-[10px] sm:pt-[7px] sm:pr-[8px] sm:pb-[6px]"
+              `${smMx} sm:mt-[18px] sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-x-[10px] sm:pt-[7px] sm:pr-[8px] sm:pb-[6px]`
             }
           >
             <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-[10px]">
               <Mark />
               <h2 className="m-0 min-w-0 flex-1 text-[14.5px] leading-[1.4] font-semibold text-[color:var(--fg)]">
-                {copy.heading(data.lines.length)}
+                {copy.heading(lines.length)}
               </h2>
             </div>
             <ul
@@ -166,7 +283,7 @@ export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
                 "sm:col-span-3 sm:mt-[4px] sm:mr-0 sm:grid sm:grid-cols-2 sm:gap-x-[28px]"
               }
             >
-              {data.lines.slice(0, shown).map((l) => (
+              {lines.slice(0, shown).map((l) => (
                 <li
                   key={`${l.kind}:${l.code}`}
                   className="border-t border-solid border-[color:var(--border)] py-[8px] text-[14px] leading-[1.4] text-[color:var(--fg-body)] sm:text-[13.5px]"
@@ -181,19 +298,18 @@ export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
               )}
             </ul>
             <Link
-              href={data.href}
+              href={arrivals!.href}
               className={
                 `${LINK} col-span-2 row-start-3 flex min-h-[44px] items-center justify-self-start pl-[32px] text-[14px] ` +
                 "sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:min-h-0 sm:pl-0 sm:text-[13.5px]"
               }
             >
               {copy.seeMany}
-              <PendingReporter href={data.href} />
+              <PendingReporter href={arrivals!.href} />
             </Link>
-            <CloseButton
-              onClose={close}
-              className="col-start-2 row-start-1 -mt-[8px] h-[44px] w-[44px] text-[14px] sm:col-start-3 sm:mt-0 sm:h-[32px] sm:w-[32px] sm:text-[13px]"
-            />
+            {closeButton(
+              "col-start-2 row-start-1 -mt-[8px] h-[44px] w-[44px] text-[14px] sm:col-start-3 sm:mt-0 sm:h-[32px] sm:w-[32px] sm:text-[13px]",
+            )}
           </section>
         )}
       </div>

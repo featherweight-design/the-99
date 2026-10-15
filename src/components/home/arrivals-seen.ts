@@ -22,7 +22,29 @@ export function arrivalsAcknowledged(keys: readonly string[]): boolean {
   return keys.length > 0 && keys.every((k) => acknowledged.has(k));
 }
 
+/**
+ * The About entries a `/about` visit in this document acknowledged (About on the banner, PR A). The same problem
+ * as the arrivals': the visit writes About's seen state and retires Home's cached payload on the server, but Back
+ * (or a client navigation) to Home restores the payload the router holds, About's line included. `RecordVisit`
+ * calls `acknowledgeAbout()` with the entries the page drew, and the banner leaves About's line out when every id
+ * it claims is among them. A new document starts clear.
+ */
+// Only ever added to: a visit acknowledges once its write has LANDED (or at once, for a reader already current), so
+// nothing is ever taken back and no late failure can race a later visit's acknowledgement.
+const aboutAcked = new Set<string>();
+
+/** A `/about` visit in this document recorded these entries. */
+export function acknowledgeAbout(ids: readonly string[]): void {
+  for (const id of ids) aboutAcked.add(id);
+}
+
+/** Every one of `ids` was acknowledged by a `/about` visit in this document. */
+export function aboutAcknowledged(ids: readonly string[]): boolean {
+  return ids.length > 0 && ids.every((id) => aboutAcked.has(id));
+}
+
 /** Tests only: a fresh document. */
 export function resetArrivalsAcknowledged(): void {
   acknowledged.clear();
+  aboutAcked.clear();
 }

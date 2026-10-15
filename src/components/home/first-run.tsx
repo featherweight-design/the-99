@@ -8,6 +8,8 @@
 // wins, which is why the locked cards are --surface-rail on --border and the
 // step-1 card is --surface-inset.
 
+import { ArrivalsBanner } from "./arrivals-banner";
+import type { AboutLine } from "../../lib/about/notice";
 import { FirstRunStepOne } from "./first-run-step-one";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { Lock } from "../ui/lock";
@@ -89,7 +91,7 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
   );
 }
 
-export function FirstRunChecklist({ addByHand = false }: { addByHand?: boolean }) {
+export function FirstRunChecklist({ addByHand = false, about = null }: { addByHand?: boolean; about?: AboutLine | null }) {
   const c = refreshCopy.firstRun;
 
   return (
@@ -126,6 +128,11 @@ export function FirstRunChecklist({ addByHand = false }: { addByHand?: boolean }
           {c.lock.pageLine}
         </p>
       </div>
+
+      {/* About's line (About on the banner, PR A; A3, or A1 for an account that read /about and then cleared its
+          collection), between the heading and the steps. No arrival lines here (H7), and no ✕: the checklist is the
+          first-run surface itself, and the line goes once About is opened. */}
+      {about && <ArrivalsBanner data={null} about={about} closable={false} gutter="checklist" />}
 
       <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px] max-md:group-has-[[data-reviewing]]/first-run:pt-[8px]">
         {/* Step 1 — live. A client component, because the card changes while its review is

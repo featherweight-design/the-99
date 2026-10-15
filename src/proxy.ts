@@ -1,20 +1,15 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import {
   ABOUT_COOKIE,
   gateApplies,
   gateDecision,
   gateHandles,
-  isDocumentLoad,
-  SHEET_COOKIE,
   SHEET_HEADER,
   SHEET_ON_HEADER,
-  sheetCookieIsCurrent,
   sheetCookieValue,
-  sheetDecision,
 } from "./lib/about/gate";
 import { aboutSheetEnabled } from "./lib/about/flag";
-import { howItWorksEnabled } from "./lib/about/how-it-works-flag";
 import { ABOUT_VERSION } from "./lib/copy/about";
 import { aboutSeen } from "./lib/about/read";
 import { isFirstRun, unseenEntries, visibleEntries, type SeenState } from "./lib/about/visible";
@@ -63,13 +58,14 @@ export default clerkMiddleware(async (auth, req) => {
   const memo = timing && userId ? switchSnapshotState() : null;
   const t2 = timing ? performance.now() : 0;
   // The reader's own switches (brief, locked rule 9): an account an override switches on sees that
-  // feature's entry and its sheet, and the cookie below is keyed on what THEY see.
+  // feature's entry, and the legacy cookie below is keyed on what THEY see.
   const env = userId ? await resolveSwitchEnv(userId) : process.env;
   if (timing && userId) {
     console.log(`[perf] proxy auth=${Math.round(t1 - t0)} switches=${Math.round(performance.now() - t2)} memo=${memo}`);
   }
-  // Both sheet headers are this proxy's to write, so neither survives from the client on any request.
-  // The shell trusts them: `SHEET_ON_HEADER` is its whole answer to whether the sheet is on.
+  // Both sheet headers are stripped from every request, so no client can summon the sheet: the shell mounts it
+  // on `SHEET_ON_HEADER` alone, and since About moved to Home's banner this proxy sets neither (PR B deletes
+  // the sheet).
   const headers = new Headers(req.headers);
   headers.delete(SHEET_HEADER);
   headers.delete(SHEET_ON_HEADER);
@@ -96,10 +92,11 @@ export default clerkMiddleware(async (auth, req) => {
     }
     return response;
   };
-  if (userId && aboutSheetEnabled(env)) {
-    headers.set(SHEET_ON_HEADER, "1");
-    return rekeyLegacy(await sheet(req, userId, env, headers, pass));
-  }
+  // About on the banner (plan 2026-10-15, PR A): with the switch on, About's notice is a line on Home's banner,
+  // decided by the page. So the proxy no longer decides a sheet, sets neither sheet header (the shell never mounts
+  // the sheet) and no longer writes the `about_sheet` cookie; Home reads that cookie, never writes it, to keep a
+  // browser that already showed the sheet for these entries from being told again. It never redirects either.
+  if (userId && aboutSheetEnabled(env)) return rekeyLegacy(pass());
   if (!userId) return pass();
 
   if (path === "/about" && gateHandles(req.method, req.headers)) return rekeyLegacy(pass());
@@ -151,40 +148,6 @@ const COOKIE_OPTIONS = {
   sameSite: "lax",
   maxAge: 60 * 60 * 24 * 365,
 } as const;
-
-/**
- * About R6: the one-time sheet in place of the redirect. Never redirects. It
- * decides on a document load whether the root layout draws the sheet and says so
- * on a request header, for the root layout to read back through `headers()`.
- *
- * Both sheet headers are stripped from every request this proxy sees, signed in or not, and
- * whatever the switch says, before this runs: a client that sent its own could otherwise summon
- * the sheet, or forge the `seen` it lists entries from.
- */
-async function sheet(req: NextRequest, userId: string, env: NodeJS.ProcessEnv, headers: Headers, pass: () => NextResponse) {
-  if (!gateApplies(req.nextUrl.pathname) || !isDocumentLoad(req.method, req.headers)) return pass();
-  // The entries this reader is drawn, read from their resolved switches. They key the cookie, so a
-  // switch flipped on, for everyone or for them, retires the cookie and the next load decides again.
-  const visible = visibleEntries(env);
-  if (sheetCookieIsCurrent(req.cookies.get(SHEET_COOKIE)?.value, userId, visible)) return pass();
-
-  // A failed read draws nothing and writes nothing, so the next load asks again.
-  let seen: SeenState;
-  try {
-    seen = await aboutSeen(userId);
-  } catch {
-    return pass();
-  }
-
-  const decision = sheetDecision({ userId, seen, visible, appendix: howItWorksEnabled(env) });
-  if (decision.show) headers.set(SHEET_HEADER, decision.header);
-  const response = pass();
-  response.cookies.set(SHEET_COOKIE, decision.cookie, {
-    ...COOKIE_OPTIONS,
-    secure: req.nextUrl.protocol === "https:",
-  });
-  return response;
-}
 
 export const config = {
   matcher: ["/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)"],
