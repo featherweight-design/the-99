@@ -30,7 +30,7 @@ import {
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
-import { printedNameOf, resolvedPrinting, withDeckPick } from "../../lib/collection/browse";
+import { faceFilm, printedNameOf, resolvedPrinting, withDeckPick, type FoilFinish } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import type { FitsViewMemory } from "./fits-view";
@@ -278,6 +278,12 @@ export type SiblingCard = {
   name?: string;
   imageUri?: string | null;
   colorIdentity?: readonly string[];
+  /**
+   * The finish of the copy `imageUri` draws, when every copy held of it shares one and the art is its own (foil
+   * handoff R2, G10): the peek and the neighbor plate draw R1's tile film from it. Absent draws none, the safe
+   * direction, so an opener that cannot know it passes nothing.
+   */
+  foil?: FoilFinish;
 };
 export type Sibling = string | SiblingCard;
 
@@ -1509,13 +1515,20 @@ export function CardDetailProvider({
     if (!s) return null;
     // A card viewed at one printing (`viewPrintings`) shows it on its plate too, as it will when
     // paged onto: the plate never draws the reader's own copy of a card the list stands at another.
+    // A viewed printing names no finish, so its plate draws no film.
     const viewed = viewPrintings?.[s.oracleId];
-    if (viewed?.imageUri) return viewed.imageUri !== (s.imageUri ?? null) ? { ...s, imageUri: viewed.imageUri } : s;
+    if (viewed?.imageUri) {
+      return viewed.imageUri !== (s.imageUri ?? null) || s.foil ? { ...s, imageUri: viewed.imageUri, foil: undefined } : s;
+    }
     const readCard = readArt.get(s.oracleId);
     if (!readCard) return s;
     const shown = withDeckPick(readCard, deckPickFor(deckPrintingPicks, deckId, deckOracleIds, s.oracleId));
-    const read = { art: resolvedPrinting(shown)?.imageUri ?? null, name: printedNameOf(shown) };
-    return read.art !== (s.imageUri ?? null) || read.name !== s.name ? { ...s, imageUri: read.art, name: read.name } : s;
+    const printing = resolvedPrinting(shown);
+    // The film follows the printing the plate draws, as the details face's does (foil handoff R2, G9).
+    const read = { art: printing?.imageUri ?? null, name: printedNameOf(shown), foil: faceFilm(printing) };
+    return read.art !== (s.imageUri ?? null) || read.name !== s.name || read.foil !== s.foil
+      ? { ...s, imageUri: read.art, name: read.name, foil: read.foil }
+      : s;
   };
   const prevSibling = paging && index > 0 ? plate(siblings[index - 1]) : null;
   const nextSibling = paging && index < siblings.length - 1 ? plate(siblings[index + 1]) : null;

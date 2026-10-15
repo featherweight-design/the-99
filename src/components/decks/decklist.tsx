@@ -762,7 +762,7 @@ export function Decklist({
   const orderedIds = groups
     .flatMap(([, groupCards]) => groupCards)
     .filter((c) => !spentOracleIds.has(c.oracleId))
-    .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri }));
+    .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri, foil: c.foil }));
 
   // Every branch below draws the bar as `key="deck-bar"` in a column `div`, so moving between the list, Stats and
   // Notes keeps the same mounted bar and the tab an arrow key just focused.

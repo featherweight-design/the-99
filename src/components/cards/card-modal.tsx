@@ -16,7 +16,9 @@ import {
   matchesPreference,
   resolvedPrinting,
   cardArt,
+  faceFilm,
   type CardArt,
+  type FoilFinish,
   WUBRG_COLOR,
 } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
@@ -55,6 +57,7 @@ import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { Chevron } from "../ui/chevron";
 import { RECEIPT_LINK_CLASS, STACK_DROP_EASE, STACK_DROP_MS } from "./card-modal-shared";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import { FoilFilm } from "../ui/foil-film";
 
 const pickerCopy = printingPickerCopy.printing;
 
@@ -569,6 +572,7 @@ const NeighborPlate = React.forwardRef<
       >
         {/* The inset ring rides on the layer too: a host's inset shadow paints under its children. */}
         {sibling.imageUri ? <ArtLayer src={sibling.imageUri} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} /> : null}
+        <SiblingFilm sibling={sibling} />
       </span>
       {sibling.name ? (
         // `--fg`, not the handoff's `--fg-muted` (ledger 1, measured in build on every backdrop
@@ -621,6 +625,26 @@ function siblingGround(sibling: SiblingCard): React.CSSProperties {
 }
 
 /**
+ * A neighbor's foil film (foil handoff R2, G10): R1's TILE film, still (`data-foil-still`), drawn AFTER the art's
+ * `ArtLayer` so it reads that layer's own arrival mark through the sibling rule
+ * (`[data-arrival="pending"] ~ [data-foil]`): the layer is queued in the modal's `ArrivalOrder`, and a neighbor whose
+ * bytes landed but whose fade still waits its turn shows no film over its bare plate. No preload of its own. Only
+ * over the neighbor's own art, so never over its identity plate.
+ */
+function SiblingFilm({ sibling }: { sibling: SiblingCard }) {
+  if (!sibling.imageUri || !sibling.foil) return null;
+  return (
+    <span
+      aria-hidden
+      data-testid="sibling-foil-film"
+      data-foil={sibling.foil}
+      data-foil-still=""
+      className="pointer-events-none absolute inset-0 rounded-[inherit]"
+    />
+  );
+}
+
+/**
  * A phone peek (carousel R2, `PhoneHero.dc.html`): the neighbor at 236/320 of the card's width and
  * opacity .5, 12px off the card and centred on it, cut by the screen edge. Read against the
  * band's `--card-w`, so a smaller card (a short screen, a stacked sheet) brings its peeks with it.
@@ -658,6 +682,7 @@ const PhonePeek = React.forwardRef<
       }}
     >
       {sibling.imageUri ? <ArtLayer src={sibling.imageUri} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} /> : null}
+      <SiblingFilm sibling={sibling} />
     </button>
   );
 });
@@ -1244,6 +1269,9 @@ export function CardModal({
           return {
             ...withId,
             imageUri: at.imageUri,
+            // The caller's exact art IS this printing's own (the same provenance the back carries below), so a foil
+            // holding opened from its own set-grid cell draws its film (foil R2, `faceFilm`).
+            hasOwnArt: true,
             // The back moves with the front, on the same condition: this row is being
             // repointed at the printing the caller named, and half a repointing is the
             // two-printing pairing the column exists to prevent.
@@ -1806,6 +1834,13 @@ export function CardModal({
   const backStyle: React.CSSProperties = backImage
     ? { backgroundImage: cssUrl(backImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
+  // THE FILM (foil handoff R2) reads the printing these faces are drawn from, never `preview.foil`, which a pick
+  // does not recompute (audit G9). Each face takes its own, so a back drawn from the oracle's art carries none.
+  // Drawn as a span INSIDE each face, armed by its own preload (`FoilFilm`): the face itself is never marked.
+  const frontFilm = { finish: faceFilm(resolved, "front"), src: resolved?.imageUri };
+  const backFilm = { finish: faceFilm(resolved, "back"), src: backImage };
+  // A one-faced card's art box IS its face, and draws the front.
+  const oneFaceFilm = twoFaced ? null : <FoilFilm {...frontFilm} size="large" />;
 
   // `set · code · collector number`, and the field AND its separator go when the
   // holding carries no number — never "no number" (the printing picker's ruling).
@@ -1925,6 +1960,8 @@ export function CardModal({
         <CardFaces
           front={frontStyle}
           back={backStyle}
+          frontFilm={frontFilm}
+          backFilm={backFilm}
           radius={radius}
           seam="inset 0 0 0 1px rgba(0,0,0,0.3)"
           testIdPrefix="modal-art"
@@ -2156,6 +2193,7 @@ export function CardModal({
               }}
             >
               {turningArt("rounded-[14px]")}
+              {oneFaceFilm}
               {/* The turn plate, centred along the card's bottom and 10px up: the
                   bottom-right corner it sat in covered the power/toughness box. OUTSIDE the box
                   that turns, for the reason the desktop's is. */}
@@ -2296,6 +2334,7 @@ export function CardModal({
             }}
           >
             {turningArt("rounded-[12px]")}
+            {oneFaceFilm}
             {/* Same trigger at this width, stretched over the art and outside the box
                 that turns — on the back face it would otherwise be facing away. */}
             <button
@@ -2887,6 +2926,8 @@ export function CardModal({
                 <CardFaces
                   front={frontStyle}
                   back={backStyle}
+                  frontFilm={frontFilm}
+                  backFilm={backFilm}
                   radius="rounded-[13px] md:rounded-[14px]"
                   // A shade darker than the art column's, because the shadow it
                   // paints over is darker: `0 24px 60px rgba(0,0,0,.6)` against the
@@ -2895,6 +2936,7 @@ export function CardModal({
                   testIdPrefix="card-zoom"
                 />
               )}
+              {oneFaceFilm}
             </div>
             {/* OUTSIDE the box that turns. Inside it, the control rode the rotation:
                 on the back face its corner became the opposite one and its glyph was
@@ -2982,12 +3024,17 @@ export function CardModal({
 function CardFaces({
   front,
   back,
+  frontFilm,
+  backFilm,
   radius,
   seam,
   testIdPrefix,
 }: {
   front: React.CSSProperties;
   back: React.CSSProperties;
+  /** Each face's foil film (foil handoff R2): inside the face, so it turns with the stock and hides with its back. */
+  frontFilm?: { finish: FoilFinish | undefined; src: string | null | undefined };
+  backFilm?: { finish: FoilFinish | undefined; src: string | null | undefined };
   radius: string;
   seam: string;
   testIdPrefix: string;
@@ -2999,7 +3046,9 @@ function CardFaces({
         data-testid={`${testIdPrefix}-face-front`}
         className={`absolute inset-0 ${radius}`}
         style={{ ...front, backfaceVisibility: "hidden", boxShadow: seam }}
-      />
+      >
+        {frontFilm ? <FoilFilm {...frontFilm} size="large" /> : null}
+      </div>
       <div
         aria-hidden
         data-testid={`${testIdPrefix}-face-back`}
@@ -3010,7 +3059,9 @@ function CardFaces({
           transform: "rotateY(180deg)",
           boxShadow: seam,
         }}
-      />
+      >
+        {backFilm ? <FoilFilm {...backFilm} size="large" /> : null}
+      </div>
     </>
   );
 }

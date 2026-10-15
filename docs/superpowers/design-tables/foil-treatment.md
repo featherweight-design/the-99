@@ -97,7 +97,7 @@ query is involved anywhere in this design. Rules that apply under every capabili
 | Tokens | `decks/token-tile.tsx` | never this round (`token_printing_holdings` records no finish); span untouched | plain | plain |
 | Suggestions | `suggestion-tile.tsx` | never (locked) | plain | plain |
 | Precon box tiles on `/precons` | — | never (a box is not a copy) | plain | plain |
-| Card details, zoom, hover preview | — | out of scope (G4) | as main | as main |
+| Card details, zoom, hover preview | — | out of scope (G4); built in R2, below | as main | as main |
 
 ### Rules shared by every surface
 
@@ -146,3 +146,66 @@ query is involved anywhere in this design. Rules that apply under every capabili
 | 16 Suggestion tile, precon box tile | always | plain | no `data-foil` |
 | 17 Card details, zoom, hover preview | always (G4, out of scope) | as main | — |
 | Themes | any of the six | identical film; only the frame changes | — |
+
+## R2 · Large views, PR 1: the film on the large and mid views (no tilt)
+
+Source: README §R2 (the CSS, the markup, "Where details reads foil"), `STATES-foil-large-views.md`, `READINESS-r2-audit.md`
+(PR 1 owns G8, G9, G10, G15 and the first half of G17). Plan: `docs/superpowers/plans/2026-10-15-foil-large-views.md`.
+The tilt (`data-tilt`, `@property`, the glare, the hover rule that plays no band on a large film) is PR 2's.
+
+### Component: `FoilFilm` (`components/ui/foil-film.tsx`), the film over a background face
+
+| Property | Mobile | Desktop |
+|---|---|---|
+| Element | `<span aria-hidden data-foil={finish} data-foil-size="large" className="pointer-events-none absolute inset-0 rounded-[inherit]" />` | same |
+| Where | inside each face: `CardFaces`' front and back divs; the one-faced art box (`modal-art-mobile`, `modal-art-desktop`) and `card-zoom-card` | same |
+| Turns with the card | the span is a child of the face, which hides its own back (`backface-visibility: hidden`) | same |
+| `::before` | R1's stops at `opacity: .8`, `inset: 0 -25%` (1.5x spread, clipped by the span's `overflow: hidden`) | same |
+| Arrival mark | on the SPAN only: one `new Image()` of the face's own URL, `armArtArrival(span, image, null)` in a layout effect; no queue (G8) | same |
+| Pending / failed | `[data-foil][data-arrival="pending"\|"failed"] { opacity: 0 }`, under either motion preference | same |
+| In | `art-in`, 300ms, under no-preference; reduced motion appears unfaded | same |
+| Done / unmarked | drawn at once | same |
+| The face | never carries `data-arrival`, never drawn through `ArtLayer`; computed opacity 1 in every film state (`probe:foil-film`) | same |
+| Cleanup | the effect's cleanup removes the Image's listeners and the mark, on unmount and on a new URL | same |
+| Band | one `foil-sweep` once the film's own mark reads `in` or `done` (never while held), delay `--motion-duration`, under `(hover: none)` and no-preference | none in PR 1 (R1's band needs a hovered `a`/`button` ancestor, and the face is not inside one); the focus band is PR 2's (G6) |
+| Reduced transparency / forced colors | R1's rules: no film; a 2px `--fg-muted` ring under reduced transparency | same |
+
+### What details reads as foil (G9)
+
+| Face | Film when | Read from |
+|---|---|---|
+| Front | the shown printing's own art (`hasOwnArt`, `imageUri`) and every copy held of it one foil finish | `faceFilm(resolvedPrinting(preview), "front")`, never `preview.foil`, which a pick does not recompute |
+| Back | as the front, and the back art is that printing's own (`hasOwnBack`, `backImageUri`) | `faceFilm(resolved, "back")` |
+| A pick | follows the pick at once | the same `resolved` the face draws |
+| Mixed holding, unowned card, suggestion, token, oracle-level or representative art | never | `soleFoilFinish` is undefined, or `hasOwnArt` is false |
+| A precon's open view | the card's own resolution (call 6) | unchanged |
+
+### Mid views: R1's tile film, still (G10)
+
+| Surface | Markup | Arrival | Finish from |
+|---|---|---|---|
+| Hover preview (`hover-preview.tsx`, desktop only) | `FoilFilm` with no `data-foil-size`, inside the preview box | its own preload, no queue (the box has no `<img>` and no list) | `usePreviewRow(imageUri, foil)` / `PreviewButton foil`: `collection/rows-view.tsx` and `decks/decklist-row.tsx`; every other caller passes none |
+| Phone peek, desktop neighbor plate | `<span data-foil data-foil-still>` AFTER the `ArtLayer` div, one parent | the layer's own mark, through `[data-arrival="pending"\|"failed"] ~ [data-foil] { opacity: 0 }` and `[data-arrival="in"] ~ [data-foil]` fading with it | `SiblingCard.foil`: the provider's `plate()` reads `faceFilm` off the printing it draws (the deck's pick included); a `viewPrintings` override draws none; the Collection and deck lists pass their own `.foil` |
+| Still | `[data-foil-still]` plays no band on hover or focus | | |
+
+### State coverage, R2 PR 1
+
+| STATES row | Built here | How |
+|---|---|---|
+| 1 Shown printing all foil, own art | film | `faceFilm` front, large |
+| 3 Etched | silver film | `data-foil="etched"` |
+| 4 Mixed | plain | `soleFoilFinish` undefined |
+| 5 Picked a plain printing | film leaves with the face | read off `resolved`, not `preview.foil` |
+| 6 Another printing's or oracle art | plain | `hasOwnArt` false |
+| 7 Unowned | plain | `finishes: {}` |
+| 8 Precon open view | own resolution | unchanged |
+| 9 Cold open | film held, 300ms fade on landing | the span's mark |
+| 10 Face failed | film held | `failed` |
+| 11 Two-faced, flipped | film on each face, rides the turn | one span per face |
+| 12 Zoom (desktop) | as 1 | `card-zoom-card`; no phone zoom exists (G5) |
+| 13 Hover preview | tile film, still | `FoilFilm`, no size |
+| 14 Peek, neighbor plate | tile film, still | `data-foil-still` after the `ArtLayer` |
+| 15 to 17 Reduced motion, transparency, forced colors | as R1 | R1's rules cover every `[data-foil]` |
+| 18 Token | plain | no finish recorded |
+| 1b, 1c, 1d, 2, phone hold, tilt | not built | PR 2 |
+

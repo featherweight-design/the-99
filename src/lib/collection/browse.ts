@@ -122,6 +122,18 @@ export function soleFoilFinish(finishes: Partial<Record<Finish, number>>): FoilF
   return held.length === 1 && held[0] !== "nonfoil" ? held[0] : undefined;
 }
 
+/**
+ * The film card details lays over a face of the printing it SHOWS (foil handoff R2, "Where details reads foil"):
+ * `cardArt`'s rule, read off the resolved printing rather than the card's `foil`, which a pick does not recompute
+ * (audit G9). Only over the printing's own art, and only when every copy held of it shares one foil finish. The back
+ * face needs its own back art too: `backImageUri` can be the oracle's back, which belongs to no printing in hand.
+ */
+export function faceFilm(printing: BrowsePrinting | undefined, face: "front" | "back" = "front"): FoilFinish | undefined {
+  if (!printing?.hasOwnArt) return undefined;
+  if (face === "front" ? !printing.imageUri : !(printing.hasOwnBack && printing.backImageUri)) return undefined;
+  return soleFoilFinish(printing.finishes);
+}
+
 /** The printing a user chose to represent a card. Set code uppercased, as BrowsePrinting is. */
 export type PreferredPrinting = { setCode: string; collectorNumber: string };
 
