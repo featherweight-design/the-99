@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About · Friends and pods entry</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A;text-decoration:none}a:hover{color:#FF62A9}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.m{font-family:'IBM Plex Mono',monospace}
+.d{font-family:'Chakra Petch',sans-serif}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.dk{width:1300px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;box-sizing:border-box}
+.rail{width:64px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0 12px;gap:6px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:14px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.slot{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#959AAD}
+.av{margin-top:auto;width:28px;height:28px;border-radius:50%;border:1px solid #262A35;color:#B1B6C7;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.ph{width:390px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
+.mh{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #181C26;background:#12141B}
+.mh .logo{margin:0;font-size:16px}
+.mh .logo i{font-size:7px}
+.mh .av{margin:0}
+.tb{height:64px;flex:none;display:flex;justify-content:space-around;align-items:center;border-top:1px solid #181C26;background:#12141B}
+.tbs{width:48px;height:44px;display:flex;align-items:center;justify-content:center;color:#959AAD}
+.cap{font-size:13.5px;line-height:1.55;color:#B1B6C7;display:flex;flex-direction:column;gap:8px}
+.cap p{margin:0}
+.keys{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.keys li{display:flex;align-items:flex-start;gap:8px}
+.keys .dot{width:14px;height:14px;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.keys .t{font:10.5px/1.5 'IBM Plex Mono',monospace;color:#6F7486}
+.fig{margin:10px 0 0;border:1px solid #181C26;border-radius:8px;background:#101219;overflow:hidden}
+.newpill{display:inline-flex;align-items:center;margin-right:8px;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;letter-spacing:.08em;background:#FF4D9A;color:#0E0F14;vertical-align:middle;font-family:'IBM Plex Mono',monospace}
+.slotc{border:1px solid #181C26;border-radius:10px;padding:14px 16px;background:#12141B;display:flex;flex-direction:column;gap:7px}
+.slotc .t{font-size:12.5px;line-height:1.55;color:#B1B6C7;white-space:pre-line;text-wrap:pretty}
+.navc{width:216px;flex:none;padding-top:24px;display:flex;flex-direction:column}
+.navc ol{margin:0;padding:0;list-style:none}
+.ch{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:6px;color:#959AAD;font-size:13px}
+.ch .n{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6F7486}
+.ch .c{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#FF4D9A}
+.e{display:flex;align-items:baseline;padding:4px 10px 4px 30px;border-radius:6px;color:#959AAD;font-size:12.5px;line-height:1.35}
+.e.now{background:#20222A;color:#E6E8F0}
+.e .t{flex:1;min-width:0}
+.e .nw{margin-left:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#FF4D9A}
+/* PodCard, as shipped (pod-card.tsx) */
+.pod{position:relative;border-radius:12px;background:#12141B;border:1px solid #262A35;padding:6px 6px 8px 18px;overflow:hidden}
+.pod.p{padding:4px 4px 6px 14px}
+.wash{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
+.wash div{position:absolute;inset:-40px;display:flex;opacity:.3;filter:blur(34px) saturate(1.25)}
+.wash img{height:100%;min-width:0;flex:1;object-fit:cover}
+.phd{position:relative;display:flex;align-items:center;gap:10px;min-height:44px}
+.phd b{font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.phd span{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.more{margin-left:auto;width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:18px;letter-spacing:1px;border-radius:8px}
+.seats{position:relative;margin:8px 12px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(5,116px);column-gap:12px;row-gap:14px}
+.pod.p .seats{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:10px;row-gap:12px;margin-right:10px}
+.seat{display:flex;flex-direction:column;gap:6px;min-width:0}
+.art{display:block;height:84px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.pod.p .art{height:74px}
+.art.you{border:1px solid #FF4D9A;box-shadow:0 0 0 1px #FF4D9A,0 10px 24px rgba(0,0,0,.45)}
+.art img{display:block;width:100%;height:100%;object-fit:cover}
+.sn{display:flex;align-items:baseline;gap:6px;font:500 13px 'IBM Plex Sans',sans-serif;color:#E6E8F0;min-width:0}
+.sn small{font:10px 'IBM Plex Mono',monospace;color:#959AAD}
+.share{position:relative;margin-top:10px;display:flex;align-items:center;gap:10px;min-height:40px;font:13px 'IBM Plex Sans',sans-serif;color:#B1B6C7}
+.pod.p .share{min-height:44px}
+.box{width:18px;height:18px;flex:none;border-radius:4px;background:#FF4D9A;border:1.5px solid #FF4D9A;box-sizing:border-box;color:#0E0F14;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+</style>
+</helmet>
+<div style="width:1810px;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif;background:#0E0F14;color:#E6E8F0;padding:44px 40px 60px;display:flex;flex-direction:column;gap:32px">
+
+  <div style="max-width:1300px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+      <span class="m" style="font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:6px;padding:4px 10px;letter-spacing:.08em">S1 · FRIENDS AND PODS</span>
+      <span class="k">§G per-entry template · R6 sheet · drawn on the shipped /about in Kamigawa</span>
+    </div>
+    <h1 class="d" style="font-weight:700;font-size:30px;margin:0;line-height:1.2">Friends and pods</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:#B1B6C7;max-width:1240px;text-wrap:pretty">Chapter 04, after <i>What your games are telling you</i> and before <i>Who you played against</i>. It follows <span class="code">SOCIAL_FRIENDS_ENABLED</span>, so <span class="code">since: 14</span>, no bump. The specimen is the shipped <b style="color:#E6E8F0">PodCard</b>: one pod as a member sees it, which carries the three things the brief asks for in one figure: faces (each seat is a friend’s commander art), the pod, and the spares box. Adding a friend by link or QR is the caption’s first paragraph.</p>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+
+    <div style="width:1300px;flex:none;display:flex;flex-direction:column;gap:36px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">Desktop · 1300 · /about, scrolled to chapter 04 · sheet mode, the entry new</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Main">
+            <span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+            <a class="slot" href="#" aria-label="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></a>
+            <a class="slot" href="#" aria-label="Collection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></a>
+            <a class="slot" href="#" aria-label="Commanders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></a>
+            <a class="slot" href="#" aria-label="Discover"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></a>
+            <a class="slot" href="#" aria-label="Decks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></a>
+            <span class="av">HH</span>
+          </nav>
+          <main style="flex:1;min-width:0;padding-bottom:28px">
+            <div style="max-width:1088px;margin:0 auto;padding:0 34px;display:flex;gap:40px;align-items:flex-start;box-sizing:border-box">
+              <article style="width:760px;flex:none">
+
+                <div style="height:46px;margin-top:-1px;border:1px solid #181C26;border-top:0;border-radius:0 0 8px 8px;background:#101219"></div>
+                <ol class="keys">
+                  <li><span class="dot">·</span><span class="t">One game is a note, two a leaning, three a finding.</span></li>
+                  <li><span class="dot">·</span><span class="t">Your marks sort into “Fix” and “Keep”.</span></li>
+                  <li><span class="dot">·</span><span class="t">Anything marked both ways equally goes under “Mixed”.</span></li>
+                </ol>
+
+                <div style="margin-top:14px;border-top:2px solid #FF4D9A;padding-top:13px">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:2px">
+                    <h3 class="d" style="margin:0;font-size:15.5px;font-weight:600;color:#E6E8F0"><span class="newpill">NEW</span>Friends and pods</h3>
+                    <a class="m" href="#" style="font-size:11.5px">/friends</a>
+                  </div>
+                  <div class="cap" style="margin-top:6px">
+                    <p>Playing with the same people every week? Make them friends in The 99. Open “Friends” from your account menu, press “Add a friend”, and send them the link, or let them scan the QR code off your screen. Once they accept, you’re friends.</p>
+                    <p>Pick a commander and its art becomes your face, beside your name everywhere a friend sees you. Then gather the friends you play with into a pod, and choose, pod by pod, who gets to see your spare cards.</p>
+                  </div>
+
+                  <figure class="fig" style="padding:14px 16px" aria-label="Specimen: a pod, as a member sees it">
+                    <div class="pod">
+                      <div class="wash" aria-hidden="true"><div><img src="/_blob/347fa04a1bd03ac2ad4b337bbd2b205c" alt=""><img src="/_blob/97c180db112f2185c74481f81553a6d5" alt=""><img src="/_blob/edb84434c81f4bc4744d79db834c2505" alt=""><img src="/_blob/7e74466bb1ffc8055446456e1dd10465" alt=""><img src="/_blob/024391a5db62812c48254b89896250ea" alt=""></div></div>
+                      <div class="phd"><b>Thursday pod</b><span>5 members · Colin owns it</span><button class="more" type="button" tabindex="-1" aria-label="Thursday pod actions">···</button></div>
+                      <ul class="seats" aria-label="Thursday pod">
+                        <li class="seat"><span class="art"><img src="/_blob/347fa04a1bd03ac2ad4b337bbd2b205c" alt=""></span><span class="sn">Colin <small>owner</small></span></li>
+                        <li class="seat"><span class="art you"><img src="/_blob/97c180db112f2185c74481f81553a6d5" alt=""></span><span class="sn">You</span></li>
+                        <li class="seat"><span class="art"><img src="/_blob/edb84434c81f4bc4744d79db834c2505" alt=""></span><span class="sn">Chris</span></li>
+                        <li class="seat"><span class="art"><img src="/_blob/7e74466bb1ffc8055446456e1dd10465" alt=""></span><span class="sn">Max</span></li>
+                        <li class="seat"><span class="art"><img src="/_blob/024391a5db62812c48254b89896250ea" alt="" style="object-position:50% 30%"></span><span class="sn">Peter</span></li>
+                      </ul>
+                      <label class="share"><span class="box" aria-hidden="true">✓</span><span>Share my spares with this pod</span></label>
+                    </div>
+                  </figure>
+
+                  <ol class="keys">
+                    <li><span class="dot">·</span><span class="t">Nobody can find you by searching. A friend link works once and lasts 7 days, and you can take back one that’s still open.</span></li>
+                    <li><span class="dot">·</span><span class="t">Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.</span></li>
+                    <li><span class="dot">·</span><span class="t">You add your own friends to your pods. Leave one you own and it passes to its longest-standing member.</span></li>
+                    <li><span class="dot">·</span><span class="t">Removing a friend or leaving a pod tells nobody.</span></li>
+                  </ol>
+                </div>
+
+                <div style="margin-top:14px;border-top:1px solid #181C26;padding-top:14px">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px">
+                    <h3 class="d" style="margin:0;font-size:15.5px;font-weight:600;color:#E6E8F0"><span class="newpill">NEW</span>Who you played against</h3>
+                    <a class="m" href="#" style="font-size:11.5px">/decks</a>
+                    <span class="m" style="font-size:11px;color:#6F7486">opens a deck’s Games tab</span>
+                  </div>
+                  <div class="cap" style="margin-top:6px"><p>When you log a game, “Across the table” lets you seat who you played: a friend, one of their decks, or anyone by their commander. Lost? Press the trophy on whoever won.</p></div>
+                </div>
+              </article>
+
+              <nav class="navc" aria-label="Contents">
+                <p class="m" style="margin:0;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#6F7486">Contents</p>
+                <label style="margin-top:10px;display:flex;align-items:center;height:32px;border:1px solid #262A35;border-radius:7px;background:#101219;padding:0 10px;font-size:13px;color:#7D8294">Find an entry</label>
+                <ol style="margin-top:10px">
+                  <li><a href="#" class="ch"><span><span class="n">01</span> Your Collection</span><span class="c">1 new</span></a></li>
+                  <li><a href="#" class="ch"><span><span class="n">02</span> Finding a commander</span></a></li>
+                  <li><a href="#" class="ch"><span><span class="n">03</span> Building the 99</span><span class="c">1 new</span></a></li>
+                  <li><a href="#" class="ch"><span><span class="n">04</span> Playing and tuning</span><span class="c">2 new</span></a>
+                    <ol>
+                      <li><a href="#" class="e"><span class="t">Logging a game</span></a></li>
+                      <li><a href="#" class="e"><span class="t">What your games are telling you</span></a></li>
+                      <li><a href="#" class="e now" aria-current="true"><span class="t">Friends and pods</span><span class="nw">new</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Who you played against</span><span class="nw">new</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Tuning a deck with Suggested changes</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Cutting back to 99 with Proposed cuts</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Reading your deck’s mana</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Stats: the deck, drawn</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Stats: your decks, side by side</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Notes on a deck</span></a></li>
+                      <li><a href="#" class="e"><span class="t">How credits work</span></a></li>
+                      <li><a href="#" class="e"><span class="t">What a deck’s status means</span></a></li>
+                    </ol>
+                  </li>
+                </ol>
+              </nav>
+            </div>
+          </main>
+        </div>
+        <span style="font-size:12.5px;line-height:1.5;color:#959AAD">Names, pod and art are fixtures. The specimen is inert: the … menu, the seats and the box press nothing on this page.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">The template’s slots</span>
+        <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:14px">
+          <div class="slotc"><span class="k" style="font-size:9.5px">Title</span><span class="t">Friends and pods
+The two words the page and the menu use, as Proxies and Sets are titled by their own names.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Id · chapter · width</span><span class="t">friends · 04 · plate
+After log-findings, before opponents. Plate: the pod is five seats wide.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Route · opens</span><span class="t">/friends
+No opens: the link lands on the page itself.</span></div>
+          <div class="slotc" style="grid-column:span 2"><span class="k" style="font-size:9.5px">Caption · two paragraphs</span><span class="t">1. Why, then how a friend is added: Friends in the account menu, Add a friend, the link or the QR code, accept.
+2. Faces (your commander’s art), then pods, then the spares choice per pod. Spares are explained where they’re used, in S3.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Since · switch</span><span class="t">since 14, no bump
+switch SOCIAL_FRIENDS_ENABLED (AboutSwitch gains it)
+marksPending: true</span></div>
+          <div class="slotc" style="grid-column:span 2"><span class="k" style="font-size:9.5px">Specimen · PodCard, mounted as shipped</span><span class="t">PodCard with fixture props (pod, shared: true) and no-op handlers inside Specimen. A member’s view (isOwner false), so no ✕ discs and no Add seat: the figure shows the pod, not the owner’s tools. One tree, never a fork (§G3).
+Not the friend request card: it is one moment on someone else’s link. Not the Friends list: rows of names say less than five faces at a table.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Fixture props</span><span class="t">fixtures.friendsPod: “Thursday pod”, 5 members, owner Colin. Colin (Sai, Master Thopterist), You (Heroes in a Half Shell), Chris (Zimone, Infinite Analyst), Max (Captain America, Team Leader), Peter (Jace, Multiverse Architect). Every member a friend. shared: true.</span></div>
+          <div class="slotc" style="grid-column:span 2"><span class="k" style="font-size:9.5px">Key lines · 4</span><span class="t">1. Nobody can find you by searching. A friend link works once and lasts 7 days, and you can take back one that’s still open.
+2. Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.
+3. You add your own friends to your pods. Leave one you own and it passes to its longest-standing member.
+4. Removing a friend or leaving a pod tells nobody.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Phone reduction</span><span class="t">Nothing dropped. The pod takes its own phone layout: three seats a row at 74px, the box at 44px.</span></div>
+          <div class="slotc" style="grid-column:span 3"><span class="k" style="font-size:9.5px">Strings from</span><span class="t">copy/about.ts: title, caption, keys. Drawn by the pod at render time: copy/social.ts (pods.metaOther, pods.ownerTag, pods.you, pods.share, pods.menuAria). Nothing retyped into about.ts.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;flex:none;display:flex;flex-direction:column;gap:10px">
+      <span class="k">Phone · 390 · the same entry, captured long</span>
+      <div class="ph">
+        <header class="mh"><span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span><span class="av">HH</span></header>
+        <div style="padding:0 16px 20px">
+          <div style="height:40px;margin-top:-1px;border:1px solid #181C26;border-top:0;border-radius:0 0 8px 8px;background:#101219"></div>
+          <ol class="keys">
+            <li><span class="dot">·</span><span class="t">Your marks sort into “Fix” and “Keep”.</span></li>
+            <li><span class="dot">·</span><span class="t">Anything marked both ways equally goes under “Mixed”.</span></li>
+          </ol>
+
+          <div style="margin-top:14px;border-top:2px solid #FF4D9A;padding-top:12px">
+            <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:2px">
+              <h3 class="d" style="margin:0;font-size:15px;font-weight:600;color:#E6E8F0"><span class="newpill">NEW</span>Friends and pods</h3>
+              <a class="m" href="#" style="font-size:11.5px">/friends</a>
+            </div>
+            <div class="cap" style="margin-top:6px">
+              <p>Playing with the same people every week? Make them friends in The 99. Open “Friends” from your account menu, press “Add a friend”, and send them the link, or let them scan the QR code off your screen. Once they accept, you’re friends.</p>
+              <p>Pick a commander and its art becomes your face, beside your name everywhere a friend sees you. Then gather the friends you play with into a pod, and choose, pod by pod, who gets to see your spare cards.</p>
+            </div>
+            <figure class="fig" style="padding:6px" aria-label="Specimen: a pod, as a member sees it">
+              <div class="pod p">
+                <div class="wash" aria-hidden="true"><div><img src="/_blob/347fa04a1bd03ac2ad4b337bbd2b205c" alt=""><img src="/_blob/97c180db112f2185c74481f81553a6d5" alt=""><img src="/_blob/edb84434c81f4bc4744d79db834c2505" alt=""></div></div>
+                <div class="phd" style="gap:8px"><b>Thursday pod</b><span>5 members · Colin owns it</span><button class="more" type="button" tabindex="-1" aria-label="Thursday pod actions">···</button></div>
+                <ul class="seats" aria-label="Thursday pod">
+                  <li class="seat"><span class="art"><img src="/_blob/347fa04a1bd03ac2ad4b337bbd2b205c" alt=""></span><span class="sn">Colin <small>owner</small></span></li>
+                  <li class="seat"><span class="art you"><img src="/_blob/97c180db112f2185c74481f81553a6d5" alt=""></span><span class="sn">You</span></li>
+                  <li class="seat"><span class="art"><img src="/_blob/edb84434c81f4bc4744d79db834c2505" alt=""></span><span class="sn">Chris</span></li>
+                  <li class="seat"><span class="art"><img src="/_blob/7e74466bb1ffc8055446456e1dd10465" alt=""></span><span class="sn">Max</span></li>
+                  <li class="seat"><span class="art"><img src="/_blob/024391a5db62812c48254b89896250ea" alt="" style="object-position:50% 30%"></span><span class="sn">Peter</span></li>
+                </ul>
+                <label class="share"><span class="box" aria-hidden="true">✓</span><span>Share my spares with this pod</span></label>
+              </div>
+            </figure>
+            <ol class="keys">
+              <li><span class="dot">·</span><span class="t">Nobody can find you by searching. A friend link works once and lasts 7 days, and you can take back one that’s still open.</span></li>
+              <li><span class="dot">·</span><span class="t">Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.</span></li>
+              <li><span class="dot">·</span><span class="t">You add your own friends to your pods. Leave one you own and it passes to its longest-standing member.</span></li>
+              <li><span class="dot">·</span><span class="t">Removing a friend or leaving a pod tells nobody.</span></li>
+            </ol>
+          </div>
+
+          <div style="margin-top:14px;border-top:1px solid #181C26;padding-top:12px">
+            <h3 class="d" style="margin:0;font-size:15px;font-weight:600;color:#E6E8F0"><span class="newpill">NEW</span>Who you played against</h3>
+            <div style="display:flex;gap:10px;align-items:baseline"><a class="m" href="#" style="font-size:11.5px">/decks</a><span class="m" style="font-size:11px;color:#6F7486">opens a deck’s Games tab</span></div>
+          </div>
+        </div>
+        <nav class="tb" aria-label="Main">
+          <a class="tbs" href="#" aria-label="Home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></a>
+          <a class="tbs" href="#" aria-label="Collection"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></a>
+          <a class="tbs" href="#" aria-label="Commanders"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></a>
+          <a class="tbs" href="#" aria-label="Discover"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></a>
+          <a class="tbs" href="#" aria-label="Decks"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></a>
+        </nav>
+      </div>
+      <span style="font-size:12.5px;line-height:1.5;color:#959AAD">Phone reduction: nothing of the entry’s own. The pod is the same component in its phone layout.</span>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1810,"height":1751}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

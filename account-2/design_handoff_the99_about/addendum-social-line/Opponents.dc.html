@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About · Who you played against entry</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A;text-decoration:none}a:hover{color:#FF62A9}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.m{font-family:'IBM Plex Mono',monospace}
+.d{font-family:'Chakra Petch',sans-serif}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.dk{width:1300px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;box-sizing:border-box}
+.rail{width:64px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0 12px;gap:6px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:14px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.slot{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#959AAD}
+.av{margin-top:auto;width:28px;height:28px;border-radius:50%;border:1px solid #262A35;color:#B1B6C7;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.ph{width:390px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
+.mh{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #181C26;background:#12141B}
+.mh .logo{margin:0;font-size:16px}
+.mh .logo i{font-size:7px}
+.mh .av{margin:0}
+.tb{height:64px;flex:none;display:flex;justify-content:space-around;align-items:center;border-top:1px solid #181C26;background:#12141B}
+.tbs{width:48px;height:44px;display:flex;align-items:center;justify-content:center;color:#959AAD}
+.cap{font-size:13.5px;line-height:1.55;color:#B1B6C7;display:flex;flex-direction:column;gap:8px}
+.cap p{margin:0}
+.keys{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.keys li{display:flex;align-items:flex-start;gap:8px}
+.gate{box-shadow:inset 2px 0 0 #843052;padding-left:10px;margin-left:-12px}
+.keys .dot{width:14px;height:14px;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.keys .t{font:10.5px/1.5 'IBM Plex Mono',monospace;color:#6F7486}
+.fig{margin:10px 0 0;border:1px solid #181C26;border-radius:8px;background:#101219;overflow:hidden}
+.newpill{display:inline-flex;align-items:center;margin-right:8px;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;letter-spacing:.08em;background:#FF4D9A;color:#0E0F14;vertical-align:middle;font-family:'IBM Plex Mono',monospace}
+.slotc{border:1px solid #181C26;border-radius:10px;padding:14px 16px;background:#12141B;display:flex;flex-direction:column;gap:7px}
+.slotc .t{font-size:12.5px;line-height:1.55;color:#B1B6C7;white-space:pre-line;text-wrap:pretty}
+.navc{width:216px;flex:none;padding-top:24px;display:flex;flex-direction:column}
+.navc ol{margin:0;padding:0;list-style:none}
+.ch{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:6px;color:#959AAD;font-size:13px}
+.ch .n{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6F7486}
+.ch .c{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#FF4D9A}
+.e{display:flex;align-items:baseline;padding:4px 10px 4px 30px;border-radius:6px;color:#959AAD;font-size:12.5px;line-height:1.35}
+.e.now{background:#20222A;color:#E6E8F0}
+.e .t{flex:1;min-width:0}
+.e .nw{margin-left:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#FF4D9A}
+/* GameMatchups, as shipped (Social R3 PR 4) */
+.gm .hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;min-height:44px;flex-wrap:wrap}
+.gm h4{margin:0;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.gm .rec{font:10px 'IBM Plex Mono',monospace;color:#5A5F70}
+.rg{display:flex;gap:2px;border:1px solid #262A35;border-radius:9px;background:#12141B;padding:3px;margin-left:auto}
+.rg span{height:32px;padding:0 14px;display:flex;align-items:center;border-radius:7px;font-size:12.5px;font-weight:500;color:#959AAD}
+.rg span.on{background:#20222A;color:#E6E8F0}
+.gm .box{border:1px solid #181C26;border-radius:11px;background:#12141B;padding:6px 18px 12px}
+.gm .cp{margin:8px 0 2px;font:11px/1.5 'IBM Plex Mono',monospace;color:#959AAD}
+.gm ul{margin:0;padding:0;list-style:none}
+.gm li{display:grid;grid-template-columns:56px minmax(0,1fr) 230px 60px 64px;gap:14px;align-items:center;min-height:54px;padding:6px 0;border-bottom:1px solid #181C26}
+.gm li:last-child{border-bottom:0}
+.th{width:56px;height:38px;border-radius:7px;overflow:hidden;background:#20222A}
+.th img{width:100%;height:100%;object-fit:cover;object-position:50% 20%;display:block}
+.gm .nm{font-size:14px;color:#E6E8F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sq{display:flex;gap:4px;flex-wrap:wrap}
+.sq i{width:22px;height:22px;box-sizing:border-box;border-radius:5px;border:1px solid #262A35;display:flex;align-items:center;justify-content:center;font:600 10.5px 'IBM Plex Mono',monospace;font-style:normal;color:#B1B6C7}
+.sq i.w{border-color:#6FA368;color:#6FA368}
+.bt2{display:flex;align-items:center;gap:4px;font:11.5px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.gn{font:11px 'IBM Plex Mono',monospace;color:#959AAD;text-align:right}
+.lg{margin:10px 0 0;display:flex;align-items:center;gap:7px;font:10.5px/1.5 'IBM Plex Mono',monospace;color:#6F7486}
+/* phone */
+.gm.p .hdr{flex-wrap:wrap;gap:8px;min-height:0;margin-bottom:8px}
+.gm.p .rg{order:9;width:100%;margin:0;border-radius:10px;box-sizing:border-box}
+.gm.p .rg span{flex:1;justify-content:center;height:38px;padding:0;font-size:13px}
+.gm.p .box{padding:4px 12px 10px;border-radius:10px}
+.gm.p .cp{font-size:10.5px}
+.gm.p li{display:flex;gap:11px;min-height:62px}
+.gm.p .th{width:48px;height:34px;border-radius:6px;flex:none}
+.gm.p .mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.gm.p .sq i{width:20px;height:20px;font-size:10px}
+.gm.p .rt{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.gm.p .gn{font-size:10.5px}
+.gm.p .lg{font-size:10px}
+</style>
+</helmet>
+<div style="width:1810px;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif;background:#0E0F14;color:#E6E8F0;padding:44px 40px 60px;display:flex;flex-direction:column;gap:32px">
+
+  <div style="max-width:1300px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+      <span class="m" style="font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:6px;padding:4px 10px;letter-spacing:.08em">S4 · WHO YOU PLAYED AGAINST</span>
+      <span class="k">§G per-entry template · R6 sheet · drawn on the shipped /about in Kamigawa</span>
+    </div>
+    <h1 class="d" style="font-weight:700;font-size:30px;margin:0;line-height:1.2">Who you played against</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:#B1B6C7;max-width:1240px;text-wrap:pretty">Chapter 04, right after <i>Friends and pods</i> and before <i>Tuning a deck with Suggested changes</i>. It follows <span class="code">SOCIAL_GAMES_ENABLED</span>, so <span class="code">since: 14</span>, no bump. The specimen is the shipped <b style="color:#E6E8F0">GameMatchups</b> with fixture props, on its Commander split: what a few seated games turn into. This is the entry Social R3’s G8 left “not drawn here”.</p>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+
+    <div style="width:1300px;flex:none;display:flex;flex-direction:column;gap:36px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">Desktop · 1300 · /about, scrolled to chapter 04 · sheet mode, the entry new</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Main">
+            <span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+            <a class="slot" href="#" aria-label="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></a>
+            <a class="slot" href="#" aria-label="Collection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></a>
+            <a class="slot" href="#" aria-label="Commanders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></a>
+            <a class="slot" href="#" aria-label="Discover"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></a>
+            <a class="slot" href="#" aria-label="Decks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></a>
+            <span class="av">HH</span>
+          </nav>
+          <main style="flex:1;min-width:0;padding-bottom:28px">
+            <div style="max-width:1088px;margin:0 auto;padding:0 34px;display:flex;gap:40px;align-items:flex-start;box-sizing:border-box">
+              <article style="width:760px;flex:none">
+
+                <div style="height:46px;margin-top:-1px;border:1px solid #181C26;border-top:0;border-radius:0 0 8px 8px;background:#101219"></div>
+                <ol class="keys">
+                  <li><span class="dot">·</span><span class="t">Nobody can find you by searching. A friend link works once and lasts 7 days, and you can take back one that’s still open.</span></li>
+                  <li><span class="dot">·</span><span class="t">Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.</span></li>
+                  <li><span class="dot">·</span><span class="t">You add your own friends to your pods. Leave one you own and it passes to its longest-standing member.</span></li>
+                  <li><span class="dot">·</span><span class="t">Removing a friend or leaving a pod tells nobody.</span></li>
+                </ol>
+
+                <div style="margin-top:14px;border-top:2px solid #FF4D9A;padding-top:13px">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:2px">
+                    <h3 class="d" style="margin:0;font-size:15.5px;font-weight:600;color:#E6E8F0"><span class="newpill">NEW</span>Who you played against</h3>
+                    <a class="m" href="#" style="font-size:11.5px">/decks</a>
+                    <span class="m" style="font-size:11px;color:#6F7486">opens a deck’s Games tab</span>
+                  </div>
+                  <div class="cap" style="margin-top:6px">
+                    <p>When you log a game, “Across the table” lets you seat who you played: a friend, one of their decks, or anyone by their commander. Lost? Press the trophy on whoever won.</p>
+                    <p>Once a few games carry names, “Matchups” on the deck’s “Games” tab splits your record by commander, colors and friend, and each game in “History” says who was there.</p>
+                  </div>
+
+                  <figure class="fig" style="padding:6px 18px 18px" aria-label="Specimen: Matchups on a deck’s Games tab">
+                    <section class="gm">
+                      <div class="hdr"><h4>Matchups</h4><span class="rec">recorded in 5 of 8 games</span><div class="rg" role="radiogroup" aria-label="Split by"><span class="on">Commander</span><span>Colors</span><span>Friend</span></div></div>
+                      <div class="box">
+                        <p class="cp">Most rows are a single game. A row means more each time a name comes back.</p>
+                        <ul>
+                          <li><span class="th"><img src="/_blob/7e74466bb1ffc8055446456e1dd10465" alt=""></span><span class="nm">Captain America, Team Leader</span><span class="sq"><i class="w">W</i><i class="w">W</i><i>D</i><i>L</i></span><span class="bt2"><svg aria-hidden="true" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>1</span><span class="gn">4 games</span></li>
+                          <li><span class="th"><img src="/_blob/cefd23af1f909f6912967948300abc15" alt=""></span><span class="nm">Rootha, Mastering the Moment</span><span class="sq"><i>L</i></span><span class="bt2"><svg aria-hidden="true" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>1</span><span class="gn">1 game</span></li>
+                          <li><span class="th"><img src="/_blob/edb84434c81f4bc4744d79db834c2505" alt=""></span><span class="nm">Zimone, Infinite Analyst</span><span class="sq"><i class="w">W</i></span><span class="bt2"></span><span class="gn">1 game</span></li>
+                        </ul>
+                        <p class="lg"><span>Squares are games: W won, L lost, D drawn.</span><span style="display:inline-flex;align-items:center;gap:5px"><svg aria-hidden="true" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>how many of your losses they won.</span></p>
+                      </div>
+                    </section>
+                  </figure>
+
+                  <ol class="keys">
+                    <li><span class="dot">·</span><span class="t">Seats are optional. A game with nobody seated counts as it always has.</span></li>
+<li><span class="dot">·</span><span class="t">Each square is one game, won, lost or drawn. No percentages, so one game reads as one game.</span></li>
+<li><span class="dot">·</span><span class="t">A seat keeps names and decks as they were that night, even if a friend renames a deck or leaves.</span></li>
+<li><span class="dot">·</span><span class="t">“Seat a pod” sits a whole pod at once.</span></li>
+                  </ol>
+                </div>
+
+                <div style="margin-top:14px;border-top:1px solid #181C26;padding-top:14px">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px">
+                    <h3 class="d" style="margin:0;font-size:15.5px;font-weight:600;color:#E6E8F0">Tuning a deck with Suggested changes</h3>
+                    <a class="m" href="#" style="font-size:11.5px">/decks</a>
+                    <span class="m" style="font-size:11px;color:#6F7486">opens a deck’s Analysis tab</span>
+                  </div>
+                  <div class="cap" style="margin-top:6px"><p>Want a second opinion? “Suggested changes”, at the bottom of the “Analysis” tab, offers up to five cards to add and five to cut, each with its own reason.</p></div>
+                </div>
+              </article>
+
+              <nav class="navc" aria-label="Contents">
+                <p class="m" style="margin:0;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#6F7486">Contents</p>
+                <label style="margin-top:10px;display:flex;align-items:center;height:32px;border:1px solid #262A35;border-radius:7px;background:#101219;padding:0 10px;font-size:13px;color:#7D8294">Find an entry</label>
+                <ol style="margin-top:10px">
+                  <li><a href="#" class="ch"><span><span class="n">01</span> Your Collection</span><span class="c">1 new</span></a></li>
+                  <li><a href="#" class="ch"><span><span class="n">02</span> Finding a commander</span></a></li>
+                  <li><a href="#" class="ch"><span><span class="n">03</span> Building the 99</span><span class="c">1 new</span></a></li>
+                  <li><a href="#" class="ch"><span><span class="n">04</span> Playing and tuning</span><span class="c">2 new</span></a>
+                    <ol>
+                      <li><a href="#" class="e"><span class="t">Logging a game</span></a></li>
+                      <li><a href="#" class="e"><span class="t">What your games are telling you</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Friends and pods</span><span class="nw">new</span></a></li>
+                      <li><a href="#" class="e now" aria-current="true"><span class="t">Who you played against</span><span class="nw">new</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Tuning a deck with Suggested changes</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Cutting back to 99 with Proposed cuts</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Reading your deck’s mana</span></a></li>
+                      <li><a href="#" class="e"><span class="t">Stats: the deck, drawn</span></a></li>
+                    </ol>
+                  </li>
+                </ol>
+              </nav>
+            </div>
+          </main>
+        </div>
+        <span style="font-size:12.5px;line-height:1.5;color:#959AAD">The chapter’s list is cut to eight rows here for space; the page lists all of 04. Commanders and games are fixtures. The specimen is inert: the split switch presses nothing on this page.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">The template’s slots</span>
+        <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:14px">
+          <div class="slotc"><span class="k" style="font-size:9.5px">Title</span><span class="t">Who you played against
+The brief’s own words. It reads as the question the section answers.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Id · chapter · width</span><span class="t">opponents · 04 · plate
+After friends, before suggested-changes. Plate: the section is wide.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Route · opens</span><span class="t">/decks · opens a deck’s Games tab
+Matchups lives on the Games tab, as the findings entry’s does.</span></div>
+          <div class="slotc" style="grid-column:span 2"><span class="k" style="font-size:9.5px">Caption · two paragraphs</span><span class="t">1. Where names come from: “Across the table” in the log form, a friend, a deck or a commander, and the trophy for who won.
+2. What they turn into: Matchups on the Games tab, split three ways, and the vs line in History.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Since · switch</span><span class="t">since 14, no bump
+switch SOCIAL_GAMES_ENABLED (needs friends)
+marksPending: true</span></div>
+          <div class="slotc" style="grid-column:span 2"><span class="k" style="font-size:9.5px">Specimen · GameMatchups, shipped</span><span class="t">The Games tab’s Matchups section with fixture props, on its Commander split. No extraction: it takes matchups and renders itself. The split switch is live in the app; here it rests on Commander.
+Art crops come from the fixture’s imageUri, at the row’s own 50% 20% focus.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Fixture props</span><span class="t">fixtures.matchups: 8 games, 5 recorded. Captain America W W D L, beat you once. Rootha L, beat you once. Zimone W.</span></div>
+          <div class="slotc" style="grid-column:span 2"><span class="k" style="font-size:9.5px">Key lines · 4</span><span class="t">1. Seats are optional. A game with nobody seated counts as it always has.
+2. Each square is one game, won, lost or drawn. No percentages, so one game reads as one game.
+3. A seat keeps names and decks as they were that night, even if a friend renames a deck or leaves.
+4. “Seat a pod” sits a whole pod at once.</span></div>
+          <div class="slotc"><span class="k" style="font-size:9.5px">Phone reduction</span><span class="t">Nothing dropped from the text. GameMatchups takes its own phone layout: the switch full width under the heading, rows stacked, the legend’s phone line.</span></div>
+          <div class="slotc" style="grid-column:span 3"><span class="k" style="font-size:9.5px">Strings from</span><span class="t">copy/about.ts: title, caption, keys. Drawn by the part at render time: gameMatchupsCopy.matchups (heading, recorded, the split labels, mostlyOne, games, legend, legendBeat, legendPhone). Nothing retyped into about.ts.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:390px;flex:none;display:flex;flex-direction:column;gap:10px">
+      <span class="k">Phone · 390 · the same entry, captured long</span>
+      <div class="ph">
+        <header class="mh"><span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span><span class="av">HH</span></header>
+        <div style="padding:0 16px 20px">
+          <div style="height:40px;margin-top:-1px;border:1px solid #181C26;border-top:0;border-radius:0 0 8px 8px;background:#101219"></div>
+          <ol class="keys">
+            <li><span class="dot">·</span><span class="t">You add your own friends to your pods. Leave one you own and it passes to its longest-standing member.</span></li>
+            <li><span class="dot">·</span><span class="t">Removing a friend or leaving a pod tells nobody.</span></li>
+          </ol>
+
+          <div style="margin-top:14px;border-top:2px solid #FF4D9A;padding-top:12px">
+            <h3 class="d" style="margin:0;font-size:15px;font-weight:600;color:#E6E8F0"><span class="newpill">NEW</span>Who you played against</h3>
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><a class="m" href="#" style="font-size:11.5px">/decks</a><span class="m" style="font-size:11px;color:#6F7486">opens a deck’s Games tab</span></div>
+            <div class="cap" style="margin-top:6px">
+              <p>When you log a game, “Across the table” lets you seat who you played: a friend, one of their decks, or anyone by their commander. Lost? Press the trophy on whoever won.</p>
+                    <p>Once a few games carry names, “Matchups” on the deck’s “Games” tab splits your record by commander, colors and friend, and each game in “History” says who was there.</p>
+            </div>
+            <figure class="fig" style="padding:6px 8px 10px" aria-label="Specimen: Matchups on a deck’s Games tab">
+              <section class="gm p">
+                <div class="hdr"><h4>Matchups</h4><span class="rec">recorded in 5 of 8 games</span><div class="rg" role="radiogroup" aria-label="Split by"><span class="on">Commander</span><span>Colors</span><span>Friend</span></div></div>
+                <div class="box">
+                  <p class="cp">Most rows are a single game. A row means more each time a name comes back.</p>
+                  <ul>
+                    <li><span class="th"><img src="/_blob/7e74466bb1ffc8055446456e1dd10465" alt=""></span><span class="mid"><span class="nm">Captain America, Team Leader</span><span class="sq"><i class="w">W</i><i class="w">W</i><i>D</i><i>L</i></span></span><span class="rt"><span class="gn">4 games</span><span class="bt2"><svg aria-hidden="true" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>1</span></span></li>
+                    <li><span class="th"><img src="/_blob/cefd23af1f909f6912967948300abc15" alt=""></span><span class="mid"><span class="nm">Rootha, Mastering the Moment</span><span class="sq"><i>L</i></span></span><span class="rt"><span class="gn">1 game</span><span class="bt2"><svg aria-hidden="true" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>1</span></span></li>
+                    <li><span class="th"><img src="/_blob/edb84434c81f4bc4744d79db834c2505" alt=""></span><span class="mid"><span class="nm">Zimone, Infinite Analyst</span><span class="sq"><i class="w">W</i></span></span><span class="rt"><span class="gn">1 game</span></span></li>
+                  </ul>
+                  <p class="lg">Squares are games: W won, L lost, D drawn. The trophy counts the losses they won.</p>
+                </div>
+              </section>
+            </figure>
+            <ol class="keys">
+              <li><span class="dot">·</span><span class="t">Seats are optional. A game with nobody seated counts as it always has.</span></li>
+<li><span class="dot">·</span><span class="t">Each square is one game, won, lost or drawn. No percentages, so one game reads as one game.</span></li>
+<li><span class="dot">·</span><span class="t">A seat keeps names and decks as they were that night, even if a friend renames a deck or leaves.</span></li>
+<li><span class="dot">·</span><span class="t">“Seat a pod” sits a whole pod at once.</span></li>
+            </ol>
+          </div>
+
+          <div style="margin-top:14px;border-top:1px solid #181C26;padding-top:12px">
+            <h3 class="d" style="margin:0;font-size:15px;font-weight:600;color:#E6E8F0">Tuning a deck with Suggested changes</h3>
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><a class="m" href="#" style="font-size:11.5px">/decks</a><span class="m" style="font-size:11px;color:#6F7486">opens a deck’s Analysis tab</span></div>
+          </div>
+        </div>
+        <nav class="tb" aria-label="Main">
+          <a class="tbs" href="#" aria-label="Home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></a>
+          <a class="tbs" href="#" aria-label="Collection"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></a>
+          <a class="tbs" href="#" aria-label="Commanders"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></a>
+          <a class="tbs" href="#" aria-label="Discover"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></a>
+          <a class="tbs" href="#" aria-label="Decks"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></a>
+        </nav>
+      </div>
+      <span style="font-size:12.5px;line-height:1.5;color:#959AAD">Phone reduction: none of the entry’s own text. GameMatchups draws its own phone layout, the switch full width and the legend’s phone line.</span>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1810,"height":1805}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
