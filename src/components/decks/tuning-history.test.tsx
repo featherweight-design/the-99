@@ -129,6 +129,29 @@ describe("HistoryList", () => {
     expect(screen.getByRole("radiogroup")).toBeTruthy();
   });
 
+  // Segmented switch 3b: the chips are the shared switch, a radiogroup named by its label. All is the string `all`
+  // inside it and `null` at the filter, and every chip keeps the `data-history-chip` probes and inventories key on.
+  it("draws the chips as the shared radiogroup, All mapping back to a null filter, each keeping its data attribute", async () => {
+    render(<Host />);
+    await waitFor(() => expect(rowEls()).toHaveLength(5));
+    const group = screen.getByRole("radiogroup", { name: copy.filterLabel });
+    expect(group.querySelector("[aria-pressed]")).toBeNull();
+    const chips = within(group).getAllByRole("radio");
+    expect(chips.map((c) => c.getAttribute("data-history-chip"))).toEqual(["all", "suggested", "cuts"]);
+    // The arrows move the choice and the focus together, and the choice reads its tool's page.
+    readPage.mockResolvedValueOnce({ rows: rows.filter((r) => r.tool === "suggested"), nextCursor: null });
+    chips[0].focus();
+    fireEvent.keyDown(chips[0], { key: "ArrowRight" });
+    await waitFor(() => expect(readPage).toHaveBeenLastCalledWith("d", "suggested", null));
+    expect(document.activeElement?.getAttribute("data-history-chip")).toBe("suggested");
+    await waitFor(() => expect(document.querySelector("[data-history-chip='suggested']")?.getAttribute("aria-checked")).toBe("true"));
+    // Back to All: the page is read with no tool, never with the string "all".
+    readPage.mockResolvedValueOnce({ rows, nextCursor: null });
+    fireEvent.click(document.querySelector("[data-history-chip='all']") as HTMLElement);
+    await waitFor(() => expect(readPage).toHaveBeenLastCalledWith("d", null, null));
+    await waitFor(() => expect(document.querySelector("[data-history-chip='all']")?.getAttribute("aria-checked")).toBe("true"));
+  });
+
   it("says when the list failed to arrive, and Try again reads it again", async () => {
     readPage.mockRejectedValueOnce(new Error("down"));
     render(<Host />);

@@ -208,8 +208,20 @@ describe("LineupView: among, jobs and worth", () => {
     expect(order()).toEqual(["brago", "tovolar", "scrappy"]);
     expect(within(card("worth")).getByText("$398.17")).toBeTruthy();
     expect(within(card("worth")).getByText("Mana Pool prices, 2h ago")).toBeTruthy();
-    fireEvent.click(within(card("worth")).getByRole("button", { name: "By name" }));
+    fireEvent.click(within(card("worth")).getByRole("radio", { name: "By name" }));
     expect(order()).toEqual(["brago", "scrappy", "tovolar"]);
+  });
+
+  // Segmented switch 3b: the three Stats cards' pill filters are the shared switch, radiogroups, never aria-pressed.
+  it("draws the worth order as a radiogroup the arrows move", () => {
+    draw(BUILT, "worth");
+    const group = within(card("worth")).getByRole("radiogroup", { name: "Order" });
+    expect(card("worth").querySelector("[aria-pressed]")).toBeNull();
+    const most = within(group).getByRole("radio", { name: "Most first" });
+    expect(most).toHaveAttribute("aria-checked", "true");
+    fireEvent.keyDown(most, { key: "ArrowRight" });
+    expect(within(group).getByRole("radio", { name: "By name" })).toHaveAttribute("aria-checked", "true");
+    expect([...card("worth").querySelectorAll("[data-stats-worth]")].map((r) => r.getAttribute("data-stats-worth"))).toEqual(["brago", "scrappy", "tovolar"]);
   });
 
   it("draws none of the three with one deck (T1)", () => {
@@ -261,8 +273,18 @@ describe("LineupView: cards your decks share", () => {
 
   it("lists only the cards wanted more than owned under that chip", () => {
     render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} />);
-    fireEvent.click(within(card("shared")).getByRole("button", { name: "Wanted more than you own · 1" }));
+    fireEvent.click(within(card("shared")).getByRole("radio", { name: "Wanted more than you own · 1" }));
     expect([...card("shared").querySelectorAll("[data-stats-shared]")].map((r) => r.getAttribute("data-stats-shared"))).toEqual(["sol"]);
+  });
+
+  it("draws the shared cards' filter as a radiogroup, In the most decks chosen first", () => {
+    render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} />);
+    const group = within(card("shared")).getByRole("radiogroup", { name: "Which cards" });
+    expect(card("shared").querySelector("[aria-pressed]")).toBeNull();
+    expect(within(group).getByRole("radio", { name: "In the most decks" })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(within(group).getByRole("radio", { name: "Wanted more than you own · 1" }));
+    expect(within(group).getByRole("radio", { name: "Wanted more than you own · 1" })).toHaveAttribute("aria-checked", "true");
+    expect(within(group).getByRole("radio", { name: "In the most decks" })).toHaveAttribute("aria-checked", "false");
   });
 
   it("says no card is in two decks when the decks share none, and counts one card in the singular", () => {
@@ -320,16 +342,27 @@ describe("LineupView: your collection, put to work", () => {
     const rows = () => [...card("collection").querySelectorAll("[data-stats-wanted]")].map((r) => r.getAttribute("data-stats-wanted"));
     expect(rows()).toEqual(["boots", "beast"]);
     expect(within(card("collection")).getByText("of Gishath decks")).toBeTruthy();
-    fireEvent.click(within(card("collection")).getByRole("button", { name: "20% or more · 3" }));
+    fireEvent.click(within(card("collection")).getByRole("radio", { name: "20% or more · 3" }));
     expect(rows()).toEqual(["boots", "beast", "path"]);
     fireEvent.change(within(card("collection")).getByRole("combobox", { name: "Whose commanders" }), { target: { value: "tovolar" } });
     expect(rows()).toEqual(["beast", "boots"]);
-    expect(within(card("collection")).getByRole("button", { name: "40% or more · 1" })).toBeTruthy();
+    expect(within(card("collection")).getByRole("radio", { name: "40% or more · 1" })).toBeTruthy();
+  });
+
+  it("draws the collection cuts as a radiogroup, its string values mapping back to the cut", () => {
+    draw(CO, "collection");
+    const group = within(card("collection")).getByRole("radiogroup", { name: "How often their decks run it" });
+    expect(card("collection").querySelector("[aria-pressed]")).toBeNull();
+    const forty = within(group).getByRole("radio", { name: "40% or more · 2" });
+    expect(forty).toHaveAttribute("aria-checked", "true");
+    fireEvent.keyDown(forty, { key: "ArrowRight" });
+    expect(within(group).getByRole("radio", { name: "20% or more · 3" })).toHaveAttribute("aria-checked", "true");
+    expect([...card("collection").querySelectorAll("[data-stats-wanted]")].map((r) => r.getAttribute("data-stats-wanted"))).toEqual(["boots", "beast", "path"]);
   });
 
   it("folds to a summary counting what the select and the cut last showed", () => {
     draw(CO, "collection");
-    fireEvent.click(within(card("collection")).getByRole("button", { name: "20% or more · 3" }));
+    fireEvent.click(within(card("collection")).getByRole("radio", { name: "20% or more · 3" }));
     fireEvent.click(head("collection"));
     // The default (All decks, 40%) would count 2.
     expect(card("collection").textContent).toContain("3 wanted by your commanders");
@@ -369,7 +402,7 @@ describe("LineupView: your collection, put to work", () => {
     draw({ ...CO, collection: { ...c, wanted: c.wanted.map((w) => (w.oracleId === "boots" ? { ...w, hits: [{ deckId: "gishath", pct: 39.6 }] } : w)) } }, "collection");
     const rows = () => [...card("collection").querySelectorAll("[data-stats-wanted]")].map((r) => r.getAttribute("data-stats-wanted"));
     expect(rows()).toEqual(["beast"]);
-    fireEvent.click(within(card("collection")).getByRole("button", { name: "20% or more · 3" }));
+    fireEvent.click(within(card("collection")).getByRole("radio", { name: "20% or more · 3" }));
     expect(within(card("collection")).getByText("39%")).toBeTruthy();
   });
 });

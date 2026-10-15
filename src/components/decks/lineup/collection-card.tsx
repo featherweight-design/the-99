@@ -12,7 +12,7 @@ import { CardDetailTrigger } from "../../cards/card-detail-provider";
 import { HoverPreviewProvider } from "../hover-preview";
 import { DeckName } from "./deck-link";
 import { DeckSelect } from "./deck-select";
-import { CHIP_OFF, CHIP_ON } from "./worth-card";
+import { SegmentedSwitch } from "../../ui/segmented-switch";
 
 const copy = decksStatsCopy.collection;
 const UNIT = "h-[7px] w-[7px] rounded-[1.5px] md:h-[8px] md:w-[8px]";
@@ -66,10 +66,17 @@ export function CollectionBody({ c, decks, filter, age, pick, onPick }: {
       <div className="flex flex-col gap-[8px] border-t border-t-[color:var(--border)] pt-[12px]">
         <span className="text-[14px] font-semibold text-[color:var(--fg)]">{copy.wantsHead}</span>
         <DeckSelect decks={decks} value={chosen ?? ""} onChange={(id) => onPick({ ...pick, deckId: id || null })} label={copy.selectAria} allLabel={copy.allDecks} />
-        <div role="group" aria-label={copy.cutsAria} className="flex flex-wrap gap-[6px]">
-          {CUTS.map((p) => (
-            <button key={p} type="button" aria-pressed={cut === p} onClick={() => onPick({ ...pick, cut: p })} className={cut === p ? CHIP_ON : CHIP_OFF}>{copy.cut(p, at(p).length)}</button>
-          ))}
+        {/* A radiogroup (segmented switch 3b): a segment's value is the cut as a string, read back by its place in CUTS. */}
+        <div>
+          <SegmentedSwitch
+            kind="radio"
+            size="compact"
+            scroll
+            ariaLabel={copy.cutsAria}
+            segments={CUTS.map((p) => ({ value: String(p), label: copy.cut(p, at(p).length) }))}
+            value={String(cut)}
+            onChange={(v) => onPick({ ...pick, cut: CUTS.find((p) => String(p) === v) ?? cut })}
+          />
         </div>
         <HoverPreviewProvider className="flex flex-col">
           {shown.length === 0 ? <span className="py-[9px] text-[12.5px] text-[color:var(--fg-body)]">{copy.none}</span> : null}

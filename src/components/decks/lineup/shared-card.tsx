@@ -13,7 +13,7 @@ import type { LineupDeck, LineupShared } from "../../../lib/lineup/types";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { HoverPreviewProvider } from "../hover-preview";
-import { CHIP_OFF, CHIP_ON } from "./worth-card";
+import { SegmentedSwitch } from "../../ui/segmented-switch";
 
 const copy = decksStatsCopy.shared;
 const SQUARE = "h-[11px] w-[11px] rounded-[2px] md:h-[13px] md:w-[13px]";
@@ -24,14 +24,22 @@ export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly Li
   const names = new Map(decks.map((d) => [d.id, d.name]));
   const v = sharedView(shared, new Set(decks.map((d) => d.id)), mode);
   if (decks.length < 2) return <span className="text-[13px] leading-[1.55] text-[color:var(--fg-body)]">{copy.one}</span>;
-  const chip = (m: SharedMode, label: string) => (
-    <button type="button" aria-pressed={mode === m} onClick={() => setMode(m)} className={mode === m ? CHIP_ON : CHIP_OFF}>{label}</button>
-  );
   return (
     <>
-      <div role="group" aria-label={copy.chipsAria} className="flex flex-wrap gap-[6px]">
-        {chip("most", copy.chipMost)}
-        {chip("wanted", copy.chipWanted(v.wantedMore))}
+      {/* A radiogroup, compact like the Lineup filter; it scrolls rather than overflowing a phone card. */}
+      <div>
+        <SegmentedSwitch<SharedMode>
+          kind="radio"
+          size="compact"
+          scroll
+          ariaLabel={copy.chipsAria}
+          segments={[
+            { value: "most", label: copy.chipMost },
+            { value: "wanted", label: copy.chipWanted(v.wantedMore) },
+          ]}
+          value={mode}
+          onChange={setMode}
+        />
       </div>
       <HoverPreviewProvider className="flex flex-col">
         {v.rows.map((r) => {

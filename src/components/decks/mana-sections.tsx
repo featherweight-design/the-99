@@ -4,7 +4,7 @@
 // `PatternRows`, `LandFacts`): the hardest costs per color, and the lands. The header is the
 // Consider panel's shelf header; a section's body is mounted only while it is open.
 
-import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { BalanceColor, ColorEvidence, LandEvidence, PatternEvidence } from "../../lib/tuning/mana-balance";
@@ -13,6 +13,7 @@ import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { HoverPreviewProvider } from "./hover-preview";
 import { PIP_STYLE } from "./mana-color-parts";
 import { Chevron } from "../ui/chevron";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 
 /** Names a pattern row shows before `+N more`. */
 const NAMES_SHOWN = 3;
@@ -54,43 +55,29 @@ export function ManaSection({ id, label, clause, open, onToggle, tight = false, 
   );
 }
 
-/** The single-select color chips: a radiogroup, so the arrow keys move the selection. */
+/** The single-select color chips: a radiogroup (segmented switch 3b), so the arrow keys move the selection. It
+ *  scrolls sideways at phone, where five colors overrun a card. */
 function ColorChips({ colors, picked, onPick }: { colors: BalanceColor[]; picked: BalanceColor; onPick: (c: BalanceColor) => void }) {
-  const refs = useRef(new Map<BalanceColor, HTMLButtonElement>());
-  const onKey = (e: KeyboardEvent, i: number) => {
-    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
-    if (!step) return;
-    e.preventDefault();
-    const next = colors[(i + step + colors.length) % colors.length];
-    onPick(next);
-    refs.current.get(next)?.focus();
-  };
   return (
-    <div role="radiogroup" aria-label={copy.patterns.chips} className="-mx-[2px] flex gap-[6px] overflow-x-auto px-[2px] pb-[2px] md:flex-wrap md:overflow-visible">
-      {colors.map((c, i) => {
-        const on = c === picked;
-        return (
-          <button
-            key={c}
-            ref={(el) => { if (el) refs.current.set(c, el); else refs.current.delete(c); }}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            tabIndex={on ? 0 : -1}
-            data-mana-chip={c}
-            onClick={() => onPick(c)}
-            onKeyDown={(e) => onKey(e, i)}
-            className={`inline-flex h-[44px] flex-none cursor-pointer items-center gap-[7px] whitespace-nowrap rounded-full px-[12px] text-[12px] md:h-[30px] ${
-              on
-                ? "border border-[color:var(--fg-body)] bg-[var(--fg-body)] font-semibold text-[color:var(--bg)]"
-                : "border border-[color:var(--border-strong)] bg-transparent font-medium text-[color:var(--fg-muted)]"
-            }`}
-          >
-            <span aria-hidden className="size-[12px] flex-none rounded-full" style={{ background: PIP_STYLE[c].bg }} />
-            {colorName(c)}
-          </button>
-        );
-      })}
+    <div>
+      <SegmentedSwitch<BalanceColor>
+        kind="radio"
+        size="compact"
+        scroll
+        ariaLabel={copy.patterns.chips}
+        segments={colors.map((c) => ({
+          value: c,
+          label: (
+            <span className="inline-flex items-center gap-[7px]">
+              <span aria-hidden className="size-[12px] flex-none rounded-full" style={{ background: PIP_STYLE[c].bg }} />
+              {colorName(c)}
+            </span>
+          ),
+          data: { "data-mana-chip": c },
+        }))}
+        value={picked}
+        onChange={onPick}
+      />
     </div>
   );
 }
