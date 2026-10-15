@@ -67,6 +67,7 @@ import { loadStatsLabels } from "../../../lib/decks/stats-labels";
 import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
+import { socialGamesEnabled } from "../../../lib/social/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
@@ -700,6 +701,7 @@ export default async function DeckBuilderPage({
           }
         : null}
       tuningEnabled={tuned}
+      socialGames={socialGamesEnabled(env)}
       proposedCutsEnabled={proposedCutsEnabled(env)}
       manaBalanceEnabled={manaBalanceEnabled(env)}
       tuningHubEnabled={tuningHubEnabled(env)}

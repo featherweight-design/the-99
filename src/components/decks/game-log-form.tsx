@@ -16,6 +16,8 @@ import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
 import { searchGameNoteCards } from "../cards/description-tag-search";
 import { useTaggedField } from "../cards/use-tagged-field";
+import { opponentsFor, podSizeHeld, seatLabelled, seatWith, seatWithout, seatWon, seatsForResult, type Seat } from "../../lib/decks/game-seats";
+import { GameSeats, type YouSeat } from "./game-seats";
 import { MutationError } from "./mutation-error";
 import { PRIMARY } from "../ui/button";
 
@@ -45,6 +47,11 @@ export interface GameLogFormProps {
    * collapsed button would show the door rather than the room.
    */
   initialOpen?: boolean;
+  /**
+   * The "Across the table" row (Social R3), present only where `SOCIAL_GAMES_ENABLED` is on for this reader:
+   * absent, the form is the shipped form and no space is kept. The deck's own commander is the You seat.
+   */
+  opponents?: { you: YouSeat };
 }
 
 const POD_SIZES = [2, 3, 4, 5, 6, 7, 8];
@@ -108,10 +115,15 @@ export function GameLogForm({
   ctaSolid = false,
   initialOpen = false,
   tuned = false,
+  opponents,
 }: GameLogFormProps) {
   const [open, setOpen] = useState(initialOpen);
   const [result, setResult] = useState<GameResult | null>(null);
   const [podSize, setPodSize] = useState(4);
+  // The seats of "Across the table", and whether a pod size below them was just pressed (the line saying why it held).
+  const [seats, setSeats] = useState<Seat[]>([]);
+  const [podHeld, setPodHeld] = useState(false);
+  const seatKeys = useRef(0);
   const [playedAt, setPlayedAt] = useState(today);
   const [dateOpen, setDateOpen] = useState(false);
   const [worked, setWorked] = useState<GameAxisKey[]>([]);
@@ -158,8 +170,22 @@ export function GameLogForm({
   });
   const openButton = useRef<HTMLButtonElement>(null);
   const movedTimer = useRef<number | null>(null);
-  const resultRoving = useRoving(RESULT_VALUES, setResult);
-  const podRoving = useRoving(POD_SIZES, setPodSize);
+  // Leaving Lost clears who won before anything is sent: the server refuses a winner on any other result.
+  function chooseResult(next: GameResult) {
+    setResult(next);
+    setSeats((held) => seatsForResult(held, next));
+  }
+  // A pod size the filled seats would not fit in holds, and says why, instead of dropping a seat.
+  function choosePod(next: number) {
+    if (podSizeHeld(next, seats.length)) {
+      setPodHeld(true);
+      return;
+    }
+    setPodSize(next);
+    setPodHeld(false);
+  }
+  const resultRoving = useRoving(RESULT_VALUES, chooseResult);
+  const podRoving = useRoving(POD_SIZES, choosePod);
   // The collapsed button is unmounted while the form is open, so a `.focus()`
   // inside `collapse()` would land on nothing. The intent is recorded here and
   // spent once the button is back on the page.
@@ -194,6 +220,8 @@ export function GameLogForm({
     setOpen(false);
     setResult(null);
     setPodSize(4);
+    setSeats([]);
+    setPodHeld(false);
     setPlayedAt(today());
     setDateOpen(false);
     setWorked([]);
@@ -267,6 +295,8 @@ export function GameLogForm({
         worked,
         hurt,
         note,
+        // Absent when there is nothing to say, so a game with no seats is exactly today's payload.
+        ...(opponents && seats.length > 0 ? { opponents: opponentsFor(seats, result) } : {}),
       });
       if (!outcome.ok) {
         // State 12: nothing is cleared. There is no edit action, so a wiped
@@ -369,7 +399,7 @@ export function GameLogForm({
                   tabIndex={on || (result === null && i === 0) ? 0 : -1}
                   disabled={busy}
                   onKeyDown={resultRoving.onKeyDown(i)}
-                  onClick={() => setResult(r.value)}
+                  onClick={() => chooseResult(r.value)}
                   className={
                     "flex-1 md:flex-none h-[44px] md:h-[40px] md:px-[20px] rounded-[8px] text-[13.5px] cursor-pointer " +
                     (on ? "font-semibold " : "font-medium ") +
@@ -410,10 +440,13 @@ export function GameLogForm({
                   tabIndex={on ? 0 : -1}
                   disabled={busy}
                   onKeyDown={podRoving.onKeyDown(i)}
-                  onClick={() => setPodSize(n)}
+                  // Held, not disabled: a disabled button takes no press, and the press is what says why.
+                  aria-disabled={podSizeHeld(n, seats.length) || undefined}
+                  onClick={() => choosePod(n)}
                   className={
                     "flex-1 md:flex-none md:w-[40px] h-[44px] md:h-[40px] rounded-[8px] font-mono " +
                     "font-semibold text-[14px] cursor-pointer border " +
+                    (podSizeHeld(n, seats.length) ? "opacity-[.36] " : "") +
                     (on
                       ? "border-accent bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-accent"
                       : "border-border-strong bg-transparent text-fg-body")
@@ -426,6 +459,24 @@ export function GameLogForm({
           </div>
         </div>
       </div>
+
+      {opponents && (
+        <GameSeats
+          you={opponents.you}
+          podSize={podSize}
+          result={result}
+          seats={seats}
+          busy={busy}
+          held={podHeld}
+          onSeat={(at, commander) => {
+            setSeats((held) => seatWith(held, at, commander, `seat${++seatKeys.current}`));
+            setPodHeld(false);
+          }}
+          onClear={(key) => { setSeats((held) => seatWithout(held, key)); setPodHeld(false); }}
+          onWon={(key) => setSeats((held) => seatWon(held, key))}
+          onLabel={(key, text) => setSeats((held) => seatLabelled(held, key, text))}
+        />
+      )}
 
       <div className="md:grid md:grid-cols-2 md:gap-[16px]">
         <AxisColumn

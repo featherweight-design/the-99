@@ -286,6 +286,8 @@ interface BuilderShellProps {
    *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
    *  credit lines' mention of it are withheld, same as `analysisEnabled` withholds the whole tab. */
   tuningEnabled?: boolean;
+  /** `socialGamesEnabled(env)` for this reader: the game log draws its "Across the table" row. */
+  socialGames?: boolean;
   /** `proposedCutsEnabled(env)`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
   /** `manaBalanceEnabled(env)`: whether the Analysis tab offers Mana Balance (a hub tile, or mounted
@@ -354,6 +356,7 @@ export function BuilderShell({
   storedPermitsUnknown = false,
   neverCut = false,
   tuningEnabled = false,
+  socialGames = false,
   proposedCutsEnabled = false,
   manaBalanceEnabled = false,
   tuningHubEnabled = false,
@@ -1895,6 +1898,7 @@ export function BuilderShell({
                   // chip is the stored reading's own signal.
                   tuned={headerBracket !== null}
                   onOpenAnalysis={() => setView("analysis")}
+                  opponents={socialGames ? { you: { name: deck.commander.name, deckName: deck.name, imageUri: deck.commander.imageUri ?? null } } : undefined}
                 />
               </div>
             ) : view === "versions" ? (
