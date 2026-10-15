@@ -422,7 +422,10 @@ export function DeckCardTile({
                 label={card.owned && !proxied ? "Owned" : "Not owned"}
               />
               {/* The foil glint, right after the dot (foil mark addendum R2): it reads with "you own this" and never
-                  among the fact marks, and `flex-none` keeps it when a long meta line drops those. */}
+                  among the fact marks, and `flex-none` keeps it when a long meta line drops those. Where the line still
+                  overflows (a locked tile with a worded chip at 360px), the shipped truncation order holds (audit F8):
+                  Design ruled the fact marks drop and the glint never does, and a glyph-only chip was tried and refused
+                  because it hides the `short N` figure the deck key does not gloss. */}
               {foilFinish && <FoilGlint finish={foilFinish} />}
               {/* THE SAME EXCLUSIVE DECISION THE LIST ROW MAKES, and the reason
                   all three occupants had to move together: read off `card.owned`
