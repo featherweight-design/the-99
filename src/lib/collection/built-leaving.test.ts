@@ -45,6 +45,20 @@ describe("builtLeaving (S14)", () => {
     expect(builtLeaving(dry, entries)).toEqual({ copies: 2, precons: 1, byHand: false });
   });
 
+  // Copies the lots cannot account for are by hand: ten hand copies whose rows aged out, then a box's one more.
+  it("names by hand beside a box when the box raised only part of a holding", () => {
+    const dry = [row("a", 11, null)];
+    expect(builtLeaving(dry, [{ source: null, rows: null }, entry("precon:x.json", row("a", 10, 11))]))
+      .toEqual({ copies: 11, precons: 1, byHand: true });
+  });
+
+  // A removal to zero clears where the copies came from: a box removed and then re-added by hand is by hand alone.
+  it("forgets a box whose copies were all removed before the holding was added again by hand", () => {
+    const dry = [row("a", 2, null)];
+    const entries = [entry("precon:x.json", row("a", null, 3)), entry(null, row("a", 3, null)), entry(null, row("a", null, 2))];
+    expect(builtLeaving(dry, entries)).toEqual({ copies: 2, precons: 0, byHand: true });
+  });
+
   it("calls a holding no entry accounts for (its rows aged out) by hand, so the sentence always names a source", () => {
     const dry = [row("a", 1, null), row("b", 1, null)];
     const entries: BuiltEntry[] = [entry("precon:x.json", row("a", null, 1)), { source: null, rows: null }];

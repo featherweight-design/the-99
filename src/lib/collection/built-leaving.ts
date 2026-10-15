@@ -24,33 +24,63 @@ export type BuiltEntry = { source: string | null; rows: HistoryRow[] | null };
 const keyOf = (r: HistoryRow) => collectionItemKey({ ...r, finish: r.finish as Finish });
 const qty = (s: HistoryRow["before"]) => s?.quantity ?? 0;
 
+/** Copies of one holding and the entry that put them there. */
+type Lot = { source: string | null; n: number };
+
+/** Takes `n` copies off the newest lots first: which copies a lowering took is not recorded, so the newest go. */
+function takeNewest(lots: Lot[], n: number): void {
+  for (let i = lots.length - 1; i >= 0 && n > 0; i--) {
+    const take = Math.min(lots[i].n, n);
+    lots[i].n -= take;
+    n -= take;
+  }
+}
+const total = (lots: readonly Lot[]) => lots.reduce((s, l) => s + l.n, 0);
+
 /**
- * What leaves, or null when nothing does (the clause is then absent and Replace reads as shipped). A lowered
- * holding no standing entry accounts for (its rows aged out of History) is counted as by hand, so the sentence
- * always names a source.
+ * What leaves, or null when nothing does (the clause is then absent and Replace reads as shipped). The standing
+ * entries are replayed per holding, in ledger order, as lots of copies by source: a raise adds a lot, a lowering
+ * takes the newest copies, and a removal to zero clears every lot, so a box removed and re-added by hand no longer
+ * names the box. Copies the lots do not account for (rows aged out of History, or a holding no entry raised) are
+ * by hand, so the sentence always names a source.
  */
 export function builtLeaving(dryRows: readonly HistoryRow[], entries: readonly BuiltEntry[]): BuiltLeaving | null {
-  const lowered = new Set<string>();
+  const lowered = new Map<string, number>();
   let copies = 0;
   for (const r of dryRows) {
     const down = qty(r.before) - qty(r.after);
     if (down <= 0) continue;
     copies += down;
-    lowered.add(keyOf(r));
+    lowered.set(keyOf(r), qty(r.before));
   }
   if (copies === 0) return null;
-  const precons = new Set<string>();
-  let byHand = false;
-  const accounted = new Set<string>();
+  const lots = new Map<string, Lot[]>();
   for (const e of entries) {
     for (const r of e.rows ?? []) {
       const key = keyOf(r);
-      if (!lowered.has(key) || qty(r.after) <= qty(r.before)) continue;
-      accounted.add(key);
-      if (e.source?.startsWith("precon:")) precons.add(e.source);
+      if (!lowered.has(key)) continue;
+      const before = qty(r.before);
+      const after = qty(r.after);
+      const held = lots.get(key) ?? [];
+      if (after > before) held.push({ source: e.source, n: after - before });
+      else if (after < before) takeNewest(held, before - after);
+      // An earlier row aged out can leave more on the lots than the holding had: the newest give way. A removal to
+      // zero therefore empties every lot.
+      if (total(held) > after) takeNewest(held, total(held) - after);
+      lots.set(key, held);
+    }
+  }
+  const precons = new Set<string>();
+  let byHand = false;
+  for (const [key, held] of lowered) {
+    const own = lots.get(key) ?? [];
+    if (total(own) > held) takeNewest(own, total(own) - held);
+    if (total(own) < held) byHand = true;
+    for (const l of own) {
+      if (l.n <= 0) continue;
+      if (l.source?.startsWith("precon:")) precons.add(l.source);
       else byHand = true;
     }
   }
-  if (accounted.size < lowered.size) byHand = true;
   return { copies, precons: precons.size, byHand };
 }
