@@ -9,6 +9,8 @@ import { TOKEN_LAYOUTS } from "../cards/game-card";
 import type { CollectionRow } from "../manabox/parse";
 import type { CatalogCard, DetailedCatalogCard, MatchIndexes } from "./match";
 import { toCollectionItemValues, type PendingItem } from "./pending";
+import { addedByKey, addedFor, fileArrival } from "./added-at";
+import { collectionItemKey } from "./key";
 
 const INSERT_BATCH = 500;
 // scryfall_id is a uuid column, so a malformed id from a hand-edited CSV would fail the
@@ -206,6 +208,14 @@ export async function replaceCollection(
           throw new NotEmpty();
         }
       }
+      // Each holding already held keeps its date through the replace; a new one arrives now, exactly only into a
+      // collection that had content (this file filled an empty one otherwise: "since", not "added on").
+      const standing = await tx.select({
+        oracleId: collectionItems.oracleId, setCode: collectionItems.setCode, collectorNumber: collectionItems.collectorNumber,
+        finish: collectionItems.finish, addedAt: collectionItems.addedAt, addedExact: collectionItems.addedExact,
+      }).from(collectionItems).where(eq(collectionItems.userId, userId));
+      const addedBefore = addedByKey(standing);
+      const arrival = fileArrival(new Date(), standing.length > 0);
       await tx.delete(collectionItems).where(eq(collectionItems.userId, userId));
       // The tokens this upload read, and the marker that they were READ, in the same transaction as the
       // replace: a failure here rolls the whole confirm back. An upload with no token still writes the
@@ -213,8 +223,9 @@ export async function replaceCollection(
       await recordUploadTokens(tx, userId, opts.confirmUploadId, "replace", opts.tokens);
       // Every score component derives from the collection, so a replace invalidates all of them.
       await tx.delete(commanderScores).where(eq(commanderScores.userId, userId));
-      for (let i = 0; i < values.length; i += INSERT_BATCH) {
-        await tx.insert(collectionItems).values(values.slice(i, i + INSERT_BATCH));
+      const dated = values.map((v) => ({ ...v, ...addedFor(addedBefore.get(collectionItemKey(v)), arrival) }));
+      for (let i = 0; i < dated.length; i += INSERT_BATCH) {
+        await tx.insert(collectionItems).values(dated.slice(i, i + INSERT_BATCH));
       }
     });
   } catch (err) {

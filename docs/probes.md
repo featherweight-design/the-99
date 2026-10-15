@@ -459,6 +459,19 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   entry (`placed`), a retry of that press reads the same record back, a restore the entry did not
   record puts nothing back, and Undo with the recorded restore drops the moved pick and puts the
   displaced reservation back at its own `created_at`.
+- `pnpm probe:added-at` proves what the collection writers leave in `collection_items.added_at` and
+  `added_exact` (Date added, PR 1) against a real Postgres, refused on production and staging. The file that
+  fills an empty collection is dated INEXACT, every holding on one day, through the ledger's Replace and the
+  legacy `replaceCollection` alike; a hand add is exact; a quantity edit and a second file keep every standing
+  holding's date; a second file's new holding is exact; a removal then a re-add is a new date, and the revert
+  of the removal puts the old date back. It also runs the backfill (`backfillAddedAt`) on a fixture of two
+  confirmed uploads and a ledger entry: the first file's holdings take its date inexact, a later file's exact,
+  a hand-added one its entry's, a holding in neither stays null, and a second run changes nothing.
+- `pnpm db:backfill:added-at [--dry-run]` dates the holdings the column found already there, ONCE per
+  database after its migration (0127). It names its target by branch and fails closed (the `pull:staging`
+  rule): `BACKFILL_TARGET_URL` and `BACKFILL_TARGET_BRANCH` are never defaulted, and a database that reports a
+  different `neon.branch_id`, or has no `added_at` column yet, exits 2 having read and written nothing. Run
+  `--dry-run` first. Never through the Neon MCP.
 - `pnpm probe:collection-write` proves the collection ledger's concurrency claims
   (`applyCollectionChange`, plan `2026-10-09-collection-write-path.md`) against a real Postgres:
   a double-submitted add applies once, two tabs editing one row with `expected` produce one

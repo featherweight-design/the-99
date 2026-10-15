@@ -10,6 +10,8 @@ const stub = vi.hoisted(() => {
       return { where: async () => {} };
     },
     insert: () => ({ values: async () => {} }),
+    // The holdings the replace finds before it deletes: none, so the write is a first fill.
+    select: () => ({ from: () => ({ where: async () => [] }) }),
     update: () => ({ set: () => ({ where: async () => {}, returning: async () => [{ id: "u" }] }) }),
     // The per-user advisory lock. Recorded rather than ignored: it is the statement that
     // stops two replaces interleaving, and a stub that silently swallowed it would let the
