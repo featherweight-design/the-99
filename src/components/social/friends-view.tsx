@@ -7,7 +7,7 @@
 // they take it, during render (never in an effect, or the old value paints once first). A press's optimistic value
 // stands only until that redraw lands, or its own write answers.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ProfileCommander } from "../../lib/social/commander";
 import type { OwnProfile } from "../../lib/social/friends";
 import type { CommanderTile } from "../../lib/decks/commander-picker";
@@ -48,7 +48,8 @@ function useFieldWrite<T>(served: T, show: (v: T) => void) {
   };
 }
 
-export function FriendsView({ profile }: { profile: OwnProfile }) {
+/** `pods`: the pods section (PR E), drawn under the head. */
+export function FriendsView({ profile, pods }: { profile: OwnProfile; pods?: ReactNode }) {
   const [name, setName] = useState(profile.displayName);
   const [commander, setCommander] = useState(profile.commander);
   const [served, setServed] = useState(() => drawnKey(profile));
@@ -83,6 +84,7 @@ export function FriendsView({ profile }: { profile: OwnProfile }) {
     <>
       <div className="mx-auto box-border w-full max-w-[720px] px-[16px] pb-[60px] pt-[22px] md:px-0 md:pt-[36px]">
         <FriendsHead name={name} commander={commander} onRename={rename} onOpenPicker={() => setPicking(true)} faceRef={face} picking={picking} />
+        {pods}
       </div>
       {picking ? <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} /> : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />

@@ -1,7 +1,10 @@
 // Social R1 (friends and pods): copy. Taken from the handoff's `social-r1 · copy strings.ts` (R2), after
 // /copy-review. PR B brought the menu row, the title and the signed-out card; PR C1 the head (the name line and
 // its field), the modals' Close and the commander picker. The friends list, the open links and the Add a friend
-// dialog arrive with PR C2, the request card with PR D (`landing`) and the pods with PR E.
+// dialog arrive with PR C2, the request card with PR D (`landing`) and the pods with PR E (`pods`).
+
+const members = (x: number) => (x === 1 ? "Just you" : `${x} members`);
+const friends = (x: number) => (x === 1 ? "1 friend" : `${x} friends`);
 
 export const socialCopy = {
   // The account menu row (popover and sheet), second, under About. Absent with the switch off.
@@ -85,5 +88,33 @@ export const socialCopy = {
     acceptFailed: "We couldn’t accept that friend request. Try again.", // toast, Try again
     declineFailed: "We couldn’t decline that friend request. Try again.", // toast, Try again
     retry: "Try again",
+  },
+  // Pods on /friends (PR E1: the table; E2 adds the header menu). Taken from the handoff's `pods.*`.
+  pods: {
+    head: (n: number) => `Pods · ${n}`,
+    newPod: "New pod",
+    emptyTitle: "No pods yet",
+    emptyBody: "A pod is a group of friends you play with. You choose which pods can see your spare cards.",
+    nameLabel: "Pod name",
+    nameHint: "Up to 40 characters. You add friends to it next.",
+    create: "Create",
+    cancel: "Cancel",
+    // The card's meta line.
+    metaOwn: (n: number) => `${members(n)} · yours`,
+    metaOther: (n: number, owner: string) => `${members(n)} · ${owner} owns it`,
+    solo: "Just you so far. Add friends to play with.",
+    you: "You",
+    ownerTag: "owner",
+    notFriendTag: "not a friend",
+    removeMemberAria: (name: string, pod: string) => `Remove ${name} from ${pod}`,
+    addFriends: "+ Add friends",
+    share: "Share my spares with this pod",
+    // Add friends (dialog at desktop, sheet at phone).
+    addTitle: (pod: string) => `Add to ${pod}`,
+    addSub: "Only your friends can be added. They aren’t told.",
+    addConfirm: (n: number) => (n === 0 ? "Add friends" : `Add ${friends(n)}`), // held at 0
+    addAllIn: "Every friend is already in this pod.",
+    addNoFriends: "No friends to add yet. Add one first.",
+    failed: "We couldn’t change that pod. Try again.", // toast, role alert
   },
 } as const;

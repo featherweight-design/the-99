@@ -16,6 +16,8 @@ const m = vi.hoisted(() => ({
   ensureProfile: vi.fn(),
   listOpenInvites: vi.fn(),
   listFriends: vi.fn(),
+  listPods: vi.fn(),
+  listSharedPods: vi.fn(),
   redeemInviteAction: vi.fn(),
   declineInviteAction: vi.fn(),
 }));
@@ -35,7 +37,8 @@ vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitch
 vi.mock("../../lib/social/friends", () => ({
   readInvite: m.readInvite, ensureProfile: m.ensureProfile, listOpenInvites: m.listOpenInvites,
 }));
-vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends }));
+vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
+vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));
 vi.mock("./actions", () => ({
   spendFriendLinkAction: m.spendFriendLinkAction,
   redeemInviteAction: m.redeemInviteAction,
@@ -66,6 +69,8 @@ beforeEach(() => {
   m.ensureProfile.mockResolvedValue({ publicId: PUB, displayName: "Hugh", commander: null });
   m.listOpenInvites.mockResolvedValue([]);
   m.listFriends.mockResolvedValue([DAVE]);
+  m.listPods.mockResolvedValue([]);
+  m.listSharedPods.mockResolvedValue([]);
 });
 afterEach(cleanup);
 
