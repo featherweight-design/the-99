@@ -54,3 +54,15 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-foil-treatment.md` (
 7. Peek and preview: R1's tile film, still.
 8. Flip: the film rides both faces.
 9. Mixed: no film.
+
+## Addendum M1 · The foil mark (approved)
+
+| Read | For |
+|---|---|
+| **`addendum-foil-mark/M-Main.dc.html`** | **The calls, the busy row, under or beside the dot, strings, engineering and gaps.** |
+| `addendum-foil-mark/M-Collection-Desktop.dc.html`, `M-Collection-Phone.dc.html` | The glint on the collection grid and list, with the keys. |
+| `addendum-foil-mark/M-Deck-Desktop.dc.html`, `M-Deck-Phone.dc.html` | Deck Card view, the two-line All and Shopping rows, and a Collector's Edition precon. |
+| `addendum-foil-mark/README.md`, `STATES-foil-mark.md` | Calls, engineering, gaps, the matrix. |
+| `addendum-foil-mark/foil-mark · copy strings.ts` | Key, tooltip and spoken strings. |
+
+A 12px glint in the film's colours marks a card whose every owned copy of the drawn printing is foil or etched.

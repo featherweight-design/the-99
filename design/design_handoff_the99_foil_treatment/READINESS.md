@@ -31,3 +31,10 @@
 - The departure in README §Where each surface reads "foil" (drawn printing, not only the pin).
 - G2's proposed `failed` arrival mark.
 - Keep or drop etched (G6).
+
+## Addendum M1 · The foil mark (2026-10-15)
+
+✅ **Approved by Hugh, 2026-10-15, after four rounds.** One 12px glint for foil and etched. It sits under the ownership dot on
+the two-line card rows, after the dot on tiles, by the count on collection rows, and first on a collection tile's meta line.
+All and Shopping rows become two lines at both widths, with the fact marks on the name line and no EDHREC figure on
+Shopping. Shopping's key is one grid. Details are in `addendum-foil-mark/README.md`.
