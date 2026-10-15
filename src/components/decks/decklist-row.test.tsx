@@ -1691,8 +1691,6 @@ describe("DecklistRow, phone Shopping row option B", () => {
     const tag = screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") });
     expect((tag.firstElementChild as HTMLElement).className).not.toContain("max-lg:bg-transparent");
     expect(screen.queryByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") })).toBeNull();
-    // The 22px desktop spacer is not drawn below lg, where it would be a stray flex item.
-    expect(row().querySelector(".max-lg\\:hidden")).not.toBeNull();
   });
 
   it("shows a two-face card's front face on the phone and the whole name from lg", () => {
@@ -1730,6 +1728,19 @@ describe("DecklistRow, phone Shopping row option B", () => {
       expect(row().className).not.toContain("min-h-[96px]");
       cleanup();
     }
+  });
+
+  it("draws a land with no EDHREC figure in the same two lines, and draws no 22px spacer below lg", () => {
+    const land = { ...priced(1500), cardTypeGroup: "Lands" as const, typeLine: "Land", manaCost: null, name: "Sunken Ruins // Back" , layout: "transform" } as DeckDetailCard;
+    inB(<DecklistRow deckId="d1" card={land} shoppingFigure={undefined} inShopping newestAsOf={asOf} />, true);
+    expect(row().className).toContain("max-lg:flex-wrap");
+    expect(row().querySelector("[aria-hidden='true'].max-lg\\:basis-full")).not.toBeNull();
+    expect(screen.getByText("Sunken Ruins", { selector: "span.lg\\:hidden" })).toBeInTheDocument();
+    cleanup();
+    inB(<DecklistRow deckId="d1" card={priced(900)} shoppingFigure={24} inShopping newestAsOf={asOf} />, true);
+    const spacer = row().querySelector<HTMLElement>("span[aria-hidden='true'].flex-none.w-\\[22px\\]")!;
+    expect(spacer.className).toContain("lg:block");
+    expect(spacer.className).not.toContain("md:block");
   });
 
   it("changes nothing outside Shopping", () => {

@@ -315,7 +315,9 @@ export function DecklistRow({
   const opensDoor = inShopping && ((swapTools !== null && !commanderRow) || gotIt !== null);
   // `over $X` never rides the meta line (it stacks on the buy tag), so being over the limit is no
   // reason to draw one.
-  const hasMetaLine = hasShoppingMeta || !inLandsGroup;
+  // Option B draws the two-line layout on every Shopping row, a land with no EDHREC figure included (the figure
+  // stays conditional, and the second line is then cost and nothing, which still carries the row's width).
+  const hasMetaLine = hasShoppingMeta || !inLandsGroup || rowB;
   const rowShell = hasMetaLine ? (inShopping ? ROW_SHELL_SHOPPING : ROW_SHELL_META) : ROW_SHELL;
   // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
   // line and needs context. Desktop: bare "24%" because it is inline with the
@@ -906,7 +908,7 @@ export function DecklistRow({
               ) : "⇄"}
             </button>
           ) : (
-            <span aria-hidden="true" className={`hidden md:block flex-none w-[22px]${rowB ? " max-lg:hidden" : ""}`} />
+            <span aria-hidden="true" className={`hidden ${rowB ? "lg:block" : "md:block"} flex-none w-[22px]`} />
           )
         ) : null}
 
