@@ -5,6 +5,7 @@
 // avatar) is the shell's, not this component's — see components/shell/nav.tsx.
 
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
+import { CountUp } from "@/components/ui/count-up";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import type { DeckListItem } from "../../lib/decks/read";
@@ -76,7 +77,6 @@ function RefreshIcon() {
 export function Dashboard(props: DashboardProps) {
   // Both arrive at the copy module pre-formatted: it formats no numbers by
   // contract, and the greeting's freshness figure is a word, not a date.
-  const cards = props.stats.totalCards.toLocaleString("en-US");
   const noDecks = props.decks.length === 0;
   const when = formatWhen(props.lastUpdated, new Date(props.now));
 
@@ -87,7 +87,7 @@ export function Dashboard(props: DashboardProps) {
           {/* Kicker above the greeting: the greeting is a hello, and the claim
               the page is actually making is the collection's size and age. */}
           <p className="m-0 mb-[6px] font-mono text-[10px] tracking-[0.16em] text-[color:var(--fg-faint)] uppercase sm:mb-[7px] sm:tracking-[0.18em]">
-            {refreshCopy.home.kicker(cards, when)}
+            <CountUp value={props.stats.totalCards} text={(n) => refreshCopy.home.kicker(n.toLocaleString("en-US"), when)} />
           </p>
           {/* Focusable by script only: the arrivals banner's ✕ moves focus here once it has closed (H8). */}
           <h1 id={HOME_HEADING_ID} tabIndex={-1} className="m-0 font-display outline-none text-[23px] leading-[1.15] font-bold text-[color:var(--fg)] sm:text-[28px] sm:leading-[1]">

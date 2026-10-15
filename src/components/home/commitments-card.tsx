@@ -20,6 +20,8 @@
 // draws the section and nothing around it.
 
 import { GhostButton } from "@/components/ui/button";
+import { CountUp } from "@/components/ui/count-up";
+import type { ReactNode } from "react";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { formatCents } from "../../lib/decks/price";
@@ -34,7 +36,7 @@ import type { Commitments } from "../../lib/home/commitments";
  * `0 cards` in that colour reads as what it is — the row that would be red if
  * it were not zero.
  */
-function Row({ label, value, color }: { label: string; value: string; color: string }) {
+function Row({ label, value, color }: { label: string; value: ReactNode; color: string }) {
   return (
     <div className="flex items-baseline justify-between">
       <span className="text-[13px] text-[color:var(--fg-body)]">{label}</span>
@@ -76,15 +78,17 @@ export function CommitmentsCard({
           // Thousands separators at the call site: `n` in commander-explained.ts
           // is that file's own private helper, and the rest of Home formats
           // here rather than exporting it.
-          value={c.inUseValue(
-            commitments.inUse.toLocaleString("en-US"),
-            totalCards.toLocaleString("en-US"),
-          )}
+          value={
+            <CountUp
+              value={commitments.inUse}
+              text={(n) => c.inUseValue(n.toLocaleString("en-US"), totalCards.toLocaleString("en-US"))}
+            />
+          }
           color="var(--accent)"
         />
         <Row
           label={c.overCommittedRow}
-          value={c.overCommittedValue(commitments.overCommitted)}
+          value={<CountUp value={commitments.overCommitted} text={c.overCommittedValue} />}
           color="var(--danger)"
         />
         <Row
@@ -93,7 +97,12 @@ export function CommitmentsCard({
           // reads. An unpriced copy still counts in the left figure and not in
           // the right: the feed omits an out-of-stock card rather than pricing
           // it at zero, and nothing here is free.
-          value={c.toBuyValue(shopping.total.copies, formatCents(shopping.total.cents))}
+          value={
+            <CountUp
+              value={shopping.total.copies}
+              text={(n) => c.toBuyValue(n, formatCents(shopping.total.cents))}
+            />
+          }
           color="var(--fg)"
         />
 
