@@ -528,8 +528,11 @@ every-printing kNN took a median of 1.5 ms (`t_knn_all`, appendix).
   than this core, which puts a frame at about 0.35-0.7 s, or 1.5-3 frames a second, and the
   every-printing JS kNN at about 80-180 ms. WebGPU could cut the model time. The lab page
   measures this on a real phone and records it with every tap.
-- The embedder parity check passed. The lab's JS warp and onnxruntime-web reproduce Python's
-  corners exactly and the embedding at cosine 0.995-0.997 on 5 scenes.
+- The embedder parity check passed. On the 5 scenes `parity_scenes.py` writes, the lab's JS warp
+  and onnxruntime-web reproduce Python's corners exactly (0.00 px) and its sharpness to 4 places,
+  and the fp32 embedding, the one the lab ships, at cosine 0.9966-0.9988 (0.9966, 0.9986, 0.9976,
+  0.9972, 0.9988; measured 2026-10-15). The int8 embedder matches its own Python run at
+  0.9951-0.9986 on the same scenes.
 
 ## Matching on the phone or on our server
 
@@ -559,7 +562,7 @@ The lab page matches on the phone only because a staging lab with no server inde
   margin, latency and agreement in `scan_lab_results`. A frame (the warped 320x448 card, JPEG,
   capped at 400 KB) is stored only when "Keep this frame" is ticked. The table is purged with the
   account.
-- **Files** (in the separate lab PR, branch `feat/scan-lab`, not in this one):
+- **Files** (the lab page, merged in #1814):
   - `src/lib/scan-lab/*` (pure geometry, matching and result parsing, all unit tested);
   - `src/components/scan-lab/scan-lab.tsx`;
   - migration `0129_scan_lab` (the new table, plus the switch added to `flag_overrides`' check);
@@ -632,10 +635,12 @@ The lab page matches on the phone only because a staging lab with no server inde
   7. `report.py`, which printed the appendix
   8. `latency.py`
   9. `export_index.py all fp32`, for the lab
-  10. `parity_scenes.py`, then `scripts/research/card-scan/wasm_bench.mjs` for the browser-path
-      parity and WASM latency. That script ships with the lab page's PR (`feat/scan-lab`), because
-      it runs the lab's own `src/lib/scan-lab` code; it needs onnxruntime-web 1.27.0 installed
-      outside the repository (see its header).
+  10. `parity_scenes.py`, which writes the parity set into `$CARD_SCAN_DIR/parity/`: five pinned
+      printings rendered with fixed seeds, as raw RGBA frames and detector squares, and
+      `expected.json` with Python's corners, sharpness and both embeddings of the detected warp
+      (`emb` int8, `emb32` fp32). Then `wasm_bench.mjs` for the browser-path parity and WASM
+      latency. It runs the lab's own `src/lib/scan-lab` code, refuses a parity set with no `emb32`,
+      and needs onnxruntime-web 1.27.0 installed outside the repository (see its header).
 
 ## Appendix: every table the run printed
 
