@@ -1,6 +1,6 @@
 // Foil mark addendum · proposed strings for /copy-review. Not shipped code.
 export const foilMarkCopy = {
-  key: { foil: "foil", etched: "etched" },
+  key: { foil: "foil" }, // R4: foil and etched share one entry
   tooltip: {
     foil: "Every copy you own of this printing is foil.",
     etched: "Every copy you own of this printing is etched foil.",
