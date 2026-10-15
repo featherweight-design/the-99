@@ -7,6 +7,8 @@ vi.mock("../../db", () => {
   const tx = {
     delete: (table: Table) => ({ where: async () => { rec.log.push(`delete:${getTableName(table)}`); } }),
     insert: () => ({ values: async () => {} }),
+    // The holdings the replace finds before it deletes: none, so the write is a first fill.
+    select: () => ({ from: () => ({ where: async () => [] }) }),
     update: () => ({ set: () => ({ where: () => ({ returning: async () => [{ id: "u" }] }) }) }),
     execute: async () => ({ rows: [] }),
   };
