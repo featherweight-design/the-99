@@ -3,7 +3,7 @@
 export const scanLabCopy = {
   title: "Card-scan lab",
   intro:
-    "Point the camera at one card. Tap ✓ when the guess is the right card and ✗ when it isn’t. Each tap saves the guess, right or wrong, and how long it took. The photo stays on this device unless you tick Keep this frame.",
+    "Point the camera at one card. Tap ✓ when the guess is the right card and ✗ when it isn’t. Each tap saves the guess, right or wrong, and how long it took. The photo goes with it while Keep this frame is ticked. Untick it and the photo stays on this device.",
   start: "Start camera",
   loading: "Loading the scanner…",
   noIndex: "The card index isn’t set up on this deployment (SCAN_LAB_INDEX_BASE).",
