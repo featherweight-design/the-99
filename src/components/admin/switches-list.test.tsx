@@ -24,7 +24,7 @@ function draw(env: Env, overrides: OverrideRow[] = [], users = ["u1", "u2"], opt
 }
 
 const rowOf = (name: SwitchName) => document.querySelector(`[data-switch="${name}"]`) as HTMLElement;
-const chip = (name: RegExp) => within(screen.getByRole("group", { name: "Show" })).getByRole("button", { name });
+const chip = (name: RegExp) => within(screen.getByRole("radiogroup", { name: "Show" })).getByRole("radio", { name });
 
 describe("SwitchesList", () => {
   it("draws every switch, features A to Z then Plumbing, with the footnote (L1)", () => {
@@ -48,16 +48,27 @@ describe("SwitchesList", () => {
 
   it("counts each chip and filters by it, keeping the heads' counts (L2)", () => {
     draw({ DECK_NOTES_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(chip(/^All/).textContent).toBe("All37");
-    expect(chip(/^All/)).toHaveAttribute("aria-pressed", "true");
-    expect(chip(/^Model features/).textContent).toBe("Model features7");
-    expect(chip(/^Overridden/).textContent).toBe("Overridden1");
+    expect(chip(/^All/).textContent).toBe("All 37");
+    expect(chip(/^All/)).toHaveAttribute("aria-checked", "true");
+    expect(chip(/^Model features/).textContent).toBe("Model features 7");
+    expect(chip(/^Overridden/).textContent).toBe("Overridden 1");
     fireEvent.click(chip(/^Overridden/));
-    expect(chip(/^Overridden/)).toHaveAttribute("aria-pressed", "true");
+    expect(chip(/^Overridden/)).toHaveAttribute("aria-checked", "true");
     expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["DECK_STATS_ENABLED"]);
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features30");
     // The Plumbing head hides when it has no rows (L3).
     expect(screen.queryByTestId("switches-plumbing-head")).toBeNull();
+  });
+
+  // Segmented switch 3b: Show is the shared switch, a radiogroup, so the arrows move the filter with the focus.
+  it("moves the Show filter with the arrow keys, never as pressed buttons", () => {
+    draw({ DECK_NOTES_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(screen.getByRole("radiogroup", { name: "Show" }).querySelector("[aria-pressed]")).toBeNull();
+    chip(/^All/).focus();
+    fireEvent.keyDown(chip(/^All/), { key: "ArrowRight" });
+    expect(chip(/^Overridden/)).toHaveAttribute("aria-checked", "true");
+    expect(document.activeElement).toBe(chip(/^Overridden/));
+    expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["DECK_STATS_ENABLED"]);
   });
 
   it("searches the name and the variable, and offers Show all when nothing matches (L2, L3)", () => {

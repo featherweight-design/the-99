@@ -8,27 +8,32 @@ import { useState } from "react";
 import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 import { worth, type WorthSort } from "../../../lib/lineup/among";
 import type { LineupDeck } from "../../../lib/lineup/types";
+import { SegmentedSwitch } from "../../ui/segmented-switch";
 import { DeckName } from "./deck-link";
 
 const copy = decksStatsCopy.worth;
-const CHIP = "inline-flex min-h-[44px] items-center rounded-full px-[12px] text-[12.5px] md:min-h-[30px]";
-export const CHIP_ON = `${CHIP} bg-[var(--accent)] font-semibold text-[color:var(--bg)]`;
-export const CHIP_OFF = `${CHIP} border border-[color:var(--border-strong)] bg-[var(--elevated)] text-[color:var(--fg)]`;
 const pct = (x: number) => `${(x * 100).toFixed(3)}%`;
 
 export function WorthBody({ decks, chosenId, pricesAsOf, now }: { decks: readonly LineupDeck[]; chosenId: string | null; pricesAsOf: string | null; now: string }) {
   const [sort, setSort] = useState<WorthSort>("most");
   const w = worth(decks, sort);
   const med = w.maxCents > 0 ? w.medianCents / w.maxCents : 0;
-  const chip = (s: WorthSort, label: string) => (
-    <button type="button" aria-pressed={sort === s} onClick={() => setSort(s)} className={sort === s ? CHIP_ON : CHIP_OFF}>{label}</button>
-  );
   return (
     <>
       <span className="font-mono text-[22px] font-semibold leading-none text-[color:var(--fg)]">{copy.money(w.sumCents)}</span>
-      <div role="group" aria-label={copy.sortAria} className="flex flex-wrap gap-[6px]">
-        {chip("most", copy.sortMost)}
-        {chip("name", copy.sortName)}
+      {/* The order is a setting of the list, so a radiogroup (segmented switch 3b), compact like the Lineup filter above it. */}
+      <div>
+        <SegmentedSwitch
+          kind="radio"
+          size="compact"
+          ariaLabel={copy.sortAria}
+          segments={[
+            { value: "most", label: copy.sortMost },
+            { value: "name", label: copy.sortName },
+          ]}
+          value={sort}
+          onChange={setSort}
+        />
       </div>
       <div className="flex flex-col">
         {w.rows.map((r) => {

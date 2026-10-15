@@ -15,6 +15,7 @@ import {
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
 import { KILL } from "../../lib/switches/resolve";
 import { PendingReporter } from "../shell/pending-reporter";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 import { SearchField } from "../ui/text-field";
 import { usePublishedHeight } from "./admin-head";
 
@@ -196,26 +197,21 @@ export function SwitchesList({
           containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px] md:max-w-[420px]"
           className="text-[16px] md:text-[14px]"
         />
-        <div role="group" aria-label={copy.chipsLabel} className="flex flex-wrap gap-[6px]">
-          {SWITCH_FILTERS.map((f) => {
-            const selected = f === filter;
-            return (
-              <button
-                key={f}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => setFilter(f)}
-                className={`inline-flex h-[36px] items-center gap-[7px] rounded-full border border-solid px-[12px] text-[12.5px] md:h-[30px] ${
-                  selected
-                    ? "border-[color:var(--border-dashed)] bg-[color:var(--elevated)] text-[color:var(--fg)]"
-                    : "border-[color:var(--border)] bg-transparent text-[color:var(--fg-muted)]"
-                }`}
-              >
-                {copy.chips[f]}
-                <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{counts[f]}</span>
-              </button>
-            );
-          })}
+        {/* A radiogroup (segmented switch 3b), compact like admin's other switches; it scrolls sideways where the row overruns, at any width. */}
+        <div>
+          <SegmentedSwitch<SwitchFilter>
+            kind="radio"
+            size="compact"
+            scroll
+            ariaLabel={copy.chipsLabel}
+            segments={SWITCH_FILTERS.map((f) => ({
+              value: f,
+              label: copy.chips[f],
+              count: <span className="ml-[7px] font-mono text-[11px] text-[color:var(--fg-faint)]">{counts[f]}</span>,
+            }))}
+            value={filter}
+            onChange={setFilter}
+          />
         </div>
       </div>
       <div className="flex flex-col gap-[12px] px-[16px] pb-[12px] md:px-[28px] md:pb-[18px]">

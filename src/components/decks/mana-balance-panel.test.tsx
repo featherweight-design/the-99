@@ -206,6 +206,26 @@ describe("ManaBalancePanel: the folded sections", () => {
     expect(screen.getByText(copy.patterns.foot("Red"))).toBeTruthy();
   });
 
+  // Segmented switch 3b: the color chips are the shared switch, each keeping `data-mana-chip`, Home and End included.
+  it("draws the color chips as the shared radiogroup, each keeping its data attribute", async () => {
+    render(<ManaBalancePanel deckId="d" read={async () => gishath()} />);
+    await waitFor(() => expect(heading()).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: /Hardest costs/ }));
+    const chips = screen.getByRole("radiogroup", { name: copy.patterns.chips });
+    const radios = within(chips).getAllByRole("radio");
+    expect(chips.querySelector("[aria-pressed]")).toBeNull();
+    // The default size: the 44px phone floor, not compact's 40px.
+    for (const r of radios) expect(r.className.split(" ")).toContain("min-h-[44px]");
+    expect(within(chips).getByRole("radio", { name: "Green" }).getAttribute("data-mana-chip")).toBe("G");
+    expect(within(chips).getByRole("radio", { name: "Red" }).getAttribute("data-mana-chip")).toBe("R");
+    expect(radios.every((r) => r.hasAttribute("data-mana-chip"))).toBe(true);
+    const last = radios[radios.length - 1];
+    fireEvent.keyDown(within(chips).getByRole("radio", { name: "Green" }), { key: "End" });
+    expect(last.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(last);
+    expect(document.querySelector(`[data-mana-patterns='${last.getAttribute("data-mana-chip")}']`)).not.toBeNull();
+  });
+
   it("lists the lands behind a tapped figure, and draws a row of 0 with nothing to open", async () => {
     render(<ManaBalancePanel deckId="d" read={async () => gishath()} />);
     await waitFor(() => expect(heading()).not.toBeNull());

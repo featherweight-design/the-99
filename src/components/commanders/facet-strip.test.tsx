@@ -89,4 +89,23 @@ describe("FacetStrip", () => {
     fireEvent.click(screen.getByRole("radio", { name: synergyCopy.facet.itemAria("Lands", "56") }));
     expect(onSelect).toHaveBeenCalledWith("land");
   });
+
+  // Segmented switch 3b: the strip is the shared switch, a well that scrolls sideways, every pill drawn alike (the
+  // dashed All and the accent ring are gone), and Home and End reach the ends.
+  it("draws every pill alike in a scrolling well, and Home and End reach the ends", () => {
+    const onSelect = vi.fn();
+    render(<FacetStrip counts={counts} selected="creature" onSelect={onSelect} />);
+    const group = screen.getByRole("radiogroup", { name: synergyCopy.facet.groupAria });
+    expect(group.className).toContain("overflow-x-auto");
+    const radios = screen.getAllByRole("radio");
+    expect(radios.every((r) => !r.getAttribute("style"))).toBe(true);
+    // All is drawn as any other facet: no dashed border and no accent ring, in a class or a style.
+    expect(radios[0].className).toBe(radios[2].className);
+    expect(radios[0].className).not.toMatch(/dashed|accent/);
+    const creatures = screen.getByRole("radio", { name: synergyCopy.facet.itemAria("Creatures", "66") });
+    fireEvent.keyDown(creatures, { key: "End" });
+    expect(onSelect).toHaveBeenLastCalledWith("land");
+    fireEvent.keyDown(creatures, { key: "Home" });
+    expect(onSelect).toHaveBeenLastCalledWith("all");
+  });
 });

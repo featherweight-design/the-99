@@ -5,7 +5,7 @@
 // and a row reopening that run (in its own tool, or read-only when it has nothing to load). Lives in the hub, which owns the open past run
 // so its phone header can carry `‹ History` in the switch slot (H3b).
 
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { readTuningHistory, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
@@ -15,6 +15,7 @@ import { afterKey } from "../../lib/tuning/history";
 import type { HistoryOutcome, HistoryRow, HistorySummary, HistoryTier, HistoryTool, PastRun } from "../../lib/tuning/history";
 import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
 import { colorWord } from "../../lib/tuning/mana-view";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 import { TuningToolMark } from "./tuning-tool-mark";
 
 const copy = tuningHubCopy.history;
@@ -283,47 +284,35 @@ function byMonth(rows: HistoryRow[]): [string, HistoryRow[]][] {
   return out;
 }
 
+/** All's value inside the switch, whose values are strings: the filter itself stays `null` for All. */
+const ALL = "all";
+
 function Chips({ tools, value, onChange }: { tools: HistoryTool[]; value: HistoryTool | null; onChange: (t: HistoryTool | null) => void }) {
-  const ids: (HistoryTool | null)[] = [null, ...tools];
-  const refs = useRef(new Map<string, HTMLButtonElement>());
-  const onKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
-    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
-    if (!step) return;
-    e.preventDefault();
-    const next = ids[(i + step + ids.length) % ids.length];
-    refs.current.get(next ?? "all")?.focus();
-    onChange(next);
-  };
+  // A radiogroup (segmented switch 3b): the arrows move the choice and the focus together, and a press reads its
+  // own page while the switch stays up, so the chosen segment keeps focus. Default size, for the 44px floor the old chips held; it
+  // scrolls sideways when the row is narrower than its tools, at any width, rather than wrapping.
   return (
-    <div
-      role="radiogroup"
-      aria-label={copy.filterLabel}
-      className="-mr-[14px] flex flex-nowrap gap-[6px] overflow-x-auto pr-[14px] [mask-image:linear-gradient(to_right,#000_calc(100%-32px),transparent)] [scrollbar-width:none] md:mr-0 md:flex-wrap md:pr-0 md:[mask-image:none]"
-    >
-      {ids.map((id, i) => {
-        const on = id === value;
-        return (
-          <button
-            key={id ?? "all"}
-            ref={(el) => { if (el) refs.current.set(id ?? "all", el); else refs.current.delete(id ?? "all"); }}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            tabIndex={on ? 0 : -1}
-            data-history-chip={id ?? "all"}
-            onClick={() => onChange(id)}
-            onKeyDown={(e) => onKey(e, i)}
-            className={`flex min-h-[44px] flex-none items-center gap-[7px] rounded-full border px-[12px] text-[12px] md:min-h-[30px] ${
-              on
-                ? "border-[var(--fg-body)] bg-[var(--fg-body)] font-semibold text-[var(--bg)]"
-                : "border-[var(--border-strong)] bg-transparent font-medium text-[var(--fg-muted)]"
-            }`}
-          >
-            {id ? <TuningToolMark tool={id} size={14} /> : null}
-            {id ? NAME[id] : copy.filterAll}
-          </button>
-        );
-      })}
+    <div>
+      <SegmentedSwitch<HistoryTool | typeof ALL>
+        kind="radio"
+        scroll
+        ariaLabel={copy.filterLabel}
+        segments={[
+          { value: ALL, label: copy.filterAll, data: { "data-history-chip": ALL } },
+          ...tools.map((id) => ({
+            value: id,
+            label: (
+              <span className="inline-flex items-center gap-[7px]">
+                <TuningToolMark tool={id} size={14} />
+                {NAME[id]}
+              </span>
+            ),
+            data: { "data-history-chip": id },
+          })),
+        ]}
+        value={value ?? ALL}
+        onChange={(v) => onChange(v === ALL ? null : v)}
+      />
     </div>
   );
 }

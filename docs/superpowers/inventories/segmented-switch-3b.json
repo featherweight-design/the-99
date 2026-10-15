@@ -1,0 +1,216 @@
+{
+  "feature": "Segmented switch, PR 3b",
+  "note": "PR 3b: the loose-pill radiogroups converge on SegmentedSwitch (kind radio, tone neutral). The three /decks Stats cards' filters (worth order, shared cards, collection cuts) are size compact like the Lineup filter above them; their accent fill is gone. Tuning history's tool chips and Mana Balance's color chips keep the default size (the 44px phone floor) in a well that scrolls sideways at phone, and keep data-history-chip and data-mana-chip. The commanders facet strip is default size and scrolling; its dashed All and accent ring are gone. The admin switches list's Show filter is compact and scrolling. Needs LINEUP_ENABLED=true and an account with several decks (a pull:staging copy) for the Stats rows; ANALYSIS_TAB_ENABLED, TUNING_ENABLED and MANA_BALANCE_ENABLED 'true' and MANA_MULTI_DECK naming a multi-color deck with a Mana Balance run in its history for the hub rows; FACET_COMMANDER_SLUG naming a commander whose synergy panel draws more than one populated facet. The admin row needs a server started with ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL staging (see admin.json); the headless account is no admin otherwise, and that row then fails, which is the gate working, not a regression. The fold memory is a cookie, so only stats-worth presses Expand all and the two Stats rows after it find the cards still open; keep the three in that order.",
+  "clearAbout": true,
+  "out": "contact-sheets/segmented-switch-3b",
+  "shares": {
+    "module": "src/components/ui/segmented-switch.tsx",
+    "binding": "SegmentedSwitch"
+  },
+  "rows": [
+    {
+      "id": "stats-worth",
+      "label": "/decks Stats: What each deck is worth, ordered By name (compact radiogroup)",
+      "view": "src/components/decks/lineup/worth-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-stats-expand]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-stats-card=worth]",
+          "settle": 500
+        },
+        {
+          "clickRole": "radio",
+          "name": "^By name$",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-stats-card=worth] [role=radiogroup]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "stats-shared",
+      "label": "/decks Stats: Cards your decks share, Wanted more than you own chosen (compact, scrolling where it overruns)",
+      "view": "src/components/decks/lineup/shared-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-stats-card=shared]",
+          "settle": 500
+        },
+        {
+          "clickRole": "radio",
+          "name": "^Wanted more than you own",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-stats-card=shared] [role=radiogroup]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "stats-collection",
+      "label": "/decks Stats: Your collection, put to work, the 20% cut chosen (compact, scrolling where it overruns)",
+      "view": "src/components/decks/lineup/collection-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-stats-card=collection]",
+          "settle": 500
+        },
+        {
+          "clickRole": "radio",
+          "name": "^20% or more",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-stats-card=collection] [role=radiogroup]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "tuning-history",
+      "label": "/decks/[id] Analysis, History filtered to Mana Balance (default size, scrolling where it overruns)",
+      "view": "src/components/decks/tuning-history.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MANA_MULTI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-chip]",
+          "settle": 500
+        },
+        {
+          "click": "[data-history-chip='mana']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row], [data-history-empty]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "mana-colors",
+      "label": "/decks/[id] Mana Balance, Hardest costs open, a color other than the most-pipped chosen (default size, scrolling where it overruns)",
+      "view": "src/components/decks/mana-sections.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MANA_MULTI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='mana']",
+          "settle": 300
+        },
+        {
+          "wait": "#mana-heading",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Hardest costs",
+          "settle": 400
+        },
+        {
+          "wait": "[data-mana-chip]",
+          "settle": 300
+        },
+        {
+          "click": "[data-mana-chip][aria-checked=false]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-mana-section='hardest']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "facet-strip",
+      "label": "/commanders/[slug]: the synergy facet strip, Lands chosen (default size, scrolling where it overruns; no dashed All, no accent ring)",
+      "view": "src/components/commanders/facet-strip.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/${FACET_COMMANDER_SLUG}",
+          "wait": "[role=radiogroup][aria-label='Filter the synergy list by card type']:visible",
+          "settle": 3500
+        },
+        {
+          "clickRole": "radio",
+          "name": "^Lands, ",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[role=radiogroup][aria-label='Filter the synergy list by card type']:visible",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "admin-switches-show",
+      "label": "/admin/switches: Show filter, Overridden chosen (compact, scrolling where it overruns). Admin account only: see the note",
+      "view": "src/components/admin/switches-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "radio",
+          "name": "^Overridden",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}

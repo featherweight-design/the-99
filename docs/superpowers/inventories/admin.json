@@ -133,7 +133,7 @@
           "settle": 1000
         },
         {
-          "clickRole": "button",
+          "clickRole": "radio",
           "name": "^Model features"
         },
         {
