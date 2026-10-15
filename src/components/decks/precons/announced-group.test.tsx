@@ -1,0 +1,263 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
+import type { RevealedCommander } from "../../../lib/precons/revealed";
+import type { UpcomingSet } from "../../../lib/precons/upcoming";
+import { ANNOUNCED_KEY, AnnouncedGroup, useAnnouncedVisit, type AnnouncedGroupProps } from "./announced-group";
+
+/** The group with its visit state held one level up, as the list view holds it. */
+function G(props: Omit<AnnouncedGroupProps, "visit">) {
+  const visit = useAnnouncedVisit();
+  return <AnnouncedGroup visit={visit} {...props} />;
+}
+
+const set = (code: string, name: string, releasesOn: string, over: Partial<UpcomingSet> = {}): UpcomingSet => ({
+  code, name, releasesOn, released: false, cardCount: 40, parentName: null, arrivedAt: null, seen: false, ...over,
+});
+const commander = (n: number, name = `TRC commander ${n}`, colorIdentity = ["W"]): RevealedCommander => ({
+  oracleId: `o${n}`, name, colorIdentity, imageUriSmall: `https://img/${n}.jpg`, collectorNumber: String(n),
+});
+const match = (s: UpcomingSet, commanders: RevealedCommander[], revealed = commanders.length): AnnouncedMatch => ({
+  set: s, commanders, matched: commanders.length, revealed,
+});
+
+const trcCards = [commander(78, "Christine Chapel, Combat Medic"), ...Array.from({ length: 14 }, (_, i) => commander(100 + i))];
+const trc = match(set("trc", "Star Trek Commander", "2026-11-13"), trcCards);
+const mdc = match(set("mdc", "Darkhold Destiny Commander", "2027-04-09"), [commander(1, "Gargantos, the Endbringer", ["B", "G"])]);
+
+const draw = (over: Partial<Omit<AnnouncedGroupProps, "visit">> = {}) =>
+  render(
+    <G matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} {...over} />,
+  );
+const head = () => screen.getByRole("button", { name: /^Announced/ });
+const region = (container: HTMLElement) => container.querySelector("#announced-sets") as HTMLElement;
+
+describe("AnnouncedGroup", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/decks/precons");
+    document.cookie = "precons_announced=; Max-Age=0; Path=/";
+  });
+
+  it("is closed by default, a heading button with the count and the next release (C1)", () => {
+    const { container } = draw();
+    expect(screen.getByRole("heading", { level: 2 })).toContainElement(head());
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+    expect(head()).toHaveAttribute("aria-controls", "announced-sets");
+    expect(head()).toHaveTextContent("2 sets · next Nov 13");
+    expect(region(container)).toHaveAttribute("inert");
+  });
+
+  it("opens by itself when it holds news, and shows the new tag (C2)", () => {
+    const { container } = draw({ opensByItself: true, newCodes: ["trc"] });
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    expect(head()).toHaveTextContent("2 sets");
+    expect(head()).not.toHaveTextContent("next");
+    expect(region(container)).not.toHaveAttribute("inert");
+    const trcBlock = screen.getAllByTestId("announced-set")[0];
+    expect(within(trcBlock).getByRole("heading", { level: 3 })).toHaveTextContent("Star Trek Commander");
+    expect(within(trcBlock).getByText("new")).toBeInTheDocument();
+  });
+
+  it("opens by itself on the banner's #announced link", () => {
+    window.history.replaceState(null, "", "/decks/precons?sort=newest#announced");
+    draw();
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("stays open after the link's fragment leaves the address (a search mirror, the decklist jump)", () => {
+    window.history.replaceState(null, "", "/decks/precons?sort=newest#announced");
+    draw();
+    window.history.replaceState(null, "", "/decks/precons?q=chapel");
+    fireEvent(window, new HashChangeEvent("hashchange"));
+    window.location.hash = "#precons-2026";
+    fireEvent(window, new HashChangeEvent("hashchange"));
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("holds this browser's last press when there is no news, and a press writes it", () => {
+    window.localStorage.setItem(ANNOUNCED_KEY, "open");
+    const { unmount } = draw();
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(head());
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+    expect(window.localStorage.getItem(ANNOUNCED_KEY)).toBe("closed");
+    unmount();
+    draw();
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("lets news open it over a stored close, and a press still closes it", () => {
+    window.localStorage.setItem(ANNOUNCED_KEY, "closed");
+    draw({ opensByItself: true, newCodes: ["trc"] });
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(head());
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("names every revealed card in text, with its full name and colors spoken (T4, T5)", () => {
+    draw({ opensByItself: true });
+    const [trcBlock, mdcBlock] = screen.getAllByTestId("announced-set");
+    expect(within(trcBlock).getAllByTestId("revealed-card")).toHaveLength(15);
+    expect(within(trcBlock).getByText("Christine Chapel, Combat Medic, White. Revealed commander.")).toBeInTheDocument();
+    expect(within(trcBlock).getByText("TRC · Nov 13, 2026 · in 30 days · 15 commanders revealed")).toBeInTheDocument();
+    expect(within(trcBlock).getByText("Nov 13, 2026 · in 30 days")).toBeInTheDocument();
+    expect(within(mdcBlock).getByText("MDC · Apr 9, 2027 · in 6 months · 1 commander revealed")).toBeInTheDocument();
+    expect(within(mdcBlock).getByText("Gargantos, the Endbringer, Black, Green. Revealed commander.")).toBeInTheDocument();
+  });
+
+  it("draws one plate for a set with none revealed (T2)", () => {
+    draw({ matches: [match(set("mdc", "Darkhold Destiny Commander", "2027-04-09"), [])], opensByItself: true });
+    expect(screen.getByTestId("none-plate")).toHaveTextContent("none revealed yet");
+    expect(screen.getByText("MDC · Apr 9, 2027 · in 6 months · no commanders revealed yet")).toBeInTheDocument();
+  });
+
+  it("reads `out` on release day, and offers the jump to listed decklists (L1, L2)", () => {
+    const out = match(set("trc", "Star Trek Commander", "2026-11-13", { released: true }), trcCards);
+    draw({ matches: [out, mdc], today: "2026-11-13", opensByItself: true, listed: { mdc: { count: 2, year: "2027" } } });
+    expect(screen.getByText("TRC · out Nov 13, 2026 · decklists not listed yet · 15 commanders revealed")).toBeInTheDocument();
+    expect(screen.getByText("Out Nov 13, 2026 · decklists not listed yet")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "2 decklists listed ↓" })).toHaveAttribute("href", "#precons-2027");
+    // The next release a closed head names is the next one still to come.
+    fireEvent.click(head());
+    expect(head()).toHaveTextContent("2 sets · next Apr 9");
+  });
+
+  it("says how many of the revealed match when a filter narrowed them (T6)", () => {
+    draw({ matches: [match(trc.set, [trcCards[0]], 15)], opensByItself: true });
+    expect(screen.getByText("TRC · Nov 13, 2026 · in 30 days · 1 of 15 revealed matches")).toBeInTheDocument();
+    expect(head()).toHaveTextContent("1 set");
+  });
+
+  it("draws nothing when no set survives (T1, T9)", () => {
+    const { container } = draw({ matches: [] });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("draws the press the cookie carries on the server, so the group never opens after hydration", () => {
+    const html = (serverPress: "open" | "closed" | null) => renderToString(
+      <G matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} serverPress={serverPress} />,
+    );
+    expect(html("open")).toMatch(/aria-expanded="true"/);
+    expect(html("closed")).toMatch(/aria-expanded="false"/);
+    expect(html(null)).toMatch(/aria-expanded="false"/);
+    // And no transition is armed until the page has settled.
+    expect(html("open")).toMatch(/data-settled="false"/);
+    expect(html("open")).not.toMatch(/transition-\[grid-template-rows/);
+  });
+
+  it("mirrors a press into the cookie the server reads", () => {
+    document.cookie = "precons_announced=; Max-Age=0; Path=/";
+    draw();
+    fireEvent.click(head());
+    expect(document.cookie).toContain("precons_announced=open");
+    fireEvent.click(head());
+    expect(document.cookie).toContain("precons_announced=closed");
+  });
+
+  it("opens while a filter is on and a set matches it, over a stored close; a press still wins", () => {
+    window.localStorage.setItem(ANNOUNCED_KEY, "closed");
+    const { rerender } = draw({ filtering: true });
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(head());
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+    // Derived, never stored: the press wrote `closed`, the filter wrote nothing.
+    expect(window.localStorage.getItem(ANNOUNCED_KEY)).toBe("closed");
+    rerender(<G matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} filtering={false} />);
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("leaves the filter's open unstored: with the filter off it falls back to the stored press", () => {
+    window.localStorage.setItem(ANNOUNCED_KEY, "closed");
+    const { rerender } = draw({ filtering: true });
+    expect(head()).toHaveAttribute("aria-expanded", "true");
+    rerender(<G matches={[trc, mdc]} today="2026-10-14" newCodes={[]} opensByItself={false} view="tiles" listed={{}} filtering={false} />);
+    expect(head()).toHaveAttribute("aria-expanded", "false");
+    expect(window.localStorage.getItem(ANNOUNCED_KEY)).toBe("closed");
+  });
+
+  describe("the strip as a keyboard stop", () => {
+    // jsdom lays nothing out: the strip's widths and the observer are stood in for.
+    let wide = 0;
+    beforeEach(() => {
+      vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+      vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(() => wide);
+      vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => 300);
+    });
+    afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+    it("is a named region the keyboard reaches while it scrolls sideways", () => {
+      wide = 1200;
+      draw({ opensByItself: true });
+      const strip = screen.getByRole("region", { name: "15 revealed commanders" });
+      expect(strip).toHaveAttribute("tabindex", "0");
+      expect(strip.className).toContain("focus-visible:outline-[color:var(--accent)]");
+    });
+
+    it("re-measures when a filter grows the strip without either box resizing (a search cleared)", () => {
+      wide = 300;
+      const one = match(trc.set, trc.commanders.slice(0, 1), 15);
+      const { rerender } = draw({ opensByItself: true, matches: [one] });
+      expect(screen.queryByRole("region", { name: /revealed commander/ })).toBeNull();
+      wide = 1200;
+      rerender(<G matches={[trc]} today="2026-10-14" newCodes={[]} opensByItself view="tiles" listed={{}} />);
+      expect(screen.getByRole("region", { name: "15 revealed commanders" })).toHaveAttribute("tabindex", "0");
+    });
+
+    it("is no stop at all once it wraps and fits", () => {
+      wide = 300;
+      draw({ opensByItself: true });
+      const strips = screen.getAllByTestId("revealed-strip");
+      expect(strips[0]).not.toHaveAttribute("tabindex");
+      expect(strips[0]).not.toHaveAttribute("role");
+      expect(screen.queryByRole("region", { name: /revealed commander/ })).toBeNull();
+    });
+  });
+
+  describe("rows (Q1–Q3)", () => {
+    it("draws one faint dot for a colorless set, as tiles do, and none for a set with nothing revealed", () => {
+      const colorless = match(set("zzc", "Colorless Commander", "2026-12-01"), [commander(5, "Karn", [])]);
+      const none = match(set("mdc", "Darkhold Destiny Commander", "2027-04-09"), []);
+      draw({ view: "rows", opensByItself: true, matches: [colorless, none] });
+      const [cRow, nRow] = screen.getAllByTestId("announced-row");
+      const dots = within(cRow).getByTestId("row-dots").children;
+      expect(dots).toHaveLength(1);
+      expect((dots[0] as HTMLElement).style.background).toBe("var(--fg-faint)");
+      expect(within(cRow).getByText("Colorless")).toHaveClass("sr-only");
+      expect(within(nRow).queryByTestId("row-dots")).toBeNull();
+    });
+
+    it("takes the same closed head, then one precon-shaped row per set", () => {
+      draw({ view: "rows" });
+      expect(head()).toHaveAttribute("aria-expanded", "false");
+      fireEvent.click(head());
+      const [trcRow, mdcRow] = screen.getAllByTestId("announced-row");
+      expect(within(trcRow).getByText("Christine Chapel, Combat Medic and 14 more")).toBeInTheDocument();
+      expect(within(trcRow).getByText("in 30 days")).toBeInTheDocument();
+      expect(within(trcRow).getByText("TRC · Nov 13, 2026")).toBeInTheDocument();
+      expect(within(mdcRow).getAllByText("Gargantos, the Endbringer")[0]).toHaveClass("truncate");
+      expect(within(mdcRow).getByText("in 6 months")).toBeInTheDocument();
+    });
+
+    it("opens a row's cards under its own disclosure, closed every visit", () => {
+      draw({ view: "rows", opensByItself: true });
+      const trcRow = screen.getAllByTestId("announced-row")[0];
+      const press = within(trcRow).getByRole("button");
+      expect(within(trcRow).getByRole("heading", { level: 3 })).toContainElement(press);
+      expect(press).toHaveAttribute("aria-expanded", "false");
+      expect(within(trcRow).queryAllByTestId("revealed-card").filter((c) => c.closest("[hidden]") === null)).toHaveLength(0);
+      fireEvent.click(press);
+      expect(press).toHaveAttribute("aria-expanded", "true");
+      expect(within(trcRow).getAllByTestId("revealed-card").filter((c) => c.closest("[hidden]") === null)).toHaveLength(15);
+    });
+
+    it("does not open a set with nothing revealed (R2)", () => {
+      draw({ view: "rows", opensByItself: true, matches: [match(set("mdc", "Darkhold Destiny Commander", "2027-04-09"), [])] });
+      const row = screen.getByTestId("announced-row");
+      expect(within(row).queryByRole("button")).toBeNull();
+      expect(within(row).getByText("No commanders revealed yet")).toBeInTheDocument();
+      expect(within(row).getByTestId("row-plate")).toBeInTheDocument();
+    });
+  });
+});

@@ -13,6 +13,10 @@ export const preconMonth = (isoDate: string) =>
 export const preconDate = (isoDate: string) =>
   new Date(`${isoDate}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
+/** `2026-11-13` as `Nov 13`: the next release on the Announced group's closed head. */
+export const preconDay = (isoDate: string) =>
+  new Date(`${isoDate}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
 /** A moment (an ISO timestamp) as the reader's own day, `Oct 13, 2026`: when they added a precon to their collection. */
 export const preconAddedDate = (isoTimestamp: string) =>
   new Date(isoTimestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -275,6 +279,50 @@ export const preconsCopy = {
     body: "The search looks at each precon’s name, its commanders and its set.",
     clear: "Clear the search",
     clearColours: "Clear the colors",
+  },
+  // Upcoming precons (handoff `design_handoff_the99_upcoming_precons/`, R2): the Announced group above the
+  // newest year. Every word is fixed copy over a set name, code, date, card name or count from the catalog.
+  upcoming: {
+    heading: "Announced",
+    count: (sets: number) => plural(sets, "set", "sets"),
+    /** The closed head's count, with the next release as `Nov 13` (`preconDay`). */
+    countNext: (sets: number, next: string) => `${plural(sets, "set", "sets")} · next ${next}`,
+    /** The structured countdown (`countdown` in `lib/precons/arrivals`) in words. `out` never reaches here. */
+    until: (c: { kind: "tomorrow" } | { kind: "days"; n: number } | { kind: "months"; n: number }) =>
+      c.kind === "tomorrow" ? "tomorrow" : c.kind === "days" ? `in ${n(c.n)} days` : `in ${plural(c.n, "month", "months")}`,
+    /** The date and its countdown: `Nov 13, 2026 · in 30 days`. */
+    when: (date: string, until: string) => `${date} · ${until}`,
+    /** A set block's meta at 900, one line; at 390 the `when` half is its own line and this keeps the code. */
+    meta: (code: string, when: string, count: string) => `${code} · ${when} · ${count}`,
+    metaCode: (code: string, count: string) => `${code} · ${count}`,
+    /** A set row's line 3, after the dots. */
+    rowMeta: (code: string, date: string) => `${code} · ${date}`,
+    /** Release day and after, before any decklist is listed. `date` is `preconDate`. */
+    out: (date: string) => `out ${date} · decklists not listed yet`,
+    /** The same, starting the phone's first meta line. */
+    outLead: (date: string) => `Out ${date} · decklists not listed yet`,
+    /** A row's `when` once the set is out. */
+    outShort: "out",
+    revealed: (count: number) => count === 0 ? "no commanders revealed yet" : `${plural(count, "commander", "commanders")} revealed`,
+    /** A filter narrowed the set's commanders. */
+    matches: (shown: number, revealed: number) => `${n(shown)} of ${n(revealed)} revealed ${shown === 1 ? "matches" : "match"}`,
+    nonePlate: "none revealed yet",
+    /** The phone strip's name while it scrolls sideways (a keyboard stop): how many cards it holds. */
+    stripLabel: (count: number) => plural(count, "revealed commander", "revealed commanders"),
+    noneRow: "No commanders revealed yet",
+    /** Rows view, line 2: the first commander and how many more. */
+    more: (first: string, more: number) => `${first} and ${n(more)} more`,
+    /** Rows view, line 2 with one or two commanders: every name. */
+    names: (names: string[]) => names.join(" and "),
+    /** Decklists listed while the set is still on the way: a jump to its year. */
+    listed: (count: number) => `${plural(count, "decklist", "decklists")} listed ↓`,
+    newTag: "new",
+    /** On a precon tile's meta line, before `you own`, for 14 days from the precon's arrival. */
+    tileNew: "new · ",
+    /** Added to the list's result line when a filter is on and announced sets survive it. */
+    resultSets: (sets: number) => ` · ${plural(sets, "announced set", "announced sets")}`,
+    /** A revealed card, spoken: its full name (the printed one is clamped to two lines) and its colors. */
+    cardAria: (name: string, colors: string) => `${name}, ${colors}. Revealed commander.`,
   },
   down: {
     head: "The precons couldn’t be read just now",

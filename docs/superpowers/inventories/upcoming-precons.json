@@ -1,0 +1,60 @@
+{
+  "feature": "Upcoming precons and the arrivals banner (handoff design_handoff_the99_upcoming_precons, R2)",
+  "note": "PR 2 rows: the Announced group on /decks/precons (plan 2026-10-14-upcoming-precons.md, Route and viewport inventory). PR 3 adds Home's banner and the About entry. Needs PRECONS_ENABLED=true and UPCOMING_PRECONS_ENABLED=true, a database holding the precon tables and catalog_first_seen, and upcoming Commander sets in the catalog (Star Trek and Darkhold on staging; `pnpm probe:upcoming-precons-ui` builds its own on local-dev). States that need a fixture clock or a fixture arrival (T2, T4's `new`, L1, L2, L3) are proved by the probe and the component tests; a contact sheet photographs what the database holds.",
+  "rows": [
+    {
+      "id": "c1",
+      "label": "/decks/precons (tiles), the Announced head closed: `Announced · 2 sets · next Nov 13` (C1)",
+      "view": "src/components/decks/precons/announced-group.tsx",
+      "steps": [{ "goto": "/decks/precons", "wait": "#announced", "settle": 1500 }]
+    },
+    {
+      "id": "c2",
+      "label": "/decks/precons (tiles), the head pressed open: each set's block, its date, countdown and revealed commanders (C2, T4, T5, T2)",
+      "view": "src/components/decks/precons/announced-parts.tsx",
+      "steps": [
+        { "goto": "/decks/precons", "wait": "#announced", "settle": 1000 },
+        { "clickRole": "button", "name": "^Announced" },
+        { "wait": "[data-testid=announced-set]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "t6",
+      "label": "/decks/precons?q=chapel (tiles), a search narrowing a set to its matching commander; the result line adds the set (T6)",
+      "view": "src/components/decks/precons/precon-list-view.tsx",
+      "steps": [
+        { "goto": "/decks/precons?q=chapel#announced", "wait": "[data-testid=announced-set]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "anchor",
+      "label": "/decks/precons?sort=newest#announced, the banner's link: the group opens by itself (C2)",
+      "view": "src/components/decks/precons/announced-group.tsx",
+      "steps": [{ "goto": "/decks/precons?sort=newest#announced", "wait": "[data-testid=announced-set]", "settle": 1500 }]
+    },
+    {
+      "id": "q2",
+      "label": "/decks/precons?view=rows, the head opened: one precon-shaped dashed row per set (Q1, Q2, R2)",
+      "view": "src/components/decks/precons/announced-row.tsx",
+      "steps": [
+        { "goto": "/decks/precons?view=rows#announced", "wait": "[data-testid=announced-row]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "q3",
+      "label": "/decks/precons?view=rows, a set row pressed open: its cards under a dashed rule (Q3)",
+      "view": "src/components/decks/precons/announced-row.tsx",
+      "steps": [
+        { "goto": "/decks/precons?view=rows#announced", "wait": "[data-testid=announced-row]", "settle": 1000 },
+        { "click": "[data-testid=announced-row] h3 button" },
+        { "wait": "[data-testid=announced-row] [data-testid=revealed-card]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "t7",
+      "label": "/decks/precons?sort=owned, Most owned: the group is hidden (T7)",
+      "view": "src/components/decks/precons/precon-list-view.tsx",
+      "steps": [{ "goto": "/decks/precons?sort=owned", "wait": "h1", "settle": 1500 }]
+    }
+  ]
+}

@@ -251,6 +251,21 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Tiles keep the LCP caps (80/150ms), so a slow first row lets lower ones go: 0 inversions in most runs and a few pairs
   in some, before and after. Reads only; needs `PRECONS_ENABLED=true` and `pnpm db:seed:precons` on local-dev, or
   `MEASURE_DEPLOYED=1` against staging.
+- `pnpm probe:upcoming-precons-ui` presses the Announced group on /decks/precons (upcoming precons, plan PR 2) at 390x844
+  and 1300x900: a visit with an unseen arrival opens the group by itself, tags the set `new`, draws its revealed
+  commanders and the plate for a set with none, and writes the seen key to `user_prefs` (polled), so the next load is
+  closed with the next release in its count; a press opens it and is remembered (`the99:precons:announced`); in rows a
+  set row opens its own cards and a set with none revealed has no press; with Most owned saved in the browser the plain
+  address hides the group while `?sort=newest#announced` lands on it open and in view; `?sort=owned` hides it (T7); at
+  390 the six-card strip scrolls sideways and is a named keyboard stop the arrow keys scroll, and at 1300 it wraps and is
+  no stop. It PLANTS its own fixtures on local-dev (two `commander` sets `zqa` and `zqb`, six `zqa` printings of legendary
+  creatures the catalog holds, `zqa`'s non-baseline `catalog_first_seen` row) and clears the reader's two seen keys
+  before each width, and deletes all of it in its `finally`, then puts the account's `user_prefs` row back exactly as it
+  was before the run (deleted if the probe created it, else its seen codes restored) and checks it, since a visit
+  acknowledges every arrival, not only the fixtures'. Fails closed on its target: `PROBE_DB_BRANCH` must name the
+  branch `DATABASE_URL` reports, and staging and production are refused by id. Needs a server on `PROBE_BASE` on the same
+  database, started with `PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true` (a `next start` on a free port; stop it by
+  its own PID).
 - `pnpm probe:tokens-group` proves the deck's Tokens group (2026-10-14) at 1300x900 and 390x844: open by default as rows in
   List view; the heading folds it and writes ONE preference (`the99:deck-tokens-fold`) that folds the group on another
   deck too, leaving the header and its note; in Card view the tokens are tiles in the deck's own grid (two across on a

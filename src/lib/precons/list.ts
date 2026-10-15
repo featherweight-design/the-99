@@ -167,7 +167,7 @@ const PIPS = ["W", "U", "B", "R", "G"];
 export type PreconView = "tiles" | "rows";
 export const isPreconView = (v: unknown): v is PreconView => v === "tiles" || v === "rows";
 
-/** The URL's filters, order and view (`q`, `colour`, `sort=owned`, `view`), parsed once by the page,
+/** The URL's filters, order and view (`q`, `colour`, `sort=owned|newest`, `view`), parsed once by the page,
  *  so the first render draws the list the URL names. An order or view the URL does not name is null:
  *  the browser's remembered choice then applies (T2u: an unknown `view` is ignored). */
 export function parsePreconParams(params: URLSearchParams): {
@@ -178,7 +178,10 @@ export function parsePreconParams(params: URLSearchParams): {
   return {
     q: params.get("q") ?? "",
     colours: PIPS.filter((c) => on.includes(c)),
-    order: params.get("sort") === "owned" ? "owned" : null,
+    // `sort=newest` is never written by the list's own mirror (Newest is the default), but a link that must
+    // land on the year heads and the Announced group names it (the arrivals banner): explicit, it beats the
+    // order this browser saved.
+    order: isPreconOrder(params.get("sort")) ? (params.get("sort") as PreconOrder) : null,
     view: isPreconView(view) ? view : null,
   };
 }
