@@ -214,7 +214,7 @@ describe("Precons I own, with cards", () => {
   const drawWith = (over: { hasCollection?: boolean; added?: Record<string, string>; entry?: "home" | "collection" } = {}) =>
     render(<PreconPickView rows={owning} entry={over.entry ?? "collection"} initial={{ q: "", colours: [] }} hasCollection={over.hasCollection ?? true} added={over.added ?? {}} />);
   const rowOf = (name: string) => screen.getByRole("checkbox", { name: new RegExp(name) }).closest("li")!;
-  const NOTE = "You added this box on Jun 30. Adding it again adds a second copy of each card.";
+  const NOTE = "You added this box on Jun 30. Adding it again gives you a second copy of each card.";
 
   it("shows the shipped `you own N of M` on every row while the collection holds any card (E2)", () => {
     drawWith();
