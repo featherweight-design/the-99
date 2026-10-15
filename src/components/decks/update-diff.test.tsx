@@ -500,6 +500,16 @@ describe("UpdateDiff provenance", () => {
     expect(onApply).toHaveBeenCalledWith(["plains"]);
   });
 
+  // Round 2: the heading counts copies, so the disclosure under it counts the copies it hides.
+  it("names the hidden copies, not the hidden rows, under a copy-counted heading", () => {
+    const drops = ["a", "b", "c", "d", "e"].map((id) => ({
+      ...row(id, { name: `Basic ${id}`, typeLine: "Basic Land", quantity: 3 }), from: 6, to: 3,
+    }));
+    renderDiff({ built: 99, out: [], in: [], fewer: drops });
+    expect(screen.getByRole("heading", { name: copy.outHeading("15") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: copy.showMore("3") })).toBeInTheDocument();
+  });
+
   it("no longer prints the new-counts line", () => {
     const { container } = renderDiff({ fewer: [plains] });
     expect(container.textContent).not.toContain("new counts");

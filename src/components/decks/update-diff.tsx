@@ -37,8 +37,13 @@ function typeGroups<T extends { oracleId: string; name: string; typeLine: string
   rows: T[],
   shown: number,
 ) {
+  return groupByCardType(typeOrder(rows).slice(0, shown));
+}
+
+/** The rows in the order the groups draw them: by card type, then as the grouping orders them. */
+function typeOrder<T extends { oracleId: string; name: string; typeLine: string }>(rows: T[]) {
   const grouped = groupByCardType(rows.map((r) => ({ ...r, cardTypeGroup: cardTypeGroup(r.typeLine) })));
-  return groupByCardType(grouped.flatMap(([, groupRows]) => groupRows).slice(0, shown));
+  return grouped.flatMap(([, groupRows]) => groupRows);
 }
 
 /** A row of the out or in group: an add or a removal, or a count change carrying both figures. */
@@ -70,6 +75,7 @@ function Group({
   bodyMobile,
   action,
   total,
+  hidden,
   children,
 }: {
   heading: string;
@@ -79,6 +85,9 @@ function Group({
   /** Rows in the group, of which `children` renders all — the disclosure hides
    *  the overflow with CSS-free unmounting, so this is what it counts. */
   total: number;
+  /** What the disclosure says it hides, when that is not a row count: the copies past the cap, in
+   *  the order the rows draw, for a group whose heading counts copies. Rows otherwise. */
+  hidden?: number;
   children: (shown: number) => React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -117,7 +126,7 @@ function Group({
           aria-controls={rowsId}
           className="mt-[10px] font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
         >
-          {expanded ? copy.showFewer : copy.showMore(String(total - ROW_CAP))}
+          {expanded ? copy.showFewer : copy.showMore(String(hidden ?? total - ROW_CAP))}
         </button>
       )}
     </section>
@@ -306,6 +315,7 @@ export function UpdateDiff({
               </GhostButton>
             }
             total={outRows.length}
+            hidden={copiesOf(typeOrder(outRows).slice(ROW_CAP))}
           >
             {(shown) =>
               typeGroups(outRows, shown).map(([group, rows]) => (
@@ -346,6 +356,7 @@ export function UpdateDiff({
               String(copiesOf(inRows.filter((r) => !r.owned))),
             )}
             total={inRows.length}
+            hidden={copiesOf(typeOrder(inRows).slice(ROW_CAP))}
           >
             {(shown) =>
               typeGroups(inRows, shown).map(([group, rows]) => (
