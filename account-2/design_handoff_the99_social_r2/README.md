@@ -1,37 +1,97 @@
 # Social R2 — the wishlist, and friends' spares
 
-**Round 2 of 3** of the social line. The wishlist is behind `SOCIAL_WISHLIST_ENABLED` (stands alone); spare lines and a
+**Round 2 of 3** of the social line. The wishlist is behind `SOCIAL_WISHLIST_ENABLED` (stands alone); spare markers and a
 friend's wishlist also need `SOCIAL_FRIENDS_ENABLED`. Phone and desktop.
 **Brief:** `docs/superpowers/design-briefs/2026-10-15-social-screens.md`, branch `brief/social-screens` (§Rulings, §R2).
-**Builds on:** `design/design_handoff_the99_social_r1/` (PR #1796): `/friends` in the account menu, friend rows and faces
-(signature commander art, initials otherwise), the per-pod spares checkbox. None of it is redrawn.
-**Read for this round:** `src/lib/wishlist/wishlist.ts`, `src/lib/social/wishlist.ts`, `src/lib/social/spares.ts`,
-`src/components/cards/card-modal.tsx` (footer, phone column), `src/components/decks/decklist-row.tsx`, `buy-tag.tsx`,
-`price-strip.tsx`, `src/components/decks/cart/*`, `card-search-row.tsx`, `src/components/collection/edit-toast.tsx`.
+**Builds on:** `design/design_handoff_the99_social_r1/` (PR #1796). Round 1's faces, rows and pod checkbox are reused, not redrawn.
 
-**The answer in one line.** Your wishlist is its own page, `/wishlist`, one row under Friends in the account menu; a card
-gets on it from one control, **Want it**, in card details' footer (plus the page's own search); a got line takes a GOT
-stamp and waits in Got until you clear it; a friend's page shows their wishlist, view only; and a friend's spare is a
-small chip with their face under the card you're short of, which lists who and how many when pressed.
+**The answer in one line (round 2).** Your wishlist is **Collection › Wishlist**, a fifth tab, drawn in the collection's
+own grid of full cards; a card gets on it from **Add to wishlist** (bookmark), one more link in card details' footer, or
+from the tab's search; a card you hold enough of moves to **Collected** (success ink, no stamp) until you clear it; a
+friend's page shows their wishlist in the same grid, view only; and a friend's spare is **one marker glyph** on the row,
+explained in the key, which opens a modal (desktop) or sheet (phone) naming who.
 
 | File | What it is |
 |---|---|
-| `The 99 - Social R2 (R1).dc.html` | Start here: the five calls, the locks, the gaps. |
-| `R1 - Wishlist-Desktop.dc.html` / `R1 - Wishlist-Phone.dc.html` | `/wishlist`: empty (friends off, then on), search, many lines with GOT and spares, ✕, Clear got. |
-| `R1 - Add-Desktop.dc.html` / `R1 - Add-Phone.dc.html` | The account menu row; card details' Want it: off, wanted, got, from Shopping; the phone teaser unchanged. |
-| `R1 - Friend-Desktop.dc.html` / `R1 - Friend-Phone.dc.html` | The friend row's ›; `/friends/[id]`: empty, lines, GOT, no commander, not a friend; switch off. |
-| `R1 - Spares-Desktop.dc.html` / `R1 - Spares-Phone.dc.html` | The spare chip: none, one, several; the popover and sheet; All view; the cart; the next read. |
-| `STATES-social-r2.md` | Every R2 state, both widths, and where it is drawn. |
-| `READINESS.md` | Verdict, engineering needs, what to audit first. |
-| `social-r2 · copy strings.ts` | Every new string, for `/copy-review`. |
-| `art/`, `brand/`, `support.js` | Carried so the folder opens standalone. Art is the design folder's twelve crops. |
+| `The 99 - Social R2 (R2).dc.html` | **Start here.** Hugh's twelve notes and the answer to each, the icon and word options, the gaps. |
+| `R2 - Wishlist-Desktop.dc.html` / `R2 - Wishlist-Phone.dc.html` | Collection › Wishlist: empty, search adding, tiles, Collected and Clear collected. |
+| `R2 - Details-Desktop.dc.html` / `R2 - Details-Phone.dc.html` | Card details: Add to wishlist, In your wishlist (stepper, have, Remove), collected, from Shopping. |
+| `R2 - Friend-Desktop.dc.html` / `R2 - Friend-Phone.dc.html` | `/friends` rows with ›; a friend's page and wishlist; empty. |
+| `R2 - Spares-Desktop.dc.html` / `R2 - Spares-Phone.dc.html` | The spare marker on Shopping and All, the key item, the modal and sheet, the cart. |
+| `R1 - *.dc.html`, `The 99 - Social R2 (R1).dc.html` | Round 1 of this design, **superseded**; kept for the record. |
+| `STATES-social-r2.md` · `READINESS.md` · `social-r2 · copy strings.ts` | The matrix, the verdict, every new string. |
+| `art/`, `brand/`, `support.js` | Carried so the folder opens standalone. Round 2's art is full cards cut from Hugh's screenshots. |
 
-Every board is drawn over the shipped pages in the Kamigawa theme. New parts on shipped surfaces carry a dashed outline;
-`/wishlist` and `/friends/[id]` are new routes, so they carry none. No About entry: the line batches them at launch.
+Every round-2 board is drawn over the shipped pages Hugh sent (Collection head and grid, the 820×620 card modal and phone
+sheet, the deck's Shopping view and key, `ModalChrome`). New parts carry a dashed pink outline. No About entry.
 
 ---
 
-## Decisions
+## Decisions (round 2)
+
+**1. The wishlist is Collection › Wishlist**, a fifth tab after History (`CollectionPlaceHead`). Nothing is added to the
+account menu. The five tabs fit the phone strip at 390. Switch off: no tab, the route is not found.
+
+**2. Cards are cards.** The collection's own grid and tile (178px track, 63/88 full card, caption; three-up on phone),
+never the face crop. The caption names the card and reads `want 2 · have 1`. The grid has no controls of its own: a tile
+opens card details, where the count changes and the card is removed.
+
+**3. Collected replaces GOT.** No stamp. A card your collection holds as many as you want moves to a **Collected** group
+at the end, caption `✓ collected · have 2` in `--success`. It stays until cleared, one at a time in card details or all
+at once with **Clear collected** in the group head. Word options on the main board: Collected (recommended, drawn),
+Owned, Have it, Complete.
+
+**4. Icon: bookmark** (recommended, drawn). Options on the main board: bookmark, heart, card +, target. Outlined before
+the card is added, filled in the accent after.
+
+**5. The add control is one footer link in card details**, in the shipped link style under Find a deck for it:
+`Add to wishlist`, then `On your wishlist ›` (opens the tab). The first press wants one more than you hold (cap 99). Phone:
+the third link at the sheet's foot; the half-height teaser is unchanged.
+
+**6. Card details' box gains one section once the card is on the list**: `In your wishlist` with `Remove` (Edit copies'
+link style), the want stepper (1 to 99) and `have N`, or `✓ collected`. No "Bought this card?" line.
+
+**7. The tab's search is the second way in**: catalog search like the Add cards sheet, one press per result
+(`Add to wishlist`; phone `Add` → `Added`).
+
+**8. Works with no friends.** Nothing friend-related is drawn. With a friend, one quiet line: `Your friends can see this list`.
+
+**9. A friend's wishlist is on their page, `/friends/[publicId]`.** The `/friends` row gains a › and becomes a link. The
+head is Round 1's face, name and since date; **no banner** (round 1's banner was my addition and is removed). Under it,
+`Colin's wishlist · 6 · view only` in the same grid: `wants 2` or `✓ collected`, never an owned count. Empty: `Peter's
+wishlist is empty` and one sentence.
+
+**10. No "not on your friends list" view.** It only covered an old link to someone who had removed you; that link gets
+the app's normal not-found page.
+
+**11. A friend's spare is a marker, not a chip.** One glyph after the row's marks, in `--fact` ink, so the buy column,
+pips and figure never move. The Shopping key gains `a friend has a spare`. Pressing it opens `ModalChrome` at 560 on
+desktop and the sheet from 52px on phone, like the stand-ins: `Spares of {card}`, a row per friend (face, name, `shares
+with {pod}`, `N spares`), and one foot line. Nothing to press but ✕. Shown on missing rows in Shopping and All, on the
+cart's lines (Shopping for all decks), and on Wanted tiles. Absent when none, never `0`.
+
+**12. Friends on every board are Colin, Peter, Max and Chris.** Every board was rendered and measured, and each
+artboard sized to its content, so none is cut off.
+
+## Gaps (round 2)
+
+| # | Gap | Who |
+|---|---|---|
+| G1 | Wishlist reads return oracle ids; tiles need name, full card image and price from the catalog. | Eng |
+| G2 | `/friends/[publicId]` reads one friend by public id, joined to the viewer's friendship. | Eng |
+| G3 | Spare markers load after the page, uncached, for cards on screen, absent on failure. If ever cached, AGENTS.md's `friendGeneration` and per-friend switch key rules apply. | Eng |
+| G4 | Add to wishlist writes owned + 1, capped at 99. | Eng |
+| G5 | Collected counts every copy held, deck copies included (the locked definition). | Note |
+| G6 | A fifth tab fits at 390; a sixth would need the strip to scroll. | Note |
+| G7 | Commander image focus (Social R3's G9) applies to every face here. | Eng |
+| G8 | Every new string is in `social-r2 · copy strings.ts` for `/copy-review`. | Note |
+
+Hugh's calls: the icon (bookmark drawn) and the word (Collected drawn).
+
+---
+
+## Round 1 decisions (superseded, for the record)
+
 
 **1. The wishlist lives at `/wishlist`, reached from the account menu.** A row after Friends (About, Friends, Wishlist,
 then Admin when shown, then the session buttons); with friends off it follows About. Not a nav item, for Round 1's reasons:
