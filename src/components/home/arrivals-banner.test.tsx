@@ -8,6 +8,7 @@ vi.mock("../../app/arrivals-actions", () => ({ dismissArrivals: dismiss }));
 
 const { ArrivalsBanner, COLLAPSE_MS, HOME_HEADING_ID } = await import("./arrivals-banner");
 const { Dashboard } = await import("./dashboard");
+const { acknowledgeArrivals, resetArrivalsAcknowledged } = await import("./arrivals-seen");
 
 const TRC: BannerLine = { kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 };
 const FRC: BannerLine = { kind: "lists", code: "frc", name: "Reality Fracture Commander", count: 4 };
@@ -37,6 +38,7 @@ const region = () => screen.queryByRole("region", { name: "New in the app" });
 
 let reduce = false;
 beforeEach(() => {
+  resetArrivalsAcknowledged();
   dismiss.mockClear();
   reduce = false;
   vi.spyOn(window, "matchMedia").mockImplementation((q: string) => ({
@@ -177,15 +179,25 @@ describe("ArrivalsBanner, ✕", () => {
   });
 });
 
-describe("ArrivalsBanner, a link press", () => {
-  it("counts as a dismissal in this document: Back to Home re-mounts it closed (a Precons visit marks seen)", () => {
-    const data = one(TRC, ["trc", "followed"]);
+describe("ArrivalsBanner, after a Precons visit in this document", () => {
+  it("re-mounts closed once the visit acknowledged the arrivals (Back to Home restores the router's payload)", () => {
+    const data = one(TRC, ["trc", "acknowledged"]);
+    const first = render(<ArrivalsBanner data={data} />);
+    expect(region()).not.toBeNull();
+    first.unmount();
+    acknowledgeArrivals();
+    render(<ArrivalsBanner data={data} />);
+    expect(region()).toBeNull();
+  });
+
+  it("is no acknowledgement by itself: a link press writes nothing, so a re-mount draws it again", () => {
+    const data = one(TRC, ["trc", "pressed"]);
     const first = render(<ArrivalsBanner data={data} />);
     fireEvent.click(screen.getByRole("link", { name: "See it in Precons" }));
     expect(dismiss).not.toHaveBeenCalled();
     first.unmount();
     render(<ArrivalsBanner data={data} />);
-    expect(region()).toBeNull();
+    expect(region()).not.toBeNull();
   });
 });
 

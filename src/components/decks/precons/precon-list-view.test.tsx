@@ -7,6 +7,8 @@ import { parsePreconParams } from "../../../lib/precons/list";
 // The real write, so the live query sees the address the view wrote, as it does in the app.
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: (href: string) => window.history.replaceState(null, "", href) }));
 import { PreconListView } from "./precon-list-view";
+import { PreconsDown } from "./precons-down";
+import { arrivalsAcknowledged, resetArrivalsAcknowledged } from "../../home/arrivals-seen";
 
 const row = (name: string, releaseDate: string, over: Partial<PreconRow> = {}): PreconRow => ({
   fileName: name.replace(/\W/g, ""), name, setCode: "SET", releaseDate, twinName: null,
@@ -319,5 +321,22 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
     const eldrazi = tiles.find((t) => t.textContent?.includes("Eldrazi Unbound"))!;
     expect(angels.textContent).toContain("new · you own");
     expect(eldrazi.textContent).not.toContain("new ·");
+  });
+
+  it("tells Home's banner its visit acknowledged the arrivals, only when the page says it wrote keys", () => {
+    resetArrivalsAcknowledged();
+    const initial = { q: "", colours: [], order: null, view: null };
+    const quiet = render(<PreconListView rows={rows} hasCollection fromNew={false} initial={initial} query="" />);
+    expect(arrivalsAcknowledged()).toBe(false);
+    quiet.unmount();
+    render(<PreconListView rows={rows} hasCollection fromNew={false} initial={initial} query="" acknowledgesArrivals />);
+    expect(arrivalsAcknowledged()).toBe(true);
+    resetArrivalsAcknowledged();
+  });
+
+  it("never acknowledges from the list's down state, which wrote nothing", () => {
+    resetArrivalsAcknowledged();
+    render(<PreconsDown />);
+    expect(arrivalsAcknowledged()).toBe(false);
   });
 });

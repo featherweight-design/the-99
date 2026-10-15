@@ -9,6 +9,8 @@ const h = vi.hoisted(() => ({
   keys: [] as string[][],
   stored: [] as boolean[],
   upcomingFails: false,
+  listFails: false,
+  allSeen: false,
   marked: [] as string[][],
   cookies: {} as Record<string, string>,
 }));
@@ -28,10 +30,13 @@ vi.mock("../../../lib/cache/page-cache", () => ({
   },
 }));
 vi.mock("../../../lib/precons/list-read", () => ({
-  loadPreconList: async () => ({
+  loadPreconList: async () => {
+    if (h.listFails) throw new Error("list down");
+    return {
     rows: [{ fileName: "TRC_A", name: "A", setCode: "TRC", releaseDate: "2026-11-13", twinName: null, commanders: [], identity: [], owned: 0, of: 1, unmapped: 0, built: [] }],
     listed: 1, hasCollection: true, newest: "2026-11-13",
-  }),
+    };
+  },
 }));
 const recent = new Date(Date.now() - 2 * 86_400_000);
 vi.mock("../../../lib/precons/announced-read", () => ({
@@ -39,11 +44,11 @@ vi.mock("../../../lib/precons/announced-read", () => ({
     if (h.upcomingFails) throw new Error("boom");
     return {
       sets: [
-        { code: "mdc", name: "Darkhold Destiny Commander", releasesOn: "2099-04-09", released: false, cardCount: 1, parentName: null, arrivedAt: recent, seen: false },
+        { code: "mdc", name: "Darkhold Destiny Commander", releasesOn: "2099-04-09", released: false, cardCount: 1, parentName: null, arrivedAt: recent, seen: h.allSeen },
       ],
       commanders: {},
       // A set whose lists have landed has left the group (E1); its lists line is still the banner's to clear.
-      arrivals: [{ fileName: "TRC_A", name: "A", setCode: "trc", setName: "Star Trek Commander", releasesOn: "2026-11-13", arrivedAt: recent, listsSeen: false }],
+      arrivals: [{ fileName: "TRC_A", name: "A", setCode: "trc", setName: "Star Trek Commander", releasesOn: "2026-11-13", arrivedAt: recent, listsSeen: h.allSeen }],
     };
   },
 }));
@@ -53,6 +58,7 @@ vi.mock("../../../lib/precons/upcoming", async (orig) => ({
 }));
 
 import PreconsPage from "./page";
+import { PreconsDown } from "../../../components/decks/precons/precons-down";
 
 const visit = async (query: Record<string, string> = {}) =>
   (await PreconsPage({ searchParams: Promise.resolve(query) })) as ReactElement<Record<string, unknown>>;
@@ -61,7 +67,7 @@ const runAfters = async () => { for (const fn of h.afters.splice(0)) await fn();
 describe("/decks/precons, upcoming precons", () => {
   beforeEach(() => {
     h.env = { PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true" };
-    h.afters = []; h.keys = []; h.stored = []; h.marked = []; h.upcomingFails = false; h.cookies = {};
+    h.afters = []; h.keys = []; h.stored = []; h.marked = []; h.upcomingFails = false; h.cookies = {}; h.listFails = false; h.allSeen = false;
   });
 
   it("caches the payload on the UTC day and hands the view the group and the new tiles", async () => {
@@ -104,6 +110,32 @@ describe("/decks/precons, upcoming precons", () => {
     expect(h.keys[0]).toEqual([]);
     expect(el.props.announced).toBeNull();
     expect(el.props.newFileNames).toEqual([]);
+    expect(h.marked).toEqual([]);
+  });
+
+  it("tells the view its visit acknowledges arrivals exactly when it writes seen keys", async () => {
+    expect((await visit()).props.acknowledgesArrivals).toBe(true);
+    await runAfters();
+    expect(h.marked).toHaveLength(1);
+
+    h.marked = [];
+    h.allSeen = true;
+    const seen = await visit();
+    await runAfters();
+    expect(seen.props.acknowledgesArrivals).toBe(false);
+    expect(h.marked).toEqual([]);
+
+    h.allSeen = false;
+    h.env = { PRECONS_ENABLED: "true" };
+    expect((await visit()).props.acknowledgesArrivals).toBe(false);
+  });
+
+  it("draws PreconsDown and acknowledges nothing when the list cannot be read", async () => {
+    h.listFails = true;
+    const el = await visit();
+    await runAfters();
+    expect(el.type).toBe(PreconsDown);
+    expect(el.props.acknowledgesArrivals).toBeUndefined();
     expect(h.marked).toEqual([]);
   });
 });

@@ -6,7 +6,8 @@
 // summarised. Tiles are the default view (R4 §1); rows stay one press away.
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { acknowledgeArrivals } from "../../home/arrivals-seen";
 import { preconsCopy } from "../../../lib/copy/precons";
 import { colorNames } from "../../../lib/copy/color-labels";
 import { PIP_ORDER, type PipCode } from "../../../lib/copy/filter-chassis";
@@ -62,6 +63,11 @@ export type PreconListViewProps = {
   storedAnnounced?: "open" | "closed" | null;
   /** The precons that read `new ·` on their tile, decided by the server against its own clock (L2, L3). */
   newFileNames?: readonly string[];
+  /**
+   * This visit writes the arrivals' seen keys (the page's `after()`, rule 6): the list drew, the switch is on and the
+   * key set is not empty. The view then tells Home's banner, whose payload the router may restore on Back.
+   */
+  acknowledgesArrivals?: boolean;
 };
 
 const isOrder = (v: string): v is PreconOrder => isPreconOrder(v);
@@ -69,8 +75,13 @@ const isView = (v: string): v is PreconView => isPreconView(v);
 
 export function PreconListView({
   rows, hasCollection, fromNew, initial, query, storedView: cookieView = null, announced = null, newFileNames = [],
+  acknowledgesArrivals = false,
   storedAnnounced = null,
 }: PreconListViewProps) {
+  // After mount, so a prefetch or a server render never counts: the reader is on the page whose visit wrote the keys.
+  useEffect(() => {
+    if (acknowledgesArrivals) acknowledgeArrivals();
+  }, [acknowledgesArrivals]);
   // `md`, not the chassis's 1000: the table draws the wide form at 900, and this chassis holds
   // three controls where `/decks`' holds six.
   const wide = useMinWidth("(min-width: 768px)");

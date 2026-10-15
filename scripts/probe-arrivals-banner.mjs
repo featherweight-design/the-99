@@ -31,6 +31,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -216,6 +217,8 @@ async function widthRun(browser, w, userId) {
   const context = await browser.newContext({ viewport: { width: w.width, height: w.height }, hasTouch: w.phone, isMobile: w.phone });
   const page = await context.newPage();
   await signIn(page, EMAIL, PASSWORD);
+  // The About sheet stays out of the way (E5); the account's prior About fields are put back in `finally`.
+  await clearAboutSheet(page, userId);
 
   // H4: several arrivals, then follow the link, then ✕ by click.
   await stamp({ set: true, lists: true });
@@ -255,6 +258,30 @@ async function widthRun(browser, w, userId) {
   const back = await onPage(page, REGION).count();
   check(back === 0, `${w.name}: Back to Home after the banner's link draws no banner`, `${back} regions`);
   await visitMarksSeen(page, w, userId, "several", KEYS);
+
+  // Precons reached WITHOUT the banner's link: Home → Decks → Commander precons by client navigation, then Back
+  // twice. The visit writes the keys; the router's held Home payload still carries the banner unless the visit told
+  // the client it acknowledged them.
+  await unsee(userId);
+  await home(page);
+  check(await region.count() === 1, `${w.name}: the banner is up before the Decks route to Precons`, `${await region.count()} regions`);
+  await page.locator('a[href="/decks"]:visible').first().click();
+  await page.waitForURL((u) => u.pathname === "/decks", { timeout: 30_000 });
+  const preconsEntry = onPage(page, 'a[href="/decks/precons"]').first();
+  await preconsEntry.waitFor({ timeout: 30_000 });
+  await preconsEntry.click();
+  await page.waitForURL((u) => u.pathname === "/decks/precons", { timeout: 30_000 });
+  await onPage(page, "#announced").first().waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(1_000);
+  await page.goBack();
+  await page.waitForURL((u) => u.pathname === "/decks", { timeout: 30_000 });
+  await page.goBack();
+  await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
+  await onPage(page, "h1").first().waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(1_000);
+  const twice = await onPage(page, REGION).count();
+  check(twice === 0, `${w.name}: Home → Decks → Commander precons → Back twice draws no banner`, `${twice} regions`);
+  await visitMarksSeen(page, w, userId, "the Decks route", KEYS);
 
   // ✕ by click, over the same two arrivals made unseen again.
   await unsee(userId);
@@ -309,10 +336,12 @@ async function widthRun(browser, w, userId) {
 }
 
 /** The switch off for this account: neither the banner nor the entry. */
-async function switchedOff(browser, w) {
+async function switchedOff(browser, w, userId) {
   const context = await browser.newContext({ viewport: { width: w.width, height: w.height }, hasTouch: w.phone, isMobile: w.phone });
   const page = await context.newPage();
   await signIn(page, EMAIL, PASSWORD);
+  // The About sheet stays out of the way (E5); the account's prior About fields are put back in `finally`.
+  await clearAboutSheet(page, userId);
   await home(page);
   check(await onPage(page, REGION).count() === 0, `${w.name} H1: no banner with the switch off`, `${await onPage(page, REGION).count()} regions`);
   await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded" });
@@ -375,7 +404,7 @@ try {
   await sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by)
             values ('UPCOMING_PRECONS_ENABLED', 'user', ${userId}, 'off', 'probe:arrivals-banner', 'probe:arrivals-banner')`;
   await new Promise((r) => setTimeout(r, MEMO_MS));
-  for (const w of WIDTHS) await switchedOff(browser, w);
+  for (const w of WIDTHS) await switchedOff(browser, w, userId);
 
   // First run: a fresh Clerk test user, so no existing account is emptied for it.
   const email = `arrivals-firstrun-${Date.now()}+clerk_test@the99.app`;

@@ -2485,7 +2485,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   with its hash, with Most owned SAVED in the browser first, and its target is drawn (`#announced` with the Announced
   group open, `#precons-<year>` the year's head); that visit marks the arrivals seen (rule 6, the page's `after()`
   write, polled in `user_prefs`) and the next Home load draws no banner, nor does Back to Home (`page.goBack()`, the
-  router's held payload); ✕, by click and by Enter,
+  router's held payload), whether Precons was reached by the banner's link or by Home → Decks → Commander precons and
+  Back twice (the page tells the client its visit acknowledged the arrivals); ✕, by click and by Enter,
   closes it, writes the seen keys (read back from `user_prefs`) and focuses Home's `h1`, and a reload draws none with
   `LIST_CACHE_ENABLED=true` (the stamp retiring cached Home, E5); a fresh first-run account gets no banner and no seen
   key (H7); the About entry `upcoming-precons` draws with the switch on, and neither it nor the banner with an account
