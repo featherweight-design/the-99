@@ -95,6 +95,8 @@ export function sourceText(source: ExplainSource, groupName: (id: string) => str
       return copy.sources.kill;
     case "account":
       return copy.sources.account;
+    case "all":
+      return copy.sources.all;
     case "group":
       return copy.sources.group(groupName(source.groupId));
     case "app":
@@ -106,7 +108,7 @@ export function sourceText(source: ExplainSource, groupName: (id: string) => str
   }
 }
 
-const RUNG_OF: Record<ExplainSource["kind"], RungKey> = { account: "account", group: "group", app: "app", env: "env", kill: "env", parent: "needs" };
+const RUNG_OF: Record<ExplainSource["kind"], RungKey> = { account: "account", all: "account", group: "group", app: "app", env: "env", kill: "env", parent: "needs" };
 
 export function switchPage(input: SwitchPageInput): SwitchPage {
   const { name, env, overrides, verdicts, accounts, groups, viewerId } = input;

@@ -12,6 +12,9 @@ const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ usePathname: () => path, useRouter: () => ({ refresh }) }));
 const move = vi.fn<(userId: string, groupId: string | null, confirmed?: number) => Promise<MoveResult>>();
 vi.mock("../../app/admin/accounts/actions", () => ({ moveAccountToGroup: (u: string, g: string | null, c?: number) => move(u, g, c) }));
+const setOverride = vi.fn();
+const clearOverride = vi.fn();
+vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: (i: unknown) => setOverride(i), clearSwitchOverride: (i: unknown) => clearOverride(i) }));
 
 const { AccountsList } = await import("./accounts-list");
 const { AccountPageView } = await import("./account-page");
@@ -52,6 +55,7 @@ const PAGE: AccountPage = {
   featureTotal: { presses: 12, spent: "$0.640" },
   month: "October",
   clerk: "ok",
+  allFeatures: null,
   overridesRead: true,
 };
 
@@ -152,6 +156,25 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(box.querySelector('[data-env-list="on"]')).toHaveTextContent("On · 2Collection edit, Notices");
     expect(box.querySelector('[data-env-list="off"]')).toHaveTextContent("Off · 1Never cut");
     expect(screen.queryByText(/disagree/i)).toBeNull();
+  });
+
+  // All features (2026-10-15): the override write at account scope under the reserved name. On sets it,
+  // Not set clears it, and the control is absent when the overrides could not be read.
+  it("turns All features on and off through the override write, at account scope", async () => {
+    setOverride.mockResolvedValue({ ok: true });
+    clearOverride.mockResolvedValue({ ok: true });
+    const { rerender } = render(<AccountPageView page={{ ...PAGE, allFeatures: false }} />);
+    const box = screen.getByTestId("account-all-features");
+    await act(async () => fireEvent.click(within(box).getByRole("radio", { name: "On" })));
+    expect(setOverride).toHaveBeenCalledWith({ switchName: "ALL_FEATURES", scope: "user", targetUserId: "user_9mara", value: "on" });
+    rerender(<AccountPageView page={{ ...PAGE, allFeatures: true }} />);
+    await act(async () => fireEvent.click(within(screen.getByTestId("account-all-features")).getByRole("radio", { name: "Not set" })));
+    expect(clearOverride).toHaveBeenCalledWith({ switchName: "ALL_FEATURES", scope: "user", targetUserId: "user_9mara" });
+  });
+
+  it("draws no All features control when the overrides did not load", () => {
+    render(<AccountPageView page={PAGE} />);
+    expect(screen.queryByTestId("account-all-features")).toBeNull();
   });
 
   it("says the overrides did not load above its sections", () => {

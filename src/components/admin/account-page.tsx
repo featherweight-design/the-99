@@ -14,6 +14,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { Avatar } from "./accounts-list";
 import { SectionHead } from "./costs-detail";
 import { ModelConfirm } from "./model-confirm";
+import { AllFeaturesControl } from "./override-controls";
 import { Pill, ResolvedDot } from "./switches-list";
 
 // One account's page (admin STATES A4 to A7; design table, Accounts). The head above the tab strip
@@ -224,8 +225,19 @@ function Switches({ page }: { page: AccountPage }) {
     <>
       <SectionHead title={adminCopy.tabs.switches} meta={String(s.total)} />
       <div data-testid="account-switches" className={CARD}>
+        {page.allFeatures !== null && (
+          <section data-testid="account-all-features" className="flex flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
+            <div className="min-w-0">
+              <h3 className={GROUP_HEAD}>
+                <span>{copy.allFeatures.title}</span>
+              </h3>
+              <p className="m-0 text-pretty text-[13px] leading-[1.45] text-[color:var(--fg-muted)]">{copy.allFeatures.body}</p>
+            </div>
+            <AllFeaturesControl userId={page.id} label={copy.allFeatures.title} value={page.allFeatures} />
+          </section>
+        )}
         {groups.map((g, i) => (
-          <section key={g.title} className={i > 0 ? ROW_LINE : undefined}>
+          <section key={g.title} className={i > 0 || page.allFeatures !== null ? ROW_LINE : undefined}>
             <h3 className={GROUP_HEAD}>
               <span>{g.title}</span>
               <span className="normal-case tracking-normal text-[color:var(--fg-faint)]">{g.lines.length}</span>

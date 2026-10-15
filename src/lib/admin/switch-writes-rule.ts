@@ -1,18 +1,20 @@
 import { KILL, type OverrideRow, type OverrideValue, type SwitchSnapshot } from "../switches/resolve";
-import { isSwitchName, switchKind, type SwitchName } from "../switches/registry";
+import { ALL_FEATURES, isSwitchName, switchKind, type OverrideName, type SwitchName } from "../switches/registry";
 
 /**
  * An admin override write, checked before anything is read under a lock (admin plan 8c, "The write,
  * in order", step 1), pure. A refusal writes nothing and records no event.
  *
- * - `switch`: not a registry name.
+ * - `switch`: not a registry name, nor `ALL_FEATURES`.
  * - `scope`: not app, group or user.
  * - `plumbing`: a plumbing switch at any scope but app-wide.
  * - `killed`: a SET while the env var is `off`. A clear is allowed: "Clear still works" (F5).
  * - `target`: a group or account missing, or one given where the scope takes none.
  * - `account`: an account outside this environment's universe.
- * - `value`: a set whose value is not on or off.
+ * - `value`: a set whose value is not on or off; for `ALL_FEATURES`, not on (Off is a clear).
  * - `note`: over 500 characters, refused and never cut, the Costs rule.
+ *
+ * `ALL_FEATURES` is account-scoped only: any other scope is `scope`.
  */
 export type Op = "set" | "clear";
 export type Scope = OverrideRow["scope"];
@@ -29,7 +31,7 @@ export type WriteInput = {
 };
 export type Write = {
   op: Op;
-  name: SwitchName;
+  name: OverrideName;
   scope: Scope;
   groupId: string | null;
   userId: string | null;
@@ -51,11 +53,12 @@ export function validate(
   universe: ReadonlySet<string>,
 ): { ok: true; write: Write } | { ok: false; error: Refusal } {
   const name = input.switchName;
-  if (typeof name !== "string" || !isSwitchName(name)) return { ok: false, error: "switch" };
+  const all = name === ALL_FEATURES;
+  if (typeof name !== "string" || !(all || isSwitchName(name))) return { ok: false, error: "switch" };
   const scope = input.scope as Scope;
-  if (!SCOPES.includes(scope)) return { ok: false, error: "scope" };
-  if (switchKind(name) === "plumbing" && scope !== "app") return { ok: false, error: "plumbing" };
-  if (op === "set" && env[name] === KILL) return { ok: false, error: "killed" };
+  if (!SCOPES.includes(scope) || (all && scope !== "user")) return { ok: false, error: "scope" };
+  if (!all && switchKind(name) === "plumbing" && scope !== "app") return { ok: false, error: "plumbing" };
+  if (!all && op === "set" && env[name] === KILL) return { ok: false, error: "killed" };
   const groupId = typeof input.groupId === "string" ? input.groupId : null;
   const userId = typeof input.targetUserId === "string" ? input.targetUserId : null;
   const targetOk =
@@ -66,7 +69,7 @@ export function validate(
   if (scope === "user" && !universe.has(userId!)) return { ok: false, error: "account" };
   let value: OverrideValue | null = null;
   if (op === "set") {
-    if (input.value !== "on" && input.value !== "off") return { ok: false, error: "value" };
+    if (input.value !== "on" && (all || input.value !== "off")) return { ok: false, error: "value" };
     value = input.value;
   }
   const note = typeof input.note === "string" ? input.note.trim() : "";

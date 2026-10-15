@@ -883,6 +883,13 @@
       "when": 1792030669193,
       "tag": "0125_collection_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 126,
+      "version": "7",
+      "when": 1792036450856,
+      "tag": "0126_all_features",
+      "breakpoints": true
     }
   ]
 }

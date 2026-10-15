@@ -1,4 +1,4 @@
-import { SWITCHES, type SwitchKind, type SwitchName } from "./registry";
+import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, type OverrideName, type SwitchKind, type SwitchName } from "./registry";
 
 /**
  * One reader's switches, resolved from the environment and the admin's overrides (brief, locked
@@ -8,6 +8,8 @@ import { SWITCHES, type SwitchKind, type SwitchName } from "./registry";
  * 1. The environment set to the literal `off` wins outright. It is the kill switch: a bad override
  *    is always beaten by a redeploy.
  * 2. The reader's own override.
+ * 2a. The reader's All features row (`ALL_FEATURES`), for a switch in `ALL_FEATURES_RAISES`: On. Below
+ *    the account's own overrides, so an explicit Off on one switch still lets the admin test the off state.
  * 3. Their group's override. An account is in at most one group (`flag_group_members.user_id` is
  *    unique), but should two group rows ever apply, OFF wins.
  * 4. The app-wide override.
@@ -22,7 +24,7 @@ import { SWITCHES, type SwitchKind, type SwitchName } from "./registry";
  */
 export type OverrideValue = "on" | "off";
 export type OverrideRow = {
-  switchName: SwitchName;
+  switchName: OverrideName;
   scope: "app" | "group" | "user";
   groupId: string | null;
   userId: string | null;
@@ -43,6 +45,7 @@ export const KILL = "off";
 export type SwitchSource =
   | { kind: "kill" }
   | { kind: "account" }
+  | { kind: "all" }
   | { kind: "group"; groupId: string }
   | { kind: "app" }
   | { kind: "env" };
@@ -67,12 +70,18 @@ export function decide(
   if (kind !== "plumbing" && userId) {
     const own = rows.find((o) => o.scope === "user" && o.userId === userId)?.value;
     if (own) return { value: own, source: { kind: "account" } };
+    if (ALL_FEATURES_RAISES.has(name) && hasAllFeatures(snapshot, userId)) return { value: "on", source: { kind: "all" } };
     const group = snapshot?.groupOf.get(userId) ?? null;
     const groups = group ? rows.filter((o) => o.scope === "group" && o.groupId === group).map((o) => o.value) : [];
     if (group && groups.length > 0) return { value: groups.includes("off") ? "off" : "on", source: { kind: "group", groupId: group } };
   }
   if (app) return { value: app, source: { kind: "app" } };
   return { value: null, source: { kind: "env" } };
+}
+
+/** Whether the account holds an All features row. */
+export function hasAllFeatures(snapshot: SwitchSnapshot | null, userId: string): boolean {
+  return snapshot?.overrides.some((o) => o.switchName === ALL_FEATURES && o.scope === "user" && o.userId === userId && o.value === "on") ?? false;
 }
 
 export function resolveEnv(base: NodeJS.ProcessEnv, snapshot: SwitchSnapshot | null, userId: string | null): NodeJS.ProcessEnv {

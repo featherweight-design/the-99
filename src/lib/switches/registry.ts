@@ -79,3 +79,39 @@ const PARENTS = new Map<string, SwitchName>(
 export const switchParent = (name: SwitchName): SwitchName | null => PARENTS.get(name) ?? null;
 
 export const isSwitchName = (name: string): name is SwitchName => KINDS.has(name);
+
+/**
+ * All features (Hugh, 2026-10-15): one account-scoped row in `flag_overrides` under this reserved name
+ * raises every switch in `ALL_FEATURES_RAISES` for that account, so a switch added later is covered by
+ * the row already there. Not a registry switch: no variable carries it and no flag function reads it.
+ * The resolver applies it below the account's own overrides (an account's explicit Off still wins)
+ * and above the group and app-wide rungs; the env kill switch still beats it.
+ */
+export const ALL_FEATURES = "ALL_FEATURES";
+export type OverrideName = SwitchName | typeof ALL_FEATURES;
+export const isOverrideName = (name: string): name is OverrideName => name === ALL_FEATURES || isSwitchName(name);
+
+/**
+ * Switches All features leaves to their other rungs, each with the reason: a switch whose surface
+ * breaks on a deployment lacking config it needs. A plumbing switch is never raised (it is not a
+ * feature a reader tries), so it needs no entry here.
+ *
+ * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config.
+ * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
+ * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
+ * every table a switch reads ships in a migration production applies on deploy.
+ */
+export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {};
+
+/**
+ * What All features raises: every `feature` and `model` switch not excluded, and every parent those
+ * need, so a raised child is never held off by a parent the account would otherwise lack.
+ */
+export const ALL_FEATURES_RAISES: ReadonlySet<SwitchName> = (() => {
+  const out = new Set<SwitchName>();
+  for (const s of SWITCHES) {
+    if (s.kind === "plumbing" || s.name in ALL_FEATURES_EXCLUDED) continue;
+    for (let n: SwitchName | null = s.name; n && !out.has(n); n = switchParent(n)) out.add(n);
+  }
+  return out;
+})();

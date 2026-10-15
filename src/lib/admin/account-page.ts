@@ -5,6 +5,7 @@ import { dailyLimitsFor, modelOwnerUserId, ownerShareMicro, readAllowance } from
 import { ALLOWANCE_WINDOW_MS, type LedgerRow } from "../model/allowance-rule";
 import { explainForAccounts, hubForAccount } from "../switches/explain";
 import { readSwitchSnapshot } from "../switches/snapshot";
+import { hasAllFeatures } from "../switches/resolve";
 import { listAccounts, orderAccounts, type Account } from "./accounts";
 import {
   accountRows,
@@ -112,6 +113,8 @@ export type AccountPage = {
   group: { id: string; name: string } | null;
   groups: { id: string; name: string }[];
   switches: SwitchGroups;
+  /** Whether the account holds All features; null when the overrides could not be read. */
+  allFeatures: boolean | null;
   features: FeatureSpend[];
   featureTotal: { presses: number; spent: string };
   month: string;
@@ -191,6 +194,7 @@ export async function loadAccountPage(userId: string, now: Date = new Date()): P
     group: groupId ? { id: groupId, name: groupNames.get(groupId) ?? groupId } : null,
     groups: heads.map((g) => ({ id: g.id, name: g.name })).sort((a, b) => a.name.localeCompare(b.name, "en-US")),
     switches: switchGroups(explainForAccounts(snapshot, [userId]).get(userId)!, (id) => groupNames.get(id) ?? id),
+    allFeatures: snapshot ? hasAllFeatures(snapshot, userId) : null,
     features: featureSpend(features),
     featureTotal: featureTotal(features),
     month,

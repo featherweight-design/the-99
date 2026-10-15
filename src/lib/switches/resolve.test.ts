@@ -1,8 +1,8 @@
 // One reader's switches: the kill switch, then account, group, app-wide and the environment.
 import { describe, expect, it } from "vitest";
 import { tuningEnabled } from "../tuning/flag";
-import { resolveEnv, switchBits, type OverrideRow, type SwitchSnapshot } from "./resolve";
-import { SWITCH_NAMES } from "./registry";
+import { decide, resolveEnv, switchBits, type OverrideRow, type SwitchSnapshot } from "./resolve";
+import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, SWITCH_NAMES } from "./registry";
 
 const e = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "DECK_NOTES_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
@@ -72,5 +72,52 @@ describe("switchBits", () => {
     const bits = switchBits(e({ [SWITCH_NAMES[0]]: "true", [SWITCH_NAMES[1]]: "off" }));
     expect(bits).toHaveLength(SWITCH_NAMES.length);
     expect(bits.slice(0, 3)).toBe("100");
+  });
+});
+
+// All features (2026-10-15): one account row raises every feature and model switch, parents included,
+// for that account alone. The env kill and the account's own Off still win; plumbing is never raised.
+describe("All features", () => {
+  const all = (userId = "u1") => row({ switchName: ALL_FEATURES, scope: "user", userId, value: "on" });
+
+  it("raises every feature and model switch for its account, and nobody else's", () => {
+    const s = snap([all()]);
+    const mine = resolveEnv(e({}), s, "u1");
+    const theirs = resolveEnv(e({}), s, "u2");
+    for (const { name, kind } of SWITCHES) {
+      expect(mine[name], name).toBe(kind === "plumbing" ? undefined : "true");
+      expect(theirs[name], name).toBeUndefined();
+    }
+    // A child's flag function asks its parent, so the parent being raised is what turns it on.
+    expect(tuningEnabled(mine)).toBe(true);
+  });
+
+  it("raises a switch added later: the set is the registry's, not a list kept with the row", () => {
+    expect([...ALL_FEATURES_RAISES].sort()).toEqual(SWITCHES.filter((s) => s.kind !== "plumbing").map((s) => s.name).sort());
+  });
+
+  it("loses to the env kill and to the account's own Off, and beats group and app-wide", () => {
+    const s = snap([
+      all(),
+      row({ switchName: "DECK_NOTES_ENABLED", scope: "user", userId: "u1", value: "off" }),
+      row({ switchName: "DECK_STATS_ENABLED", scope: "group", groupId: "g1", value: "off" }),
+      row({ switchName: "LINEUP_ENABLED", scope: "app", value: "off" }),
+    ], { u1: "g1" });
+    const env = resolveEnv(e({ NEVER_CUT_ENABLED: "off" }), s, "u1");
+    expect(env.NEVER_CUT_ENABLED).toBe("off");
+    expect(env.DECK_NOTES_ENABLED).toBe("false");
+    expect(env.DECK_STATS_ENABLED).toBe("true");
+    expect(env.LINEUP_ENABLED).toBe("true");
+    expect(decide("DECK_STATS_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
+  });
+
+  it("leaves plumbing to its app-wide rung", () => {
+    const env = resolveEnv(e({ LIST_CACHE_ENABLED: "true" }), snap([all(), row({ switchName: "LIST_CACHE_ENABLED", scope: "app", value: "off" })]), "u1");
+    expect(env.LIST_CACHE_ENABLED).toBe("false");
+  });
+
+  it("does nothing as an Off row, or at a scope other than an account", () => {
+    expect(resolveEnv(e({}), snap([all("u1"), row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "off" })]), "u2").DECK_NOTES_ENABLED).toBeUndefined();
+    expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").DECK_NOTES_ENABLED).toBeUndefined();
   });
 });
