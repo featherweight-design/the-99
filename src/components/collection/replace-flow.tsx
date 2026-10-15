@@ -5,7 +5,7 @@
 //         replace), straight to confirmUpload() with no step 3.
 // Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import {
   confirmUpload,
   previewUploadChange,
@@ -43,6 +43,35 @@ const SYNC_REREAD_MS = 150;
 
 const isSyncRead = (r: unknown): r is SyncRead =>
   typeof r === "object" && r !== null && "detail" in r && "sync" in r && (r as SyncRead).sync !== undefined;
+
+/** The choice's reads for one upload and attempt. */
+type ChoiceRead = {
+  key: string;
+  datas: ChoiceReads | null;
+  error: string | null;
+  /** The server answered "nothing to compare" (confirmed elsewhere): the shipped review and dialog stand. */
+  noRead: boolean;
+};
+
+/** No base to merge against any more, marked on the plain Sync read: what the Sync card draws. */
+function markBaseGone(setRead: Dispatch<SetStateAction<ChoiceRead | null>>, reason: NonNullable<UploadSyncPreview["unavailable"]>) {
+  setRead((was) =>
+    was?.datas?.sync ? { ...was, datas: { ...was.datas, sync: { ...was.datas.sync, sync: { ...was.datas.sync.sync, unavailable: reason } } } } : was,
+  );
+}
+
+/**
+ * Every Sync read after the plain one lands through here: a partial pick's read, a review's re-read, the read that
+ * decides whether a thrown confirm landed. A read whose base has gone (the anchor went: another tab reverted it)
+ * compared nothing, so it is never drawn as a review, `Nothing to sync` included: true, and the base is marked. A
+ * Sync pick or review standing on a marked base is taken back during render, in one place. The plain read needs no
+ * call: its own `unavailable` IS the mark.
+ */
+function syncReadGone(setRead: Dispatch<SetStateAction<ChoiceRead | null>>, r: SyncRead): boolean {
+  if (r.sync.unavailable === null) return false;
+  markBaseGone(setRead, r.sync.unavailable);
+  return true;
+}
 
 export function ReplaceFlow({
   currentCardCount,
@@ -114,13 +143,7 @@ export function ReplaceFlow({
   // off), there is no choice: the review is the shipped Replace one and the confirm is the dialog.
   // Keyed on the upload and the attempt, so a new upload or a retry reads as "not read yet" by
   // derivation, with nothing to reset in an effect.
-  const [read, setRead] = useState<{
-    key: string;
-    datas: ChoiceReads | null;
-    error: string | null;
-    /** The server answered "nothing to compare" (confirmed elsewhere): the shipped review and dialog stand. */
-    noRead: boolean;
-  } | null>(null);
+  const [read, setRead] = useState<ChoiceRead | null>(null);
   const [attempt, setAttempt] = useState(0);
   // Which card the reader has picked (never preselected), and whether the review is open.
   const [picked, setPicked] = useState<UploadMode | null>(null);
@@ -161,6 +184,14 @@ export function ReplaceFlow({
   const pickRead: PickRead | undefined = pickNow === "everything" ? (syncBase ?? undefined) : cachedReads[pickNow];
   const planDigest = pickRead && pickRead !== "failed" ? pickRead.sync.planDigest : "";
   const syncUsable = syncBase !== null && syncBase.sync.unavailable === null;
+  // A Sync pick, or its review, standing on a base that has gone is taken back here, during render, whichever read
+  // or refusal found it gone (`syncReadGone`, `markBaseGone`): back to the choice, where the Sync card says why.
+  // One place, so no site that marks the base can leave a review drawn over it.
+  if (picked === "sync" && syncBase !== null && !syncUsable) {
+    setPicked(null);
+    setReviewing(false);
+    setChange(null);
+  }
   useEffect(() => {
     if (!deckCheck || !previewedId || firstImport) return;
     let live = true;
@@ -209,6 +240,8 @@ export function ReplaceFlow({
       const file = (r: PickRead) => {
         inFlight.current.delete(key);
         setPickReads((was) => ({ ...was, [key]: r }));
+        // The anchor can go between the plain read and this one: then this read compared nothing.
+        if (r !== "failed") syncReadGone(setRead, r);
       };
       previewUploadChange(previewedId, "sync", { pick })
         .then((r) => file(isSyncRead(r) ? r : "failed"))
@@ -271,10 +304,7 @@ export function ReplaceFlow({
           }
           // The base went while the review was open (another tab reverted the anchor): no comparison was made,
           // so nothing here may read as one. Back to the choice, as the confirm's own refusal goes.
-          if (r.sync.unavailable !== null) {
-            syncUnavailable(r.sync.unavailable);
-            return;
-          }
+          if (syncReadGone(setRead, r)) return;
           const moved = syncMoved.current;
           syncMoved.current = false;
           setChange((was) => was && { ...was, data: r, decks: r.decks, fresh: new Set(), changed: moved, failure: null });
@@ -308,22 +338,14 @@ export function ReplaceFlow({
     conflictsRef.current?.focusFirstUndecided();
   }, [syncWant, syncReading, pending, change]);
 
-  /** No base to merge against any more: back to the choice, where the Sync card now says why. */
-  function syncUnavailable(reason: NonNullable<UploadSyncPreview["unavailable"]>) {
-    setRead((was) =>
-      was?.datas?.sync ? { ...was, datas: { ...was.datas, sync: { ...was.datas.sync, sync: { ...was.datas.sync.sync, unavailable: reason } } } } : was,
-    );
-    setPicked(null);
-    setReviewing(false);
-    setChange(null);
-  }
-
   function openReview(mode: UploadMode) {
     if (!datas || pending) return;
     let data: UploadChangePreview;
     if (mode === "sync") {
       // The pick's own read, drawn with no answers; answers kept from an earlier visit re-read at once.
       if (!pickRead || pickRead === "failed") return;
+      // A read whose base has gone is never opened, whichever pick it is.
+      if (!syncUsable || syncReadGone(setRead, pickRead)) return;
       data = pickRead;
       setSyncDrawn(syncKey({}, syncNonce));
     } else data = datas[mode];
@@ -396,7 +418,7 @@ export function ReplaceFlow({
         return;
       }
       if (outcome && "unavailable" in outcome) {
-        syncUnavailable(outcome.unavailable);
+        markBaseGone(setRead, outcome.unavailable);
         return;
       }
       if (review && outcome && "missingCard" in outcome) {
@@ -428,10 +450,12 @@ export function ReplaceFlow({
       // so it must not claim the collection is unchanged either.
       const landed = choosing
         ? await previewUploadChange(preview.uploadId, picked ?? "replace", picked === "sync" ? { pick: pickNow, answers } : undefined).then(
-            (r) => (r === null ? "yes" : "no"),
+            // A Sync whose base went since: nothing landed, and the choice says why.
+            (r) => (r === null ? "yes" : isSyncRead(r) && syncReadGone(setRead, r) ? "gone" : "no"),
             () => "unknown" as const,
           )
         : "no";
+      if (landed === "gone") return;
       if (landed === "yes") {
         nav.go(`/collection/replace/summary/${preview.uploadId}`);
         return;

@@ -274,6 +274,22 @@ describe("ReplaceFlow · the Sync review", () => {
     expect(screen.queryByRole("heading", { name: "Review before you sync" })).toBeNull();
   });
 
+  it("goes back to the choice when a thrown confirm's own re-read finds the base gone", async () => {
+    let gone = false;
+    choiceReads((o) => syncRead(o?.answers, gone ? { unavailable: "noRecord", nothing: true } : {}));
+    await reachSyncReview();
+    fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
+    await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
+    confirmUpload.mockImplementationOnce(async () => {
+      gone = true;
+      throw new Error("boom");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    const card = await screen.findByRole("radio", { name: "Sync my collection" });
+    expect(card.getAttribute("aria-disabled")).toBe("true");
+    expect(screen.queryByRole("heading", { name: "Review before you sync" })).toBeNull();
+  });
+
   it("drops a Sync read still in flight once the reader leaves for another review", async () => {
     let release: (v: unknown) => void = () => {};
     choiceReads((o) => {

@@ -152,6 +152,48 @@ describe("ReplaceFlow · the Sync choice", () => {
     expect(picks.sort()).toEqual(["additions", "plain", "tokens"]);
   });
 
+  it("takes Sync back to the choice when a pick's own read finds the base gone, never opening `Nothing to sync`", async () => {
+    let release: (v: unknown) => void = () => {};
+    previewChange.mockImplementation(async (_id: string, mode: string, opts?: { pick?: string }) => {
+      if (mode !== "sync") return plain(mode === "add" ? 8961 : 4345);
+      // The anchor goes between the plain read and Only what it adds' own.
+      if (opts?.pick === "additions")
+        return new Promise((resolve) => {
+          const gone = syncData(4617, {}, { unavailable: "noRecord" }, "");
+          release = () => resolve({ ...gone, sync: { ...gone.sync, nothing: true } });
+        });
+      if (opts?.pick === "tokens") return syncData(4616, {}, { stale: "older", kept: 121, changed: 38 }, "d-tokens");
+      return syncData(4580, { up: 3, leaving: 16, down: 2 }, { stale: "older", kept: 121, taken: 21, changed: 44, missing: 12 }, "d-all");
+    });
+    await reachChoice(true);
+    fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
+    await screen.findByRole("group", { name: "What should Sync take from this file?" });
+    await act(async () => release(undefined));
+    const card = screen.getByRole("radio", { name: "Sync my collection" });
+    expect(card.getAttribute("aria-disabled")).toBe("true");
+    expect(card.getAttribute("aria-checked")).toBe("false");
+    const go = screen.queryByRole("button", { name: "Review the sync →" });
+    if (go) fireEvent.click(go);
+    expect(screen.queryByRole("heading", { name: "Review before you sync" })).toBeNull();
+    expect(screen.queryByText(/^Nothing to sync\./)).toBeNull();
+  });
+
+  it("leaves a Replace review standing when a pick's read finds the base gone", async () => {
+    let release: (v: unknown) => void = () => {};
+    previewChange.mockImplementation(async (_id: string, mode: string, opts?: { pick?: string }) => {
+      if (mode !== "sync") return plain(mode === "add" ? 8961 : 4345);
+      if (opts?.pick === "tokens") return new Promise((resolve) => { release = () => resolve(syncData(4616, {}, { unavailable: "noRecord" }, "")); });
+      if (opts?.pick === "additions") return syncData(4619, { up: 3, before: 4617 }, { stale: "older", kept: 121, taken: 3, changed: 40 }, "d-adds");
+      return syncData(4580, { up: 3, leaving: 16, down: 2 }, { stale: "older", kept: 121, taken: 21, changed: 44, missing: 12 }, "d-all");
+    });
+    await reachChoice(true);
+    fireEvent.click(screen.getByRole("radio", { name: /Replace my collection/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Review the replace →" }));
+    await screen.findByRole("heading", { name: /Review before you replace/ });
+    await act(async () => release(undefined));
+    expect(screen.getByRole("heading", { name: /Review before you replace/ })).toBeTruthy();
+  });
+
   it("draws no follow-up for a file whose cards match the last upload (S1)", async () => {
     previewChange.mockImplementation(async (_id: string, mode: string) =>
       mode === "sync" ? syncData(4616, {}, { stale: "noNewer", kept: 121, changed: 40 }, "d") : plain(mode === "add" ? 8961 : 4345));
