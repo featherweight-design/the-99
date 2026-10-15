@@ -26,7 +26,7 @@ import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
 import { entryRow, HOW_IT_WORKS_ID, howItWorksLinksCopy } from "../../lib/copy/how-it-works-links";
 import { RecordVisit } from "./record-visit";
-import { switchedIds, unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
+import { displayedId, switchedIds, unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
 import {
   ABOUT_VERSION,
   aboutCopy,
@@ -398,7 +398,7 @@ export function AboutPage({
         <RecordVisit
           behind={behind || (howItWorks && !seenIds.includes(HOW_IT_WORKS_ID))}
           shown={shown}
-          drawn={visible.map((e) => e.id)}
+          drawn={visible.map(displayedId)}
         />
       )}
       {(sheetMode || howItWorks) && <JumpMark />}

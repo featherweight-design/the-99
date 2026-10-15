@@ -144,3 +144,25 @@ describe("notes, on the page", () => {
     expect(within(el).getByRole("button", { name: /Thassa’s Oracle/, hidden: true }).className).toContain("decoration-dashed");
   });
 });
+
+describe("what a /about visit acknowledges to Home's banner in this document", () => {
+  afterEach(() => {
+    delete process.env.COLLECTION_EDIT_ENABLED;
+    delete process.env.COLLECTION_SYNC_ENABLED;
+  });
+
+  // The banner's line names each entry by the form it draws (`displayedId`), so the page must acknowledge by the
+  // same identity: a page drawn in Sync's variant answers the variant's line, and never the base form's.
+  it("acknowledges an entry drawn in its variant by its variant id, not its base id", async () => {
+    process.env.COLLECTION_EDIT_ENABLED = "true";
+    process.env.COLLECTION_SYNC_ENABLED = "true";
+    const { visibleEntries, switchedIds } = await import("../../lib/about/visible");
+    const { aboutAcknowledged, resetArrivalsAcknowledged } = await import("../home/arrivals-seen");
+    resetArrivalsAcknowledged();
+    // A current reader: the page acknowledges what it drew at once.
+    render(<AboutPage env={ENV_VIEW} seen={ABOUT_VERSION} seenIds={switchedIds(visibleEntries(ENV_VIEW))} sheetMode />);
+    expect(aboutAcknowledged(["upload-choice@COLLECTION_SYNC_ENABLED"])).toBe(true);
+    expect(aboutAcknowledged(["upload-choice"])).toBe(false);
+    resetArrivalsAcknowledged();
+  });
+});

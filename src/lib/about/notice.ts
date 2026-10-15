@@ -11,7 +11,7 @@
 // it); the cookie is per browser and is read per request, outside it, and the page combines the two.
 
 import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
-import { isFirstRun, switchedIds, unseenEntries, type SeenState } from "./visible";
+import { displayedId, isFirstRun, switchedIds, unseenEntries, type SeenState } from "./visible";
 
 export type AboutNotice =
   | { kind: "firstRun" }
@@ -36,7 +36,8 @@ export function aboutNotice(
 /**
  * What the browser is handed: the titles it draws, and `ids`, what its ✕ claims and what a `/about` visit in the
  * same document acknowledges. Behind, the unseen entries; first run, every visible entry (the line stands for the
- * whole page, and the ✕ writes what a visit writes).
+ * whole page, and the ✕ writes what a visit writes). Each id names the FORM drawn (`displayedId`): an entry drawn
+ * in its variant by its variant id, so a line drawn before a switch chose the variant claims the base form only.
  */
 export type AboutLine =
   | { kind: "firstRun"; ids: string[] }
@@ -44,8 +45,8 @@ export type AboutLine =
 
 export function aboutLine(notice: AboutNotice | null, visible: readonly AboutEntry[]): AboutLine | null {
   if (!notice) return null;
-  if (notice.kind === "firstRun") return { kind: "firstRun", ids: visible.map((e) => e.id) };
-  return { kind: "behind", titles: notice.entries.map((e) => e.title), ids: notice.entries.map((e) => e.id) };
+  if (notice.kind === "firstRun") return { kind: "firstRun", ids: visible.map(displayedId) };
+  return { kind: "behind", titles: notice.entries.map((e) => e.title), ids: notice.entries.map(displayedId) };
 }
 
 /** No notice names more ids than the catalog holds; a longer claim is not one a page drew. */
@@ -54,7 +55,8 @@ const MAX_CLAIMED = 200;
 /**
  * What the banner's ✕ writes for About (Q2: ✕ counts as seen), re-decided on the server: `claimed` is what the
  * page drew, sent back by the browser and so not trusted. The reader's notice is read again (cookie aside: a ✕
- * only exists where the line was drawn), and only the claimed ids it still names are written. So a client can
+ * only exists where the line was drawn), and only the claimed ids it still names, in the form it now draws them
+ * (`displayedId`, an exact match), are written. So a client can
  * drop an id but never add one, and an entry switched on after the page rendered is not marked seen unread.
  *
  * The version floor is `ABOUT_VERSION`, as a visit writes, when every unswitched entry the notice names now was
@@ -73,10 +75,12 @@ export function aboutDismissal(
   if (!notice) return null;
   const named = new Set(claimed.slice(0, MAX_CLAIMED).filter((id): id is string => typeof id === "string"));
   const current = notice.kind === "firstRun" ? [...visible] : notice.entries;
-  const valid = current.filter((e) => named.has(e.id));
+  // EXACT match on the form drawn: a claim of an entry's base form does not answer it once it is drawn in its
+  // variant (a switch flipped after the render), so the variant is never marked seen unread.
+  const valid = current.filter((e) => named.has(displayedId(e)));
   if (valid.length === 0) return null;
   const unswitched = current.filter((e) => !e.switch);
-  const unclaimed = unswitched.filter((e) => !named.has(e.id));
+  const unclaimed = unswitched.filter((e) => !named.has(displayedId(e)));
   // Below every unclaimed entry, so none is marked seen by the floor; a claimed entry above that stays new too,
   // which is the safe side.
   const floor = unclaimed.length === 0

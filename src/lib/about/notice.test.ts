@@ -5,7 +5,8 @@ import { ABOUT_VERSION, aboutEntries, type AboutEntry } from "../copy/about";
 import { HOW_IT_WORKS_ID } from "../copy/how-it-works-links";
 import { sheetCookieIsCurrent, sheetCookieValue, sheetDecision } from "./gate";
 import { aboutDismissal, aboutLine, aboutNotice } from "./notice";
-import { visibleEntries, type SeenState } from "./visible";
+import { displayedId, visibleEntries, type SeenState } from "./visible";
+import { aboutAcknowledged, acknowledgeAbout, resetArrivalsAcknowledged } from "../../components/home/arrivals-seen";
 
 const V = ABOUT_VERSION;
 const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
@@ -101,9 +102,42 @@ describe("aboutDismissal (the ✕)", () => {
   it("writes the variant id of an entry drawn in its variant, the one isSeen checks, so the notice stops naming it", () => {
     const varied: AboutEntry = { ...aboutEntries[0], id: "varied", since: 5, switch: undefined, variantOn: "COLLECTION_SYNC_ENABLED" };
     const vis = [plain, varied];
-    const out = aboutDismissal(["plain", "varied"], seen(2), vis, 6);
+    // The line claims the form it drew (`aboutLine`): the variant id.
+    expect(aboutLine(aboutNotice(seen(2), vis, false), vis)!.ids).toEqual(["plain", "varied@COLLECTION_SYNC_ENABLED"]);
+    const out = aboutDismissal(["plain", "varied@COLLECTION_SYNC_ENABLED"], seen(2), vis, 6);
     expect(out).toEqual({ version: 6, ids: ["varied@COLLECTION_SYNC_ENABLED"] });
     expect(aboutNotice({ version: out!.version, ids: out!.ids }, vis, false)).toBeNull();
+  });
+
+  // A banner drawn before Collection Sync flipped named `upload-choice` in its base form. Its ✕ after the flip claims
+  // that form, which the reader read; the variant they never saw stays new.
+  const EDIT = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true" }));
+  const SYNC = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", COLLECTION_SYNC_ENABLED: "true" }));
+  const SYNC_ID = "upload-choice@COLLECTION_SYNC_ENABLED";
+
+  it("does not mark the variant seen when the banner's base form is dismissed after the switch flipped", () => {
+    const before = aboutLine(aboutNotice(seen(V), EDIT, false), EDIT)!;
+    expect(before.ids).toContain("upload-choice");
+    expect(before.ids).not.toContain(SYNC_ID);
+    const out = aboutDismissal(before.ids, seen(V), SYNC);
+    expect(out?.ids ?? []).not.toContain(SYNC_ID);
+    const after = aboutNotice({ version: out?.version ?? V, ids: out?.ids ?? [] }, SYNC, false);
+    expect(after?.kind === "behind" && after.entries.map((e) => e.id)).toContain("upload-choice");
+    // The variant's own claim does answer it.
+    expect(aboutDismissal([SYNC_ID], seen(V), SYNC)!.ids).toContain(SYNC_ID);
+  });
+
+  it("does not hide the variant's banner behind a /about visit that drew the base form", () => {
+    resetArrivalsAcknowledged();
+    // What `/about` acknowledges for a page drawn with Sync off.
+    acknowledgeAbout(EDIT.map(displayedId));
+    const line = aboutLine(aboutNotice(seen(V), SYNC, false), SYNC)!;
+    expect(line.ids).toContain(SYNC_ID);
+    expect(aboutAcknowledged(line.ids)).toBe(false);
+    // A visit that drew the variant does.
+    acknowledgeAbout(SYNC.map(displayedId));
+    expect(aboutAcknowledged(line.ids)).toBe(true);
+    resetArrivalsAcknowledged();
   });
 
   it("takes a first-run reader past first run with what a visit writes", () => {

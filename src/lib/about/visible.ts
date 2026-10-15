@@ -150,6 +150,14 @@ export function unseenEntries(visible: readonly AboutEntry[], seen: SeenState): 
 export const variantId = (id: string, sw: AboutSwitch) => `${id}@${sw}`;
 
 /**
+ * The identity of the FORM an entry is drawn in: its variant id when drawn in its variant, else its own id. What a
+ * banner claims and a visit acknowledges in the browser, so a claim or an acknowledgement of one form never answers
+ * the other: a banner drawn before a switch chose the variant names the base form, and the reader has not read the
+ * variant.
+ */
+export const displayedId = (e: AboutEntry) => (e.variantOn ? variantId(e.id, e.variantOn) : e.id);
+
+/**
  * The switched entries this deployment draws, and the variants it draws them in, which a visit
  * records as seen. An entry in its variant records its own id too, so the base form is not new
  * again if that switch is later turned off.
