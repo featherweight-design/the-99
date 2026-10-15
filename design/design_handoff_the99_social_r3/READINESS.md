@@ -3,7 +3,7 @@
 **🟢 Approved.** Hugh approved R1 on 2026-10-15 with one change: the stand-in pictures became real commander art
 (Zimone, Rootha, Jace, Heroes in a Half Shell, Sai, Captain America), cropped from the app's precon grid, with the
 Colors boards using those commanders' own identities. G4 (no label-only anyone seat) and G5 (a deleted account's
-friend rows) ship as drawn. Engineering still confirms G1, G6 and G7 in the plan.
+friend rows) ship as drawn. Engineering still confirms G1, G6, G7 and G9 (commander image focus, which also covers Social R1) in the plan.
 
 ## Locks held
 
