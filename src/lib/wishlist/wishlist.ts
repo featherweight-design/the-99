@@ -112,23 +112,39 @@ export async function loadWishlistWant(viewerId: string, oracleId: string): Prom
 }
 
 /**
- * What a want write did: `wanted`, the line stands; `held`, the want is no more than the collection already holds,
- * so there is nothing to want and no line stands (any earlier line for the card is gone); `null`, nothing was written
- * (bad input, or a card id the catalog does not hold).
+ * What a want write did. `wanted`: the line stands at `quantity`. `held`: the want is no more than the collection
+ * already holds, so there is nothing to want and no line stands (any earlier line for the card is gone). `held` is
+ * what the collection holds of the card, read under the same lock as the write, for the screen's `have N`. `null`
+ * from the writes below means nothing was written: bad input, or a card id the catalog does not hold.
  */
-export type WantResult = "wanted" | "held" | null;
+export type WantResult = { status: "wanted" | "held"; quantity: number; held: number };
 
 /**
  * Put a card on the viewer's wishlist wanting `quantity` copies, or change how many. A card id the catalog
  * does not hold writes nothing (checked in the statement, so no foreign-key error reaches the caller). A want the
  * collection already reaches, set new or lowered to what is held, leaves no line, and is NOT kept for the collected
  * strip: the player made that change in front of them, and the strip says what was collected "since you last looked".
- * Under the player's collection lock, so a collection write cannot land between the read of what is held and the
- * write.
  */
-export async function setWishlistQuantity(viewerId: string, oracleId: unknown, rawQuantity: unknown = 1): Promise<WantResult> {
+export async function setWishlistQuantity(viewerId: string, oracleId: unknown, rawQuantity: unknown = 1): Promise<WantResult | null> {
   const quantity = cleanQuantity(rawQuantity);
   if (typeof oracleId !== "string" || !UUID.test(oracleId) || quantity === null) return null;
+  return writeWant(viewerId, oracleId, () => quantity);
+}
+
+/**
+ * Add to wishlist's first press (Social R2 G4): want ONE MORE than the collection holds, capped at 99, so a line
+ * lands wanted rather than collected. A player holding 99 or more is answered `held`, with no line.
+ */
+export async function wantOneMore(viewerId: string, oracleId: unknown): Promise<WantResult | null> {
+  if (typeof oracleId !== "string" || !UUID.test(oracleId)) return null;
+  return writeWant(viewerId, oracleId, (held) => Math.min(held + 1, MAX_WISHLIST_QUANTITY));
+}
+
+/**
+ * The one want write. Under the player's collection lock, so a collection write cannot land between the read of
+ * what is held and the write, and the want is decided from that read.
+ */
+async function writeWant(viewerId: string, oracleId: string, want: (held: number) => number): Promise<WantResult | null> {
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
     const { rows: [card] } = await tx.execute<{ held: number }>(sql`
@@ -138,15 +154,16 @@ export async function setWishlistQuantity(viewerId: string, oracleId: unknown, r
       from ${cards} c where c.oracle_id = ${oracleId}
     `);
     if (!card) return null;
+    const quantity = want(card.held);
     if (quantity <= card.held) {
       await tx.delete(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), eq(wishlistItems.oracleId, oracleId)));
-      return "held";
+      return { status: "held", quantity, held: card.held };
     }
     await tx.execute(sql`
       insert into ${wishlistItems} (user_id, oracle_id, quantity) values (${viewerId}, ${oracleId}, ${quantity})
       on conflict (user_id, oracle_id) do update set quantity = excluded.quantity
     `);
-    return "wanted";
+    return { status: "wanted", quantity, held: card.held };
   });
 }
 
