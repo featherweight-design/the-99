@@ -12,8 +12,8 @@
 // final string, so assistive tech hears one value and never the count in between. The server renders the real figure too
 // (no script, no zero); once the page hydrates the digits drop to the start and count, so a first load shows the real figure
 // for the moments before hydration and then counts from 0: an accepted flash, since the alternative is a 0 with no script.
-// The digits sit in a box as wide as the final figure (in `ch`, which tabular digits make exact), right-aligned, so the
-// words around them do not shift as it grows. Reduced motion shows the
+// The digits sit in a box as wide as the wider of the final and the moving figure, right-aligned, so the words around
+// them do not shift as it grows (or falls). Reduced motion shows the
 // final figure and never animates.
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -39,11 +39,11 @@ export function easeInOut(t: number): number {
 }
 
 /** The figure as the app writes a count: thousands separators, en-US. */
-const format = (n: number) => n.toLocaleString("en-US");
+const format = (n: number, grouped = true) => (grouped ? n.toLocaleString("en-US") : String(n));
 
 const reduced = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export function CountUp({ value, before = "", after = "" }: { value: number; before?: string; after?: string }) {
+export function CountUp({ value, before = "", after = "", grouped = true }: { value: number; before?: string; after?: string; grouped?: boolean }) {
   const [shown, setShown] = useState(value);
   // What the digits showed last, so a change counts from it (and a first draw from 0).
   const last = useRef<number | null>(null);
@@ -93,15 +93,18 @@ export function CountUp({ value, before = "", after = "" }: { value: number; bef
     return () => document.removeEventListener("visibilitychange", settle);
   }, [value]);
 
-  const whole = `${before}${format(value)}${after}`;
+  const whole = `${before}${format(value, grouped)}${after}`;
   if (value < COUNT_UP_MIN) return <>{whole}</>;
   return (
     <>
       <span className="sr-only">{whole}</span>
       <span aria-hidden="true" className="tabular-nums">
         {before}
-        <span className="inline-block text-end" style={{ minWidth: `${format(value).length}ch` }} data-count-up>
-          {format(shown)}
+        {/* One grid cell holds both the final figure (unseen) and the moving one, so the box is the wider of the two in
+            the text's own font and letter-spacing, and a count that falls (100 to 99) starts no narrower than it ends. */}
+        <span className="inline-grid text-end">
+          <span className="invisible col-start-1 row-start-1">{format(value, grouped)}</span>
+          <span className="col-start-1 row-start-1" data-count-up>{format(shown, grouped)}</span>
         </span>
         {after}
       </span>

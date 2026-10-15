@@ -11,7 +11,12 @@ const source = readFileSync(join(process.cwd(), "src/components/ui/count-up.tsx"
 const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 const visible = (c: HTMLElement) => c.querySelector("[data-count-up]")?.textContent;
 const twin = (c: HTMLElement) => c.querySelector(".sr-only")?.textContent;
-const whole = (c: HTMLElement) => c.querySelector("[aria-hidden]")?.textContent;
+// What the eye reads: the aria-hidden text without the unseen sizing copy of the final figure.
+const whole = (c: HTMLElement) => {
+  const copy = c.querySelector("[aria-hidden]")?.cloneNode(true) as HTMLElement | undefined;
+  copy?.querySelectorAll(".invisible").forEach((e) => e.remove());
+  return copy?.textContent;
+};
 
 function reduce(on: boolean) {
   window.matchMedia = ((q: string) => ({ matches: on && q.includes("reduce"), addEventListener() {}, removeEventListener() {}, media: q })) as never;
@@ -110,6 +115,6 @@ describe("CountUp around its words", () => {
     expect(twin(container)).toBe("1,284 of 5,000 · $94.80");
     act(() => void vi.advanceTimersByTime(COUNT_UP_DELAY_MS + COUNT_UP_MS / 2));
     expect(whole(container)?.endsWith(" of 5,000 · $94.80")).toBe(true);
-    expect(container.querySelector("[data-count-up]")?.getAttribute("style")).toContain("min-width: 5ch");
+    expect(container.querySelector(".invisible")?.textContent).toBe("1,284");
   });
 });
