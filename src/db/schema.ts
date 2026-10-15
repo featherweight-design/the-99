@@ -3455,6 +3455,11 @@ export const scanLabResults = pgTable("scan_lab_results", {
   agreedFrames: smallint("agreed_frames").notNull().default(0),
   indexVersion: text("index_version").notNull(),
   frame: bytea("frame"),
+  /**
+   * The card it really was, named by the player after a ✗ tap ("What card was it?"). Null on a ✓
+   * tap (the guess is the card), on a ✗ the player skipped, and on every row from before it existed.
+   */
+  trueOracleId: uuid("true_oracle_id"),
 }, (t) => [
   index("scan_lab_results_user_idx").on(t.userId, t.createdAt),
   check("scan_lab_results_latency_check", sql`${t.latencyMs} >= 0`),

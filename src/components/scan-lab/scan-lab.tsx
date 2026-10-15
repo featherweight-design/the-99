@@ -3,7 +3,8 @@
 // The card-scan lab's camera loop (`/lab/scan`). Everything runs on the device: the frame is drawn
 // to a canvas, the detector finds the four corners, the card is warped to 320x448, embedded, and
 // matched against the card index. Only a ✓/✗ tap sends anything, and a frame only with Keep this
-// frame ticked (the default). Unstyled beyond the tokens: it is a measuring page with no design handoff.
+// frame ticked (the default). After a ✗ tap, an optional "What card was it?" step under the controls
+// names the card it really was. Unstyled beyond the tokens: it is a measuring page with no design handoff.
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
@@ -13,6 +14,7 @@ import {
 import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan-lab/reading";
 import { sessionHolder } from "../../lib/scan-lab/sessions";
+import { TrueCardStep } from "./true-card-step";
 import {
   AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
 } from "../../lib/scan-lab/models";
@@ -85,6 +87,9 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const [keepFrame, setKeepFrame] = useState(true);
   const [note, setNote] = useState<string | null>(null);
   const [taps, setTaps] = useState({ n: 0, right: 0 });
+  // The ✗ row the "What card was it?" step labels; any new tap replaces or closes it.
+  const [missed, setMissed] = useState<string | null>(null);
+  const tapSeq = useRef(0);
   const indexVersion = useRef("unknown");
 
   useEffect(() => {
@@ -227,6 +232,8 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     // one reading, the one on screen: its verdict, its timings and its own crop
     const r = reading;
     const crop = readingCrop(r);
+    setMissed(null);
+    const mine = ++tapSeq.current;
     let frame: string | null = null;
     if (keepFrame && crop) {
       const c = document.createElement("canvas");
@@ -243,6 +250,11 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     if (res?.ok) {
       setTaps((t) => ({ n: t.n + 1, right: t.right + (correct ? 1 : 0) }));
       setNote(copy.saved);
+      if (!correct) {
+        const body = (await res.json().catch(() => null)) as { id?: unknown } | null;
+        // a later tap already closed this miss's step, so a late answer does not reopen it
+        if (typeof body?.id === "string" && mine === tapSeq.current) setMissed(body.id);
+      }
     } else {
       setNote(copy.saveFailed);
     }
@@ -302,6 +314,17 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
             {copy.taps(taps.n, taps.right)}
             {note ? ` · ${note}` : ""}
           </span>
+          {/* Under the controls, so opening it never moves them; keyed so a new miss starts empty. */}
+          {missed && (
+            <TrueCardStep
+              key={missed}
+              resultId={missed}
+              onDone={(done) => {
+                setMissed(null);
+                if (done) setNote(done);
+              }}
+            />
+          )}
         </section>
       )}
     </div>
