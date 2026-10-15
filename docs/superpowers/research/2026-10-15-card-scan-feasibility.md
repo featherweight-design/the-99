@@ -241,8 +241,12 @@ Perspective, glare, sleeve sheen and low contrast at severity 2 (appendix):
 ## Frame agreement (blur and low light)
 
 300 cross-printing queries, 5 independent frames each, every frame augmented at the same severity
-with its own seed. Detector path, with the p99 gate. An undetected frame casts no vote. Top-1 on
-the every-printing index; "single frame" is frame 0.
+with its own seed. Detector path, with the p99 gate. A frame votes when it passes the card-present
+gate, the only signal a real scanner has; ground-truth corners are not consulted, so a frame whose
+quad is badly placed still votes. A frame below the gate casts no vote. Top-1 on the
+every-printing index; "single frame" is frame 0 by the same rule. At most 0.1% of frames in any
+row pass the gate with a badly placed quad (IoU under 0.9), so this moves one row by a third of a
+point.
 
 | augmentation | sev | index | single frame right | 2-of-3: right / no answer / wrong | 3-of-5: right / no answer / wrong |
 |---|---|---|---|---|---|
@@ -250,7 +254,7 @@ the every-printing index; "single frame" is frame 0.
 | blur | 2 | own present | 27.0 | 26.3 / 57.7 / 16.0 | 26.3 / 65.0 / 8.7 |
 | blur | 3 | own present | 1.7 | 1.0 / 85.0 / 14.0 | 0.3 / 92.0 / 7.7 |
 | low light | 1 | own present | 90.7 | 92.7 / 7.0 / 0.3 | 93.3 / 6.3 / 0.3 |
-| low light | 2 | own present | 33.0 | 34.0 / 32.0 / 34.0 | 34.0 / 34.3 / 31.7 |
+| low light | 2 | own present | 33.3 | 34.3 / 31.7 / 34.0 | 34.3 / 34.0 / 31.7 |
 | low light | 3 | own present | 0.0 | 0.0 / 94.7 / 5.3 | 0.0 / 94.7 / 5.3 |
 | realistic | - | own present | 50.3 | 51.0 / 48.0 / 1.0 | 55.7 / 44.0 / 0.3 |
 | blur | 1 | held out | 42.7 | 42.7 / 29.0 / 28.3 | 42.7 / 33.3 / 24.0 |
@@ -347,6 +351,15 @@ right answers have a median margin of 0.197 against 0.014 for wrong ones.
 - **Galleries**: single (34,383); multi (49,492: one printing per (oracle, illustration), the
   reference for its own art, else the newest non-promo, with the query printings held out); every
   printing (103,823 with DFC backs). Held-out figures mask the scene's own Scryfall id per scene.
+- **Top-k by oracle**: the run ranked the 60 nearest printing rows and deduplicated them by
+  oracle, so a card whose printings fill those 60 rows could return fewer than 5 oracles,
+  understating top-5 and leaving no runner-up for the margin. Counted in `results.jsonl`: of
+  46,712 card scenes, 2 dhvazquez fp32 lists (both same-printing controls, outside every
+  margin and top-5 cross-printing figure), 4 int8 lists and 8 DINOv2 lists came back short, and
+  in every short fp32 and int8 list the right oracle was already present and ranked first (the DINOv2 figures are top-1
+  only, which a short list cannot change), so no figure in this report moves. No fp32 list lacks a runner-up. `run_queries.py` now widens the
+  pool until it holds 5 distinct oracles among unmasked rows. The top-10 vote rows count 10
+  printing rows by design and can name fewer than 5 oracles.
 - **Images**: the catalog's stored `normal` URIs (cards.scryfall.io, 488x680), each fetched
   once (103,361 files, 11.0 GB, 0 failures). The fetch used 8 workers with keep-alive, a 0.1 s
   pause per worker and a research User-Agent, and ran at about 42/s.
@@ -460,8 +473,14 @@ Single thread on an Apple M4 Pro, load average about 23 during these runs. Media
 | dhvazquez embedder int8 | 21.4 / 19.0 | 150.7 / 145.7 |
 | DINOv2-small fp32, 224x168 | 106.5 / 101.8 | 290.6 / 285.4 |
 | DINOv2-small int8 | not runnable on 1.19 | 244.1 / 234.5 |
-| kNN, 103,823 × 256 | 1.34 / 1.09 (numpy fp32) | 45.0 / 39.2 (the lab's JS, int8) |
+| kNN, 103,823 × 256 | 2.13 / 1.59 (numpy fp32; measured 2026-10-15 at load ~17, see below) | 45.0 / 39.2 (the lab's JS, int8) |
 | kNN, 34,383 × 256 | 0.70 / 0.24 | 38.1 / 23.9 (measured under load ~43) |
+
+The every-printing numpy row was missing from `latency.py` in the first run, and the figure first
+printed here (1.34 / 1.09 ms) had no measurement behind it. `latency.py` now times 103,823 × 256
+(and × 384); its kNN loop, run alone on 2026-10-15 at load ~17, read 2.13 / 1.59 ms, against
+0.94 / 0.32 ms for 34,383 × 256 in the same run. Inside the benchmark run itself, the
+every-printing kNN took a median of 1.5 ms (`t_knn_all`, appendix).
 
 - **On this laptop, in the lab's own code path, one frame costs about 166 ms** (detector + warp +
   fp32 embedder + kNN over every printing), or about 6 frames a second.
@@ -478,7 +497,7 @@ Single thread on an Apple M4 Pro, load average about 23 during these runs. Media
 |---|---|---|
 | first-open download | ≈ 47 MB (runtime, both models, a 26.7 MB index) | ≈ 20 MB (runtime and both models) |
 | per scan, network | none | ~1 KB up (a 256-float embedding), a few hundred bytes down; a round trip on slow 4G is about 600 ms, the spike's slow profile |
-| match time | 39-45 ms JS on this laptop; estimate 80-180 ms on a phone | 1.1-1.3 ms numpy on this laptop; the round trip dominates |
+| match time | 39-45 ms JS on this laptop; estimate 80-180 ms on a phone | 1.5-2.1 ms numpy on this laptop; the round trip dominates |
 | privacy | nothing leaves the device | only the embedding leaves; no pixels |
 | update cost | every new set means re-downloading the index (26.7 MB), or building a delta format | the server appends the new printings' rows after the daily catalog refresh; phones download nothing |
 | offline | works | needs a connection, though captures can queue (the scanning plan's §7) |
@@ -547,6 +566,22 @@ The lab page matches on the phone only because a staging lab with no server inde
   (weights/, bulk/, img/ 11 GB, out/, venv-arm/).
 - **Environment**: the venv must be arm64 on Apple silicon (`arch -arm64`), or everything runs
   under Rosetta at about 3x the cost.
+- **Inputs fetched by hand, before the scripts run** (no script fetches them):
+  - `$CARD_SCAN_DIR/bulk/default_cards.jsonl.gz`, which `build_catalog.py` opens. It is
+    Scryfall's `default_cards` bulk file in its gzipped JSON-lines form, one card object per line
+    (the reader also skips a bare `[` or `]` line and a trailing comma, so the gzipped JSON-array
+    form works too). This run's copy was fetched once on 2026-10-14 from
+    `https://data.scryfall.io/default-cards/default-cards-20261014210635.jsonl.gz` (the URL is
+    kept beside it in `bulk/SOURCE_URL`): 79,718,635 bytes, 118,740 lines, sha256
+    `98cd569c3ee869c83eaec7da8fc7f8e03da1e8260560c05fb62ac514c8ae4f21`. Scryfall replaces the file
+    daily and serves the newest from `https://api.scryfall.com/bulk-data/default-cards`
+    (`download_uri`), so a later fetch will not reproduce these counts exactly.
+  - `$CARD_SCAN_DIR/meta/dhv_class_map.json`, which `report.py` reads for the
+    `query_printing_trained` stratum. It is the embedder's own `class_map.json`, from the same
+    pinned commit as its weights:
+    `https://huggingface.co/dhvazquez/mtg_card_identification_embeddings/resolve/653d88d94b2beb31a7894561e7c6b26f589a3861/20260521-044732/class_map.json`
+    (8,609,185 bytes, sha256 `555abd796c9df2dab3edf678f9e089fcd88db6fa33b30afafb08f4488891d190`).
+    Without it the report prints that stratum as unknown rather than guessing.
 - **Run, in order**:
   1. `fetch_weights.py`, then `fix_detector.py`
   2. `build_catalog.py`, which needs `THE_99_NEON_STAGING_DIRECT` and reads only
@@ -733,31 +768,31 @@ scenes 46712, empty scenes 600. HanClinto sharpness on empty scenes: p50 0.0130,
 
 ### Frame agreement (set F: 5 independent frames per query, detector path, cross-printing)
 
-A frame votes for its top-1 oracle when it is detected; an undetected frame casts no vote. k-of-n: the first n frames, answered when one oracle has at least k votes.
+A frame votes for its top-1 oracle when it passes the card-present gate (sharpness >= p99 of empty scenes), the only signal a real scanner has; ground-truth IoU is NOT used, so a frame whose quad is badly placed still votes, possibly wrong. A frame below the gate casts no vote. k-of-n: the first n frames, answered when one oracle has at least k votes. 'one frame' is frame 0 by the same rule. 'bad quad' is the share of all frames that pass the gate with IoU < 0.9 (diagnostic only).
 
-| augmentation | severity | gallery | n | one frame e2e | 2-of-3 right | 2-of-3 no consensus | 2-of-3 wrong | 3-of-5 right | 3-of-5 no consensus | 3-of-5 wrong |
-|---|---|---|---|---|---|---|---|---|---|---|
-| blur | 1 | all_heldout | 300 | 42.7 | 42.7 | 29.0 | 28.3 | 42.7 | 33.3 | 24.0 |
-| blur | 1 | all | 300 | 87.0 | 90.0 | 10.0 | 0.0 | 89.7 | 10.3 | 0.0 |
-| blur | 1 | single | 300 | 21.0 | 21.3 | 34.7 | 44.0 | 22.0 | 43.7 | 34.3 |
-| blur | 2 | all_heldout | 300 | 9.7 | 8.0 | 65.0 | 27.0 | 7.7 | 79.3 | 13.0 |
-| blur | 2 | all | 300 | 27.0 | 26.3 | 57.7 | 16.0 | 26.3 | 65.0 | 8.7 |
-| blur | 2 | single | 300 | 5.7 | 5.0 | 67.0 | 28.0 | 5.0 | 80.0 | 15.0 |
-| blur | 3 | all_heldout | 300 | 0.7 | 0.7 | 85.0 | 14.3 | 0.3 | 92.0 | 7.7 |
-| blur | 3 | all | 300 | 1.7 | 1.0 | 85.0 | 14.0 | 0.3 | 92.0 | 7.7 |
-| blur | 3 | single | 300 | 0.3 | 0.0 | 88.3 | 11.7 | 0.0 | 94.7 | 5.3 |
-| low_light | 1 | all_heldout | 300 | 40.3 | 41.3 | 16.7 | 42.0 | 40.7 | 20.0 | 39.3 |
-| low_light | 1 | all | 300 | 90.7 | 92.7 | 7.0 | 0.3 | 93.3 | 6.3 | 0.3 |
-| low_light | 1 | single | 300 | 24.7 | 24.3 | 20.3 | 55.3 | 24.3 | 26.0 | 49.7 |
-| low_light | 2 | all_heldout | 300 | 9.0 | 8.7 | 39.0 | 52.3 | 8.0 | 45.0 | 47.0 |
-| low_light | 2 | all | 300 | 33.0 | 34.0 | 32.0 | 34.0 | 34.0 | 34.3 | 31.7 |
-| low_light | 2 | single | 300 | 5.7 | 4.7 | 44.7 | 50.7 | 4.3 | 52.3 | 43.3 |
-| low_light | 3 | all_heldout | 300 | 0.0 | 0.0 | 94.7 | 5.3 | 0.0 | 94.7 | 5.3 |
-| low_light | 3 | all | 300 | 0.0 | 0.0 | 94.7 | 5.3 | 0.0 | 94.7 | 5.3 |
-| low_light | 3 | single | 300 | 0.0 | 0.0 | 96.3 | 3.7 | 0.0 | 96.7 | 3.3 |
-| realistic | - | all_heldout | 300 | 22.3 | 22.0 | 72.0 | 6.0 | 21.0 | 73.7 | 5.3 |
-| realistic | - | all | 300 | 50.3 | 51.0 | 48.0 | 1.0 | 55.7 | 44.0 | 0.3 |
-| realistic | - | single | 300 | 8.7 | 9.0 | 82.0 | 9.0 | 8.7 | 87.0 | 4.3 |
+| augmentation | severity | gallery | n | one frame right | 2-of-3 right | 2-of-3 no consensus | 2-of-3 wrong | 3-of-5 right | 3-of-5 no consensus | 3-of-5 wrong | bad quad |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| blur | 1 | all_heldout | 300 | 42.7 | 42.7 | 29.0 | 28.3 | 42.7 | 33.3 | 24.0 | 0.0 |
+| blur | 1 | all | 300 | 87.0 | 90.0 | 10.0 | 0.0 | 89.7 | 10.3 | 0.0 | 0.0 |
+| blur | 1 | single | 300 | 21.0 | 21.3 | 34.7 | 44.0 | 22.0 | 43.7 | 34.3 | 0.0 |
+| blur | 2 | all_heldout | 300 | 9.7 | 8.0 | 65.0 | 27.0 | 7.7 | 79.3 | 13.0 | 0.0 |
+| blur | 2 | all | 300 | 27.0 | 26.3 | 57.7 | 16.0 | 26.3 | 65.0 | 8.7 | 0.0 |
+| blur | 2 | single | 300 | 5.7 | 5.0 | 67.0 | 28.0 | 5.0 | 80.0 | 15.0 | 0.0 |
+| blur | 3 | all_heldout | 300 | 0.7 | 0.7 | 85.0 | 14.3 | 0.3 | 92.0 | 7.7 | 0.0 |
+| blur | 3 | all | 300 | 1.7 | 1.0 | 85.0 | 14.0 | 0.3 | 92.0 | 7.7 | 0.0 |
+| blur | 3 | single | 300 | 0.3 | 0.0 | 88.3 | 11.7 | 0.0 | 94.7 | 5.3 | 0.0 |
+| low_light | 1 | all_heldout | 300 | 40.3 | 41.3 | 16.7 | 42.0 | 40.7 | 20.0 | 39.3 | 0.0 |
+| low_light | 1 | all | 300 | 90.7 | 92.7 | 7.0 | 0.3 | 93.3 | 6.3 | 0.3 | 0.0 |
+| low_light | 1 | single | 300 | 24.7 | 24.3 | 20.3 | 55.3 | 24.3 | 26.0 | 49.7 | 0.0 |
+| low_light | 2 | all_heldout | 300 | 9.0 | 8.7 | 39.0 | 52.3 | 8.0 | 45.0 | 47.0 | 0.1 |
+| low_light | 2 | all | 300 | 33.3 | 34.3 | 31.7 | 34.0 | 34.3 | 34.0 | 31.7 | 0.1 |
+| low_light | 2 | single | 300 | 5.7 | 4.7 | 44.7 | 50.7 | 4.3 | 52.3 | 43.3 | 0.1 |
+| low_light | 3 | all_heldout | 300 | 0.0 | 0.0 | 94.7 | 5.3 | 0.0 | 94.7 | 5.3 | 0.1 |
+| low_light | 3 | all | 300 | 0.0 | 0.0 | 94.7 | 5.3 | 0.0 | 94.7 | 5.3 | 0.1 |
+| low_light | 3 | single | 300 | 0.0 | 0.0 | 96.3 | 3.7 | 0.0 | 96.7 | 3.3 | 0.1 |
+| realistic | - | all_heldout | 300 | 22.3 | 22.0 | 72.0 | 6.0 | 21.0 | 73.7 | 5.3 | 0.0 |
+| realistic | - | all | 300 | 50.3 | 51.0 | 48.0 | 1.0 | 55.7 | 44.0 | 0.3 | 0.0 |
+| realistic | - | single | 300 | 8.7 | 9.0 | 82.0 | 9.0 | 8.7 | 87.0 | 4.3 | 0.0 |
 
 Embedder class map: 82110 printings; catalog paper printings among them: 20703 of 102571.
 

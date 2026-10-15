@@ -8,6 +8,8 @@ Definitions used in every table:
                 counted only over detected frames; "perfect crop" warps the true corners.
   end-to-end    a frame counts as right when it is detected AND the detector-warp top-1 is the
                 right oracle; an undetected frame is a miss.
+  present       sharpness clears the card-present gate, with no ground truth: what a real scanner
+                sees. Frame agreement votes on this, not on "detected".
   galleries     single (one reference per oracle), multi (one printing per illustration, query
                 printings held out), all_heldout (every printing but the scene's own: the main
                 multi-printing figure), all (every printing, own included). See run_queries.py.
@@ -64,6 +66,10 @@ def main():
 
     def detected(r):
         return r["hc_iou"] >= IOU_OK and r["hc_sharp"] >= gate
+
+    def present(r):
+        # what a real scanner can see: the card-present gate alone, no ground truth
+        return r["hc_sharp"] >= gate
 
     def pose_detected(r):
         return r.get("pose_iou", 0) >= IOU_OK and r.get("pose_score", 0) >= pgate
@@ -203,10 +209,13 @@ def main():
 
     # ---- frame agreement
     print("## Frame agreement (set F: 5 independent frames per query, detector path, cross-printing)\n")
-    print("A frame votes for its top-1 oracle when it is detected; an undetected frame casts no vote. "
-          "k-of-n: the first n frames, answered when one oracle has at least k votes.\n")
-    print("| augmentation | severity | gallery | n | one frame e2e | 2-of-3 right | 2-of-3 no consensus | 2-of-3 wrong | 3-of-5 right | 3-of-5 no consensus | 3-of-5 wrong |")
-    print("|---|---|---|---|---|---|---|---|---|---|---|")
+    print("A frame votes for its top-1 oracle when it passes the card-present gate (sharpness >= p99 of empty "
+          "scenes), the only signal a real scanner has; ground-truth IoU is NOT used, so a frame whose quad is "
+          "badly placed still votes, possibly wrong. A frame below the gate casts no vote. k-of-n: the first n "
+          "frames, answered when one oracle has at least k votes. 'one frame' is frame 0 by the same rule. "
+          "'bad quad' is the share of all frames that pass the gate with IoU < 0.9 (diagnostic only).\n")
+    print("| augmentation | severity | gallery | n | one frame right | 2-of-3 right | 2-of-3 no consensus | 2-of-3 wrong | 3-of-5 right | 3-of-5 no consensus | 3-of-5 wrong | bad quad |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|---|")
     fr = defaultdict(dict)
     for r in rows:
         if "F" in r["sets"]:
@@ -218,30 +227,41 @@ def main():
                 key = f"det/dhv32/{gal}"
 
                 def vote(frames, k):
-                    c = Counter(f["res"][key][0][0] for f in frames if detected(f))
+                    c = Counter(f["res"][key][0][0] for f in frames if present(f))
                     if not c:
                         return None
                     o, n = c.most_common(1)[0]
                     return o if n >= k else None
-                one = [detected(v[0]) and hit(v[0], key) for v in groups]
+                one = [present(v[0]) and hit(v[0], key) for v in groups]
+                bad = pct([present(f) and f["hc_iou"] < IOU_OK for v in groups for f in v.values()])
                 out = {}
                 for k, n in ((2, 3), (3, 5)):
                     ans = [(vote([v[i] for i in range(n)], k), truth(v[0])) for v in groups]
                     out[(k, n)] = (pct([a == t for a, t in ans]), pct([a is None for a, t in ans]),
                                    pct([a is not None and a != t for a, t in ans]))
-                print(f"| {cond} | {sev or '-'} | {gal} | {len(groups)} | {pct(one)} | {' | '.join(out[(2, 3)])} | {' | '.join(out[(3, 5)])} |")
+                print(f"| {cond} | {sev or '-'} | {gal} | {len(groups)} | {pct(one)} | {' | '.join(out[(2, 3)])} | {' | '.join(out[(3, 5)])} | {bad} |")
     print()
 
     # ---- strata on the realistic mix
-    trained = set()
+    # meta/dhv_class_map.json ships with the dhvazquez embedder (fetch_weights.py). Without it,
+    # whether a printing was in training is UNKNOWN, never "not trained".
+    trained = None
     cm = OUT.parent / "meta" / "dhv_class_map.json"
     if cm.exists():
         trained = {k.split("__")[1].split("_")[0] for k in json.load(open(cm))}
     for q in qs:
-        q["query_printing_trained"] = (q["query"] in trained) if q["query"] else None
+        if not q["query"]:
+            q["query_printing_trained"] = None
+        elif trained is None:
+            q["query_printing_trained"] = "unknown (no dhv_class_map.json)"
+        else:
+            q["query_printing_trained"] = q["query"] in trained
         q["query_released_after_2026_05_21"] = bool(q["query"]) and (pr[q["query"]]["released"] or "") > "2026-05-21"
-    print(f"Embedder class map: {len(trained)} printings; catalog paper printings among them: "
-          f"{sum(1 for sid in pr if sid in trained)} of {len(pr)}.\n")
+    if trained is None:
+        print(f"Embedder class map: MISSING ({cm}); query_printing_trained is unknown.\n")
+    else:
+        print(f"Embedder class map: {len(trained)} printings; catalog paper printings among them: "
+              f"{sum(1 for sid in pr if sid in trained)} of {len(pr)}.\n")
     sel = [r for r in rows if r["kind"] == "cross" and r["cond"] == "realistic" and "A" in r["sets"] and r["rep"] < 2]
     print("## Strata (realistic mix, cross-printing, set A)\n")
     for field in ("treatment", "layout_group", "era", "same_art_as_ref", "query_art_in_multi", "stratum",

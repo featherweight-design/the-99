@@ -99,10 +99,11 @@ def ranked(scores, rows=None, exclude=None, vote=False, k=5):
         sub = np.full_like(s, -np.inf)
         sub[rows] = s[rows]
         s = sub
-    idx = np.argpartition(-s, 60)[:60]
-    idx = idx[np.argsort(-s[idx])]
     O = G["all_oracle"]
     if vote:
+        # the vote counts the 10 nearest rows by design, so it can name fewer than k oracles
+        idx = np.argpartition(-s, 10)[:10]
+        idx = idx[np.argsort(-s[idx])]
         counts = {}
         for r in idx[:10]:
             o = int(O[r])
@@ -110,16 +111,30 @@ def ranked(scores, rows=None, exclude=None, vote=False, k=5):
             counts[o] = (c + 1, max(best, float(s[r])))
         order = sorted(counts.items(), key=lambda kv: (-kv[1][0], -kv[1][1]))
         return [[G["oracles"][o], round(v[1], 4)] for o, v in order[:k]]
-    seen, out = set(), []
-    for r in idx:
-        o = int(O[r])
-        if o in seen:
-            continue
-        seen.add(o)
-        out.append([G["oracles"][o], round(float(s[r]), 4)])
-        if len(out) == k:
-            break
-    return out
+    # Widen the candidate pool until it holds k distinct oracles among unmasked rows: a popular card
+    # can fill the first 60 rows with its own printings, and a short list would understate top-k and,
+    # with no runner-up, inflate the margin.
+    n_live = int(np.isfinite(s).sum())
+    if n_live == 0:
+        return []
+    pool = 60
+    while True:
+        pool = min(pool, n_live)
+        idx = np.argpartition(-s, pool - 1)[:pool] if pool < len(s) else np.arange(len(s))
+        idx = idx[np.isfinite(s[idx])]
+        idx = idx[np.argsort(-s[idx])]
+        seen, out = set(), []
+        for r in idx:
+            o = int(O[r])
+            if o in seen:
+                continue
+            seen.add(o)
+            out.append([G["oracles"][o], round(float(s[r]), 4)])
+            if len(out) == k:
+                return out
+        if pool >= n_live:
+            return out
+        pool *= 4
 
 
 def views(prefix, scores, own_sid, votes=True):

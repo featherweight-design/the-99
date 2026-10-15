@@ -48,7 +48,7 @@ def main():
     for name, f in rows:
         med, mn = timeit(f, 15 if "pose" in name or "DINO" in name else RUNS)
         print(f"| {name} | {med:.1f} | {mn:.1f} |")
-    for n, d in ((34383, 256), (49492, 256), (34383, 384)):
+    for n, d in ((34383, 256), (49492, 256), (103823, 256), (34383, 384), (103823, 384)):
         G = np.random.default_rng(0).standard_normal((n, d)).astype(np.float32)
         q = G[0].copy()
         med, mn = timeit(lambda: np.argpartition(-(G @ q), 60)[:60])
