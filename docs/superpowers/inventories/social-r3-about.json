@@ -1,0 +1,49 @@
+{
+  "feature": "Social R3 PR 5: the About entries for friends and pods and for opponents",
+  "note": "Both entries on /about, each scrolled to its own figure, at both widths. The entries are switched, so the run needs SOCIAL_FRIENDS_ENABLED and SOCIAL_GAMES_ENABLED on. The 1024px width is the one a wide layout overflows: the article there is 566px, narrower than the pod grid (640) and the matchup row (572) need.",
+  "rows": [
+    {
+      "id": "fig-friends",
+      "label": "/about: the friends and pods figure (the shipped PodCard)",
+      "view": "src/components/about/social-figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='friends']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='friends']"
+        }
+      ]
+    },
+    {
+      "id": "fig-opponents",
+      "label": "/about: the opponents figure (the shipped GameMatchups)",
+      "view": "src/components/about/social-figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='opponents']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='opponents']"
+        }
+      ]
+    }
+  ],
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "tablet",
+      "width": 1024,
+      "height": 800
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ]
+}

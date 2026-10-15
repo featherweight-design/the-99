@@ -75,3 +75,14 @@ describe("the startup graph keeps the deck page's copy on the deck page", () => 
     expect(strays, "import the slice (deck-tuning-games.ts) instead of deck-tuning.ts").toEqual([]);
   });
 });
+
+describe("the About page's client bundle stays off the database", () => {
+  it("no file the page ships to the browser reaches src/db", { timeout: 30_000 }, () => {
+    // The figures draw shipped components over fixtures, and a fixture builder that imported a module which also
+    // held a query (summarizeMatchups through games.ts) put `src/db` in the browser: `DATABASE_URL is not set`
+    // on module evaluation and the whole page in its error boundary. jsdom never evaluates that module's db.
+    const { files, via } = clientGraph([LAYOUT, "src/app/about/page.tsx"]);
+    const found = [...files].filter((f) => f === "src/db/index.ts" || f.startsWith("src/db/"));
+    expect(found.map((f) => chainTo(f, via).join(" > "))).toEqual([]);
+  });
+});

@@ -116,7 +116,11 @@ export type AboutSwitch =
   | 'LINEUP_ENABLED'
   | 'PROPOSED_CUTS_ENABLED'
   | 'FIND_A_DECK_READ_ENABLED'
-  | 'NO_COLLECTION_ENTRY_ENABLED';
+  | 'NO_COLLECTION_ENTRY_ENABLED'
+  // The Social line (Social R3 PR 5): friends and pods, opponents in the game log, and (for R2's entries, later) the wishlist.
+  | 'SOCIAL_FRIENDS_ENABLED'
+  | 'SOCIAL_GAMES_ENABLED'
+  | 'SOCIAL_WISHLIST_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -1338,6 +1342,45 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 1,
+  },
+  // The Social line (Social R3 PR 5; addendum `design_handoff_the99_about/addendum-social-line`, approved 2026-10-15). Each
+  // follows its own switch, so both are `since: 14` and bump nothing; the specimens are the shipped PodCard and GameMatchups.
+  {
+    id: 'friends',
+    switch: 'SOCIAL_FRIENDS_ENABLED',
+    chapter: '04',
+    title: 'Friends and pods',
+    route: '/friends',
+    width: 'plate',
+    caption:
+      'Playing with the same people every week? Make them friends in The 99. Open “Friends” from your account menu, press “Add a friend”, and send them the link, or let them scan the QR code off your screen. Once they accept, you’re friends.\n\nPick a commander and its art becomes your face, beside your name everywhere a friend sees you. Then gather the friends you play with into a pod, and choose, pod by pod, who gets to see your spare cards.',
+    keys: [
+      'Nobody can find you by searching. A friend link works once and lasts 7 days, and you can revoke one that’s still open.',
+      'Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.',
+      'You add your own friends to your pods. Leave one you own and it passes to its longest-standing member.',
+      'Removing a friend or leaving a pod tells nobody.',
+    ],
+    marksPending: true,
+    since: 14,
+  },
+  {
+    id: 'opponents',
+    switch: 'SOCIAL_GAMES_ENABLED',
+    chapter: '04',
+    title: 'Who you played against',
+    route: '/decks',
+    opens: 'opens a deck’s Games tab',
+    width: 'plate',
+    caption:
+      'When you log a game, “Across the table” lets you seat who you played: a friend, one of their decks, or anyone by their commander. Lost? Mark who won.\n\nOnce a few games carry names, “Matchups” on the deck’s “Games” tab splits your record by commander, colors and friend, and each game in “History” says who was there.',
+    keys: [
+      'Seats are optional. A game with nobody seated counts as it always has.',
+      'Each square is one game, won, lost or drawn. No percentages, so one game reads as one game.',
+      'A seat keeps names and decks as they were that night, even if a friend renames a deck or leaves.',
+      '“Seat a pod” sits a whole pod at once.',
+    ],
+    marksPending: true,
+    since: 14,
   },
   {
     id: 'suggested-changes',

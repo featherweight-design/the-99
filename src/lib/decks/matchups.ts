@@ -11,7 +11,8 @@
  * `beatMe` is how many of the cell's games the player lost to an opponent in that cell (Q15's tap). Cells
  * order by how many games they hold, then by key, never by record, which would rank on a rate.
  */
-import { summarizeGames, type DeckGame, type GameSummary } from "./games";
+import { summarizeGames } from "./games-summary";
+import type { DeckGame, GameSummary } from "./games";
 import type { GameOpponent, OpponentCommander } from "./game-opponents";
 
 type Cell = { key: string; summary: GameSummary; beatMe: number };
