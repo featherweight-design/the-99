@@ -118,7 +118,7 @@ describe("GroupToggle denominator", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: `Shopping ${count}` })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: `Shopping ${count}` })).toBeInTheDocument();
     expect(
       screen.getByText(priceCopy.strip.pricedClause(1, count)),
     ).toBeInTheDocument();
@@ -263,6 +263,7 @@ describe("GroupToggle's Stats segment", () => {
     expect(buttons.map((b) => b.getAttribute("aria-selected"))).toEqual(["false", "true", "false"]);
     // Shopping keeps its warm ink while selected.
     expect(buttons[1].style.getPropertyValue("--seg-ink")).toBe("var(--warning)");
+    expect(buttons[1].className).toContain("text-[color:var(--seg-ink)]");
     expect(buttons[1].className).toContain("bg-[color:var(--elevated)]");
 
     rerender(<GroupToggle {...props} filter="shopping" stats={{ open: true, onChange: vi.fn() }} />);
@@ -272,9 +273,16 @@ describe("GroupToggle's Stats segment", () => {
     expect(screen.getByText(deckStatsCopy.segment.provenance)).toBeInTheDocument();
   });
 
-  it("is today's toolbar, with no group, when the switch is off", () => {
+  // With Stats and Notes off the bar is the same well, holding All and Shopping alone: no hairline, and a tablist
+  // either way, so a probe meets one role whatever the switches say.
+  it("is the same well with All and Shopping alone when the switches are off", () => {
     const { container } = render(<GroupToggle {...props} filter="all" />);
-    expect(container.querySelector("[data-toolbar-group]")).toBeNull();
+    const group = container.querySelector("[data-toolbar-group]")!;
+    expect(group).toHaveAttribute("role", "tablist");
+    expect(Array.from(group.querySelectorAll("[role=tab]")).map((t) => t.textContent)).toEqual([
+      expect.stringMatching(/^All \d+$/),
+      expect.stringMatching(/^Shopping \d+$/),
+    ]);
     expect(container.querySelector("[data-switch-divider]")).toBeNull();
   });
 });

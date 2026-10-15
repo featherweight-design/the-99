@@ -1,7 +1,7 @@
 // A linked brew draws a Versions tab for v0 alone. Unlinking from v0's panel takes the tab away
 // with it, and the shell must fall back to the deck rather than leave no tab selected over an
 // empty rail.
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckOrigin } from "../../lib/precons/origin";
@@ -56,12 +56,12 @@ function shell(preconOrigin: DeckOrigin | null) {
 describe("BuilderShell — a linked brew unlinked from v0", () => {
   it("falls back to the deck when the Versions tab goes", () => {
     const { rerender } = render(shell(ORIGIN));
-    expect(screen.getByRole("tab", { selected: true }).textContent).toContain(deckVersioningCopy.history.tab);
+    expect(within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true }).textContent).toContain(deckVersioningCopy.history.tab);
     expect(screen.getByTestId("rail")).toBeTruthy();
 
     rerender(shell(null));
     expect(screen.queryByRole("tab", { name: /version/i })).toBeNull();
-    expect(screen.getByRole("tab", { selected: true })).toBeTruthy();
+    expect(within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true })).toBeTruthy();
     expect(screen.queryByTestId("rail")).toBeNull();
   });
 });

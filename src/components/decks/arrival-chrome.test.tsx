@@ -308,7 +308,7 @@ describe("The banner's jump to the unresolved group", () => {
       renderBuilder(shortDeck({ cards: makeCards(97).map((c) => ({ ...c, owned: false })), ownedCount: 0, toBuyCount: 97 }));
     });
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /Shopping/ }));
+      fireEvent.click(screen.getByRole("tab", { name: /Shopping/ }));
     });
     expect(document.getElementById("unresolved-group")).toBeNull();
 

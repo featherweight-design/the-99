@@ -13,7 +13,7 @@
       "view": "src/components/decks/got-it-confirm.tsx",
       "steps": [
         { "goto": "/decks/${IGI_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Shopping", "settle": 800 },
+        { "clickRole": "tab", "name": "^Shopping", "settle": 800 },
         { "clickRole": "button", "name": "^Bought ", "wait": "[role=dialog]", "settle": 1200 }
       ]
     },

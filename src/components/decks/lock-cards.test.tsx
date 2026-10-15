@@ -657,7 +657,7 @@ describe("the Lock cards mode, through BuilderShell", () => {
   it("holds no mode slot under Shopping", async () => {
     renderShell([sol, { ...signet, owned: false }]);
     expect(screen.queryByTestId("lock-mode-line")).not.toBeNull();
-    await act(async () => screen.getAllByRole("button", { name: /^Shopping/ })[0].click());
+    await act(async () => screen.getAllByRole("tab", { name: /^Shopping/ })[0].click());
     expect(screen.queryByTestId("lock-mode-line")).toBeNull();
   });
 
@@ -739,9 +739,9 @@ describe("the Lock cards mode, through BuilderShell", () => {
   it("ends the mode on a switch to Shopping", async () => {
     renderShell([sol, signet]);
     await act(async () => lockButton()!.click());
-    await act(async () => screen.getByRole("button", { name: /^Shopping/ }).click());
+    await act(async () => screen.getByRole("tab", { name: /^Shopping/ }).click());
     expect(liveRegion().textContent).toBe(lockedCardsCopy.mode.announceLeave);
-    await act(async () => screen.getByRole("button", { name: /^All/ }).click());
+    await act(async () => screen.getByRole("tab", { name: /^All/ }).click());
     expect(lockButton()).not.toBeNull();
     expect(doneButton()).toBeNull();
   });

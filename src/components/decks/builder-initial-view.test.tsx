@@ -3,7 +3,7 @@
 // answers a URL written by hand or held in a bookmark. Parsing it is covered in
 // `builder-view.test.ts`; what is only answerable through the shell is whether
 // the parsed value actually decides which tab is selected on the first render.
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
@@ -85,7 +85,7 @@ async function mount(initialView: BuilderView, stats = false) {
 describe("BuilderShell — the tab it opens on", () => {
   it("opens on the deck by default", async () => {
     await mount("deck");
-    expect(screen.getByRole("tab", { selected: true })).toHaveTextContent(
+    expect(within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true })).toHaveTextContent(
       addPanelCopy.tabs.deck,
     );
   });
@@ -95,14 +95,14 @@ describe("BuilderShell — the tab it opens on", () => {
   // link having gone nowhere.
   it("opens on the games log when the arrival names it", async () => {
     await mount("games");
-    expect(screen.getByRole("tab", { selected: true })).toHaveTextContent(
+    expect(within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true })).toHaveTextContent(
       gameLogCopy.tab.label,
     );
   });
 
   it("opens on the consider panel when the arrival names it", async () => {
     await mount("consider");
-    expect(screen.getByRole("tab", { selected: true })).toHaveTextContent(
+    expect(within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true })).toHaveTextContent(
       addPanelCopy.tabs.consider,
     );
   });

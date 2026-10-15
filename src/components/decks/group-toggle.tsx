@@ -1,6 +1,7 @@
 "use client";
 
-// Group Toggle — All/Shopping filter pills + By type / By role grouping pills.
+// Group Toggle — the deck toolbar: the panel switch (All · Shopping, and Stats · Notes behind their switches) and the
+// By type / By role grouping switch, both `SegmentedSwitch`.
 // §Decklist Group Toggle (design table).
 
 import { useState } from "react";
@@ -175,8 +176,6 @@ export function GroupToggle({
   const notesOpen = notes?.open ?? false;
   // A panel is open: the list tools step aside and neither list pill reads as chosen.
   const panelOpen = statsOpen || notesOpen;
-  // The segment owns the selection while a panel is open, so neither list pill reads as chosen.
-  const shown = panelOpen ? null : filter;
   // `md:` is the only breakpoint this row has ever used, and the panel's form
   // follows it: a labelled 44px pill at phone, the desktop popover above.
   const wide = useIsDesktop();
@@ -207,27 +206,21 @@ export function GroupToggle({
        column — left on the outer element they would centre the pills and turn
        the 7/10px pill gap into the gap above the strip. */
     <div className="flex flex-col px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:border-b-0">
-      {/* `flex-wrap`: at 390px the row carries two filter pills, two bulk auto
-          controls and two grouping pills, and without it the last of them is
+      {/* `flex-wrap`: at 390px the row carries the panel switch, two bulk auto
+          controls and the grouping switch, and without it the last of them is
           pushed off the edge. The auto cluster is one flex child, so it wraps
           whole rather than splitting the pair across two lines. */}
       <div className="flex flex-wrap items-center gap-[7px] md:gap-[10px]">
-        {/* "All N" filter pill. Selected is bone on `--elevated` with a
-            `--border-strong` ring — verbatim the active `By type` skin. No
-            accent fill anywhere on the builder's control bar: selection here is
-            said with the bone-on-elevated skin, never with a coloured ground.
-            Accent does still tint a border — the Shopping pill mixes 30% of it
-            into its idle ring below. */}
-        {stats || notes ? (
-          /* DECK_STATS_ENABLED / DECK_NOTES_ENABLED: One segmented group (handoff 2a): a single bordered container holding
-             All and Shopping, a hairline, then Stats. The selected segment is the filled raised pill;
-             Shopping keeps its warm ink selected or not. Full width at phone with the segments
-             sharing it (44px targets), content-width from `md:`. */
+        {/* One segmented well (handoff 2a), a tablist since it swaps what the panel shows: All and Shopping,
+            then, behind a hairline, Stats and Notes when their switches are on (DECK_STATS_ENABLED /
+            DECK_NOTES_ENABLED). Shopping keeps its warm ink selected or not (the accent tone). Full width at
+            phone with the segments sharing it when the toolbar takes its explicit phone rows; content width
+            otherwise, and from `md:` either way. */}
           <SegmentedSwitch
             kind="tabs"
             ariaLabel={deckStatsCopy.segment.groupAria}
             tone="accent"
-            fill
+            fill={phoneRows}
             data={{ "data-toolbar-group": "" }}
             value={statsOpen ? "stats" : notesOpen ? "notes" : filter}
             onChange={(v) => {
@@ -256,38 +249,6 @@ export function GroupToggle({
                 : []),
             ]}
           />
-        ) : (
-          <>
-        <button
-          type="button"
-          onClick={() => onFilterChange("all")}
-          className={[
-            "font-sans font-semibold transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
-            shown === "all"
-              ? "text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
-              : "text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
-          ].join(" ")}
-        >
-          All {allCount}
-        </button>
-
-        {/* "Shopping N" filter pill — idle: amber text with amber border */}
-        <button
-          type="button"
-          onClick={() => onFilterChange("shopping")}
-          data-shopping-filter=""
-          className={[
-            "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
-            shown === "shopping"
-              ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
-              : "font-medium text-[color:var(--warning)] bg-transparent border border-solid border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]",
-          ].join(" ")}
-        >
-          Shopping {shoppingCount}
-        </button>
-
-          </>
-        )}
 
         {statsOpen && (
           <span className="basis-full font-mono text-[10.5px] text-[color:var(--fg-faint)] md:basis-auto md:ml-auto">

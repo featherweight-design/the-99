@@ -483,11 +483,11 @@ describe("undo row lifetime (#185)", () => {
     removeCardFromDeck.mockReturnValue(deferred<void>().promise);
 
     renderBuilder();
-    expect(screen.getByRole("button", { name: /All 2/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /All 2/ })).toBeInTheDocument();
 
     await removeFromBuilder("Sol Ring");
 
-    expect(screen.getByRole("button", { name: /All 1/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /All 1/ })).toBeInTheDocument();
     expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
   });
 

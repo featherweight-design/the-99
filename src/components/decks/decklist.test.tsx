@@ -1476,7 +1476,7 @@ describe("an unowned commander heads the Shopping list", () => {
 
     const rows = triggers();
     expect(rows).toHaveLength(3);
-    expect(screen.getByRole("button", { name: `Shopping ${rows.length}` })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: `Shopping ${rows.length}` })).toBeInTheDocument();
   });
 
   it("does not list an owned commander with a copy to spare", () => {
@@ -1485,7 +1485,7 @@ describe("an unowned commander heads the Shopping list", () => {
     expect(
       screen.queryByText(recommendationsCopy.shopping.commanderGroupLabel(1)),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Shopping 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Shopping 1" })).toBeInTheDocument();
   });
 
   it("leaves the All view without the commander", () => {
@@ -1498,7 +1498,7 @@ describe("an unowned commander heads the Shopping list", () => {
       screen.queryByText(recommendationsCopy.shopping.commanderGroupLabel(1)),
     ).not.toBeInTheDocument();
     // The pill under All still counts what Shopping would show.
-    expect(screen.getByRole("button", { name: "Shopping 2" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Shopping 2" })).toBeInTheDocument();
   });
 });
 
@@ -1788,7 +1788,7 @@ describe("the Tokens group is mounted at the foot of Your deck", () => {
       tokens: read.status === "ok" ? read.tokens.map((t) => ({ ...t, joined: true })) : [],
     };
     renderDecklist([rampUnowned], { filter: "shopping" });
-    const pillWithout = screen.getByRole("button", { name: /^Shopping/ }).textContent;
+    const pillWithout = screen.getByRole("tab", { name: /^Shopping/ }).textContent;
     cleanup();
     renderDecklist([rampUnowned], { filter: "shopping", tokens: joined });
     expect(screen.getByText("1 · not in the deck’s count")).toBeTruthy();
@@ -1796,7 +1796,7 @@ describe("the Tokens group is mounted at the foot of Your deck", () => {
     const card = screen.getAllByText("Arcane Signet")[0];
     expect(card.compareDocumentPosition(screen.getByText("Food")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // A token never moves the deck's own count.
-    expect(screen.getByRole("button", { name: /^Shopping/ }).textContent).toBe(pillWithout);
+    expect(screen.getByRole("tab", { name: /^Shopping/ }).textContent).toBe(pillWithout);
   });
 
   it("draws the joined tokens on a deck with no card left to buy", () => {

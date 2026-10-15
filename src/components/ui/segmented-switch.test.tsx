@@ -55,7 +55,10 @@ describe("SegmentedSwitch", () => {
 
   it("lets a segment keep its own ink only under the accent tone; neutral draws every segment alike", () => {
     const { rerender } = render(<SegmentedSwitch kind="tabs" ariaLabel="P" tone="accent" segments={SEGMENTS} value="a" onChange={() => {}} />);
-    expect(screen.getByRole("tab", { name: "Beta" }).style.getPropertyValue("--seg-ink")).toBe("var(--warning)");
+    const accented = screen.getByRole("tab", { name: "Beta" });
+    expect(accented.style.getPropertyValue("--seg-ink")).toBe("var(--warning)");
+    // The class that reads it, or the property is set and never drawn.
+    expect(accented.className).toContain("text-[color:var(--seg-ink)]");
     rerender(<SegmentedSwitch kind="tabs" ariaLabel="P" tone="neutral" segments={SEGMENTS} value="a" onChange={() => {}} />);
     const beta = screen.getByRole("tab", { name: "Beta" });
     expect(beta.style.getPropertyValue("--seg-ink")).toBe("");

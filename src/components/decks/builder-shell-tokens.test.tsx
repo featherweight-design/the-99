@@ -84,7 +84,7 @@ describe("BuilderShell: card details asks for the Tokens group", () => {
     draw(WITH_CARD, read);
     // The Tokens group is the All view's: on Shopping, with nothing joined, there is no such heading.
     expect(screen.getByRole("heading", { name: /^Tokens/ })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /^Shopping/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /^Shopping/ }));
     expect(screen.queryByRole("heading", { name: /^Tokens/ })).toBeNull();
     act(() => { window.dispatchEvent(new Event(SHOW_DECK_TOKENS)); });
     expect(screen.getByRole("heading", { name: /^Tokens/ })).toBeTruthy();
