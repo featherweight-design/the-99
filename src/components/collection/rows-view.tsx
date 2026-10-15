@@ -22,6 +22,7 @@ import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { GhostButton } from "../ui/button";
 import { ROW_SHELL_GRID } from "../ui/row-shell";
+import { DateFigure, dateSpoken } from "./date-figure";
 import { PriceFigure, priceSpoken } from "./price-figure";
 import { PreviewButton } from "../ui/preview-button";
 
@@ -38,12 +39,14 @@ export function RowsView({
   revealFrom = null,
   busy = false,
   showPrice = false,
+  showAdded = false,
 }: {
   cards: BrowseListCard[];
   /** Where the latest Show more began, so the tiles it added fade in (E9); null reveals nothing. */
   revealFrom?: number | null;
   /** Sorted by price: the figure leads the type line and is spoken last. Off, the row is as shipped. */
   showPrice?: boolean;
+  showAdded?: boolean;
   totalCards: number;
   onShowMore: () => void;
   /**
@@ -77,7 +80,7 @@ export function RowsView({
         const overRing =
           state === "over" ? "[box-shadow:inset_0_0_0_1px_var(--avail-over-border)]" : "";
         const pending = pendingOracleId === c.oracleId;
-        const spokenPrice = showPrice ? priceSpoken(c.price) : null;
+        const spokenPrice = showPrice ? priceSpoken(c.price) : showAdded ? dateSpoken(c) : null;
         return (
         <PreviewButton
           key={c.oracleId}
@@ -195,10 +198,14 @@ export function RowsView({
             {/* Mobile type line — §Row: Type Line (mobile): 11.5px, --fg-faint, truncate.
                 UNTOUCHED by combo awareness: `/collection` draws a 16px marker in the cluster
                 rather than a sentence, so nothing yields and this line stays as it was. */}
-            {showPrice ? (
-              // Sorted by price, the figure leads the line and never truncates; the type gives way.
+            {showPrice || showAdded ? (
+              // Sorted by price or date added, the figure leads the line and never truncates; the type gives way.
               <span className="flex md:hidden min-w-0 items-baseline gap-[6px]">
-                <PriceFigure code={c.price} className="font-mono text-[11px] font-medium" />
+                {showPrice ? (
+                  <PriceFigure code={c.price} className="font-mono text-[11px] font-medium" />
+                ) : (
+                  <DateFigure card={c} className="font-mono text-[11px] font-medium" />
+                )}
                 <span className="min-w-0 truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
                   {c.typeLine}
                 </span>
@@ -230,7 +237,7 @@ export function RowsView({
           </span>
 
           {/* SetRarityColumn: mobile set code + desktop type/set/rarity/chevron columns */}
-          <SetRarityColumn card={c} showPrice={showPrice} />
+          <SetRarityColumn card={c} showPrice={showPrice} showAdded={showAdded} />
         </PreviewButton>
         );
       })}
@@ -249,7 +256,7 @@ export function RowsView({
   );
 }
 
-function SetRarityColumn({ card, showPrice }: { card: BrowseListCard; showPrice: boolean }) {
+function SetRarityColumn({ card, showPrice, showAdded }: { card: BrowseListCard; showPrice: boolean; showAdded: boolean }) {
   return (
     <>
       {/* Mobile: single trailing set code — §Row: Set Code (mobile): mono 10.5px, --fg-faint, letter-spacing 0.04em */}
@@ -261,9 +268,13 @@ function SetRarityColumn({ card, showPrice }: { card: BrowseListCard; showPrice:
       </span>
 
       {/* Desktop-only trailing spans — displayed only ≥md */}
-      {showPrice ? (
+      {showPrice || showAdded ? (
         <span className="hidden md:flex min-w-0 items-baseline gap-[8px]">
-          <PriceFigure code={card.price} className="font-mono text-[11.5px] font-medium" />
+          {showPrice ? (
+            <PriceFigure code={card.price} className="font-mono text-[11.5px] font-medium" />
+          ) : (
+            <DateFigure card={card} className="font-mono text-[11.5px] font-medium" />
+          )}
           <span className="min-w-0 truncate font-sans text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
             {card.typeLine}
           </span>

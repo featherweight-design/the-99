@@ -15,6 +15,7 @@
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import { readCardPrice } from "../../lib/collection/copy-price";
+import { DateFigure, dateSpoken, readCardDate } from "./date-figure";
 import { PriceFigure, priceSpoken } from "./price-figure";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
@@ -62,6 +63,7 @@ export function GridView({
   busy = false,
   mayBeHidden = false,
   showPrice = false,
+  showAdded = false,
 }: {
   cards: BrowseListCard[];
   /** Where the latest Show more began, so the tiles it added fade in (E9); null reveals nothing. */
@@ -71,6 +73,7 @@ export function GridView({
    * the rarity to make room (Hugh, 2026-10-12). Decided by the sort, never by measurement.
    */
   showPrice?: boolean;
+  showAdded?: boolean;
   totalCards: number;
   onShowMore: () => void;
   /**
@@ -111,7 +114,7 @@ export function GridView({
       {cards.map((c, i) => {
         const reveal = revealOf(i, revealFrom);
         const state = c.availability ? availabilityState(c.availability) : "free";
-        const spokenPrice = showPrice ? priceSpoken(c.price) : null;
+        const spokenPrice = showPrice ? priceSpoken(c.price) : showAdded ? dateSpoken(c) : null;
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
         // and nothing else.
         const border =
@@ -287,11 +290,15 @@ export function GridView({
                also shows the rarity on a phone, where the meta line had only had room for
                the set code. */
             nameSub={
-              showPrice ? (
+              showPrice || showAdded ? (
                 <span className="flex min-w-0">
-                  <PriceFigure code={c.price} className="font-semibold" noStockClassName="font-medium" />
+                  {showPrice ? (
+                    <PriceFigure code={c.price} className="font-semibold" noStockClassName="font-medium" />
+                  ) : (
+                    <DateFigure card={c} className="font-semibold" />
+                  )}
                   <span className="min-w-0 truncate">
-                    {readCardPrice(c.price) === null ? "" : "\u00a0· "}
+                    {(showPrice ? readCardPrice(c.price) === null : readCardDate(c) === null) ? "" : "\u00a0· "}
                     {c.primarySetCode}
                     <span className="hidden md:inline"> · {c.rarity}</span>
                   </span>

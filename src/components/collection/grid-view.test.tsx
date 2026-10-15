@@ -2,7 +2,7 @@
 // as the row: the chip carries a number and never a deck name. The fixtures are
 // deliberately a copy of rows-view.test.tsx's — the two files are read side by
 // side, and a shared module for six lines would cost more than it saves.
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseListCard } from "../../lib/collection/browse";
@@ -294,6 +294,34 @@ describe("GridView price clause", () => {
     expect(name.indexOf("RVR")).toBeLessThan(name.indexOf("$20.00 at Mana Pool"));
     rerender(<GridView cards={[priced]} totalCards={1} onShowMore={() => {}} onOpen={() => {}} />);
     expect(screen.getByRole("button", { name: /Smothering Tithe/ }).textContent).not.toContain("Mana Pool");
+  });
+});
+
+// Date added shares the price slot: a figure leads the sub-line, the clause is spoken last, and a card
+// with no date draws nothing (days are read in UTC, so the draw is the same on any machine).
+describe("GridView Date added figure", () => {
+  const open = () => {};
+  // The year is shown only for a date outside the current UTC year, so the clock is pinned.
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(Date.UTC(2026, 9, 15)); });
+  afterEach(() => { vi.useRealTimers(); });
+  it("draws an exact day and since for an inexact one, spoken after the set and rarity", () => {
+    const exact = { ...card, added: Date.UTC(2026, 9, 12, 15) / 60_000 };
+    const since = { ...card, oracleId: "since", name: "Since Card", printedName: "Since Card", since: Date.UTC(2026, 8, 2) / 86_400_000 };
+    render(<GridView cards={[exact, since]} totalCards={2} onShowMore={() => {}} onOpen={open} showAdded />);
+    const exactName = screen.getByRole("button", { name: /Smothering Tithe/ }).textContent ?? "";
+    expect(exactName.endsWith("added Oct 12")).toBe(true);
+    expect(exactName.indexOf("RVR")).toBeLessThan(exactName.indexOf("added Oct 12"));
+    expect(screen.getByRole("button", { name: /Since Card/ }).textContent).toMatch(/in your collection since Sep 2$/);
+    // The drawn figures are their own aria-hidden spans, so the test fails if `DateFigure` is not rendered.
+    const drawn = [...document.querySelectorAll("span[aria-hidden]")].map((e) => e.textContent);
+    expect(drawn).toContain("Oct 12");
+    expect(drawn).toContain("since Sep 2");
+  });
+  it("is silent for a card with no date and off the sort", () => {
+    const { rerender } = render(<GridView cards={[card]} totalCards={1} onShowMore={() => {}} onOpen={open} showAdded />);
+    expect(screen.getByRole("button", { name: /Smothering Tithe/ }).textContent).not.toMatch(/added|since/);
+    rerender(<GridView cards={[{ ...card, added: 1 }]} totalCards={1} onShowMore={() => {}} onOpen={open} />);
+    expect(screen.getByRole("button", { name: /Smothering Tithe/ }).textContent).not.toMatch(/added/);
   });
 });
 

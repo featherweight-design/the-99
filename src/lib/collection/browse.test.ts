@@ -255,6 +255,32 @@ describe("aggregateCollection", () => {
     expect(agg.setCodes.sort()).toEqual(["C21", "LEA"]);
     expect(agg.primarySetCode).toBe("C21");
   });
+  describe("Date added figures", () => {
+    const at = (iso: string) => new Date(iso);
+    it("takes the newest EXACT holding in minutes, and no since when one exists", () => {
+      const [agg] = aggregateCollection([
+        raw({ setCode: "c21", collectorNumber: "1", addedAt: at("2026-10-01T00:00:00Z"), addedExact: true }),
+        raw({ setCode: "lea", collectorNumber: "2", addedAt: at("2026-10-12T00:00:30Z"), addedExact: true }),
+        raw({ setCode: "m21", collectorNumber: "3", addedAt: at("2026-09-02T00:00:00Z"), addedExact: false }),
+      ]);
+      expect(agg.added).toBe(Math.floor(at("2026-10-12T00:00:30Z").getTime() / 60_000));
+      expect(agg.since).toBeUndefined();
+    });
+    it("falls to the oldest inexact holding in days when none is exact", () => {
+      const [agg] = aggregateCollection([
+        raw({ setCode: "c21", collectorNumber: "1", addedAt: at("2026-09-05T10:00:00Z"), addedExact: false }),
+        raw({ setCode: "lea", collectorNumber: "2", addedAt: at("2026-09-02T23:00:00Z"), addedExact: false }),
+      ]);
+      expect(agg.added).toBeUndefined();
+      expect(agg.since).toBe(Math.floor(at("2026-09-02T23:00:00Z").getTime() / 86_400_000));
+    });
+    it("carries neither for an undated or unread holding", () => {
+      const [agg] = aggregateCollection([raw({ addedAt: null }), raw({ setCode: "lea", collectorNumber: "2" })]);
+      expect(agg.added).toBeUndefined();
+      expect(agg.since).toBeUndefined();
+    });
+  });
+
   // The exact-id price path rests on this: without the holding's own catalog id on
   // the printing, every owned card falls to the set/number key, and a holding that
   // carries neither goes silent.
@@ -999,6 +1025,26 @@ describe("sortCards", () => {
   it("name Z→A", () => {
     const list = [listCard({ oracleId: "a", name: "Cyclonic Rift" }), listCard({ oracleId: "b", name: "Ancestral Recall" })];
     expect(sortCards(list, "name", "desc").map((c) => c.name)).toEqual(["Cyclonic Rift", "Ancestral Recall"]);
+  });
+  describe("date added", () => {
+    const list = [
+      listCard({ oracleId: "a", name: "Exact old", added: 100 }),
+      listCard({ oracleId: "b", name: "Exact new", added: 300 }),
+      listCard({ oracleId: "c", name: "Since Z", since: 5 }),
+      listCard({ oracleId: "d", name: "Since A", since: 9 }),
+      listCard({ oracleId: "e", name: "Unknown B" }),
+      listCard({ oracleId: "f", name: "Unknown A" }),
+    ];
+    it("newest first by default: exact arrivals, then the since block by name, then unknown", () => {
+      expect(sortCards(list, "added").map((c) => c.name)).toEqual([
+        "Exact new", "Exact old", "Since A", "Since Z", "Unknown A", "Unknown B",
+      ]);
+    });
+    it("oldest first reverses the dates but keeps unknown last and names A to Z", () => {
+      expect(sortCards(list, "added", "asc").map((c) => c.name)).toEqual([
+        "Since A", "Since Z", "Exact old", "Exact new", "Unknown A", "Unknown B",
+      ]);
+    });
   });
   it("returns a new array — does not mutate input", () => {
     const list = [listCard({ oracleId: "a", name: "B" }), listCard({ oracleId: "b", name: "A" })];

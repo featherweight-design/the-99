@@ -716,16 +716,16 @@ export function CollectionBrowser({
         // (`mayBeHidden`), or a phone downloads a screen of art it never shows.
         <>
           <div className="hidden md:block">
-            <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} mayBeHidden />
+            <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} mayBeHidden />
           </div>
           <div className="md:hidden">
-            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
+            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
           </div>
         </>
       ) : resolvedView === "rows" ? (
-        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
+        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
       ) : (
-        <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
+        <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
       )}
       </HoverPreviewProvider>
     </>

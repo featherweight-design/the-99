@@ -118,6 +118,22 @@ describe("encodeCollection / decodeCollection", () => {
     }
   });
 
+  it("carries a card's price and Date added figures under short keys, and back", () => {
+    const dated = [card("a", { price: 120, added: 29_000_000, since: 20_700 }), card("b", { added: 29_000_001 }), card("c")];
+    const wire = encodeCollection(dated, null);
+    expect(wire.cards[0]).toMatchObject({ p: 120, ad: 29_000_000, sn: 20_700 });
+    expect(wire.cards[2]).not.toHaveProperty("ad");
+    expect(wire.cards[2]).not.toHaveProperty("sn");
+    const text = JSON.stringify(wire);
+    expect(text).not.toContain('"added"');
+    expect(text).not.toContain('"since"');
+    const back = decodeCollection(wire);
+    expect(back[0]).toMatchObject({ price: 120, added: 29_000_000, since: 20_700 });
+    expect(back[1]).toMatchObject({ added: 29_000_001 });
+    expect(back[1]).not.toHaveProperty("since");
+    expect(back[2]).not.toHaveProperty("added");
+  });
+
   it("reads a card with no reading as null, not as free", () => {
     expect(decodeCollection(encodeCollection(cards, null)).every((c) => c.availability === null)).toBe(true);
   });
