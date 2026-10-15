@@ -143,7 +143,12 @@ async function signIn(page) {
 /** A deck to walk, asked of the page rather than named by an id that rots. */
 async function findDeck(page) {
   await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1200);
+  // On state: a deck link (or the empty list) is drawn. Swallowed on purpose, since an empty result is what
+  // the caller reports.
+  await page.waitForFunction((scope) => {
+    const root = document.querySelector(scope);
+    return Boolean(root?.querySelector("a[href^='/decks/']")) || Boolean(root?.textContent?.includes("No decks"));
+  }, PAGE, { timeout: 15_000 }).catch(() => {});
   const hrefs = await page.evaluate((scope) => {
     const root = document.querySelector(scope);
     return [...(root?.querySelectorAll("a[href^='/decks/']") ?? [])]
@@ -618,7 +623,7 @@ async function run() {
         await ctx.close();
         continue;
       }
-      await p.waitForTimeout(600);
+      await p.evaluate(() => document.fonts.ready);
 
       const tabs = await p.evaluate((scope) => {
         const root = document.querySelector(scope);
@@ -648,25 +653,44 @@ async function run() {
         readsHeld += 1;
         const response = await route.fetch();
         const body = await response.text();
-        await gate;
+        // Bounded: a walk that throws still releases below, and a gate never opened gives way after 60s.
+        await Promise.race([gate, new Promise((r) => setTimeout(r, 60_000))]);
+        // Swallowed on purpose: the page may have closed while the reply was held.
         await route.fulfill({ response, body }).catch(() => {});
       };
       await p.route("**/*", holdSynopsis);
-      await onPage(p, '[role="tab"]').nth(analysisAt).click();
-      await onPage(p, '[data-testid="analysis-empty"]').first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
-      await p.waitForTimeout(500);
-      await walkEmpty(p, label, viewport.width, () => readsHeld);
-      release();
-      await p.unroute("**/*", holdSynopsis);
-      // The note lands once the read is released.
-      await onPage(p, '[data-testid="analysis-empty"] [data-testid="press-note"]').first().waitFor({ timeout: 30_000 }).catch(() => {});
+      try {
+        await onPage(p, '[role="tab"]').nth(analysisAt).click();
+        // On STATE, never a sleep: the empty state is up AND the probe has intercepted the note's read (the
+        // read can be queued behind the stored peek after the empty state draws), with the gate still shut.
+        const emptyUp = await onPage(p, '[data-testid="analysis-empty"]').first()
+          .waitFor({ state: "visible", timeout: 20_000 }).then(() => true, () => false);
+        const deadline = Date.now() + 20_000;
+        while (readsHeld === 0 && Date.now() < deadline) await p.waitForTimeout(100);
+        report(`${label}px · the empty state is up and the note's read is held`, emptyUp && readsHeld > 0,
+          JSON.stringify({ emptyUp, readsHeld }));
+        await walkEmpty(p, label, viewport.width, () => readsHeld);
+      } finally {
+        release();
+        await p.unroute("**/*", holdSynopsis);
+      }
+      // Released, the read settles: the frame gives way to the note, or to nothing when the list already has
+      // its overview (`pressNote` returns null then). Either way the frame must go.
+      const settled = await p.waitForFunction(
+        (scope) => !document.querySelector(`${scope} [data-testid="analysis-empty"] [data-testid="press-note-slot"]`), PAGE, { timeout: 30_000 },
+      ).then(() => true, () => false);
+      report(`${label}px · released, the note's read settles and the frame gives way`, settled,
+        settled ? "gone" : "the frame was still waiting after 30s");
       const invite = onPageRole(p, "button", /^Analyze$/);
-      if ((await invite.count()) > 0) {
+      const canPress = (await invite.count()) > 0;
+      report(`${label}px · the empty state offers Analyze`, canPress, canPress ? "drawn" : "no Analyze press");
+      if (canPress) {
         await invite.first().click();
-        await onPage(p, 'section[aria-label="Your bracket"]')
+        const boxUp = await onPage(p, 'section[aria-label="Your bracket"]')
           .first()
           .waitFor({ state: "visible", timeout: 20_000 })
-          .catch(() => {});
+          .then(() => true, () => false);
+        report(`${label}px · pressing Analyze draws the bracket box`, boxUp, boxUp ? "visible" : "no visible box after 20s");
       }
 
       await walk(p, label, markPx, viewport.width);

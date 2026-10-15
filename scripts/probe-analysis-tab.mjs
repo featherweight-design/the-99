@@ -136,6 +136,7 @@ async function findDeck(page) {
       PAGE,
       { timeout: 15_000 },
     )
+    // Swallowed on purpose: an empty list is what the caller reports ("a deck to walk", failed).
     .catch(() => {});
   return page.evaluate((scope) => {
     const root = document.querySelector(scope);
@@ -149,8 +150,9 @@ async function findDeck(page) {
 async function pickWidestDeck(page, hrefs) {
   for (const href of hrefs.slice(0, 6)) {
     await page.goto(`${BASE}${href}`, { waitUntil: "domcontentloaded" });
-    await page.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 }).catch(() => {});
-    await page.waitForTimeout(500);
+    // A deck whose tab row never renders is skipped, and said so, rather than read as one with no Versions cell.
+    const up = await page.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 }).then(() => true, () => false);
+    if (!up) { console.log(`       (${href}: no tab row after 20s; skipped)`); continue; }
     const cells = await readTabs(page);
     if (cells.some((c) => /version/i.test(c.label) || /version/i.test(c.aria))) {
       return { href, widest: true };
@@ -212,6 +214,20 @@ async function dropWritten(sql, deckId, before) {
   }
 }
 
+// Waits until no new server action has been asked for `quietMs`, at most `maxMs`: a window is counted
+// once its calls have stopped, never after a fixed sleep that a slow server outruns. True when it settled.
+async function settleActions(page, posts, quietMs = 1_500, maxMs = 20_000) {
+  const start = Date.now();
+  let last = posts();
+  let since = Date.now();
+  while (Date.now() - start < maxMs) {
+    await page.waitForTimeout(100);
+    if (posts() !== last) { last = posts(); since = Date.now(); }
+    if (Date.now() - since >= quietMs) return true;
+  }
+  return false;
+}
+
 async function run() {
   // Global setup, once, before any page gets a testing token — the bot-protection bypass
   // needs the frontend API URL and throws without it.
@@ -264,7 +280,8 @@ async function run() {
         await ctx.close();
         continue;
       }
-      await p.waitForTimeout(800);
+      // Measured once the fonts have settled, not after a sleep: a late face moves every cell's edge.
+      await p.evaluate(() => document.fonts.ready);
 
       const tabs = await readTabs(p);
       const analysisAt = tabs.findIndex((t) => /analysis/i.test(t.label) || /analysis/i.test(t.aria));
@@ -332,12 +349,23 @@ async function run() {
         if (id) actions.push(id);
       });
       const posts = () => actions.length;
+      // An observation window, deliberately a fixed one: nothing is pressed, so any call in it is a finding.
       await p.waitForTimeout(400);
       report(`${label}px · no action called before anything is pressed`, posts() === 0,
         `${posts()} action call(s) before the press`);
 
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
-      await p.waitForTimeout(600);
+      // THE OPENING WINDOW CLOSES ON STATE, never on a sleep: the empty state is up and the credit note's read
+      // has answered (its frame, #1844, gives way to the note or to nothing), then no further call for 1.5s.
+      // A `fetchSynopsis` queued behind a slow stored peek is then counted here, not in the press's window.
+      const emptyUp = await onPage(p, '[data-testid="analysis-empty"]').first()
+        .waitFor({ state: "visible", timeout: 20_000 }).then(() => true, () => false);
+      const noteAnswered = emptyUp && await p.waitForFunction(
+        (scope) => !document.querySelector(`${scope} #panel-analysis [data-testid='press-note-slot']`), PAGE, { timeout: 15_000 },
+      ).then(() => true, () => false);
+      report(`${label}px · the tab opens on its empty state, and the credit note's read answers`, emptyUp && noteAnswered,
+        !emptyUp ? "no visible empty state after 20s" : noteAnswered ? "the note's frame gave way" : "the frame was still waiting after 15s");
+      await settleActions(p, posts);
 
       // Opening the tab makes exactly two reads, neither of which computes a profile: the stored peek
       // (`fetchStoredDeckProfile`, #874: a stored reading draws on open) and the overview's read
@@ -352,11 +380,8 @@ async function run() {
       // free notes write; the check, used-up, paused and owner-share notes, and no note at all (the list
       // already has its overview), write nothing. So the note is waited for (its frame, #1844, gives way
       // to the note or to nothing once the read answers) and classified by its words (`noteVariant`,
-      // tested against the shipped copy). An unrecognised note fails rather than guessing.
-      const noteAnswered = await p.waitForFunction((scope) => !document.querySelector(`${scope} #panel-analysis [data-testid='press-note-slot']`), PAGE, { timeout: 15_000 })
-        .then(() => true, () => false);
-      report(`${label}px · the credit note's read answers before the press`, noteAnswered,
-        noteAnswered ? "the note's frame gave way" : "the frame was still waiting after 15s");
+      // tested against the shipped copy). An unrecognised note fails rather than guessing. The wait for the note
+      // to settle is the opening window's own (above).
       const noteText = await p.evaluate((scope) => {
         const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
         const note = document.querySelector(`${scope} #panel-analysis [data-testid='press-note']`);
@@ -389,12 +414,13 @@ async function run() {
       // way the overview's read follows the reading it is keyed on (below), so it is given time to be asked.
       if (writes) {
         // VISIBLE, and reported: a wait that swallowed its timeout let the later checks read a hidden slot.
-        const landed = await onPage(p, "#panel-analysis [data-testid='synopsis-overview'] button", { hasText: "View full overview" })
-          .first().waitFor({ state: "visible", timeout: 90_000 }).then(() => true, () => false);
+        const landed = await onPage(p, "#panel-analysis [data-testid='synopsis-overview'] button")
+          .filter({ hasText: "View full overview" }).first().waitFor({ state: "visible", timeout: 90_000 }).then(() => true, () => false);
         report(`${label}px · the overview the press wrote lands, visible`, landed,
           landed ? "View full overview is shown" : "no visible View full overview after 90s");
       }
-      await p.waitForTimeout(2_500);
+      // The press's window closes once its calls stop (the overview's re-reads trail the reading and the write).
+      const pressSettled = await settleActions(p, posts);
       const afterPress = posts();
       // The press computes the profile ONCE (`fetchDeckProfile`), and the overview is read again
       // (`fetchSynopsis`): its key carries the reading's `analyzedAt` and freshness (#912, `useDeckSynopsis`
@@ -407,7 +433,7 @@ async function run() {
         ? "fetchDeckProfile×1, fetchSynopsis×2, writeSynopsis×1"
         : "fetchDeckProfile×1, fetchSynopsis×1";
       report(`${label}px · pressing it computes the profile once${writes ? ", writes the overview once" : ""} and re-reads the overview`,
-        pressed === pressWant, `${pressed} (want ${pressWant})`);
+        pressSettled && pressed === pressWant, `${pressed} (want ${pressWant})${pressSettled ? "" : ", calls still arriving after 20s"}`);
 
       // AND THE PROFILE REPLY LANDED: the empty state is replaced by the bracket box (the consolidated tab
       // draws no re-ask on a reading). The count above names the call; this says its reply was drawn.
@@ -423,9 +449,16 @@ async function run() {
       // state would still pass.
       const otherTab = analysisAt === 0 ? 1 : 0;
       await onPage(p, '[role="tab"]').nth(otherTab).click();
-      await p.waitForTimeout(300);
+      const left = await p.waitForFunction((scope) => !document.querySelector(`${scope} #panel-analysis`), PAGE, { timeout: 10_000 })
+        .then(() => true, () => false);
+      report(`${label}px · leaving the tab unmounts the Analysis panel`, left, left ? "gone" : "still mounted after 10s");
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
-      await p.waitForTimeout(1_500);
+      // The return's overview read holds the reading (`holdsOpening`) until it settles: wait, bounded, for the
+      // overview slot to show, then for the calls to stop, rather than sampling after a fixed sleep.
+      const backUp = await onPage(p, "#panel-analysis [data-testid='synopsis-overview']").first()
+        .waitFor({ state: "visible", timeout: 30_000 }).then(() => true, () => false);
+      report(`${label}px · on the return the overview shows again`, backUp, backUp ? "visible" : "no visible overview after 30s");
+      await settleActions(p, posts);
       // The profile is NOT fetched again: its hook lives in the shell. The overview's read runs while the tab
       // is open and so asks again on a new visit (#912: `useDeckSynopsis` is active only on the Analysis view,
       // and a new visit opens afresh), which reads its state and computes nothing.

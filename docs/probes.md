@@ -1029,7 +1029,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   retryable), after each width and in a `finally`. **Drawn means a visible box**, in this probe and in
   `probe:verdict-block`: width and height over zero, not `visibility: hidden`, and no `display: none` up
   the tree (`checkVisibility`), never DOM presence; a hidden slot, or a hidden button in it, offers
-  nothing, and a wait for one fails rather than being swallowed. With the overview given `display: none`
+  nothing, and a wait for one fails rather than being swallowed. **Every window closes on STATE, never
+  on a sleep**: `probe:analysis-tab` counts the opening once the empty state is up and the note's read
+  has answered, and each window once its calls have stopped for 1.5s (bounded at 20s); the return waits,
+  bounded, for the overview to show again. `probe:verdict-block` walks the empty state only once the
+  note's read has been INTERCEPTED (it can queue behind the stored peek), always reopens the gate, and
+  then waits for the note's frame to give way, which covers a list that already has its overview (no
+  note at all). With the stored peek slowed by 3s both probes still pass; with the gate kept shut the
+  settle check fails, and with the View full overview filter misspelt the overview's wait fails. With the overview given `display: none`
   or `visibility: hidden`, the slot checks fail in both probes at both widths. With the press expected to write nothing, or
   each window widened or narrowed by one call, or the slot read in the wrong place, those checks fail. Since #1310 the strip has ONE mount, at Your deck on the spine above the
   tab row, Analysis on or off: the probe asserts exactly one strip, above the tabs, before and after
