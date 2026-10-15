@@ -14,6 +14,7 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy, type Sibling } from "../cards/card-detail-provider";
+import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 import { DeckSiblingsProvider, useCommanderSiblings } from "./deck-siblings";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
@@ -220,6 +221,59 @@ function SiblingsReader({ seen }: { seen: (list: readonly Sibling[] | undefined)
 }
 
 // ── Test suites ───────────────────────────────────────────────────────────────
+
+// The other direction: card details opened on a row page back through the commanders, which the
+// decklist draws no row for. The first card of the 99 used to be position 1 with Prev dead.
+describe("card details on the first card of the 99 page back to the commanders", () => {
+  const commanderOf = (oracleId: string, name: string): DeckCommander => ({
+    oracleId, name, colorIdentity: ["G"], manaCost: null, typeLine: "Legendary Creature",
+    oracleText: null, imageUri: null, artCropUri: null, owned: true, availability: null,
+  });
+  const browse = (oracleId: string, name: string) => ({
+    oracleId, name, typeLine: "Legendary Creature", manaCost: null, oracleText: null,
+    keywords: [], rarity: "rare" as const, colorIdentity: [], imageUri: null,
+    quantity: 0, printings: [], setCodes: [], primarySetCode: "abc", preferredPrinting: null,
+  });
+  const names: Record<string, string> = { a: "Cmdr A", b: "Cmdr B", "ramp-1": "Arcane Signet", "draw-1": "Mystic Remora" };
+  const fetchCard = async (id: string) => browse(id, names[id] ?? id);
+  const openFirstCard = async () => {
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", { name: /^View details for / })[0]);
+    });
+  };
+  const pressPrev = async () => {
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: cardCarouselCopy.prevAria }));
+    });
+  };
+
+  it("reaches the commander from the first card", async () => {
+    renderDecklist([rampOwned, drawOwned], { filter: "all", commander: commanderOf("a", "Cmdr A"), fetchCard });
+    await openFirstCard();
+    expect(await screen.findAllByText(cardCarouselCopy.position(2, 3))).not.toHaveLength(0);
+    expect(screen.getByRole("button", { name: cardCarouselCopy.prevAria })).toHaveAttribute("aria-disabled", "false");
+    await pressPrev();
+    expect(await screen.findAllByText(cardCarouselCopy.position(1, 3))).not.toHaveLength(0);
+  });
+
+  it("reaches both commanders of a partner pair, in the order the header draws them", async () => {
+    renderDecklist([rampOwned, drawOwned], {
+      filter: "all", commander: commanderOf("a", "Cmdr A"), partner: commanderOf("b", "Cmdr B"), fetchCard,
+    });
+    await openFirstCard();
+    expect(await screen.findAllByText(cardCarouselCopy.position(3, 4))).not.toHaveLength(0);
+    await pressPrev();
+    expect(await screen.findAllByText(cardCarouselCopy.position(2, 4))).not.toHaveLength(0);
+    await pressPrev();
+    expect(await screen.findAllByText(cardCarouselCopy.position(1, 4))).not.toHaveLength(0);
+  });
+
+  it("still pages the 99 alone where the deck has no commander prop", async () => {
+    renderDecklist([rampOwned, drawOwned], { filter: "all", fetchCard });
+    await openFirstCard();
+    expect(await screen.findAllByText(cardCarouselCopy.position(1, 2))).not.toHaveLength(0);
+  });
+});
 
 // The header's commander carousel pages into the list the decklist DRAWS. Shopping draws its own
 // list (only what is to buy, in its own sections), so it publishes that one, not the deck's whole.
