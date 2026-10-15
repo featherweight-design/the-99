@@ -1107,7 +1107,7 @@ export function CardDetailProvider({
           const region: HTMLElement | null = target.closest<HTMLElement>("[inert],[hidden]");
           if (!region) return target;
           // A hidden item (a tile a fold hid) carries no id of its own: its container is the region the disclosure names.
-          const named = region.id ? region : region.parentElement?.closest<HTMLElement>("[id]");
+          const named: HTMLElement | null | undefined = region.id ? region : region.parentElement?.closest<HTMLElement>("[id]");
           target = named?.id ? document.querySelector<HTMLElement>(`[aria-controls~="${CSS.escape(named.id)}"]`) : null;
         }
         return null;
