@@ -30,6 +30,7 @@ import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
 import { GhostButton } from "../ui/button";
 import { HydratedImg } from "../ui/hydrated-art";
+import { revealOf } from "../ui/reveal-from";
 import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 /**
@@ -58,12 +59,15 @@ export function GridView({
   onShowMore,
   onOpen,
   pendingOracleId = null,
+  revealFrom = null,
   busy = false,
   mayBeHidden = false,
   showPrice = false,
   showAdded = false,
 }: {
   cards: BrowseListCard[];
+  /** Where the latest Show more began, so the tiles it added fade in (E9); null reveals nothing. */
+  revealFrom?: number | null;
   /**
    * Sorted by price: the figure leads the sub-line and is spoken last, and the phone tile drops
    * the rarity to make room (Hugh, 2026-10-12). Decided by the sort, never by measurement.
@@ -108,6 +112,7 @@ export function GridView({
           the desktop chip spells the availability state out in words too (below). */}
       <CollectionMarkKey className="col-span-full" />
       {cards.map((c, i) => {
+        const reveal = revealOf(i, revealFrom);
         const state = c.availability ? availabilityState(c.availability) : "free";
         const spokenPrice = showPrice ? priceSpoken(c.price) : showAdded ? dateSpoken(c) : null;
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
@@ -135,11 +140,11 @@ export function GridView({
           // the focused tile blurs it, and the modal's focus-return would then
           // have nothing to hand focus back to on close.
           aria-busy={pending}
-          style={pending ? { opacity: 0.55 } : undefined}
+          style={pending || reveal.style ? { ...(pending ? { opacity: 0.55 } : null), ...reveal.style } : undefined}
           // §Grid Tile Container: radius 9/10px, overflow hidden, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: an inline
           // border outranks the hover: variant and the accent hover never lands.
-          className={`art-lift-host text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border}`}
+          className={`art-lift-host text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border} ${reveal.className ?? ""}`}
         >
           {/* Art region — §Grid Tile: Art Region */}
           <div

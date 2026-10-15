@@ -54,6 +54,7 @@ import { NoResults } from "./no-results";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { PAGE_SIZE, parseBrowseParams } from "../../lib/collection/window";
+import { REVEAL_DONE_MS } from "../ui/reveal-from";
 import type { CollectionRow } from "../../lib/collection/list-wire";
 import { useCollectionFields } from "./use-collection-fields";
 
@@ -335,6 +336,8 @@ export function CollectionBrowser({
     close: closeDetail,
   } = useCardDetail();
   const [shown, setShown] = useState(PAGE_SIZE);
+  // Where the latest press of Show more began (E9). Dropped by anything that is not a press: a filter, a search, a sort.
+  const [revealFrom, setRevealFrom] = useState<number | null>(null);
 
   const totalQuantity = useMemo(() => cards.reduce((sum, c) => sum + c.quantity, 0), [cards]);
 
@@ -459,13 +462,19 @@ export function CollectionBrowser({
       if (message) publishAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
+      setRevealFrom(null);
     },
     [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement],
   );
+  const showMore = useCallback(() => {
+    setRevealFrom(shown);
+    setShown((s) => s + PAGE_SIZE);
+  }, [shown]);
   const updateSort = useCallback((s: SortKey, direction: SortDirection) => {
     setSort(s);
     setSortDirection(direction);
     setShown(PAGE_SIZE);
+    setRevealFrom(null);
   }, []);
 
   const filtered = useMemo(() => filterCards(cards, filters), [cards, filters]);
@@ -547,6 +556,15 @@ export function CollectionBrowser({
     setHeld({ from: wanted, rows: resolvedWanted as BrowseListCard[] });
   }
   const windowed = complete ? (resolvedWanted as BrowseListCard[]) : held.rows;
+  // The reveal is over once the last tile's fade is (the beat, the capped stagger and the 200ms fade, well inside this),
+  // counted from when the new rows are on screen: a Show more whose draw fields are still arriving keeps the rows already
+  // drawn, and its boundary has to be there when they mount. Dropping it then means a view switch or a breakpoint change,
+  // which mounts a fresh list, replays nothing.
+  useEffect(() => {
+    if (revealFrom === null || !complete) return;
+    const done = setTimeout(() => setRevealFrom(null), REVEAL_DONE_MS);
+    return () => clearTimeout(done);
+  }, [revealFrom, complete]);
 
   // The ordered ids Prev/Next pages through — the sorted list, not the window,
   // so paging runs past the 200 cards currently rendered. Carries each card's own
@@ -698,16 +716,16 @@ export function CollectionBrowser({
         // (`mayBeHidden`), or a phone downloads a screen of art it never shows.
         <>
           <div className="hidden md:block">
-            <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} mayBeHidden />
+            <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} mayBeHidden />
           </div>
           <div className="md:hidden">
-            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
+            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
           </div>
         </>
       ) : resolvedView === "rows" ? (
-        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
+        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
       ) : (
-        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
+        <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
       )}
       </HoverPreviewProvider>
     </>
