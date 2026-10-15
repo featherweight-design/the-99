@@ -154,9 +154,13 @@ describe("who reads the opponents table", () => {
   it("and its read reaches only the game log's own modules, never a prompt builder", () => {
     // `deck-opponents-read.ts` is the deck page's Games tab read (R3 PR 1): it hands the seats and the matchups to
     // the page and sends neither to a model.
-    // `game-seats.ts` (R3 PR 2) takes only the `OpponentInput` TYPE, to shape what the form sends: it reads no
-    // opponent and sends no name to a model.
-    const IMPORTERS = new Set(["src/app/decks/actions.ts", "src/lib/decks/matchups.ts", "src/lib/decks/deck-opponents-read.ts", "src/lib/decks/game-seats.ts"]);
+    // `deck-opponents-read.ts` is the deck page's Games tab read (R3 PR 1). `game-seats.ts` (PR 2) takes only the
+    // `OpponentInput` TYPE. The four below (PR 4) take the seat and matchup TYPES to DRAW the snapshot: the History
+    // row, its `vs` line, the Matchups section and its row rules. Each reads no opponent and sends no name to a model.
+    const IMPORTERS = new Set([
+      "src/app/decks/actions.ts", "src/lib/decks/matchups.ts", "src/lib/decks/deck-opponents-read.ts", "src/lib/decks/game-seats.ts",
+      "src/components/decks/game-history-row.tsx", "src/components/decks/game-matchups.tsx", "src/components/decks/game-vs-line.tsx", "src/lib/decks/matchup-rows.ts",
+    ]);
     const importers = walk("src").filter((p) => /from\s+["'][^"']*\/(?:game-opponents|matchups)["']/.test(readFileSync(p, "utf8")));
     expect(importers).toContain("src/app/decks/actions.ts");
     expect(importers.filter((p) => !IMPORTERS.has(p))).toEqual([]);

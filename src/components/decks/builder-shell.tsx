@@ -72,6 +72,7 @@ import type { DeckPanel } from "./group-toggle";
 import type { DeckNotesView } from "../../lib/decks/notes-types";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { GamesPanel } from "./games-panel";
+import type { DeckOpponentsWire } from "../../lib/decks/deck-opponents-read";
 // Types only: `games.ts` reaches for the database, and a value import from a
 // "use client" module would drag drizzle into the browser bundle.
 import type { DeckGame, GameSummary } from "../../lib/decks/games";
@@ -227,6 +228,8 @@ interface BuilderShellProps {
   /** Aggregated on the server — `summarizeGames` is pure, so running it here
       would only ship the work to the browser. */
   gameSummary?: GameSummary;
+  /** The seats of each game and the matchups (Social R3), or null with the switch off or no opponents read. */
+  gameOpponents?: DeckOpponentsWire | null;
   /** What this deck's draft has changed since its newest version (#389). Read on
       every visit, so it is always present in the app — optional only so the
       shell's own tests can leave it out. Its absence draws no banner and no row
@@ -337,6 +340,7 @@ export function BuilderShell({
   fillPasses = [],
   games = [],
   gameSummary = NO_GAMES,
+  gameOpponents = null,
   draft = null,
   wasCounts,
   labelRows = null,
@@ -1899,6 +1903,7 @@ export function BuilderShell({
                   // chip is the stored reading's own signal.
                   tuned={headerBracket !== null}
                   onOpenAnalysis={() => setView("analysis")}
+                  gameOpponents={gameOpponents}
                   opponents={socialGames ? { you: { name: deck.commander.name, deckName: deck.name, imageUri: deck.commander.imageUri ?? null } } : undefined}
                 />
               </div>

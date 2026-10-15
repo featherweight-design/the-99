@@ -9,6 +9,8 @@ import { deriveHeadline, type Headline } from "../../lib/decks/game-headline";
 import { GameAxisCell } from "./game-axis-cell";
 import { GameHistoryRow } from "./game-history-row";
 import { GameLogForm, type GameLogFormProps, type GameResult } from "./game-log-form";
+import { GameMatchups } from "./game-matchups";
+import type { DeckOpponentsWire } from "../../lib/decks/deck-opponents-read";
 import { deckTuningGamesCopy } from "../../lib/copy/deck-tuning-games";
 import { PATTERN_MIN, axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 
@@ -22,6 +24,8 @@ export interface GamesPanelProps {
   onOpenAnalysis?: () => void;
   /** The log form's "Across the table" row, for a reader with `SOCIAL_GAMES_ENABLED` on. Absent: the shipped form. */
   opponents?: GameLogFormProps["opponents"];
+  /** The seats of each game and the matchups drawn from them (Social R3), for a reader with `SOCIAL_GAMES_ENABLED` on. Null: no Matchups, no `vs` lines. */
+  gameOpponents?: DeckOpponentsWire | null;
 }
 
 type GameRecord = GameSummary["record"];
@@ -233,7 +237,7 @@ export function GameHeadlineHeader({ headline, count }: { headline: Headline; co
   );
 }
 
-export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents }: GamesPanelProps) {
+export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
 
@@ -328,7 +332,9 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
         </p>
       ) : null}
 
-      <div className={`flex items-baseline gap-[10px] mb-[10px] ${tuned && onOpenAnalysis ? "mt-[10px] md:mt-[12px]" : "mt-[22px]"}`}>
+      {gameOpponents && <GameMatchups matchups={gameOpponents.matchups} />}
+
+      <div className={`flex items-baseline gap-[10px] mb-[10px] ${(tuned && onOpenAnalysis) && !gameOpponents ? "mt-[10px] md:mt-[12px]" : "mt-[22px]"}`}>
         <h2 className="font-mono uppercase text-[10px] tracking-[0.14em] text-fg-faint">
           {gameLogCopy.history.heading}
         </h2>
@@ -346,6 +352,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
             deckId={deckId}
             game={g}
             isLast={games.length === 1}
+            opponents={gameOpponents?.opponents[g.id]}
             onDeleted={(wasLast) =>
               wasLast
                 ? setAnnouncement(gameLogCopy.announce.deletedLast)

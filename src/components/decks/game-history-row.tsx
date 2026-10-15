@@ -7,10 +7,12 @@ import { deleteGame } from "../../app/decks/actions";
 import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import type { GameOpponent } from "../../lib/decks/game-opponents";
 import type { DeckGame } from "../../lib/decks/games";
 import { formatPlayed } from "../../lib/decks/format";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
+import { GameVsLine } from "./game-vs-line";
 
 export interface GameHistoryRowProps {
   deckId: string;
@@ -18,6 +20,8 @@ export interface GameHistoryRowProps {
   /** True when this is the only game left, so the announcement can say so. */
   isLast: boolean;
   onDeleted: (wasLast: boolean) => void;
+  /** Who sat across the table, as logged (Social R3). Absent or empty: no line, nothing reserved. */
+  opponents?: readonly GameOpponent[];
 }
 
 const RESULT_GLYPH = {
@@ -26,7 +30,7 @@ const RESULT_GLYPH = {
   draw: gameLogCopy.history.drawn,
 } as const;
 
-export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryRowProps) {
+export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: GameHistoryRowProps) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -208,6 +212,8 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
       </div>
 
       </div>
+
+      {opponents && opponents.length > 0 && <GameVsLine seats={opponents} />}
 
       {/* The note line — deck-tuning.md §Note line. Rendered only when there is
           one, with nothing reserved when there is not. Indented to the mark

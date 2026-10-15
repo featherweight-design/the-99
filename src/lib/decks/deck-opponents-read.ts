@@ -7,9 +7,11 @@
  * `null` is both "the switch is off" and "the read failed", and the caller draws neither differently: a deck
  * with no recorded opponents draws no Matchups section at all.
  */
+import { loadOpeningArt } from "../cards/opening-printing";
+import { loadCatalogArt } from "./catalog-art";
 import { socialGamesEnabled } from "../social/flag";
 import type { DeckGame } from "./games";
-import { listGameOpponents, type GameOpponent } from "./game-opponents";
+import { listGameOpponents, type GameOpponent, type OpponentCommander } from "./game-opponents";
 import { summarizeMatchups, type Matchups } from "./matchups";
 
 export type DeckOpponents = {
@@ -17,6 +19,36 @@ export type DeckOpponents = {
   opponents: Map<string, GameOpponent[]>;
   matchups: Matchups;
 };
+
+/** What crosses to the Games tab: plain objects, so the seats ride as a record. */
+export type DeckOpponentsWire = {
+  opponents: Record<string, GameOpponent[]>;
+  matchups: Matchups;
+};
+
+export const opponentsWire = (read: DeckOpponents): DeckOpponentsWire => ({
+  opponents: Object.fromEntries(read.opponents),
+  matchups: read.matchups,
+});
+
+/**
+ * The art a thumbnail draws for each commander a seat names, the printing card details opens (the same
+ * one the seat picker drew when the seat was filled). Fail-soft: a failed art read leaves the seats
+ * with initials and the matchups with pips, and never costs the opponents themselves.
+ */
+async function withArt(opponents: Map<string, GameOpponent[]>): Promise<Map<string, GameOpponent[]>> {
+  const ids = new Set<string>();
+  for (const seats of opponents.values()) {
+    for (const s of seats) for (const c of [s.commander, s.partner]) if (c) ids.add(c.oracleId);
+  }
+  if (ids.size === 0) return opponents;
+  const art = await loadOpeningArt([...ids]).catch(() => new Map<string, string>());
+  // A commander with no priced non-foil printing keeps the catalog's own image, as the seat picker does.
+  const bare = [...ids].filter((id) => !art.has(id));
+  if (bare.length > 0) for (const [id, uri] of await loadCatalogArt(bare).catch(() => new Map<string, string>())) art.set(id, uri);
+  const dress = (c: OpponentCommander | null): OpponentCommander | null => (c ? { ...c, imageUri: art.get(c.oracleId) ?? null } : null);
+  return new Map([...opponents].map(([game, seats]) => [game, seats.map((s) => ({ ...s, commander: dress(s.commander), partner: dress(s.partner) }))]));
+}
 
 export async function loadDeckOpponents(
   deckId: string,
@@ -28,7 +60,7 @@ export async function loadDeckOpponents(
 ): Promise<DeckOpponents | null> {
   if (!socialGamesEnabled(env) || games.length === 0) return null;
   try {
-    const opponents = await read(deckId, userId);
+    const opponents = await withArt(await read(deckId, userId));
     return { opponents, matchups: summarizeMatchups(games, opponents) };
   } catch (error) {
     console.error("game opponents: the deck's opponents could not be read", error);

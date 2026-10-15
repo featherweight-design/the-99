@@ -67,6 +67,7 @@ import { loadStatsLabels } from "../../../lib/decks/stats-labels";
 import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
+import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
 import { socialGamesEnabled } from "../../../lib/social/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
@@ -216,6 +217,11 @@ export default async function DeckBuilderPage({
   // A failed read costs the menu its Move row and nothing else.
   const foldersRead = early(perf.timed("folders", () => listFolders(userId)).catch(() => null));
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
+  // Who sat across the table, and the matchups drawn from it (Social R3), behind `SOCIAL_GAMES_ENABLED`. Never
+  // throws: a failed read draws no Matchups and no `vs` lines, and the games stand as they were.
+  const opponentsRead = socialGamesEnabled(env)
+    ? early(gamesRead.then((g) => perf.timed("opponents", () => loadDeckOpponents(id, userId, g, env))))
+    : null;
   // Not swallowed, unlike the price and availability reads below. Those degrade to a missing
   // ornament; a ledger that quietly vanished would tell the player their passes are gone, which is
   // a lie about deck state.
@@ -342,6 +348,7 @@ export default async function DeckBuilderPage({
     draft,
     versions,
     printedInSets,
+    deckOpponents,
   ] = await Promise.all([
       suggestionsRead,
       allDecksRead,
@@ -368,6 +375,7 @@ export default async function DeckBuilderPage({
       draftRead,
       versionsRead,
       printedInSetsRead,
+      opponentsRead,
     ]);
 
   // The figures the version held, for the `was n` line in the mix cells. Read
@@ -649,6 +657,7 @@ export default async function DeckBuilderPage({
       wasCounts={wasCounts}
       versionCards={versionCards}
       games={games}
+      gameOpponents={deckOpponents ? opponentsWire(deckOpponents) : null}
       gameSummary={gameSummary}
       versions={versions}
       // Left in the URL rather than swept with a router.replace. Stripping it
