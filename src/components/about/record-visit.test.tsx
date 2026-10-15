@@ -41,17 +41,19 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
   });
 
   // About on the banner: Back to Home after a visit must not bring About's line back from the router's payload.
-  it("tells Home's banner, in this document, that every entry the page drew is answered", () => {
+  it("tells Home's banner, once the write lands, that every entry the page drew is answered", async () => {
     render(<RecordVisit behind shown={["notes"]} drawn={["browse", "notes"]} />);
+    expect(aboutAcknowledged(["notes"])).toBe(false);
+    await Promise.resolve();
+    await Promise.resolve();
     expect(aboutAcknowledged(["notes"])).toBe(true);
     expect(aboutAcknowledged(["browse", "notes"])).toBe(true);
     expect(aboutAcknowledged(["notes", "lineup"])).toBe(false);
   });
 
-  it("takes the acknowledgement back when the write fails", async () => {
+  it("acknowledges nothing when the write fails", async () => {
     recordAboutVisit.mockRejectedValueOnce(new Error("offline"));
     render(<RecordVisit behind shown={["notes"]} drawn={["notes"]} />);
-    expect(aboutAcknowledged(["notes"])).toBe(true);
     await Promise.resolve();
     await Promise.resolve();
     expect(aboutAcknowledged(["notes"])).toBe(false);
@@ -68,6 +70,18 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(aboutAcknowledged(["notes"])).toBe(true);
+  });
+
+  it("a re-run effect while the write is pending leaves nothing acknowledged when it fails", async () => {
+    let reject!: (e: Error) => void;
+    recordAboutVisit.mockImplementationOnce(() => new Promise<void>((_, r) => { reject = r; }));
+    const { rerender } = render(<RecordVisit behind shown={["notes"]} drawn={["notes"]} />);
+    rerender(<RecordVisit behind shown={["notes"]} drawn={["notes", "browse"]} />);
+    reject(new Error("offline"));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(aboutAcknowledged(["notes"])).toBe(false);
+    expect(recordAboutVisit).toHaveBeenCalledTimes(1);
   });
 
   it("acknowledges what it drew for a current reader too, with no write: a stale Home in this tab still holds the line", () => {

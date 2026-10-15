@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { recordAboutVisit } from "../../app/about/actions";
-import { acknowledgeAbout, unacknowledgeAbout } from "../home/arrivals-seen";
+import { acknowledgeAbout } from "../home/arrivals-seen";
 
 /**
  * Records the visit once the page is open in a browser (About R6 §O4, audit E2).
@@ -14,7 +14,9 @@ import { acknowledgeAbout, unacknowledgeAbout } from "../home/arrivals-seen";
  *
  * It also tells Home's banner, in this document, that About's line is answered (`acknowledgeAbout`, with `drawn`,
  * every entry the page drew): Back to Home restores the payload the router holds, About's line included, and that
- * re-mount must not draw it. A failed write takes the acknowledgement back.
+ * re-mount must not draw it. A behind reader's visit acknowledges once its write LANDS, a current reader's at once;
+ * nothing is ever taken back, so overlapping visits and re-run effects cannot leave a false acknowledgement behind.
+ * Back pressed while the write is still in flight draws the line once more, the cheaper failure.
  */
 export function RecordVisit({
   behind,
@@ -27,19 +29,24 @@ export function RecordVisit({
 }) {
   const sent = useRef(false);
   useEffect(() => {
-    // Every visit answers the line in this document, a current reader's included: another tab or device may have
-    // marked About seen after this tab's Home was rendered, and Back restores that Home's payload with the line in it.
-    const attempt = acknowledgeAbout(drawn);
-    if (!behind || sent.current) return;
+    // A current reader's visit answers the line in this document too: another tab or device may have marked About
+    // seen after this tab's Home was rendered, and Back restores that Home's payload with the line in it.
+    if (!behind) {
+      acknowledgeAbout(drawn);
+      return;
+    }
+    if (sent.current) return;
     sent.current = true;
     // The ids the page showed: the visit acknowledges these, so an entry switched on after it
     // rendered is not marked seen unread.
-    void recordAboutVisit(shown).catch(() => {
-      unacknowledgeAbout(attempt);
-      // A failed write leaves the reader behind, which puts About's line in front
-      // of them once more on a later Home load. That is the cheaper failure.
-      sent.current = false;
-    });
+    recordAboutVisit(shown).then(
+      () => acknowledgeAbout(drawn),
+      () => {
+        // A failed write leaves the reader behind, which puts About's line in front
+        // of them once more on a later Home load. That is the cheaper failure.
+        sent.current = false;
+      },
+    );
   }, [behind, shown, drawn]);
   return null;
 }

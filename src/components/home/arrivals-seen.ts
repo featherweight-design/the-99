@@ -27,29 +27,15 @@ export function arrivalsAcknowledged(keys: readonly string[]): boolean {
  * as the arrivals': the visit writes About's seen state and retires Home's cached payload on the server, but Back
  * (or a client navigation) to Home restores the payload the router holds, About's line included. `RecordVisit`
  * calls `acknowledgeAbout()` with the entries the page drew, and the banner leaves About's line out when every id
- * it claims is among them. A failed visit write takes them back out. A new document starts clear.
+ * it claims is among them. A new document starts clear.
  */
-// Held per ATTEMPT: each acknowledgement is a token, and an id stays acknowledged while any token holds it. A failed
-// write takes back its own attempt's claim only, so an older visit failing late never erases a later visit's.
-const aboutAcked = new Map<string, Set<symbol>>();
+// Only ever added to: a visit acknowledges once its write has LANDED (or at once, for a reader already current), so
+// nothing is ever taken back and no late failure can race a later visit's acknowledgement.
+const aboutAcked = new Set<string>();
 
-/** A `/about` visit in this document recorded these entries. Returns the attempt, for `unacknowledgeAbout`. */
-export function acknowledgeAbout(ids: readonly string[]): symbol {
-  const attempt = Symbol("about-visit");
-  for (const id of ids) {
-    const holders = aboutAcked.get(id) ?? new Set<symbol>();
-    holders.add(attempt);
-    aboutAcked.set(id, holders);
-  }
-  return attempt;
-}
-
-/** That attempt's write failed: its claim goes, and any other attempt's on the same entries stays. */
-export function unacknowledgeAbout(attempt: symbol): void {
-  for (const [id, holders] of aboutAcked) {
-    holders.delete(attempt);
-    if (holders.size === 0) aboutAcked.delete(id);
-  }
+/** A `/about` visit in this document recorded these entries. */
+export function acknowledgeAbout(ids: readonly string[]): void {
+  for (const id of ids) aboutAcked.add(id);
 }
 
 /** Every one of `ids` was acknowledged by a `/about` visit in this document. */
