@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Getting a card on the wishlist, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.rail{width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.slot{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486}
+.slot.on{background:#20222A;color:#E6E8F0}
+.av{margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #FF4D9A;background:#0E0F14;color:#FF4D9A;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;padding:0}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden;padding:36px 48px;gap:14px;box-sizing:border-box}
+.ghost{height:14px;border-radius:4px;background:#16181F}
+.gt{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:20px}
+.gt span{height:150px;border-radius:10px;background:#13151C;border:1px solid #181C26}
+.pop{position:absolute;left:14px;bottom:52px;width:300px;padding:8px;box-sizing:border-box;background:#191B22;border:1px solid #262A35;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.6);z-index:2}
+.idh{display:flex;align-items:center;gap:12px;padding:12px 12px 14px;border-bottom:1px solid #181C26}
+.bav{width:44px;height:44px;border-radius:12px;border:1px solid #FF4D9A;background:#0E0F14;color:#FF4D9A;font:500 14px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;flex:none}
+.nm{font-size:14px;font-weight:600;color:#E6E8F0}
+.em{font:11px 'IBM Plex Mono',monospace;color:#959AAD;margin-top:2px}
+.tk{margin:0;padding:10px 4px 6px;font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#6F7486}
+.tg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 4px}
+.th{border-radius:10px;padding:7px;border:1px solid #262A35;display:flex;flex-direction:column;gap:2px}
+.th.on{border-color:#FF4D9A;background:#20222A}
+.th b{font-size:10.5px;font-weight:500;color:#E6E8F0}
+.th span{font:8.5px 'IBM Plex Mono',monospace;color:#959AAD}
+.menu{margin-top:12px;padding-top:10px;border-top:1px solid #181C26;display:flex;flex-direction:column;gap:2px}
+.mi{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:8px;font-size:14px;color:#E6E8F0;text-decoration:none;background:transparent;border:0;text-align:left;font-family:'IBM Plex Sans',sans-serif}
+.mi.hv{background:#20222A}
+.dia{width:6px;height:6px;transform:rotate(45deg);background:#FF4D9A;flex:none;display:inline-block}
+.dia.d{background:#C6533F}
+.new{outline:1.5px dashed rgba(255,77,154,.6);outline-offset:2px}
+.scrim{position:absolute;inset:0;z-index:3;background:rgba(10,11,15,.74)}
+.md{position:absolute;left:50%;top:40px;transform:translateX(-50%);z-index:4;width:1000px;height:740px;box-sizing:border-box;background:#16181F;border:1px solid #262A35;border-radius:16px;box-shadow:0 30px 70px rgba(0,0,0,.6);display:flex;flex-direction:column}
+.mx{position:absolute;right:14px;top:12px;width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:16px;padding:0}
+.mb{flex:1;display:flex;gap:32px;padding:32px 32px 0;min-height:0}
+.cardf{width:300px;height:419px;flex:none;border-radius:14px;padding:9px;box-sizing:border-box;background:#2a2620;border:1px solid #3a342b;display:flex;flex-direction:column;gap:5px}
+.cbar{height:26px;border-radius:6px;background:#E9E1CF;color:#1a1712;font:600 12.5px 'IBM Plex Sans',sans-serif;display:flex;align-items:center;padding:0 9px}
+.cart{height:200px;border-radius:3px;overflow:hidden;border:1px solid #1a1712}
+.cart img{width:100%;height:100%;object-fit:cover;display:block}
+.ctype{height:22px;border-radius:5px;background:#E9E1CF;color:#1a1712;font:500 11px 'IBM Plex Sans',sans-serif;display:flex;align-items:center;padding:0 9px}
+.ctext{flex:1;border-radius:4px;background:#EFE8DA;padding:10px;display:flex;flex-direction:column;gap:6px}
+.ctext span{height:7px;border-radius:3px;background:#cfc6b4}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.ttl{margin:0;font:700 29px 'Chakra Petch',sans-serif;color:#E6E8F0;line-height:1.1}
+.typ{margin:4px 0 0;font-size:14px;color:#959AAD}
+.blk{border:1px solid #181C26;background:#0E0F14;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.bh{display:flex;justify-content:space-between;align-items:baseline;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.bh a{font:500 12.5px 'IBM Plex Sans',sans-serif;letter-spacing:0;text-transform:none}
+.ot{font-size:13.5px;line-height:1.55;color:#B1B6C7;margin:0}
+.rc{font:12.5px 'IBM Plex Mono',monospace;color:#B1B6C7}
+.rc b{color:#FF4D9A;font-weight:600}
+.meta{display:flex;gap:26px;font-size:12.5px;color:#959AAD}
+.meta b{display:block;font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#6F7486;margin-bottom:3px}
+.ft{flex:none;display:flex;align-items:center;gap:16px;margin:0 32px 30px;padding-top:20px;border-top:1px solid #181C26;min-height:44px}
+.lk{display:flex;flex-direction:column;gap:8px}
+.ext{font-size:14px;font-weight:500;color:#FF62A9;text-decoration:underline;text-decoration-color:rgba(255,98,169,.45)}
+.ext i{font-style:normal;color:#959AAD;margin-left:4px}
+.fits{font-size:13px;color:#B1B6C7;text-decoration:underline;text-decoration-color:#843052}
+.want{display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid #343843;background:transparent;color:#E6E8F0;font:500 13.5px 'IBM Plex Sans',sans-serif}
+.want svg{color:#959AAD}
+.won{display:flex;align-items:center;gap:10px;height:40px;padding:0 4px 0 12px;border-radius:8px;border:1px solid #843052;background:rgba(255,77,154,.07)}
+.won.gt2{border-color:rgba(111,163,104,.55);background:rgba(111,163,104,.07)}
+.wl{font:500 13.5px 'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;align-items:center;gap:7px}
+.wl a{font-weight:500}
+.hv2{font:11.5px 'IBM Plex Mono',monospace;color:#959AAD}
+.hv2.g{color:#6FA368}
+.st{display:flex;align-items:center;height:32px;border:1px solid #262A35;border-radius:7px;overflow:hidden;background:#0E0F14}
+.sb{width:30px;height:32px;border:0;background:transparent;color:#B1B6C7;font:500 15px 'IBM Plex Sans',sans-serif;padding:0}
+.sb.off{color:#3D404E}
+.sv{min-width:20px;text-align:center;font:600 13px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.wx{width:32px;height:32px;border:0;background:transparent;color:#959AAD;font-size:13px;padding:0}
+.stamp{padding:0 5px;border:1.5px solid #6FA368;border-radius:3px;color:#6FA368;font:700 10px 'Chakra Petch',sans-serif;letter-spacing:.14em;transform:rotate(-6deg);display:inline-block}
+.pn{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:15px;color:#6F7486}
+.pn span{font:11px 'IBM Plex Mono',monospace}
+.pn b{font-weight:400;color:#FF4D9A}
+.dh{display:flex;align-items:center;gap:16px}
+.dh img{width:76px;height:54px;object-fit:cover;border-radius:9px;border:1px solid #262A35}
+.dn{margin:0;font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.dsub{font-size:13px;color:#959AAD;margin-top:2px}
+.row{height:34px;border-bottom:1px solid #181C26;display:flex;align-items:center;gap:10px;font-size:13.5px;color:#E6E8F0}
+.dot{width:7px;height:7px;border-radius:50%;border:1.5px dashed #6F7486;box-sizing:border-box}
+.bt{margin-left:auto;font:9.5px 'IBM Plex Mono',monospace;color:#E0913C;background:rgba(224,145,60,.13);border-radius:4px;padding:2px 6px}
+.flag{position:absolute;z-index:5;border:1.5px dashed rgba(255,77,154,.7);border-radius:10px;pointer-events:none}
+</style>
+</helmet>
+<div style="width:2760px;min-height:2260px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Getting a card on it · desktop 1300 · the shipped account menu and card details, Kamigawa theme · new parts carry a dashed outline</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">One way in for the page, one control for every card: Want it, in card details’ footer</h2>
+    <p class="cap" style="max-width:2200px">The account menu gains a Wishlist row, after Friends, before the session buttons. Card details’ pinned footer gains one control between the link-out and Prev / Next: Want it. Every card in the app opens this sheet, so search, Collection, Discover, Commanders, a deck and its Shopping view all reach the wishlist the same way, and no row anywhere gains a button. Pressed, the control becomes the line itself: the star fills, you see what you have, and the stepper sets how many you want in all. Nothing else in the sheet changes.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 48px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Primary">
+            <span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+            <a class="slot" href="#" aria-label="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></a>
+            <a class="{{f.colSlot}}" href="#" aria-label="Collection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></a>
+            <a class="slot" href="#" aria-label="Commanders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></a>
+            <a class="slot" href="#" aria-label="Discover"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></a>
+            <a class="{{f.deckSlot}}" href="#" aria-label="Decks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></a>
+            <button class="av" type="button" aria-haspopup="dialog" aria-label="Account">HH</button>
+          </nav>
+          <main class="main">
+            <sc-if value="{{f.deckBg}}" hint-placeholder-val="{{false}}">
+              <div class="dh"><img src="art/rootha.png" alt=""><div><h1 class="dn">Rootha Spells</h1><div class="dsub">Rootha, Mastering the Moment · 100 of 100</div></div></div>
+              <div class="row"><span class="dot"></span>Smothering Tithe<span class="bt">buy · $14.80</span></div>
+              <div class="row"><span class="dot"></span>The Master, Transcendent<span class="bt">buy · $3.10</span></div>
+              <div class="row"><span class="dot"></span>Rhystic Study<span class="bt">buy · $38.50</span></div>
+            </sc-if>
+            <sc-if value="{{f.ghostBg}}" hint-placeholder-val="{{true}}">
+              <div class="ghost" style="width:200px;height:26px"></div><div class="ghost" style="width:420px"></div>
+              <div class="gt"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            </sc-if>
+          </main>
+          <sc-if value="{{f.menu}}" hint-placeholder-val="{{false}}">
+            <div class="pop" role="dialog" aria-label="Account">
+              <div class="idh"><span class="bav" aria-hidden="true">HH</span><div><div class="nm">Hugh H.</div><div class="em">[email]</div></div></div>
+              <p class="tk">Theme</p>
+              <div class="tg" role="radiogroup" aria-label="Theme">
+                <span class="th"><b>Low Sun</b><span>Amonkhet</span></span><span class="th on"><b>Neon Rain</b><span>Kamigawa</span></span><span class="th"><b>Canopy</b><span>Ixalan</span></span>
+                <span class="th"><b>Oil Haze</b><span>New Phyrexia</span></span><span class="th"><b>Witching Hour</b><span>Eldraine</span></span><span class="th"><b>First Frost</b><span>Kaldheim</span></span>
+              </div>
+              <div class="menu" role="menu" aria-label="Hugh H.">
+                <a class="mi" href="#" role="menuitem"><span class="dia" aria-hidden="true"></span>About</a>
+                <sc-if value="{{f.friendsOn}}" hint-placeholder-val="{{true}}"><a class="mi" href="#" role="menuitem"><span class="dia" aria-hidden="true"></span>Friends</a></sc-if>
+                <a class="mi hv new" href="#" role="menuitem"><span class="dia" aria-hidden="true"></span>Wishlist</a>
+                <button class="mi" type="button" role="menuitem"><span class="dia" aria-hidden="true"></span>Manage account</button>
+                <button class="mi" type="button" role="menuitem"><span class="dia d" aria-hidden="true"></span>Sign out</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{f.details}}" hint-placeholder-val="{{true}}">
+            <div class="scrim"></div>
+            <div class="md" role="dialog" aria-labelledby="ttl" aria-modal="true">
+              <button class="mx" type="button" aria-label="Close">✕</button>
+              <div class="mb">
+                <button class="cardf" type="button" aria-label="{{f.card}}, larger" style="padding:9px;border:1px solid #3a342b">
+                  <span class="cbar">{{f.card}}</span>
+                  <span class="cart"><img src="{{f.art}}" alt=""></span>
+                  <span class="ctype">{{f.type}}</span>
+                  <span class="ctext"><span style="width:92%"></span><span style="width:80%"></span><span style="width:86%"></span><span style="width:54%"></span></span>
+                </button>
+                <div class="col">
+                  <div><h3 class="ttl" id="ttl">{{f.card}}</h3><p class="typ">{{f.type}}</p></div>
+                  <div class="blk"><div class="bh"><span>Oracle text</span></div><p class="ot">[the card’s oracle text, as shipped]</p></div>
+                  <div class="blk"><div class="bh"><span>In your collection</span><a href="#">{{f.recLink}}</a></div><div class="rc">{{f.receipt}}</div></div>
+                  <div class="meta"><span><b>Set</b>[SET] · 112</span><span><b>Rarity</b>Mythic</span><span><b>Identity</b>{{f.ident}}</span><span><b>You own</b>{{f.own}}</span></div>
+                </div>
+              </div>
+              <div class="ft">
+                <div class="lk"><a class="ext" href="#">Buy any printing at Mana Pool<i>↗</i></a><a class="fits" href="#">Find a deck for it →</a></div>
+                <div style="position:relative">
+                  <sc-if value="{{f.wOff}}" hint-placeholder-val="{{true}}">
+                    <button class="want new" type="button" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/></svg>Want it</button>
+                  </sc-if>
+                  <sc-if value="{{f.wOn}}" hint-placeholder-val="{{false}}">
+                    <div class="{{f.wonCls}}" role="group" aria-label="On your wishlist">
+                      <span class="wl"><svg width="16" height="16" viewBox="0 0 24 24" fill="{{f.starFill}}" stroke="{{f.starFill}}" stroke-width="1.7" aria-hidden="true"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/></svg><a href="#">Wishlist</a></span>
+                      <sc-if value="{{f.isGot}}" hint-placeholder-val="{{false}}"><span class="stamp" aria-label="got">GOT</span></sc-if>
+                      <span class="{{f.hvCls}}">{{f.have}}</span>
+                      <div class="st" role="group" aria-label="Copies wanted"><button class="{{f.minusCls}}" type="button" aria-label="Want one fewer">−</button><span class="sv">{{f.want}}</span><button class="sb" type="button" aria-label="Want one more">+</button></div>
+                      <button class="wx" type="button" aria-label="Take it off your wishlist">✕</button>
+                    </div>
+                  </sc-if>
+                </div>
+                <div class="pn"><span style="color:#6F7486;font-family:'IBM Plex Sans',sans-serif;font-size:15px">‹ Prev</span><span>{{f.pos}}</span><b>Next ›</b></div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        <p class="cap" style="max-width:1300px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":2260}}'>
+class Component extends DCLogic {
+renderVals() {
+const base = { colSlot: 'slot', deckSlot: 'slot', deckBg: false, ghostBg: true, menu: false, friendsOn: true, details: false, card: 'The Master, Transcendent', art: 'art/hero-master.png', type: 'Legendary Creature — Time Lord Rogue', recLink: 'Edit copies', receipt: '', ident: 'U R', own: '×1', wOff: true, wOn: false, wonCls: 'won', starFill: '#FF4D9A', isGot: false, hvCls: 'hv2', have: '', want: 1, minusCls: 'sb', pos: '14 / 212' };
+const F = (o) => Object.assign({}, base, o);
+const frames = [
+F({ label: 'A1 · the account menu · friends on', menu: true, deckSlot: 'slot on', note: 'Wishlist is the third row, after About and Friends: the links together, the session buttons below, as Round 1 placed Friends. A real link (new tab on a modified press, in the roving focus), no badge, no count. With the Admin door: About, Friends, Wishlist, Admin. On /wishlist no rail slot is current.' }),
+F({ label: 'A2 · the account menu · friends off, wishlist on', menu: true, friendsOn: false, deckSlot: 'slot on', note: 'The wishlist has its own switch and stands alone: About, then Wishlist. Wishlist off: the row is not drawn, /wishlist answers not found, and card details keep today’s footer.' }),
+F({ label: 'A3 · card details from Collection · not on your wishlist', details: true, colSlot: 'slot on', receipt: '×1 · free', wOff: true, note: 'One outlined button, Want it, after the link-out and before Prev / Next, with the star the empty page draws. Never the accent: it is an offer, not a state. It sits in the pinned row, so it is there however far the column scrolls. Shown for any card while the switch is on, owned or not, from every context.' }),
+F({ label: 'A4 · pressed · on your wishlist, wanting 2', details: true, colSlot: 'slot on', receipt: '×1 · free', wOff: false, wOn: true, have: 'have 1', want: 2, note: 'The first press writes one more than you own: you own 1, so it asks for 2, and the line is never GOT the moment it lands. The control becomes the line: the star fills in the accent, Wishlist links to the page, have 1, the stepper (1 to 99), and ✕ takes it off. Each step writes at once (setWishlistQuantity); a failure puts the old count back and raises the shared ToastFrame.' }),
+F({ label: 'A5 · a card you have enough of · GOT', details: true, colSlot: 'slot on', receipt: '×2 · free', own: '×2', wOff: false, wOn: true, wonCls: 'won gt2', starFill: '#6FA368', isGot: true, hvCls: 'hv2 g', have: 'have 2 of 2', want: 2, note: 'Got: the star and the frame turn --success, the small GOT stamp sits beside it, and the have line reads 2 of 2. ✕ is clear, the same as the page’s ✕. + makes it wanted again. Nothing here says GOT unless the card is on your wishlist.' }),
+F({ label: 'A6 · from a deck’s Shopping view · a card the deck is short of', details: true, deckBg: true, ghostBg: false, deckSlot: 'slot on', receipt: 'none · Rootha Spells wants 1', recLink: 'Bought this card?', own: '×0', wOff: true, pos: '2 / 12', note: 'Shopping opens the same sheet with its own parts unchanged (Bought this card?, the stand-ins door, Prev / Next through the buy list). Want it is there too, for a card you want beyond this deck. It does not touch Shopping, the buy tag or the cart: the deck still needs its copy, and the wishlist counts copies in all.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>
