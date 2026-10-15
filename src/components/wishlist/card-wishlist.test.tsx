@@ -204,3 +204,37 @@ describe("focus when the line goes", () => {
     await waitFor(() => expect(addButton).toHaveFocus());
   });
 });
+
+describe("a refreshed snapshot", () => {
+  const view = (want: number | null, owned: number, onWrite = vi.fn()) => (
+    <CardWishlist oracleId={CARD} want={want} owned={owned} onWrite={onWrite} />
+  );
+
+  it("is adopted when no write is out: a cached unlisted card refreshed to listed draws the line and the count", () => {
+    const { rerender } = render(view(null, 1));
+    expect(screen.getByRole("button", { name: c.add })).toBeInTheDocument();
+    rerender(view(3, 2));
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
+    expect(screen.getByText(c.have(2))).toBeInTheDocument();
+  });
+
+  it("is not adopted while a step is out, and the step's own answer stands", async () => {
+    let answer: (v: unknown) => void = () => {};
+    set.mockReturnValue(new Promise((r) => { answer = r; }));
+    const { rerender } = render(view(2, 1));
+    fireEvent.click(screen.getByRole("button", { name: c.more }));
+    rerender(view(2, 1));
+    rerender(view(5, 1));
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
+    await act(async () => { answer(wanted(3, 1)); });
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
+  });
+
+  it("steps from the adopted count, not the one it mounted with", async () => {
+    set.mockResolvedValue(wanted(5, 1));
+    const { rerender } = render(view(2, 1));
+    rerender(view(4, 1));
+    fireEvent.click(screen.getByRole("button", { name: c.more }));
+    expect(set).toHaveBeenCalledWith(CARD, 5);
+  });
+});

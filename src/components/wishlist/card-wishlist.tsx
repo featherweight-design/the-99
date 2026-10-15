@@ -54,6 +54,24 @@ export function CardWishlist({
   // Add and Remove run alone: each is ignored while any write is in flight, and a step is ignored while either is,
   // so no two writes ever answer over one another and a failure always has one confirmed count to go back to.
   const exclusive = useRef(false);
+  // Writes in flight, mirrored in state so a render can tell whether a refreshed server snapshot may be adopted.
+  const inflight = useRef(0);
+  const [busy, setBusy] = useState(false);
+  const open = () => { inflight.current += 1; setBusy(true); };
+  const close = () => { inflight.current -= 1; if (inflight.current === 0) setBusy(false); };
+  // The provider paints a cached card and then refreshes it under the same key, so the props can move after mount.
+  // A refreshed snapshot is adopted only while no write is out, and an edit in flight keeps the screen it made.
+  const [snap, setSnap] = useState({ want: initial, owned });
+  if (snap.want !== initial || snap.owned !== owned) {
+    setSnap({ want: initial, owned });
+    if (!busy) {
+      setWant(initial);
+      setHave(owned);
+    }
+  }
+  useEffect(() => {
+    if (inflight.current === 0) confirmed.current = snap.want;
+  }, [snap]);
   const toasts = useRef(0);
   const fail = (text: string) => setToast({ id: ++toasts.current, text });
 
@@ -80,6 +98,7 @@ export function CardWishlist({
   async function add() {
     if (exclusive.current || pending.current > 0) return;
     exclusive.current = true;
+    open();
     try {
       const out = await addToWishlistAction(oracleId);
       if (!out.ok) return fail(copy.failedAdd);
@@ -89,6 +108,7 @@ export function CardWishlist({
       fail(copy.failedAdd);
     } finally {
       exclusive.current = false;
+      close();
     }
   }
 
@@ -100,6 +120,7 @@ export function CardWishlist({
     if (exclusive.current) return;
     const ticket = ++latest.current;
     pending.current += 1;
+    open();
     setWant(next);
     let out: WantOutcome | null = null;
     try {
@@ -108,6 +129,7 @@ export function CardWishlist({
       out = null;
     }
     pending.current -= 1;
+    close();
     if (out?.ok) {
       confirmed.current = out.status === "wanted" ? out.want : null;
       if (ticket === latest.current) settle(out);
@@ -121,6 +143,7 @@ export function CardWishlist({
   async function remove() {
     if (exclusive.current || pending.current > 0) return;
     exclusive.current = true;
+    open();
     try {
       const out = await removeFromWishlistAction(oracleId);
       if (!out.ok) return fail(copy.failedSet);
@@ -131,6 +154,7 @@ export function CardWishlist({
       fail(copy.failedSet);
     } finally {
       exclusive.current = false;
+      close();
     }
   }
 
