@@ -18,7 +18,8 @@
 //   e  Anchors: after reverting the last Sync, the base is the one before it; after an Add, it does not move.
 //   f  Only what it adds: no removal or lowering is written, tokens are upserted to the greater count and
 //      none is deleted, and the base does not move.
-//   g  Only its tokens, from a file with no matched cards: the tokens are recorded and no card moves.
+//   g  Only its tokens, from a file with no matched cards: the tokens are recorded, no card moves, and the file is
+//      never read as stale (it has no card to date it by).
 //   h  A restored upload anchors: upload, revert, revert of the revert (its entry still `reverted_by`), an app
 //      edit, then a Sync: the base is the restored upload and the edit is a conflict, not a removal taken.
 //   i  Only what it adds never lowers a token row of any source: a precon row of 5 against a file of 2 stays 5,
@@ -176,7 +177,7 @@ async function run() {
   check("a · nothing removed and the hand entries kept", [await count(A), await count(B), await count(C), await count(D), await count(E)], [1, 3, 1, 1, 2]);
   check("a · the tokens are recorded as upload rows", await tokenRows(), ["0:upload=2"]);
   const [summaryA] = await rows<{ s: unknown }>("select preview_payload -> 'syncSummary' s from csv_uploads where id = $1", [a.uploadId]);
-  check("a · the upload carries its summary", summaryA.s, { kept: 3, pick: "everything", decided: 0, answeredFile: 0 });
+  check("a · the upload carries its summary", summaryA.s, { kept: 3, pick: "everything", cards: 0, tokens: 1, decided: 0, answeredFile: 0 });
   check("a · and anchors the next sync", await anchorId(), a.uploadId);
 
   const again = await sync(F, { tokens: [tok(0, 2)] });
@@ -281,6 +282,8 @@ async function run() {
   const cardsBeforeG = await rows<{ n: number }>("select coalesce(sum(quantity), 0)::int n from collection_items where user_id = $1", [USER]);
   const g = await sync([], { pick: "tokens", tokens: [tok(2, 3)] });
   check("g · a tokens-only file syncs its tokens under Replace's rule", [g.result.status, await tokenRows()], ["applied", ["2:upload=3"]]);
+  // A file with no card says nothing about its age: no stale banner, whatever the earlier uploads hold.
+  check("g · and is never read as stale", g.preview.sync!.stale, null);
   check("g · and writes no card", (await rows<{ n: number }>("select coalesce(sum(quantity), 0)::int n from collection_items where user_id = $1", [USER]))[0].n, cardsBeforeG[0].n);
 
   // ---- h. A restored upload anchors (round 2, finding 1) ----------------------------------------------
