@@ -5,7 +5,7 @@
 //         replace), straight to confirmUpload() with no step 3.
 // Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { confirmUpload, previewUploadChange, type UploadChangePreview, type UploadMode, type UploadPreview } from "../../app/collection/actions";
 import { UploadEntry } from "./upload-entry";
 import { importReviewCopy } from "../../lib/copy/import-review";
@@ -114,7 +114,11 @@ export function ReplaceFlow({
   const [followPick, setFollowPick] = useState<SyncPick>("additions");
   const [answers, setAnswers] = useState<SyncAnswers>({});
   // Each follow-up pick's own dry run (G8), cached per pick for this upload and attempt as the mode reads are.
-  const [pickReads, setPickReads] = useState<{ key: string; reads: Partial<Record<SyncPick, PickRead>> } | null>(null);
+  // Keyed `<readKey>:<pick>`, so a read lands in its own entry whatever is selected by then, and a new upload or
+  // attempt reads as uncached by derivation.
+  const [pickReads, setPickReads] = useState<Record<string, PickRead>>({});
+  // The reads issued and not yet landed, by the same key: never issued twice.
+  const inFlight = useRef(new Set<string>());
   const [reviewing, setReviewing] = useState(false);
   // The review's state for the picked mode: the decks as last said, and a failed write's notice.
   const [change, setChange] = useState<ReviewChange | null>(null);
@@ -133,7 +137,10 @@ export function ReplaceFlow({
   };
   const syncBase = datas?.sync ?? null;
   const pickNow: SyncPick = syncBase ? effectivePick(syncBase, followPick) : "everything";
-  const cachedReads = pickReads?.key === readKey ? pickReads.reads : {};
+  const cachedReads: Partial<Record<SyncPick, PickRead>> = {
+    additions: pickReads[`${readKey}:additions`],
+    tokens: pickReads[`${readKey}:tokens`],
+  };
   // The read Sync's figure, note and digest come from: the plain Sync's, or the pick's own.
   const pickRead: PickRead | undefined = pickNow === "everything" ? (syncBase ?? undefined) : cachedReads[pickNow];
   const planDigest = pickRead && pickRead !== "failed" ? pickRead.sync.planDigest : "";
@@ -174,22 +181,33 @@ export function ReplaceFlow({
   const wanted: SyncPick[] = syncBase && followUpShown(syncBase)
     ? [pickNow, ...(["additions", "tokens"] as const).filter((p) => p !== pickNow)].filter((p) => p !== "everything")
     : pickNow !== "everything" ? [pickNow] : [];
-  const needPick = choosing && syncUsable ? (wanted.find((p) => cachedReads[p] === undefined) ?? null) : null;
+  // The queue is independent of the selection: every wanted pick not cached is issued once, and its result is
+  // filed under its own key when it lands, whatever is selected by then. No cleanup discards a pending read.
+  const toRead = choosing && syncUsable ? wanted.filter((p) => cachedReads[p] === undefined).join(",") : "";
   useEffect(() => {
-    if (!needPick || !previewedId) return;
-    let live = true;
-    const key = readKey;
-    const file = (r: PickRead) => {
-      if (!live) return;
-      setPickReads((was) => ({ key, reads: { ...(was?.key === key ? was.reads : {}), [needPick]: r } }));
-    };
-    previewUploadChange(previewedId, "sync", { pick: needPick })
-      .then((r) => file(r && "detail" in r && r.sync ? { detail: r.detail, sync: r.sync } : "failed"))
-      .catch(() => file("failed"));
-    return () => {
-      live = false;
-    };
-  }, [needPick, previewedId, readKey]);
+    if (!toRead || !previewedId) return;
+    for (const pick of toRead.split(",") as SyncPick[]) {
+      const key = `${readKey}:${pick}`;
+      if (inFlight.current.has(key)) continue;
+      inFlight.current.add(key);
+      const file = (r: PickRead) => {
+        inFlight.current.delete(key);
+        setPickReads((was) => ({ ...was, [key]: r }));
+      };
+      previewUploadChange(previewedId, "sync", { pick })
+        .then((r) => file(r && "detail" in r && r.sync ? { detail: r.detail, sync: r.sync } : "failed"))
+        .catch(() => file("failed"));
+    }
+  }, [toRead, previewedId, readKey]);
+  // Retry clears only the failed pick's entry; the effect then reads it again. The selection is untouched.
+  const retryPick = (pick: SyncPick) =>
+    setPickReads((was) => {
+      const key = `${readKey}:${pick}`;
+      if (was[key] !== "failed") return was;
+      const next = { ...was };
+      delete next[key];
+      return next;
+    });
 
   function openReview(mode: FlowMode) {
     if (!datas || pending) return;
@@ -397,6 +415,8 @@ export function ReplaceFlow({
         // Every "since your <date> upload" names the file this one is compared with, never the newest upload.
         anchorAt: base.sync.anchorConfirmedAt,
         figure: own ? { before: own.detail.copiesBefore, after: own.detail.copiesAfter } : pickRead === "failed" ? "failed" : null,
+        // The plain Sync's read failing drops the card (see the choice read), so only a partial pick retries here.
+        onRetry: pickNow !== "everything" ? () => retryPick(pickNow) : undefined,
         note: own ? syncNote(own, pickNow) : null,
         next: own ? syncNext(own, pickNow) : { kind: "sync" },
         stale:

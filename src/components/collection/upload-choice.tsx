@@ -32,6 +32,8 @@ export type SyncChoice = {
    * transaction, so they are never mixed); null while that read is in flight; `failed` when it could not be read.
    */
   figure: { before: number; after: number } | null | "failed";
+  /** Reads the selected pick's dry run again after it failed, keeping the selection. */
+  onRetry?: () => void;
   note: SyncNote | null;
   next: SyncNext;
   stale: { kind: "noNewer"; tokens: number | null } | { kind: "older"; missing: number } | null;
@@ -395,6 +397,16 @@ export function UploadChoice({
             </Card>
           ) : null}
         </div>
+        {picked === "sync" && sync?.figure === "failed" && sync.onRetry ? (
+          // The shipped retry control and its copy. Outside the card: a radio's children are presentational.
+          <button
+            type="button"
+            onClick={sync.onRetry}
+            className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
+          >
+            {c.retry}
+          </button>
+        ) : null}
         {picked === "sync" && sync?.followUp && !syncOff ? <FollowUp followUp={sync.followUp} /> : null}
       </div>
       <div className="flex flex-col gap-[10px] border-t border-t-[color:var(--border-strong)] bg-[color:var(--surface-rail)] p-[14px_18px] md:flex-row md:items-center md:gap-[20px] md:p-[16px_56px]">

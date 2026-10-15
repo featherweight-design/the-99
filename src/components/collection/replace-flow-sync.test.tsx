@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
 
@@ -177,5 +177,64 @@ describe("ReplaceFlow · the Sync choice", () => {
     expect(screen.getByText("Next: the tokens this sync changes. Your cards don’t move.")).toBeTruthy();
     // Nothing on the step reads as recording, or as something unrecorded.
     expect(document.body.textContent).not.toMatch(/record|unrecorded|its \d+ tokens?/i);
+  });
+
+  describe("the follow-up's own reads", () => {
+    const older = (mode: string, pick?: string) => {
+      if (mode !== "sync") return plain(mode === "add" ? 8961 : 4345);
+      if (pick === "additions") return syncData(4619, { up: 3 }, { stale: "older", kept: 121, taken: 3, changed: 40 }, "d-adds");
+      if (pick === "tokens") return syncData(4616, {}, { stale: "older", kept: 121, changed: 38 }, "d-tokens");
+      return syncData(4580, { up: 3, leaving: 16, down: 2 }, { stale: "older", kept: 121, taken: 21, changed: 44, missing: 12 }, "d-all");
+    };
+    const syncPicks = () => previewChange.mock.calls.filter((c) => c[1] === "sync").map((c) => (c[2] as { pick?: string } | undefined)?.pick ?? "plain");
+
+    it("reads each pick exactly once when the pick changes while its read is in flight", async () => {
+      // The partial picks' reads are held until the test lets them land.
+      const held: { pick: string; land: () => void }[] = [];
+      previewChange.mockImplementation((_id: string, mode: string, opts?: { pick?: string }) => {
+        if (mode === "sync" && opts?.pick) {
+          return new Promise((resolve) => held.push({ pick: opts.pick!, land: () => resolve(older(mode, opts.pick)) }));
+        }
+        return Promise.resolve(older(mode));
+      });
+      await reachChoice(true);
+      fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
+      const group = await screen.findByRole("group", { name: "What should Sync take from this file?" });
+      await waitFor(() => expect(held.map((h) => h.pick).sort()).toEqual(["additions", "tokens"]));
+      // Flip the pick back and forth with both reads still pending.
+      fireEvent.click(within(group).getByRole("radio", { name: /Only its tokens/ }));
+      fireEvent.click(within(group).getByRole("radio", { name: /Only what it adds/ }));
+      fireEvent.click(within(group).getByRole("radio", { name: /Only its tokens/ }));
+      await act(async () => {
+        held.find((h) => h.pick === "additions")!.land();
+        held.find((h) => h.pick === "tokens")!.land();
+      });
+      // Both results were kept, whatever was selected when they landed.
+      expect(await screen.findByText("4,616 → 4,616 cards")).toBeTruthy();
+      fireEvent.click(within(group).getByRole("radio", { name: /Only what it adds/ }));
+      expect(await screen.findByText("4,616 → 4,619 cards")).toBeTruthy();
+      expect(syncPicks().sort()).toEqual(["additions", "plain", "tokens"]);
+    });
+
+    it("offers Try again on a failed pick read, re-reads only that pick, and keeps the selection", async () => {
+      let tokensFails = true;
+      previewChange.mockImplementation(async (_id: string, mode: string, opts?: { pick?: string }) => {
+        if (mode === "sync" && opts?.pick === "tokens" && tokensFails) throw new Error("boom");
+        return older(mode, opts?.pick);
+      });
+      await reachChoice(true);
+      fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
+      const group = await screen.findByRole("group", { name: "What should Sync take from this file?" });
+      fireEvent.click(within(group).getByRole("radio", { name: /Only its tokens/ }));
+      await screen.findByText("We couldn’t read how this file compares to your collection. Nothing was changed.");
+      tokensFails = false;
+      fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+      expect(await screen.findByText("4,616 → 4,616 cards")).toBeTruthy();
+      expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+      expect((within(group).getByRole("radio", { name: /Only its tokens/ }) as HTMLInputElement).checked).toBe(true);
+      expect(screen.getByRole("radio", { name: /Sync my collection/ }).getAttribute("aria-checked")).toBe("true");
+      // The plain read and Only what it adds were read once; only the failed pick was read again.
+      expect(syncPicks().sort()).toEqual(["additions", "plain", "tokens", "tokens"]);
+    });
   });
 });
