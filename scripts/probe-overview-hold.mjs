@@ -199,7 +199,7 @@ function hubStaysPut(at, hub, pressAt, released, landings) {
   const idle = hub.tops.filter((t) => t.at <= pressAt);
   console.log(`  info  ${at("the hub before the press")} — ${JSON.stringify({ tops: idle, creditNoteAt: hub.noteAt, pressAt })}`);
   const settled = idle.at(-1)?.top ?? null;
-  // `released` and `landings` are sampler FRAMES; `pressAt` is a time, read before the press.
+  // `released` and `landings` are sampler FRAMES; `pressAt` is a time, stamped by the click itself.
   const held = hub.tops.filter((t) => t.at > pressAt && (released === null || t.frame < released));
   report(at("its top stays put from the press to the analysis landing"),
     settled !== null && released !== null && held.every((t) => Math.abs(t.top - settled) <= 1),
@@ -276,8 +276,17 @@ async function run() {
         continue;
       }
       await page.evaluate(() => { const w = window.__hold; w.seen = {}; w.headings = []; w.tops.verdict.clear(); w.tops.overview.clear(); w.said = []; });
-      const pressAt = await page.evaluate(() => Math.round(performance.now() - window.__hold.t0));
+      // The boundary is the click itself, not the moment before Playwright's actionability wait: the sampler
+      // must already hold the credit note's frame (the hub's one allowed drop before the press, #1465), and the
+      // press time is stamped in the page by the click's own event.
+      if (HUB === "on") await page.waitForFunction(() => window.__hold.hub.noteAt !== null, null, { timeout: 30_000 });
+      await page.evaluate(() => {
+        const w = window.__hold;
+        w.pressAt = null;
+        document.addEventListener("click", () => { w.pressAt ??= Math.round(performance.now() - w.t0); }, { capture: true, once: true });
+      });
       await empty.getByRole("button", { name: "Analyze" }).click();
+      const pressAt = await page.evaluate(() => window.__hold.pressAt);
       await page.locator(`${PAGE} [data-testid='verdict-cell']`).first().waitFor({ timeout: 90_000 });
       if (MODE === "fallback") {
         await page.locator(`${PAGE} [data-testid='synopsis-overview'] button`, { hasText: "View full overview" }).first().waitFor({ timeout: 90_000 });
