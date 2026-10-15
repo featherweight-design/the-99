@@ -420,8 +420,8 @@ export function UploadChoice({
           <PrimaryButton
             type="button"
             onClick={onContinue}
-            // TODO(collection sync PR 3): Sync's review. Until it ships, a picked Sync cannot continue.
-            disabled={picked === null || picked === "sync"}
+            // A picked Sync continues once the pick's own dry run is in: its review is drawn from that read.
+            disabled={picked === null || (picked === "sync" && (sync?.figure == null || sync.figure === "failed"))}
             className="h-[44px] px-[24px] text-[14px] font-semibold disabled:opacity-40"
           >
             {picked === "add" ? c.continueAdd : picked === "sync" ? c.continueSync : c.continueReplace}

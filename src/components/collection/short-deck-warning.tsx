@@ -47,7 +47,7 @@ export function ShortDeckWarning({
    */
   variant?: "dialog" | "embedded";
   /** What the decks would be left short by: it words the title and the confirm. */
-  source?: "replace" | "revert" | "save" | "remove" | "undo";
+  source?: "replace" | "sync" | "revert" | "save" | "remove" | "undo";
   /** The card a `save` or `remove` is about: the title of a removal and the body name it. */
   cardName?: string;
   /** The id the host's `aria-labelledby` names. Unused when embedded. */
@@ -74,12 +74,15 @@ export function ShortDeckWarning({
     : source === "undo" ? gotItCopy.shortWarning.titleUndo(rows.length)
     : source === "remove" ? c.titleRemove(cardName ?? "", rows.length)
     : source === "save" ? c.titleSave(rows.length)
+    // Collection Sync (handoff call 6, Other decisions): never danger red, Cancel still takes focus.
+    : source === "sync" ? c.titleSync(rows.length)
     : c.titleReplace(rows.length);
   const confirmLabel =
     source === "revert" ? c.confirmRevert
     : source === "undo" ? gotItCopy.shortWarning.confirmUndo
     : source === "remove" ? c.confirmRemove
     : source === "save" ? c.confirmSave
+    : source === "sync" ? c.confirmSync
     : c.confirmReplace;
   const body = (source === "remove" || source === "save") && cardName ? c.bodyCard(cardName) : c.body;
   const named = showAll ? rows : rows.slice(0, c.namedCount);

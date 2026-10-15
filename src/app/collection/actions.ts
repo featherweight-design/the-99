@@ -48,6 +48,12 @@ export type UploadPreview = {
    * that dropped 113 cards on the floor.
    */
   skippedByDesignCount: number;
+  /**
+   * The rows of `skippedByDesignCount` that are tokens, so a Sync's issues panel can count emblems alone
+   * (collection sync README G4). Null when no token lookup ran (a paste, or no token catalog), where the two
+   * cannot be told apart; absent on a preview built before it existed.
+   */
+  skippedTokenCount?: number | null;
   parseErrors: { line: number; reason: string }[];
   currentCollectionCount: number;
   filename: string;
@@ -125,6 +131,7 @@ async function buildPreview(args: {
     matchedCardCount,
     unmatchedRows: unmatchedPayload,
     skippedByDesignCount: skipped.length,
+    skippedTokenCount: indexes.tokensRead ? tokenRows.length : null,
     parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
     currentCollectionCount,
     filename,
@@ -308,7 +315,8 @@ export async function previewUploadChange(
       { id: randomUUID(), dryRun: true, env },
     ),
     editsSinceUpload(userId),
-    // Only a Replace overwrites hand changes, so only it tags rows `edited`.
+    // Only a Replace overwrites hand changes, so only it tags rows `edited` from History. A Sync tags only
+    // the conflicts answered File (below), the one place it overwrites the player's work.
     kind === "replace" ? editedKeysSinceUpload(userId) : Promise.resolve(new Set<string>()),
     collectionTotals(userId),
     lastUploadConfirmedAt(userId),
@@ -340,13 +348,16 @@ export async function previewUploadChange(
     default: throw new Error(`upload preview refused: ${result.status}`);
   }
   const s = result.sync;
+  const tagged = s
+    ? new Set(s.conflicts.filter((r) => r.answer === "file").map((r) => r.key))
+    : editedKeys;
   return {
     raised: result.raised,
     lowered: result.lowered,
     decks: result.decks,
     ...common,
     detail: summarizeUploadPreview({
-      rows: result.rows, holdings: totals.holdings, copies: totals.copies, editedKeys,
+      rows: result.rows, holdings: totals.holdings, copies: totals.copies, editedKeys: tagged,
     }),
     ...(s && sync
       ? {

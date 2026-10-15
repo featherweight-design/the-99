@@ -72,7 +72,7 @@ describe("ReplaceFlow · the Sync choice", () => {
     expect(screen.queryByText("What’s this file for?")).toBeNull();
   });
 
-  it("with the switch on, reads the plain Sync and draws it third, its Continue held until its review ships", async () => {
+  it("with the switch on, reads the plain Sync and draws it third, and its Continue opens Sync's review", async () => {
     previewChange.mockImplementation(async (_id: string, mode: string) =>
       mode === "sync" ? syncData(4632, { up: 18 }, { kept: 121, taken: 18 }, "d-all") : plain(mode === "add" ? 8961 : 4345));
     await reachChoice(true);
@@ -84,10 +84,12 @@ describe("ReplaceFlow · the Sync choice", () => {
     expect(screen.getByText("4 changes you made in the app since your Oct 2 upload will be overwritten.")).toBeTruthy();
     fireEvent.click(card);
     expect(card.getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByRole("button", { name: "Review the sync →" })).toBeDisabled();
     // Replace still reaches its review from the same choice.
     fireEvent.click(screen.getByRole("radio", { name: /Replace my collection/ }));
     expect(screen.getByRole("button", { name: "Review the replace →" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Review the sync →" }));
+    expect(await screen.findByRole("heading", { name: "Review before you sync" })).toBeTruthy();
   });
 
   it("leaves Replace and Add standing when the Sync read fails", async () => {

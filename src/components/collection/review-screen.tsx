@@ -13,6 +13,7 @@ import { Crown } from "../ui/crown";
 import { replaceCopy } from "../../lib/copy/replace";
 import { cards, collectionEditCopy, rows } from "../../lib/copy/collection-edit";
 import { ReplaceReviewDetail, type ReviewChange } from "./replace-review-detail";
+import { syncBar, syncFigures, type SyncBar, type SyncReviewControls } from "./sync-review";
 
 const INITIAL_LIMIT = 8; // Per-section preview cap; full list lives in the Issue Inspector.
 
@@ -28,6 +29,7 @@ export function ReviewScreen({
   mode = "replace",
   step = "STEP 2 OF 3",
   onSwitchToReplace,
+  sync,
 }: {
   preview: UploadPreview;
   onCancel: () => void;
@@ -51,6 +53,8 @@ export function ReviewScreen({
   step?: string;
   /** An Add whose every card is already owned offers the other way (A3b). */
   onSwitchToReplace?: () => void;
+  /** A Sync's answers and presses (collection sync PR 3); with `mode="sync"`, the review is Sync's. */
+  sync?: SyncReviewControls;
 }) {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const failureRef = useRef<HTMLDivElement>(null);
@@ -82,6 +86,16 @@ export function ReviewScreen({
   const isInitialImport = preview.currentCollectionCount === 0;
   // An Add's banner states what the add does, in copies; the matched count is a Replace's figure.
   const addDetail = change && mode === "add" ? change.data.detail : null;
+  // A Sync's review: its figures and its bar, from the server's last read for the answers on screen.
+  const syncData = change && mode === "sync" && sync ? change.data.sync ?? null : null;
+  const bar = syncData && change ? syncBar(syncFigures(syncData, change.decks)) : null;
+  const sr = collectionEditCopy.upload.syncReview;
+  // G4: on a Sync the tokens line says the file's tokens are recorded, so the issues panel counts emblems
+  // alone. Null when the preview could not tell tokens from emblems (no token lookup ran): the shipped line.
+  const emblems = syncData && preview.skippedTokenCount != null ? skippedByDesign - preview.skippedTokenCount : null;
+  const skippedLine = (k: number) =>
+    emblems !== null ? sr.emblemsSkipped(k) : `token and emblem ${k === 1 ? "row" : "rows"} skipped`;
+  const skippedShown = emblems ?? skippedByDesign;
 
   return (
     // Wrapping section splits into scrollable content + sticky confirm bar
@@ -95,7 +109,7 @@ export function ReviewScreen({
           className="md:hidden flex flex-none items-baseline gap-[12px] p-[18px_18px_14px]"
           style={{ borderBottom: "1px solid var(--border)" }}
         >
-          <span className="font-display font-semibold text-[18px]" style={{ color: "var(--fg)" }}>Review import</span>
+          <span className="font-display font-semibold text-[18px]" style={{ color: "var(--fg)" }}>{syncData ? sr.titlePhone : "Review import"}</span>
           <span className="ml-auto font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>{preview.filename}</span>
         </div>
       )}
@@ -113,7 +127,7 @@ export function ReviewScreen({
           className="hidden md:block font-display font-bold text-[29px] mt-[12px]"
           style={{ color: "var(--fg)" }}
         >
-          {mode === "add" ? e.reviewAdd : "Review before you replace"}
+          {mode === "add" ? e.reviewAdd : syncData ? sr.title : "Review before you replace"}
         </h1>
 
         {failed ? (
@@ -123,7 +137,7 @@ export function ReviewScreen({
             tabIndex={-1}
             className="mt-[16px] rounded-[10px] border border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--danger)] bg-[color:var(--surface)] p-[12px_14px] outline-none"
           >
-            <div className="text-[14px] font-semibold text-[color:var(--fg)]">{e.failedTitle}</div>
+            <div className="text-[14px] font-semibold text-[color:var(--fg)]">{syncData ? sr.failedTitleSync : e.failedTitle}</div>
             <p className="m-0 mt-[4px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{failed.body}</p>
             {onRetry ? (
               <button type="button" onClick={onRetry} disabled={pending} className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2 disabled:opacity-60">
@@ -164,7 +178,7 @@ export function ReviewScreen({
                 ) : (
                   <>
                     <span className="md:hidden">{importCount === 1 ? "card" : "cards"} matched &amp; ready</span>
-                    <span className="hidden md:inline">{importCount === 1 ? "card" : "cards"} matched to the Oracle database: ready to import</span>
+                    <span className="hidden md:inline">{importCount === 1 ? "card" : "cards"} {syncData ? sr.matchedLabel : "matched to the Oracle database: ready to import"}</span>
                   </>
                 )}
               </div>
@@ -190,13 +204,13 @@ export function ReviewScreen({
               </span>
               <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>{importReviewCopy.stats.unreadable(preview.parseErrors.length)}</span>
             </div>
-            {skippedByDesign > 0 && (
+            {skippedShown > 0 && (
               <div className="flex items-center gap-[10px]">
                 <span aria-hidden className="rounded-full flex-none" style={{ width: 9, height: 9, background: "var(--fg-faint)" }} />
                 <span className="font-mono text-[16px]" style={{ color: "var(--fg-faint)" }}>
-                  {skippedByDesign.toLocaleString()}
+                  {skippedShown.toLocaleString()}
                 </span>
-                <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>token and emblem {skippedByDesign === 1 ? "row" : "rows"} skipped</span>
+                <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>{skippedLine(skippedShown)}</span>
               </div>
             )}
             <div
@@ -216,9 +230,9 @@ export function ReviewScreen({
             </div>
             {/* Matches the mini-stat label's 11px/--fg-faint. Its own line because a fourth cell
                 would squeeze all four below the label's legible width on a 360px viewport. */}
-            {skippedByDesign > 0 && (
+            {skippedShown > 0 && (
               <p className="text-[11px]" style={{ color: "var(--fg-faint)" }}>
-                {skippedByDesign.toLocaleString()} token and emblem {skippedByDesign === 1 ? "row" : "rows"} skipped
+                {skippedShown.toLocaleString()} {skippedLine(skippedShown)}
               </p>
             )}
           </div>
@@ -232,6 +246,7 @@ export function ReviewScreen({
             changed={change.changed}
             mode={mode}
             onSwitchToReplace={onSwitchToReplace}
+            sync={sync}
           />
         ) : comparing ? (
           <p role="status" className="m-0 mt-[16px] text-[13px] text-[color:var(--fg-muted)]">
@@ -367,9 +382,15 @@ export function ReviewScreen({
       >
         {/* Summary sentence — §Sticky Confirm Bar: Summary Sentence */}
         <p
-          className="text-[11.5px] md:text-[13.5px] text-center md:text-left mb-[10px] md:mb-0 text-[color:var(--fg-faint)] md:text-[color:var(--fg-body)]"
+          className={`text-[11.5px] md:text-[13.5px] text-center md:text-left mb-[10px] md:mb-0 ${
+            bar?.kind === "held"
+              ? "text-[color:var(--warning)]"
+              : "text-[color:var(--fg-faint)] md:text-[color:var(--fg-body)]"
+          }`}
         >
-          {change && mode === "add" ? (
+          {bar ? (
+            bar.line
+          ) : change && mode === "add" ? (
             e.barAdd(change.data.detail.copiesAfter - change.data.detail.copiesBefore, skippedTotal, change.data.detail.copiesBefore)
           ) : change ? (
             e.barReplace(change.data.detail.copiesBefore, change.data.detail.copiesAfter, new Set(change.decks.map((d) => d.deckId)).size)
@@ -398,6 +419,9 @@ export function ReviewScreen({
             a 46px hairline left of Continue). md:whitespace-nowrap on Continue keeps the label on
             one line when the summary sentence eats horizontal space (#32); md:flex-none on the
             group blocks flex-shrink so the label and padding stay intact. */}
+        {bar && sync ? (
+          <SyncBarButtons bar={bar} sync={sync} pending={pending} onCancel={onCancel} onConfirm={onContinue} />
+        ) : (
         <div className="md:ml-auto md:flex-none flex gap-[10px] md:gap-[12px]">
           <GhostButton
             type="button"
@@ -433,6 +457,7 @@ export function ReviewScreen({
                   : "Continue to replace →"}
           </PrimaryButton>
         </div>
+        )}
       </div>
 
       {inspectorOpen && (
@@ -443,6 +468,68 @@ export function ReviewScreen({
         />
       )}
     </section>
+  );
+}
+
+/**
+ * A Sync's buttons. Nothing to sync offers only the way out (call 10, no empty History entry). Otherwise
+ * Cancel and the confirm; while a conflict is undecided, or the figures for the answers on screen are still
+ * being read, the confirm is HELD rather than disabled (`aria-disabled`, .4), so it keeps its focus stop, and
+ * a press on it moves to the first unanswered row instead (K1b).
+ */
+function SyncBarButtons({
+  bar,
+  sync,
+  pending,
+  onCancel,
+  onConfirm,
+}: {
+  bar: SyncBar;
+  sync: SyncReviewControls;
+  pending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const b = collectionEditCopy.upload.syncReview.bar;
+  if (bar.kind === "nothing") {
+    return (
+      <div className="md:ml-auto md:flex-none flex">
+        <PrimaryButton
+          type="button"
+          onClick={sync.onLeave}
+          className="flex-1 md:flex-none h-[46px] md:h-auto rounded-[10px] md:rounded-lg text-[15px] md:text-[14px] md:whitespace-nowrap md:py-[12px] px-0 md:px-[24px]"
+        >
+          {b.back}
+        </PrimaryButton>
+      </div>
+    );
+  }
+  const held = bar.kind === "held" || sync.reading;
+  return (
+    <div className="md:ml-auto md:flex-none flex gap-[10px] md:gap-[12px]">
+      <GhostButton
+        type="button"
+        onClick={onCancel}
+        disabled={pending}
+        className="flex-none h-[46px] md:h-auto rounded-[10px] md:rounded-lg px-[18px] md:px-[20px] md:py-[12px] text-[14px] max-md:font-normal disabled:opacity-60"
+      >
+        {replaceCopy.review.cancel}
+      </GhostButton>
+      <PrimaryButton
+        type="button"
+        aria-disabled={held || undefined}
+        onClick={() => {
+          if (bar.kind === "held") sync.onHeld();
+          else if (!held) onConfirm();
+        }}
+        disabled={pending}
+        className={`flex-1 md:flex-none h-[46px] md:h-auto rounded-[10px] md:rounded-lg text-[15px] md:text-[14px] md:whitespace-nowrap md:py-[12px] px-0 md:px-[24px] disabled:opacity-60 disabled:cursor-wait ${
+          held ? "opacity-40" : ""
+        }`}
+      >
+        {pending ? b.pending : bar.kind === "confirm" ? bar.label : b.confirm}
+      </PrimaryButton>
+    </div>
   );
 }
 
