@@ -15,15 +15,17 @@ import { recommendedMix } from "../../lib/decks/mix";
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
 const TEST_MIX = recommendedMix(null, false);
 
-const { addCardToDeck, removeCardFromDeck } = vi.hoisted(() => ({
+const { addCardToDeck, removeCardFromDeck, setBasicQuantity } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
   removeCardFromDeck: vi.fn(),
+  setBasicQuantity: vi.fn(),
 }));
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
   addCardToDeck,
   removeCardFromDeck,
+  setBasicQuantity,
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
 }));
@@ -33,6 +35,8 @@ vi.mock("../../app/decks/actions", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { BuilderShell } = await import("./builder-shell");
+const { SETTLE_MS } = await import("./use-basic-count");
+const { addPanelCopy } = await import("../../lib/copy/decks-builder");
 
 function deferred<T>() {
   let resolve!: (v: T) => void;
@@ -169,8 +173,32 @@ describe("optimistic deck list", () => {
 
   // A decremented stack keeps its row, so the row explains itself and the shell
   // must stay quiet — otherwise one failure is announced in two places.
-  it("says it once when the row survives to say it", async () => {
+  // A stack that is NOT a basic (an import can stack a card) keeps its ✕, and a failed one-copy removal from
+  // it is reported once, by the row: the shell takes only a last copy's failure.
+  it("says a stack's ✕ failure once", async () => {
     removeCardFromDeck.mockRejectedValue(new Error("boom"));
+    const rats = { ...makeDeck().cards[0], oracleId: "o-rats", name: "Relentless Rats", typeLine: "Creature — Rat", quantity: 9 };
+    render(
+      <BuilderShell mix={TEST_MIX}
+        deck={{ ...makeDeck(), cards: [rats] }}
+        suggestions={[suggestion]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+       newestAsOf={null}/>,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Remove one copy of Relentless Rats, 9 in deck" }));
+    });
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+  });
+
+  // A stack of basics has the stepper now, not a ✕ (basics stepper, R2), so its failure is the stepper's
+  // save throwing: the row survives it, and the one line under it is the only thing that says so.
+  it("says it once when the row survives to say it", async () => {
+    vi.useFakeTimers();
+    setBasicQuantity.mockRejectedValue(new Error("boom"));
 
     render(
       <BuilderShell mix={TEST_MIX}
@@ -183,13 +211,15 @@ describe("optimistic deck list", () => {
        newestAsOf={null}/>,
     );
     await act(async () => {
-      // A stack says which of the two outcomes the ✕ has (#179).
-      fireEvent.click(
-        screen.getByRole("button", { name: "Remove one copy of Forest, 9 in deck" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "One fewer Forest, 8 in deck" }));
     });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SETTLE_MS);
+    });
+    vi.useRealTimers();
 
     expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.getByRole("alert")).toHaveTextContent(addPanelCopy.basicStepper.unconfirmed);
   });
 
   it("draws the card in the decklist before the server answers", async () => {

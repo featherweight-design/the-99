@@ -2881,6 +2881,45 @@ describe("setBasicQuantity — a basic land's count, set absolutely", () => {
     expect(cardWrites()).toHaveLength(0);
   });
 
+  // Compare-and-set: another writer on the page moved the row since the stepper last saw it, so an absolute
+  // figure computed from the old count would erase that change.
+  it("refuses a figure computed from a count the row no longer holds, writing nothing", async () => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 8 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 7, 6)).toEqual({ ok: false, reason: "moved" });
+    expect(cardWrites()).toHaveLength(0);
+    expect(stamped()).toBe(false);
+    // The page that sent it draws the old count: it re-renders.
+    expect(stub.state.revalidated.length).toBeGreaterThan(0);
+  });
+
+  it("compares against a stack above the write ceiling, so an imported 1,000 can step down", async () => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 1000 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 999, 1000)).toEqual({ ok: true, quantity: 999, changed: true });
+  });
+
+  it("writes when the row still holds the expected count", async () => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 6 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 7, 6)).toEqual({ ok: true, quantity: 7, changed: true });
+  });
+
+  it("refuses a figure computed from a count the row no longer holds, even down to 0", async () => {
+    ownDeck();
+    basic();
+    stub.state.deckRows.push({ oracleId: ISLAND, quantity: 3 });
+    const { setBasicQuantity } = await import("./actions");
+    expect(await setBasicQuantity(DECK, ISLAND, 0, 2)).toEqual({ ok: false, reason: "moved" });
+    expect(cardDeletes()).toHaveLength(0);
+  });
+
   it("refuses a basic the deck no longer holds, writing nothing", async () => {
     ownDeck();
     basic();

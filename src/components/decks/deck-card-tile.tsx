@@ -19,7 +19,7 @@
 // exception is a tile with NO art, whose plate prints no cost of its own and so
 // keeps the drawn pips; on a tile that has art the cost is spoken instead.
 
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { removeCardFromDeck } from "../../app/decks/actions";
@@ -49,6 +49,10 @@ import {
   useReportRemoveFailure,
 } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
+import { useBasicCount } from "./use-basic-count";
+import { CountStepper } from "../ui/count-stepper";
+import { isBasicLand } from "../../lib/decks/grouping";
+import { setBasicQuantity } from "../../app/decks/actions";
 import { ProxyTag } from "./proxy-tag";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useLockCards } from "./lock-cards";
@@ -96,7 +100,9 @@ export function DeckCardTile({
   // list has had this since versioning shipped and the card view has had
   // nothing, so a deck with an uncommitted draft photographed identically in
   // card view whether the draft was clean or not.
-  const pendingMove = usePendingChange()?.moves.get(card.oracleId);
+  const pendingChange = usePendingChange();
+  const pendingMove = pendingChange?.moves.get(card.oracleId);
+  const hasPendingChange = pendingChange != null;
   // `from` is 0 for a card the version did not hold at all — the plain add —
   // which `PendingChangeMove` already documents, so the two figures need no
   // query the provider is not already making.
@@ -148,11 +154,41 @@ export function DeckCardTile({
   const lockMode = lockCards?.mode === true;
   const lockError = lockCards?.errors.get(card.oracleId) ?? null;
   const lockDescriptionId = useId();
+  // THE BASICS STEPPER on a tile (handoff R2, call 3): `− count +` across the foot of the art, so the tile does
+  // not grow; the caption loses its `×N` and its ✕ column. It yields to the lock toggle in the mode, as the ✕ does.
+  const stepperOn = isBasicLand(card.typeLine) && card.commander !== true && !lockMode;
+  const [settledLine, setSettledLine] = useState("");
+  const basic = useBasicCount({
+    deckId,
+    oracleId: card.oracleId,
+    quantity: card.quantity,
+    onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(printedFaceName(card), n)),
+  });
+  // `from N` takes the draft figure's place: the committed count, while the count on screen is not it.
+  const committedCount = !stepperOn
+    ? null
+    : pendingMove
+      ? pendingMove.from > 0 ? pendingMove.from : null
+      : hasPendingChange
+        ? basic.base
+        : null;
+  const fromMarker = committedCount !== null && basic.count !== committedCount ? committedCount : null;
+  // Spoken from the committed count and the count on screen, in place of the draft's description (as the row).
+  const stepperSpeaks = committedCount !== null;
+  const fromDescriptionId = useId();
+  const fromSpoken =
+    fromMarker !== null
+      ? basic.count > fromMarker
+        ? deckVersioningCopy.pending.addMarkRecountedA11y(fromMarker, basic.count)
+        : deckVersioningCopy.pending.cutMarkRecountedA11y(fromMarker, basic.count)
+      : null;
   // Both ids in reading order, as the row does: that the card is locked, then what the draft did.
   // Said in the mode too, where the drawn mark gives way to the toggle but the card is no less
   // locked.
   const describedBy =
-    [locked ? lockDescriptionId : null, pendingMove ? draftDescriptionId : null].filter(Boolean).join(" ") ||
+    [locked ? lockDescriptionId : null, pendingMove && !stepperSpeaks ? draftDescriptionId : null, fromSpoken ? fromDescriptionId : null]
+      .filter(Boolean)
+      .join(" ") ||
     undefined;
   /** Spoken after the name, in the vocabulary's own order — see the `ariaLabel` below. */
   const factClause = card.facts?.length
@@ -169,7 +205,13 @@ export function DeckCardTile({
     run(
       async () => {
         try {
-          await removeCardFromDeck(deckId, card.oracleId);
+          // A − still settling: cancel its save and go by an absolute 0 (as the row does).
+          const taken = stepperOn ? basic.takeOver() : null;
+          if (taken) {
+            // A refusal (another writer moved the row) is a failed removal, said as one: the row is still there.
+            const outcome = await setBasicQuantity(deckId, card.oracleId, 0, await taken);
+            if (!outcome.ok) throw new Error(outcome.reason);
+          } else await removeCardFromDeck(deckId, card.oracleId);
         } catch (cause) {
           if (shellReportsFailure) reportRemoveFailure(card.oracleId, card.name, generation);
           throw cause;
@@ -207,7 +249,7 @@ export function DeckCardTile({
             made to escape, and `onShell` would have reported it fixed.
             `decklist-row.tsx` gets away with a shadow because a row has no
             opaque full-width child. */}
-        {pendingMove && (
+        {(pendingMove || fromMarker !== null) && (
           <span
             aria-hidden
             className="absolute left-0 top-0 bottom-0 w-[2px] z-20 pointer-events-none bg-[color:var(--accent)]"
@@ -285,6 +327,29 @@ export function DeckCardTile({
               className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
             />
           </CardDetailTrigger>
+          {/* A sibling of the trigger, never inside it: a button cannot hold buttons. */}
+          {stepperOn && (
+            <CountStepper
+              layout="band"
+              count={basic.count}
+              fewerLabel={addPanelCopy.basicStepper.fewerAria(displayName, basic.count - 1)}
+              moreLabel={addPanelCopy.basicStepper.moreAria(displayName, basic.count + 1)}
+              countLabel={addPanelCopy.basicStepper.countAria(displayName)}
+              onStep={basic.step}
+              onType={basic.type}
+              atOne={
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  disabled={isPending}
+                  aria-label={addPanelCopy.row.removeAria(displayName)}
+                  className="flex h-[44px] w-[44px] md:h-[32px] md:w-[32px] items-center justify-center rounded-[6px] bg-transparent border-0 p-0 text-[13px] leading-none text-[color:var(--fg-body)] md:text-[color:var(--fg-faint)] md:group-hover:text-[color:var(--fg)] md:group-focus-within:text-[color:var(--fg)] cursor-pointer disabled:opacity-50 disabled:cursor-default focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+                >
+                  {addPanelCopy.row.remove}
+                </button>
+              }
+            />
+          )}
 
           {/* Outside the trigger: `CardDetailTrigger` carries its own accessible
               name, which replaces everything nested under it, so a cost spoken
@@ -392,7 +457,13 @@ export function DeckCardTile({
                   `×N` beside the name. An add has no figure at all since erratum
                   11 — `+1` restated the count — so it falls through to the count
                   itself, which is exactly what the row does. */}
-              {draftFigure ? (
+              {stepperOn ? (
+                fromMarker !== null && (
+                  <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
+                    {addPanelCopy.basicStepper.from(fromMarker)}
+                  </span>
+                )
+              ) : draftFigure ? (
                 <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
                   {draftFigure}
                 </span>
@@ -480,7 +551,7 @@ export function DeckCardTile({
           name={displayName}
           nameTrail={<TwoFacedMark layout={card.layout} />}
           trailing={
-            lockCards && lockMode ? (
+            stepperOn ? undefined : lockCards && lockMode ? (
               /* In the mode the ✕ column is the lock toggle (STATES, card tile), drawn at rest
                  rather than on hover: the column keeps its width, 32px on desktop and 44px on the
                  phone, so the mode costs the caption nothing. The box is 26×24 on desktop and 36px
@@ -535,6 +606,11 @@ export function DeckCardTile({
         />
       </div>
       {error && !shellReportsFailure && <MutationError message={error} />}
+      {basic.error && <MutationError message={basic.error} />}
+      {stepperOn && (
+        <span className="sr-only" role="status" aria-live="polite">{settledLine}</span>
+      )}
+      {fromSpoken && <span id={fromDescriptionId} className="sr-only">{fromSpoken}</span>}
       {/* A refused lock reverts and says why here, under its tile, as the row does. */}
       {lockError && <MutationError message={lockError} />}
     </li>

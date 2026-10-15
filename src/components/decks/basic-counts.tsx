@@ -1,0 +1,195 @@
+"use client";
+
+import { createContext, useContext } from "react";
+
+import type { BasicQuantityOutcome } from "../../lib/decks/set-basic-quantity";
+
+/** Quiet time after the last press before the one save goes (plan `2026-10-14-basic-lands-stepper.md`). */
+export const SETTLE_MS = 600;
+
+export type BasicCountResult = { kind: "ok"; n: number } | { kind: "refused" } | { kind: "thrown" };
+
+type Entry = {
+  target: number;
+  /** The deck's count when this burst began: the row's `from N` reads it. */
+  base: number;
+  /** The count the server last confirmed for this card: each save is a compare-and-set against it. */
+  expected: number;
+  timer: ReturnType<typeof setTimeout> | null;
+  wake: ((settled: boolean) => void) | null;
+  taken: boolean;
+  /** A flush asked for this burst while a save was out: the next settle is skipped, not waited out. */
+  flushing: boolean;
+  /** Resolves once the burst has ended: true when its last save was confirmed, false otherwise. */
+  done: Promise<boolean>;
+};
+
+export type BasicCounts = {
+  /** A press or a typed figure. Opens a burst, or moves the open one's target and restarts its settle. */
+  set: (oracleId: string, n: number, base: number) => void;
+  /**
+   * The ✕ at 1 inside an open burst: cancel it, sending nothing more and saying nothing. Null with no burst open;
+   * otherwise the count the server last confirmed, once any save already out has answered, for the removal's own
+   * compare-and-set.
+   */
+  takeOver: (oracleId: string) => Promise<number> | null;
+  /**
+   * Settle every open burst now and wait for every save: before a write that would race them. Resolves false
+   * when any of them was refused or threw, so the caller can stop rather than write over an unknown count.
+   */
+  flush: () => Promise<boolean>;
+  /** The base of the open burst for this card, or null. */
+  base: (oracleId: string) => number | null;
+  /** The views of a card hear its burst's outcome here, whichever of them is mounted when it lands. */
+  subscribe: (oracleId: string, listener: (r: BasicCountResult) => void) => () => void;
+  /** This render's save, prediction, transition and refresh, set after each commit (never during render). */
+  configure: (deps: Deps) => void;
+};
+
+type Deps = {
+  save: (oracleId: string, n: number, expected: number) => Promise<BasicQuantityOutcome>;
+  /** The deck-wide prediction, inside a transition. */
+  predict: (oracleId: string, n: number) => void;
+  /** Runs the burst as one async transition, so the prediction stands until the save has answered. */
+  transition: (fn: () => Promise<void>) => void;
+  refresh: () => void;
+};
+
+/**
+ * The basics stepper's save queue, ONE PER DECK (round 2 of #1752): a row and a tile are two views of one card,
+ * and List ↔ Card swaps one for the other mid-burst, so the queue cannot live in either. It also has to be
+ * reachable by the deck's other writers to the same row: Clear auto sweeps a fill-added basic the stepper has
+ * just claimed, and the Add panel adds one copy to the count the stepper is about to overwrite, so both `flush`
+ * first.
+ *
+ * Each card's burst is one async transition: the prediction stands until its save has answered and the page
+ * has revalidated. Each save is a COMPARE-AND-SET against the count the server last confirmed (round 6): every
+ * other writer to the row on this page (an add, a trade, a swap, an undo, a commit, a restore) can only make it
+ * refuse, never be overwritten by a figure computed from the count before it. The flushes below are for the
+ * common case, so a plain Add or Clear auto never meets that refusal at all. A press during a save restarts the settle and the next save carries the newer figure. A
+ * returned refusal and a thrown save are told apart, because only the first may say the deck is unchanged.
+ */
+export function createBasicCounts(initial?: Deps): BasicCounts {
+  let deps: Deps = initial ?? {
+    save: async () => ({ ok: false, reason: "not-in-deck" as const }),
+    predict: () => {},
+    transition: (fn) => void fn(),
+    refresh: () => {},
+  };
+  const entries = new Map<string, Entry>();
+  const listeners = new Map<string, Set<(r: BasicCountResult) => void>>();
+  const tell = (oracleId: string, r: BasicCountResult) => {
+    for (const l of listeners.get(oracleId) ?? []) l(r);
+  };
+
+  function quiet(entry: Entry): Promise<boolean> {
+    if (entry.flushing) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      entry.wake = (settled) => {
+        if (entry.timer) clearTimeout(entry.timer);
+        entry.timer = null;
+        entry.wake = null;
+        resolve(settled);
+      };
+      entry.timer = setTimeout(() => entry.wake?.(true), SETTLE_MS);
+    });
+  }
+
+  function open(oracleId: string, n: number, base: number) {
+    let finish!: (ok: boolean) => void;
+    const entry: Entry = { target: n, base, expected: base, timer: null, wake: null, taken: false, flushing: false, done: new Promise((r) => (finish = r)) };
+    entries.set(oracleId, entry);
+    deps.transition(async () => {
+      deps.predict(oracleId, n);
+      let result: BasicCountResult = { kind: "ok", n };
+      try {
+        for (;;) {
+          if (!(await quiet(entry))) {
+            if (entry.taken) break;
+            continue;
+          }
+          const saved = entry.target;
+          let outcome: BasicQuantityOutcome;
+          try {
+            outcome = await deps.save(oracleId, saved, entry.expected);
+          } catch {
+            result = { kind: "thrown" };
+            break;
+          }
+          if (outcome.ok) entry.expected = saved;
+          if (entry.taken) break;
+          // Refused (another writer moved the row, most likely): stop, and say so, rather than send a newer
+          // figure computed from the same stale count.
+          if (outcome.ok && entry.target !== saved) continue;
+          result = outcome.ok ? { kind: "ok", n: saved } : { kind: "refused" };
+          break;
+        }
+      } finally {
+        // Only this generation's own entry: a takeOver hands the card to a fresh burst at once.
+        if (entries.get(oracleId) === entry) entries.delete(oracleId);
+        finish(!entry.taken && result.kind === "ok");
+      }
+      if (entry.taken) return;
+      // Either failure re-reads: a throw may have landed, and a `moved` refusal means the row holds a count this
+      // page has not drawn.
+      if (result.kind !== "ok") deps.refresh();
+      tell(oracleId, result);
+    });
+  }
+
+  return {
+    set(oracleId, n, base) {
+      const entry = entries.get(oracleId);
+      if (!entry) return open(oracleId, n, base);
+      entry.target = n;
+      deps.transition(async () => deps.predict(oracleId, n));
+      entry.wake?.(false);
+    },
+    takeOver(oracleId) {
+      const entry = entries.get(oracleId);
+      if (!entry) return null;
+      entry.taken = true;
+      // Out of the map now, not when its loop ends: a press after the removal and its Undo opens a FRESH burst,
+      // which an in-flight save of this one must not swallow.
+      entries.delete(oracleId);
+      entry.wake?.(false);
+      return entry.done.then(() => entry.expected);
+    },
+    async flush() {
+      const open = [...entries.values()];
+      if (open.length === 0) return true;
+      for (const e of open) {
+        e.flushing = true;
+        e.wake?.(true);
+      }
+      return (await Promise.all(open.map((e) => e.done))).every(Boolean);
+    },
+    base(oracleId) {
+      return entries.get(oracleId)?.base ?? null;
+    },
+    configure(next) {
+      deps = next;
+    },
+    subscribe(oracleId, listener) {
+      const set = listeners.get(oracleId) ?? new Set();
+      set.add(listener);
+      listeners.set(oracleId, set);
+      return () => set.delete(listener);
+    },
+  };
+}
+
+const BasicCountsContext = createContext<BasicCounts | null>(null);
+
+export const BasicCountsProvider = BasicCountsContext.Provider;
+
+/** Null outside the deck builder: a row mounted alone keeps a queue of its own. */
+export function useBasicCounts(): BasicCounts | null {
+  return useContext(BasicCountsContext);
+}
+
+/** Settles the stepper's open bursts before a write that would race them; resolves at once outside the builder. */
+export function useFlushBasicCounts(): () => Promise<boolean> {
+  const counts = useContext(BasicCountsContext);
+  return counts ? counts.flush : async () => true;
+}

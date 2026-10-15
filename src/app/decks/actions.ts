@@ -482,17 +482,21 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
 
 /**
  * The basics stepper's one write: a basic land's count in the deck's draft, set to `n` (absolute,
- * so the client's settled burst of presses is one call). Every refusal is returned, not thrown, and
+ * so the client's settled burst of presses is one call), against the `expected` count the client last saw. Every refusal is returned, not thrown, and
  * is decided before any write, so the row may say the deck is unchanged; a throw may have committed.
  */
 export async function setBasicQuantity(
   deckId: string,
   oracleId: string,
   n: number,
+  expected?: number,
 ): Promise<BasicQuantityOutcome> {
   const userId = await requireUserId();
-  const outcome = await setBasicQuantityFor(userId, deckId, oracleId, n);
-  if (outcome.ok && outcome.changed) revalidateClaims(deckId, userId);
+  const outcome = await setBasicQuantityFor(userId, deckId, oracleId, n, expected);
+  // A row that moved or went is drawn stale on the page that sent this: re-render it as well.
+  if ((outcome.ok && outcome.changed) || (!outcome.ok && (outcome.reason === "moved" || outcome.reason === "not-in-deck"))) {
+    revalidateClaims(deckId, userId);
+  }
   return outcome;
 }
 

@@ -7,7 +7,7 @@
 import { SHOW_DECK_TOKENS } from "./deck-tokens-landing";
 import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
-import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
+import { useState, useMemo, useCallback, useContext, useEffect, useRef, useTransition } from "react";
 import { printedNameOf } from "../../lib/collection/browse";
 import { commanderExportName } from "../../lib/decks/export-helpers";
 import { deckBodySize } from "../../lib/decks/deck-size";
@@ -55,6 +55,7 @@ import {
   clearAutoCards,
   keepAllAutoCards,
   restoreAutoCards,
+  setBasicQuantity,
   type SweptRow,
 } from "../../app/decks/actions";
 import { saveDeckDescription } from "../../app/decks/tuning-actions";
@@ -79,6 +80,8 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { DeckSiblingsProvider } from "./deck-siblings";
 import { comboScopeIds } from "../../lib/decks/combo-scope";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
+import { BasicCountsProvider, createBasicCounts, type BasicCounts } from "./basic-counts";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLedger, FillFailedBannerConnected } from "./provenance-line";
@@ -446,7 +449,25 @@ export function BuilderShell({
     keepOptimisticCard,
     sweepOptimisticAuto,
     keepAllOptimisticAuto,
+    setOptimisticQuantity,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
+  // The basics stepper's save queue, one for the deck (`basic-counts.tsx`): it outlives a List ↔ Card switch,
+  // and Clear auto and the Add panel flush it before writing the rows it would race. Built once, and handed
+  // this render's prediction and router after each commit; a press always comes after one.
+  const appRouter = useContext(AppRouterContext);
+  const [, startBasicCount] = useTransition();
+  const [basicCounts] = useState<BasicCounts>(() => createBasicCounts());
+  // Leaving the builder (for the review page, where the commit is) settles every open burst AT ONCE, so the count
+  // the player saw is saved on the way out rather than 600ms later, behind a commit that would snapshot the old one.
+  useEffect(() => () => void basicCounts.flush(), [basicCounts]);
+  useEffect(() => {
+    basicCounts.configure({
+      save: (oracleId, n, expected) => setBasicQuantity(deck.id, oracleId, n, expected),
+      predict: setOptimisticQuantity,
+      transition: (fn) => startBasicCount(fn),
+      refresh: () => appRouter?.refresh(),
+    });
+  });
   // The page's live region. Declared this high because the lock state below speaks into it.
   const [announcement, setAnnouncement] = useState("");
   // Locked (PR 4a): every lock pressed on this visit, drawn over the optimistic list, so the rows,
@@ -794,14 +815,18 @@ export function BuilderShell({
   //
   // `addChanges` rather than `adds` because that is the list carrying the
   // before/after pair, and it is the same cards in the same order.
+  //
+  // An EMPTY map on a committed deck with nothing pending, not null: the basics stepper reads "this deck has
+  // a version to compare against" off the provider, to draw `from N` during its first burst before any move
+  // exists. Every reader asks `moves.get`, so an empty map draws no mark and no note.
   const pendingChange = useMemo(() => {
-    if (!draft) return null;
+    if (!draft?.version) return null;
     const moves = new Map<string, { from: number; to: number }>();
     for (const c of draft.addChanges) moves.set(c.oracleId, { from: c.from, to: c.to });
     for (const c of draft.removes) {
       if (c.to > 0) moves.set(c.oracleId, { from: c.from, to: c.to });
     }
-    return moves.size > 0 ? { moves } : null;
+    return { moves };
   }, [draft]);
 
   // The one deliberate exception. Keyed off the SERVER counts because the
@@ -1207,6 +1232,13 @@ export function BuilderShell({
       // A LOCKED auto card stays (L3): the server's delete skips it, so the prediction keeps it too,
       // or the card vanishes until revalidation and the announced total is short by its copies.
       const keep = new Set(lockedAutoCards.map((c) => c.oracleId));
+      // A basic the stepper is still settling is about to be claimed (its save clears `auto`): flush first, or
+      // the sweep deletes the land the player just counted. A save that did not confirm leaves that count
+      // unknown, so the sweep does not run over it.
+      if (!(await basicCounts.flush())) {
+        setAutoError(recommendationsCopy.auto.sweepFailed);
+        return;
+      }
       sweepOptimisticAuto(keep);
       try {
         const removed = await clearAutoCards(deck.id);
@@ -1320,6 +1352,7 @@ export function BuilderShell({
     resolveRow: resolveOptimisticRow,
     deleteRow: deleteOptimisticRow,
     keep: keepOptimisticCard,
+    setQuantity: setOptimisticQuantity,
     undo: { restore: addOptimisticCard, reportFailure: reportUndoFailure, failure: undoFailure, removal },
   };
 
@@ -1440,6 +1473,7 @@ export function BuilderShell({
     >
       <DeckSiblingsProvider>
       <AddOptimisticCardProvider value={deckEdits}>
+        <BasicCountsProvider value={basicCounts}>
         <PassMarkProvider value={passMark}>
         <LabelRowsProvider value={labelRows} queried={labelQueried}>
         {/* One column at both widths now that the rail is gone. The document is
@@ -2223,6 +2257,7 @@ export function BuilderShell({
         </div>
         </LabelRowsProvider>
         </PassMarkProvider>
+        </BasicCountsProvider>
       </AddOptimisticCardProvider>
       </DeckSiblingsProvider>
     </CardDetailProvider>

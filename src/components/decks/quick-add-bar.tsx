@@ -28,6 +28,7 @@ import type { Bracket } from "../../lib/bracket/types";
 import { cardFactName } from "../../lib/copy/card-mark";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
+import { useFlushBasicCounts } from "./basic-counts";
 import { type CardSearchInput, useCardSearch } from "./use-card-search";
 import { type DeckComboMap, useDeckComboMap } from "./use-deck-combo-map";
 import { useDeckMutation } from "./use-deck-mutation";
@@ -407,6 +408,9 @@ function QuickAddRow({
 }: QuickAddRowProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
+  // An add is ONE MORE copy; the basics stepper's pending save is an absolute count. Settle that first, or
+  // the stepper's figure lands after the add and erases it.
+  const flushBasicCounts = useFlushBasicCounts();
   const ownership = result.owned
     ? addPanelCopy.quickAdd.rowOwned(result.ownedQty)
     : addPanelCopy.quickAdd.rowNotOwned;
@@ -432,9 +436,14 @@ function QuickAddRow({
   // The guard lives here rather than on the click handler alone: Enter reaches
   // the row through registerAdd, which would otherwise re-fire the mutation
   // while the optimistic row is showing but deckOracleIds has not caught up.
-  const handleAdd = useCallback(() => {
+  const handleAdd = useCallback(async () => {
     if (applied) return;
+    // At the press, not after the flush: a search typed while the queue drains is a newer generation, and
+    // completing this add must not clear it.
     const added = beginAdd();
+    // Settled BEFORE the add's own prediction: a step pressed while the queue drains then lands in the
+    // stepper's figure, and the one copy this adds is counted once, on top of it.
+    if (isBasicLand(result.typeLine)) await flushBasicCounts();
     run(
       async () => {
         const outcome = await addCardToDeck(deckId, result.oracleId);
@@ -466,7 +475,7 @@ function QuickAddRow({
           imageUri: result.imageUri,
         }),
     );
-  }, [applied, run, deckId, result, addOptimisticCard, beginAdd]);
+  }, [applied, run, deckId, result, addOptimisticCard, beginAdd, flushBasicCounts]);
 
   // The bar's Enter handler adds through whichever row is active. Layout rather
   // than passive: a passive effect runs after paint, leaving a window in which

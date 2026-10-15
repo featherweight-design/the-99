@@ -104,7 +104,8 @@ describe("deck card-detail triggers", () => {
         onGroupingChange={vi.fn()}
        newestAsOf={null}/>,
     );
-    expect(screen.getByText("×3")).toBeInTheDocument();
+    // The stepper holds the count now (basics stepper, R2), in its field rather than a `×3` glyph.
+    expect(screen.getByRole("textbox", { name: "Forest copies in deck" })).toHaveValue("3");
     expect(screen.getAllByRole("button", { name: cardDetailCopy.triggerAria("Forest") })).toHaveLength(1);
   });
 

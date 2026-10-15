@@ -17,6 +17,7 @@ vi.mock("../../app/decks/[id]/search-action", () => ({ searchCards }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
 
 const { QuickAddBar } = await import("./quick-add-bar");
+const { BasicCountsProvider } = await import("./basic-counts");
 
 const row = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
   oracleId: over.name.toLowerCase(),
@@ -730,3 +731,29 @@ describe("QuickAddBar — the card note and its marks", () => {
     await act(async () => { settle(); });
   });
 });
+
+// An add is one MORE copy and the basics stepper's pending save is an absolute count (round 2 of #1752): the
+// add flushes the stepper's queue first, so the stepper's figure cannot land after the add and erase it.
+describe("adding a basic while the stepper is settling", () => {
+  it("flushes the stepper's queue before adding a basic", async () => {
+    const order: string[] = [];
+    const counts = {
+      flush: vi.fn(async () => { order.push("flush"); return true; }),
+      set: vi.fn(), takeOver: vi.fn(() => null), base: vi.fn(() => null), subscribe: vi.fn(() => () => {}), configure: vi.fn(),
+    };
+    addCardToDeck.mockImplementation(async () => { order.push("add"); return { ok: true as const }; });
+    const island = row({ name: "Island Study", oracleId: "basic-island", typeLine: "Basic Land — Island", role: "land" });
+    searchCards.mockResolvedValue([rhystic, island]);
+    render(
+      <BasicCountsProvider value={counts}>
+        <QuickAddBar deckId="deck-1" commanderIdentity={["U"]} deckOracleIds={[]} commanderShortName="Korvold"
+          commanderOracleId="cmd-korvold" declaredBracket={null} noteCounts={EMPTY_NOTE_COUNTS} />
+      </BasicCountsProvider>,
+    );
+    await search();
+    fireEvent.keyDown(field(), { key: "ArrowDown" });
+    fireEvent.keyDown(field(), { key: "Enter" });
+    await waitFor(() => expect(order).toEqual(["flush", "add"]));
+  });
+});
+
