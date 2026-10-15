@@ -85,7 +85,9 @@ describe("the lock's guards sit where the writes are", () => {
     expect(lock).toBeGreaterThan(-1);
     expect(check).toBeGreaterThan(lock);
     expect(check).toBeLessThan(fn.indexOf("tx.delete(deckCards)"));
-    expect(fn).toContain("!seen.has(r.oracleId)");
+    expect(fn).toContain("!seen.has(id)");
+    // A count drop is a cut of those copies, so it meets the same re-check.
+    expect(fn).toContain("...lowering.map((r) => r.oracleId)");
   });
 
   it("the update preview reads the locks failing closed", () => {

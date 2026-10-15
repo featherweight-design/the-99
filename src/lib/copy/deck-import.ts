@@ -537,6 +537,8 @@ export const deckImportCopy = {
       // alike — so no removal can honestly be labelled differently from any
       // other. Product ruled the variants out on 2026-09-05.
       outBody: "Your list does not name these.",
+      // When a count the list lowers sits among them: those rows are named, at fewer copies.
+      outBodyFewer: "Your list does not name these, or names fewer copies.",
       keepAll: (n: string) => `Keep all ${n}`,
 
       inHeading: (n: string) => `Going in · ${n}`,
@@ -554,14 +556,9 @@ export const deckImportCopy = {
             ? "They come across as lines you can resolve on the deck, exactly as an import’s do, and they replace the 1 unresolved line this deck is carrying now."
             : `They come across as lines you can resolve on the deck, exactly as an import’s do, and they replace the ${existing} unresolved lines this deck is carrying now.`,
 
-      // A count that moves is reconciled in silence — the ruling that keeps a
-      // basic's 12 → 9 from burying the cards that actually left the deck.
-      // Silence about the change is not silence about the arithmetic, though:
-      // the landing figure carries those copies, so a player adding the chips
-      // up lands short of it with nothing on the screen to say why. This line
-      // is that why. It stays a line rather than a group for the same reason
-      // the change is quiet.
-      recounted: (list: string) => `Same cards, new counts: ${list}.`,
+      // A count the list moves is a row in the group its copies count toward (Hugh, 2026-10-15),
+      // drawn with both figures: a drop under Coming out, a rise under Going in. The line that
+      // used to name them under the heading went with that.
       recountedItem: (name: string, from: string, to: string) => `${name} ${from} → ${to}`,
 
       unchangedDisclosure: (n: string) => `Show the ${n} that do not change`,

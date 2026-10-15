@@ -10,7 +10,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import type { DeckUpdatePreview } from "../../app/decks/update-actions";
+import type { DeckUpdateChangedRow, DeckUpdatePreview } from "../../app/decks/update-actions";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { cardTypeGroup, groupByCardType } from "../../lib/decks/grouping";
@@ -37,8 +37,31 @@ function typeGroups<T extends { oracleId: string; name: string; typeLine: string
   rows: T[],
   shown: number,
 ) {
+  return groupByCardType(typeOrder(rows).slice(0, shown));
+}
+
+/** The rows in the order the groups draw them: by card type, then as the grouping orders them. */
+function typeOrder<T extends { oracleId: string; name: string; typeLine: string }>(rows: T[]) {
   const grouped = groupByCardType(rows.map((r) => ({ ...r, cardTypeGroup: cardTypeGroup(r.typeLine) })));
-  return groupByCardType(grouped.flatMap(([, groupRows]) => groupRows).slice(0, shown));
+  return grouped.flatMap(([, groupRows]) => groupRows);
+}
+
+/** A row of the out or in group: an add or a removal, or a count change carrying both figures. */
+type DiffGroupRow = DeckUpdateChangedRow & { from?: number; to?: number };
+
+/** The copies a set of rows moves: a row's whole count, or a count change's difference. */
+function copiesOf(rows: { quantity: number; from?: number; to?: number }[]) {
+  return rows.reduce(
+    (n, r) => n + (r.from === undefined || r.to === undefined ? r.quantity : Math.abs(r.to - r.from)),
+    0,
+  );
+}
+
+/** A count change's two figures, for the row that draws them; nothing on an add or a removal. */
+function recountOf(row: { from?: number; to?: number }) {
+  return row.from === undefined || row.to === undefined
+    ? undefined
+    : { from: String(row.from), to: String(row.to) };
 }
 
 /** Rows shown before the disclosure takes over. Four at both widths — the cap is
@@ -60,6 +83,7 @@ function Group({
   bodyMobile,
   action,
   total,
+  hidden,
   children,
 }: {
   heading: string;
@@ -69,6 +93,9 @@ function Group({
   /** Rows in the group, of which `children` renders all — the disclosure hides
    *  the overflow with CSS-free unmounting, so this is what it counts. */
   total: number;
+  /** What the disclosure says it hides, when that is not a row count: the copies past the cap, in
+   *  the order the rows draw, for a group whose heading counts copies. Rows otherwise. */
+  hidden?: number;
   children: (shown: number) => React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -107,7 +134,7 @@ function Group({
           aria-controls={rowsId}
           className="mt-[10px] font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
         >
-          {expanded ? copy.showFewer : copy.showMore(String(total - ROW_CAP))}
+          {expanded ? copy.showFewer : copy.showMore(String(hidden ?? total - ROW_CAP))}
         </button>
       )}
     </section>
@@ -171,22 +198,19 @@ export function UpdateDiff({
   const [kept, setKept] = useState<Set<string>>(() => new Set(preview.lockedOut ?? []));
   const [live, setLive] = useState("");
 
-  const removing = preview.out.length - kept.size;
-  // Counted in copies, not rows: `built` is a sum of quantities, so a removal of
-  // twelve Islands has to subtract twelve. The chips above stay row counts —
-  // they name groups, and this names the number compared to 99.
-  const leaving = preview.out
-    .filter((r) => !kept.has(r.oracleId))
-    .reduce((n, r) => n + r.quantity, 0);
-  const arriving = preview.in.reduce((n, r) => n + r.quantity, 0);
-  const recountedDelta = preview.recounted.reduce((n, r) => n + (r.to - r.from), 0);
-  const landing = preview.built - leaving + arriving + recountedDelta;
-  // Rows, deliberately, and the CTA is the only place the choice is visible:
-  // `19 in, 6 out` restates the group headings directly above it, so counting
-  // copies here would have the button disagree with the lists it summarises.
-  // The copies figure is not missing from the screen — `landing` sits beside it.
-  const inN = String(preview.in.length);
-  const outN = String(removing);
+  // Every figure here counts COPIES (Hugh, 2026-10-15): a count that drops is copies coming out
+  // and one that rises is copies going in, so `3 in · 3 out` beside `99 → 99` adds up. Rows were
+  // counted before, and a list that took Plains from 6 to 3 read `3 in, 0 out` over a deck that
+  // stayed at 99. A drop is its own row in the out group (`fewer`), a rise its own row in the in
+  // group (`more`), each carrying only the copies that move.
+  const outRows: DiffGroupRow[] = [...preview.out, ...preview.fewer];
+  const inRows: DiffGroupRow[] = [...preview.in, ...preview.more];
+  const outCopies = copiesOf(outRows);
+  const arriving = copiesOf(inRows);
+  const leaving = copiesOf(outRows.filter((r) => !kept.has(r.oracleId)));
+  const landing = preview.built - leaving + arriving;
+  const inN = String(arriving);
+  const outN = String(leaving);
 
   useEffect(() => {
     const timer = setTimeout(
@@ -214,7 +238,6 @@ export function UpdateDiff({
   // the *list* looks like a different deck, which is true of the paste and stays
   // true however many rows the player rescues from it. Moving with the Keeps
   // would make the sentence flicker in and out while the player works.
-  const outCopies = preview.out.reduce((n, r) => n + r.quantity, 0);
   const wholesale = preview.built > 0 && outCopies / preview.built > WHOLESALE_SHARE;
   const clamped = preview.notes.filter((n) => n.kind === "quantityClamped").length;
   // This flow never changes the deck's commanders, so a commander line in the
@@ -259,15 +282,6 @@ export function UpdateDiff({
             {deckImportCopy.notes.quantityClamped(clamped)}
           </p>
         )}
-        {preview.recounted.length > 0 && (
-          <p className="mt-[8px] mb-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
-            {copy.recounted(
-              preview.recounted
-                .map((r) => copy.recountedItem(r.name, String(r.from), String(r.to)))
-                .join(", "),
-            )}
-          </p>
-        )}
         {extraCommanders > 0 && (
           <p className="mt-[8px] mb-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
             {deckImportCopy.notes.thirdCommanderDeclared(extraCommanders)}
@@ -275,15 +289,15 @@ export function UpdateDiff({
         )}
 
         <div className="mt-[16px] md:mt-[20px] flex flex-wrap items-baseline gap-x-[18px] gap-y-[8px] md:gap-x-[26px] pb-[16px] [border-bottom:1px_solid_var(--border)]">
-          <Chip figure={preview.out.length} label={copy.chipOut} />
-          <Chip figure={preview.in.length} label={copy.chipIn} />
+          <Chip figure={outCopies} label={copy.chipOut} />
+          <Chip figure={arriving} label={copy.chipIn} />
           <Chip
             figure={preview.unresolved.length}
             label={copy.chipUnnamed}
             labelMobile={copy.chipUnnamedMobile}
           />
           <Chip
-            figure={preview.unchanged.length}
+            figure={copiesOf(preview.unchanged)}
             label={copy.chipUnchanged}
             labelMobile={copy.chipUnchangedMobile}
           />
@@ -292,28 +306,29 @@ export function UpdateDiff({
           </span>
         </div>
 
-        {preview.out.length > 0 && (
+        {outRows.length > 0 && (
           <Group
-            heading={copy.outHeading(String(preview.out.length))}
-            body={copy.outBody}
-            bodyMobile={copy.outBody}
+            heading={copy.outHeading(String(outCopies))}
+            body={preview.fewer.length > 0 ? copy.outBodyFewer : copy.outBody}
             action={
               <GhostButton
-                onClick={() => setKept(new Set(preview.out.map((r) => r.oracleId)))}
+                onClick={() => setKept(new Set(outRows.map((r) => r.oracleId)))}
                 className="flex-none font-mono text-[11.5px] px-[12px] h-[38px] md:h-[32px]"
               >
-                {copy.keepAll(String(preview.out.length))}
+                {copy.keepAll(String(outCopies))}
               </GhostButton>
             }
-            total={preview.out.length}
+            total={outRows.length}
+            hidden={copiesOf(typeOrder(outRows).slice(ROW_CAP))}
           >
             {(shown) =>
-              typeGroups(preview.out, shown).map(([group, rows]) => (
-                <TypeGroup key={group} label={group} count={rows.length}>
+              typeGroups(outRows, shown).map(([group, rows]) => (
+                <TypeGroup key={group} label={group} count={copiesOf(rows)}>
                   {rows.map((row) => (
                     <DiffRowOut
                       key={row.oracleId}
                       card={row}
+                      recount={recountOf(row)}
                       kept={kept.has(row.oracleId)}
                       action={
                         <DiffRowKeep
@@ -337,20 +352,26 @@ export function UpdateDiff({
         )}
 
         {/* State 15: the group unmounts at zero rather than drawing an empty block. */}
-        {preview.in.length > 0 && (
+        {inRows.length > 0 && (
           <Group
-            heading={copy.inHeading(String(preview.in.length))}
+            heading={copy.inHeading(String(arriving))}
             body={copy.inMeta(
-              String(preview.in.filter((r) => r.owned).length),
-              String(preview.in.filter((r) => !r.owned).length),
+              String(copiesOf(inRows.filter((r) => r.owned))),
+              String(copiesOf(inRows.filter((r) => !r.owned))),
             )}
-            total={preview.in.length}
+            total={inRows.length}
+            hidden={copiesOf(typeOrder(inRows).slice(ROW_CAP))}
           >
             {(shown) =>
-              typeGroups(preview.in, shown).map(([group, rows]) => (
-                <TypeGroup key={group} label={group} count={rows.length}>
+              typeGroups(inRows, shown).map(([group, rows]) => (
+                <TypeGroup key={group} label={group} count={copiesOf(rows)}>
                   {rows.map((row) => (
-                    <DiffRowIn key={row.oracleId} card={row} sourceLine={row.sourceLine} />
+                    <DiffRowIn
+                      key={row.oracleId}
+                      card={row}
+                      sourceLine={row.sourceLine}
+                      recount={recountOf(row)}
+                    />
                   ))}
                 </TypeGroup>
               ))
@@ -447,14 +468,14 @@ function UnchangedGroup({ rows }: { rows: DeckUpdatePreview["unchanged"] }) {
         aria-controls={expanded ? rowsId : undefined}
         className="font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
       >
-        {expanded ? copy.showFewer : copy.unchangedDisclosure(String(rows.length))}
+        {expanded ? copy.showFewer : copy.unchangedDisclosure(String(copiesOf(rows)))}
       </button>
       {expanded && (
         <div id={rowsId} className="mt-[10px] flex flex-col">
           {/* Expanded, so every row is shown — the cap belongs to the four
               capped groups, and this one is all-or-nothing. */}
           {typeGroups(rows, rows.length).map(([group, groupRows]) => (
-            <TypeGroup key={group} label={group} count={groupRows.length}>
+            <TypeGroup key={group} label={group} count={copiesOf(groupRows)}>
               {groupRows.map((row) => (
                 <DiffRowUnchanged key={row.oracleId} card={row} />
               ))}
