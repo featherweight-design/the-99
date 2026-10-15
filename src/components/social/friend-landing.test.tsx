@@ -175,7 +175,9 @@ describe("Decline", () => {
     render(<FriendLanding token={TOKEN} view={OPEN} />);
     arrive();
     await press(L.decline);
-    act(() => { vi.advanceTimersByTime(120); });
+    act(() => { vi.advanceTimersByTime(119); });
+    expect(title()).toBe(L.openTitle("Ana"));
+    act(() => { vi.advanceTimersByTime(1); });
     expect(title()).toBe(L.declinedTitle);
   });
 

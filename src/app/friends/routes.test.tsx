@@ -156,11 +156,11 @@ describe("/friend/[token]", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(title);
   });
 
-  it("names nobody on a link that has ended", async () => {
+  // The name is stripped before it reaches the page (`shapeInvite`, tested in friends.test.ts); this holds the card.
+  it("draws a link that has ended face down, with no front to turn", async () => {
     m.readInvite.mockResolvedValue({ state: "revoked" });
     render(await FriendLinkPage({ params: params() }));
     expect(screen.queryByTestId("friend-card-front")).toBeNull();
-    expect(screen.queryByText(/Ana/)).toBeNull();
   });
 });
 

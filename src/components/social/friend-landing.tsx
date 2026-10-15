@@ -11,6 +11,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { usePendingPush } from "../shell/pending-push";
+import { PendingReporter } from "../shell/pending-reporter";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { socialCopy } from "../../lib/copy/social";
 import type { LandingView } from "../../lib/social/landing";
@@ -86,6 +88,7 @@ export function LandingColumn({
 
 export function FriendLanding({ token, view }: { token: string; view: LandingView }) {
   const router = useRouter();
+  const { go } = usePendingPush();
   const [shown, setShown] = useState<Shown>(view);
   // The face the card was drawn with stays on its front once it turns back down, so the turn has a front to hide.
   const [face, setFace] = useState(() => faceOf(view));
@@ -141,7 +144,7 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
       const r = await redeemInviteAction(token);
       if (r.ok) {
         // Stays busy: the page is leaving.
-        router.push(friendsReceiptPath(r.friend.publicId));
+        go(friendsReceiptPath(r.friend.publicId));
         return;
       }
       setBusy(false);
@@ -192,7 +195,7 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
     }
   }
 
-  const toFriends = <Link href="/friends" className={SECONDARY_BUTTON}>{copy.toFriends}</Link>;
+  const toFriends = <Link href="/friends" className={SECONDARY_BUTTON}>{copy.toFriends}<PendingReporter href="/friends" /></Link>;
   const column = (() => {
     switch (shown.kind) {
       case "open":
@@ -240,7 +243,7 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
             kicker={copy.kicker}
             title={copy.declinedTitle}
             body={copy.declinedBody(shown.name)}
-            actions={<Link href="/" className={SECONDARY_BUTTON}>{copy.toHome}</Link>}
+            actions={<Link href="/" className={SECONDARY_BUTTON}>{copy.toHome}<PendingReporter href="/" /></Link>}
           />
         );
       case "expired":

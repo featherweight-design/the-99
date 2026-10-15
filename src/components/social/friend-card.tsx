@@ -10,6 +10,7 @@
 import type { ProfileCommander } from "../../lib/social/commander";
 import { socialCopy } from "../../lib/copy/social";
 import { FadingImg } from "../ui/hydrated-art";
+import { ArtLayer } from "../ui/art-layer";
 import { faceInitials } from "./face";
 
 const copy = socialCopy.landing;
@@ -86,10 +87,11 @@ function CardFront({ face, hidden }: { face: CardFace; hidden: boolean }) {
       aria-hidden={hidden || undefined}
       data-testid="friend-card-front"
       data-frame={art ? "art" : "grey"}
-      className={`friend-card-face friend-card-front box-border rounded-[17px] p-[3px] ${SHADOW} ${art ? "bg-[color:var(--border-strong)] bg-cover bg-center bg-no-repeat" : "bg-[linear-gradient(160deg,#4A4E5C,#262A35)]"}`}
-      style={art ? { backgroundImage: `url(${JSON.stringify(art)})` } : undefined}
+      className={`friend-card-face friend-card-front box-border overflow-hidden rounded-[17px] p-[3px] ${SHADOW} ${art ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`}
     >
-      <div className="box-border flex h-full w-full flex-col gap-[6px] overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-[9px]">
+      {/* The frame is the commander's art crop, behind the face, fading in as it lands. */}
+      {art && <ArtLayer src={art} />}
+      <div className="relative box-border flex h-full w-full flex-col gap-[6px] overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-[9px]">
         <div className="flex h-[32px] flex-none items-center gap-[8px] rounded-[8px] bg-[color:var(--elevated)] px-[10px] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)]">
           <b className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-display text-[16px] font-bold text-[color:var(--fg)]">{face.name}</b>
         </div>
@@ -100,7 +102,7 @@ function CardFront({ face, hidden }: { face: CardFace; hidden: boolean }) {
         ) : (
           <div
             data-testid="friend-card-initials"
-            className="flex h-[178px] flex-none items-center justify-center overflow-hidden rounded-[6px] bg-[radial-gradient(220px_160px_at_50%_40%,#2A2C36,#16181F)] font-display text-[64px] font-bold tracking-[.04em] text-[color:var(--fg-muted)] shadow-[inset_0_0_0_1px_rgba(0,0,0,.6)]"
+            className="flex h-[178px] flex-none items-center justify-center overflow-hidden rounded-[6px] bg-[radial-gradient(220px_160px_at_50%_40%,var(--elevated),var(--surface))] font-display text-[64px] font-bold tracking-[.04em] text-[color:var(--fg-muted)] shadow-[inset_0_0_0_1px_rgba(0,0,0,.6)]"
           >
             {faceInitials(face.name)}
           </div>
