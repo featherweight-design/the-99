@@ -3,15 +3,15 @@
 //   R3_FIXTURE_BRANCH=br-... R3_FIXTURE_USER=user_... pnpm tsx scripts/seed-r3-picker-fixture.mts
 import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
-const PROTECTED = new Set(["br-noisy-violet-a6vw4ess", "br-polished-pond-a6e63y0b", "br-patient-hall-a6nbonvo"]);
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 const named = process.env.R3_FIXTURE_BRANCH;
 const viewer = process.env.R3_FIXTURE_USER;
 if (!named || !viewer) throw new Error("set R3_FIXTURE_BRANCH and R3_FIXTURE_USER");
-if (PROTECTED.has(named)) throw new Error(`${named} is production, staging or local-dev`);
 const { db } = await import("../src/db");
 const { sql } = await import("drizzle-orm");
 const { rows } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);
 if (rows[0]?.b !== named) throw new Error(`database reports ${rows[0]?.b}, not ${named}`);
+assertScratchBranch(rows[0]?.b, "seed-r3-picker-fixture");
 const friends = await import("../src/lib/social/friends");
 const pods = await import("../src/lib/social/pods");
 
@@ -40,5 +40,5 @@ if (!pod) throw new Error("createPod refused");
 await pods.addMember(viewer, pod.id, dave.publicId);
 await pods.addMember(viewer, pod.id, sam.publicId);
 void C4;
-console.log("seeded: Dave (2 decks), Jo (none), Samantha Rivers (1), pod Thursday of 3");
+console.log("seeded: Dave (2 decks), Jo (none), Samantha Rivers (1), pod Thursday (you, Dave, Samantha)");
 process.exit(0);
