@@ -538,6 +538,8 @@ html {
   /* Card art fading in as it lands, wherever it fades (`data-arrival`; Hugh, 2026-10-12: 0.2 to 0.3s). */
   --motion-fade: 300ms;
   --motion-ease: cubic-bezier(0.45, 0, 0.55, 1);
+  /* The gap between neighbours in a batch that arrives item by item (`Show more`; `.anim-reveal`). */
+  --motion-stagger: 40ms;
   /* One lap of a running read's border (`.ai-sweep`; Hugh, 2026-10-13: option 1, the conic sweep). */
   --motion-loop: 3200ms;
 }
@@ -825,6 +827,17 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    backs, so the swap happens behind the edge at the midpoint with nothing to
    schedule. */
 .anim-card-turn { transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* E9, staggered Show more (small-polish R2 §3): item n of the batch a `Show more` added fades in at the beat plus the stagger
+   times n (n capped at 11 by `useRevealFrom`, so a batch is fully in by 740ms), 200ms each on the shared curve, opacity only.
+   `backwards`, so an item waits at 0 through its delay and then hands back to whatever opacity it has of its own (a pending
+   tile's .55). The items already on screen carry no class and do not move. Reduced motion: 100ms with no wait. */
+@keyframes reveal-in {
+  from { opacity: 0; }
+}
+.anim-reveal {
+  animation: reveal-in var(--motion-quick) var(--motion-ease) calc(var(--motion-delay) + var(--motion-stagger) * var(--reveal-n, 0)) backwards;
+}
 
 /* THE RING READING (Analysis tab handoff §2, 2b). Each of the five marks lights in turn,
    1 to 5 clockwise: the stagger is the component's `animation-delay`, 0.16s per mark.
@@ -1130,6 +1143,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .sheet-snap.sheet-gentle,
   .band-dim,
   .card-grow { transition: none; }
+
+  .anim-reveal { animation: reveal-in 100ms var(--motion-ease) backwards; }
 
   /* Reading, still: the ring holds at full ink, and only the heading says it is reading. */
   .anim-at-wave { animation: none; opacity: 1; }

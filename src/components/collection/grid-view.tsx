@@ -29,6 +29,8 @@ import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
 import { GhostButton } from "../ui/button";
 import { HydratedImg } from "../ui/hydrated-art";
+import { useMemo } from "react";
+import { revealOf, useRevealFrom } from "../ui/use-reveal-from";
 import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 /**
@@ -85,6 +87,8 @@ export function GridView({
    */
   mayBeHidden?: boolean;
 }) {
+  // The tiles a `Show more` just added fade in one after another (E9); a filter or a new sort reveals nothing.
+  const from = useRevealFrom(useMemo(() => cards.map((c) => c.oracleId), [cards]));
   return (
     /* §Grid Container. The desktop track is a TILE FLOOR rather than a column
        count (card-captions readiness, erratum 5): `md:grid-cols-6` would begin
@@ -105,6 +109,7 @@ export function GridView({
           the desktop chip spells the availability state out in words too (below). */}
       <CollectionMarkKey className="col-span-full" />
       {cards.map((c, i) => {
+        const reveal = revealOf(i, from);
         const state = c.availability ? availabilityState(c.availability) : "free";
         const spokenPrice = showPrice ? priceSpoken(c.price) : null;
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
@@ -132,11 +137,11 @@ export function GridView({
           // the focused tile blurs it, and the modal's focus-return would then
           // have nothing to hand focus back to on close.
           aria-busy={pending}
-          style={pending ? { opacity: 0.55 } : undefined}
+          style={pending || reveal.style ? { ...(pending ? { opacity: 0.55 } : null), ...reveal.style } : undefined}
           // §Grid Tile Container: radius 9/10px, overflow hidden, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: an inline
           // border outranks the hover: variant and the accent hover never lands.
-          className={`text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border}`}
+          className={`text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border} ${reveal.className ?? ""}`}
         >
           {/* Art region — §Grid Tile: Art Region */}
           <div

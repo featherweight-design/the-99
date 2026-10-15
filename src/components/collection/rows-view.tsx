@@ -9,6 +9,8 @@ import { hasFrontFaceCost } from "../../lib/cards/faces";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { CostPips, COST_PIP_CAP, COST_PIP_SIZE } from "../ui/cost-pips";
+import { useMemo } from "react";
+import { revealOf, useRevealFrom } from "../ui/use-reveal-from";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -52,13 +54,16 @@ export function RowsView({
   /** The row whose card is being fetched, which shows the click landed. */
   pendingOracleId?: string | null;
 }) {
+  // The rows a `Show more` just added fade in one after another (E9); a filter or a new sort reveals nothing.
+  const from = useRevealFrom(useMemo(() => cards.map((c) => c.oracleId), [cards]));
   return (
     // §Rows Scroll Container: flex-1, padding 2px 12px 12px mobile / 12px 34px 34px desktop, flex column, gap 6/7px
     <div aria-busy={busy || undefined} className="flex-1 flex flex-col gap-[6px] md:gap-[7px] px-[12px] md:px-[34px] pt-[2px] md:pt-[12px] pb-[12px] md:pb-[34px]">
       {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
           thing that decodes it, rather than trusting a caller to mount one above. */}
       <CollectionMarkKey />
-      {cards.map((c) => {
+      {cards.map((c, i) => {
+        const reveal = revealOf(i, from);
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §1 gave over-committed a border tint. Card-rows call 4
         // moved it to an inset ring: a tinted border froze the row's hover
@@ -82,7 +87,7 @@ export function RowsView({
           // the focused row blurs it, and the modal's focus-return would then
           // have nothing to hand focus back to on close.
           aria-busy={pending}
-          style={pending ? { opacity: 0.55 } : undefined}
+          style={pending || reveal.style ? { ...(pending ? { opacity: 0.55 } : null), ...reveal.style } : undefined}
           // The FULL printed name, both faces of a two-faced card included — the
           // visible caption below is the front face and may clip, and this is a
           // real button, so the whole string is spoken here.
@@ -113,7 +118,7 @@ export function RowsView({
           // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 7px, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: inline values
           // outrank the hover: variants and neither hover state ever lands.
-          className={`${ROW_SHELL_GRID} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_1fr_76px_auto] md:[grid-template-columns:52px_1fr_90px_150px_92px_18px]`}
+          className={`${ROW_SHELL_GRID} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_1fr_76px_auto] md:[grid-template-columns:52px_1fr_90px_150px_92px_18px] ${reveal.className ?? ""}`}
         >
           {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, --accent, font-weight 500 */}
           <span className="font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--accent)" }}>
