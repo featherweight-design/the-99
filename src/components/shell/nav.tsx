@@ -252,7 +252,8 @@ function tabPlace(slot: HTMLElement) {
 }
 
 /**
- * Desktop: the well around the four locked slots, its padlock and LOCKED foot,
+ * Desktop: the well around the locked slots (all four, or the three after Collection when the
+ * open lock leaves Collection out), its padlock and LOCKED foot,
  * and each slot's note (1.x, 1a, 1b, 3.x).
  *
  * The note opens on hover, keyboard focus or a click of a slot, and hovering
