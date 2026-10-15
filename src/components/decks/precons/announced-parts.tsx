@@ -10,7 +10,7 @@
 // the decklists' size; in rows the opened row keeps the small strip. Outside a `CardDetailProvider` (About's
 // specimen) a commander is drawn as before, unpressable.
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { preconDate, preconsCopy } from "../../../lib/copy/precons";
 import { colorNames } from "../../../lib/copy/color-labels";
 import { WUBRG_COLOR } from "../../../lib/collection/browse";
@@ -20,6 +20,8 @@ import { HydratedImg } from "../../ui/hydrated-art";
 import { CardDetailTrigger, useCardDetailIfAny } from "../../cards/card-detail-provider";
 import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../../ui/card-tile-caption";
 import { PRECON_TILES_CLASS } from "./precon-grid";
+import { SheetGroupToggle } from "../../ui/sheet-group";
+import { collapsible, firstPaintCss } from "../../../lib/precons/announced-collapse";
 
 const copy = preconsCopy.upcoming;
 
@@ -187,7 +189,7 @@ export const TILE_FOCUS_RING =
  * control, and its `::after` is stretched over the tile, so the art and the caption both open it and hover anywhere
  * on it draws the preview. One accessible name, the press's.
  */
-function RevealedTile({ card, siblings }: { card: RevealedCommander; siblings: readonly string[] }) {
+function RevealedTile({ card, siblings, hidden = false }: { card: RevealedCommander; siblings: readonly string[]; hidden?: boolean }) {
   const identity = card.colorIdentity.length > 0 ? card.colorIdentity : ["C"];
   const art = card.imageUri ?? card.imageUriSmall;
   const pressable = useCardDetailIfAny() !== null;
@@ -195,6 +197,7 @@ function RevealedTile({ card, siblings }: { card: RevealedCommander; siblings: r
     <li
       className={`${TILE_SHELL} art-lift-host relative min-w-0 border border-solid border-[color:var(--border)] bg-[color:var(--surface)] md:hover:border-[color:var(--border-strong)] transition-colors ${TILE_FOCUS_RING}`}
       data-testid="revealed-tile"
+      style={hidden ? { display: "none" } : undefined}
     >
       <div
         aria-hidden
@@ -240,16 +243,88 @@ function RevealedTile({ card, siblings }: { card: RevealedCommander; siblings: r
   );
 }
 
-/** A set's commanders in tiles: the precon list's own grid, or the empty plate. */
-function RevealedTiles({ commanders }: { commanders: readonly RevealedCommander[] }) {
+/** The columns the grid lays, read from its computed template; null until measured (the server's paint has none). */
+function useGridColumns(ref: React.RefObject<HTMLElement | null>, watch: boolean): number | null {
+  const [columns, setColumns] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !watch) return;
+    const read = () => {
+      const tracks = getComputedStyle(el).gridTemplateColumns;
+      setColumns(tracks && tracks !== "none" ? tracks.split(/\s+/).length : null);
+    };
+    read();
+    const observer = new ResizeObserver(read);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, watch]);
+  return columns;
+}
+
+/**
+ * A set's commanders in tiles: the precon list's own grid, or the empty plate. A large reveal folds to its first row
+ * with `Show all N` under the grid (addendum A1): more than twice the columns, no filter on, not pressed open this
+ * visit. Hidden tiles are `display: none`, so they leave the tab and reading order; card details still page every
+ * commander of the set (`siblings`).
+ */
+function RevealedTiles({ commanders, setName, code, filtering, expanded, onToggleExpanded }: {
+  commanders: readonly RevealedCommander[];
+  setName: string;
+  code: string;
+  filtering: boolean;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+}) {
+  const gridId = useId();
+  const gridRef = useRef<HTMLUListElement>(null);
+  const toggleRef = useRef<HTMLDivElement>(null);
+  const columns = useGridColumns(gridRef, commanders.length > 4 && !filtering);
+  const folds = columns !== null && collapsible(commanders.length, columns, filtering);
+  const collapsed = folds && !expanded;
+  // Show fewer lifts the toggle with the tiles it folds away: if that would leave it above the window, bring it back.
+  const wasExpanded = useRef(expanded);
+  useLayoutEffect(() => {
+    if (wasExpanded.current && !expanded) toggleRef.current?.querySelector("button")?.scrollIntoView({ block: "nearest" });
+    wasExpanded.current = expanded;
+  }, [expanded]);
   if (commanders.length === 0) {
     return <ul className="m-0 flex list-none p-0"><NonePlate /></ul>;
   }
   const siblings = commanders.map((c) => c.oracleId);
+  // The server cannot know the columns: until they are measured, CSS keyed on the grid's width hides what a fold would.
+  const guess = columns === null && !filtering && !expanded ? firstPaintCss(code, commanders.length) : "";
   return (
-    <ul className={PRECON_TILES_CLASS} data-testid="revealed-tiles">
-      {commanders.map((c) => <RevealedTile key={c.oracleId} card={c} siblings={siblings} />)}
-    </ul>
+    <>
+      {guess && <style>{guess}</style>}
+      <div className="@container">
+        <ul
+          id={gridId}
+          ref={gridRef}
+          className={PRECON_TILES_CLASS}
+          data-testid="revealed-tiles"
+          data-collapse={guess ? code : undefined}
+          data-measured={columns !== null ? "" : undefined}
+        >
+          {commanders.map((c, i) => (
+            <RevealedTile key={c.oracleId} card={c} siblings={siblings} hidden={collapsed && i >= (columns ?? 0)} />
+          ))}
+        </ul>
+      </div>
+      {folds && (
+        <div ref={toggleRef}>
+          <SheetGroupToggle
+            all={expanded}
+            onToggle={onToggleExpanded}
+            label={copy.showAll(commanders.length)}
+            fewer={copy.showFewer}
+            ariaLabel={expanded ? copy.showFewerAria(setName) : copy.showAllAria(commanders.length, setName)}
+            controls={gridId}
+            rule={false}
+            className={`pl-0 ${FOCUS_RING}`}
+          />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -273,7 +348,7 @@ export type ListedJump = { count: number; year: string };
  * the set's head and its commanders as tiles in the decklists' own grid. They are narrower than a decklist tile only
  * by the block's inset (orchestrator's ruling, option 3, 2026-10-15).
  */
-export function AnnouncedSet({ match, today, isNew, listed, compact = false }: {
+export function AnnouncedSet({ match, today, isNew, listed, compact = false, filtering = false, expanded = false, onToggleExpanded = () => {} }: {
   match: AnnouncedMatch;
   today: string;
   isNew: boolean;
@@ -283,6 +358,11 @@ export function AnnouncedSet({ match, today, isNew, listed, compact = false }: {
    * where a lone decklist-sized tile in a wide figure read as an empty box and clipped its name at 390.
    */
   compact?: boolean;
+  /** A search or a color is on: nothing folds (addendum A1). */
+  filtering?: boolean;
+  /** This visit's press on Show all for this set, held by the list view. */
+  expanded?: boolean;
+  onToggleExpanded?: () => void;
 }) {
   const { set } = match;
   const code = set.code.toUpperCase();
@@ -307,7 +387,7 @@ export function AnnouncedSet({ match, today, isNew, listed, compact = false }: {
           </a>
         )}
       </div>
-      {compact ? <RevealedStrip commanders={match.commanders} /> : <RevealedTiles commanders={match.commanders} />}
+      {compact ? <RevealedStrip commanders={match.commanders} /> : <RevealedTiles commanders={match.commanders} setName={set.name} code={set.code} filtering={filtering} expanded={expanded} onToggleExpanded={onToggleExpanded} />}
     </li>
   );
 }

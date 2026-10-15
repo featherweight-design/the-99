@@ -65,3 +65,24 @@ describe("SheetGroupToggle busy", () => {
     expect(b).not.toBeDisabled();
   });
 });
+
+// Addendum A1 (Announced collapse) gives the toggle three optional props. Their defaults leave the Change commander and
+// swap sheets exactly as they were: the rule drawn, no spoken name, no `aria-controls`.
+describe("SheetGroupToggle · optional props", () => {
+  it("draws the rule and sets no aria-label or aria-controls by default", () => {
+    render(<SheetGroupToggle all={false} onToggle={() => {}} label="Show all 12" fewer="Show fewer" />);
+    const b = screen.getByRole("button", { name: "Show all 12" });
+    expect(b.className).toContain("border-b border-b-[color:var(--border)]");
+    expect(b).not.toHaveAttribute("aria-label");
+    expect(b).not.toHaveAttribute("aria-controls");
+  });
+
+  it("drops the rule and names what it controls when asked", () => {
+    render(<SheetGroupToggle all onToggle={() => {}} label="Show all 15" fewer="Show fewer" rule={false} ariaLabel="Show fewer commanders revealed for Set" controls="grid-1" className="pl-0" />);
+    const b = screen.getByRole("button", { name: "Show fewer commanders revealed for Set" });
+    expect(b.className).not.toContain("border-b-[color:var(--border)]");
+    expect(b.className).toContain("pl-0");
+    expect(b).toHaveAttribute("aria-controls", "grid-1");
+  });
+});
+

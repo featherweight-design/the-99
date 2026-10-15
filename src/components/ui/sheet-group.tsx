@@ -23,7 +23,7 @@ export function SheetGroupHeading({ label, note, as: Tag = "h4" }: { label: stri
  * decides whether the group is long enough to draw one. `className` sets the left indent, which
  * lines the label up with its rows' name column (43px on the swap sheet).
  */
-export function SheetGroupToggle({ all, onToggle, label, fewer, className, busy = false }: {
+export function SheetGroupToggle({ all, onToggle, label, fewer, className, busy = false, rule = true, ariaLabel, controls }: {
   all: boolean;
   onToggle: () => void;
   label: string;
@@ -31,11 +31,19 @@ export function SheetGroupToggle({ all, onToggle, label, fewer, className, busy 
   className?: string;
   /** The press is fetching the rest of a capped group (the swap sheet's Show all): busy, and not pressable. */
   busy?: boolean;
+  /** Draw the bottom rule. A group inside a block that draws its own edge (the Announced sets) drops it. */
+  rule?: boolean;
+  /** The spoken name, when the visible label alone does not say which group it folds. It starts with the visible label. */
+  ariaLabel?: string;
+  /** The id of the region it expands (`aria-controls`). */
+  controls?: string;
 }) {
   return (
     <button
       type="button"
       aria-expanded={all}
+      aria-label={ariaLabel}
+      aria-controls={controls}
       aria-busy={busy || undefined}
       disabled={busy}
       onClick={onToggle}
@@ -48,7 +56,7 @@ export function SheetGroupToggle({ all, onToggle, label, fewer, className, busy 
         // `border-b` — a false conflict, since in real Tailwind those are two different utilities
         // (width vs. this app's mana-token color collision), not one twMerge can override. Appended
         // outside the merge, untouched, since no caller's `className` here ever sets a border.
-        + " border-0 border-b border-b-[color:var(--border)] border-[color:var(--border)]"
+        + (rule ? " border-0 border-b border-b-[color:var(--border)] border-[color:var(--border)]" : " border-0")
       }
     >
       <span>{all ? fewer : label}</span>

@@ -339,6 +339,11 @@ export const preconsCopy = {
     cardAria: (name: string, colors: string) => `${name}, ${colors}. Revealed commander.`,
     /** The same card as the control that opens its details: the press's whole name, so nothing beside it is spoken. */
     pressAria: (name: string, colors: string) => `View details for ${name}, ${colors}. Revealed commander.`,
+    /** A large reveal folds to its first row (addendum A1). The visible labels are the shared toggle's own; the spoken names carry the set, since two large sets would each draw one. */
+    showAll: (n: number) => `Show all ${n}`,
+    showAllAria: (n: number, set: string) => `Show all ${n} commanders revealed for ${set}`,
+    showFewer: "Show fewer",
+    showFewerAria: (set: string) => `Show fewer commanders revealed for ${set}`,
   },
   /**
    * Precons I own (`/decks/precons?pick=own`, no-collection entry S2 to S7): a pick of the boxes a player owns, added
