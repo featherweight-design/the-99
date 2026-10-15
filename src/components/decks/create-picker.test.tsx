@@ -209,6 +209,20 @@ describe("CreatePicker — Help me choose's door", () => {
     expect(screen.getByText(addPanelCopy.createPicker.sub)).toBeTruthy();
   });
 
+  it("adds the past-runs link to History only when the page says the player has a run", () => {
+    const { unmount } = render(<CreatePicker legalCommanders={commanders} helpDoor />);
+    expect(screen.queryByTestId("past-runs-link")).toBeNull();
+    unmount();
+    render(<CreatePicker legalCommanders={commanders} helpDoor pastRuns />);
+    const links = screen.getAllByTestId("past-runs-link");
+    // One per width (the wide one closes the sentence, the narrow one has its own line), both to History.
+    expect(links).toHaveLength(2);
+    for (const l of links) {
+      expect(l.getAttribute("href")).toBe("/decks/new/choose?v=history");
+      expect(l.textContent).toBe("Your past runs ›");
+    }
+  });
+
   it("is never in the dock", () => {
     render(<CreatePicker legalCommanders={commanders} helpDoor />);
     expect(screen.getByTestId("create-picker-dock").querySelector("[data-testid='help-me-choose-door']")).toBeNull();
