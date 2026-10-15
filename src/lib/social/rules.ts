@@ -4,13 +4,14 @@
  * the tests pin them without one.
  */
 import { randomBytes } from "node:crypto";
+import { codePointLength, DISPLAY_NAME_MAX, POD_NAME_MAX } from "./client-rules";
+
+export { DISPLAY_NAME_MAX, POD_NAME_MAX };
 
 /** Seven days, single-use (Q2). */
 export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 /** Open invites one account may hold at once. */
 export const MAX_OPEN_INVITES = 10;
-export const DISPLAY_NAME_MAX = 30;
-export const POD_NAME_MAX = 40;
 
 /** 128 random bits as base64url: 22 characters, unguessable, so the link needs no attempt cap (Q1). */
 export function newInviteToken(): string {
@@ -45,7 +46,7 @@ export function cleanName(raw: unknown, max: number): string | null {
   if (typeof raw !== "string") return null;
   const name = raw.normalize("NFC").replace(/\s+/gu, " ").trim();
   if (/[\p{Cc}\p{Cf}]/u.test(name.replace(/\u200D/gu, ""))) return null;
-  const length = [...name].length;
+  const length = codePointLength(name);
   return length >= 1 && length <= max ? name : null;
 }
 
