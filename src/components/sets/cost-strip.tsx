@@ -219,11 +219,11 @@ export function CostStrip({
           }}
           aria-expanded
           aria-label={setPageCopy.cost.collapseAria}
-          // Pinned where the collapsed row's ▾ was (H15): it used to wrap to a full-width
+          // Pinned where the collapsed row's chevron was (H15): it used to wrap to a full-width
           // row at the strip's foot, so the control that opened the strip moved the moment
           // it was pressed. The block above reserves its 44px.
-          // The glyph sits at the ▾'s own x, not centred in the 44px target: the ▾ ends at the
-          // collapsed row's 12px padding, so the ▴ ends there too.
+          // The glyph sits at the chevron's own x, not centred in the 44px target: it ends at the
+          // collapsed row's 12px padding, so the open chevron ends there too.
           className="absolute right-0 top-0 flex h-[44px] w-[44px] items-center justify-end pr-[12px]
                      font-mono text-[color:var(--fg-muted)] md:hidden"
         >

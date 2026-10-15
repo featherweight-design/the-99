@@ -3186,7 +3186,7 @@ function MetaField({
  * diamond + `Your pick · of N ▾` after one.
  */
 function TriggerHint({ count, picked, expanded }: { count: number; picked: string | null; expanded: boolean }) {
-  const chevron = <Chevron open={expanded} />;
+  const chevron = <Chevron kind="disclosure" open={expanded} />;
   if (picked === null) {
     return (
       <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--accent)" }}>

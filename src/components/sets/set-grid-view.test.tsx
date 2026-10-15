@@ -3242,7 +3242,7 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
   // strip opened and closed. Only keyboard focus holds it. jsdom cannot tell the two kinds of
   // focus apart, so `:focus-visible` is answered here the way a browser answers it after a tap.
   it("collapses over focus a pointer press left behind (H17)", () => {
-    // The real path: a tap on the cost strip's ▾, whose replacement ▴ takes focus inside a
+    // The real path: a tap on the cost strip's chevron, whose replacement takes focus inside a
     // member the collapse hides. The phone form, where the toggle is drawn.
     stubDesktop(false);
     const { container } = view([p("1"), p("2")], []);
