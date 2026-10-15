@@ -51,7 +51,9 @@ export function useCollectionFields(served: CollectionRow[], wanted: CollectionR
       const card = under(row);
       if (!card || !("art" in card)) return card;
       const { art, ...rest } = card;
-      return Object.hasOwn(row, "imageUri") || !art ? rest : { ...rest, ...art };
+      // `foil` named outright: the batch omits it when there is no film, and a spread would keep the
+      // page's stale one over the batch's art.
+      return Object.hasOwn(row, "imageUri") || !art ? rest : { ...rest, ...art, foil: art.foil };
     },
     [under],
   );

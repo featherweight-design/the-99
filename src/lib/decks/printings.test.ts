@@ -108,7 +108,7 @@ describe("readDeckPrintings", () => {
   });
 
   it("reads the foil film's finish off the printing the deck draws, never another of the card's", async () => {
-    state.cards = [ownedCard([printing("C21", "263", { finishes: { foil: 2 } }), printing("KHM", "31", { finishes: { nonfoil: 1, foil: 1 } })])];
+    state.cards = [ownedCard([printing("C21", "263", { finishes: { foil: 2 }, hasOwnArt: true }), printing("KHM", "31", { finishes: { nonfoil: 1, foil: 1 }, hasOwnArt: true })])];
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "c21", collector_number: "263" }];
     expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBe("foil");
     // The mixed printing draws nothing (audit ruling G8).
@@ -116,8 +116,8 @@ describe("readDeckPrintings", () => {
     expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBeUndefined();
   });
 
-  it("draws no film when the drawn printing has no art of its own, since the tile falls back to the catalog's", async () => {
-    state.cards = [ownedCard([printing("C21", "263", { finishes: { foil: 1 }, imageUri: null })])];
+  it("draws no film when the drawn printing has no art of its own, since the tile draws a fallback picture", async () => {
+    state.cards = [ownedCard([printing("C21", "263", { finishes: { foil: 1 }, hasOwnArt: false })])];
     state.picks = [];
     expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBeUndefined();
   });

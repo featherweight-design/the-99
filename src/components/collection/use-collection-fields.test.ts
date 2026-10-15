@@ -76,7 +76,7 @@ describe("useCollectionFields", () => {
 
   // The foil film rides the same caption: a holding that stopped (or started) being all foil since the
   // page was read moves no name and no set code, so the film is compared too, both ways.
-  it.each([["stopped", { foil: "foil" as const }, {}], ["started", {}, { foil: "foil" as const }]])(
+  it.each<[string, Partial<BrowseListCard>, Partial<BrowseListCard>]>([["stopped", { foil: "foil" }, {}], ["started", {}, { foil: "foil" }]])(
     "reads the page again when the drawn printing's film %s since it was read",
     async (_, page, now) => {
       const onStale = vi.fn();
@@ -89,6 +89,8 @@ describe("useCollectionFields", () => {
         await act(async () => answer!());
         await waitFor(() => expect(result.current.resolve(list[1])).not.toBeNull());
         await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
+        // While the page reads again, the batch's art is drawn with the batch's film, never the page's.
+        expect(result.current.resolve(list[1])?.foil).toBe(now.foil);
       } finally {
         served[1] = card(1);
         moved[1] = card(1, { imageUri: "https://cards.example/sld.jpg", printedName: "Renamed", primarySetCode: "SLD" });

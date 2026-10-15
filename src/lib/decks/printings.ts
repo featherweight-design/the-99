@@ -176,9 +176,9 @@ export async function readDeckPrintings(
       setCode: p.setCode,
       collectorNumber: p.collectorNumber,
       source: held ? "deck" : "collection",
-      // Only when this printing supplies the art: an artless one leaves the tile on the catalog's picture,
-      // and a film there would lie over another printing's art.
-      foil: p.imageUri ? soleFoilFinish(p.finishes) : undefined,
+      // Only over this printing's own art: an artless one draws a representative or the catalog's
+      // picture, and a film there would lie over another printing's art.
+      foil: p.hasOwnArt ? soleFoilFinish(p.finishes) : undefined,
     });
   }
 

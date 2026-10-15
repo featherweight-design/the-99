@@ -80,6 +80,12 @@ export type BrowsePrinting = {
    */
   hasOwnBack?: boolean;
   /**
+   * Whether `imageUri` is THIS printing's own art rather than a representative or the card's
+   * oracle-level picture (`resolveImageUri`'s fallback tiers). The foil film reads it, so a film is
+   * never drawn over another printing's art. Absent means "not its own", as `hasOwnBack` does.
+   */
+  hasOwnArt?: boolean;
+  /**
    * THIS printing's frame-free crop — what a wash draws behind a commander sleeved from it.
    *
    * Printing-level for the same reason `backImageUri` is: `cards.art_crop_uri` is one
@@ -632,6 +638,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       artCropUri: resolveArtCropUri(r),
       backImageUri: resolveBackImageUri(r),
       hasOwnBack: backImageIsOwn(r),
+      hasOwnArt: r.exactImageUri !== null,
       flavorName: resolveFlavorName(r),
     };
     const existing = byOracle.get(r.oracleId);
@@ -689,6 +696,8 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // so this can only ever set true onto true — belt and braces, in the same spirit,
       // and it means no future caller has to remember the pair travels together.
       seen.hasOwnBack ||= printing.hasOwnBack;
+      // The image coalesces above, and its provenance travels with it, for the same reason.
+      seen.hasOwnArt ||= printing.hasOwnArt;
       seen.artCropUri ??= printing.artCropUri;
       // NOT `??=`, unlike the two lines above. Two finishes of one printing normally
       // share a catalog id, but the import path already records that they can
@@ -781,7 +790,8 @@ export function cardArt(cardName: string, printing: BrowsePrinting): CardArt {
     imageUri: printing.imageUri,
     // Always the key, undefined when there is no film, so a pick laid over a foil row clears it.
     // JSON drops an undefined value, so the wire carries nothing for a plain card.
-    foil: soleFoilFinish(printing.finishes),
+    // Only over the printing's own art: a fallback picture belongs to another printing.
+    foil: printing.hasOwnArt ? soleFoilFinish(printing.finishes) : undefined,
     // Exact equality, verbatim, per spec: a printing whose flavor name IS the
     // oracle name has not renamed anything, and normalising would silently
     // change which cards count as renamed.

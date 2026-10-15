@@ -23,7 +23,7 @@ const tile = (id, attrs, foil = "foil") =>
   `<span aria-hidden="true" data-foil="${foil}" class="shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]" style="pointer-events:none;position:absolute;inset:0;border-radius:inherit"></span></div></button>`;
 const html = `<!doctype html><html><head><link rel="stylesheet" href="app.css"></head><body style="display:flex;gap:12px;padding:20px;background:#111">
 ${tile("nosrc", "")}${tile("pending", `src="${img}" data-arrival="pending"`)}${tile("failed", `src="${img}" data-arrival="failed"`)}
-${tile("done", `src="${img}" data-arrival="done"`)}${tile("etched", `src="${img}"`, "etched")}</body></html>`;
+${tile("done", `src="${img}" data-arrival="done"`)}${tile("unarmed", `src="${img}"`)}${tile("etched", `src="${img}" data-arrival="done"`, "etched")}</body></html>`;
 fs.writeFileSync(path.join(dir, "page.html"), html);
 const url = "file://" + path.join(dir, "page.html");
 const browser = await chromium.launch();
@@ -39,6 +39,7 @@ for (const motion of ["no-preference", "reduce"]) {
   check(`${motion}: no src holds the film`, (await op(page, "nosrc")) === "0", await op(page, "nosrc"));
   const pend = await op(page, "pending");
   check(`${motion}: pending holds the film`, pend === "0", pend);
+  check(`${motion}: art the server drew, not yet armed, holds the film`, (await op(page, "unarmed")) === "0", await op(page, "unarmed"));
   check(`${motion}: failed holds the film`, (await op(page, "failed")) === "0", await op(page, "failed"));
   check(`${motion}: done draws the film`, (await op(page, "done")) === "1", await op(page, "done"));
   const bg = await pseudo(page, "done", "::before", "backgroundImage");

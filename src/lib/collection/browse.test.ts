@@ -702,8 +702,8 @@ describe("the foil film's finish", () => {
 
   it("follows the drawn printing, so a pick moves it and clears it", () => {
     const [agg] = aggregateCollection([
-      raw({ collectorNumber: "263", finish: "foil", quantity: 2 }),
-      raw({ setCode: "lea", collectorNumber: "270", finish: "nonfoil", quantity: 1 }),
+      raw({ collectorNumber: "263", finish: "foil", quantity: 2, exactImageUri: "https://img/c21-263.jpg" }),
+      raw({ setCode: "lea", collectorNumber: "270", finish: "nonfoil", quantity: 1, exactImageUri: "https://img/lea-270.jpg" }),
     ]);
     expect(agg.foil).toBe("foil");
     expect(toListCards([agg])[0].foil).toBe("foil");
@@ -712,6 +712,17 @@ describe("the foil film's finish", () => {
     expect(picked.foil).toBeUndefined();
     // Absent on the wire for a plain card: JSON carries nothing for it.
     expect(Object.hasOwn(JSON.parse(JSON.stringify(picked)), "foil")).toBe(false);
+  });
+
+  it("draws no film over a fallback picture, which belongs to another printing", () => {
+    // No art of its own: the tile draws the set's representative printing, a different card face.
+    const [rep] = aggregateCollection([
+      raw({ finish: "foil", quantity: 1, exactImageUri: null, representativeImageUri: "https://img/rep.jpg" }),
+    ]);
+    expect(rep.imageUri).toBe("https://img/rep.jpg");
+    expect(rep.foil).toBeUndefined();
+    const [oracle] = aggregateCollection([raw({ finish: "etched", quantity: 1, exactImageUri: null, cardImageUri: "https://img/card.jpg" })]);
+    expect(oracle.foil).toBeUndefined();
   });
 });
 

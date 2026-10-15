@@ -1079,10 +1079,13 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 }
 
 /* The film waits for the art: never over the sunken ground of a tile whose art has not been asked
-   for or is still on its way, and never over art that broke (`failed`, audit ruling G2). The hold
+   for or is still on its way, and never over art that broke (`failed`, audit ruling G2). Art the
+   server drew carries no mark until the page hydrates, when it is armed `pending`, `in` or `done`,
+   so an unmarked image holds the film too: the film waits for its state, never the art. The hold
    applies under either motion preference, since art that has not landed shows nothing to lie over;
    only the fade it lands with is motion's, so with reduced motion the film appears with the art. */
 img:not([src]) ~ [data-foil],
+img:not([data-arrival]) ~ [data-foil],
 img[data-arrival="pending"] ~ [data-foil],
 img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
