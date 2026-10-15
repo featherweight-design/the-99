@@ -1,5 +1,5 @@
 import { parseChooseParams, serializeChooseParams, type ChooseParams } from "./params";
-import { CHOOSE_PATH } from "./submit";
+import { CHOOSE_PATH, PAST_PARAM } from "./submit";
 
 /**
  * Help me choose's hand-off, read on `/decks/new` (HANDOFF §6). Pure and client-safe.
@@ -14,7 +14,12 @@ export function handOffFrom(sp: URLSearchParams): ChooseParams | null {
   return p.results ? p : null;
 }
 
-/** *Back to results*: the results screen the press came from, answers and all. */
-export function resultsHref(p: ChooseParams): string {
-  return `${CHOOSE_PATH}${serializeChooseParams({ ...p, results: true })}`;
+/** Whether the press came from a past run opened from History (`h=1`), which *Back to results* keeps. */
+export function pastFrom(sp: URLSearchParams): boolean {
+  return sp.get(PAST_PARAM) === "1";
+}
+
+/** *Back to results*: the results screen the press came from, answers and all (a past run stays one). */
+export function resultsHref(p: ChooseParams, past = false): string {
+  return `${CHOOSE_PATH}${serializeChooseParams({ ...p, results: true })}${past ? `&${PAST_PARAM}=1` : ""}`;
 }

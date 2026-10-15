@@ -11,7 +11,7 @@ import { hasListableRun } from "../../../lib/intake/history-read";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { MAX_SETS, MAX_THEMES } from "../../../lib/intake/answers";
-import { handOffFrom, resultsHref } from "../../../lib/intake/hand-off";
+import { handOffFrom, pastFrom, resultsHref } from "../../../lib/intake/hand-off";
 import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-load";
 import { serializeChooseParams } from "../../../lib/intake/params";
 import { CHOOSE_PATH } from "../../../lib/intake/submit";
@@ -54,7 +54,7 @@ export default async function NewDeckPage({
           budgetDollars: answers.budgetDollars,
           bracket: answers.bracket,
         },
-        resultsHref: resultsHref(asked),
+        resultsHref: resultsHref(asked, pastFrom(searchParamsOf(raw))),
         changeHref: `${CHOOSE_PATH}${serializeChooseParams({ ...asked, notUsed: [], readId: null, results: false })}`,
         drawBlock: hasAnswerRows(answers),
       } : undefined;

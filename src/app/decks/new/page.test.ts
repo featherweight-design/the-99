@@ -67,6 +67,12 @@ describe("/decks/new", () => {
     expect((p.handOff?.create as { themes: string[] }).themes).toHaveLength(8);
   });
 
+  it("keeps a past run's mark in Back to results, so the run is not turned into a live page", async () => {
+    const p = await props({ commander: COMMANDER, t: "dinosaurs", b: "150", v: "results", r: "00000000-0000-4000-8000-0000000000aa", h: "1" });
+    expect(p.handOff?.resultsHref).toMatch(/&h=1$/);
+    expect((await props({ commander: COMMANDER, t: "dinosaurs", v: "results" })).handOff?.resultsHref).not.toContain("h=1");
+  });
+
   it("still hands the create the card when only the card's read failed", async () => {
     const CARD = "0000aaaa-0000-4000-8000-000000000001";
     stub.answers.mockResolvedValue({ themes: [], themeJoin: "all", sets: [], pool: "any", card: null, cardUnread: true, budgetDollars: 150, bracket: null });

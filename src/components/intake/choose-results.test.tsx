@@ -24,7 +24,7 @@ const page = (n: number, over: Partial<ResultsPage> = {}): ResultsPage => ({
 });
 const narrow = { without: [{ answers: [{ kind: "theme" as const, slug: "dinosaurs" }], count: 30 }], widen: null, anyOf: null, cardOverBracket: null };
 
-function draw(p: ResultsPage, read: ReadPhase | null = null, themes = ["dinosaurs"], deckNames: Record<string, string> = {}, queryString = "t=dinosaurs&v=results", extra: { pastRun?: boolean; gone?: React.ReactNode } = {}) {
+function draw(p: ResultsPage, read: ReadPhase | null = null, themes = ["dinosaurs"], deckNames: Record<string, string> = {}, queryString = "t=dinosaurs&v=results", extra: { pastRun?: boolean; pastReasons?: boolean; gone?: React.ReactNode } = {}) {
   return render(
     <CardDetailProvider fetchCard={vi.fn()}>
       <ReadScope initial={read}>
@@ -272,6 +272,17 @@ describe("a past run opened from History (PR 3)", () => {
     draw(picked(4, 4), "done", [], {}, undefined, { pastRun: true, gone: goneGroup });
     expect(screen.getByTestId("gone-group")).toBeTruthy();
     expect(screen.queryByTestId("rest-divider")).toBeNull();
+  });
+
+  it("carries the past mark on a row's press, and claims no deleted deck after a failed lookup", () => {
+    draw(picked(14, 1), "done", [], {}, undefined, { pastRun: true, pastReasons: false });
+    const press = screen.getAllByRole("link").map((l) => l.getAttribute("href") ?? "").filter((h) => h.startsWith("/decks/new?"));
+    expect(press.length).toBeGreaterThan(0);
+    for (const h of press) expect(h).toMatch(/&h=1$/);
+    expect(screen.queryByTestId("row-reason-gone")).toBeNull();
+    cleanup();
+    draw(picked(14, 1));
+    for (const h of screen.getAllByRole("link").map((l) => l.getAttribute("href") ?? "").filter((x) => x.startsWith("/decks/new?"))) expect(h).not.toContain("h=1");
   });
 
   it("says a line named a deleted deck, in its place, only on a past run", () => {

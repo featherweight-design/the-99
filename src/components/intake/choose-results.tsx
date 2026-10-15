@@ -34,6 +34,7 @@ export function ChooseResults({
   changeHref,
   deckNames,
   pastRun = false,
+  pastReasons = pastRun,
   gone = null,
 }: {
   page: ResultsPage;
@@ -50,6 +51,8 @@ export function ChooseResults({
   deckNames?: Readonly<Record<string, string>>;
   /** A run opened from History: lines naming a deleted deck say so. */
   pastRun?: boolean;
+  /** See `ChooseRow`: false after a failed deck lookup, so no line claims a deck was deleted. */
+  pastReasons?: boolean;
   /** A past run's picks the search no longer lists, drawn as one group after the open picks. */
   gone?: React.ReactNode;
 }) {
@@ -152,6 +155,7 @@ export function ChooseResults({
       retry={() => retry(r.oracleId)}
       deckNames={deckNames}
       pastRun={pastRun}
+      pastReasons={pastReasons}
     />
   );
   // After the read's picks, the divider: the first row of the rest with no reason, once any row

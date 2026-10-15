@@ -326,7 +326,8 @@ async function Results({
       queryString={queryString}
       changeHref={changeHref}
       deckNames={deckNames}
-      pastRun={past !== null && !past.deckLookupFailed}
+      pastRun={past !== null}
+      pastReasons={past !== null && !past.deckLookupFailed}
       gone={gone.length > 0 ? <GonePicks picks={gone} /> : null}
     />
   );
