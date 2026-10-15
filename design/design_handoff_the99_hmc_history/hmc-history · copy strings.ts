@@ -39,7 +39,7 @@ export const helpMeChooseHistoryCopy = {
     meta: (date: string) => `${date} · a past run`,
     /** Appended to the title's accessible name when a past run opens. */
     titleAria: (day: string) => `, a past run from ${day}, read-only`,
-    note: (day: string) => `A past run, read-only. It used 1 credit on ${day}; opening it again used none.`,
+    note: "A past run, read-only. Opening it again uses no credit.",
     noteNothing: "A past run, read-only. It found nothing, so no credit was used.",
     /** Appended to the note when some or all picks went. */
     open: (open: number, picks: number) =>

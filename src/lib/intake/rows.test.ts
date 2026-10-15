@@ -85,3 +85,22 @@ describe("the reader's env", () => {
     expect((stub.chainArt.mock.calls[0] as unknown[])[3] === ENV).toBe(true);
   });
 });
+
+describe("loadResultsPage: picks the search no longer lists (History's aged run)", () => {
+  it("names a pick the search does not return, in the read's order, and still lists the open ones", async () => {
+    const picks = { picks: [
+      { oracleId: id(5), reason: [{ text: "Open." }] },
+      { oracleId: id(99), reason: [{ text: "Built since." }] },
+      { oracleId: id(98), reason: [{ text: "Not ranked." }] },
+    ] };
+    const page = await loadResultsPage("u", answers, 0, picks, ENV_VIEW);
+    expect(page.gone).toEqual([id(99), id(98)]);
+    expect(page.rows[0].name).toBe("Commander 5");
+    expect(page.rows.some((r) => r.oracleId === id(99))).toBe(false);
+  });
+
+  it("has none gone with no read, and none when every pick is still listed", async () => {
+    expect((await loadResultsPage("u", answers, 0, null, ENV_VIEW)).gone).toEqual([]);
+    expect((await loadResultsPage("u", answers, 0, { picks: [{ oracleId: id(3), reason: [{ text: "x" }] }] }, ENV_VIEW)).gone).toEqual([]);
+  });
+});

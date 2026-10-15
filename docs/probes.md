@@ -230,6 +230,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   deck). The tile's root carries `TILE_FIELD`, a size container, and the corners round by `max(9px, 3.4cqw)`, so the
   fixed 9px that let the matte through at 480-767px (a ~361px tile wants 11px) no longer does. Needs
   `PRECONS_ENABLED` and seeded precons; writes nothing.
+- `pnpm probe:foil-film` proves what the foil film draws (foil handoff R1), against the BUILT stylesheet: run
+  `pnpm build` first (the stub-DB build will do). It loads the compiled CSS into a static page of five tiles in the
+  shipped markup and reads computed styles, with no server, no database and no sign-in: the film holds while the art
+  has no source, carries no arrival mark yet (art the server drew, before hydration), is `pending` (under either
+  motion preference: art still on its way shows nothing to lie over) or `failed`; it draws a 115° gradient once the art is in, foil and etched differ; the band sweeps only on
+  the hovered tile, never under reduced motion, and a phone (coarse pointer, no hover) never creates `::after`;
+  reduced transparency swaps the gradient for a 2px inset ring and forced colors drops it. Which tiles carry
+  `data-foil` is the component tests' half.
 - `pnpm probe:art-layer` proves card art drawn as a CSS background fades in (card-art fades plan), on deployed
   staging only (`MEASURE_DEPLOYED=1`, signed in as `THE_99_E2E_AUDIT_USER_EMAIL` with a ticket from
   `THE_99_CLERK_SECRET_KEY_STAGING`; it reads pages and writes nothing). On a deck (`MEASURE_DECK_ID`, else the first
@@ -451,6 +459,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   entry (`placed`), a retry of that press reads the same record back, a restore the entry did not
   record puts nothing back, and Undo with the recorded restore drops the moved pick and puts the
   displaced reservation back at its own `created_at`.
+- `pnpm probe:added-at` proves what the collection writers leave in `collection_items.added_at` and
+  `added_exact` (Date added, PR 1) against a real Postgres, refused on production and staging. The file that
+  fills an empty collection is dated INEXACT, every holding on one day, through the ledger's Replace and the
+  legacy `replaceCollection` alike; a hand add is exact; a quantity edit and a second file keep every standing
+  holding's date; a second file's new holding is exact; a removal then a re-add is a new date, and the revert
+  of the removal puts the old date back. It also runs the backfill (`backfillAddedAt`) on a fixture of two confirmed uploads and ledger entries: a holding
+  whose current ownership began with a hand entry takes that entry's time, exact; the first confirmed upload
+  holding any other is its date, inexact always; a holding added and then removed is not dated to its first
+  life; a holding in none stays null; and a second run changes nothing.
+- `pnpm db:backfill:added-at [--dry-run]` dates the holdings the column found already there, ONCE per
+  database after its migration (0127). It names its target by branch and fails closed (the `pull:staging`
+  rule): `BACKFILL_TARGET_URL` and `BACKFILL_TARGET_BRANCH` are never defaulted, and a database that reports a
+  different `neon.branch_id`, or has no `added_at` column yet, exits 2 having read and written nothing. Run
+  `--dry-run` first. Never through the Neon MCP.
 - `pnpm probe:collection-write` proves the collection ledger's concurrency claims
   (`applyCollectionChange`, plan `2026-10-09-collection-write-path.md`) against a real Postgres:
   a double-submitted add applies once, two tabs editing one row with `expected` produce one
@@ -2137,6 +2159,22 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   against the reservations the start itself wrote it fails l, and with the reservations dropped before the revert reads
   its "before" it fails m (both Hugh's symptoms on production, 2026-10-14). Case i needs `precon_tokens`, which a
   branch whose precons were ingested before the token columns lacks.
+- `pnpm probe:deck-own` proves the import's `I own these cards. Add them to my collection.` (no-collection entry plan,
+  PR 1) against a real database, through the real `buildDeckImport`, `readDeckOwnLines`, `importDeckOwned`,
+  `listHistory` and `applyCollectionChange` (revert), the steps `importDeck` takes with the box ticked:
+  - one add writes the deck (its lines and its unresolved line) and the copies, as one History entry;
+  - every line is added at the deck's count, at the list's named printing or else the card's default, the commander
+    included and the unresolved line adding nothing; a card already held gains a copy;
+  - History lists it as a Deck add titled `Added from <deck>`, by the deck's current name;
+  - a retry under the same action id lands on the same deck and writes nothing more, and an id another add used is
+    refused;
+  - a deck write that fails inside the add (a commander the catalog lacks) leaves neither the deck, the cards nor an
+    entry;
+  - reverting the add takes back exactly its copies and leaves the deck standing.
+
+  It WRITES under a per-run account it purges, after the same branch guard as `probe:precon-add`, on a scratch branch
+  made from local-dev and migrated to 0128. Its mutation checks (the commander lines dropped, the deck written outside
+  the add's transaction, the source left off) are listed in its header and are to be run on its first run.
 - `pnpm probe:payments-webhook` proves the Stripe webhook's grant transaction (payments K1a) against a real database,
   through the real `fulfilCheckoutSession`, `readAllowance` and `purgeAccount`, with Stripe a stand-in whose
   `checkout.sessions.retrieve` serves a crafted Session and counts its calls: a paid Session for its own account
@@ -2187,7 +2225,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   row and records `override_cleared` with its old value; a set under a kill, a plumbing account override and a group
   that does not exist are refused with nothing written; a snapshot read after the commit carries the change; and
   clearing an app-wide `off` over an env var that is `true` returns a confirm and writes nothing until the confirmed
-  count comes back. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
+  count comes back. It also proves All features (2026-10-15): the reserved `ALL_FEATURES` row written at account
+  scope through the same write, with its event, raising every feature and model switch for that account alone while
+  the account's own Off still wins, an Off row and an app-wide row refused, and a clear removing it. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
   staging, production and local-dev are refused by id. It writes as made-up accounts and removes every row in a
   `finally`.
 - `pnpm probe:admin-groups` proves the admin's group writes (admin plan 9a) against a real database: a create

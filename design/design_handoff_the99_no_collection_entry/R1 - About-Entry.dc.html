@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About, start without a collection</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+.ent{display:flex;flex-direction:column;gap:12px;padding:22px 24px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:12px}
+.t{margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:21px;color:#C6D2D3}
+.c{margin:0;font-size:13.5px;line-height:1.6;color:#B3C0C2;white-space:pre-line}
+.key{display:flex;gap:10px;font-size:13px;line-height:1.5;color:#B3C0C2}
+.key span:first-child{color:#7C8A8C}
+.new{background:rgba(111,163,104,.14);color:#C6D2D3}
+.gone{text-decoration:line-through;color:#7C8A8C}
+.spec{padding:18px;background:#121217;border:1px solid #2E3340;border-radius:10px;display:flex;flex-direction:column;gap:6px}
+.altk{font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.ways{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.way{display:flex;flex-direction:column;gap:2px;padding:7px 0}
+.wt{font-size:13px;font-weight:600;color:#C6D2D3}
+.ws{font-size:12px;line-height:1.45;color:#95A4A6}
+.prow{display:flex;justify-content:space-between;height:40px;align-items:center;border-bottom:1px solid #23252D;font-size:13.5px;font-weight:600;color:#C6D2D3}
+</style>
+</helmet>
+<div style="width:1600px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">About · per-entry artboard (§8) · one new entry, two edits · ABOUT_VERSION 14 → 15 at launch · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">start-without-a-collection, in chapter 01 after Importing your Collection</h2>
+    <p class="cap" style="margin:0;max-width:1400px">A capability a reader discovers, so a new entry and a bump (brief §About). It follows COLLECTION_EDIT_ENABLED through AboutSwitch; a switched entry is announced when its switch flips, so the one bump is at launch, batched to the line’s last PR. The specimen is the step-1 group, drawn from its own copy keys at render (rule 2). Key 2 rides PRECONS_ENABLED through keySwitches.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:900px 390px;gap:48px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Desktop · plate</span>
+      <article class="ent">
+        <span class="m" style="font-size:11px;color:#7C8A8C">01 · /collection · opens the empty Collection</span>
+        <h3 class="t">Starting without a collection file</h3>
+        <div class="spec" aria-hidden="true">
+          <span class="altk">No file? Start another way</span>
+          <div class="ways"><span class="way"><span class="wt">Precons I own ›</span><span class="ws">Pick the boxes. We know every card in them.</span></span><span class="way"><span class="wt">Import a deck ›</span><span class="ws">Paste a list you play, then add its cards.</span></span><span class="way"><span class="wt">Add cards by hand ›</span><span class="ws">Search by name and add them one by one.</span></span></div>
+        </div>
+        <p class="c">No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.
+
+Pick the precons you own and their cards go into your Collection at the box’s printings, tokens too. Import a deck you play and add its cards in one press. Or add cards one at a time. A file can come later.</p>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="key"><span>·</span><span>Commanders, Discover and Decks open once your Collection has a card in it.</span></div>
+          <div class="key"><span>·</span><span>Each precon box is its own change in History, and Revert takes it back. Adding a box twice stacks its copies.</span></div>
+          <div class="key"><span>·</span><span>An imported deck’s cards are added as one change, at the printings the list named.</span></div>
+          <div class="key"><span>·</span><span>Your first file asks whether it replaces or adds, and says what a replace would remove.</span></div>
+        </div>
+      </article>
+      <span class="cap">Fixture props: the group with all three rows (both switches on). id start-without-a-collection · chapter 01 · route /collection · opens “opens the empty Collection” · width plate · switch COLLECTION_EDIT_ENABLED · keySwitches { key 2: PRECONS_ENABLED } · since 15.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Phone reduction</span>
+      <article class="ent" style="padding:18px">
+        <span class="m" style="font-size:10.5px;color:#7C8A8C">01 · /collection</span>
+        <h3 class="t" style="font-size:19px">Starting without a collection file</h3>
+        <div class="spec" aria-hidden="true" style="padding:12px 14px"><span class="altk">No file? Start another way</span><span class="prow">Precons I own<span style="color:#7C8A8C;font-weight:400">›</span></span><span class="prow">Import a deck<span style="color:#7C8A8C;font-weight:400">›</span></span><span class="prow" style="border-bottom:0">Add cards by hand<span style="color:#7C8A8C;font-weight:400">›</span></span></div>
+        <p class="c">No export to upload? If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there. A file can come later.</p>
+        <div class="key"><span>·</span><span>Commanders, Discover and Decks open once your Collection has a card in it.</span></div>
+        <div class="key"><span>·</span><span>Each precon box is its own change in History, and Revert takes it back.</span></div>
+      </article>
+      <span class="cap">The specimen takes the phone rows; the caption keeps its first and last sentences; two keys.</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">precons · ordinary edit · caption, second paragraph</span>
+      <article class="ent">
+        <h3 class="t">Starting from a precon</h3>
+        <p class="c">Open one to read its list, group by group, as rows or as cards. Say you own 74 of Eldrazi Unbound’s 85: start a deck from it and you get the whole list, in the box’s printings. Own the box? Select “I own this precon” when you start, and its cards and tokens go into your collection too. <span class="new">Own a few boxes and don’t want decks from them yet? Pick them under Precons I own, from your Collection, and they’re added without starting anything.</span></p>
+      </article>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">deck-import · ordinary edit · one key line added (3 → 4)</span>
+      <article class="ent">
+        <h3 class="t">Importing a deck, or updating one</h3>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="key"><span>·</span><span>Paste Moxfield or MTGO text, or upload a CSV from ManaBox, Moxfield or Archidekt.</span></div>
+          <div class="key"><span>·</span><span>Updating shows what the new list changes, and lets you keep cards it leaves out.</span></div>
+          <div class="key"><span>·</span><span>A line we can’t match still comes over, flagged for you to fix.</span></div>
+          <div class="key"><span>·</span><span class="new">No cards here yet? After an import, one press adds the deck’s cards to your Collection.</span></div>
+        </div>
+      </article>
+      <span class="cap">Both edits ride the same bump; neither is a new entry. The deck-import key line rides COLLECTION_EDIT_ENABLED through keySwitches.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

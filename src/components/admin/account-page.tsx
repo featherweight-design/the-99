@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { moveAccountToGroup } from "../../app/admin/accounts/actions";
@@ -14,6 +14,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { Avatar } from "./accounts-list";
 import { SectionHead } from "./costs-detail";
 import { ModelConfirm } from "./model-confirm";
+import { AllFeaturesControl } from "./override-controls";
 import { Pill, ResolvedDot } from "./switches-list";
 
 // One account's page (admin STATES A4 to A7; design table, Accounts). The head above the tab strip
@@ -63,14 +64,18 @@ function GroupSection({ page }: { page: AccountPage }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState(page.group?.id ?? "");
-  const [inFlight, setInFlight] = useState(false);
+  const [saving, setSaving] = useState(false);
+  // A saved move closes the picker inside the refresh's transition, so the picker and the group link
+  // change together when the page redraws: closed at once, the link read the old group for a beat.
+  const [refreshing, startRefresh] = useTransition();
+  const inFlight = saving || refreshing;
   const [failure, setFailure] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ConfirmPreview | null>(null);
   const targetName = page.groups.find((g) => g.id === target)?.name ?? null;
 
   async function submit(confirmed?: number) {
     setFailure(null);
-    setInFlight(true);
+    setSaving(true);
     let result: MoveResult;
     try {
       result = await moveAccountToGroup(page.id, target || null, confirmed);
@@ -78,17 +83,19 @@ function GroupSection({ page }: { page: AccountPage }) {
       // A thrown action is a lost reply, not a refusal: the move may have committed before the reply was
       // lost, so this is never "nothing changed". Refresh to reconcile and say the outcome is unknown, as
       // the group editor does.
-      setInFlight(false);
+      setSaving(false);
       setConfirm(null);
       setFailure(adminCopy.groups.errors.unknown);
       router.refresh();
       return;
     }
-    setInFlight(false);
+    setSaving(false);
     if (result.ok) {
       setConfirm(null);
-      setOpen(false);
-      router.refresh();
+      startRefresh(() => {
+        setOpen(false);
+        router.refresh();
+      });
       return;
     }
     if (result.error === "confirm") {
@@ -224,8 +231,22 @@ function Switches({ page }: { page: AccountPage }) {
     <>
       <SectionHead title={adminCopy.tabs.switches} meta={String(s.total)} />
       <div data-testid="account-switches" className={CARD}>
+        {page.allFeatures !== null && (
+          <section data-testid="account-all-features">
+            <h3 className={GROUP_HEAD}>
+              <span>{copy.allFeatures.title}</span>
+            </h3>
+            {/* The head is the card's full-width sunken bar, as every group's is, and the row under it
+                takes the rows' own side padding: inside the head's column, the body ran flush to the
+                card's edge. */}
+            <div className="flex flex-col gap-[8px] px-[14px] py-[11px] md:flex-row md:items-center md:justify-between md:gap-[16px] md:px-[16px]">
+              <p className="m-0 min-w-0 text-pretty text-[13px] leading-[1.45] text-[color:var(--fg-muted)]">{copy.allFeatures.body}</p>
+              <AllFeaturesControl userId={page.id} label={copy.allFeatures.title} value={page.allFeatures} />
+            </div>
+          </section>
+        )}
         {groups.map((g, i) => (
-          <section key={g.title} className={i > 0 ? ROW_LINE : undefined}>
+          <section key={g.title} className={i > 0 || page.allFeatures !== null ? ROW_LINE : undefined}>
             <h3 className={GROUP_HEAD}>
               <span>{g.title}</span>
               <span className="normal-case tracking-normal text-[color:var(--fg-faint)]">{g.lines.length}</span>

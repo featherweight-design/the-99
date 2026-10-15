@@ -16,6 +16,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { helpMeChooseHistoryCopy as historyCopy } from "../../lib/copy/help-me-choose-history";
 import { IdentityPips } from "../commanders/commander-art";
 import { BuyTag } from "../decks/buy-tag";
 import { AvailabilityGlyph } from "../ui/availability-marker";
@@ -23,6 +24,7 @@ import { CommanderThumb } from "../ui/commander-thumb";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { serializeChooseParams, type ChooseParams } from "../../lib/intake/params";
+import { PAST_PARAM } from "../../lib/intake/submit";
 import type { Figure } from "../../lib/intake/present";
 import type { CommanderMark, ResultRow } from "../../lib/intake/rows";
 import type { ReasonPart } from "../../lib/intake/the-read";
@@ -45,9 +47,10 @@ export function reasonDrawable(reason: readonly ReasonPart[] | undefined, deckNa
   return !!reason && reason.length > 0 && reason.every((part) => "text" in part || deckNames[part.deck] !== undefined);
 }
 
-export function handOffHref(oracleId: string, p: ChooseParams): string {
+export function handOffHref(oracleId: string, p: ChooseParams, past = false): string {
   const rest = serializeChooseParams({ ...p, results: true }).slice(1);
-  return `/decks/new?${new URLSearchParams({ commander: oracleId }).toString()}&${rest}`;
+  // A past run's press keeps its mark, so *Back to results* returns to the run and not to a live page.
+  return `/decks/new?${new URLSearchParams({ commander: oracleId }).toString()}&${rest}${past ? `&${PAST_PARAM}=1` : ""}`;
 }
 
 /** About a whole-dollar figure: the fill is an estimate, and cents would claim otherwise. */
@@ -69,6 +72,8 @@ export function ChooseRow({
   trial,
   retry,
   deckNames = {},
+  pastRun = false,
+  pastReasons = pastRun,
 }: {
   row: ResultRow;
   figures: readonly Figure[];
@@ -85,9 +90,21 @@ export function ChooseRow({
   retry: () => void;
   /** A deck commander's oracle id to the short name a reason draws it by (`shortName`). */
   deckNames?: Readonly<Record<string, string>>;
+  /**
+   * A run opened from History: a line that named a deck since deleted says so, in its place, rather
+   * than leaving a silent gap (a fresh read draws no line, as it always has).
+   */
+  pastRun?: boolean;
+  /** A deleted deck's reason is claimed only where the page could look every deck up: false after a failed lookup. */
+  pastReasons?: boolean;
 }) {
-  const href = handOffHref(row.oracleId, params);
-  const reason = row.reason && reasonDrawable(row.reason, deckNames) ? <Reason parts={row.reason} deckNames={deckNames} /> : null;
+  const href = handOffHref(row.oracleId, params, pastRun);
+  const drawable = !!row.reason && reasonDrawable(row.reason, deckNames);
+  const reason = drawable
+    ? <Reason parts={row.reason!} deckNames={deckNames} />
+    : pastReasons && row.reason
+      ? <p data-testid="row-reason-gone" className="m-0 text-[12.5px] md:text-[13px] leading-[1.5] text-[color:var(--fg-faint)]">{historyCopy.past.reasonGone}</p>
+      : null;
   const own = (
     <OwnershipLine
       mark={row.mark}

@@ -2,10 +2,11 @@
 //
 // In the spine beside `Export`, not in a banner: a deck that has never been
 // committed has nothing pending, so there is no draft for a banner to be about.
-// Outline and never the cream primary — making a deck's claims hard is a real
-// consequence and not the app's goal for the player.
+// The header's one primary while it is offered (Hugh, 2026-10-15): Export drops
+// to the ghost style beside it, and it sits before the deck's ⋯, which is the
+// row's last control at both widths.
 
-import Link from "next/link";
+import { PrimaryButton } from "@/components/ui/button";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 
 const copy = deckVersioningCopy.pending;
@@ -23,11 +24,11 @@ export function FirstCommitOffer({ deckId }: { deckId: string }) {
     // only affects how much of the row this offer claims, and it claimed too
     // much: the whole of #641 was that claim resolving the deck's title column
     // to 0px.
-    <Link
+    <PrimaryButton
       href={`/decks/${deckId}/changes?commit=1`}
-      className="inline-flex items-center rounded-[8px] px-[16px] py-[9px] font-sans font-medium text-[13px] text-[color:var(--fg)] no-underline [border:1px_solid_var(--border-strong)]"
+      className="inline-flex items-center rounded-[8px] px-[16px] py-[9px] text-[13px] no-underline"
     >
       {copy.firstCommitCta}
-    </Link>
+    </PrimaryButton>
   );
 }

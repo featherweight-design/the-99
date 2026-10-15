@@ -13,6 +13,8 @@ import { Chevron } from "../ui/chevron";
 import { useCardDetailIfAny, useCardIntentIfAny, type SiblingCard } from "../cards/card-detail-provider";
 import { usePreviewRow } from "./hover-preview";
 import { ArtLayer } from "../ui/art-layer";
+import { useDeckTokens } from "./deck-tokens-context";
+import { TokenRefusalToast } from "./token-refusal-toast";
 
 /** `{W}{U}` for a token's colors, `{C}` for none: the row's pip is the same pip a card's cost draws. */
 export function tokenPips(colors: string[]): string {
@@ -54,30 +56,36 @@ export function printingLine(token: DeckToken, newestAsOf: Date | null): string 
 const CONTROL = "rounded-[6px] text-[12px] disabled:opacity-60";
 
 /**
- * A token press: one write at a time, pending while it lands, and a refusal line for both a refusal and a
- * throw (the session lapsed, the database threw), which say the same thing to the reader.
+ * A token press: one write at a time, pending while it lands. A refusal and a throw (the session lapsed, the database
+ * threw) say the same thing to the reader, and it is said as a deck toast (`TokenRefusalToast`). The deck's
+ * `DeckTokensProvider` hosts the one toast every press of the deck shares (a newer refusal replaces the older); outside a
+ * provider the hook keeps its own, which the caller draws with `toast` (null inside a provider).
  */
 export function useTokenPress() {
-  const [refused, setRefused] = useState(false);
+  const ctx = useDeckTokens();
+  const [own, setOwn] = useState<{ name: string; key: number } | null>(null);
   const [pending, start] = useTransition();
-  const press = (write: () => Promise<{ ok: boolean }>) => {
-    setRefused(false);
+  const refuse = (token: { oracleId: string; name: string }) => (ctx ? ctx.refuse(token) : setOwn({ name: token.name, key: Date.now() }));
+  const press = (write: () => Promise<{ ok: boolean }>, token: { oracleId: string; name: string }) => {
+    setOwn(null);
+    ctx?.clear(token.oracleId);
     start(async () => {
       try {
         const r = await write();
-        if (!r.ok) setRefused(true);
+        if (!r.ok) refuse(token);
       } catch {
-        setRefused(true);
+        refuse(token);
       }
     });
   };
-  return { press, pending, refused };
+  const toast = own ? <TokenRefusalToast key={own.key} name={own.name} onDone={() => setOwn(null)} /> : null;
+  return { press, pending, toast };
 }
 
 /**
  * The two presses a token carries, in the row and in the tile alike: the hand mark (`I have one`, or the plain
  * `in your collection` an upload wrote) and the Shopping join. `press` and `pending` are the host's own
- * (`useTokenPress`), so its refusal line sits under whatever drew these.
+ * (`useTokenPress`), so its refusal toast is whatever drew these's to draw.
  */
 export function TokenControls({
   deckId, token, press, pending,
@@ -102,7 +110,7 @@ export function TokenControls({
         aria-describedby={`token-${token.oracleId}-face`}
         aria-pressed={byHand}
         aria-label={byHand ? tokensCopy.row.haveOffAria(token.name) : tokensCopy.row.haveAria(token.name)}
-        onClick={() => press(() => setTokenHeld(deckId, token.oracleId, !byHand))}
+        onClick={() => press(() => setTokenHeld(deckId, token.oracleId, !byHand), token)}
         // 44 on a phone, 24 from md up; regular weight until it is held.
         className={`${CONTROL} h-[44px] bg-transparent px-[8px] md:h-[24px] ${
           byHand
@@ -121,7 +129,7 @@ export function TokenControls({
         aria-describedby={`token-${token.oracleId}-face`}
         aria-pressed={token.joined}
         aria-label={token.joined ? tokensCopy.row.leaveAria(token.name) : tokensCopy.row.joinAria(token.name)}
-        onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined))}
+        onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined), token)}
         // 32 tall with a 44 hit area on a phone (the pseudo-element), 24 from md up.
         className={`${CONTROL} relative h-[32px] border px-[10px] font-medium max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-[6px] max-md:after:content-[''] md:h-[24px] ${
           token.joined
@@ -148,7 +156,7 @@ export function TokenRow({
   siblings?: readonly SiblingCard[];
 }) {
   const [open, setOpen] = useState(false);
-  const { press, pending, refused } = useTokenPress();
+  const { press, pending, toast } = useTokenPress();
 
   const pt = tokenPT(token);
   const first = token.makers[0];
@@ -298,11 +306,7 @@ export function TokenRow({
         ) : null}
       </div>
 
-      {refused ? (
-        <p role="alert" className="m-0 mt-[6px] pl-[56px] font-mono text-[10.5px] text-[color:var(--fg-locked)] md:pl-[54px]">
-          {tokensCopy.row.refused}
-        </p>
-      ) : null}
+      {toast}
 
       {open && canOpen ? <TokenMakers makers={token.makers} printingLine={printingLine(token, newestAsOf)} /> : null}
     </li>

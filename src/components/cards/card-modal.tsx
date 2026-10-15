@@ -49,10 +49,11 @@ import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
 import { TokenCardLine } from "../decks/token-card-line";
+import { TokenDeckBox } from "../decks/token-deck-box";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { Chevron, CHEVRON_CLASS } from "../ui/chevron";
-import { RECEIPT_LINK_CLASS, STACK_DROP_MS } from "./card-modal-shared";
+import { RECEIPT_LINK_CLASS, STACK_DROP_EASE, STACK_DROP_MS } from "./card-modal-shared";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 const pickerCopy = printingPickerCopy.printing;
@@ -966,7 +967,7 @@ export function CardModal({
     onMinimizedChange?.(startMinimized);
   }, [onMinimizedChange, startMinimized]);
   // Whether the sheet's last move reached or left the min snap: those moves are gentle (the motion
-  // rule's beat and ease-in-out), and teaser to full keeps its shipped 240ms snap.
+  // rule's beat and ease-in-out), and teaser to full keeps the quick snap (`--motion-quick`).
   const [gentle, setGentle] = useState(false);
   const sheetFull = snap === "full";
   const setSnap = (next: SheetSnap) => {
@@ -1003,7 +1004,7 @@ export function CardModal({
   // not offered.
   const min = narrow && snap === "min" && !cramped;
   // THE DROP (stacked sheets R1, motion): from wherever the card is, so a dismissal during the
-  // 240ms rise reverses it rather than snapping the card to the top first (#1268). The rise class
+  // rise (a beat, then `--motion-duration`) reverses it rather than snapping the card to the top first (#1268). The rise class
   // stays on, still running, and this animation, being script-made, composites over it.
   useLayoutEffect(() => {
     const el = dialogRef.current;
@@ -1011,7 +1012,7 @@ export function CardModal({
     const from = getComputedStyle(el).transform;
     const drop = el.animate(
       [{ transform: from === "none" ? "translateY(0)" : from }, { transform: "translateY(100%)" }],
-      { duration: STACK_DROP_MS, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" },
+      { duration: STACK_DROP_MS, easing: STACK_DROP_EASE, fill: "forwards" },
     );
     return () => drop.cancel();
   }, [dropping]);
@@ -2006,7 +2007,7 @@ export function CardModal({
 
   // THE PHONE'S ENTRANCE (STATES §Motion, "Phone commit"): a paged card arrives from where its
   // peek stood, at the peek's scale and opacity, plus wherever a swipe left the band, and settles
-  // in 240ms. Centre to centre is half the card, the 12px gap and half the peek (0.86875 of the
+  // after the beat, in `--motion-duration`. Centre to centre is half the card, the 12px gap and half the peek (0.86875 of the
   // card's own width, plus 12). Reduced motion draws it in place (`globals.css`).
   const phoneEnterX = enteredFrom === "next" || enteredFrom === "nextPeek"
     ? `calc(86.875% + 12px + ${enteredOffset}px)`
@@ -2616,6 +2617,9 @@ export function CardModal({
                   footer={<TokenCardLine oracleId={card.oracleId} onShowTokens={onShowTokens} />}
                 />
               )}
+
+              {/* A token's own deck box: its hand mark, the cards that make it and its printing line. */}
+              {deckId && isToken && <TokenDeckBox oracleId={card.oracleId} onSelectCard={onSelectCard} />}
 
               {/* MOBILE meta grid — §Mobile: Meta 2×2 Grid. At 2+ printings the Set cell is
                   promoted out of the grid into a full-width row below Rarity and Identity, so

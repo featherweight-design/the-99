@@ -883,6 +883,27 @@
       "when": 1792030669193,
       "tag": "0125_collection_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 126,
+      "version": "7",
+      "when": 1792036450856,
+      "tag": "0126_all_features",
+      "breakpoints": true
+    },
+    {
+      "idx": 127,
+      "version": "7",
+      "when": 1792041163511,
+      "tag": "0127_collection_added_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 128,
+      "version": "7",
+      "when": 1792047093033,
+      "tag": "0128_no_collection_entry_switch",
+      "breakpoints": true
     }
   ]
 }

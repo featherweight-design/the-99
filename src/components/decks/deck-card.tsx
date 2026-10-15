@@ -360,7 +360,7 @@ export function DeckCard({
       // Paired with the `sm:h-full` on the `<li>`, and gated for the same reason
       // — below `sm` the list is a flex column with no height to be a percentage
       // of, and one stacked tile per row has nothing to end level with.
-      className="@container relative flex min-w-0 flex-none flex-col overflow-hidden rounded-[14px] sm:h-full"
+      className="art-lift-host @container relative flex min-w-0 flex-none flex-col overflow-hidden rounded-[14px] sm:h-full"
       style={{ background: "var(--surface-inset)", border: "1px solid var(--border)" }}
     >
       {/* 1 · Art header. Always present: `decks.commander_oracle_id` is NOT

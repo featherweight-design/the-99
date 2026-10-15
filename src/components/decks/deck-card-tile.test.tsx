@@ -55,6 +55,17 @@ afterEach(cleanup);
 // The art loads lazily: a CSS background, or an eager img, is fetched for every tile in the Card
 // view whether or not it is on screen, which on a 99-card deck is every card at once.
 describe("DeckCardTile — art", () => {
+  it("carries the foil film on its ring span when the drawn printing is held all foil, and only over art", () => {
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, foil: "foil" } as DeckDetailCard} />);
+    expect(document.querySelector("[data-foil]")?.getAttribute("data-foil")).toBe("foil");
+    cleanup();
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, foil: "foil", imageUri: null } as DeckDetailCard} />);
+    expect(document.querySelector("[data-foil]")).toBeNull();
+    cleanup();
+    renderTile(<DeckCardTile deckId="d1" card={card} />);
+    expect(document.querySelector("[data-foil]")).toBeNull();
+  });
+
   it("draws its art as a lazy img, not a background", () => {
     renderTile(<DeckCardTile deckId="d1" card={card} />);
     const img = document.querySelector("img");

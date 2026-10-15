@@ -8,9 +8,10 @@ vi.mock("../../../lib/switches/request", async () => {
   return { requestSwitchEnv: async () => ENV_VIEW };
 });
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ totalCards: 3 }) }));
-vi.mock("../../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => true }));
+const syncOn = vi.hoisted(() => ({ value: false }));
+vi.mock("../../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => true, collectionSyncEnabled: () => syncOn.value }));
 vi.mock("../../../components/collection/replace-flow", () => ({
-  ReplaceFlow: () => <div data-testid="flow" />,
+  ReplaceFlow: ({ sync }: { sync?: boolean }) => <div data-testid="flow" data-sync={String(sync)} />,
 }));
 
 import ReplacePage from "./page";
@@ -24,5 +25,15 @@ describe("/collection/replace", () => {
     const section = screen.getByTestId("flow").parentElement!;
     expect(section.tagName).toBe("SECTION");
     expect(section.className.split(/\s+/)).toEqual(expect.arrayContaining(["flex", "flex-1", "flex-col"]));
+  });
+
+  it("hands the flow the reader's Sync switch (collection sync PR 2)", async () => {
+    syncOn.value = false;
+    const { unmount } = render(await ReplacePage());
+    expect(screen.getByTestId("flow").getAttribute("data-sync")).toBe("false");
+    unmount();
+    syncOn.value = true;
+    render(await ReplacePage());
+    expect(screen.getByTestId("flow").getAttribute("data-sync")).toBe("true");
   });
 });

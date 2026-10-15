@@ -4,12 +4,17 @@
 
 import Link from "next/link";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
 import { CHOOSE_PATH } from "../../lib/intake/submit";
 
 const copy = helpMeChooseCopy.door;
 
-/** The create picker's door: the first thing in its list column, above the search, never in the dock. */
-export function HelpMeChooseDoor() {
+/**
+ * The create picker's door: the first thing in its list column, above the search, never in the dock.
+ * `pastRuns` is set only when the player has a run History would list: the link closes the sentence on
+ * a wide door and takes its own 44px line under it on a narrow one.
+ */
+export function HelpMeChooseDoor({ pastRuns = false }: { pastRuns?: boolean }) {
   return (
     <div
       data-testid="help-me-choose-door"
@@ -17,7 +22,11 @@ export function HelpMeChooseDoor() {
     >
       <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
         <p className="m-0 font-display text-[14.5px] font-semibold text-[color:var(--fg)] md:text-[16px]">{copy.head}</p>
-        <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)] md:text-[13px]">{copy.body}</p>
+        <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)] md:text-[13px]">
+          {copy.body}
+          {pastRuns && <PastRunsLink className="hidden md:inline md:ml-[6px]" />}
+        </p>
+        {pastRuns && <PastRunsLink className="flex min-h-[44px] items-center md:hidden" />}
       </div>
       <Link
         href={CHOOSE_PATH}
@@ -26,6 +35,19 @@ export function HelpMeChooseDoor() {
         {copy.cta}
       </Link>
     </div>
+  );
+}
+
+function PastRunsLink({ className }: { className: string }) {
+  return (
+    <Link
+      href={`${CHOOSE_PATH}?v=history`}
+      prefetch={false}
+      data-testid="past-runs-link"
+      className={`${className} text-[12.5px] font-medium text-[color:var(--accent)] no-underline md:text-[13px]`}
+    >
+      {helpMeChooseHistoryCopy.doorLink}
+    </Link>
   );
 }
 

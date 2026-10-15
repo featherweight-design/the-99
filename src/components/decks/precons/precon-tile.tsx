@@ -35,7 +35,7 @@ function Art({ commander, eager }: { commander: PreconCommander; eager: boolean 
       eager={eager}
       src={commander.imageUri}
       decoding="async"
-      className="absolute inset-0 h-full w-full object-cover object-center"
+      className="art-lift absolute inset-0 h-full w-full object-cover object-center"
     />
   ) : (
     <NoArt name={commander.name} />
@@ -78,7 +78,7 @@ export function PreconTile({ row, href, eager = false, isNew = false }: {
   const identity = row.identity.length > 0 ? row.identity : ["C"];
   const hasFoot = row.built.length > 0 || row.twinName !== null || row.unmapped > 0;
   return (
-    <li className={`${TILE_SHELL} relative min-w-0 border border-solid border-[color:var(--border)] bg-[color:var(--surface)] md:hover:border-[color:var(--border-strong)] transition-colors`}>
+    <li className={`${TILE_SHELL} art-lift-host relative min-w-0 border border-solid border-[color:var(--border)] bg-[color:var(--surface)] md:hover:border-[color:var(--border-strong)] transition-colors`}>
       <div
         aria-hidden
         className={`relative w-full overflow-hidden bg-[color:var(--surface-sunken)] ${TILE_ART_CLIP}`}

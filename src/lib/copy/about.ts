@@ -601,7 +601,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'HELP_ME_CHOOSE_ENABLED',
     caption:
-      'Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.\n\nColors, themes, sets, a budget and a bracket narrow the list for free. Or describe the deck in your own words: how it should feel, or how it should differ from your decks. That uses a credit, and up to ten picks come first, each with a line on why.\n\nPick a commander and your answers carry over to a new deck, ready to fill from your Collection.',
+      'Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.\n\nColors, themes, sets, a budget and a bracket narrow the list for free. Or describe the deck in your own words: how it should feel, or how it should differ from your decks. That uses a credit, and up to ten picks come first, each with a line on why.\n\nPick a commander and your answers carry over to a new deck, ready to fill from your Collection. Every run that reads your words is kept under History, and opening one again is free.',
     keys: [
       'Words in the “Anything else?” box are read against every commander your answers allow. Tag a card there with [[ and it is required: only commanders whose decks run it are suggested.',
       'Your answers always hold, so no pick falls outside them.',
@@ -1287,6 +1287,35 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 10,
   },
   {
+    id: 'proposed-cuts',
+    chapter: '04',
+    title: 'Cutting back to 99 with Proposed cuts',
+    route: '/decks',
+    opens: 'opens a deck’s Analysis tab',
+    width: 'plate',
+    // 2026-10-15 (`design_handoff_the99_proposed_cuts_about`, R1, approved): follows PROPOSED_CUTS_ENABLED,
+    // so turning the tool on is what announces it. NO BUMP, as `mana-balance` and `deck-tokens`: a switched
+    // entry is seen by its id, and `since` is the current version. Caption and keys are placeholders owed to
+    // /copy-review. The specimen is the panel's own free count (`CutsFreeCount`) from HD - Zombies.
+    switch: 'PROPOSED_CUTS_ENABLED',
+    caption:
+      'Deck over 100 cards? Proposed cuts, on a deck’s Analysis tab, counts what runs long against the decks EDHREC holds for your commander: roles past their recommended count, the fullest steps of the curve, cards few of those decks run, and anything the bracket you declared doesn’t allow. The count is free, and it names no card.\n\n' +
+      'Look deeper names the cards: as many as the deck is over, in batches when it’s far over, each with a one-line reason. Cut or Keep each one, and when the deck is back to 99 the tool closes.\n\n' +
+      'When a deck is over, its header says so, with a Proposed cuts press that opens the tool. Every run is kept in History, under Tuning, and reopening one checks each cut against the deck as it is now.',
+    // The trim line's Proposed cuts press and History both draw only with the Tuning hub on.
+    captionLineSwitches: {
+      'When a deck is over, its header says so, with a Proposed cuts press that opens the tool. Every run is kept in History, under Tuning, and reopening one checks each cut against the deck as it is now.': 'TUNING_HUB_ENABLED',
+    },
+    keys: [
+      'The count is free. Look deeper uses a credit, and a run that names nothing or doesn’t finish gives it back.',
+      'It never names your commander, a card you locked or a Key card.',
+      'Every reason is checked against the deck. One that doesn’t hold is swapped for a plain note, with only the figures that do.',
+      'Cut changes the list straight away, and Undo puts the card back.',
+    ],
+    marksPending: true,
+    since: 14,
+  },
+  {
     id: 'mana-balance',
     chapter: '04',
     title: 'Reading your deck’s mana',
@@ -1403,7 +1432,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // `fillAllowance` (admin PR 9c, 2026-10-13, a copy edit, no bump); it was the friend's fixed five.
     // The owner's monthly testing share is left out on purpose: Hugh, 2026-10-06, "friends only".
     caption:
-      'Some features write something just for you, and those use credits. You get {allowance}, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Look deeper” in Proposed cuts\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n\nDetermining your deck’s bracket is free.',
+      'Some features write something just for you, and those use credits. You get {allowance}, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Look deeper” in Proposed cuts\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n\nDetermining your deck’s bracket is free.\nOpening a past “Help me choose” run from History is free.',
     // 2026-10-08: the second bullet names Suggested changes, which Tuning can now withhold while
     // the Overview and Help me choose still spend credits — so, unlike the rest of this entry
     // (which carries no switch), that one line does.
@@ -1415,6 +1444,8 @@ export const aboutEntries: readonly AboutEntry[] = [
       // list names every spender, each line behind its own feature's switch. An ordinary edit, no bump.
       '- Each “Look deeper” in Proposed cuts': 'PROPOSED_CUTS_ENABLED',
       '- Each “Which deck needs it most?” read': 'FIND_A_DECK_READ_ENABLED',
+      // 2026-10-14 (Help me choose history): an ordinary edit, no bump.
+      'Opening a past “Help me choose” run from History is free.': 'HELP_ME_CHOOSE_ENABLED',
     },
     keys: [
       'A run that comes back empty-handed or doesn’t finish gives the credit back.',

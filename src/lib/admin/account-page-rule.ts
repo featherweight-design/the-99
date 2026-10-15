@@ -145,7 +145,7 @@ export function switchGroups(switches: AccountSwitches, groupName: (id: string) 
   const of = (...kinds: string[]) => lines.filter((l) => kinds.includes(l.kind)).map((l) => l.line);
   const env = of("env");
   return {
-    override: of("account", "group", "app"),
+    override: of("account", "all", "group", "app"),
     rule: of("kill", "parent"),
     envOn: env.filter((l) => l.on).map((l) => l.label),
     envOff: env.filter((l) => !l.on).map((l) => l.label),

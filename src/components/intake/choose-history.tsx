@@ -14,6 +14,8 @@ import { FailureMark } from "../decks/tuning-history";
 
 /** While a run is in flight the list re-reads its first page at the tools' own cadence. */
 const WATCH_MS = 3000;
+/** The run a press opened, kept for the visit so Back can put focus on its row. */
+const LAST_OPENED = "hmc-history-last-opened";
 
 const noop = () => () => {};
 /**
@@ -94,6 +96,22 @@ export function ChooseHistory({
     }
   }
 
+  // Back from a run: focus returns to the row that opened it (the instance that is drawn).
+  useEffect(() => {
+    try {
+      const id = sessionStorage.getItem(LAST_OPENED);
+      if (!id) return;
+      if (root.current?.offsetParent === null) return;
+      sessionStorage.removeItem(LAST_OPENED);
+      // A run opened from a later page is not in the first page the list mounts with: focus lands on the heading.
+      const target = root.current?.querySelector<HTMLElement>(`[data-history-run="${CSS.escape(id)}"]`)
+        ?? root.current?.querySelector<HTMLElement>(`[id="${CSS.escape(headingId)}"]`);
+      target?.focus();
+    } catch {
+      // Storage can be unavailable (a private window); focus then starts where the page puts it.
+    }
+  }, [headingId]);
+
   // A run in flight settles in place: re-read the first page while one is `reading`. One read at a time
   // (a slow answer never overtakes a newer one), and only the instance that is drawn reads at all: the
   // phone's view and the column can both be mounted, one of them hidden.
@@ -132,7 +150,7 @@ export function ChooseHistory({
       }
     >
       <div className="flex flex-wrap items-baseline gap-[10px]">
-        <h2 id={headingId} className={`m-0 font-display font-normal text-[color:var(--fg)] ${column ? "text-[19px]" : "text-[24px]"}`}>
+        <h2 id={headingId} tabIndex={-1} className={`m-0 font-display font-normal text-[color:var(--fg)] ${column ? "text-[19px]" : "text-[24px]"}`}>
           {copy.title}
         </h2>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{empty ? copy.subEmpty : copy.sub}</span>
@@ -222,6 +240,7 @@ function RunRow({ row, column, zoned }: { row: ChooseHistoryRow; column: boolean
       prefetch={false}
       aria-label={label}
       data-history-run={row.id}
+      onClick={() => { try { sessionStorage.setItem(LAST_OPENED, row.id); } catch { /* storage unavailable */ } }}
       data-state={row.state}
       className={`flex flex-col rounded-[9px] border border-solid bg-[color:var(--surface)] no-underline hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--border-strong)] ${
         reading ? "border-[color:var(--accent)]" : "border-[color:var(--border)]"

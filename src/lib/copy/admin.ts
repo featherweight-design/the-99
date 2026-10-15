@@ -290,6 +290,11 @@ export const adminCopy = {
     ownerShare: (pct: number, share: string) => `${pct}% of the ${share} testing share`,
     hub: { drawn: "Drawn", notDrawn: "Not drawn", tools: (n: number) => `${n} of its tools on` },
     switchGroups: { override: "Set by an override", rule: "Off by a rule", env: "From the environment" },
+    // Owed to /copy-review.
+    allFeatures: {
+      title: "All features",
+      body: "Every feature switch on for this account, those added later included. An Off set on one switch here still wins, and so does an env var set to off.",
+    },
     envList: { on: (n: number) => `On · ${n}`, off: (n: number) => `Off · ${n}` },
     group: "Group",
     changeGroup: "Change group",
@@ -456,6 +461,7 @@ export const adminCopy = {
     sources: {
       kill: "env var is off",
       account: "account override",
+      all: "All features",
       group: (name: string) => `group ${name}`,
       app: "app-wide override",
       env: "from the env var",
@@ -501,8 +507,8 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
-  COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Added copy, Mark bought and Sync need it." },
-  COLLECTION_SYNC_ENABLED: { label: "Collection Sync", description: "Sync an upload: take what the file changed and keep your own edits." },
+  COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Added copy, Mark bought and Collection sync need it." },
+  COLLECTION_SYNC_ENABLED: { label: "Collection sync", description: "Sync an upload: take what the file changed and keep your own edits." },
   DECK_BENCHMARKS_ENABLED: { label: "Deck benchmarks", description: "A deck measured against similar decks." },
   DECK_NOTES_ENABLED: { label: "Deck notes", description: "Notes on a deck, in Your deck." },
   DECK_PRINTINGS_ENABLED: { label: "Deck printings", description: "Choose the printing of each card in a deck." },
@@ -519,6 +525,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   NAV_STALL_LOG_ENABLED: { label: "Stuck-loader reports", description: "Logs a report when a loading screen stays up 8 seconds. Changes nothing on screen." },
   NEVER_CUT_ENABLED: { label: "Never cut", description: "Mark cards a suggestion may not cut." },
   NOTICES_ENABLED: { label: "Notices", description: "Notices on a deck." },
+  NO_COLLECTION_ENTRY_ENABLED: { label: "No-collection entry", description: "Start with no collection: own an imported deck’s cards, or pick the precons you own." },
   OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
   PRECONS_ENABLED: { label: "Precons", description: "Browse Commander precons and start a deck from one." },
   PROPOSED_CUTS_ENABLED: { label: "Proposed cuts", description: "Cuts proposed for a deck over 99." },

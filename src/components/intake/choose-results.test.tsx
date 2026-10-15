@@ -20,11 +20,11 @@ const row = (i: number): ResultRow => ({
   cardFit: null, ownedSupport: 0, supportTotal: 0,
 });
 const page = (n: number, over: Partial<ResultsPage> = {}): ResultsPage => ({
-  order: "fit", tooNarrow: null, card: null, rows: Array.from({ length: n }, (_, i) => row(i + 1)), hasMore: false, total: n, ...over,
+  order: "fit", tooNarrow: null, card: null, rows: Array.from({ length: n }, (_, i) => row(i + 1)), hasMore: false, total: n, gone: [], ...over,
 });
 const narrow = { without: [{ answers: [{ kind: "theme" as const, slug: "dinosaurs" }], count: 30 }], widen: null, anyOf: null, cardOverBracket: null };
 
-function draw(p: ResultsPage, read: ReadPhase | null = null, themes = ["dinosaurs"], deckNames: Record<string, string> = {}, queryString = "t=dinosaurs&v=results") {
+function draw(p: ResultsPage, read: ReadPhase | null = null, themes = ["dinosaurs"], deckNames: Record<string, string> = {}, queryString = "t=dinosaurs&v=results", extra: { pastRun?: boolean; pastReasons?: boolean; gone?: React.ReactNode } = {}) {
   return render(
     <CardDetailProvider fetchCard={vi.fn()}>
       <ReadScope initial={read}>
@@ -36,6 +36,7 @@ function draw(p: ResultsPage, read: ReadPhase | null = null, themes = ["dinosaur
           queryString={queryString}
           changeHref="/decks/new/choose?t=dinosaurs"
           deckNames={deckNames}
+          {...extra}
         />
       </ReadScope>
     </CardDetailProvider>,
@@ -243,5 +244,72 @@ describe("the results' hover preview", () => {
       act(() => { vi.advanceTimersByTime(1000); });
       expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/c1.jpg");
     } finally { vi.useRealTimers(); }
+  });
+});
+
+describe("a past run opened from History (PR 3)", () => {
+  const goneGroup = <section data-testid="gone-group">gone</section>;
+
+  it("draws the picks that went as one group after the open picks and before the divider", () => {
+    draw(picked(14, 4), "done", [], {}, undefined, { pastRun: true, gone: goneGroup });
+    const group = screen.getByTestId("gone-group");
+    const divider = screen.getByTestId("rest-divider");
+    expect(group.compareDocumentPosition(divider) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(group.closest("ol")).toBe(divider.closest("ol"));
+    // The open picks above it, in the list: Commander 4 is the last pick.
+    expect(group.closest("li")?.previousElementSibling?.textContent).toContain("Commander 4");
+  });
+
+  it("heads the page with the group when every pick went, before the rest of the results", () => {
+    draw(picked(14, 0), "done", [], {}, undefined, { pastRun: true, gone: goneGroup });
+    const group = screen.getByTestId("gone-group");
+    expect(group.closest("ol")).toBeNull();
+    // Before the first free row, best fits included.
+    expect(group.compareDocumentPosition(screen.getByText("Commander 1")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("draws the group after the last pick when no free row follows it", () => {
+    draw(picked(4, 4), "done", [], {}, undefined, { pastRun: true, gone: goneGroup });
+    expect(screen.getByTestId("gone-group")).toBeTruthy();
+    expect(screen.queryByTestId("rest-divider")).toBeNull();
+  });
+
+  it("carries the past mark on a row's press, and claims no deleted deck after a failed lookup", () => {
+    draw(picked(14, 1), "done", [], {}, undefined, { pastRun: true, pastReasons: false });
+    const press = screen.getAllByRole("link").map((l) => l.getAttribute("href") ?? "").filter((h) => h.startsWith("/decks/new?"));
+    expect(press.length).toBeGreaterThan(0);
+    for (const h of press) expect(h).toMatch(/&h=1$/);
+    expect(screen.queryByTestId("row-reason-gone")).toBeNull();
+    cleanup();
+    draw(picked(14, 1));
+    for (const h of screen.getAllByRole("link").map((l) => l.getAttribute("href") ?? "").filter((x) => x.startsWith("/decks/new?"))) expect(h).not.toContain("h=1");
+  });
+
+  it("says a line named a deleted deck, in its place, only on a past run", () => {
+    const missing = picked(14, 1); // the first pick names DECK, which `deckNames` does not hold
+    draw(missing, "done", [], {}, undefined, { pastRun: true });
+    expect(screen.getByTestId("row-reason-gone").textContent).toBe("Its line named a deck you’ve since deleted.");
+    cleanup();
+    draw(missing, "done", [], {});
+    expect(screen.queryByTestId("row-reason-gone")).toBeNull();
+  });
+
+  it("still draws the group when no free result remains", () => {
+    draw(page(0), "done", [], {}, undefined, { pastRun: true, gone: goneGroup });
+    expect(screen.getByTestId("gone-group")).toBeTruthy();
+  });
+
+  it("previews a gone pick on hover even when no free result remains", async () => {
+    const { GonePicks } = await import("./past-run");
+    const picks = [{ oracleId: "0000aaaa-0000-4000-8000-000000000001", name: "Gone One", imageUri: "https://x/g.jpg", artCropUri: null, deck: null }];
+    draw(page(0), "done", [], {}, undefined, { pastRun: true, gone: <GonePicks picks={picks} /> });
+    vi.useFakeTimers();
+    try {
+      fireEvent.mouseEnter(screen.getByText("Gone One"), { clientX: 10, clientY: 10 });
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://x/g.jpg");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

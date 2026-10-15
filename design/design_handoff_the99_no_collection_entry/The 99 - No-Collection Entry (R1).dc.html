@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>No-collection entry, the calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+.blk{display:flex;flex-direction:column;gap:12px;padding:22px 24px;background:#1E1F26;border:1px solid #2E3340;border-radius:12px}
+.row{display:grid;grid-template-columns:48px 260px minmax(0,1fr);gap:18px;padding:14px 0;border-top:1px solid #2E3340;align-items:start}
+.row:first-of-type{border-top:0}
+.n{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8A8C;padding-top:2px}
+.q{font-size:14px;font-weight:600;color:#C6D2D3;line-height:1.45}
+.a{font-size:14px;line-height:1.6;color:#B3C0C2}
+.a b{color:#C6D2D3;font-weight:600}
+.m{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C6D2D3}
+.lk{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;padding:10px 0;border-top:1px solid #2E3340;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.lk span:first-child{color:#C6D2D3;font-weight:600}
+.g{display:grid;grid-template-columns:56px minmax(0,1fr);gap:14px;padding:9px 0;border-top:1px solid #2E3340;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.g span:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;padding-top:2px}
+</style>
+</helmet>
+<div style="width:1600px;box-sizing:border-box;padding:48px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:26px">
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="k">The 99 · no-collection entry · R1 · 2026-10-15 · account 2</span>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px">A way in without a collection file</h1>
+    <p class="a" style="margin:0;max-width:1300px">Upload stays the first and largest thing on step 1. Under it, one quiet group, <b>No file? Start another way</b>, holds the three ways to give The 99 your cards without one: <b>Precons I own</b>, <b>Import a deck</b>, <b>Add cards by hand</b>. The same group sits under Upload on the empty Collection. Collection stops locking at zero cards; Commanders, Discover and Decks still wait for cards. Nothing new replaces: every write is an add, one History entry per box or deck.</p>
+    <p class="cap" style="margin:0">Source of truth: docs/superpowers/design-briefs/2026-10-15-no-collection-entry.md (branch brief/no-collection-entry). Mirrors design_handoff_the99_first_run_onboarding/. Aligned with design_handoff_the99_precons/ (R4 tiles), design_handoff_the99_deck_import/ and design_handoff_the99_collection_sync/.</p>
+  </div>
+
+  <section class="blk" aria-labelledby="h-open">
+    <span class="k" id="h-open">§Open · the seven calls</span>
+    <div class="row"><span class="n">1</span><span class="q">Step 1's shape, given ruling 1</span><span class="a">The alternatives are on step 1, <b>below</b> the upload, as ways to give us your cards, never as a way round the collection. The card keeps <span class="m">Upload a CSV</span> (fill) and <span class="m">Paste a list</span> (hairline). A 1px rule, then <span class="m">NO FILE? START ANOTHER WAY</span> and three text rows. <span class="m">Add cards by hand</span> moves out of the button row into the group, so the buttons say “your file” and the group says “no file”. Hugh confirms (ruling 1 is his).</span></div>
+    <div class="row"><span class="n">2</span><span class="q">Which path leads; is (c) a choice?</span><span class="a"><b>Precons I own</b> leads the group: the catalog already knows every card in the box, so it is the most cards for the least typing. Then <b>Import a deck</b>, then <b>Add cards by hand</b>. <b>(c) is not a button.</b> Starting empty is what happens when the player leaves: Collection is open at zero cards and its empty state carries the same group. A “Start empty” press would write nothing and only move the lock, which reads as a skip button.</span></div>
+    <div class="row"><span class="n">3</span><span class="q">The own-these offer after an import</span><span class="a">A second line on the shipped arrival strip, shown when the collection was empty at the import: <span class="m">Already own these? Add the 99 cards to your collection.</span> with <span class="m">Add 99 cards</span> and <span class="m">Not now</span>. It adds every line, no ticks: a player who owns some of them uses the Shopping view's shipped <span class="m">I got it</span>, per card. The same line sits at the head of the deck's Shopping view while the collection is empty, so a dismissed offer can be found again.</span></div>
+    <div class="row"><span class="n">4</span><span class="q">The precon pick</span><span class="a"><b>A pick mode of the shipped precon list</b>, <span class="m">/decks/precons?pick=own</span>, in rows (tiles are tall; 197 boxes is a list job). Grouped by year, newest first, with the shipped search. Each row: checkbox, name, <span class="m">SET · Mon YYYY</span>, pips, <span class="m">100 cards</span>. The ownership figure is dropped in this mode (it reads 0 of N everywhere at first run). A twin row picks the plain edition; ticked, it shows one radio pair, <span class="m">Regular</span> / <span class="m">Collector's Edition</span>. A sticky foot: <span class="m">Add 3 boxes · 300 cards</span>, held until one is ticked.</span></div>
+    <div class="row"><span class="n">5</span><span class="q">The later-CSV seam</span><span class="a"><b>Collection Sync's handoff answers it</b>, so the choice is not redrawn: nothing preselected, Replace and Add unchanged, Sync shown disabled with its shipped never-uploaded reason (<span class="m">your collection was built in the app without one</span>). One addition, on Replace's warning: it names what came from precons and by hand that the file lacks, from the dry run (<span class="m">212 cards you added from 3 precons and by hand aren't in this file and would leave.</span>). See design/design_handoff_the99_collection_sync/.</span></div>
+    <div class="row"><span class="n">6</span><span class="q">The nav lock at zero cards</span><span class="a"><b>Collection opens at zero cards</b> (edit switch on), because its empty state is where a player who starts empty starts. <b>Commanders, Discover and Decks stay locked</b> until a card lands (Locked 4: an unowned deck unlocks nothing). The well and the tab bracket span three slots, and the words name three: <span class="m">Commanders, Discover and Decks open once your cards are in.</span> Outside first run the note's button is <span class="m">Add your cards</span> to /collection, since there is no step 1 to go to.</span></div>
+    <div class="row"><span class="n">7</span><span class="q">/commanders and /discover empty states</span><span class="a">Title <span class="m">Nothing to rank yet</span>, body <span class="m">We rank commanders from the cards you own. Add some and every one you can build shows up here.</span>, one button <span class="m">Add your cards</span> to /collection, where every way in lives. Moved to copy keys.</span></div>
+  </section>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
+    <section class="blk" aria-labelledby="h-locks">
+      <span class="k" id="h-locks">§Locked · how R1 holds each</span>
+      <div class="lk" style="border-top:0"><span>No data loss</span><span>Every write is an add through applyCollectionChange: one History entry per box, one per deck. Revert takes each back. Nothing new replaces.</span></div>
+      <div class="lk"><span>Upload stays primary</span><span>The only fill on step 1 and the empty Collection. The group sits below it in body text, never in a button.</span></div>
+      <div class="lk"><span>Precon add reused</span><span>The pick calls addPreconForUser per box, as is, no deck started, nothing reserved.</span></div>
+      <div class="lk"><span>Ruling 1's order</span><span>Every path ends in owned cards. A deck imported and not owned leaves Commanders, Discover and Decks locked.</span></div>
+      <div class="lk"><span>Switches</span><span>Edit off: the group, the offer and the open Collection are absent, upload alone. Precons off: the Precons row is absent.</span></div>
+    </section>
+    <section class="blk" aria-labelledby="h-gaps">
+      <span class="k" id="h-gaps">For the audit · gaps</span>
+      <div class="g" style="border-top:0"><span>G1</span><span>Ruling 1 on step 1: drawn below the upload. Hugh's call.</span></div>
+      <div class="g"><span>G2</span><span>Collection unlocks at 0 cards. A change to the shipped lock, not asked for in the brief.</span></div>
+      <div class="g"><span>G3</span><span>Decks stays locked with an unowned deck (Locked 4). The deck is reached from Home's dashboard. Unlocking Decks once a deck exists is the other option.</span></div>
+      <div class="g"><span>G4</span><span>The offer shows only when the collection was empty at the import. Widening it to every import would add only the lines not owned.</span></div>
+      <div class="g"><span>G5</span><span>Precon names, years and counts are illustrative; staging has no empty account, so nothing here was observed.</span></div>
+      <div class="g"><span>G6</span><span>The pick writes boxes one entry each, so a part-failure is real (S7). Drawn as a toast plus the rows' own marks.</span></div>
+    </section>
+  </div>
+
+  <section class="blk" aria-labelledby="h-boards">
+    <span class="k" id="h-boards">Boards</span>
+    <p class="a" style="margin:0">First run (S1, S15, S16) · Precon pick (S2–S4, S17) · Precon result (S5–S7) · Import, own these (S8–S12) · No cards outside first run (S12, S13, the lock, Open 7) · First CSV over a built collection (S14) · About entry. Every state at 1300 and 390.</p>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

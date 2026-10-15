@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
 
-const stub = vi.hoisted(() => ({ history: vi.fn(), themes: vi.fn(), chip: vi.fn(), allowance: vi.fn(), read: vi.fn(), decks: vi.fn(), page: vi.fn(), env: null as NodeJS.ProcessEnv | null }));
+const stub = vi.hoisted(() => ({ history: vi.fn(), past: vi.fn(), themes: vi.fn(), chip: vi.fn(), allowance: vi.fn(), read: vi.fn(), decks: vi.fn(), page: vi.fn(), env: null as NodeJS.ProcessEnv | null }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
 vi.mock("../../../../lib/switches/request", async () => {
@@ -21,7 +21,7 @@ vi.mock("../../../../lib/intake/run-store", async (actual) => ({
   loadTheRead: stub.read,
 }));
 vi.mock("../../../../lib/intake/the-read-load", () => ({ loadReadDecks: stub.decks }));
-vi.mock("../../../../lib/intake/history-read", () => ({ loadChooseHistory: stub.history }));
+vi.mock("../../../../lib/intake/history-read", () => ({ loadChooseHistory: stub.history, loadPastRead: stub.past }));
 
 const { default: ChoosePage } = await import("./page");
 const { ReadPanel, ReadScope } = await import("../../../../components/intake/read-panel");
@@ -30,6 +30,8 @@ const { DimWhileReading } = await import("../../../../components/intake/read-pan
 const { Suspense } = await import("react");
 const { IntakeForm } = await import("../../../../components/intake/intake-form");
 const { ChooseHistory } = await import("../../../../components/intake/choose-history");
+const { PastRunMeta, PastWontOpen } = await import("../../../../components/intake/past-run");
+const { ChooseHeader } = await import("../../../../components/intake/choose-header");
 
 /** The first element of `type` anywhere in a rendered tree, props included (the look is a prop). */
 function find(node: unknown, type: unknown): { props: Record<string, unknown> } | null {
@@ -53,6 +55,7 @@ describe("the choose page", () => {
     stub.read.mockResolvedValue({ kind: "none" });
     stub.decks.mockResolvedValue([]);
     stub.history.mockReset().mockResolvedValue({ rows: [], nextCursor: null });
+    stub.past.mockReset();
   });
 
   it("draws the results when the vocabulary and the card chip both fail to read", async () => {
@@ -188,6 +191,56 @@ describe("the choose page", () => {
       expect(digest).toContain("/decks/new/choose?");
       expect(digest).not.toContain("v=results");
     }
+  });
+
+  describe("A past run opened from History (PR 3)", () => {
+    const RID = "0000bbbb-0000-4000-8000-000000000009";
+    const done = { kind: "done", result: { picks: [{ oracleId: CARD, reason: [{ text: "Why." }] }], pool: 164, weighed: 9 } };
+    const open = (extra: Record<string, string> = {}) =>
+      ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", r: RID, h: "1", ...extra }) });
+
+    beforeEach(() => { stub.themes.mockResolvedValue([]); stub.read.mockClear(); stub.allowance.mockClear(); });
+
+    it("reads the run with its date, never the live read or the credit standing, and draws no read panel", async () => {
+      stub.past.mockResolvedValue({ state: done, at: "2026-10-13T21:40:00.000Z" });
+      const tree = await open();
+      expect(stub.past).toHaveBeenCalledWith(RID, "user_1", expect.any(Date));
+      expect(stub.read).not.toHaveBeenCalled();
+      expect(stub.allowance).not.toHaveBeenCalled();
+      expect(find(tree, ReadPanel)).toBeNull();
+      expect(find(tree, PastRunMeta)!.props).toMatchObject({ at: "2026-10-13T21:40:00.000Z", titleId: "past-run-title" });
+      expect(find(tree, ChooseHeader)!.props).toMatchObject({ back: { label: "‹ History" }, titleId: "past-run-title" });
+    });
+
+    it("draws today's empty panel, with no credit line, for a run that found nothing", async () => {
+      stub.past.mockResolvedValue({ state: { kind: "nothing", result: { picks: [], pool: 3445, weighed: 0 } }, at: "2026-10-13T21:40:00.000Z" });
+      const panel = find(await open(), ReadPanel)!;
+      expect(panel.props).toMatchObject({ standing: null, repeat: false });
+    });
+
+    it("opens a run still in flight as the live page, with no past mark", async () => {
+      stub.past.mockResolvedValue({ state: { kind: "pending", phase: "judge" }, at: "2026-10-14T10:00:00.000Z" });
+      const tree = await open();
+      expect(find(tree, PastRunMeta)).toBeNull();
+      expect(find(tree, ReadPanel)).toBeTruthy();
+    });
+
+    it("says the run will not open when it is gone, another player's, failed or unreadable", async () => {
+      for (const past of [null, { state: { kind: "none" }, at: "x" }, { state: { kind: "failed" }, at: "x" }, { state: { kind: "stopped" }, at: "x" }]) {
+        stub.past.mockResolvedValue(past);
+        expect(find(await open(), PastWontOpen)!.props).toMatchObject({ historyHref: "/decks/new/choose?v=history" });
+      }
+      stub.past.mockRejectedValue(new Error("db down"));
+      expect(find(await open(), PastWontOpen)).toBeTruthy();
+    });
+
+    it("is the ordinary page without the past mark, which reads the live read", async () => {
+      stub.read.mockResolvedValue(done);
+      const tree = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", r: RID }) });
+      expect(stub.past).not.toHaveBeenCalled();
+      expect(stub.read).toHaveBeenCalled();
+      expect(find(tree, PastRunMeta)).toBeNull();
+    });
   });
 
   describe("History (Help me choose history PR 2)", () => {

@@ -24,7 +24,7 @@ import { CopyChooserDialog } from "./copy-chooser-dialog";
 import type { ReceiptFacts } from "../../lib/decks/mark-bought";
 import { ShortDeckWarning } from "../collection/short-deck-warning";
 import { PendingReporter } from "../shell/pending-reporter";
-import { ToastFrame, useToastClock } from "../collection/edit-toast";
+import { DECK_TOAST_CLAIM, ToastFrame, useToastClock } from "../collection/edit-toast";
 
 const c = gotItCopy.receipt;
 
@@ -214,6 +214,13 @@ export function GotItReceipt({
       if (stage.current === "warning") host.end(oracleId);
     };
   }, [host, oracleId]);
+  // The deck slot is this receipt's (it holds an Undo): a token refusal showing there steps aside. Once, when the receipt
+  // enters the slot, which is on mount and again when it comes back from its Undo warning (the warning swaps the frame out and
+  // back without remounting): `host` is a fresh object on every provider render, so the effect above must not carry this.
+  const frameShown = phase.k !== "warning";
+  useEffect(() => {
+    if (frameShown) window.dispatchEvent(new Event(DECK_TOAST_CLAIM));
+  }, [frameShown]);
 
   const facts = written.facts as ReceiptFacts | null;
   const sourceDeckId = typeof deckId === "string" ? deckId : null;

@@ -64,6 +64,11 @@ export type ResultsPage = Pick<SearchResult, "order" | "tooNarrow"> & {
    * (`read.stepScan`). Never printed as a count of results (F6).
    */
   total: number;
+  /**
+   * The read's picks the search no longer lists (History: a past run), in the read's order: a
+   * commander the player has built since, or one the index no longer ranks. Empty with no read.
+   */
+  gone: string[];
 };
 
 /**
@@ -83,6 +88,8 @@ export async function loadResultsPage(
   const ordered = picks ? reorder(outcome.rows, (r) => r.candidate.oracleId, picks) : outcome.rows;
   const slice = ordered.slice(offset, offset + RESULT_PAGE);
   const reasons = new Map((picks?.picks ?? []).map((p) => [p.oracleId, p.reason]));
+  const listed = new Set(outcome.rows.map((r) => r.candidate.oracleId));
+  const gone = (picks?.picks ?? []).filter((p) => !listed.has(p.oracleId)).map((p) => p.oracleId);
   const rows = await decorate(userId, slice, answers.sets ?? [], env);
   return {
     order: outcome.order,
@@ -91,6 +98,7 @@ export async function loadResultsPage(
     rows: rows.map((r) => (reasons.has(r.oracleId) ? { ...r, reason: reasons.get(r.oracleId) } : r)),
     hasMore: ordered.length > offset + RESULT_PAGE,
     total: ordered.length,
+    gone,
   };
 }
 

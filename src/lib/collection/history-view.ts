@@ -71,6 +71,7 @@ export function entryTitle(
     return entry.revertsVisible ? c.undidOlder : c.undidAged(dayLabel(reachesBack));
   }
   if (entry.kind === "add" && entry.preconName) return c.addedFromPrecon(entry.preconName);
+  if (entry.kind === "add" && entry.addedFromDeck?.name) return c.addedFromDeck(entry.addedFromDeck.name);
   if (!entry.firstName) return c.untitled;
   return entry.rowCount > 1 ? c.andMore(entry.firstName, entry.rowCount - 1) : entry.firstName;
 }

@@ -1,3 +1,4 @@
+import { dateOf } from "./added-at";
 import type { HistoryRowState } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { toCollectionItemValues, type PendingItem } from "./pending";
@@ -95,6 +96,29 @@ export type SyncCounts = {
  * unanswered (an unanswered conflict is something to sync: the review has to ask it). What the preview's
  * `nothing` and the confirm's `nothingToSync` read, and `measure:sync` prints.
  */
+/**
+ * Holdings the anchor's file holds that this file lacks or holds fewer of: what the stale banner calls
+ * "missing", read from the two files alone, never from what the merge would write.
+ */
+export function missingFromAnchor(anchor: ReadonlyMap<string, number>, file: ReadonlyMap<string, number>): number {
+  let n = 0;
+  for (const [k, q] of anchor) if (q > 0 && (file.get(k) ?? 0) < q) n += 1;
+  return n;
+}
+
+/**
+ * Of a token plan's changes, the distinct tokens whose COUNT moves, either way: an add, a removal or a precon
+ * restoration alike. A source-only change (a hand mark becoming an upload row at the same count), a printing
+ * row and the read marker are not counted.
+ */
+export function changedTokenCount(
+  changes: readonly { kind: string; id: string; from: number | null; to: number | null }[],
+): number {
+  const changed = new Set<string>();
+  for (const c of changes) if (c.kind === "token" && (c.from ?? 0) !== (c.to ?? 0)) changed.add(c.id);
+  return changed.size;
+}
+
 export function nothingToSync(plan: Pick<SyncPlan, "rows" | "counts">, tokenChanges: number): boolean {
   return plan.rows.length === 0 && tokenChanges === 0 && plan.counts.undecided === 0;
 }
@@ -120,7 +144,7 @@ export type SyncPlan = {
 };
 
 const stateOf = (h: SyncHolding): HistoryRowState =>
-  ({ quantity: h.quantity, scryfallId: h.scryfallId, condition: h.condition });
+  ({ quantity: h.quantity, scryfallId: h.scryfallId, condition: h.condition, ...dateOf(h) });
 const identityOf = (r: CollectionItemIdentity): CollectionItemIdentity =>
   ({ oracleId: r.oracleId, setCode: r.setCode, collectorNumber: r.collectorNumber, finish: r.finish });
 

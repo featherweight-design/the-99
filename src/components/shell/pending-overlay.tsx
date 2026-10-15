@@ -6,7 +6,8 @@ import { shellCopy } from "../../lib/copy/shell";
 import type { LoadingKey } from "../../lib/shell/pending-routes";
 import { LoadingScreen } from "./loading-screen";
 
-export const OVERLAY_OUT_MS = 120;
+/** The fade out's length: `--motion-exit-quick` in `globals.css` (a test holds the two together). */
+export const OVERLAY_OUT_MS = 140;
 
 /**
  * The escalation screen (escalation addendum): the target route's `LoadingScreen`, laid over the
@@ -50,7 +51,7 @@ export function PendingOverlay({
     };
   }, [boxRef]);
 
-  // Unmount once the 120ms fade has run. A timer rather than `animationend`, which never fires
+  // Unmount once the fade (`OVERLAY_OUT_MS`) has run. A timer rather than `animationend`, which never fires
   // where animations do not run and would leave the screen up over the new page.
   useEffect(() => {
     if (!leaving) return;

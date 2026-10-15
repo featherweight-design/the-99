@@ -1235,7 +1235,7 @@ export function CardDetailProvider({
 
   // Every close of the live card goes through here: the ✕ or the pill, Escape, hardware Back and
   // the backdrop. A card over a sheet on the phone drops before it goes (stacked sheets R1: "the
-  // card drops in 200ms", never sideways); anywhere else, and under reduced motion, it is a swap.
+  // card drops in about two-thirds of its rise", never sideways); anywhere else, and under reduced motion, it is a swap.
   const dismiss = useCallback(() => {
     if (leavingTimer.current !== null) return;
     if (stepBack()) return;

@@ -26,7 +26,7 @@ the read panel's place.
 
 | Lock | How R1 holds it |
 |---|---|
-| Reopening is free | The row press and the opened page make no model call; the note says `opening it again used none`. No credit pill appears anywhere in History. |
+| Reopening is free | The row press and the opened page make no model call; the note says `Opening it again uses no credit.`. No credit pill appears anywhere in History. |
 | Read-only | No edit in place. The opened page keeps the shipped `Change answers`, which opens the form filled: a changed answer is a new ask, as today. |
 | Per account | The list reads the player's own rows; no friend, pod or admin surface draws one. |
 | No "still free" badge (proposal 4) | Nothing in History says whether asking again costs. Re-asking goes through the form's own press and its own cost line. |
@@ -83,8 +83,8 @@ the read panel's place.
 
 - Header: `‹ History` (back to the form with History open; focus returns to the row), the shipped title `Commanders for you`,
   then `Oct 13 · 9:40 PM · a past run` (mono, `--fg-faint`).
-- The note (dashed, `--border-dashed`, `--fg-faint`, the deck History's past note): `A past run, read-only. It used 1
-  credit on Oct 13; opening it again used none.` plus the aged count when it applies.
+- The note (dashed, `--border-dashed`, `--fg-faint`, the deck History's past note): `A past run, read-only. Opening it again
+  uses no credit.` (ruled 2026-10-14: the spent-credit clause is dropped everywhere, one note for every listed run) plus the aged count when it applies.
 - Focus moves to the title on open; its accessible name adds `, a past run from October 13, read-only`.
 - Opening: header and note draw at once from the row; picks breathe on the shipped results skeleton.
 - Won't open (row gone, another account's id, read failed, an old pasted link): the failure mark, `This run didn’t load.
@@ -111,7 +111,7 @@ Both re-pin the content hash. Hugh rules whether the feature owes more.
 | G2 | **The pending row departs from proposal 3**, which lists only `ok` and `nothing_valid`. The list read must also return the player's one pending row. Reason: a player who closed the tab mid-read looks in History for it. |
 | G3 | **The no-words row.** A stored read needs words today; the row exists only if a read can be stored with an empty `w` (a box holding only card tags). Drawn as the brief asks; engineering confirms whether it occurs. |
 | G4 | **Why a pick went.** `you built it since` needs the player's decks by commander (the reader already has them for `isCandidate`); every other cause reads `no longer among the commanders we rank`. The deck link is the newest deck led by that commander. |
-| G5 | `It used 1 credit on <date>` assumes every listed `ok` row spent one. True since #1717 (a free repeat writes no row). A paid-lot credit is still one credit. |
+| G5 | `It used 1 credit on <date>` was false for an `ok` run that was refunded, and no call status is read for a sentence. Ruled 2026-10-14: the clause is dropped. |
 | G6 | The nothing-found panel's number is the row's stored `pool`, not today's count. |
 | G7 | The column draws on the form only; the results page keeps no column, as today. |
 | G8 | No delete. If stored words become a privacy question, a per-row delete with a confirm (`the same ask would cost a credit again`) is R2. |

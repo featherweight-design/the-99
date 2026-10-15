@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  answerFor, holdingDistance, nothingToSync, parseSyncOptions, planSync, quantitiesOf, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
+  answerFor, holdingDistance, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
   type SyncAnswers, type SyncHolding, type SyncPick,
 } from "./sync";
+import { planTokenWrite } from "../tokens/ownership";
 
 const oracle = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const id = (n: number): CollectionItemIdentity => ({ oracleId: oracle(n), setCode: "lea", collectorNumber: "1", finish: "nonfoil" });
@@ -24,6 +25,21 @@ function one(b: number, a: number, f: number, pick: SyncPick = "everything", ans
 
 const counts = (c: Partial<ReturnType<typeof one>["counts"]>) => ({
   taken: 0, kept: 0, agreed: 0, unchanged: 0, conflicts: 0, undecided: 0, answeredFile: 0, ignored: 0, ...c,
+});
+
+describe("planSync and the date a holding arrived", () => {
+  it("records the app row's date on the before side of a removal, so a revert can put it back", () => {
+    const dated = { ...hold(1, 2, "NM", "app"), addedAt: "2026-09-02T12:00:00.000Z", addedExact: false };
+    const p = planSync({ base: new Map([[key(1), 2]]), app: new Map([[key(1), dated]]), file: [], pick: "everything" });
+    expect(p.rows).toHaveLength(1);
+    expect(p.rows[0].after).toBeNull();
+    expect(p.rows[0].before).toMatchObject({ quantity: 2, addedAt: "2026-09-02T12:00:00.000Z", addedExact: false });
+  });
+
+  it("writes no date on an after side, which a file never dated", () => {
+    const p = planSync({ base: new Map(), app: new Map(), file: [hold(1, 1, "NM", "file")], pick: "everything" });
+    expect(p.rows[0].after).not.toHaveProperty("addedAt");
+  });
 });
 
 describe("planSync, the merge table", () => {
@@ -293,5 +309,41 @@ describe("nothingToSync", () => {
     expect(nothingToSync(one(2, 2, 4), 0)).toBe(false);
     expect(nothingToSync(one(2, 2, 2), 1)).toBe(false);
     expect(nothingToSync(one(2, 2, 2), 0)).toBe(true);
+  });
+});
+
+describe("missingFromAnchor", () => {
+  it("counts the anchor's holdings the file lacks or holds fewer of, and nothing the file adds or raises", () => {
+    const anchor = new Map([[key(1), 2], [key(2), 1], [key(3), 4], [key(4), 1]]);
+    const file = new Map([[key(1), 2], [key(3), 3], [key(4), 5], [key(5), 1]]);
+    // card 2 is absent, card 3 is lower; card 4 is raised and card 5 is new, neither is missing.
+    expect(missingFromAnchor(anchor, file)).toBe(2);
+    expect(missingFromAnchor(anchor, anchor)).toBe(0);
+  });
+});
+
+describe("changedTokenCount", () => {
+  it("counts distinct tokens whose count moves either way, never a source-only change or a printing row", () => {
+    expect(changedTokenCount([
+      { kind: "token", id: "a", from: null, to: 2 },
+      { kind: "token", id: "b", from: 3, to: 1 },
+      { kind: "token", id: "c", from: 2, to: 2 },
+      { kind: "printing", id: "p", from: null, to: 4 },
+      { kind: "read", id: "", from: null, to: null },
+      { kind: "token", id: "d", from: 1, to: null },
+    ])).toBe(3);
+  });
+
+  it("counts a removal: an EMPTY token file under Replace's rule takes an upload-owned token away", () => {
+    const state = { owned: [{ tokenOracleId: "t1", quantity: 2, source: "upload" }], uploadPrintings: [], read: true };
+    const { changes } = planTokenWrite("replace", state, []);
+    expect(changedTokenCount(changes)).toBe(1);
+  });
+
+  it("counts nothing for a hand mark the file reads at the same count", () => {
+    // The file reads the hand-marked token at its count: the source moves, the count does not.
+    const same = planTokenWrite("replace", { owned: [{ tokenOracleId: "t1", quantity: 2, source: "manual" }], uploadPrintings: [], read: true },
+      [{ tokenOracleId: "t1", quantity: 2 }]);
+    expect(changedTokenCount(same.changes)).toBe(0);
   });
 });

@@ -153,6 +153,15 @@ describe("planRevert", () => {
     expect(row.after).toBeNull();
   });
 
+  it("brings a removed row back with the date its entry recorded, and no date for a row that stands", () => {
+    const dated = { ...entryRow(A, 2, null), before: { quantity: 2, scryfallId: "s1", condition: "NM", addedAt: "2026-09-02T12:00:00.000Z", addedExact: false } };
+    const [back] = planRevert(coll(), [dated]);
+    expect(back.after).toMatchObject({ quantity: 2, addedAt: "2026-09-02T12:00:00.000Z", addedExact: false });
+    // A row that still stands keeps the date it has: the revert does not plan one for it.
+    const [standing] = planRevert(coll(held(A, 5)), [dated]);
+    expect(standing.after).not.toHaveProperty("addedAt");
+  });
+
   it("recreates a removed row with the columns it had", () => {
     const [row] = planRevert(coll(), [entryRow(A, 2, null, { scryfallId: "s9", condition: "LP" })]);
     expect(row.after).toEqual({ quantity: 2, scryfallId: "s9", condition: "LP" });

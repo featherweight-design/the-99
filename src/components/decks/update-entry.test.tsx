@@ -161,6 +161,17 @@ describe("the terminal steps", () => {
     expect(screen.getByText(copy.noChange.body("91"))).toBeInTheDocument();
   });
 
+  // The column centres its children, so without a stretch the button row shrank to its widest
+  // label and the phone's full-width buttons drew their text against their own borders.
+  it("stretches the no-change buttons' row to the column on the phone", async () => {
+    previewDeckUpdate.mockResolvedValue({ ...preview, out: [], noChange: true });
+    renderEntry();
+    paste();
+    compare();
+    const back = await screen.findByRole("button", { name: copy.noChange.back });
+    expect(back.parentElement!.className).toMatch(/(^| )self-stretch( |$)/);
+  });
+
   it("lets a no-change return to the list step to try another paste", async () => {
     previewDeckUpdate.mockResolvedValue({ ...preview, out: [], noChange: true });
     renderEntry();

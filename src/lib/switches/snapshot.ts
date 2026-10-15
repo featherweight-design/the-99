@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { isSwitchName } from "./registry";
+import { isOverrideName } from "./registry";
 import { resolveEnv, type OverrideRow, type SwitchSnapshot } from "./resolve";
 
 /**
@@ -51,7 +51,7 @@ async function readSnapshot(): Promise<SwitchSnapshot | null> {
     if (!url) throw new Error("DATABASE_URL is not set");
     http ??= neon(url);
     const [row] = (await http.query(SNAPSHOT_SQL)) as { overrides: OverrideRow[]; members: { userId: string; groupId: string }[] }[];
-    const overrides = row.overrides.filter((r) => isSwitchName(r.switchName));
+    const overrides = row.overrides.filter((r) => isOverrideName(r.switchName));
     return { overrides, groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
   } catch (error) {
     // not a fallback: a cached page keys on the switches this resolves to, so a page drawn from the

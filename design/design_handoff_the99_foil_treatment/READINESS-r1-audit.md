@@ -87,6 +87,11 @@ Rulings are logged here because Hugh is away. Each has one defensible answer.
   handoff hides the film while art is `pending` under any motion preference. So a landed image whose queued release is
   still pending shows briefly without its film. Engineering: scope the film's pending rule to
   `prefers-reduced-motion: no-preference`, matching the art.
+  **Reversed at build (2026-10-14).** Scoped that way, with reduced motion an image whose bytes had NOT landed is also
+  `pending`, and the film painted its gradient over the bare sunken ground, which is the lock "the film waits for the
+  art". The two cases trade a film over nothing against a landed image going without its film until its queued release
+  (bounded by the arrival queue's cap). The second is the smaller cost, so the pending hold stays unconditional, as the
+  handoff wrote it; only the fade is motion's. Found by the build's pre-open review.
 
 ## About
 

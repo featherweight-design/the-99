@@ -24,4 +24,11 @@ describe("historyKindOf", () => {
     // The undo of a purchase is a revert, whatever the source it reverted.
     expect(historyKindOf({ kind: "revert", removesOnly: true, source: "shopping:x" })).toBe("revert");
   });
+
+  it("reads an add sourced from a deck import as Deck add, and only an add", () => {
+    expect(historyKindOf({ kind: "add", removesOnly: false, source: "deck:7284ff0a-6e76-4dc0-8af5-fc630a403b2b" })).toBe("deckAdd");
+    expect(historyKindOf({ kind: "add", removesOnly: false, source: "precon:Multiverse_Reforged" })).toBe("add");
+    // The undo of a deck add is a revert, whatever the source it reverted.
+    expect(historyKindOf({ kind: "revert", removesOnly: true, source: "deck:x" })).toBe("revert");
+  });
 });

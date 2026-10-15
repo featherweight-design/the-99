@@ -2,6 +2,7 @@
 // write is in flight, a failure says so with Try again, a rise opens the confirm and sends its count
 // back, and a kill disables the segment while leaving Clear live.
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { Suspense, use, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WriteResult } from "../../lib/admin/switch-writes";
 
@@ -38,6 +39,38 @@ describe("AppWideControl", () => {
     expect(set).toHaveBeenCalledWith({ switchName: "DECK_NOTES_ENABLED", scope: "app", value: "on" });
     await act(async () => d.resolve({ ok: true }));
     expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  // The refresh the save starts is a transition, and the page is drawn with the old value until it
+  // lands. Released before then, On flipped back to Off for a beat and then to On (Hugh's report).
+  it("keeps the saved option pressed until the refresh has drawn it", async () => {
+    let land!: () => void;
+    const landed = new Promise<void>((r) => (land = r));
+    let startRefresh!: () => void;
+    function Pending({ go }: { go: boolean }) {
+      if (go) use(landed);
+      return null;
+    }
+    function Page() {
+      const [go, setGo] = useState(false);
+      startRefresh = () => setGo(true);
+      return (
+        <Suspense fallback={null}>
+          <Pending go={go} />
+          <AppWideControl name="DECK_NOTES_ENABLED" label="Deck notes" value={null} killed={false} />
+        </Suspense>
+      );
+    }
+    refresh.mockImplementation(() => startRefresh());
+    set.mockResolvedValueOnce({ ok: true });
+    render(<Page />);
+    await act(async () => fireEvent.click(radio("On")));
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(radio("On")).toHaveAttribute("aria-checked", "true");
+    expect(radio("Not set")).toHaveAttribute("aria-checked", "false");
+    await act(async () => land());
+    // Drawn with the page's own value once the refresh has landed (this fixture's never moves).
+    expect(radio("Not set")).toHaveAttribute("aria-checked", "true");
   });
 
   it("says nothing changed, and Try again repeats the write (F11)", async () => {

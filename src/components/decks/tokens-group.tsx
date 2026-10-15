@@ -99,9 +99,9 @@ export function TokensGroup() {
             <ArrivalOrder>
             {cards ? (
               // The deck's own Card view declaration (`DecklistGroup`): the column count falls out of the width.
-              <ul className="m-0 grid list-none grid-cols-2 items-start gap-[12px] p-0 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[20px]">
+              <ul className="m-0 grid list-none grid-cols-2 items-stretch gap-[12px] p-0 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[20px]">
                 {read.tokens.map((t) => (
-                  <TokenTile key={t.oracleId} deckId={deckId} token={t} newestAsOf={read.newestPriceAsOf} siblings={siblings} />
+                  <TokenTile key={t.oracleId} deckId={deckId} token={t} siblings={siblings} />
                 ))}
               </ul>
             ) : (

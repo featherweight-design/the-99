@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { useAiSweepRef } from "../ui/use-ai-sweep";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   cutProposed,
@@ -11,15 +10,13 @@ import {
   runProposedCuts,
   undoProposedCut,
 } from "../../app/decks/cuts-actions";
-import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
-import { overCopy } from "../../lib/copy/decks-builder";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
 import { cutsAsk, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
-import { cutChips, type Chip, type CountRow } from "../../lib/tuning/cuts-count";
+import { cutChips, type Chip } from "../../lib/tuning/cuts-count";
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { awaitRunSettled } from "./await-run";
@@ -28,8 +25,8 @@ import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
 import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
-import { CreditButton, FailMark } from "../ui/credit-button";
-import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
+import { FailMark } from "../ui/credit-button";
+import { CutsBand, CutsFrame, CutsFreeCount, CutsOffer, cutsBlocked, cutsStanding } from "./cuts-free-count";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
@@ -68,7 +65,6 @@ const WATCH_MS = 3000;
 /** The counting frame appears only after this, so a fast read never flashes it. */
 const COUNTING_DELAY_MS = 400;
 
-const overWords = (n: number) => overCopy.trim.words[n] ?? String(n);
 const clock = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -223,16 +219,8 @@ export function CutsPanelView({
 
   const failed = !running && !priorRun && !panel.review && run?.status === "failed";
   const refusedRun = failed && run.errorClass === "ungrounded";
-  const left = freeCount(panel.allowance);
-  const spent = !hasCredit(panel.allowance);
-  const blocked = spent || !!panel.allowance.paused || panel.allowance.ownerShare === true || panel.allLocked;
-  const standing = panel.allowance.paused
-    ? creditsCopy.paused(panel.allowance.paused.until)
-    : panel.allowance.ownerShare
-      ? creditsCopy.ownerShare(new Date())
-      : spent
-        ? creditsCopy.spent(panel.allowance.limit, panel.allowance.reopensAt ?? panel.allowance.nextAt)
-        : creditsCopy.standing(left, panel.allowance.limit, panel.allowance.nextAt);
+  const blocked = cutsBlocked(panel);
+  const standing = cutsStanding(panel);
 
   async function press() {
     if (running || blocked) return;
@@ -293,160 +281,60 @@ export function CutsPanelView({
     if (failed || refusedRun) return copy.leadBare;
     return copy.lead;
   })();
-  const headline = over === 0 ? copy.done.head(panel.bodySize, cutCount) : copy.overLead(overWords(over), panel.bodySize);
 
   return (
     <VerdictOverridesProvider value={overrides.value}>
-    <section
+    <CutsFrame
       aria-labelledby="cuts-heading"
       aria-busy={running || undefined}
-      className="mt-[18px] rounded-[11px] px-[14px] py-[16px] md:mt-6 md:rounded-[12px] md:px-[20px] md:py-[18px]"
-      style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
+      className="mt-[18px] md:mt-6"
     >
-      <div className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[12px]">
-        <h2 id="cuts-heading" ref={headingRef} tabIndex={-1} className="font-display text-[17px] font-semibold outline-none md:text-[19px]" style={{ color: "var(--fg)" }}>
-          {copy.heading}
-        </h2>
-        <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{copy.sub}</span>
-      </div>
-      <p className="mt-[8px] text-[13px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
-        <b className="font-semibold" style={{ color: "var(--fg)" }}>{headline}</b>{" "}
-        {over === 0 ? copy.done.body : lead}
-      </p>
-
-      {over === 0 ? null : (
-        <>
-          {running ? (
-            <Band accent>
-              <div className="flex flex-col gap-[10px] md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-[13.5px] font-semibold" style={{ color: "var(--fg)" }}>{copy.deeper.pending}</p>
-                  <p className="mt-[3px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
-                    {`${copy.deeper.pendingRead} · ${clock(now - (startedAt ?? (run ? run.createdAt.getTime() : now)))}`}
-                  </p>
-                </div>
+      <CutsFreeCount
+        panel={panel}
+        lead={lead}
+        cutCount={cutCount}
+        headingRef={headingRef}
+        onPress={() => void press()}
+        band={running ? (
+          <CutsBand accent>
+            <div className="flex flex-col gap-[10px] md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-[13.5px] font-semibold" style={{ color: "var(--fg)" }}>{copy.deeper.pending}</p>
+                <p className="mt-[3px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
+                  {`${copy.deeper.pendingRead} · ${clock(now - (startedAt ?? (run ? run.createdAt.getTime() : now)))}`}
+                </p>
               </div>
-            </Band>
-          ) : failed && !refusedRun ? (
-            <Band>
-              <h3 className="flex items-center gap-[9px] font-display text-[17px] font-semibold md:text-[19px]" style={{ color: "var(--fg)" }}>
-                <FailMark label={copy.deeper.failedTag} />{copy.deeper.failedHeading}
-              </h3>
-              <p className="mt-[6px] text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.deeper.failedBody}</p>
-              <Offer panel={panel} variant="retry" blocked={blocked} standing={`${standing} · ${copy.deeper.untouched}`} onPress={() => void press()} />
-            </Band>
-          ) : refusedRun ? (
-            <Band>
-              <p className="text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.deeper.refused}</p>
-              <Offer panel={panel} variant="offer" blocked={blocked} standing={`${standing} · ${copy.deeper.refusedFoot}`} onPress={() => void press()} />
-            </Band>
-          ) : panel.allLocked ? (
-            <Band><p className="text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.allLocked(panel.commander)}</p></Band>
-          ) : !resultShown ? (
-            <Band>
-              <Offer panel={panel} variant="offer" blocked={blocked} standing={standing} onPress={() => void press()} />
-            </Band>
-          ) : null}
-          {refused ? <MutationError message={refused} /> : null}
-        </>
-      )}
-
-      {resultShown && !running ? (
-        <ResultBlock panel={panel} deps={deps} standing={standing} onSettled={verdictSettled} />
-      ) : null}
-
-      {over === 0 ? null : (
-        <Count panel={panel} divider={resultShown && !running ? (answered > 0 ? copy.facts.dividerPart : copy.facts.dividerResult) : null} />
-      )}
+            </div>
+          </CutsBand>
+        ) : failed && !refusedRun ? (
+          <CutsBand>
+            <h3 className="flex items-center gap-[9px] font-display text-[17px] font-semibold md:text-[19px]" style={{ color: "var(--fg)" }}>
+              <FailMark label={copy.deeper.failedTag} />{copy.deeper.failedHeading}
+            </h3>
+            <p className="mt-[6px] text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.deeper.failedBody}</p>
+            <CutsOffer panel={panel} variant="retry" blocked={blocked} standing={`${standing} · ${copy.deeper.untouched}`} onPress={() => void press()} />
+          </CutsBand>
+        ) : refusedRun ? (
+          <CutsBand>
+            <p className="text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.deeper.refused}</p>
+            <CutsOffer panel={panel} variant="offer" blocked={blocked} standing={`${standing} · ${copy.deeper.refusedFoot}`} onPress={() => void press()} />
+          </CutsBand>
+        ) : panel.allLocked ? (
+          <CutsBand><p className="text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.allLocked(panel.commander)}</p></CutsBand>
+        ) : !resultShown ? undefined : null}
+        after={(
+          <>
+            {over !== 0 && refused ? <MutationError message={refused} /> : null}
+            {resultShown && !running ? (
+              <ResultBlock panel={panel} deps={deps} standing={standing} onSettled={verdictSettled} />
+            ) : null}
+          </>
+        )}
+        divider={resultShown && !running ? (answered > 0 ? copy.facts.dividerPart : copy.facts.dividerResult) : null}
+      />
       <p role="status" className="sr-only">{announced}</p>
-    </section>
+    </CutsFrame>
     </VerdictOverridesProvider>
-  );
-}
-
-function Band({ children, accent = false }: { children: ReactNode; accent?: boolean }) {
-  const sweepRef = useAiSweepRef();
-  return (
-    <div ref={sweepRef} className={`mt-[14px] rounded-[10px] px-[14px] py-[14px] md:px-[16px]${accent ? " ai-sweep" : ""}`}
-      style={{ background: "var(--surface)", border: `1px solid ${accent ? "var(--accent)" : "var(--border)"}` }}>
-      {children}
-    </div>
-  );
-}
-
-/** Look deeper: the hub's one filled button, with its credit as a segment inside it. */
-function Offer({ panel, variant, blocked, standing, onPress }: {
-  panel: CutsPanel; variant: "offer" | "retry"; blocked: boolean; standing: string; onPress: () => void;
-}) {
-  const spent = !hasCredit(panel.allowance);
-  const d = copy.deeper;
-  return (
-    <div className={variant === "offer" ? "" : "mt-[12px]"}>
-      {variant === "offer" ? (
-        <div className="flex flex-col gap-[12px] md:flex-row md:items-start md:justify-between md:gap-[20px]">
-          <div className="min-w-0">
-            <h3 className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>{d.offerTitle(cutsAsk(panel.over))}</h3>
-            <p className="mt-[5px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
-              {panel.thin ? d.offerLeadThin : d.offerLead(cutsAsk(panel.over))}
-            </p>
-          </div>
-          <CreditButton label={d.action} credit={d.credit} filled blocked={blocked} spent={spent} onPress={onPress} />
-        </div>
-      ) : (
-        <CreditButton label={d.retry} credit={d.credit} filled={false} blocked={blocked} spent={spent} onPress={onPress} />
-      )}
-      <p className="mt-[10px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}><CreditsText text={standing} /></p>
-    </div>
-  );
-}
-
-
-/** "What we counted": the model's input, as it is. Nothing here names a card. */
-function Count({ panel, divider }: { panel: CutsPanel; divider: string | null }) {
-  const f = copy.facts;
-  return (
-    <div className="mt-[18px]">
-      {divider ? (
-        <div className="mb-[10px] flex items-center gap-[10px]">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{divider}</span>
-          <span aria-hidden className="h-px flex-1" style={{ background: "var(--border)" }} />
-        </div>
-      ) : null}
-      <div className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[10px]">
-        <h3 className="text-[13.5px] font-semibold" style={{ color: "var(--fg)" }}>{f.head}</h3>
-        <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
-          {f.read(panel.total, panel.commander, panel.edhrecDecks, panel.declaredBracket)}
-        </span>
-      </div>
-      {panel.rows.length === 0 ? (
-        <p className="mt-[8px] text-[12.5px]" style={{ color: "var(--fg-body)" }}>{f.none}</p>
-      ) : (
-        <ul className="mt-[8px]" style={{ borderTop: "1px solid var(--border)" }}>
-          {panel.rows.map((r) => <CountLine key={r.key} row={r} />)}
-        </ul>
-      )}
-      <p className="mt-[10px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
-        {copy.neverCut(panel.commander, panel.lockedCount, panel.keyCount)}
-      </p>
-    </div>
-  );
-}
-
-function CountLine({ row }: { row: CountRow }) {
-  return (
-    <li
-      data-testid={`count-${row.key}`}
-      className={`grid grid-cols-[64px_1fr_auto] items-baseline gap-x-[12px] py-[9px] md:grid-cols-[84px_1fr_auto_minmax(0,220px)] md:gap-x-[16px] ${row.thin ? "mt-[4px] rounded-[7px] px-[8px]" : ""}`}
-      style={row.thin ? { border: "1px dashed var(--border-dashed)" } : { borderBottom: "1px solid var(--border)" }}
-    >
-      <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>{copy.sources[row.source]}</span>
-      <span className="min-w-0 text-[13px]" style={{ color: row.thin ? "var(--fg-muted)" : "var(--fg)" }}>
-        {row.label}
-        <span className="block font-mono text-[11px] md:hidden" style={{ color: "var(--fg-muted)" }}>{row.note}</span>
-      </span>
-      {row.figure === null ? <span /> : <span className="text-right font-mono text-[13px] font-semibold" style={{ color: "var(--fg)" }}>{row.figure}</span>}
-      <span className="hidden font-mono text-[11px] md:inline" style={{ color: "var(--fg-muted)" }}>{row.note}</span>
-    </li>
   );
 }
 

@@ -37,7 +37,7 @@ reason are hand-built, as the brief allows.
 | # | State | Phone (390) | Desktop |
 |---|---|---|---|
 | R1 | Opening | `‹ History`, title, meta, note draw at once; picks on the results skeleton. | Same, three card shapes + rows. |
-| R2 | Past run | Shipped results page; meta `Oct 13 · 9:40 PM · a past run`; note `A past run, read-only. It used 1 credit on Oct 13; opening it again used none.` | Same, best fits as three cards. |
+| R2 | Past run | Shipped results page; meta `Oct 13 · 9:40 PM · a past run`; note `A past run, read-only. Opening it again uses no credit.` (ruled 2026-10-14: one note for every listed run) | Same, best fits as three cards. |
 | R3 | Aged, some gone | Note + `7 of its 9 picks are still open to you.`; gone picks in `NOT OPEN TO YOU NOW · 2` after the picks. | Same; group two to a line; best fits refill from open picks. |
 | R4 | Aged, reason not drawn | Row keeps its place; line reads `Its line named a deck you’ve since deleted.` (`--fg-faint`); sub drops `each with a line on why`. | Same. |
 | R5 | Aged, all gone | Note + `None of its 9 picks are open to you now.`; gone group heads the page; then The rest of your results. | Same. |

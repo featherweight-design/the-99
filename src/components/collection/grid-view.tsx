@@ -141,7 +141,7 @@ export function GridView({
           // §Grid Tile Container: radius 9/10px, overflow hidden, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: an inline
           // border outranks the hover: variant and the accent hover never lands.
-          className={`text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border} ${reveal.className ?? ""}`}
+          className={`art-lift-host text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border} ${reveal.className ?? ""}`}
         >
           {/* Art region — §Grid Tile: Art Region */}
           <div
@@ -181,14 +181,17 @@ export function GridView({
                 src={c.imageUri}
                 alt=""
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover object-center"
+                className="art-lift absolute inset-0 h-full w-full object-cover object-center"
               />
             )}
             {/* The 1px inner edge, drawn OVER the art. An inset shadow on this box would
                 paint under its img child and vanish. `rounded-[inherit]` keeps the edge on
-                the clip's rounded corners. */}
+                the clip's rounded corners. It carries the foil film too (`data-foil`, foil
+                handoff R1): the drawn printing's finish, when every copy held of it shares one, and only
+                over art: never over the identity plate a card with none draws. */}
             <span
               aria-hidden
+              data-foil={c.imageUri ? c.foil : undefined}
               className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
             />
           </div>

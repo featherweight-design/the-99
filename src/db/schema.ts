@@ -15,7 +15,7 @@ import type { ValidationReport } from "../lib/tuning/validate";
 import type { CutCite } from "../lib/tuning/cuts-schema";
 import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
-import { SWITCH_NAMES } from "../lib/switches/registry";
+import { ALL_FEATURES, SWITCH_NAMES } from "../lib/switches/registry";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -436,6 +436,18 @@ export const collectionItems = pgTable("collection_items", {
   collectorNumber: text("collector_number").notNull().default(""),  // TEXT — "31", "12a", "★"
   finish: text("finish", { enum: FINISHES }).notNull().default("nonfoil"),
   condition: text("condition"),
+  /**
+   * When this HOLDING (the key above) reached the collection: kept through quantity changes, a new date
+   * after a removal and a re-add, put back by a revert. Null on a row nothing could date (the backfill
+   * found no upload and no ledger entry holding it), which sorts last and reads as unknown.
+   */
+  addedAt: timestamp("added_at"),
+  /**
+   * Whether `added_at` is a real arrival. False for the first file that filled an empty collection, whose
+   * holdings all share that day: "in your collection since", not "added on". The Date added sort ties
+   * inexact dates and falls to name, so it never orders holdings a file brought in one batch.
+   */
+  addedExact: boolean("added_exact").notNull().default(false),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId, t.setCode, t.collectorNumber, t.finish] }),
   // The column's enum option only narrows the TypeScript type; a text column with a closed
@@ -447,7 +459,18 @@ export const collectionItems = pgTable("collection_items", {
  * One collection row's state on one side of a ledger entry: what `collection_items` held for
  * that key, or `null` when the row did not exist.
  */
-export type HistoryRowState = { quantity: number; scryfallId: string | null; condition: string | null };
+export type HistoryRowState = {
+  quantity: number;
+  scryfallId: string | null;
+  condition: string | null;
+  /**
+   * The row's `added_at` (ISO) and whether it was exact, recorded on the BEFORE side of an entry so a revert
+   * of a removal puts the date back. Not compared: two states differing only here are the same state. Absent
+   * on every entry from before the column.
+   */
+  addedAt?: string | null;
+  addedExact?: boolean;
+};
 
 /**
  * One row a ledger entry changed. `name` is the card's name AT WRITE TIME, so an entry still
@@ -2577,7 +2600,7 @@ export const flagOverrides = pgTable("flag_overrides", {
   updatedBy: text("updated_by").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
-  check("flag_overrides_switch_check", sql`${t.switchName} in (${sql.raw(SWITCH_NAMES.map((n) => `'${n}'`).join(", "))})`),
+  check("flag_overrides_switch_check", sql`${t.switchName} in (${sql.raw([...SWITCH_NAMES, ALL_FEATURES].map((n) => `'${n}'`).join(", "))})`),
   check("flag_overrides_scope_check", sql`${t.scope} in ('app', 'group', 'user')`),
   check("flag_overrides_value_check", sql`${t.value} in ('on', 'off')`),
   check("flag_overrides_target_check", sql`(${t.scope} = 'app' and ${t.groupId} is null and ${t.userId} is null)

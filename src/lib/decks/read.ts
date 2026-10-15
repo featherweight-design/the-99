@@ -574,6 +574,8 @@ export async function getDeckDetail(
     printedSetCode: row.owned ? (resolved.get(row.oracleId)?.setCode ?? null) : null,
     printedCollectorNumber:
       row.owned ? (resolved.get(row.oracleId)?.collectorNumber ?? null) : null,
+    // Set only when there is a film, so a plain card carries nothing more than it did.
+    ...(row.owned && resolved.get(row.oracleId)?.foil ? { foil: resolved.get(row.oracleId)!.foil } : {}),
     layout: row.layout,
   }));
 

@@ -48,6 +48,27 @@ function page(name: SwitchName, env: Env, rows: (OverrideDetail & { name: Switch
 const rung = (p: ReturnType<typeof page>, key: string) => p.rungs.find((r) => r.key === key);
 
 describe("switchPage", () => {
+  // Round 1 of #1790: an account on only because of All features counts on the Account rung, and the
+  // rung's value names it, rather than reading None beside "decides for 1".
+  it("names an account its All features row decides, on the Account rung", () => {
+    const snapshot: SwitchSnapshot = {
+      overrides: [{ switchName: "ALL_FEATURES", scope: "user", groupId: null, userId: "u2", value: "on" }],
+      groupOf: new Map(),
+    };
+    const p = switchPage({
+      name: "DECK_NOTES_ENABLED",
+      env: envValues({}),
+      overrides: [],
+      verdicts: explainAccounts({} as NodeJS.ProcessEnv, snapshot, ACCOUNTS.map((a) => a.id)),
+      accounts: ACCOUNTS,
+      groups: GROUPS,
+      events: [],
+      historyLimit: 100,
+      viewerId: "u1",
+    });
+    expect(rung(p, "account")).toMatchObject({ value: "Mara: All features", tone: "plain", deciding: true });
+  });
+
   it("raises the rungs that decide, and says for how many (F1)", () => {
     const p = page("TUNING_ENABLED", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" }, [
       ov({ scope: "app", value: "off" }),

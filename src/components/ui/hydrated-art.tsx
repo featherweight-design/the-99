@@ -67,9 +67,10 @@ export function useNearViewport(ref: RefObject<Element | null>, enabled: boolean
 /**
  * How card art arrives (motion plan E4; Hugh, 2026-10-12: art popped in on /collection's tiles).
  * `armArtArrival` marks `el` with `data-arrival="pending"` while `image`'s bytes are on their way, `in`
- * for the one fade when they land (or fail: a broken image is not held behind a fade that never
- * ends), and `done` when `image` had already settled the moment it was armed, so art drawn from the
- * cache, or already painted before the page hydrated, is never faded or hidden. The CSS hides
+ * for the one fade when they land, `failed` when they never will (a broken image is not held behind
+ * a fade that never ends, and the foil film over a tile reads it to stay off a picture that is not
+ * there: foil handoff R1, G2), and `done` when `image` had already loaded the moment it was armed, so
+ * art drawn from the cache, or already painted before the page hydrated, is never faded or hidden. The CSS hides
  * `pending` and plays `in` only under `prefers-reduced-motion: no-preference` (and an art-wash
  * layer under reduced transparency, whose opacity is fixed, appears without the fade). Written to
  * the DOM from a layout effect rather than rendered: the server HTML carries no mark, so art is
@@ -83,22 +84,28 @@ export function armArtArrival(el: HTMLElement, image: HTMLImageElement, queue: A
   const clear = () => {
     delete el.dataset.arrival;
   };
+  // A complete image with no width is one that broke before it was armed.
   if (image.complete) {
-    el.dataset.arrival = "done";
+    el.dataset.arrival = image.naturalWidth > 0 ? "done" : "failed";
     return clear;
   }
   el.dataset.arrival = "pending";
+  let broke = false;
   const release = () => {
-    if (el.dataset.arrival === "pending") el.dataset.arrival = "in";
+    if (el.dataset.arrival === "pending") el.dataset.arrival = broke ? "failed" : "in";
   };
   // In a list, its fade waits its turn in reading order (`ArrivalOrder`); alone, it plays on landing.
   const queued = queue?.join(el, release) === true;
   const land = () => (queued ? queue!.landed(el) : release());
+  const fail = () => {
+    broke = true;
+    land();
+  };
   image.addEventListener("load", land);
-  image.addEventListener("error", land);
+  image.addEventListener("error", fail);
   return () => {
     image.removeEventListener("load", land);
-    image.removeEventListener("error", land);
+    image.removeEventListener("error", fail);
     if (queued) queue!.leave(el);
     clear();
   };

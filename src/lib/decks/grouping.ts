@@ -6,6 +6,7 @@ import type { CardFact } from "../copy/card-mark";
 import { addPanelCopy } from "../copy/decks-builder";
 import type { Availability } from "./availability";
 import type { PriceFact } from "./price";
+import type { FoilFinish } from "../collection/browse";
 
 export type CardTypeGroup =
   | "Creatures" | "Instants" | "Sorceries"
@@ -102,6 +103,12 @@ export type DeckDetailCard = {
    * Collector's Edition can be the same printing as its plain edition in foil alone. Absent elsewhere.
    */
   printedFoil?: boolean;
+  /**
+   * The foil film over the Card view tile (foil handoff R1): the finish every owned copy of the
+   * drawn printing shares, when it is foil or etched. Absent for an unowned card, a plain or a
+   * mixed holding.
+   */
+  foil?: FoilFinish;
   /**
    * Scryfall's layout word, for the `//` mark (#363). Optional for the same
    * reason the three above are; absent means no mark, which is the right way

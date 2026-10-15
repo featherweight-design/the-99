@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>First CSV over a built collection</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#121217;border:1px solid #2E3340;border-radius:12px;overflow:hidden;box-sizing:border-box}
+.rail{width:72px;flex:none;background:#16171D;border-right:1px solid #2E3340}
+.main{flex:1;display:flex;flex-direction:column}
+.pad{padding:26px 40px;display:flex;flex-direction:column;flex:1}
+.meta{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#7C8A8C}
+.h1{margin:12px 0 6px;font-family:'Metamorphous',serif;font-weight:400;font-size:24px;color:#C6D2D3}
+.lede{margin:0 0 22px;font-size:14px;color:#95A4A6}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.card{display:flex;flex-direction:column;gap:10px;padding:16px;background:#1E1F26;border:1px solid #2E3340;border-radius:12px;box-sizing:border-box}
+.card.off{background:#16171D}
+.tr{display:flex;align-items:center;gap:10px}
+.rad{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid #424755;box-sizing:border-box}
+.rad.off{border-color:#2E3340}
+.ct{font-size:15px;font-weight:600;color:#C6D2D3}
+.off .ct{color:#95A4A6}
+.cb{font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.off .cb{color:#7C8A8C}
+.fig{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#95A4A6}
+.warn{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:#212229;border:1px solid #2E3340;border-left:3px solid #E0913C;border-radius:10px;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.warn .new{background:rgba(111,163,104,.14);color:#C6D2D3;border-radius:3px}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:#16171D;border-radius:10px;font-size:13.5px;line-height:1.55;color:#95A4A6}
+.why{padding:12px 14px;border:1px dashed #424755;border-radius:10px;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 40px;background:#181920;border-top:1px solid #2E3340}
+.btnp{height:40px;padding:0 20px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 14px 'IBM Plex Sans',sans-serif;opacity:.4}
+.btng{height:40px;padding:0 18px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #2E3340;font:600 14px 'IBM Plex Sans',sans-serif}
+.ph{width:390px;height:844px;flex:none;background:#121217;border:1px solid #2E3340;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
+</style>
+</helmet>
+<div style="width:2200px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">S14 · first CSV over a collection built in the app · both widths · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">Collection Sync’s choice, unchanged, with one clause on Replace</h2>
+    <p class="cap" style="margin:0;max-width:1900px">Brief Open 5 points to design/design_handoff_the99_collection_sync/, so the step is its R2 drawing: nothing preselected, Replace and Add as shipped, Sync drawn third and disabled with its never-uploaded reason (a precon, hand or deck-add collection has no upload to compare against). The one addition, highlighted: Replace’s warning names what came from precons and by hand that the file lacks, read from the dry run. After this upload, later files can use Sync.</p>
+  </div>
+  <div style="display:flex;gap:48px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">S14 · desktop 1300</span>
+      <div class="dk">
+        <div class="rail" aria-hidden="true"></div>
+        <div class="main">
+          <div class="pad">
+            <span class="meta">STEP 2 OF 4 · The Vault 10-15-26.csv · 3,570 rows</span>
+            <h1 class="h1" id="lh">What’s this file for?</h1>
+            <p class="lede">Nothing changes until you confirm on the next screen.</p>
+            <div class="cards" role="radiogroup" aria-labelledby="lh">
+              <label class="card"><span class="tr"><input type="radio" name="d" style="position:absolute;opacity:0"><span class="rad"></span><span class="ct">Replace my collection</span></span><span class="cb">Your collection becomes exactly this file. Anything not in it leaves.</span><span class="fig">341 → 3,505 cards</span><span class="warn"><span aria-hidden="true" style="color:#E0913C">⚠</span><span><span class="new">212 cards you added from 3 precons and by hand aren’t in this file and would leave.</span> Revert can bring them back.</span></span></label>
+              <label class="card"><span class="tr"><input type="radio" name="d" style="position:absolute;opacity:0"><span class="rad"></span><span class="ct">Add these cards</span></span><span class="cb">The file’s quantities are added to yours. Nothing is removed, and your art picks stay.</span><span class="fig">341 → 3,846 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>You already own 129 of these cards. Adding the file raises those counts.</span></span></label>
+              <label class="card off"><span class="tr"><input type="radio" name="d" aria-disabled="true" style="position:absolute;opacity:0"><span class="rad off"></span><span class="ct">Sync my collection</span></span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="why">Sync compares a file with your last upload, and your collection was built in the app without one. Replace or Add will work.</span></label>
+            </div>
+          </div>
+          <div class="bar"><span style="flex:1;font-size:13px;color:#95A4A6">Pick what this file is for.</span><button class="btng" type="button">Cancel</button><button class="btnp" type="button" aria-disabled="true">Review →</button></div>
+        </div>
+      </div>
+      <span class="cap" style="max-width:1300px">The clause replaces the shipped overwrite count’s sentence for this account only, because “changes you made in the app since your last upload” has no upload to be since. Precon adds and deck adds are History entries of kind add, so the shipped count already includes them (brief: history.ts:29); the new part is saying where they came from. Under 1 card leaving, the clause is absent and Replace reads as shipped.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">S14 · phone 390</span>
+      <section class="ph">
+        <div style="padding:20px 18px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden">
+          <span class="meta">STEP 2 OF 4 · The Vault 10-15-26.csv · 3,570 rows</span>
+          <h1 class="h1" style="margin:0;font-size:18px">What’s this file for?</h1>
+          <label class="card"><span class="tr"><span class="rad"></span><span class="ct">Replace my collection</span></span><span class="cb">Your collection becomes exactly this file. Anything not in it leaves.</span><span class="fig">341 → 3,505 cards</span><span class="warn"><span aria-hidden="true" style="color:#E0913C">⚠</span><span><span class="new">212 cards you added from 3 precons and by hand aren’t in this file and would leave.</span> Revert can bring them back.</span></span></label>
+          <label class="card"><span class="tr"><span class="rad"></span><span class="ct">Add these cards</span></span><span class="cb">The file’s quantities are added to yours. Nothing is removed.</span><span class="fig">341 → 3,846 cards</span></label>
+          <label class="card off"><span class="tr"><span class="rad off"></span><span class="ct">Sync my collection</span></span><span class="why">Sync compares a file with your last upload, and your collection was built in the app without one.</span></label>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:14px 18px;background:#181920;border-top:1px solid #2E3340"><button class="btnp" type="button" style="height:44px">Review →</button><button class="btng" type="button" style="height:44px">Cancel</button></div>
+      </section>
+      <span class="cap" style="max-width:390px">Stacked, as Sync’s phone choice. Scrolls under the sticky bar.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2200,"height":1160}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -24,7 +24,9 @@ describe("SetCell — the dim", () => {
   it("dims the art and dashes the edge on a missing cell", () => {
     const { container } = render(<SetCell cell={cell({})}  newestAsOf={null}/>);
     expect(art(container).style.opacity).toBe("0.28");
-    expect(art(container).style.filter).toBe("saturate(.55)");
+    // The dimming is the image's base filter, a variable the lift composes with on hover (an inline filter would beat it).
+    expect(art(container).style.getPropertyValue("--art-base")).toBe("saturate(.55)");
+    expect(art(container).style.filter).toBe("");
     expect(plate(container).style.border).toContain("dashed");
   });
 

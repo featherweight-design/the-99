@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { explainForAccounts } from "../switches/explain";
-import { isSwitchName } from "../switches/registry";
+import { isOverrideName } from "../switches/registry";
 import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
 import { listAccounts } from "./accounts";
 import {
@@ -55,7 +55,8 @@ async function readState(groupId: string | null) {
     ) e), '[]'::json) as events`);
   const [row] = rows;
   const snapshot: SwitchSnapshot = {
-    overrides: row.overrides.filter((o) => isSwitchName(o.switchName)),
+    // An All features row outranks the group rung, so the resolver's snapshot keeps it.
+    overrides: row.overrides.filter((o) => isOverrideName(o.switchName)),
     groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])),
   };
   return { groups: row.groups, snapshot, events: row.events.map((e) => ({ ...e, at: utc(e.at) })) };

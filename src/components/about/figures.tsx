@@ -19,6 +19,7 @@ import { RoleGroupHeader } from "../commanders/coverage-section";
 import { CommitmentsCard } from "../home/commitments-card";
 import { CurveCard } from "../decks/deck-stats-view";
 import { ManaEvidenceTable } from "../decks/mana-evidence";
+import { CutsFrame, CutsFreeCount } from "../decks/cuts-free-count";
 import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { PreconTile } from "../decks/precons/precon-tile";
@@ -111,6 +112,7 @@ import {
   STATUSES,
   DECK_STATS,
   MANA_BALANCE,
+  PROPOSED_CUTS,
   BENCHMARKS_SCRAPPY,
   BENCHMARKS_ANALYZED_AT,
   PRECON_ROW,
@@ -805,6 +807,24 @@ function ManaBalanceFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/**
+ * Proposed cuts' free count (C1), drawn by the panel's own `CutsFreeCount` from HD - Zombies'
+ * figures: the heading, the lead, the Look deeper offer and "What we counted", before any spend.
+ * No `onPress`, and `Specimen` is inert, so the offer cannot act. The allowance is drawn full at
+ * the app-wide limit, as the credits figure draws it. The count switches on the viewport, as the
+ * panel does, so the plate shows whichever layout the reader's screen gets.
+ */
+function ProposedCutsFigure({ width, creditLimit }: { width: AboutWidth; creditLimit: number }) {
+  const { panel } = PROPOSED_CUTS;
+  return (
+    <Specimen label="proposed-cuts" width={width}>
+      <CutsFrame>
+        <CutsFreeCount panel={{ ...panel, allowance: { ...panel.allowance, limit: creditLimit } }} />
+      </CutsFrame>
+    </Specimen>
+  );
+}
+
 /** Stats' curve card at plate width with Creature lit, drawn by the card itself from a fixture. */
 function DeckStatsFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1239,6 +1259,7 @@ export const FIGURES: Partial<
   resume: ResumeFigure,
   proxies: ProxiesFigure,
   "suggested-changes": SuggestedChangesFigure,
+  "proposed-cuts": ProposedCutsFigure,
   "deck-stats": DeckStatsFigure,
   "decks-stats": DecksStatsFigure,
   notes: NotesFigure,

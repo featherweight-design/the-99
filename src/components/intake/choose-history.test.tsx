@@ -74,6 +74,17 @@ describe("ChooseHistory", () => {
     }
   });
 
+  it("puts focus back on the row that was opened, or on the heading when that run is on a later page", () => {
+    sessionStorage.setItem("hmc-history-last-opened", "a");
+    const first = render(<ChooseHistory layout="view" initial={firstPage([A, B])} />);
+    expect(document.activeElement?.getAttribute("data-history-run")).toBe("a");
+    first.unmount();
+    sessionStorage.setItem("hmc-history-last-opened", "not-on-this-page");
+    render(<ChooseHistory layout="view" initial={firstPage([A, B])} />);
+    expect(document.activeElement?.tagName).toBe("H2");
+    expect(sessionStorage.getItem("hmc-history-last-opened")).toBeNull();
+  });
+
   it("says what will land here when the player has made no read", () => {
     render(<ChooseHistory layout="column" initial={firstPage([])} />);
     expect(screen.getByText("No runs yet")).toBeTruthy();

@@ -2217,7 +2217,7 @@ const aboutEntry = (
   e: Partial<import("../collection/history").HistoryListEntry> & Pick<import("../collection/history").HistoryListEntry, "id" | "seq" | "createdAt" | "kind">,
 ): import("../collection/history").HistoryListEntry => ({
   source: null, raised: 0, lowered: 0, rowCount: 1, copiesUp: 0, copiesDown: 0, removesOnly: false,
-  revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false, uploadFilename: null, firstName: null, shoppingDeck: null, shoppingCart: false, preconName: null, cartDecks: null, wentTo: null,
+  revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false, uploadFilename: null, firstName: null, shoppingDeck: null, shoppingCart: false, preconName: null, addedFromDeck: null, cartDecks: null, wentTo: null,
   ...e,
 });
 
@@ -2369,6 +2369,51 @@ export const MANA_BALANCE: { balance: import("../tuning/mana-view").ClientManaBa
     },
     identity: ["W", "R", "G"],
     colorOrder: [],
+  },
+};
+
+/**
+ * Proposed cuts' free count for the About entry (handoff `design_handoff_the99_proposed_cuts_about`, C1):
+ * staging's HD - Zombies, deck 3119268e-f824-48ce-8e27-6b8cabe4cb61 (110 cards, 10 over the 99; NOT
+ * its 99-card twin), Zul Ashur, Lich Lord, no partner, no locked cards, no run. Read 2026-10-14 from
+ * staging (branch br-polished-pond-a6e63y0b) through the panel's own read functions
+ * (`readProfileHead`, `loadDeckProfileFromHead`, `readCutSupport`, `readKeyCardNames`), on server
+ * connections set read-only, and counted by the panel's own `cutFacts` and `cutCounts` with the
+ * label role basis staging runs (`LABEL_ROLE_COUNTS_ENABLED`). Every figure below is that read's:
+ * the four rows, `total`, the deck's declared bracket 2, the 3,309 EDHREC decks, and its 8 Key cards
+ * (the overview's eight, every one still in the deck). No row is a bracket row: the deck carries
+ * no flag bracket 2 bears on. The allowance is the specimen's own, a full one with no reset time;
+ * the figure draws it at the app-wide limit it is handed.
+ */
+export const PROPOSED_CUTS: { panel: import("../tuning/cuts-state").CutsPanel } = {
+  panel: {
+    run: null,
+    items: [],
+    itemsReport: null,
+    lastOkFingerprint: null,
+    lastOkAt: null,
+    modelVersionMoved: false,
+    allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
+    review: null,
+    total: 110,
+    bodySize: 99,
+    over: 10,
+    commander: "Zul Ashur, Lich Lord",
+    allLocked: false,
+    lockedCount: 0,
+    keyCount: 8,
+    declaredBracket: 2,
+    edhrecDecks: 3309,
+    thin: false,
+    rows: [
+      { key: "role:draw", source: "role", label: "Card draw", figure: 8, note: "rec 7 · 1 over" },
+      { key: "role:removal", source: "role", label: "Removal", figure: 9, note: "rec 7 · 2 over" },
+      { key: "curve:2", source: "curve", label: "Cost 2", figure: 25, note: "the fullest slot" },
+      { key: "edhrec", source: "edhrec", label: "In under 10% of Zul Ashur, Lich Lord decks", figure: 3, note: "your median card 46%" },
+    ],
+    chips: { medianPct: 46, flagCounts: {}, declared: 2 },
+    resultCurrent: false,
+    asked: 0,
   },
 };
 

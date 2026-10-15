@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { explainForAccounts, switchEnvValues } from "../switches/explain";
-import { isSwitchName, type SwitchName } from "../switches/registry";
+import { isOverrideName, isSwitchName, type OverrideName, type SwitchName } from "../switches/registry";
 import type { SwitchSnapshot } from "../switches/resolve";
 import { readSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts } from "./accounts";
@@ -67,10 +67,13 @@ async function readSwitchState(name: SwitchName) {
         select * from admin_events where "switch" = ${name} order by at desc, id desc limit ${HISTORY_LIMIT + 1}
       ) e), '[]'::json) as events`);
     const [row] = rows;
-    const overrides = row.overrides.filter((o) => isSwitchName(o.switchName)).map((o) => ({ ...o, updatedAt: utc(o.updatedAt) }));
+    // The resolver's snapshot keeps an All features row (`isOverrideName`), so the page's verdicts read
+    // an account it raises as the request path does; the rows the page lists are switches alone.
+    const known = row.overrides.filter((o) => isOverrideName(o.switchName)).map((o) => ({ ...o, updatedAt: utc(o.updatedAt) }));
+    const overrides = known.filter((o) => isSwitchName(o.switchName));
     return {
       snapshot: {
-        overrides: overrides.map(({ switchName, scope, groupId, userId, value }) => ({ switchName: switchName as SwitchName, scope, groupId, userId, value })),
+        overrides: known.map(({ switchName, scope, groupId, userId, value }) => ({ switchName: switchName as OverrideName, scope, groupId, userId, value })),
         groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])),
       } satisfies SwitchSnapshot,
       overrides,

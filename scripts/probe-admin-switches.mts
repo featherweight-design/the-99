@@ -1,7 +1,7 @@
 // Proves the admin's override writes (admin plan 8c) against a real database: the switch constraint,
 // a set and its event, a second set that updates rather than inserts, a clear with its old value, the
 // refusals and the unconfirmed model rise that write nothing, a group that does not exist, and that a
-// snapshot read after the commit carries the change.
+// snapshot read after the commit carries the change; and All features, the reserved account-scoped row.
 //
 // It WRITES, so it fails closed on its target: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL`
 // reports, and never staging, production or local-dev. It writes as made-up accounts and removes every
@@ -122,6 +122,40 @@ async function main() {
     }
     if (savedH === undefined) delete process.env[H];
     else process.env[H] = savedH;
+
+    // All features (2026-10-15): the reserved name at account scope, through the same write. Its rise
+    // asks to confirm (it raises every model switch); the confirmed count writes it and its event, the
+    // resolver then reads every feature on for U1 and not for U2, an account Off still wins, and a clear
+    // takes the row away.
+    {
+      const { resolveEnv } = await import("../src/lib/switches/resolve");
+      const { ALL_FEATURES, ALL_FEATURES_RAISES } = await import("../src/lib/switches/registry");
+      // Whether it raises a model capability depends on this environment's variables: when it does, it
+      // must ask first and write nothing, and the confirmed count writes it.
+      const asked = await writeOverride(ADMIN, "set", { switchName: ALL_FEATURES, scope: "user", targetUserId: U1, value: "on" }, deps);
+      let set = asked;
+      if (!asked.ok && asked.error === "confirm") {
+        check("All features asks to confirm a rise, for that one account", asked.preview.count === 1);
+        check("and writes nothing until confirmed", (await rowsFor(ALL_FEATURES)) === 0);
+        set = await writeOverride(ADMIN, "set", { switchName: ALL_FEATURES, scope: "user", targetUserId: U1, value: "on", confirmed: 1 }, deps);
+      }
+      check("the confirmed count writes it, with an override_set", set.ok && (await rowsFor(ALL_FEATURES)) === 1 && (await count(sql`select count(*)::int as n from admin_events where actor_id = ${ADMIN} and kind = 'override_set' and "switch" = ${ALL_FEATURES}`)) === 1);
+      await writeOverride(ADMIN, "set", { switchName: S, scope: "user", targetUserId: U1, value: "off" }, deps);
+      const snap = await readSwitchSnapshot();
+      const none = {} as NodeJS.ProcessEnv;
+      const mine = resolveEnv(none, snap, U1);
+      const theirs = resolveEnv(none, snap, U2);
+      const raised = [...ALL_FEATURES_RAISES].filter((n) => n !== S);
+      check(`a snapshot read after it raises all ${raised.length} other features for that account`, raised.every((n) => mine[n] === "true"));
+      check("the account's own Off still wins", mine[S] === "false");
+      check("another account is untouched", [...ALL_FEATURES_RAISES].every((n) => theirs[n] === undefined));
+      const offRefused = await writeOverride(ADMIN, "set", { switchName: ALL_FEATURES, scope: "user", targetUserId: U1, value: "off" }, deps);
+      check("an Off row is refused (Off is a clear)", !offRefused.ok && offRefused.error === "value");
+      const appRefused = await writeOverride(ADMIN, "set", { switchName: ALL_FEATURES, scope: "app", value: "on" }, deps);
+      check("an app-wide row is refused", !appRefused.ok && appRefused.error === "scope");
+      check("a clear is ok and deletes the row", (await writeOverride(ADMIN, "clear", { switchName: ALL_FEATURES, scope: "user", targetUserId: U1 }, deps)).ok && (await rowsFor(ALL_FEATURES)) === 0);
+      await writeOverride(ADMIN, "clear", { switchName: S, scope: "user", targetUserId: U1 }, deps);
+    }
   } finally {
     await db.execute(sql`delete from flag_overrides where updated_by = ${ADMIN}`);
     if (group) await db.execute(sql`delete from flag_groups where id = ${group}`);

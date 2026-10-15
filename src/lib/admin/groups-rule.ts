@@ -203,8 +203,8 @@ export function groupsList(input: {
 /** The overrides one group carries, A to Z by the switch's label. */
 export function carried(overrides: readonly OverrideRow[], groupId: string): GroupCard["overrides"] {
   return overrides
-    .filter((o) => o.scope === "group" && o.groupId === groupId && isSwitchName(o.switchName))
-    .map((o) => ({ name: o.switchName, label: switchCopy[o.switchName].label, value: o.value }))
+    .flatMap((o) => (o.scope === "group" && o.groupId === groupId && isSwitchName(o.switchName) ? [{ name: o.switchName, value: o.value }] : []))
+    .map((o) => ({ name: o.name, label: switchCopy[o.name].label, value: o.value }))
     .sort((a, b) => a.label.localeCompare(b.label, "en-US"));
 }
 

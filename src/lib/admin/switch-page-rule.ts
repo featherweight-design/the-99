@@ -95,6 +95,8 @@ export function sourceText(source: ExplainSource, groupName: (id: string) => str
       return copy.sources.kill;
     case "account":
       return copy.sources.account;
+    case "all":
+      return copy.sources.all;
     case "group":
       return copy.sources.group(groupName(source.groupId));
     case "app":
@@ -106,7 +108,7 @@ export function sourceText(source: ExplainSource, groupName: (id: string) => str
   }
 }
 
-const RUNG_OF: Record<ExplainSource["kind"], RungKey> = { account: "account", group: "group", app: "app", env: "env", kill: "env", parent: "needs" };
+const RUNG_OF: Record<ExplainSource["kind"], RungKey> = { account: "account", all: "account", group: "group", app: "app", env: "env", kill: "env", parent: "needs" };
 
 export function switchPage(input: SwitchPageInput): SwitchPage {
   const { name, env, overrides, verdicts, accounts, groups, viewerId } = input;
@@ -141,11 +143,20 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
   const appRow = overrides.find((o) => o.scope === "app") ?? null;
   const groupRows = overrides.filter((o) => o.scope === "group");
   const userRows = overrides.filter((o) => o.scope === "user");
+  const allIds = [...verdicts.entries()].filter(([, v]) => v[name].source.kind === "all").map(([id]) => id);
   const list = (items: string[]) => (items.length ? items.join(" · ") : copy.none);
   const rungs: Rung[] = [];
   if (!plumbing) {
     rungs.push(
-      rung("account", list(userRows.map((o) => `${userName(o.userId!)}: ${o.value}`)), userRows.length ? "plain" : "none", userRows.length > 0),
+      // An account decided by its All features row is on this rung too, named as such: the rung's count
+      // includes it, so its value must say what the count is of. It is not a row of this switch, so it
+      // carries no control.
+      rung(
+        "account",
+        list([...userRows.map((o) => `${userName(o.userId!)}: ${o.value}`), ...allIds.map((id) => `${userName(id)}: ${copy.sources.all}`)]),
+        userRows.length || allIds.length ? "plain" : "none",
+        userRows.length > 0 || allIds.length > 0,
+      ),
       rung("group", list(groupRows.map((o) => `${groupName(o.groupId!)}: ${o.value}`)), groupRows.length ? "plain" : "none", groupRows.length > 0),
     );
   }

@@ -235,7 +235,7 @@ export function DeckCardTile({
            both reads fine — the chip carries the shortfall, the edge carries the
            draft. Over 46px of caption the accent was easy to miss; over a whole
            tile it is not, and the two views now say it the same way. */
-        className={`${TILE_SHELL_SCALED} relative bg-[color:var(--surface)] ${
+        className={`${TILE_SHELL_SCALED} art-lift-host relative bg-[color:var(--surface)] ${
           availState === "over"
             ? "[border:1px_solid_var(--avail-over-border)]"
             : "[border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)] transition-colors"
@@ -310,7 +310,7 @@ export function DeckCardTile({
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover object-center"
+                className="art-lift absolute inset-0 h-full w-full object-cover object-center"
               />
             ) : (
               <span
@@ -321,9 +321,11 @@ export function DeckCardTile({
               </span>
             )}
             {/* The 1px inner edge, drawn OVER the art: an inset shadow on this box paints
-                under its img child. `rounded-[inherit]` keeps it on the clipped corners. */}
+                under its img child. `rounded-[inherit]` keeps it on the clipped corners. It
+                carries the foil film too (`data-foil`, foil handoff R1), only over art. */}
             <span
               aria-hidden
+              data-foil={card.imageUri ? card.foil : undefined}
               className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
             />
           </CardDetailTrigger>

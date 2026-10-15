@@ -20,7 +20,7 @@ import {
   planTokenWrite, readTokenState, recordUploadTokens, syncPreconTokens, tokenFinalEntries, tokenOwnershipTablesExist,
   type TokenChange, type TokenFinal, type TokenHolding, type TokenWriteMode,
 } from "../tokens/ownership";
-import { nothingToSync, planSync, staleness, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
+import { missingFromAnchor, nothingToSync, planSync, quantitiesOf, staleness, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
 import { readSyncBase } from "./sync-base";
 
 /**
@@ -36,6 +36,7 @@ import { readSyncBase } from "./sync-base";
  * on its own (`write.test.ts`); the transaction only reads, calls them and writes what they say.
  */
 
+import { addedFor, dateOf, fileArrival, handArrival, restoredAdded, type Arrival } from "./added-at";
 /** Entries older than this are hidden from history and pruned on the player's next write. */
 import { HISTORY_RETENTION_DAYS } from "./retention";
 export { HISTORY_RETENTION_DAYS };
@@ -362,6 +363,12 @@ export type SyncPreview = {
   conflicts: SyncReviewRow[];
   kept: SyncReviewRow[];
   stale: Staleness;
+  /** When the anchor (the file this one is compared with) was confirmed: every "since your <date> upload" names it. */
+  anchorConfirmedAt: Date;
+  /** Holdings the anchor's file holds that this file lacks or holds fewer of (`missingFromAnchor`). */
+  missingFromAnchor: number;
+  /** Conflicts, uncapped, whose file count is above the app's: the ones Only what it adds still asks. */
+  raisingConflicts: number;
   /** The token rows the confirm would change; empty when the tokens stand as the file reads them. */
   tokenChanges: TokenChange[];
   /** No card and no token would change: the confirm answers `nothingToSync`. */
@@ -377,8 +384,11 @@ type EntryKind = (typeof collectionHistory.$inferSelect)["kind"];
 
 const keyOf = (r: CollectionItemIdentity) => collectionItemKey(r);
 const qty = (s: HistoryRowState | null) => s?.quantity ?? 0;
-const stateOf = (h: Held): HistoryRowState =>
-  ({ quantity: h.quantity, scryfallId: h.scryfallId, condition: h.condition });
+const stateOf = (h: Held): HistoryRowState => ({
+  quantity: h.quantity, scryfallId: h.scryfallId, condition: h.condition,
+  // The date rides on a before-side so a revert of a removal can put it back (`dateOf`).
+  ...dateOf(h),
+});
 const identityOf = (r: CollectionItemIdentity): CollectionItemIdentity =>
   ({ oracleId: r.oracleId, setCode: r.setCode, collectorNumber: r.collectorNumber, finish: r.finish });
 
@@ -441,7 +451,8 @@ export function planAdd(current: Map<string, Held>, items: Held[]): Planned[] {
   return items.flatMap((i) => {
     const c = current.get(keyOf(i)) ?? null;
     if (!c) return planned(i, null, stateOf(i));
-    const merged = stateOf(c);
+    // The after side carries no date: it rides on the BEFORE side only (`HistoryRowState.addedAt`).
+    const merged: HistoryRowState = { quantity: c.quantity, scryfallId: c.scryfallId, condition: c.condition };
     mergeHolding(merged, i);
     return planned(i, stateOf(c), merged);
   });
@@ -509,6 +520,8 @@ export function planRevert(current: Map<string, Held>, rows: HistoryRow[]): (Pla
     const attrs = c === null || untouched
       ? { scryfallId: source?.scryfallId ?? null, condition: source?.condition ?? null }
       : { scryfallId: c.scryfallId, condition: c.condition };
+    // A row the revert BRINGS BACK takes the date its entry recorded (`restoredAdded` in `writeRows`).
+    if (c === null && typeof source?.addedAt === "string") Object.assign(attrs, { addedAt: source.addedAt, addedExact: source.addedExact === true });
     return planned(r as CollectionItemIdentity, c && stateOf(c), settle(quantity, attrs))
       .map((p) => ({ ...p, name: r.name }));
   });
@@ -880,15 +893,16 @@ export async function applyCollectionChange(
           const tokenPlan = tokenState && change.tokens ? planTokenWrite(syncTokenMode(change.pick), tokenState, change.tokens) : null;
           const tokenChanges = tokenPlan?.changes ?? [];
           const digest = planDigest(plan, tokenChanges, tokenPlan?.final ?? null);
+          // The file folded per holding key as the anchor's items are, so a key on two rows counts once, summed.
+          const fileItems = quantitiesOf(items);
           syncPreview = {
             counts: merged.counts,
             conflicts: merged.conflicts,
             kept: merged.kept,
-            stale: staleness(
-              new Map(items.map((i) => [keyOf(i), i.quantity])),
-              base.anchor.items,
-              base.earlier.map((e) => e.items),
-            ),
+            stale: staleness(fileItems, base.anchor.items, base.earlier.map((e) => e.items)),
+            anchorConfirmedAt: base.anchor.confirmedAt,
+            missingFromAnchor: missingFromAnchor(base.anchor.items, fileItems),
+            raisingConflicts: merged.conflicts.filter((r) => r.file > r.app).length,
             tokenChanges,
             nothing: nothingToSync(merged, tokenChanges.length),
             planDigest: digest,
@@ -976,14 +990,26 @@ export async function applyCollectionChange(
         : null;
 
       // ---- 6. The rows.
+      // When a NEW holding arrived: a file's holdings arrive exactly only into a collection that had content
+      // (`hadHoldings`, read under the lock), a hand change's always. A holding the collection already has keeps
+      // its date through any of it.
+      const filed = change.kind === "replace" || change.kind === "sync" || (change.kind === "add" && uploadId !== undefined);
+      const arrival: Arrival = filed
+        ? fileArrival(new Date(), (await tx.select({ one: sql<number>`1` }).from(collectionItems)
+          .where(eq(collectionItems.userId, userId)).limit(1)).length > 0)
+        : handArrival(new Date());
       if (change.kind === "replace") {
         await tx.delete(collectionItems).where(eq(collectionItems.userId, userId));
-        const values = items.map((i) => ({ userId, ...identityOf(i), ...stateOf(i) }));
+        const values = items.map((i) => {
+          const held = current.get(keyOf(i));
+          const added = addedFor(held && { addedAt: held.addedAt ? new Date(held.addedAt) : null, addedExact: held.addedExact === true }, arrival);
+          return { userId, ...identityOf(i), ...stateOf(i), ...added };
+        });
         for (let i = 0; i < values.length; i += INSERT_BATCH) {
           await tx.insert(collectionItems).values(values.slice(i, i + INSERT_BATCH));
         }
       } else {
-        await writeRows(tx, userId, plan);
+        await writeRows(tx, userId, plan, arrival);
       }
       const assigned: AssignReport = { created: false };
       if (opts.assign && !opts.dryRun) {
@@ -1191,7 +1217,7 @@ async function raisedCards(
 /** Rows written in one statement each way: deletes for a zero, one upsert for the rest. */
 const INSERT_BATCH = 500;
 
-async function writeRows(tx: Tx, userId: string, plan: Planned[]): Promise<void> {
+async function writeRows(tx: Tx, userId: string, plan: Planned[], arrival: Arrival): Promise<void> {
   const gone = plan.filter((p) => p.after === null);
   if (gone.length > 0) {
     // sql.param keeps each array ONE parameter; a bare array expands to a parameter list.
@@ -1209,7 +1235,11 @@ async function writeRows(tx: Tx, userId: string, plan: Planned[]): Promise<void>
     `);
   }
   const kept = plan.filter((p) => p.after !== null).map((p) => ({
-    userId, ...identityOf(p), ...p.after!,
+    userId, ...identityOf(p),
+    quantity: p.after!.quantity, scryfallId: p.after!.scryfallId, condition: p.after!.condition,
+    // Only a NEW row takes these: the upsert below leaves a standing holding's date alone. A revert of a
+    // removal brings the row back with the date its entry recorded.
+    ...restoredAdded(p.after, arrival),
   }));
   for (let i = 0; i < kept.length; i += INSERT_BATCH) {
     // The after-states are absolute and were computed under the lock, so the upsert writes
@@ -1242,12 +1272,14 @@ async function readHeld(tx: Tx, userId: string, named: CollectionItemIdentity[] 
     quantity: collectionItems.quantity,
     scryfallId: collectionItems.scryfallId,
     condition: collectionItems.condition,
+    addedAt: collectionItems.addedAt,
+    addedExact: collectionItems.addedExact,
   })
     .from(collectionItems)
     .where(oracleIds
       ? and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, oracleIds))
       : eq(collectionItems.userId, userId));
-  return new Map(rows.map((r) => [keyOf(r), r]));
+  return new Map(rows.map((r) => [keyOf(r), { ...r, addedAt: r.addedAt ? r.addedAt.toISOString() : null }]));
 }
 
 async function readOwnedCounts(tx: Tx, userId: string): Promise<OwnedCounts> {

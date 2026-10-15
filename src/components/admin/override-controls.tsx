@@ -1,19 +1,22 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/switches/actions";
 import type { ConfirmPreview, WriteResult } from "../../lib/admin/switch-writes";
 import type { Op, Scope, WriteInput } from "../../lib/admin/switch-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import type { OverrideValue } from "../../lib/switches/resolve";
+import { ALL_FEATURES } from "../../lib/switches/registry";
 import { ModelConfirm, type ConfirmContext } from "./model-confirm";
 
 // The switch page's writes (admin STATES F3, F5, F9 to F12; design table, Switch page): the App-wide
 // segment, On and Off on each override row, and Clear. Each control runs its own write: the option
 // pressed holds while it is in flight and the others are disabled, with no spinner (F10); a failure
 // says so under the control with Try again (F11); a rise in model access opens the confirm (F3). A
-// saved write refreshes the page, which reads the tables fresh.
+// saved write refreshes the page, which reads the tables fresh, and the option stays pressed until
+// that refresh has drawn: released any earlier, the control showed the value the page was drawn with
+// for a beat, so On flipped back to Off and then to On again.
 
 const copy = adminCopy.switch;
 
@@ -25,6 +28,9 @@ type Pending = { op: Op; value: OverrideValue | null; note: string | null };
 export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "op">, onSaved?: (p: Pending) => void) {
   const router = useRouter();
   const [inFlight, setInFlight] = useState<Pending | null>(null);
+  // The saved write, held while the refresh that redraws the page with it is still pending.
+  const [settling, setSettling] = useState<Pending | null>(null);
+  const [refreshing, startRefresh] = useTransition();
   const [failed, setFailed] = useState<{ again: Pending; refused: boolean; clerkDown?: boolean } | null>(null);
   const [confirm, setConfirm] = useState<{ preview: ConfirmPreview; pending: Pending } | null>(null);
   const confirmAfter = useRef<(() => void) | null>(null);
@@ -43,10 +49,15 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
     setInFlight(null);
     if (result.ok) {
       setConfirm(null);
-      onSaved?.(p);
       confirmAfter.current = null;
       afterSave?.();
-      router.refresh();
+      setSettling(p);
+      // The caller's own updates (a pending row handing back to its picker) ride in the same transition,
+      // so they commit with the redrawn page rather than ahead of it.
+      startRefresh(() => {
+        onSaved?.(p);
+        router.refresh();
+      });
     } else if (result.error === "confirm") {
       // A confirmed write saves later, from the dialog: keep what it should do then (and nothing
       // else's: a dialog for a set must never run a cancelled clear's callback).
@@ -82,7 +93,7 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
   );
   /** The write the open confirm is asking about (F3 rings its option). */
   const confirming = confirm?.pending ?? null;
-  return { run, inFlight, confirming, dialog, failure };
+  return { run, inFlight: inFlight ?? (refreshing ? settling : null), confirming, dialog, failure };
 }
 
 /**
@@ -176,6 +187,37 @@ export function AppWideControl({ name, label, value, killed }: { name: string; l
         ringed={keyOf(w.confirming)}
         fill
         onPick={(k) => w.run(k === "notSet" ? { op: "clear", value: null, note: null } : { op: "set", value: k, note: null })}
+      />
+      {w.failure}
+      {w.dialog}
+    </div>
+  );
+}
+
+const ALL_OPTIONS = [
+  { key: "notSet", text: copy.appOpts.notSet },
+  { key: "on", text: copy.appOpts.on },
+] as const;
+type AllKey = (typeof ALL_OPTIONS)[number]["key"];
+
+/**
+ * An account's All features (`ALL_FEATURES`): the App-wide segment's own anatomy at account scope, with
+ * no Off, since an Off row would mean nothing the absence does not. On sets the row, `Not set` clears it;
+ * the write, its confirm on a rise in model access and its `admin_events` row are the override write's.
+ */
+export function AllFeaturesControl({ userId, label, value }: { userId: string; label: string; value: boolean }) {
+  const w = useOverrideWrite({ switchName: ALL_FEATURES, scope: "user", targetUserId: userId }, { switchLabel: label, scope: "user", groupName: null });
+  const keyOf = (p: { op: string } | null): AllKey | null => (p ? (p.op === "clear" ? "notSet" : "on") : null);
+  return (
+    <div className="flex flex-col gap-[8px]">
+      <Seg
+        label={label}
+        options={ALL_OPTIONS}
+        selected={value ? "on" : "notSet"}
+        pressed={keyOf(w.inFlight)}
+        disabled={false}
+        ringed={keyOf(w.confirming)}
+        onPick={(k) => w.run(k === "notSet" ? { op: "clear", value: null, note: null } : { op: "set", value: "on", note: null })}
       />
       {w.failure}
       {w.dialog}

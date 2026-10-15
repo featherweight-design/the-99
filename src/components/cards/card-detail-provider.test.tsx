@@ -289,8 +289,8 @@ describe("CardDetailProvider", () => {
       const sol: BrowseCard = {
         ...card("o-sol", "Sol Ring"),
         printings: [
-          { setCode: "CMM", collectorNumber: "676", imageUri: "https://cards.scryfall.io/collection-sol.jpg", quantity: 1, flavorName: null },
-          { setCode: "LTC", collectorNumber: "284", imageUri: "https://cards.scryfall.io/deck-sol.jpg", quantity: 1, flavorName: null },
+          { setCode: "CMM", collectorNumber: "676", imageUri: "https://cards.scryfall.io/collection-sol.jpg", quantity: 1, finishes: { nonfoil: 1 }, flavorName: null },
+          { setCode: "LTC", collectorNumber: "284", imageUri: "https://cards.scryfall.io/deck-sol.jpg", quantity: 1, finishes: { nonfoil: 1 }, flavorName: null },
         ] as unknown as BrowseCard["printings"],
         preferredPrinting: { setCode: "CMM", collectorNumber: "676" },
       };
@@ -315,8 +315,8 @@ describe("CardDetailProvider", () => {
     const pickedSol = (deckFlavor: string | null): BrowseCard => ({
       ...card("o-sol", "Sol Ring"),
       printings: [
-        { setCode: "CMM", collectorNumber: "676", imageUri: "https://cards.scryfall.io/collection-sol.jpg", quantity: 1, flavorName: null },
-        { setCode: "LTC", collectorNumber: "284", imageUri: "https://cards.scryfall.io/deck-sol.jpg", quantity: 1, flavorName: deckFlavor },
+        { setCode: "CMM", collectorNumber: "676", imageUri: "https://cards.scryfall.io/collection-sol.jpg", quantity: 1, finishes: { nonfoil: 1 }, flavorName: null },
+        { setCode: "LTC", collectorNumber: "284", imageUri: "https://cards.scryfall.io/deck-sol.jpg", quantity: 1, finishes: { nonfoil: 1 }, flavorName: deckFlavor },
       ] as unknown as BrowseCard["printings"],
       preferredPrinting: { setCode: "CMM", collectorNumber: "676" },
     });
