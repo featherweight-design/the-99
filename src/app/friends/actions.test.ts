@@ -14,6 +14,7 @@ const m = vi.hoisted(() => ({
   createInvite: vi.fn(),
   revokeInvite: vi.fn(),
   redeemInvite: vi.fn(),
+  spendAlreadyFriendsInvite: vi.fn(),
   declineInvite: vi.fn(),
   readInvite: vi.fn(),
   unfriend: vi.fn(),
@@ -33,6 +34,7 @@ vi.mock("next/server", () => ({ after: m.after }));
 vi.mock("../../lib/social/friends", () => ({
   setDisplayName: m.setDisplayName, createInvite: m.createInvite, revokeInvite: m.revokeInvite,
   redeemInvite: m.redeemInvite, declineInvite: m.declineInvite, readInvite: m.readInvite, unfriend: m.unfriend,
+  spendAlreadyFriendsInvite: m.spendAlreadyFriendsInvite,
 }));
 vi.mock("../../lib/social/commander", () => ({ setCommander: m.setCommander }));
 vi.mock("../../lib/social/pods", () => ({
@@ -185,22 +187,22 @@ describe("friend links", () => {
 });
 
 describe("the already-friends spend (G4)", () => {
-  it("spends an open link from a friend", async () => {
-    m.readInvite.mockResolvedValue(open({ alreadyFriends: true }));
-    m.redeemInvite.mockResolvedValue({ ok: true, friend: { publicId: FRIEND, displayName: "Ana" }, alreadyFriends: true });
+  it("spends through the spend-only write, never the accept, so a view writes no friendship", async () => {
+    m.spendAlreadyFriendsInvite.mockResolvedValue(true);
     expect(await actions.spendFriendLinkAction(TOKEN)).toEqual({ ok: true, spent: true });
-    expect(m.redeemInvite).toHaveBeenCalledWith("user_1", TOKEN);
+    expect(m.spendAlreadyFriendsInvite).toHaveBeenCalledWith("user_1", TOKEN);
+    expect(m.redeemInvite).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ["a stranger's open link", open()],
-    ["your own link", open({ self: true, alreadyFriends: true })],
-    ["an ended link", { state: "redeemed" }],
-    ["no link", null],
-  ])("never accepts %s by a page view", async (_n, view) => {
-    m.readInvite.mockResolvedValue(view);
+  it("reports nothing spent when the write found no open link from a friend", async () => {
+    m.spendAlreadyFriendsInvite.mockResolvedValue(false);
     expect(await actions.spendFriendLinkAction(TOKEN)).toEqual({ ok: true, spent: false });
     expect(m.redeemInvite).not.toHaveBeenCalled();
+  });
+
+  it("refuses a malformed token before any write", async () => {
+    expect(await actions.spendFriendLinkAction("nope")).toEqual({ ok: true, spent: false });
+    expect(m.spendAlreadyFriendsInvite).not.toHaveBeenCalled();
   });
 });
 

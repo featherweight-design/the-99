@@ -19,7 +19,7 @@ import { requireUserId } from "../../lib/auth";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import {
-  createInvite, declineInvite, readInvite, redeemInvite, revokeInvite, setDisplayName, unfriend,
+  createInvite, declineInvite, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
 } from "../../lib/social/friends";
 import { setCommander } from "../../lib/social/commander";
 import { addMembers, createPod, deletePod, leavePod, removeMember, renamePod, type LeaveOutcome } from "../../lib/social/pods";
@@ -146,11 +146,10 @@ export async function spendFriendLinkAction(token: unknown): Promise<SpendOutcom
   const userId = await socialReader();
   if (!userId) return OFF;
   if (!isInviteToken(token)) return { ok: true, spent: false };
-  const view = await readInvite(userId, token);
-  if (view === null || view.state !== "open" || view.self || !view.alreadyFriends) return { ok: true, spent: false };
-  const result = await redeemInvite(userId, token);
-  if (result.ok) refreshFriendsLater();
-  return { ok: true, spent: result.ok };
+  // Marks the link used and writes no friendship, so an unfriend that lands first is never undone by a view.
+  const spent = await spendAlreadyFriendsInvite(userId, token);
+  if (spent) refreshFriendsLater();
+  return { ok: true, spent };
 }
 
 export type UnfriendOutcome = { ok: true } | Off | { ok: false; reason: "notFriend" };

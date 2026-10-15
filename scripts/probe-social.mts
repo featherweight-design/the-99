@@ -69,6 +69,19 @@ async function main() {
     const { rows: links } = await db.execute<{ n: number }>(sql`select count(*)::int as n from friend_links where user_id in (${A}, ${B})`);
     check("a friendship is two directed rows", links[0].n === 2);
 
+    // The already-friends spend (G4): marks the link used and writes no friendship.
+    const friendLink = await friends.createInvite(A);
+    if (!friendLink.ok) throw new Error("createInvite refused the spend link");
+    check("a friend's view spends A's open link", (await friends.spendAlreadyFriendsInvite(B, friendLink.token)) === true);
+    check("the spent link reads as ended", (await friends.readInvite(C, friendLink.token))?.state !== "open");
+    const { rows: afterSpend } = await db.execute<{ n: number }>(sql`select count(*)::int as n from friend_links where user_id in (${A}, ${B})`);
+    check("the spend wrote no friendship row", afterSpend[0].n === 2);
+    const strangerLink = await friends.createInvite(A);
+    if (!strangerLink.ok) throw new Error("createInvite refused the stranger link");
+    check("a stranger's view spends nothing", (await friends.spendAlreadyFriendsInvite(C, strangerLink.token)) === false);
+    check("the stranger's link stays open", (await friends.readInvite(C, strangerLink.token))?.state === "open");
+    await friends.revokeInvite(A, strangerLink.token);
+
     // Reads: A and B see each other; C sees nobody.
     check("A lists B", (await access.listFriends(A)).map((f) => f.publicId).join() === b.publicId);
     check("B lists A", (await access.listFriends(B)).map((f) => f.publicId).join() === a.publicId);
@@ -116,6 +129,11 @@ async function main() {
     check("A unfriends B", await friends.unfriend(A, b.publicId));
     check("B left A's pod with the friendship", (await access.listPods(B)).length === 0);
     check("A and B no longer list each other", (await access.listFriends(A)).every((f) => f.publicId !== b.publicId));
+    const afterUnfriend = await friends.createInvite(A);
+    if (!afterUnfriend.ok) throw new Error("createInvite refused");
+    check("a spend after an unfriend spends nothing", (await friends.spendAlreadyFriendsInvite(B, afterUnfriend.token)) === false);
+    check("and brings no friendship back", (await access.listFriends(A)).every((f) => f.publicId !== b.publicId));
+    await friends.revokeInvite(A, afterUnfriend.token);
 
     // Owner leaves: the earliest remaining member takes it.
     const invite2 = await friends.createInvite(A);

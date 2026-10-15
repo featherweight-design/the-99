@@ -205,6 +205,26 @@ export async function redeemInvite(viewerId: string, token: string, now = new Da
   });
 }
 
+/**
+ * Spend an already-friends link (G4): marks an open link from someone the viewer is ALREADY friends with as
+ * redeemed, and writes no friendship. It locks the invite, then the friendship row, in one transaction, so an
+ * unfriend landing first leaves the link open rather than being undone by a page view. False: nothing spent.
+ */
+export async function spendAlreadyFriendsInvite(viewerId: string, token: string, now = new Date()): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const [invite] = await tx.select().from(friendInvites).where(eq(friendInvites.token, token)).for("update");
+    if (!invite || invite.inviterUserId === viewerId || inviteState(invite, now) !== "open") return false;
+    const [friendship] = await tx
+      .select({ userId: friendLinks.userId })
+      .from(friendLinks)
+      .where(and(eq(friendLinks.userId, viewerId), eq(friendLinks.friendUserId, invite.inviterUserId)))
+      .for("share");
+    if (!friendship) return false;
+    await tx.update(friendInvites).set({ redeemedBy: viewerId, redeemedAt: now }).where(eq(friendInvites.token, token));
+    return true;
+  });
+}
+
 /** Decline: the token is spent and nobody is told. Your own link cannot be declined, only revoked. */
 export async function declineInvite(viewerId: string, token: string, now = new Date()): Promise<boolean> {
   const written = await db
