@@ -13,14 +13,22 @@ function fmt(opts: Intl.DateTimeFormatOptions, timeZone: string | undefined) {
 }
 
 function sameDay(a: Date, b: Date, timeZone: string | undefined): boolean {
-  const day = fmt({ year: "numeric", month: "numeric", day: "numeric" }, timeZone);
-  return day.format(a) === day.format(b);
+  return dayNumber(a, timeZone) === dayNumber(b, timeZone);
+}
+
+/** The calendar day `d` falls on in `timeZone`, as a count of days: a day is a date, never 24 hours. */
+function dayNumber(d: Date, timeZone: string | undefined): number {
+  const parts = fmt({ year: "numeric", month: "numeric", day: "numeric" }, timeZone).formatToParts(d);
+  const part = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return Date.UTC(part("year"), part("month") - 1, part("day")) / DAY_MS;
 }
 
 /** `today`, `yesterday`, or `Oct 2`: a friendship's `since`, on the friend row and on the already-friends card. */
 export function sinceDay(since: Date, now: Date, timeZone?: string): string {
-  if (sameDay(since, now, timeZone)) return socialCopy.friends.today;
-  if (sameDay(since, new Date(now.getTime() - DAY_MS), timeZone)) return socialCopy.friends.yesterday;
+  // By calendar day in the zone, so a day the clocks change (23 or 25 hours long) still has one yesterday.
+  const days = dayNumber(now, timeZone) - dayNumber(since, timeZone);
+  if (days === 0) return socialCopy.friends.today;
+  if (days === 1) return socialCopy.friends.yesterday;
   return fmt({ month: "short", day: "numeric" }, timeZone).format(since);
 }
 
