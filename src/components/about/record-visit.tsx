@@ -27,15 +27,17 @@ export function RecordVisit({
 }) {
   const sent = useRef(false);
   useEffect(() => {
+    // Every visit answers the line in this document, a current reader's included: another tab or device may have
+    // marked About seen after this tab's Home was rendered, and Back restores that Home's payload with the line in it.
+    acknowledgeAbout(drawn);
     if (!behind || sent.current) return;
     sent.current = true;
-    acknowledgeAbout(drawn);
     // The ids the page showed: the visit acknowledges these, so an entry switched on after it
     // rendered is not marked seen unread.
     void recordAboutVisit(shown).catch(() => {
       unacknowledgeAbout(drawn);
-      // A failed write leaves the reader behind, which puts the sheet in front
-      // of them once more on a later load. That is the cheaper failure.
+      // A failed write leaves the reader behind, which puts About's line in front
+      // of them once more on a later Home load. That is the cheaper failure.
       sent.current = false;
     });
   }, [behind, shown, drawn]);

@@ -57,8 +57,9 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
     expect(aboutAcknowledged(["notes"])).toBe(false);
   });
 
-  it("acknowledges nothing for a current reader", () => {
+  it("acknowledges what it drew for a current reader too, with no write: a stale Home in this tab still holds the line", () => {
     render(<RecordVisit behind={false} shown={[]} drawn={["notes"]} />);
-    expect(aboutAcknowledged(["notes"])).toBe(false);
+    expect(aboutAcknowledged(["notes"])).toBe(true);
+    expect(recordAboutVisit).not.toHaveBeenCalled();
   });
 });
