@@ -199,6 +199,27 @@ describe("the head", () => {
     expect(document.activeElement).toBe(search);
   });
 
+  it("a toast that replaces a hovered one, with no leave fired, still counts down", async () => {
+    vi.useFakeTimers();
+    try {
+      a.setDisplayNameAction.mockResolvedValue({ ok: false, reason: "invalid" });
+      draw();
+      for (const next of ["One", "Two"]) {
+        fireEvent.click(screen.getByRole("button", { name: "Change" }));
+        fireEvent.change(screen.getByLabelText(socialCopy.page.nameField.label), { target: { value: next } });
+        await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.nameField.save })));
+        // The first toast is hovered and then replaced: no pointer leave reaches it.
+        if (next === "One") fireEvent.pointerEnter(alert());
+      }
+      act(() => {
+        vi.advanceTimersByTime(TOAST_MS + 500);
+      });
+      expect(screen.queryByRole("alert")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("holds the toast's window while it is hovered or holds focus, and runs it once both let go", async () => {
     vi.useFakeTimers();
     try {

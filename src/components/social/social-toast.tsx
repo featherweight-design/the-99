@@ -15,16 +15,22 @@ export function SocialToast({ toast, onDone }: { toast: SocialToastState | null;
   // Hover and focus hold the window separately, and it runs again only once both have let go.
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
-  // A toast that leaves under the pointer or with focus in it fires no leave, so its holds go with it, or the next
-  // toast would never count down.
-  if (!toast && (hover || focus)) {
+  // A toast that leaves, or is replaced, under the pointer or with focus in it fires no leave, so its holds go
+  // with it, or the next toast would never count down.
+  const [heldFor, setHeldFor] = useState(toast?.id);
+  if (toast?.id !== heldFor) {
+    setHeldFor(toast?.id);
     setHover(false);
     setFocus(false);
   }
   const { restart } = useToastClock(ref, toast !== null && !hover && !focus, onDone);
-  // A new toast gets the whole window, whatever the last one spent.
+  // A new toast gets the whole window, whatever the last one spent, and holds only what the NEW frame holds.
   useEffect(() => {
     restart();
+    const frame = ref.current;
+    if (!frame) return;
+    setHover(frame.matches(":hover"));
+    setFocus(frame.contains(document.activeElement));
   }, [toast?.id, restart]);
   if (!toast) return null;
   return (

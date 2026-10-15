@@ -61,7 +61,9 @@ export function FriendsView({ profile }: { profile: OwnProfile }) {
   const face = useRef<HTMLButtonElement>(null);
   const [picking, setPicking] = useState(false);
   const [toast, setToast] = useState<SocialToastState | null>(null);
-  const say = (text: string) => setToast({ id: Date.now(), text });
+  // A counter, not the clock: two toasts in one millisecond are still two toasts.
+  const toastSeq = useRef(0);
+  const say = (text: string) => setToast({ id: ++toastSeq.current, text });
   const writeName = useFieldWrite(profile.displayName, setName);
   const writeCommander = useFieldWrite<ProfileCommander | null>(profile.commander, setCommander);
 
