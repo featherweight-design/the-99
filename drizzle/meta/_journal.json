@@ -897,6 +897,13 @@
       "when": 1792041163511,
       "tag": "0127_collection_added_at",
       "breakpoints": true
+    },
+    {
+      "idx": 128,
+      "version": "7",
+      "when": 1792047093033,
+      "tag": "0128_no_collection_entry_switch",
+      "breakpoints": true
     }
   ]
 }

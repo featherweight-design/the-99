@@ -2173,7 +2173,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   - reverting the add takes back exactly its copies and leaves the deck standing.
 
   It WRITES under a per-run account it purges, after the same branch guard as `probe:precon-add`, on a scratch branch
-  made from local-dev and migrated to 0127. Its mutation checks (the commander lines dropped, the deck written outside
+  made from local-dev and migrated to 0128. Its mutation checks (the commander lines dropped, the deck written outside
   the add's transaction, the source left off) are listed in its header and are to be run on its first run.
 - `pnpm probe:payments-webhook` proves the Stripe webhook's grant transaction (payments K1a) against a real database,
   through the real `fulfilCheckoutSession`, `readAllowance` and `purgeAccount`, with Stripe a stand-in whose

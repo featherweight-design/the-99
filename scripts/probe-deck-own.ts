@@ -22,7 +22,7 @@
 //
 // It writes under a per-run `user_id` and purges that account in a `finally`, after the branch guard:
 // `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by id. Point
-// it at a scratch branch made from local-dev, migrated to 0127.
+// it at a scratch branch made from local-dev, migrated to 0128.
 //
 //   PROBE_DB_BRANCH=br-… pnpm probe:deck-own
 import { requireEnv } from "./lib/env.mjs";
