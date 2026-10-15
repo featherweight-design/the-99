@@ -22,7 +22,10 @@ export type RevealedPrinting = {
   imageUriSmall: string | null;
   /** The printing's normal render: the tile view's art and the hover preview's. */
   imageUri: string | null;
+  /** The back face's render, for a double-faced printing; null for one face. */
+  backImageUri: string | null;
   collectorNumber: string;
+  scryfallId: string;
 };
 
 export type RevealedCommander = Omit<RevealedPrinting, "setCode" | "typeLine">;
@@ -74,8 +77,8 @@ export function revealedCommanders(rows: readonly RevealedPrinting[]): Record<st
   for (const [code, cardsIn] of bySet) {
     out[code] = [...cardsIn.values()]
       .sort((a, b) => compareCollectorNumbers(a.collectorNumber, b.collectorNumber) || (a.oracleId < b.oracleId ? -1 : 1))
-      .map(({ oracleId, name, colorIdentity, imageUriSmall, imageUri, collectorNumber }) => ({
-        oracleId, name, colorIdentity, imageUriSmall, imageUri, collectorNumber,
+      .map(({ oracleId, name, colorIdentity, imageUriSmall, imageUri, backImageUri, collectorNumber, scryfallId }) => ({
+        oracleId, name, colorIdentity, imageUriSmall, imageUri, backImageUri, collectorNumber, scryfallId,
       }));
   }
   return out;
@@ -92,7 +95,9 @@ export function revealedPrintingsQuery(codes: readonly string[], q: Reader = db)
       typeLine: cards.typeLine,
       imageUriSmall: printings.imageUriSmall,
       imageUri: printings.imageUri,
+      backImageUri: printings.backImageUri,
       collectorNumber: printings.collectorNumber,
+      scryfallId: printings.scryfallId,
     })
     .from(printings)
     .innerJoin(cards, eq(cards.oracleId, printings.oracleId))
@@ -111,6 +116,8 @@ export async function loadRevealedCommanders(codes: readonly string[], q: Reader
     typeLine: r.typeLine,
     imageUriSmall: r.imageUriSmall ?? r.imageUri,
     imageUri: r.imageUri ?? r.imageUriSmall,
+    backImageUri: r.backImageUri,
     collectorNumber: r.collectorNumber,
+    scryfallId: r.scryfallId,
   })));
 }

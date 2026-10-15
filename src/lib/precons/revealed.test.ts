@@ -18,7 +18,9 @@ const p = (over: Partial<RevealedPrinting>): RevealedPrinting => ({
   typeLine: "Legendary Creature — Human",
   imageUriSmall: null,
   imageUri: null,
+  backImageUri: null,
   collectorNumber: "1",
+  scryfallId: "s-1",
   ...over,
 });
 
@@ -63,7 +65,7 @@ describe("revealedCommanders", () => {
       p({ oracleId: "chapel", name: "Christine Chapel", collectorNumber: "300", imageUriSmall: "s300" }),
       p({ oracleId: "chapel", name: "Christine Chapel", collectorNumber: "78", imageUriSmall: "s78" }),
     ]);
-    expect(out.trc).toEqual([{ oracleId: "chapel", name: "Christine Chapel", colorIdentity: [], imageUriSmall: "s78", imageUri: null, collectorNumber: "78" }]);
+    expect(out.trc).toEqual([{ oracleId: "chapel", name: "Christine Chapel", colorIdentity: [], imageUriSmall: "s78", imageUri: null, backImageUri: null, collectorNumber: "78", scryfallId: "s-1" }]);
   });
 
   it("keeps 78 over 78a and over a later 300, whatever order the read gives", () => {

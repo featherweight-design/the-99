@@ -30,6 +30,8 @@ export const UPCOMING_SET: { match: AnnouncedMatch; today: string } = {
         colorIdentity: ["B", "G"],
         imageUriSmall: "https://cards.scryfall.io/small/front/6/0/60b48730-3590-4c8c-b0e8-6007bb36d6b6.jpg?1791578335",
         imageUri: "https://cards.scryfall.io/normal/front/6/0/60b48730-3590-4c8c-b0e8-6007bb36d6b6.jpg?1791578335",
+        backImageUri: null,
+        scryfallId: "60b48730-3590-4c8c-b0e8-6007bb36d6b6",
         collectorNumber: "399",
       },
     ],

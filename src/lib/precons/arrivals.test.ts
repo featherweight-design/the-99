@@ -47,7 +47,9 @@ const commander = (over: Partial<RevealedCommander>): RevealedCommander => ({
   colorIdentity: [],
   imageUriSmall: null,
   imageUri: null,
+  backImageUri: null,
   collectorNumber: "1",
+  scryfallId: "s-1",
   ...over,
 });
 

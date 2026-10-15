@@ -81,7 +81,13 @@ export function announcedPrintings(matches: readonly AnnouncedMatch[]): Record<s
   const out: Record<string, ViewPrinting> = {};
   for (const m of matches) {
     for (const c of m.commanders) {
-      out[c.oracleId] ??= { setCode: m.set.code, collectorNumber: c.collectorNumber, imageUri: c.imageUri ?? c.imageUriSmall };
+      // Upper case, as card details' printings carry it (`matchesPreference` compares exactly; `sets.code` is lower),
+      // and the printing's own id and back face, so an unowned announced printing is drawn whole, never paired
+      // with another printing's back.
+      out[c.oracleId] ??= {
+        setCode: m.set.code.toUpperCase(), collectorNumber: c.collectorNumber, scryfallId: c.scryfallId,
+        imageUri: c.imageUri ?? c.imageUriSmall, backImageUri: c.backImageUri,
+      };
     }
   }
   return out;

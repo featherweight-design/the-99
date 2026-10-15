@@ -58,6 +58,7 @@ const set = (code: string, name: string, releasesOn: string, over: Partial<Upcom
 });
 const commander = (n: number, name = `TRC commander ${n}`, colorIdentity = ["W"]): RevealedCommander => ({
   oracleId: `o${n}`, name, colorIdentity, imageUriSmall: `https://img/${n}.jpg`, imageUri: `https://img/normal/${n}.jpg`, collectorNumber: String(n),
+  backImageUri: null, scryfallId: `s${n}`,
 });
 const match = (s: UpcomingSet, commanders: RevealedCommander[], revealed = commanders.length): AnnouncedMatch => ({
   set: s, commanders, matched: commanders.length, revealed,
@@ -219,7 +220,7 @@ describe("AnnouncedGroup", () => {
       // Outside the closed region: not inert, not hidden, and it holds focus.
       expect(region(container)).not.toContainElement(dialog);
       // The modal views the announced printing the tile pictures (the read itself names no printing).
-      expect(dialog).toHaveTextContent("trc · 78");
+      expect(dialog).toHaveTextContent("SetTRC · 78");
       expect(dialog.closest("[inert]")).toBeNull();
       expect(dialog.closest(".invisible")).toBeNull();
       await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
@@ -278,12 +279,33 @@ describe("AnnouncedGroup", () => {
       expect(document.activeElement).toBe(head());
     });
 
+    it("views the announced printing over a reprint the reader owns from another set", async () => {
+      const { warmCardModal } = await import("../../cards/card-detail-provider");
+      await warmCardModal();
+      draw({ opensByItself: true });
+      const chapel = screen.getByRole("button", { name: "View details for Christine Chapel, Combat Medic, White. Revealed commander." });
+      await act(async () => { fireEvent.click(chapel); });
+      await act(async () => {
+        details.resolve!({
+          oracleId: "o78", name: "Christine Chapel, Combat Medic", typeLine: "Legendary Creature — Human Doctor",
+          manaCost: "{2}{W}", cmc: 3, oracleText: null, keywords: [], rarity: "rare", colorIdentity: ["W"], imageUri: "https://img/owned.jpg",
+          printedName: null, quantity: 1, printings: [], setCodes: ["SLD"], primarySetCode: "SLD",
+          preferredPrinting: { setCode: "SLD", collectorNumber: "9" },
+        });
+      });
+      const dialog = await screen.findByRole("dialog", { name: /Christine Chapel, Combat Medic/ });
+      expect(dialog).toHaveTextContent("SetTRC · 78");
+      expect(dialog).not.toHaveTextContent("SLD · 9");
+    });
+
     it("views each commander at its announced set's printing, the first set's when two reveal one card", () => {
       const one = (code: string, n: string) => ({
         set: { code } as AnnouncedMatch["set"], matched: 1, revealed: 1,
-        commanders: [{ oracleId: "x", name: "X", colorIdentity: [], imageUriSmall: `s${n}`, imageUri: `n${n}`, collectorNumber: n }],
+        commanders: [{ oracleId: "x", name: "X", colorIdentity: [], imageUriSmall: `s${n}`, imageUri: `n${n}`, backImageUri: `b${n}`, collectorNumber: n, scryfallId: `id${n}` }],
       });
-      expect(announcedPrintings([one("aaa", "1"), one("bbb", "2")])).toEqual({ x: { setCode: "aaa", collectorNumber: "1", imageUri: "n1" } });
+      expect(announcedPrintings([one("aaa", "1"), one("bbb", "2")])).toEqual({
+        x: { setCode: "AAA", collectorNumber: "1", scryfallId: "id1", imageUri: "n1", backImageUri: "b1" },
+      });
     });
 
     it("draws each one with the shared trigger in rows, at the strip's unchanged size", () => {
