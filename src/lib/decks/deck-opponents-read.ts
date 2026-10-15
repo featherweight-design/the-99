@@ -8,6 +8,7 @@
  * with no recorded opponents draws no Matchups section at all.
  */
 import { loadOpeningArt } from "../cards/opening-printing";
+import { loadCatalogArt } from "./catalog-art";
 import { socialGamesEnabled } from "../social/flag";
 import type { DeckGame } from "./games";
 import { listGameOpponents, type GameOpponent, type OpponentCommander } from "./game-opponents";
@@ -42,6 +43,9 @@ async function withArt(opponents: Map<string, GameOpponent[]>): Promise<Map<stri
   }
   if (ids.size === 0) return opponents;
   const art = await loadOpeningArt([...ids]).catch(() => new Map<string, string>());
+  // A commander with no priced non-foil printing keeps the catalog's own image, as the seat picker does.
+  const bare = [...ids].filter((id) => !art.has(id));
+  if (bare.length > 0) for (const [id, uri] of await loadCatalogArt(bare).catch(() => new Map<string, string>())) art.set(id, uri);
   const dress = (c: OpponentCommander | null): OpponentCommander | null => (c ? { ...c, imageUri: art.get(c.oracleId) ?? null } : null);
   return new Map([...opponents].map(([game, seats]) => [game, seats.map((s) => ({ ...s, commander: dress(s.commander), partner: dress(s.partner) }))]));
 }

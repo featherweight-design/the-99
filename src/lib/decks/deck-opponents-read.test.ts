@@ -6,6 +6,8 @@ import { loadDeckOpponents, opponentsWire } from "./deck-opponents-read";
 const loadOpeningArt = vi.fn(async (ids: readonly string[]) => new Map(ids.filter((i) => i === "y").map((i) => [i, `${i}.jpg`])));
 vi.mock("../cards/opening-printing", () => ({ loadOpeningArt: (ids: readonly string[]) => loadOpeningArt(ids) }));
 
+vi.mock("./catalog-art", () => ({ loadCatalogArt: async (ids: readonly string[]) => new Map(ids.filter((i) => i === "c").map((i) => [i, "catalog.jpg"])) }));
+
 const ON = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const game = (id: string): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-10-01"), versionNumber: null, note: null, worked: [], hurt: [],
@@ -48,6 +50,12 @@ describe("loadDeckOpponents", () => {
 });
 
 describe("the art and the wire", () => {
+  it("falls back to the catalog's own image for a commander the opening printing has none for", async () => {
+    const read = vi.fn().mockResolvedValue(new Map([["g1", [{ ...seat, commander: { oracleId: "c", name: "Cee" } }]]]));
+    const out = await loadDeckOpponents("d", "u", [game("g1")], ON, read);
+    expect(out?.opponents.get("g1")?.[0].commander?.imageUri).toBe("catalog.jpg");
+  });
+
   it("gives a commander the catalog has no art for a null image, and a failed art read costs only the art", async () => {
     const read = vi.fn().mockResolvedValue(new Map([["g1", [{ ...seat, commander: { oracleId: "z", name: "Zed" } }]]]));
     const none = await loadDeckOpponents("d", "u", [game("g1")], ON, read);

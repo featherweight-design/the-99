@@ -34,7 +34,7 @@ function ThumbView({ thumb }: { thumb: Thumb }) {
       }
     >
       {thumb.kind === "art" && <ArtLayer src={thumb.imageUri} style={{ backgroundPosition: "50% 20%" }} />}
-      {thumb.kind === "pips" && <IdentityPips colorIdentity={thumb.colorIdentity} size={12} gap={3} />}
+      {thumb.kind === "pips" && <IdentityPips colorIdentity={thumb.colorIdentity} size={8} gap={2} />}
       {thumb.kind === "initials" && thumb.text}
     </span>
   );
@@ -63,17 +63,17 @@ function Squares({ row }: { row: MatchupRow }) {
 
 function Row({ row }: { row: MatchupRow }) {
   return (
-    <li className="flex min-h-[62px] list-none items-center gap-[11px] border-0 border-b border-solid border-b-[color:var(--border)] py-[6px] last:border-b-0 md:grid md:min-h-[54px] md:grid-cols-[56px_minmax(0,1fr)_300px_84px_76px] md:gap-[14px]">
+    <li className="flex min-h-[62px] list-none items-center gap-[11px] border-0 border-b border-solid border-b-[color:var(--border)] py-[6px] last:border-b-0 lg:grid lg:min-h-[54px] lg:grid-cols-[56px_minmax(0,1fr)_300px_84px_76px] lg:gap-[14px]">
       <ThumbView thumb={row.thumb} />
-      <span className="flex min-w-0 flex-1 flex-col gap-[5px] md:contents">
-        <span className="flex min-w-0 flex-col md:min-w-0">
+      <span className="flex min-w-0 flex-1 flex-col gap-[5px] lg:contents">
+        <span className="flex min-w-0 flex-col lg:min-w-0">
           <span className="truncate text-[14px] text-[color:var(--fg)]">{row.name}</span>
           {row.sub && <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{row.sub}</span>}
         </span>
         <Squares row={row} />
       </span>
-      <span className="flex shrink-0 flex-col items-end gap-[4px] md:contents">
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] md:order-last md:text-right md:text-[11px]">{copy.games(row.games)}</span>
+      <span className="flex shrink-0 flex-col items-end gap-[4px] lg:contents">
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] lg:order-last lg:text-right md:text-[11px]">{copy.games(row.games)}</span>
         <span className="flex items-center gap-[4px] font-mono text-[11px] text-[color:var(--fg)] md:text-[11.5px]">
           {row.beat > 0 && (
             <>
