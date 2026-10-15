@@ -956,10 +956,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   **It also walks the tab around the box** (Analysis tab handoff §2). Before a reading the tab
   is one empty state: a 150px ring of five 44px marks, 1 at twelve o'clock and running
   clockwise on a 50px radius, then the heading in the display face, then Analyze with the
-  provenance opener under it. A fresh, never-analyzed tab must draw the credit note's frame
-  (`press-note-slot`, or the note itself) from its first paint (#1844), and with a note in the row
-  the opener takes its own line under the pair at 1300 as at 390 (frame 7a, #916): a build that loses
-  the frame puts the opener back beside Analyze at 1300 and fails. With
+  provenance opener under it. It is read while the note's read is HELD: the probe keeps the first
+  `fetchSynopsis` reply from the page (`page.route`, the action named from the dev manifest by
+  `lib/action-names.mjs`) and releases it after the walk, so a fast read cannot stand in for the frame.
+  While held, the note's frame (`press-note-slot`, #1844) must be drawn, visible, with height and
+  empty, with no note yet, and with a frame in the row the opener takes its own line under the pair at
+  1300 as at 390 (frame 7a, #916). With the frame removed from the page the frame check fails at both
+  widths, and with the opener's row break undone the opener check fails at 1300. Its Analyze press
+  writes the overview when the note says so (#916), and that row is deleted with its ledger unit after
+  each width and in a `finally` (`lib/overview-drop.mjs`). With
   a reading the overview slot is drawn too (#912), and its grid places the three: at 1300 the
   overview tops the left column (2fr) with the climb 26px under it, and the box spans both rows on
   the right (1fr) from the overview's top; at 390 they stack overview, box, climb. With the gap
@@ -1017,9 +1022,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   words (`noteVariant`). A credit or free note adds `writeSynopsis` once, through the overview's stand-in,
   and one more `fetchSynopsis` when the write settles; any other note writes nothing. Over a reading the
   overview slot is drawn in the panel (#912) and offers View full overview when this press wrote one or
-  one was written before, and nothing to view otherwise. On the local-dev fixture the note is the credit
+  one was SHOWN before (`readShownSynopsis`'s predicate: done, with at least one section accepted), and
+  nothing to view otherwise. On the local-dev fixture the note is the credit
   note, so the writing branch is the one exercised; each overview the press writes is deleted again with
-  its ledger unit after each width and in a `finally`. With the press expected to write nothing, or
+  its ledger unit, in ONE statement (`lib/overview-drop.mjs`, so a failure rolls both back and stays
+  retryable), after each width and in a `finally`. With the press expected to write nothing, or
   each window widened or narrowed by one call, or the slot read in the wrong place, those checks fail. Since #1310 the strip has ONE mount, at Your deck on the spine above the
   tab row, Analysis on or off: the probe asserts exactly one strip, above the tabs, before and after
   the tab is opened, and none inside `#panel-analysis` (pointed at the whole page instead, the panel

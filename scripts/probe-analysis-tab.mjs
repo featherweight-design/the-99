@@ -37,7 +37,6 @@
 // Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-analysis-tab.mjs
-import { readFileSync } from "node:fs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
@@ -45,6 +44,8 @@ import { requireEnv } from "./lib/env.mjs";
 import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { noteVariant } from "./lib/note-variant.mjs";
+import { tally } from "./lib/action-names.mjs";
+import { dropWrittenOverviews } from "./lib/overview-drop.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -194,37 +195,13 @@ const readStrip = (page) =>
     };
   }, PAGE);
 
-// THE ACTIONS' NAMES. Next sends a server action as a POST whose `next-action` header is a hashed id, and
-// the dev server's own manifest maps each id to its file and export. So the counts below name the action
-// they count rather than counting opaque ids. Read from THIS worktree's `next dev` build, so PROBE_BASE must
-// be a `next dev` server started here; an id the manifest does not hold is named `unknown:<id>` and fails
-// every count it lands in.
-const ACTION_MANIFEST = new URL("../.next/dev/server/server-reference-manifest.json", import.meta.url);
-function actionName(id) {
-  try {
-    const entry = JSON.parse(readFileSync(ACTION_MANIFEST, "utf8")).node?.[id];
-    if (entry?.exportedName) return entry.exportedName;
-  } catch {
-    // No manifest: the server is not this worktree's `next dev`.
-  }
-  return `unknown:${id.slice(0, 10)}`;
-}
-/** The calls in `ids`, as a sorted `name×n` list, for comparing against what ships. */
-const tally = (ids) => {
-  const n = {};
-  for (const id of ids) { const name = actionName(id); n[name] = (n[name] ?? 0) + 1; }
-  return Object.entries(n).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}×${v}`).join(", ") || "none";
-};
+// THE ACTIONS' NAMES: each `next-action` id is named from this worktree's `next dev` manifest
+// (`lib/action-names.mjs`), so the counts below say which actions ran, not only how many.
 
-// Deletes the overview rows a press wrote on the deck (every row not in `before`), with their ledger
-// units, so the account keeps its credits and both widths press the deck from the same state.
+// The overview rows a press wrote, deleted with their ledger units in one statement (`lib/overview-drop.mjs`).
 async function dropWritten(sql, deckId, before) {
   try {
-    const calls = (await sql`
-      delete from deck_synopses where deck_id = ${deckId} and not (id = any(${before}::uuid[]))
-      returning model_call_id`).map((r) => r.model_call_id).filter(Boolean);
-    if (calls.length > 0) await sql`delete from model_calls where id = any(${calls}::uuid[])`;
-    return calls.length;
+    return await dropWrittenOverviews(sql, deckId, before);
   } catch (error) {
     console.error(`cleanup: the overview written on ${deckId} was left behind:`, error.message);
     failures += 1;
@@ -449,7 +426,13 @@ async function run() {
       // full overview; a press that wrote nothing leaves what the deck had: View full overview over one
       // written before, and no View full overview over none.
       const [{ written }] = await sql`
-        select exists(select 1 from deck_synopses where deck_id = ${deckId} and status = 'done' and id = any(${synopsesBefore}::uuid[])) as written`;
+        select exists(
+          select 1 from deck_synopses where deck_id = ${deckId} and id = any(${synopsesBefore}::uuid[])
+            -- SHOWN, by readShownSynopsis's own predicate (src/lib/synopsis/generate.ts): done, and at
+            -- least one section accepted. A failed run, or one whose every section was refused, is not shown.
+            -- Restated here because that module reaches the app's db and cannot load in a probe.
+            and status = 'done' and content -> 'verdicts' @> '[{"status":"ok"}]'::jsonb
+        ) as written`;
       const wantView = writes || written;
       const synopsis = await p.evaluate((scope) => {
         const slot = document.querySelector(scope)?.querySelector("#panel-analysis [data-testid='synopsis-overview']");

@@ -41,7 +41,9 @@
 // `greatest(...)` so it can only ever move forward. That is the convention
 // `probe-card-captions.mjs` set and records the reason for — the flag is true once this has
 // run, and clearing it would re-break every other probe on this account. And the walked deck's
-// `deck_profiles` row, deleted and rewritten by the press, then restored as captured. It touches
+// `deck_profiles` row, deleted and rewritten by the press, then restored as captured. The press also
+// writes the overview when its credit note says so (#916), through the stand-in, and that row is deleted
+// again with its ledger unit after each width and in the `finally` (`lib/overview-drop.mjs`). It touches
 // no deck, no collection and no catalog row. Signs in through Clerk's dev instance — see the local-auth note in memory.
 // Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
 //
@@ -55,6 +57,8 @@ import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { actionName } from "./lib/action-names.mjs";
+import { dropWrittenOverviews } from "./lib/overview-drop.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -381,7 +385,7 @@ async function walk(page, label, markPx, viewportWidth) {
 }
 
 /** 2a, measured: the ring's geometry, the type, and where the opener sits beside Analyze. */
-async function walkEmpty(page, label, width) {
+async function walkEmpty(page, label, width, held) {
   const phone = width < 768;
   const e = await page.evaluate((scope) => {
     const root = document.querySelector(scope);
@@ -411,8 +415,13 @@ async function walkEmpty(page, label, width) {
       cta: { text: cta.textContent, h: Math.round(cb.height) },
       besides: Math.abs(cb.top + cb.height / 2 - (ob.top + ob.height / 2)) < 4 && ob.left > cb.right,
       below: ob.top >= cb.bottom - 1,
-      // The credit note, or its reserved frame while the note's read is out (#1844).
-      noteFrame: Boolean(empty.querySelector('[data-testid="press-note"], [data-testid="press-note-slot"]')),
+      // The note's reserved frame while its read is out (#1844): drawn, with height, and EMPTY.
+      slot: (() => {
+        const el = empty.querySelector('[data-testid="press-note-slot"]');
+        const r = el?.getBoundingClientRect();
+        return el ? { h: Math.round(r.height), w: Math.round(r.width), text: el.textContent, hidden: getComputedStyle(el).visibility === "hidden" } : null;
+      })(),
+      note: Boolean(empty.querySelector('[data-testid="press-note"]')),
       grid: !!root.querySelector('section[aria-label="Your bracket"]'),
     };
   }, PAGE);
@@ -429,12 +438,14 @@ async function walkEmpty(page, label, width) {
     `${e.marks.length} marks at ${e.marks.map((m) => m.w).join("/")}px, first ${e.marks[0]?.n}`);
   report(`${label}px · the heading is the display face at ${phone ? 21 : 26}px`,
     e.h2.size === `${phone ? 21 : 26}px` && e.h2.family === e.h2.display, `${e.h2.size}, ${e.h2.family.split(",")[0]}`);
-  // A fresh, never-analyzed tab draws the credit note's frame from its first paint while the note's read is out
-  // (#1844), and with a note in the row the opener takes its own line under the pair (frame 7a, #916), at 1300
-  // as at 390. So the frame must be THERE, and the opener under Analyze: a build that lost the frame would put
-  // the opener back beside the press at 1300, and fails here.
-  report(`${label}px · a fresh tab draws the credit note's frame (#1844)`, e.noteFrame,
-    e.noteFrame ? "press-note or press-note-slot drawn" : "no note and no frame");
+  // Read while the note's read (`fetchSynopsis`) is HELD by the probe, so a fast read cannot stand in for the
+  // frame: a fresh, never-analyzed tab draws the note's frame from its first paint while that read is out
+  // (#1844), visible, with height and empty, and no note yet. With a frame in the row the opener takes its
+  // own line under the pair (frame 7a, #916), at 1300 as at 390, so a build that lost the frame puts the
+  // opener back beside the press at 1300 and fails.
+  report(`${label}px · with the note's read held, the note's frame is drawn, empty (#1844)`,
+    held() > 0 && e.slot !== null && !e.slot.hidden && e.slot.h > 0 && e.slot.text.trim() === "" && !e.note,
+    JSON.stringify({ readsHeld: held(), slot: e.slot, note: e.note }));
   report(`${label}px · Analyze is a 44px press with the opener under it`,
     e.cta.text === "Analyze" && e.cta.h >= 44 && e.below,
     `"${e.cta.text}", ${e.cta.h}px, opener ${e.besides ? "beside" : e.below ? "under" : "elsewhere"}`);
@@ -570,6 +581,17 @@ async function run() {
     const sql = neon(DATABASE_URL);
     // Captured to DISK before the first delete, and put back in the `finally` whatever happens.
     const restore = await holdProfile(sql, deckId);
+    // Its Analyze press writes the overview when the credit note says so (#916), through the stand-in: every
+    // overview row past these is deleted with its ledger unit after each width and in the \`finally\`.
+    const baseSynopses = (await sql`select id from deck_synopses where deck_id = ${deckId}`).map((r) => r.id);
+    const dropWritten = async () => {
+      try {
+        await dropWrittenOverviews(sql, deckId, baseSynopses);
+      } catch (error) {
+        console.error(`cleanup: the overview written on ${deckId} was left behind:`, error.message);
+        failures += 1;
+      }
+    };
     try {
 
     for (const { label, viewport, markPx } of WIDTHS) {
@@ -607,10 +629,30 @@ async function run() {
 
       // REACHED BY A PRESS, never by a URL: the tab is client state and produces no address,
       // which is why the card mark shipped broken into a surface a URL sweep photographed.
+      // THE NOTE'S READ IS HELD while the empty state is walked: the first `fetchSynopsis` reply is kept
+      // from the page (named from the dev manifest, `lib/action-names.mjs`) and released after the walk.
+      let release;
+      const gate = new Promise((r) => { release = r; });
+      let readsHeld = 0;
+      const holdSynopsis = async (route) => {
+        const req = route.request();
+        const id = req.headers()["next-action"];
+        if (req.method() !== "POST" || !id || actionName(id) !== "fetchSynopsis") return route.fallback();
+        readsHeld += 1;
+        const response = await route.fetch();
+        const body = await response.text();
+        await gate;
+        await route.fulfill({ response, body }).catch(() => {});
+      };
+      await p.route("**/*", holdSynopsis);
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
-      await p.waitForTimeout(500);
       await onPage(p, '[data-testid="analysis-empty"]').first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
-      await walkEmpty(p, label, viewport.width);
+      await p.waitForTimeout(500);
+      await walkEmpty(p, label, viewport.width, () => readsHeld);
+      release();
+      await p.unroute("**/*", holdSynopsis);
+      // The note lands once the read is released.
+      await onPage(p, '[data-testid="analysis-empty"] [data-testid="press-note"]').first().waitFor({ timeout: 30_000 }).catch(() => {});
       const invite = onPageRole(p, "button", /^Analyze$/);
       if ((await invite.count()) > 0) {
         await invite.first().click();
@@ -624,9 +666,11 @@ async function run() {
       await walkLayout(p, label, viewport.width);
       await walkStale(p, sql, deckId, label, viewport.width);
       await ctx.close();
+      await dropWritten();
     }
     } finally {
       // PUT BACK AS IT WAS: the press rewrote the row, and a row that did not exist is removed.
+      await dropWritten();
       await restore();
     }
   } finally {
