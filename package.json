@@ -134,6 +134,7 @@
     "probe:non-game": "tsx scripts/probe-non-game.ts",
     "probe:pending": "node scripts/probe-pending-banner.mjs",
     "probe:deck-menu-stack": "node scripts/probe-deck-menu-stack.mjs",
+    "probe:deck-tile-export": "node scripts/probe-deck-tile-export.mjs",
     "probe:fits-stack": "node scripts/probe-fits-stack.mjs",
     "probe:banner-busy": "node scripts/probe-banner-busy.mjs",
     "probe:review": "node scripts/probe-review-changes.mjs",

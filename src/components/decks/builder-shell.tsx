@@ -9,7 +9,6 @@ import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useContext, useEffect, useRef, useTransition } from "react";
 import { printedNameOf } from "../../lib/collection/browse";
-import { commanderExportName } from "../../lib/decks/export-helpers";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckDetail } from "../../lib/decks/read";
 import { countStatus, statusPill } from "../../lib/decks/status";
@@ -76,6 +75,7 @@ import type { DeckGame, GameSummary } from "../../lib/decks/games";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { QuickAddBar } from "./quick-add-bar";
 import { ExportDialog } from "./export-dialog";
+import { deckExportData } from "../../lib/decks/export-data";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { DeckSiblingsProvider } from "./deck-siblings";
 import { comboScopeIds } from "../../lib/decks/combo-scope";
@@ -2211,48 +2211,7 @@ export function BuilderShell({
           {exportOpen && (
             <ExportDialog
               deckName={deck.name}
-              // A commander line naming its printing names that printing's face, as a body line does
-              // (`printedNameOf`): the oracle name over a renamed printing's set and number would
-              // describe a card face that reads something else.
-              commanderName={commanderExportName(deck.commander)}
-              partnerName={deck.partner ? commanderExportName(deck.partner) : null}
-              // The printing the deck shows for each commander, as a body line names its own.
-              commanderPrinting={{
-                setCode: deck.commander.printedSetCode ?? undefined,
-                collectorNumber: deck.commander.printedCollectorNumber ?? undefined,
-              }}
-              partnerPrinting={deck.partner ? {
-                setCode: deck.partner.printedSetCode ?? undefined,
-                collectorNumber: deck.partner.printedCollectorNumber ?? undefined,
-              } : null}
-              decklistCards={cards.map((c) => ({
-                // The whole printed string, not the front face: an export is
-                // read by another deckbuilder, which wants the full name and
-                // has no width to run out of. Naming the printing while still
-                // exporting the oracle name would emit a line whose set and
-                // number describe a card face that reads something else.
-                name: printedNameOf(c),
-                quantity: c.quantity,
-                setCode: c.printedSetCode ?? undefined,
-                collectorNumber: c.printedCollectorNumber ?? undefined,
-                // The deck view's own group, so the export's type sections are the ones it draws.
-                typeGroup: c.cardTypeGroup,
-              }))}
-              // The Shopping filter's own predicate, not a second `!owned` list.
-              // The two diverged: this one carried the unowned basics the filter
-              // refuses to show and dropped the spoken-for cards it puts front
-              // and centre, so the buy link under it bought a basket the player
-              // never saw.
-              // The commanders first, as the list draws them (H28).
-              shoppingCards={[
-                ...commanderShoppingRows(deck.commander, deck.partner, cards),
-                ...cards.filter(isShoppingCard),
-              ].map((c) => ({
-                  name: c.name,
-                  role: c.role,
-                  quantity: c.quantity,
-                  owned: c.owned,
-                }))}
+              {...deckExportData(deck.commander, deck.partner, cards)}
               open={exportOpen}
               onClose={() => setExportOpen(false)}
             />

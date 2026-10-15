@@ -2,7 +2,7 @@
 // ExportDialog — §Export Dialog / Sheet: modal (desktop) / bottom sheet (mobile), two tabs: Decklist + Shopping list.
 // Task 10. Reuses useDialogA11y for focus trap, Escape, focus-return.
 
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { downloadTextFile } from "../../lib/decks/download";
@@ -65,6 +65,8 @@ interface ExportDialogProps {
    * describe renders there alone.
    */
   initialTab?: Tab;
+  /** Where focus goes on close, when the opener knows better than the focus at mount (`useDialogA11y`). */
+  returnFocusRef?: RefObject<HTMLElement | null>;
 }
 
 export function ExportDialog({
@@ -79,6 +81,7 @@ export function ExportDialog({
   onClose,
   inert = false,
   initialTab = "decklist",
+  returnFocusRef,
 }: ExportDialogProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -86,7 +89,7 @@ export function ExportDialog({
 
   // Focus trap, Escape, focus-return, body scroll lock — all hooks must run
   // before any early return, so the lock tracks `open` rather than the mount.
-  useDialogA11y(dialogRef, onClose, { lockScroll: open, inert });
+  useDialogA11y(dialogRef, onClose, { lockScroll: open, inert, returnFocusRef });
 
   if (!open) return null;
 

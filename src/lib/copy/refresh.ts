@@ -144,6 +144,8 @@ export const refreshCopy = {
       updateFromList: 'Update from a list',
       rename: 'Rename',
       delete: 'Delete',
+      /** The tile menu's Export row when the deck's export could not be read. Placeholder owed to /copy-review. */
+      exportFailed: 'Couldn’t load. Try again',
       trigger: (deckName: string) => `Actions for ${deckName}`,
     },
 
