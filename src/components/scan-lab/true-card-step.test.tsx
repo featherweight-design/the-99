@@ -45,8 +45,8 @@ describe("TrueCardStep", () => {
     search.mockResolvedValue([FELIX]);
     render(<TrueCardStep resultId={ROW} onDone={vi.fn()} />);
     await type("felix");
-    const hit = screen.getByRole("button", { name: /Feral Felix/ });
-    expect(hit.textContent).toContain("Barrowgoyf");
+    const lines = [...screen.getByRole("button", { name: /Feral Felix/ }).querySelectorAll("span > span")].map((n) => n.textContent);
+    expect(lines).toEqual(["Feral Felix", "Barrowgoyf"]);
   });
 
   it("keeps the step open with a line when the save fails", async () => {
@@ -58,6 +58,20 @@ describe("TrueCardStep", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Whir of Invention/ })); });
     expect(onDone).not.toHaveBeenCalled();
     expect(screen.getByText("That didn’t save. Pick it again or skip.")).toBeTruthy();
+  });
+
+  it("reports nothing when the save lands after a newer tap closed the step", async () => {
+    search.mockResolvedValue([WHIR]);
+    let resolve!: (ok: boolean) => void;
+    label.mockReturnValue(new Promise<boolean>((r) => { resolve = r; }));
+    const onDone = vi.fn();
+    const view = render(<TrueCardStep resultId={ROW} onDone={onDone} />);
+    await type("whir");
+    fireEvent.click(screen.getByRole("button", { name: /Whir of Invention/ }));
+    view.unmount();
+    await act(async () => { resolve(true); });
+    expect(label).toHaveBeenCalledWith(ROW, WHIR.oracleId);
+    expect(onDone).not.toHaveBeenCalled();
   });
 
   it("closes on Skip with no write", () => {

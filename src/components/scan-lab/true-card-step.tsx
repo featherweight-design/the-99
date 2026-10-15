@@ -20,6 +20,10 @@ export function TrueCardStep({ resultId, onDone }: { resultId: string; onDone: (
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const ticket = useRef(0);
+  // A save that lands after a newer tap closed this step reports nothing: the row is saved, and the
+  // step on screen (if any) belongs to another miss.
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
   const trimmed = query.trim();
 
   // The debounced search. A ticket drops an answer that a newer keystroke has outdated.
@@ -48,6 +52,7 @@ export function TrueCardStep({ resultId, onDone }: { resultId: string; onDone: (
     setSaving(true);
     setSaveFailed(false);
     const ok = await labelScanLabResult(resultId, hit.oracleId).catch(() => false);
+    if (!alive.current) return;
     setSaving(false);
     if (ok) onDone(copy.labelled(hit.name));
     else setSaveFailed(true);
