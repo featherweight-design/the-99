@@ -38,5 +38,7 @@ export const gameSeatsCopy = {
     searching: "Searching…",
     /** Not drawn in the handoff: the one line a search with no hit needs. */
     noMatch: "No commander by that name.",
+    /** Not drawn either: a search that failed is not a search with no hit. */
+    failed: "Couldn\u2019t search just now. Try again.",
   },
 } as const;

@@ -23,7 +23,7 @@ const PANEL_WIDTH = 340;
 const KEYSTROKE_MS = 180;
 const copy = gameSeatsCopy.picker;
 
-type Search = { state: "idle" } | { state: "busy" } | { state: "done"; hits: OpponentCommanderHit[] };
+type Search = { state: "idle" } | { state: "busy" } | { state: "failed" } | { state: "done"; hits: OpponentCommanderHit[] };
 
 function Body({
   onPick,
@@ -49,7 +49,7 @@ function Body({
       setSearch({ state: "busy" });
       searchOpponentCommandersAction(q)
         .then((hits) => { if (asked.current === ticket) setSearch({ state: "done", hits }); })
-        .catch(() => { if (asked.current === ticket) setSearch({ state: "done", hits: [] }); });
+        .catch(() => { if (asked.current === ticket) setSearch({ state: "failed" }); });
     }, KEYSTROKE_MS);
     return () => window.clearTimeout(timer);
   }, [query]);
@@ -82,6 +82,9 @@ function Body({
       <ul className="m-0 mt-[8px] min-h-0 list-none overflow-y-auto p-0 pb-[6px]">
         {!short && search.state === "done" && search.hits.length === 0 && (
           <li className="px-[14px] py-[10px] text-[13px] text-[color:var(--fg-muted)]">{copy.noMatch}</li>
+        )}
+        {!short && search.state === "failed" && (
+          <li role="alert" className="px-[14px] py-[10px] text-[13px] text-[color:var(--fg-muted)]">{copy.failed}</li>
         )}
         {!short && search.state === "busy" && (
           <li className="px-[14px] py-[10px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</li>

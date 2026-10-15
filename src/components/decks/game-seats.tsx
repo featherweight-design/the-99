@@ -169,6 +169,14 @@ export function GameSeats({
     setPicking(null);
   }
 
+  // Clearing a seat removes the ✕ that held focus, and always makes room for Add opponent: focus goes there.
+  const clearedFocus = useRef(false);
+  useEffect(() => {
+    if (!clearedFocus.current) return;
+    clearedFocus.current = false;
+    addRef.current?.focus();
+  }, [seats]);
+
   // Filling the last seat removes Add opponent in the same commit that closes the picker, so the dialog's own
   // focus return lands on a detached button and focus drops to the page. The seat just filled is the last one.
   useEffect(() => {
@@ -207,7 +215,7 @@ export function GameSeats({
             busy={busy}
             editing={picking?.at === s.key}
             onOpen={(anchor) => setPicking({ at: s.key, anchor })}
-            onClear={() => onClear(s.key)}
+            onClear={() => { clearedFocus.current = true; onClear(s.key); }}
             onWon={() => onWon(s.key)}
             onLabel={(text) => onLabel(s.key, text)}
           />

@@ -189,6 +189,27 @@ describe("the picker", () => {
   });
 });
 
+describe("focus and failure", () => {
+  it("moves focus to Add opponent when a seat is cleared, instead of dropping it to the page", async () => {
+    mount(true);
+    await seat(seatsCopy.add, "yur", "Yuriko");
+    const clear = screen.getByRole("button", { name: seatsCopy.clear("Yuriko") });
+    clear.focus();
+    fireEvent.click(clear);
+    await waitFor(() => expect(screen.getByRole("button", { name: seatsCopy.add })).toHaveFocus());
+  });
+
+  it("says so when the search fails, rather than reporting no commander by that name", async () => {
+    search.mockRejectedValueOnce(new Error("down"));
+    mount(true);
+    fireEvent.click(screen.getByRole("button", { name: seatsCopy.add }));
+    const dialog = await screen.findByRole("dialog", { name: gameSeatsCopy.picker.title });
+    fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: "yur" } });
+    expect(await within(dialog).findByText(gameSeatsCopy.picker.failed)).toBeInTheDocument();
+    expect(within(dialog).queryByText(gameSeatsCopy.picker.noMatch)).toBeNull();
+  });
+});
+
 describe("the pod", () => {
   it("holds a pod size below the filled seats, and says why", async () => {
     mount(true);
