@@ -87,7 +87,7 @@ function CountField({
       inputMode="numeric"
       aria-label={label}
       value={shownText}
-      onChange={(e) => setDraft(e.target.value.replace(/\D/g, "").slice(0, 3))}
+      onChange={(e) => setDraft(e.target.value.replace(/\D/g, ""))}
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === "Enter") {

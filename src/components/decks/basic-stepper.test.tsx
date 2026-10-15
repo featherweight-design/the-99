@@ -261,6 +261,18 @@ describe("the basics stepper on a decklist row", () => {
       expect(field()).toHaveValue("21");
     });
 
+    // The whole pasted figure is parsed and THEN bounded: nothing truncates it into a different count first.
+    it("reads a pasted 0099 as 99 and refuses a pasted 0100", async () => {
+      wrap(<DecklistRow deckId="d1" card={island} newestAsOf={null} />);
+      await type("0100");
+      await settle();
+      expect(setBasicQuantity).not.toHaveBeenCalled();
+      expect(field()).toHaveValue("6");
+      await type("0099");
+      await settle();
+      expect(setBasicQuantity).toHaveBeenCalledWith("d1", "o-island", 99, 6);
+    });
+
     it("steps by one on the arrow keys", async () => {
       wrap(<DecklistRow deckId="d1" card={island} newestAsOf={null} />);
       await act(async () => { fireEvent.keyDown(field(), { key: "ArrowUp" }); });
