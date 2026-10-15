@@ -313,7 +313,7 @@ describe("ReplaceFlow · Sync's other ways in", () => {
     await reachWith({ ...preview, matchedCardCount: 0 }, { sync: true });
     await screen.findByRole("radiogroup");
     expect(previewChange.mock.calls.map((c) => [c[1], c[2]])).toEqual([["sync", { pick: "tokens" }]]);
-    const reason = "No card in this file matched, only tokens. There’s nothing here to replace or add.";
+    const reason = "Only tokens in this file matched. Replace and Add need at least one card.";
     for (const name of [/Replace my collection/, /Add these cards/]) {
       const card = screen.getByRole("radio", { name });
       expect(card.getAttribute("aria-disabled")).toBe("true");

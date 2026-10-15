@@ -67,6 +67,19 @@ export type ContestedCard = {
   claimants: ContestedClaimant[];
 };
 
+/**
+ * Whether this upload was confirmed as an Add: its ledger entry, which `applyCollectionChange` files as
+ * `upload_add` and names `csv_uploads:<id>`. A Replace, a Sync and an upload confirmed before the ledger
+ * (or with it off) have no such entry, and read as a Replace. Aliased and qualified on both sides: Drizzle
+ * leaves a column in a single-table projection unqualified, and `user_id` and `id` exist on both tables.
+ */
+export const uploadIsAdd = sql<boolean>`exists (
+  select 1 from collection_history h
+  where h.user_id = ${csvUploads}.user_id
+    and h.source = 'csv_uploads:' || ${csvUploads}.id::text
+    and h.kind = 'upload_add'
+)`;
+
 export type SummaryView = {
   uploadId: string;
   filename: string;
@@ -85,6 +98,8 @@ export type SummaryView = {
   chooser: Record<string, ContestedCard>;
   /** A Sync's kept, decided and token figures (its upload's `syncSummary`); null for a Replace or an Add. */
   sync: SyncEntrySummary | null;
+  /** What a non-Sync upload did to the collection; the receipt's words follow it. */
+  mode: "replace" | "add";
 };
 
 
@@ -251,6 +266,7 @@ export async function loadSummaryView(
       // The one key of the preview payload this route reads, extracted in the database so the
       // aggregated rows beside it never travel.
       syncSummary: sql<unknown>`${csvUploads.previewPayload} -> 'syncSummary'`,
+      isAdd: uploadIsAdd,
     })
     .from(csvUploads)
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
@@ -301,6 +317,7 @@ export async function loadSummaryView(
     contested,
     chooser: opts.addedCopy && shown?.went ? await chooserFor(shown, contested, userId, opts.env) : {},
     sync: readSyncSummary(upload.syncSummary),
+    mode: upload.isAdd ? "add" : "replace",
   };
 }
 

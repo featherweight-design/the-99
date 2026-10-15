@@ -97,7 +97,7 @@ describe("UploadChoice with Sync", () => {
     expect(card.getAttribute("aria-disabled")).toBe("true");
     const reason = document.getElementById(card.getAttribute("aria-describedby") ?? "");
     expect(reason?.textContent).toBe(
-      "Sync compares against your last full upload, and there isn’t one it can read. Replace or Add will work.",
+      "Sync compares against your last Replace or Sync, and there isn’t one it can read. Replace or Add will work.",
     );
     expect(reason?.className).toContain("border-dashed");
     expect(reason?.className).toContain("mt-[6px]");
@@ -158,7 +158,7 @@ describe("UploadChoice with Sync", () => {
 });
 
 describe("UploadChoice · a file with no matched card", () => {
-  const reason = "No card in this file matched, only tokens. There’s nothing here to replace or add.";
+  const reason = "Only tokens in this file matched. Replace and Add need at least one card.";
 
   it("draws Replace and Add unavailable with the reason in place of the figure, and names Sync at the foot", () => {
     const picks: string[] = [];

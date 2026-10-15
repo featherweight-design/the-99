@@ -159,6 +159,7 @@ export function ArrivalsSummary({
   addedCopy = false,
   chooser = {},
   sync = null,
+  mode = "replace",
 }: {
   /** Null when the receipt did not survive its write — renders the nothing-to-report state. */
   summary: ArrivalsSummary | null;
@@ -177,7 +178,14 @@ export function ArrivalsSummary({
    * lede's ending, the short-deck verb and the stamp's word, nothing else.
    */
   sync?: (SyncLede & { tokens: number; cards?: number }) | null;
+  /**
+   * What the upload did to the collection (`loadSummaryView`): a Replace swapped it for the file, an Add put
+   * the file's cards into it. A Sync is told by `sync`, not here. Only the words differ: the eyebrow, the lost
+   * receipt's heading, and the nothing-to-report lede's ending, which says the collection is the new file.
+   */
+  mode?: "replace" | "add";
 }) {
+  const add = mode === "add" && !sync;
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [showAllCleared, setShowAllCleared] = useState(false);
   const [showAllStill, setShowAllStill] = useState(false);
@@ -220,14 +228,14 @@ export function ArrivalsSummary({
     // narrow strip against a screen of empty ground.
     <div className="mx-auto w-full p-[18px] md:p-[28px_34px] max-w-[760px]">
       <p className="font-mono text-[11px] uppercase tracking-[0.16em] m-0" style={{ color: "var(--fg-faint)" }}>
-        {sync ? copy.summary.eyebrowSync : copy.summary.eyebrow}
+        {sync ? copy.summary.eyebrowSync : add ? copy.summary.eyebrowAdd : copy.summary.eyebrow}
       </p>
       <h1 className="font-display font-bold text-[24px] md:text-[30px] mt-[6px] mb-[8px]" style={{ color: "var(--fg)" }}>
         {/* A LOST RECEIPT HAS NO FIGURE, and must not invent one. `summary` is null only when
             the payload did not survive its write, and `heading(0)` would then tell a player
             with 2,733 cards that they have none — a false statement, and one that makes a
             successful import look like an emptied collection. */}
-        {summary ? copy.summary.heading(summary.totalAfter) : sync ? copy.summary.headingNoReceiptSync : copy.summary.headingNoReceipt}
+        {summary ? copy.summary.heading(summary.totalAfter) : sync ? copy.summary.headingNoReceiptSync : add ? copy.summary.headingNoReceiptAdd : copy.summary.headingNoReceipt}
       </h1>
       <p className="text-[13.5px] m-0" style={{ color: "var(--fg-body)" }}>
         {/* THE FROZEN SECTIONS CHOOSE THE SENTENCE, for the reason the empty state does: a row
@@ -251,13 +259,14 @@ export function ArrivalsSummary({
             // The same holds for a Replace or an Add: "nothing went back on the buy list" is read off the
             // receipt's sections, and a lost receipt has none to read.
             : summary === null ? copy.summary.ledeNoReceipt
+            : add ? copy.summary.ledeNothingToReportAdd
             : copy.summary.ledeNothingToReport
           : (summary?.contested.length ?? 0) > 0
             ? copy.summary.lede(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0, lede)
             : still.length > 0 || nowShort.length > 0
               ? copy.summary.ledeOwing(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0, lede)
               : copy.summary.ledeNoContention(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0, lede)}
-        {nowShort.length > 0 ? ` ${copy.summary.nowShort(nowShort, sync ? "Syncing" : "Replacing")}` : ""}
+        {nowShort.length > 0 ? ` ${copy.summary.nowShort(nowShort, sync ? "Syncing" : add ? "Adding" : "Replacing")}` : ""}
       </p>
       <p className="font-mono text-[10.5px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
         {sync ? copy.summary.syncFileStamp(stampDate, filename) : copy.summary.fileStamp(stampDate, filename)}

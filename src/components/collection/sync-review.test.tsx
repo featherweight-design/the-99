@@ -413,7 +413,12 @@ describe("Sync review · the bar", () => {
     // No planned change, never "already has everything": Sync may be keeping an app deletion the file disagrees with.
     const note = screen.getByText("Nothing in this file changes your collection.");
     expect(note.className).toContain("text-[color:var(--fg-muted)]");
-    expect(screen.getByText("Nothing will change.")).toBeTruthy();
+    // One line says it: the note above. The bar is only the way back and carries no sentence of its own.
+    expect(screen.queryByText("Nothing will change.")).toBeNull();
+    // …and draws no empty sentence line in its place (it would still take the phone's 10px gap).
+    const bar = screen.getByRole("button", { name: "Back to Collection" }).closest("div[style*='border-top']");
+    expect(bar).not.toBeNull();
+    expect(bar!.querySelector("p")).toBeNull();
     expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sync collection" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Back to Collection" }));
@@ -440,6 +445,8 @@ describe("Sync review · the bar", () => {
       "Taking 19 cards from the file and keeping 119 of yours, with 114 token changes. You decided 3.",
     );
     expect(f({ conflicts: 3, undecided: 1 })).toEqual({ kind: "held", line: "1 card still to decide." });
+    // Nothing to take: the bar carries no sentence (the note above says it), only the way back.
+    expect(syncBar(syncFigures(data({ counts: { taken: 0 }, tokensChange: false, nothing: true }).sync!, []))).toEqual({ kind: "nothing" });
     expect(f({ taken: 18 }, { tokensChange: false, tokensChanged: 0 }).line).toBe("Taking 18 cards from the file and keeping 119 of yours.");
     // Nothing of yours kept and only tokens moving: no "including the 0 you changed".
     expect(f({ taken: 0, kept: 0 })).toEqual({ kind: "confirm", line: "Your cards stay as they are. 114 tokens change.", label: "Sync 114 token changes" });

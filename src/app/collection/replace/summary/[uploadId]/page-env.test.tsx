@@ -52,4 +52,19 @@ describe("the import receipt page", () => {
     expect(await stampOf({ kept: 0, decided: 0, tokens: 0, cards: 1 })).toBe("9 Oct 2026");
     expect(await stampOf(null)).toBe("8 Oct 2026");
   });
+
+  // The receipt's words follow what the upload did, so the page hands the component the view's mode.
+  it("hands the receipt the upload's mode", async () => {
+    stub.env = envViewWith({});
+    const modeOf = async (mode: "replace" | "add") => {
+      stub.view.mockResolvedValueOnce({
+        uploadId: UPLOAD, filename: "f.csv", summary: null, contested: [], chooser: {}, sync: null, mode,
+        createdAt: new Date("2026-10-08T23:30:00Z"), confirmedAt: new Date("2026-10-09T08:00:00Z"),
+      });
+      const el = await ImportSummaryPage({ params: Promise.resolve({ uploadId: UPLOAD }) }) as unknown as { props: { children: { props: { mode: string } } } };
+      return el.props.children.props.mode;
+    };
+    expect(await modeOf("add")).toBe("add");
+    expect(await modeOf("replace")).toBe("replace");
+  });
 });

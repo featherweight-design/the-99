@@ -380,8 +380,9 @@ export function ReviewScreen({
         } z-10 md:p-[16px_56px] md:flex md:items-center md:gap-[20px]`}
         style={{ background: "var(--surface-rail)", borderTop: "1px solid var(--border-strong)" }}
       >
-        {/* Summary sentence — §Sticky Confirm Bar: Summary Sentence */}
-        <p
+        {/* Summary sentence — §Sticky Confirm Bar: Summary Sentence. A Sync with nothing to take has none: the
+            review's own note above already says so, and the bar is only the way back. */}
+        {bar?.kind === "nothing" ? null : <p
           className={`text-[11.5px] md:text-[13.5px] text-center md:text-left mb-[10px] md:mb-0 ${
             bar?.kind === "held"
               ? "text-[color:var(--warning)]"
@@ -413,7 +414,7 @@ export function ReviewScreen({
               </span>
             </>
           )}
-        </p>
+        </p>}
 
         {/* Buttons — Cancel then Continue at both widths (D11: the phone's exit is this Cancel,
             a 46px hairline left of Continue). md:whitespace-nowrap on Continue keeps the label on
