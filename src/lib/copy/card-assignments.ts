@@ -43,8 +43,18 @@ const fmt = (n: number) => n.toLocaleString("en-US");
 const cards = (n: number) => (n === 1 ? "1 card" : `${fmt(n)} cards`);
 const tokens = (n: number) => (n === 1 ? "1 token" : `${fmt(n)} tokens`);
 
-/** What a Sync's receipt adds to the lede: the cards it kept and the conflicts the player decided (G9). */
-export type SyncLede = { kept: number; decided: number };
+/**
+ * What a Sync's receipt adds to the lede: the cards it kept, the conflicts the player decided (G9) and the
+ * tokens it changed, either way.
+ */
+export type SyncLede = { kept: number; decided: number; tokens?: number };
+
+/** `the K cards you changed in the app stayed as you had them`, agreeing for one card (`as you had it`). */
+const keptCards = (k: number, the = "the") =>
+  `${the} ${cards(k)} you changed in the app stayed as you had ${k === 1 ? "it" : "them"}`;
+
+/** ` N tokens changed.`, direction-neutral (a Sync moves token counts either way), or nothing. */
+const tokensChanged = (t: number | undefined) => (t && t > 0 ? ` ${tokens(t)} changed.` : "");
 
 /**
  * The lede's first sentence, `Was W. A arrived, L left.` A Sync carries on past `left` (collection
@@ -55,11 +65,15 @@ export type SyncLede = { kept: number; decided: number };
 const ledeHead = (was: number, arrived: number, left: number, sync?: SyncLede) =>
   `Was ${fmt(was)}. ${arrived} arrived, ${left} left` + syncTail(sync);
 
-/** `, and the K cards you changed in the app stayed as you had them. You decided D.`, or `.` for a Replace. */
+/**
+ * `, and the K cards you changed in the app stayed as you had them. You decided D. N tokens changed.`, or `.`
+ * for a Replace.
+ */
 const syncTail = (sync?: SyncLede) =>
   !sync ? "."
-  : (sync.kept > 0 ? `, and the ${cards(sync.kept)} you changed in the app stayed as you had them.` : ".") +
-    (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : "");
+  : (sync.kept > 0 ? `, and ${keptCards(sync.kept)}.` : ".") +
+    (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : "") +
+    tokensChanged(sync.tokens);
 
 export const cardAssignmentsCopy = {
   summary: {
@@ -122,8 +136,9 @@ export const cardAssignmentsCopy = {
     ledeNothingToReportSync: (sync: SyncLede) =>
       "Nothing your decks care about moved. No purchase cleared, nothing went back on the buy list, " +
       "and no copy is contested." +
-      (sync.kept > 0 ? ` The ${cards(sync.kept)} you changed in the app stayed as you had them.` : "") +
-      (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : ""),
+      (sync.kept > 0 ? ` ${keptCards(sync.kept, "The")}.` : "") +
+      (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : "") +
+      tokensChanged(sync.tokens),
     /**
      * Appended to whichever lede is drawn when this upload left committed decks short. The same
      * decks, by the same rule, the warning before the confirm named, so the receipt says

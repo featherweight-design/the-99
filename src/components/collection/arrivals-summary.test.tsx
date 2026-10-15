@@ -221,14 +221,14 @@ describe("copy.summary.nowShort", () => {
 });
 
 describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () => {
-  const sync = (over: Partial<{ kept: number; decided: number; tokens: number }> = {}) => ({ kept: 119, decided: 3, tokens: 114, ...over });
+  const sync = (over: Partial<{ kept: number; decided: number; tokens: number; cards: number }> = {}) => ({ kept: 119, decided: 3, tokens: 114, ...over });
   const synced = (s: Summary | null, sy = sync()) => (
     <ArrivalsSummary summary={s} contested={[]} preview={null} filename="The Vault.csv" stampDate="Oct 15, 2026" sync={sy} />
   );
 
   it("carries on past `left` with the kept clause and the decided sentence, on the shipped comma join", () => {
     const s = summary({ totalBefore: 4616, arrived: 15, left: 2, still: [{ deckId: DECK, oracleId: CARD, owed: 1, reason: { kind: "gone" } }] });
-    render(synced(s));
+    render(synced(s, sync({ tokens: 0 })));
     const lede = copy.summary.ledeOwing(4616, 15, 2, { kept: 119, decided: 3 });
     expect(lede).toBe(
       "Was 4,616. 15 arrived, 2 left, and the 119 cards you changed in the app stayed as you had them. " +
@@ -240,6 +240,33 @@ describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () =
     expect(screen.getByText(copy.summary.eyebrowSync)).toBeTruthy();
     expect(screen.getByText(copy.summary.syncFileStamp("Oct 15, 2026", "The Vault.csv"))).toBeTruthy();
     expect(screen.queryByText(/^uploaded /)).toBeNull();
+  });
+
+  it("says the tokens a Sync that also moved cards changed, neutrally and agreeing in number", () => {
+    const s = summary({ totalBefore: 4616, arrived: 15, left: 2, still: [{ deckId: DECK, oracleId: CARD, owed: 1, reason: { kind: "gone" } }] });
+    render(synced(s, sync({ kept: 119, decided: 3, tokens: 114, cards: 17 })));
+    expect(screen.getByText(
+      "Was 4,616. 15 arrived, 2 left, and the 119 cards you changed in the app stayed as you had them. " +
+        "You decided 3. 114 tokens changed. Here’s what your decks still need after the update.",
+    )).toBeTruthy();
+    expect(copy.summary.lede(10, 1, 0, { kept: 0, decided: 0, tokens: 1 })).toMatch(/^Was 10\. 1 arrived, 0 left\. 1 token changed\. Here’s/);
+    expect(copy.summary.ledeNothingToReportSync({ kept: 0, decided: 0, tokens: 2 })).toMatch(/ 2 tokens changed\.$/);
+  });
+
+  it("agrees for one kept card: it stayed as you had it", () => {
+    expect(copy.summary.lede(10, 1, 0, { kept: 1, decided: 0 })).toMatch(/^Was 10\. 1 arrived, 0 left, and the 1 card you changed in the app stayed as you had it\. Here’s/);
+    expect(copy.summary.ledeNothingToReportSync({ kept: 1, decided: 0 })).toContain("The 1 card you changed in the app stayed as you had it.");
+  });
+
+  it("is not tokens-only when a Sync changed a card row that moved no copy count (a printing, a finish, a condition)", () => {
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 0, decided: 0, tokens: 2, cards: 3 })));
+    expect(screen.queryByText(/Your cards are as you left them/)).toBeNull();
+    expect(screen.getByText(copy.summary.ledeNothingToReportSync({ kept: 0, decided: 0, tokens: 2 }))).toBeTruthy();
+  });
+
+  it("is tokens-only when the Sync changed no card row", () => {
+    render(synced(summary({ arrived: 0, left: 0, totalAfter: 100 }), sync({ kept: 0, decided: 0, tokens: 2, cards: 0 })));
+    expect(screen.getByText(copy.summary.ledeTokensOnly(2))).toBeTruthy();
   });
 
   it("drops the decided sentence when nothing was decided, and the kept clause when nothing was kept", () => {
@@ -269,7 +296,7 @@ describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () =
   });
 
   it("a Sync that moved cards no deck cares about keeps the kept clause, and never says the collection is the file", () => {
-    render(synced(summary(), sync({ kept: 7, decided: 1 })));
+    render(synced(summary(), sync({ kept: 7, decided: 1, tokens: 0 })));
     const lede = copy.summary.ledeNothingToReportSync({ kept: 7, decided: 1 });
     expect(screen.getByText(lede)).toBeTruthy();
     expect(lede).toContain("The 7 cards you changed in the app stayed as you had them. You decided 1.");

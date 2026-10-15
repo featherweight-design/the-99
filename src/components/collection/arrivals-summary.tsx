@@ -176,7 +176,7 @@ export function ArrivalsSummary({
    * an Add. The same layout either way (collection sync ruling 3): a Sync changes the eyebrow, the
    * lede's ending, the short-deck verb and the stamp's word, nothing else.
    */
-  sync?: (SyncLede & { tokens: number }) | null;
+  sync?: (SyncLede & { tokens: number; cards?: number }) | null;
 }) {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [showAllCleared, setShowAllCleared] = useState(false);
@@ -203,8 +203,13 @@ export function ArrivalsSummary({
   const unmatched = summary?.issues.unmatched ?? 0;
   const parseErrors = summary?.issues.parseErrors ?? 0;
   const hasIssues = unmatched + parseErrors > 0;
-  // A Sync that moved no card at all recorded only its tokens (Y1b), and says so.
-  const tokensOnly = sync !== null && summary !== null && summary.arrived + summary.left === 0;
+  // A Sync that changed no card row at all changed only its tokens (Y1b), and says so. Decided by the card
+  // ROWS it changed (`sync.cards`), never by the receipt's copy delta: `arrived` and `left` count oracle ids,
+  // so a Sync that only moved a printing, a finish or a condition reads 0 and 0 there. A summary stored
+  // before `cards` existed falls back to that delta.
+  const tokensOnly = sync !== null && (sync.cards !== undefined
+    ? sync.cards === 0
+    : summary !== null && summary.arrived + summary.left === 0);
   const lede = sync ?? undefined;
 
   return (
@@ -248,7 +253,7 @@ export function ArrivalsSummary({
         {sync ? copy.summary.syncFileStamp(stampDate, filename) : copy.summary.fileStamp(stampDate, filename)}
         {/* On the empty receipt the lede says nothing your DECKS care about moved, and without
             the file's own delta beside it that reads as an import which did nothing at all. A
-            Sync's lede already says what it kept and recorded, and "differ from the old list"
+            Sync's lede already says what it kept and what tokens changed, and "differ from the old list"
             would count the cards it kept as the file's. */}
         {nothingToReport && summary && !sync ? ` · ${copy.summary.fileDelta(summary.arrived + summary.left)}` : ""}
       </p>

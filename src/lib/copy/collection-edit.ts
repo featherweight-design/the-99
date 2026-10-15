@@ -264,7 +264,7 @@ export const collectionEditCopy = {
     titleSync: "Revert this sync?",
     /**
      * A Sync's revert, under the lede: token writes are not in the ledger, so a revert leaves them
-     * (G3). Drawn only when the Sync recorded any.
+     * (G3). Drawn only when the Sync changed any.
      */
     syncTokensStay: (t: number) => `The ${tokenChanges(t)} it made ${t === 1 ? "stays" : "stay"}.`,
     // Direction-neutral: a revert can move copies either way, so the lede names what moved without
