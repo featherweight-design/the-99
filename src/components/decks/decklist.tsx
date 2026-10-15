@@ -251,6 +251,7 @@ export function buildMarkKeyEntries({
   inCardView,
   commanderRows = [],
   shoppingKeyDraws = false,
+  assumeLocked = false,
 }: {
   cards: DeckDetailCard[];
   filter: string;
@@ -260,6 +261,9 @@ export function buildMarkKeyEntries({
   /** `ShoppingKey` is drawn above the list (I got it on). It decodes the buy mark itself, so under
    *  Shopping, where every row carries it, this key does not say `to buy` a second time (Hugh, 2026-10-11). */
   shoppingKeyDraws?: boolean;
+  /** Draw the `locked` entry as though a card were locked: the key as it will read after the first lock, so the
+   *  slot it shares with the Lock cards line can hold that room before it is needed. */
+  assumeLocked?: boolean;
 }): MarkKeyEntry[] {
     const shown = filter === "shopping"
       ? [...commanderRows, ...cards].filter(isShoppingCard)
@@ -281,7 +285,7 @@ export function buildMarkKeyEntries({
     }
     // Locked, conditional like `buy` and `proxy`: it describes the rows or tiles below, both of
     // which draw the closed lock (the tile's on its meta line since Locked PR 4b).
-    if (shown.some((c) => c.locked)) {
+    if (assumeLocked || shown.some((c) => c.locked)) {
       entries.push({ id: "locked", sample: <LockMark />, word: lockedCardsCopy.mark.key });
     }
     // THE FACT ENTRIES FOLLOW THE CARDS, exactly as `buy` and `proxy` do.
@@ -533,6 +537,12 @@ export function Decklist({
     [cards, filter, inCardView, commanderShopping, shoppingKeyDraws],
   );
 
+  // The same entries with the lock's included, in the order they will really have (it sits before the facts).
+  const markKeyIfLocked = useMemo(
+    () => buildMarkKeyEntries({ cards, filter, inCardView, commanderRows: commanderShopping, shoppingKeyDraws, assumeLocked: true }),
+    [cards, filter, inCardView, commanderShopping, shoppingKeyDraws],
+  );
+
   // One label, computed beside the entries and passed to every instance: the
   // three call sites are three branches of one surface, and a label chosen per
   // branch would be three chances to disagree about what is underneath.
@@ -561,6 +571,14 @@ export function Decklist({
       <div className={`[grid-area:1/1] ${lockMode ? "invisible" : ""}`}>
         <MarkKey marks={markKey} regionAria={markKeyRegion} />
       </div>
+      {/* The key as it will read once a card is locked, held in the cell and never seen: the first
+          lock adds an entry to the key, and at 390 that can wrap it to a second line. Reserving the
+          room means the slot is the same before and after any lock, so locking moves nothing. */}
+      {!markKey.some((m) => m.id === "locked") && (
+        <div aria-hidden="true" className="[grid-area:1/1] invisible">
+          <MarkKey marks={markKeyIfLocked} regionAria={markKeyRegion} />
+        </div>
+      )}
       <div className={`[grid-area:1/1] ${lockMode ? "" : "invisible"}`}>
         <LockModeLine count={lockedCardCount} />
       </div>

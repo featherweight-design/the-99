@@ -58,4 +58,11 @@ describe("the mark key", () => {
     // Every other key keeps the wrapping line.
     expect(screen.getByRole("group", { name: proxyCopy.key.regionAria }).className).not.toMatch(/grid/);
   });
+
+  it("sets each sample in a flex box, so an inline sample cannot grow the line by a baseline strut", () => {
+    const { container } = render(<MarkKey marks={[proxy]} />);
+    const sample = container.querySelector('[aria-hidden="true"]');
+    expect(sample?.className).toMatch(/(^|\s)inline-flex(\s|$)/);
+    expect(sample?.className).toMatch(/items-center/);
+  });
 });

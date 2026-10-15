@@ -298,6 +298,7 @@
     "probe:font-parity": "node scripts/probe-font-parity.mjs",
     "probe:onboarding": "node scripts/probe-onboarding.mjs",
     "probe:locked-nav": "node scripts/probe-locked-nav.mjs",
+    "probe:lock-shift": "node scripts/probe-lock-shift.mjs",
     "probe:issues-sheet": "node scripts/probe-issues-sheet.mjs",
     "test:clock": "CLOCK_SHIFT_DAYS=${CLOCK_SHIFT_DAYS:-400} pnpm test",
     "probe:nav-pending": "node scripts/probe-nav-pending.mjs",

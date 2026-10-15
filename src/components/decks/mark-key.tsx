@@ -78,7 +78,11 @@ export function MarkKey({
               says the word right beside it. Left spoken, every key entry read
               its mark twice, and the whole legend became a second copy of the
               row vocabulary in the reading order. */}
-          <span aria-hidden="true">{mark.sample}</span>
+          {/* A flex container rather than an inline wrapper: the lock's sample is itself inline-flex, and inside
+              an inline span it sits on the text baseline, so the line box grew by the strut and the first lock
+              stretched the key's slot by 2.8px. As the child of a flex container it is a flex item with its
+              own height. */}
+          <span aria-hidden="true" className="inline-flex items-center">{mark.sample}</span>
           <span>{mark.word}</span>
         </span>
       ))}
