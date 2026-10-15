@@ -40,13 +40,12 @@ describe("aboutNotice", () => {
     expect(aboutNotice(seen(V, ["change-commander"]), FLIPPED, false)).toBeNull();
   });
 
-  it("never names the How it works appendix, which the sheet added", () => {
+  it("cannot name the How it works appendix (Q3): the sheet appended it, and the catalog the notice reads lacks it", () => {
+    // By construction: the notice's entries are drawn from the visible catalog, and the appendix is not an entry.
+    // This pins that premise, so an appendix moved into the catalog fails here rather than reaching the banner.
+    expect(aboutEntries.map((e) => e.id)).not.toContain(HOW_IT_WORKS_ID);
     const sheet = sheetDecision({ userId: "u", seen: seen(W - 1), visible: OFF, appendix: true });
     expect(sheet.show && sheet.header).toContain(HOW_IT_WORKS_ID);
-    const n = aboutNotice(seen(W - 1), OFF, false);
-    expect(n?.kind === "behind" && n.entries.map((e) => e.id)).not.toContain(HOW_IT_WORKS_ID);
-    // A reader with only the appendix unseen is current.
-    expect(aboutNotice(seen(V), OFF, false)).toBeNull();
   });
 
   it("is suppressed in a browser whose sheet cookie is current, and only there", () => {
@@ -92,6 +91,8 @@ describe("aboutDismissal (the ✕)", () => {
   it("leaves an entry that arrived after the render new: no claim, no floor past it", () => {
     // `newer` (since 5) is new now but was not drawn, so the floor rises to `plain` alone.
     expect(aboutDismissal(["plain", "a"], seen(2), visible, 6)).toEqual({ version: 3, ids: ["a"] });
+    // A dropped entry BELOW a claimed one: the floor stops under it, so dropping it never marks it seen.
+    expect(aboutDismissal(["newer", "a"], seen(2), visible, 6)).toEqual({ version: 2, ids: ["a"] });
     // And a switched entry flipped on after the render stays new too.
     expect(aboutDismissal(["b"], seen(5, ["a"]), visible, 6)).toEqual({ version: 6, ids: ["b"] });
     expect(aboutDismissal(["a"], seen(5, ["a"]), visible, 6)).toBeNull();

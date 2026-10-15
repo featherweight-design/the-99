@@ -45,9 +45,9 @@ export default async function Shell({
   // even when it says nothing, because the sheet latches the state it MOUNTED
   // with: a later re-render of this layout (router.refresh, a revalidating
   // action) arrives without the header and must not unmount an unread sheet.
-  // On when the PROXY says so for this reader (`SHEET_ON_HEADER`): it decides from their resolved
-  // switches and strips both headers from every request, so this never resolves them a second time
-  // through its own memo, which could disagree with the proxy's for up to its lifetime after a flip.
+  // Off since About moved to Home's banner (plan `2026-10-15-about-on-the-banner.md`, PR A): the proxy
+  // strips both headers from every request and no longer sets `SHEET_ON_HEADER`, so this is always null
+  // and the sheet never mounts. PR B deletes the path.
   const requestHeaders = await headers();
   const sheet = requestHeaders.get(SHEET_ON_HEADER) === "1" ? readSheetState(requestHeaders) : null;
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).

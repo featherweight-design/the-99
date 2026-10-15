@@ -59,7 +59,7 @@ const MAX_CLAIMED = 200;
  *
  * The version floor is `ABOUT_VERSION`, as a visit writes, when every unswitched entry the notice names now was
  * claimed. When one was not (a deploy added it after the render, or the client dropped it), the floor rises only to
- * the newest claimed unswitched entry, so the unclaimed one stays new. The ids are the claimed switched entries; an
+ * the newest claimed unswitched entry and never to an unclaimed one's, so every unclaimed one stays new. The ids are the claimed switched entries; an
  * unswitched entry is seen by the floor alone. Null when there is nothing to write.
  */
 export function aboutDismissal(
@@ -76,9 +76,15 @@ export function aboutDismissal(
   const valid = current.filter((e) => named.has(e.id));
   if (valid.length === 0) return null;
   const unswitched = current.filter((e) => !e.switch);
-  const floor = unswitched.every((e) => named.has(e.id))
+  const unclaimed = unswitched.filter((e) => !named.has(e.id));
+  // Below every unclaimed entry, so none is marked seen by the floor; a claimed entry above that stays new too,
+  // which is the safe side.
+  const floor = unclaimed.length === 0
     ? version
-    : Math.max(0, ...valid.filter((e) => !e.switch).map((e) => e.since));
+    : Math.min(
+        Math.max(0, ...valid.filter((e) => !e.switch).map((e) => e.since)),
+        Math.min(...unclaimed.map((e) => e.since)) - 1,
+      );
   const ids = valid.filter((e) => e.switch).map((e) => e.id);
   if (ids.length === 0 && floor <= seen.version) return null;
   return { version: floor, ids };
