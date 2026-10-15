@@ -50,6 +50,11 @@ describe("the anchor query", () => {
     expect(q.sql).toContain("order by u.confirmed_at desc, u.id desc limit 1");
   });
 
+  it("selects the anchor upload's token list beside its items, from the same payload", () => {
+    expect(q.sql).toContain("u.preview_payload -> 'tokens' as tokens");
+    expect(q.sql).toContain("a.id, a.confirmed_at, a.items, a.tokens");
+  });
+
   it("aliases every table, so no bare column can resolve against the wrong one (AGENTS.md)", () => {
     expect(q.sql).not.toMatch(/"csv_uploads"|"collection_history"/);
     expect(q.sql).not.toMatch(/[^.\w]confirmed_at is not null/);
@@ -136,6 +141,17 @@ describe("readSyncBase", () => {
     expect(base.anchor.confirmedAt.toISOString()).toBe("2026-10-01T00:00:00.000Z");
     expect([...base.anchor.items]).toEqual([["o1|lea|1|nonfoil", 3], ["o2|lea|1|nonfoil", 1]]);
     expect(base.earlier.map((e) => e.uploadId)).toEqual(["e1"]);
+  });
+
+  it("returns the anchor's token list as stored, an empty list included, and none for a legacy upload", async () => {
+    const row = { uploaded: true, id: "a", confirmed_at: "2026-10-01T00:00:00Z", items: [full(1)] };
+    const tokens = [{ tokenOracleId: "t1", quantity: 2 }];
+    for (const [stored, want] of [[tokens, tokens], [[], []], [null, undefined]] as const) {
+      const base = await readSyncBase("u", runner([{ ...row, tokens: stored }], []).q);
+      if (!("anchor" in base)) throw new Error("expected an anchor");
+      expect(base.anchor.tokens).toEqual(want);
+      expect("tokens" in base.anchor).toBe(want !== undefined);
+    }
   });
 
   it("hasFullKeys accepts an empty collector number (a bare Name,Qty export) and refuses a missing one", () => {
