@@ -19,7 +19,7 @@
 
 1. Intensity at size: R1’s film, at 80% strength and spread one and a half times wider.
 2. Motion at size: The film follows the tilt: it slides toward the pointer or finger, up to a quarter of the card’s width each way, and a soft light follows with it.
-3. Tilt (Hugh, 2026-10-15: yes, subtle; smoothed against his reference app): Every card in details and the zoom tilts up to 6° toward where you point: the side under the pointer lifts toward you, and a sliver of card edge shows along the far sides, as a card does in hand.
+3. Tilt (Hugh, 2026-10-15: yes, subtle; smoothed against his reference app): Every card in details and the zoom tilts up to 6° toward where you point: the side under the pointer lifts toward you, and a hairline of card edge shows on that same side, as a card does in hand.
 4. The phone: Press and hold the card, then move your finger: it tilts the same way.
 5. Arrival on a background face: The face never waits; only the film does.
 6. Precons in details: Details keeps the card’s own resolution.
