@@ -255,3 +255,40 @@ describe("a refreshed snapshot", () => {
     expect(set).toHaveBeenCalledWith(CARD, 5);
   });
 });
+
+describe("a press shows it is pending on the same frame", () => {
+  it("marks the stepper busy as soon as a step is pressed, and clears it when the answer lands", async () => {
+    let answer!: (v: unknown) => void;
+    set.mockReturnValue(new Promise((r) => { answer = r; }));
+    mount(2, 1);
+    const stepper = screen.getByTestId("want-stepper").parentElement!;
+    expect(stepper).not.toHaveAttribute("aria-busy");
+    fireEvent.click(screen.getByRole("button", { name: c.more }));
+    expect(stepper).toHaveAttribute("aria-busy", "true");
+    expect(stepper.className).toContain("opacity-60");
+    await act(async () => answer(wanted(3, 1)));
+    expect(stepper).not.toHaveAttribute("aria-busy");
+  });
+
+  it("marks the Add button busy while its write is out", async () => {
+    let answer!: (v: unknown) => void;
+    add.mockReturnValue(new Promise((r) => { answer = r; }));
+    mount(null);
+    const button = screen.getByRole("button", { name: c.add });
+    fireEvent.click(button);
+    expect(button).toHaveAttribute("aria-busy", "true");
+    await act(async () => answer({ ok: false, reason: "invalid" }));
+    expect(button).not.toHaveAttribute("aria-busy");
+  });
+
+  it("marks Remove busy while its write is out", async () => {
+    let answer!: (v: unknown) => void;
+    remove.mockReturnValue(new Promise((r) => { answer = r; }));
+    mount(2);
+    const button = screen.getByRole("button", { name: c.remove });
+    fireEvent.click(button);
+    expect(button).toHaveAttribute("aria-busy", "true");
+    await act(async () => answer({ ok: false, reason: "invalid" }));
+    expect(button).not.toHaveAttribute("aria-busy");
+  });
+});

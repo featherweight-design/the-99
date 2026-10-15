@@ -112,6 +112,9 @@ export function CardWishlist({
       return out.ok ? { ok: true as const, status: "held" as const, want: 0, have } : out;
     }, copy.failedSet);
 
+  // A press shows its pending state on the same frame: the control that was pressed (and the count) go busy and dim,
+  // and a press made meanwhile is ignored where the reader can see why. Never a spinner over the section.
+  const wait = busy ? " opacity-60 cursor-progress" : "";
   return (
     <section
       data-testid="card-wishlist"
@@ -125,7 +128,7 @@ export function CardWishlist({
           {want === null ? copy.section0 : copy.section}
         </div>
         {want === null ? null : (
-          <button type="button" onClick={() => void remove()} className={RECEIPT_LINK_CLASS}>
+          <button type="button" aria-busy={busy || undefined} onClick={() => void remove()} className={RECEIPT_LINK_CLASS + wait}>
             {copy.remove}
           </button>
         )}
@@ -134,8 +137,9 @@ export function CardWishlist({
         <button
           ref={addRef}
           type="button"
+          aria-busy={busy || undefined}
           onClick={() => void add()}
-          className="mt-[10px] flex h-[44px] w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent text-[13.5px] font-medium text-[color:var(--fg)] md:h-[34px] md:w-auto md:px-[14px] md:pointer-coarse:h-[44px]"
+          className={"mt-[10px] flex h-[44px] w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent text-[13.5px] font-medium text-[color:var(--fg)] md:h-[34px] md:w-auto md:px-[14px] md:pointer-coarse:h-[44px]" + wait}
         >
           <Bookmark filled={false} />
           {copy.add}
@@ -143,14 +147,16 @@ export function CardWishlist({
       ) : (
         <div className="mt-[8px] flex items-center gap-[10px] text-[13px]" style={{ color: "var(--fg-body)" }}>
           <span>{copy.want}</span>
-          <WantStepper
-            value={want}
-            onChange={(next) => void step(next)}
-            fewerLabel={copy.fewer}
-            moreLabel={copy.more}
-            countLabel={copy.want}
-            focusOnMount={arrived}
-          />
+          <span aria-busy={busy || undefined} className={"inline-flex" + wait}>
+            <WantStepper
+              value={want}
+              onChange={(next) => void step(next)}
+              fewerLabel={copy.fewer}
+              moreLabel={copy.more}
+              countLabel={copy.want}
+              focusOnMount={arrived}
+            />
+          </span>
           <span className="font-mono" style={{ color: "var(--fg-muted)" }}>{copy.have(have)}</span>
         </div>
       )}
