@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Social R3, the calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:13px;line-height:1.6;color:#959AAD;margin:0}
+.card{background:#12141B;border:1px solid #262A35;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:10px}
+.call{display:grid;grid-template-columns:40px 250px 1fr;gap:18px;padding:16px 0;border-top:1px solid #181C26}
+.n{font:600 22px 'Chakra Petch',sans-serif;color:#FF4D9A}
+.q{font-size:14px;font-weight:600;color:#E6E8F0;line-height:1.45}
+.a{font-size:13.5px;line-height:1.6;color:#B1B6C7;margin:0}
+.a b{color:#E6E8F0;font-weight:600}
+.li{font-size:13px;line-height:1.55;color:#B1B6C7;margin:0;padding-left:16px;position:relative}
+.li:before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:#343843}
+.g{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:10px 0;border-top:1px solid #181C26}
+.gid{font:600 12px 'IBM Plex Mono',monospace;color:#E0913C}
+.gid.h{color:#FF4D9A}
+.strip{display:flex;gap:10px}
+.strip img{width:120px;height:84px;object-fit:cover;border-radius:10px;border:1px solid #262A35}
+</style>
+</helmet>
+<div style="width:1600px;min-height:1640px;box-sizing:border-box;padding:48px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:1040px">
+      <span class="k">Social line · round 3 of 3 · R1 · behind SOCIAL_GAMES_ENABLED (needs friends on) · phone and desktop · 2026-10-15</span>
+      <h1 style="margin:0;font:700 34px 'Chakra Petch',sans-serif;line-height:1.15">Opponents and matchups: the table you sat at, inside the form you already use</h1>
+      <p class="cap" style="font-size:14.5px;color:#B1B6C7">Logging a game gains one optional row, <b style="color:#E6E8F0">Across the table</b>, between Pod size and the marks. It draws the table as art seats: you first, then each opponent, then one dashed seat while the pod has room. One picker fills a seat with a friend, a friend’s deck, or anyone by commander. On a loss each seated opponent carries a trophy; one press says who won. The Games tab gains <b style="color:#E6E8F0">Matchups</b> between the findings and History, one list at a time (Commander, Colors, Friend), each row a result square per game and a count. No rate, no finding, no model.</p>
+    </div>
+    <div class="strip" aria-hidden="true"><img src="art/zimone.png" alt=""><img src="art/captain-america.png" alt=""><img src="art/heroes.png" alt=""><img src="art/jace.png" alt=""></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 470px;gap:28px;align-items:start">
+    <div class="card">
+      <span class="k">The five open calls (brief §R3 Open), answered</span>
+      <sc-for list="{{calls}}" as="c" hint-placeholder-count="6">
+        <div class="call"><span class="n">{{c.n}}</span><span class="q">{{c.q}}</span><p class="a">{{c.a}}</p></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card">
+        <span class="k">Locks, held as drawn</span>
+        <sc-for list="{{locks}}" as="l" hint-placeholder-count="7"><p class="li">{{l}}</p></sc-for>
+      </div>
+      <div class="card">
+        <span class="k">Boards on this canvas</span>
+        <sc-for list="{{boards}}" as="b" hint-placeholder-count="4"><p class="li"><b style="color:#E6E8F0;font-weight:600">{{b.n}}</b> · {{b.d}}</p></sc-for>
+      </div>
+      <div class="card">
+        <span class="k">About the pictures</span>
+        <p class="cap">Every board is drawn over the shipped deck page in the Kamigawa theme: the rail or the phone shell, the deck head, the four tabs, and the Games tab as it ships. The canvas cannot load Scryfall, so the commander art is cropped from screenshots of the app’s precon grid (Zimone, Rootha, Jace, Heroes in a Half Shell, Sai, Captain America), and the Colors boards use those six commanders’ real identities.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="k">Gaps for engineering and Hugh (G1–G8; also in README.md)</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:40px">
+      <sc-for list="{{gaps}}" as="g" hint-placeholder-count="8">
+        <div class="g"><span class="{{g.cls}}">{{g.id}}</span><p class="a">{{g.t}}</p></div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1640}}'>
+class Component extends DCLogic {
+renderVals() {
+const calls = [
+{ n: '1', q: 'How seats are added in the log-a-game form', a: 'A row inside the shipped form, Across the table, right under Result and Pod size, because those two bound it: the pod size sets how many seats there are (pod minus you), and a loss is what turns on the trophy. It draws the table as art seats, the look R1’s pods already gave a table: You first with your deck’s commander, then each seated opponent, then one dashed Add opponent seat while seats remain, with a count (2 of 3 seats). Nothing is required and nothing asks: a game saved with no seats is the game as it ships today. If you have pods, their names sit on the same line as quick-seat chips: one press seats every pod member who is your friend, and sets the pod size to the pod’s.' },
+{ n: '2', q: 'Picking a friend vs a friend’s deck vs anyone', a: 'One picker per seat: a panel under the seat on desktop, a sheet on the phone. One field finds friends and commanders together, so there is no mode to choose first. Before typing it lists your friends, by face and name, with how many decks each has. Picking a friend opens their decks (name and commander, newest first), then Another commander and Just Dave. Picking a commander seats it as anyone, and the seat then offers Add a name inline (30 characters). With no friends the same field finds commanders only, and nothing points elsewhere.' },
+{ n: '3', q: 'The “who won” control on a loss', a: 'When the result is Lost, each seated opponent shows a trophy on its seat. One press marks that seat as the winner, a press on another moves it, a press on the same one clears it: at most one, never required. A hint line says so once. Changing the result away from Lost clears the mark before anything is sent (parseOpponents refuses won on a win or a draw).' },
+{ n: '4', q: 'Where matchups show on the Games tab', a: 'A section of its own between the findings and History: Matchups, with the denominator on its heading line (recorded in 3 of 6 games) and a three-way switch, Commander · Colors · Friend, that shows one list at a time. It is absent while the switch is off, and a dashed line explains it when games exist and none has opponents yet. History rows gain a vs line under the marks, drawn from the snapshot alone.' },
+{ n: '5', q: 'How one-game cells read', a: 'A row is a picture of its games, never a ratio: one result square per game, the History row’s own W / L / D squares, wins first, then draws, then losses, and the count at the end (1 game). A trophy and a number say how many of those games that opponent won. At one game a row is a single square, which cannot be quoted as 100%. Past ten games the squares give way to counts (7 W · 5 L · 12 games). No row is ever coloured as a finding, and the list orders by games, then name, never by record.' },
+{ n: '+', q: 'Friends drawn without deciding where friends live', a: 'Friends appear here only as a pickable list inside the seat picker, with R1’s commander faces at pick time. The faces are a friend’s live choice, so they stop at the picker: a saved seat draws the commander it SNAPSHOT (or initials when it has none), never the friend’s current face, deck name or name.' }
+];
+const locks = [
+'Seats run from seat 1 upward and stay fewer than the pod size: the form never offers more seats than pod minus one, and a pod size below the filled seats is held (drawn).',
+'Each seat is a friend, a friend’s deck, or anyone by catalog commander plus an optional label of up to 30 characters.',
+'An optional won on a loss, at most one per game.',
+'Rows snapshot the friend’s name and the deck’s name and commanders at log time. History and matchups read only the snapshot (a removed friend and a renamed deck are drawn).',
+'A friend’s deck is offered only through your own friendship: the picker lists your friends’ decks and nothing else.',
+'Matchups are counts with their totals, by commander, color identity and friend. No rate anywhere.',
+'No model calls. The label is player-typed text that reaches no prompt.'
+];
+const boards = [
+{ n: 'Form · desktop', d: 'nine frames: no friends, the picker, a friend’s decks, a friend with none, seated three ways, who won, pod quick-seat, a full pod of 8, games off.' },
+{ n: 'Form · phone', d: 'the same states as a seat list and a sheet.' },
+{ n: 'Games · desktop', d: 'no opponents yet, then mostly one-game rows by commander, colors and friend, a removed friend and a renamed deck in History, and a later deck past ten games.' },
+{ n: 'Games · phone', d: 'the same at 390.' }
+];
+const gaps = [
+{ id: 'G1', cls: 'gid', t: 'Pod quick-seat needs the pod’s member count (listPods has it) beside listPodSeats, which returns only members who are your friends. A member who is not (after a hand-on) leaves an empty seat; drawn that way in the quick-seat frame’s caption.' },
+{ id: 'G2', cls: 'gid', t: 'History and matchups draw a friend seat’s face from its snapshot commander, never R1’s live signature commander. A friend seat with no deck and no commander is initials. Engineering needs no new read; this is a rule for the row.' },
+{ id: 'G3', cls: 'gid', t: 'Squares need only each cell’s record (summary.record) and beatMe, both returned. Order is W, D, L, not by date: the cell holds counts, not which games.' },
+{ id: 'G4', cls: 'gid h', t: 'For Hugh: an anyone seat always has a commander here. parseOpponents also accepts a label alone (“Lee, commander unknown”). Drawn: not offered, to keep one way in. Say if you want it.' },
+{ id: 'G5', cls: 'gid h', t: 'For Hugh: a friend whose ACCOUNT was deleted keys each seat alone (assembleOpponents), so By friend shows one row per game under the same name. Drawn as is; a later read could expose a gone flag and fold or caption them.' },
+{ id: 'G6', cls: 'gid', t: 'Partner commanders: a commander that can pair shows + partner under its seat, which opens the same search for the second. Described here, not drawn.' },
+{ id: 'G7', cls: 'gid', t: 'The seat picker needs listFriendDecks per friend on open; fetch on pick (one friend), not on the form’s open, so a closed form reads nothing.' },
+{ id: 'G8', cls: 'gid', t: 'Copy goes to /copy-review (social-r3 · copy strings.ts). About entry 4 is batched at launch and not drawn here.' }
+];
+return { calls, locks, boards, gaps };
+}
+}
+</script>
+</body>
+</html>
