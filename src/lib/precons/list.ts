@@ -28,7 +28,14 @@ export type PreconSource = {
   twinOf: string | null;
   unmappedCount: number;
   cards: PreconCardFact[];
+  /** The box's copies (`precon_cards.quantity` summed) and tokens (`precon_tokens.quantity` summed, as the add marks
+   *  them): read only for the pick (`?pick=own`), absent on every other read. */
+  copies?: number;
+  tokens?: number;
 };
+
+/** One box as the pick (`?pick=own`) adds it: its copies and tokens, and its Collector's Edition twin's, when it has one. */
+export type PreconBox = { copies: number; tokens: number; twin: { fileName: string; copies: number; tokens: number } | null };
 
 export type ReaderDeck = {
   id: string;
@@ -60,6 +67,8 @@ export type PreconRow = {
   unmapped: number;
   /** The reader's decks linked to this list, then those that share it, the larger share first. */
   built: PreconBuilt[];
+  /** The pick's figures, on the pick's own read only (`summarisePrecons`' `boxes`). */
+  box?: PreconBox;
 };
 
 const WUBRG = ["W", "U", "B", "R", "G"];
@@ -73,9 +82,11 @@ export function summarisePrecons(
   sources: readonly PreconSource[],
   owned: ReadonlySet<string>,
   decks: readonly ReaderDeck[],
+  opts: { boxes?: boolean } = {},
 ): PreconRow[] {
   const twinName = new Map<string, string>();
-  for (const s of sources) if (s.twinOf !== null) twinName.set(s.twinOf, s.name);
+  const twinOf = new Map<string, PreconSource>();
+  for (const s of sources) if (s.twinOf !== null) { twinName.set(s.twinOf, s.name); twinOf.set(s.twinOf, s); }
 
   const rows: PreconRow[] = [];
   for (const s of sources) {
@@ -113,9 +124,19 @@ export function summarisePrecons(
       of: counted.size,
       unmapped: s.unmappedCount,
       built,
+      ...(opts.boxes ? { box: preconBox(s, twinOf.get(s.fileName) ?? null) } : {}),
     });
   }
   return rows;
+}
+
+/** A box's figures for the pick: its own, and its twin's (a Collector's Edition adds its own printings). */
+export function preconBox(s: PreconSource, twin: PreconSource | null): PreconBox {
+  return {
+    copies: s.copies ?? 0,
+    tokens: s.tokens ?? 0,
+    twin: twin ? { fileName: twin.fileName, copies: twin.copies ?? 0, tokens: twin.tokens ?? 0 } : null,
+  };
 }
 
 export type PreconOrder = "newest" | "owned";

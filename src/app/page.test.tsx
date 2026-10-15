@@ -9,6 +9,7 @@ const stub = vi.hoisted(() => ({
   uniqueCards: 10,
   decks: [] as unknown[],
   arrivals: vi.fn(),
+  receipt: vi.fn(),
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: "user_1" }) }));
@@ -33,10 +34,12 @@ vi.mock("../lib/decks/availability-query", () => ({ loadAvailability: async () =
 vi.mock("../lib/commanders/in-use", () => ({ receiptCountsByCommander: () => new Map() }));
 vi.mock("../lib/home/commitments", () => ({ commitmentFigures: () => null }));
 vi.mock("../lib/precons/banner", () => ({ loadArrivalsBanner: stub.arrivals }));
+vi.mock("../lib/precons/pick-receipt-read", () => ({ readPickReceipt: stub.receipt }));
 
 const { default: HomePage } = await import("./page");
 const { Dashboard } = await import("../components/home/dashboard");
 const { FirstRunChecklist } = await import("../components/home/first-run");
+const { PreconPickReceipt } = await import("../components/home/precon-pick-receipt");
 
 const BANNER = { lines: [{ kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 }], href: "/decks/precons?sort=newest#announced", keys: ["trc"] };
 const ON = { PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true" };
@@ -47,6 +50,7 @@ beforeEach(() => {
   stub.decks = [];
   stub.arrivals.mockReset();
   stub.arrivals.mockResolvedValue(BANNER);
+  stub.receipt.mockReset();
 });
 
 describe("Home's arrivals banner", () => {
@@ -77,5 +81,38 @@ describe("Home's arrivals banner", () => {
     const page = (await HomePage()) as ReactElement<{ arrivals: unknown }>;
     expect(page.type).toBe(Dashboard);
     expect(page.props.arrivals).toBeNull();
+  });
+});
+
+describe("Home's precon pick receipt (no-collection entry S5)", () => {
+  const RECEIPT = { entryIds: ["e1"], names: ["Abzan Armor"], copies: 100, tokens: 10 };
+  const LINE = { ...ON, COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
+  const visit = async (query: Record<string, string>) =>
+    (await HomePage({ searchParams: Promise.resolve(query) })) as ReactElement<{ children: ReactElement[] }>;
+
+  it("reads the claim from the ledger and draws the strip over the dashboard, with the line's switch on", async () => {
+    stub.env = LINE;
+    stub.receipt.mockResolvedValue(RECEIPT);
+    const page = await visit({ precons: "e1" });
+    expect(stub.receipt).toHaveBeenCalledWith("user_1", "e1");
+    expect(page.props.children[0].type).toBe(PreconPickReceipt);
+    expect(page.props.children[1].type).toBe(Dashboard);
+  });
+
+  it("is exactly the shipped dashboard with the switch off, a claim or not", async () => {
+    stub.receipt.mockResolvedValue(RECEIPT);
+    const page = await visit({ precons: "e1" });
+    expect(page.type).toBe(Dashboard);
+    expect(stub.receipt).not.toHaveBeenCalled();
+  });
+
+  it("draws the dashboard alone when the claim reads as nothing or the read fails", async () => {
+    stub.env = LINE;
+    stub.receipt.mockResolvedValue(null);
+    expect((await visit({ precons: "forged" })).type).toBe(Dashboard);
+    stub.receipt.mockRejectedValue(new Error("down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await visit({ precons: "e1" })).type).toBe(Dashboard);
+    expect((await visit({})).type).toBe(Dashboard);
   });
 });

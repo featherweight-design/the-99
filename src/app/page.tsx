@@ -30,6 +30,10 @@ import { SHEET_COOKIE, sheetCookieIsCurrent } from "../lib/about/gate";
 import { aboutLine, aboutNotice } from "../lib/about/notice";
 import { aboutSeen } from "../lib/about/read";
 import { visibleEntries, type SeenState } from "../lib/about/visible";
+import { noCollectionEntryEnabled } from "../lib/collection/edit-flag";
+import { PICK_RECEIPT_PARAM } from "../lib/precons/pick";
+import { readPickReceipt, type PickReceipt } from "../lib/precons/pick-receipt-read";
+import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
 
 /**
  * What the signed-in Home draws, cached whole. First run draws none of the Dashboard. Both carry the reader's About
@@ -51,7 +55,7 @@ async function readAboutSeen(userId: string, env: NodeJS.ProcessEnv): Promise<Se
   }
 }
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> } = {}) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -240,7 +244,20 @@ export default async function HomePage() {
   }
   if (data.firstRun) return <FirstRunChecklist addByHand={collectionEditEnabled(env)} about={about} />;
 
-  return (
+  // A precon pick's receipt (no-collection entry S5): read per request from the ledger, outside the cached payload,
+  // and only when the address claims one. A failed read draws no strip.
+  let receipt: PickReceipt | null = null;
+  const claim = noCollectionEntryEnabled(env) ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
+  if (claim !== undefined) {
+    try {
+      receipt = await readPickReceipt(userId, claim);
+    } catch (error) {
+      // not a fallback: the receipt is an extra, and the dashboard below draws whether or not it was read.
+      console.error("home: the precon receipt could not be read", error);
+    }
+  }
+
+  const dashboard = (
     <Dashboard
       stats={data.stats}
       lastUpdated={data.lastUpdated}
@@ -257,4 +274,5 @@ export default async function HomePage() {
       now={now.toISOString()}
     />
   );
+  return receipt ? <><PreconPickReceipt receipt={receipt} />{dashboard}</> : dashboard;
 }

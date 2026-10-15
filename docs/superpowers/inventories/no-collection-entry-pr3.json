@@ -1,0 +1,47 @@
+{
+  "feature": "No-collection entry PR 3: Precons I own, /decks/precons?pick=own, and Home's receipt strip (handoff design_handoff_the99_no_collection_entry, S2 to S7; plan 2026-10-15-no-collection-entry.md, PR 3)",
+  "note": "Needs PRECONS_ENABLED=true, COLLECTION_EDIT_ENABLED=true and NO_COLLECTION_ENTRY_ENABLED=true for the reader. The S2 and S3 rows tick boxes without pressing the add, so they write nothing. The S5 row presses the add, so each cell ADDS one precon box to the signed-in account's collection (one History entry): run it on local-dev or a scratch branch only, never staging or production. S4 (pending) is transient, and S6 and S7 (a refused or part-failed add) cannot be forced from a browser; the component tests prove all three.",
+  "out": "contact-sheets/no-collection-entry-pr3",
+  "rows": [
+    {
+      "id": "s2-open",
+      "label": "/decks/precons?pick=own, nothing ticked: `Tick the boxes you own.` and the add held (S2)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        { "goto": "/decks/precons?pick=own", "wait": "input[type=checkbox]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "s3-three",
+      "label": "Three boxes ticked: the foot's lead and `Add 3 boxes · N cards` (S3)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        { "goto": "/decks/precons?pick=own", "wait": "input[type=checkbox]", "settle": 1000 },
+        { "click": "section:first-of-type li:nth-of-type(1) input[type=checkbox]" },
+        { "click": "section:first-of-type li:nth-of-type(2) input[type=checkbox]" },
+        { "click": "section:first-of-type li:nth-of-type(3) input[type=checkbox]", "settle": 600 }
+      ]
+    },
+    {
+      "id": "s3-twin",
+      "label": "A twin ticked: Regular / Collector's Edition under its row (S3)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        { "goto": "/decks/precons?pick=own&q=Avengers", "wait": "input[type=checkbox]", "settle": 1000 },
+        { "click": "li:nth-of-type(1) input[type=checkbox]" },
+        { "wait": "[role=radiogroup]", "settle": 600 }
+      ]
+    },
+    {
+      "id": "s5-home-receipt",
+      "label": "Home after one box is added: the receipt strip over the dashboard, ✕ alone (S5). WRITES one box",
+      "view": "src/components/home/precon-pick-receipt.tsx",
+      "steps": [
+        { "goto": "/decks/precons?pick=own", "wait": "input[type=checkbox]", "settle": 1000 },
+        { "click": "section:first-of-type li:nth-of-type(1) input[type=checkbox]" },
+        { "clickRole": "button", "name": "^Add 1 box" },
+        { "wait": "[role=status] button[aria-label=Dismiss]", "settle": 2000 }
+      ]
+    }
+  ]
+}

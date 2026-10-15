@@ -98,7 +98,8 @@ export function ToastFrame({
   frameRef: RefObject<HTMLDivElement | null>;
   role?: "status" | "alert";
   placement?: "center" | "deck" | "cart" | "inline";
-  /** `deck` only: draw this many px above the slot, over a toast that already holds it (a token refusal over a receipt). */
+  /** Draw this many px above the slot: over a toast that already holds it (`deck`: a token refusal over a receipt), or
+   *  over a page's own sticky bar (`center`: the precon pick's foot). */
   lift?: number;
   /** Marks the toast's kind, for another toast to tell it from a receipt (`data-toast-kind`). */
   kind?: string;
@@ -128,6 +129,7 @@ export function ToastFrame({
         ref={frameRef}
         role={role}
         {...holds}
+        style={lift > 0 ? { translate: `-50% -${lift}px` } : undefined}
         className="fixed bottom-[calc(var(--tabbar-h,0px)+16px)] left-1/2 z-[60] flex w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 items-center gap-[14px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] py-[4px] pl-[16px] pr-[6px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] md:bottom-[24px]"
       >
         <span className="min-w-0 flex-1 py-[8px] text-[13.5px] text-[color:var(--fg)]">{title}</span>
