@@ -2484,7 +2484,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   link; the link and ✕ take the 2px `--accent` ring at a 2px offset; each link lands on `/decks/precons?sort=newest`
   with its hash, with Most owned SAVED in the browser first, and its target is drawn (`#announced` with the Announced
   group open, `#precons-<year>` the year's head); that visit marks the arrivals seen (rule 6, the page's `after()`
-  write, polled in `user_prefs`) and the next Home load draws no banner; ✕, by click and by Enter,
+  write, polled in `user_prefs`) and the next Home load draws no banner, nor does Back to Home (`page.goBack()`, the
+  router's held payload); ✕, by click and by Enter,
   closes it, writes the seen keys (read back from `user_prefs`) and focuses Home's `h1`, and a reload draws none with
   `LIST_CACHE_ENABLED=true` (the stamp retiring cached Home, E5); a fresh first-run account gets no banner and no seen
   key (H7); the About entry `upcoming-precons` draws with the switch on, and neither it nor the banner with an account
@@ -2492,5 +2493,6 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   only (production and staging refused by branch id): two `commander` sets `pqaset` and `pqalist`, a precon listing
   `pqalist`, a day-old non-baseline `catalog_first_seen` stamp per arrival, the override, and a temporary Clerk test
   user on the DEVELOPMENT instance (its key must be `sk_test_`), all removed in its `finally` with the account's seen
-  keys. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true
+  keys; the account's `user_prefs` row (its seen keys and About fields, or its absence) is read before any page and put
+  back exactly, then re-read as a check. `PROBE_BASE` must be loopback with a port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true
   UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true ABOUT_SHEET_ENABLED=true`; stop it by its own PID.

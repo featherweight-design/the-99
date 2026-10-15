@@ -34,6 +34,13 @@ import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+// A local server only: the probe writes fixtures, so a remote host is never a target, whatever it serves.
+{
+  const u = new URL(BASE);
+  if (u.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(u.hostname) || u.port === "" || u.pathname !== "/") {
+    throw new Error(`refusing PROBE_BASE ${BASE}: a loopback server with a port only (http://localhost:3311)`);
+  }
+}
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
@@ -114,6 +121,23 @@ async function unsee(userId) {
   await sql`insert into user_prefs (user_id) values (${userId}) on conflict (user_id) do nothing`;
   await sql`update user_prefs set upcoming_seen_codes = array(select k from unnest(upcoming_seen_codes) k where k <> all(${KEYS}))
             where user_id = ${userId}`;
+}
+
+/** The row's fields this run can move, and whether it existed (`probe-upcoming-precons-ui.mjs`'s pattern). */
+async function readPrior(id) {
+  const rows = await sql`select upcoming_seen_codes, about_version_seen, about_seen_ids from user_prefs where user_id = ${id}`;
+  return rows.length === 0 ? { existed: false } : { existed: true, ...rows[0] };
+}
+
+/** Puts that row back: deleted if the run created it, else exactly its prior fields; then reads it again. */
+async function restorePrior(id, was) {
+  if (!was.existed) await sql`delete from user_prefs where user_id = ${id}`;
+  else {
+    await sql`update user_prefs set upcoming_seen_codes = ${was.upcoming_seen_codes}, about_version_seen = ${was.about_version_seen},
+              about_seen_ids = ${was.about_seen_ids} where user_id = ${id}`;
+  }
+  const now = await readPrior(id);
+  check(JSON.stringify(now) === JSON.stringify(was), "the account's user_prefs row is restored as it was", `${JSON.stringify(was)} -> ${JSON.stringify(now)}`);
 }
 
 const seenKeys = async (userId) =>
@@ -222,6 +246,14 @@ async function widthRun(browser, w, userId) {
     `${w.name} H8: the link's focus ring is 2px --accent at a 2px offset`, JSON.stringify(r));
 
   await follow(page, w, "several (a set among them)", "announced");
+  // Back, not a fresh load: the router restores the Home payload it holds, which still carries the banner, and the
+  // link press is what keeps it closed.
+  await page.goBack();
+  await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
+  await onPage(page, "h1").first().waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(1_000);
+  const back = await onPage(page, REGION).count();
+  check(back === 0, `${w.name}: Back to Home after the banner's link draws no banner`, `${back} regions`);
   await visitMarksSeen(page, w, userId, "several", KEYS);
 
   // ✕ by click, over the same two arrivals made unseen again.
@@ -317,11 +349,15 @@ if (!branch || branch === PRODUCTION || branch === STAGING) {
 }
 const browser = await chromium.launch();
 let userId = null;
+/** The audit account's `user_prefs` row as it stood before the run, put back in `finally`. */
+let prior;
 let tempUser = null;
 try {
-  const ctx = await browser.newContext();
-  userId = await signIn(await ctx.newPage(), EMAIL, PASSWORD);
-  await ctx.close();
+  // The account's id from Clerk's API, so its preferences are read before any page of the app has been opened for it.
+  const [account] = await clerk("GET", `/users?email_address=${encodeURIComponent(EMAIL)}`);
+  if (!account?.id) throw new Error(`no Clerk account for ${EMAIL}`);
+  userId = account.id;
+  prior = await readPrior(userId);
   const [{ n }] = await sql`select (select count(*) from collection_items where user_id = ${userId}) + (select count(*) from decks where user_id = ${userId}) as n`;
   if (Number(n) === 0) throw new Error("the sign-in account is on its first run: the banner never draws for it");
 
@@ -347,7 +383,7 @@ try {
   for (const w of WIDTHS) await firstRun(browser, w, email);
 } finally {
   await cleanFixtures();
-  if (userId) await unsee(userId);
+  if (userId && prior) await restorePrior(userId, prior);
   if (tempUser) try {
     // Whatever the first-run visits wrote for the temporary account, then the account itself.
     const tables = await sql`select table_name from information_schema.columns where table_schema = 'public' and column_name = 'user_id'`;

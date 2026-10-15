@@ -126,7 +126,8 @@ export function Dashboard(props: DashboardProps) {
       </header>
 
       {/* Between the header and Ready to build, in the flow and spanning both columns (handoff call 4). */}
-      {props.arrivals && <ArrivalsBanner data={props.arrivals} />}
+      {/* Keyed by its arrivals, so a new batch is a new banner and never inherits an earlier one's dismissal. */}
+      {props.arrivals && <ArrivalsBanner key={props.arrivals.keys.join(",")} data={props.arrivals} />}
 
       {/* §HomeBody. One row of two columns on desktop; on a phone the same two
           columns stack, and nothing drops at either width — that is the whole

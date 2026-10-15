@@ -21,9 +21,11 @@ export const HOME_HEADING_ID = "home-heading";
 export const COLLAPSE_MS = 160;
 
 /**
- * The banners dismissed in this document, by their keys. The press writes the seen state and the next load draws
- * nothing, but a client navigation back to Home re-mounts the payload the router already holds; this keeps that
- * re-mount closed. Only ever written by a press, so the server's copy of the module stays empty.
+ * The banners dismissed in this document, by their keys. ✕ writes the seen state, and so does the Precons visit a
+ * link press starts (rule 6, the page's `after()`), and the next load draws nothing. But a client navigation back
+ * to Home (Back included) re-mounts the payload the router already holds, so both presses record the banner here
+ * and that re-mount stays closed. A ✕ whose write fails takes its entry back out. Only ever written by a press, so
+ * the server's copy of the module stays empty.
  */
 const dismissed = new Set<string>();
 
@@ -91,9 +93,15 @@ export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
   const close = () => {
     dismissed.add(id);
     setPhase("closing");
-    // The banner closes on the press; a write that fails leaves the arrivals unseen, and the next load shows them
-    // again (rule 6: only ✕ or a Precons visit marks seen).
-    void dismissArrivals(data.keys).catch(() => {});
+    // The banner closes on the press; a write that fails leaves the arrivals unseen, so the next load shows them
+    // again (rule 6), and a re-mount in this document draws it again too.
+    void dismissArrivals(data.keys).catch(() => {
+      dismissed.delete(id);
+    });
+  };
+  // A link press opens Precons, whose visit marks these arrivals seen: the press is a dismissal for this document.
+  const followed = () => {
+    dismissed.add(id);
   };
 
   const closing = phase === "closing";
@@ -126,6 +134,7 @@ export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
               </p>
               <Link
                 href={data.href}
+                onClick={followed}
                 className={`${LINK} min-h-[24px] self-start text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
               >
                 {one.kind === "set" ? copy.seeOne : copy.seeMany}
@@ -176,6 +185,7 @@ export function ArrivalsBanner({ data }: { data: ArrivalsBannerData }) {
             </ul>
             <Link
               href={data.href}
+              onClick={followed}
               className={
                 `${LINK} col-span-2 row-start-3 flex min-h-[44px] items-center justify-self-start pl-[32px] text-[14px] ` +
                 "sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:min-h-0 sm:pl-0 sm:text-[13.5px]"

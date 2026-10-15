@@ -148,6 +148,45 @@ describe("ArrivalsBanner, ✕", () => {
     render(<ArrivalsBanner data={data} />);
     expect(region()).toBeNull();
   });
+
+  it("draws the banner again in this document when the write fails, though it closed at once", async () => {
+    vi.useFakeTimers();
+    dismiss.mockRejectedValueOnce(new Error("offline"));
+    const data = one(TRC, ["trc", "failed-write"]);
+    const first = render(<ArrivalsBanner data={data} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(document.querySelector("[data-arrivals-banner]")?.getAttribute("data-arrivals-banner")).toBe("closing");
+    await act(async () => {
+      await Promise.resolve();
+      vi.advanceTimersByTime(COLLAPSE_MS);
+    });
+    expect(region()).toBeNull();
+    first.unmount();
+    render(<ArrivalsBanner data={data} />);
+    expect(region()).not.toBeNull();
+  });
+
+  it("draws a new batch of arrivals after an earlier one was dismissed, in the same Home", () => {
+    vi.useFakeTimers();
+    const view = render(<Dashboard {...DASH} arrivals={one(TRC, ["trc", "batch-1"])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    act(() => vi.advanceTimersByTime(COLLAPSE_MS));
+    expect(region()).toBeNull();
+    view.rerender(<Dashboard {...DASH} arrivals={one(FRC, ["frc", "lists:frc", "batch-2"])} />);
+    expect(region()).toHaveTextContent("Reality Fracture Commander: 4 decklists listed.");
+  });
+});
+
+describe("ArrivalsBanner, a link press", () => {
+  it("counts as a dismissal in this document: Back to Home re-mounts it closed (a Precons visit marks seen)", () => {
+    const data = one(TRC, ["trc", "followed"]);
+    const first = render(<ArrivalsBanner data={data} />);
+    fireEvent.click(screen.getByRole("link", { name: "See it in Precons" }));
+    expect(dismiss).not.toHaveBeenCalled();
+    first.unmount();
+    render(<ArrivalsBanner data={data} />);
+    expect(region()).toBeNull();
+  });
 });
 
 describe("Dashboard", () => {
