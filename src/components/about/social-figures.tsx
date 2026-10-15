@@ -1,11 +1,14 @@
 "use client";
-// The Social line's About specimens (Social R3 PR 5; the addendum `design_handoff_the99_about/addendum-social-line`).
+// The Social line's About specimens (Social R3 PR 5, and R2's last PR for the wishlist; the addendum
+// `design_handoff_the99_about/addendum-social-line`).
 // Each is a SHIPPED component drawn over a fixture, inert inside `Specimen`, with no-op callbacks: no new visuals, so the
 // page can never describe a control the app does not draw. The fixtures name no real account.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PodCard } from "../social/pod-card";
 import { GameMatchups } from "../decks/game-matchups";
+import { WISHLIST_TILE_SHELL, WishlistTileFace, type WishlistTileCard } from "../wishlist/wishlist-tile";
+import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import type { DeckGame } from "../../lib/decks/games";
 import { summarizeMatchups } from "../../lib/decks/matchups";
 import type { GameOpponent } from "../../lib/decks/game-opponents";
@@ -108,6 +111,38 @@ export function OpponentsFigureBody() {
   return (
     <FitFigure wideAt="lg:min-w-[780px]">
       <GameMatchups matchups={MATCHUPS} />
+    </FitFigure>
+  );
+}
+
+/**
+ * `fixtures.wishlist` (the board's E1): three lines of a wishlist, one partly held. Each tile is the catalog's name and
+ * image, as the tab draws it.
+ */
+const WISHLIST: WishlistTileCard[] = [
+  { name: "Lathliss, Dragon Queen", imageUri: "https://cards.scryfall.io/normal/front/0/c/0cb48015-627b-49cd-8dc3-d446e82b8172.jpg?1783907068", want: 2, have: 1 },
+  { name: "Giada, Font of Hope", imageUri: "https://cards.scryfall.io/normal/front/8/a/8ae6fc26-cfad-4da8-98d9-49c27c24d293.jpg?1783909085", want: 1, have: 0 },
+  // The board drew Miku, a Secret Lair name for Trostani; the tab draws the catalog's name and image, so the specimen does too.
+  { name: "Trostani, Selesnya's Voice", imageUri: "https://cards.scryfall.io/normal/front/3/4/34ea44f2-cb2f-4b86-83fc-fe507f05bb9d.jpg?1783932732", want: 1, have: 0 },
+];
+
+/**
+ * The Wishlist tab's tiles, three across in the tab's own grid track. The shared `WishlistTileFace` in a plain box
+ * rather than the tab's card-details press: the specimen is inert, and the press needs the provider the tab mounts.
+ */
+export function WishlistFigureBody() {
+  // Three 178px tracks and two 20px gaps are 574px, more than the article has at a signed-in 1024px.
+  return (
+    <FitFigure wideAt="md:min-w-[574px]">
+      <ul className={`m-0 grid list-none p-0 ${CARD_GRID_TRACKS} gap-[8px] md:gap-[20px]`}>
+        {WISHLIST.map((tile) => (
+          <li key={tile.name} className="flex flex-col" data-testid="wishlist-tile">
+            <span className={WISHLIST_TILE_SHELL}>
+              <WishlistTileFace tile={tile} eager={false} />
+            </span>
+          </li>
+        ))}
+      </ul>
     </FitFigure>
   );
 }

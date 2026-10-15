@@ -117,7 +117,7 @@ export type AboutSwitch =
   | 'PROPOSED_CUTS_ENABLED'
   | 'FIND_A_DECK_READ_ENABLED'
   | 'NO_COLLECTION_ENTRY_ENABLED'
-  // The Social line (Social R3 PR 5): friends and pods, opponents in the game log, and (for R2's entries, later) the wishlist.
+  // The Social line (Social R3 PR 5, and R2's last PR for the wishlist): friends and pods, opponents in the game log, the wishlist.
   | 'SOCIAL_FRIENDS_ENABLED'
   | 'SOCIAL_GAMES_ENABLED'
   | 'SOCIAL_WISHLIST_ENABLED';
@@ -594,6 +594,34 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 12,
+  },
+  // The Social line, entry 2 (Social R2's last PR; addendum `design_handoff_the99_about/addendum-social-line`, approved
+  // 2026-10-15): last in chapter 01, as the Wishlist tab follows History. It follows `SOCIAL_WISHLIST_ENABLED`, which
+  // stands alone, so `since: 14` and no bump; the friends paragraph and key line need `SOCIAL_FRIENDS_ENABLED` too.
+  // The specimen is the Wishlist tab's own tile (E1, `wishlist/wishlist-tile.tsx`).
+  {
+    id: 'wishlist',
+    switch: 'SOCIAL_WISHLIST_ENABLED',
+    chapter: '01',
+    title: 'Keeping a wishlist',
+    route: '/collection/wishlist',
+    width: 'plate',
+    caption:
+      'Want a card that no deck is asking for yet? Put it on your wishlist. Press “Add to wishlist” in any card’s details, or search on the “Wishlist” tab of your Collection, and set how many you want. Any printing counts.\n\nOnce your Collection holds that many, the card leaves the list by itself, and the tab tells you once what left. Nothing piles up to clear.\n\nYour friends can see your wishlist, and you can see theirs: open a friend from “Friends”.',
+    captionLineSwitches: {
+      'Your friends can see your wishlist, and you can see theirs: open a friend from “Friends”.': 'SOCIAL_FRIENDS_ENABLED',
+    },
+    keys: [
+      '“Add to wishlist” turns into a counter right where you pressed it, starting at one more than you have.',
+      'Copies in your decks count toward what you have.',
+      'It stays apart from Shopping: a deck’s missing cards stay on that deck’s list.',
+      'Friends see each card and how many you want, never how many you own.',
+    ],
+    keySwitches: {
+      'Friends see each card and how many you want, never how many you own.': 'SOCIAL_FRIENDS_ENABLED',
+    },
+    marksPending: true,
+    since: 14,
   },
   {
     id: 'ready-to-build',
