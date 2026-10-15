@@ -707,6 +707,10 @@ describe("the foil film's finish", () => {
     ]);
     expect(agg.foil).toBe("foil");
     expect(toListCards([agg])[0].foil).toBe("foil");
+    // A plain card's list entry has no `foil` key at all: the server payload would carry an undefined one.
+    const [plain] = aggregateCollection([raw({ finish: "nonfoil", exactImageUri: "https://img/c21-263.jpg" })]);
+    expect(Object.hasOwn(plain, "foil")).toBe(true);
+    expect(Object.hasOwn(toListCards([plain])[0], "foil")).toBe(false);
     const picked = withDeckPick(agg, { setCode: "LEA", collectorNumber: "270" });
     expect(picked.primarySetCode).toBe("LEA");
     expect(picked.foil).toBeUndefined();

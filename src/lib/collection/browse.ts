@@ -337,6 +337,10 @@ export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
       counts.set(code, (counts.get(code) ?? 0) + p.quantity);
     }
     const list: BrowseListCard = { ...rest, setCounts: [...counts] };
+    // `cardArt` writes `foil` as an explicit undefined so a pick clears it, and React's server payload
+    // keeps an undefined key (`"$undefined"`) where JSON drops it: at a few thousand plain cards that
+    // is tens of kilobytes, so the list drops the key where there is no film.
+    if (list.foil === undefined) delete list.foil;
     // Set only when present: an absent key costs nothing on the wire, and `undefined` does.
     if (comboPartner) list.comboPartner = { name: comboPartner.name };
     return list;
