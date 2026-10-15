@@ -83,7 +83,10 @@ Realistic mix: a plausible bad-but-normal phone shot. Mild perspective, one slee
 spot, a thumb 40% of the time, low light (mostly mild, 30% at severity 2), mild blur, and JPEG
 quality 60-85. Two renders per query, cross-printing (the scanned printing differs from the
 indexed reference wherever one exists), dhvazquez fp32 embedder, HanClinto detector, card-present
-gate at the 99th percentile of empty-scene sharpness.
+gate at the 99th percentile of empty-scene sharpness. 124 of those 600 empty scenes held a
+blurred whole card; without them the end-to-end figures below lie between 21.2 and 27.4 held out
+and between 51.1 and 68.0 present, most likely within a point of the figures shown (see Detector
+stage).
 
 | index | images | top-1, perfect crop | top-5, perfect crop | end-to-end top-1 | end-to-end top-5 |
 |---|---|---|---|---|---|
@@ -116,6 +119,26 @@ HanClinto `ccgdetector-fastweb-single` 1.39 on cross-printing scenes. Two defini
 
 `sharpness` separates poorly. The 600 empty scenes include busy playmats of blurred card art, and
 their 99th percentile (0.0607) sits close to the card scenes' median (0.0644).
+
+**124 of the 600 "empty" scenes hold a whole card.** The busy-playmat background is a gallery
+image, frame and text included, stretched to the frame and blurred (sigma 3 to 8). The seed picks
+the background, so the count is exact. Every gated figure in this report used all 600. The run
+did not record which empty scene drew which background, and results came back out of order, so
+the gate without them cannot be computed exactly from the cached results (the detector was not
+re-run). What can be measured, both renders, n=5,184, as in the Headline table:
+
+| empty scenes behind the p99 gate | gate | of the 600 passing | realistic: card present | e2e, held out | e2e, own present |
+|---|---|---|---|---|---|
+| all 600 (shipped) | 0.0607 | 1.0 | 67.1 | 21.7 | 52.4 |
+| 476 card-free, if the 124 scored lowest (strictest case) | 0.0610 | 0.8 | 65.1 | 21.2 | 51.1 |
+| 476 card-free, if the 124 scored highest (loosest case) | 0.0213 | 21.5 | 95.9 | 27.4 | 68.0 |
+| 476 card-free, if results came back in planned order (**estimate**) | 0.0604 | 1.2 | 68.7 | 22.1 | 53.4 |
+
+The perfect-crop figures (28.2 held out, 69.8 present) do not use the gate. Under the order
+estimate the blurred-card scenes score like the rest (median sharpness 0.0127 against 0.0132), so
+the likely effect is under a point, upward; the hard range is the two middle rows. No case comes
+near the 90% bar. `run_queries.py` now draws empty scenes with no card: a rerun keeps the 476
+card-free backgrounds exactly and redraws the other 124.
 
 | augmentation | sev | corners found (IoU ≥ 0.9) | card present, gate p99 | mean IoU | dhvazquez pose model, gate p99 (n=150) |
 |---|---|---|---|---|---|
@@ -305,7 +328,7 @@ held out (21.7 both).
 From the realistic mix, cross-printing. All of the examples are real rows of the run.
 
 1. **The index has a different printing from the one scanned (the main failure).** With one
-   reference per oracle, 2,805 of 4,537 wrong answers are scans whose art differs from the
+   reference per oracle, 2,806 of 4,537 wrong answers are scans whose art differs from the
    reference's. Examples: Eldrazi Monument [SLD 603, borderless] → Grim Lavamancer; Meteor
    Crater [EOS 26, borderless] → Mortus Strider; Quest for Renewal [SLD 2405] → Haughty Djinn.
    The fix is to index every printing; this is the ManaBox-style bundle.
@@ -316,8 +339,13 @@ From the realistic mix, cross-printing. All of the examples are real rows of the
    members: Talisman of Dominance [SLD] → Talisman of Resilience, Furycalm Snarl → Frostboil
    Snarl, Zopandrel → Tekuthal (ONE showcase Dominus). 239 of 3,723 held-out errors are the same
    artist with different art.
-3. **A different oracle with near-identical art is rare.** Only 1 wrong answer in 5,184 went to an
-   oracle sharing the true card's illustration: The Colossal Dreadmaw [UNK RG06b] → Dockbreacher.
+3. **A different oracle with the same art did not occur.** No wrong answer in 5,184 went to an
+   oracle sharing the true card's illustration. An earlier version of this report counted one, The
+   Colossal Dreadmaw [UNK RG06b] → Dockbreacher: both are playtest printings with no illustration
+   id in Scryfall's data, and the report treated the two missing ids as equal. 549 of the
+   catalog's 102,571 printings have no illustration id and 550 no artist; an unknown now matches
+   nothing, so that row moved to "art differs" (single, 2,805 → 2,806) or "other" (held out,
+   3,483 → 3,484 and 2,257 → 2,258). No other figure moved.
    The Universes Beyond and Secret Lair renames are the SAME oracle with a `flavor_name`, so for
    card-level identification they are not confusions at all. They fail on art instead: flavor-name
    printings scored 0.2% single and 7.1% held out.
@@ -391,7 +419,7 @@ right answers have a median margin of 0.197 against 0.014 for wrong ones.
   - D: 400 queries for DINOv2.
   - F: 300 queries × 5 frames for agreement.
   - P: 150 queries for the pose model.
-  - N: 600 empty scenes for the gate.
+  - N: 600 empty scenes for the gate (124 of them on a blurred whole card; see Detector stage).
   - Total: 46,712 card scenes plus 600 empty ones, in 31 minutes on 12 processes.
 - **Pipeline**: detector → OpenCV perspective warp of its four corners to 448x320 (the embedder's
   input; ImageNet mean/std) → L2-normalized embedding → brute-force cosine over the gallery,
@@ -870,7 +898,7 @@ Embedder class map: 82110 printings; catalog paper printings among them: 20703 o
 
 ### Failure modes: realistic, cross-printing, SINGLE gallery, perfect crop
 
-- **query art differs from the indexed reference's art**: 2805 of 4537
+- **query art differs from the indexed reference's art**: 2806 of 4537
   - Eldrazi Monument [sld 603, borderless] -> Grim Lavamancer (truth rank >5)
   - Eldrazi Monument [sld 603, borderless] -> Corpse Dance (truth rank >5)
   - Zurgo and Ojutai [mom 319, showcase] -> Gerrard's Hourglass Pendant (truth rank 5)
@@ -897,8 +925,6 @@ Embedder class map: 82110 printings; catalog paper printings among them: 20703 o
   - Flinthoof Boar [m13 171, modern_2003] -> Abomination of Gudul (truth rank >5)
   - Feebleness [tsp 110, modern_2003] -> Promise of Power (truth rank >5)
   - Master Transmuter [con 31, modern_2003] -> Vectis Agents (truth rank 2)
-- **wrong oracle shares the SAME illustration**: 1 of 4537
-  - The Colossal Dreadmaw [unk RG06b, m15] -> Dockbreacher (truth rank >5)
 
 ### Confidence: realistic, cross-printing, ALL-printings gallery, own printing held out, perfect crop (n=5184)
 
@@ -910,7 +936,7 @@ Embedder class map: 82110 printings; catalog paper printings among them: 20703 o
 
 ### Failure modes: realistic, cross-printing, ALL-printings gallery, own printing held out, perfect crop
 
-- **other**: 3483 of 3723
+- **other**: 3484 of 3723
   - Eldrazi Monument [sld 603, borderless] -> Serum Visions (truth rank >5)
   - Zurgo and Ojutai [mom 319, showcase] -> Dragonlord Ojutai (truth rank >5)
   - Zurgo and Ojutai [mom 319, showcase] -> Sarkhan, Soul Aflame (truth rank 3)
@@ -928,8 +954,6 @@ Embedder class map: 82110 printings; catalog paper printings among them: 20703 o
   - Muxus, Goblin Grandee [sld 2833, flavor_name] -> Island (truth rank >5)
   - Krark, the Thumbless [sld 1543, borderless] -> Yargle, Glutton of Urborg (truth rank >5)
   - Armageddon [ptc bl5, old_border] -> Forest (truth rank >5)
-- **wrong oracle shares the SAME illustration**: 1 of 3723
-  - The Colossal Dreadmaw [unk RG06b, m15] -> Dockbreacher (truth rank >5)
 
 ### Confidence: realistic, cross-printing, own printing held out, detected frames (n=3476)
 
@@ -941,7 +965,7 @@ Embedder class map: 82110 printings; catalog paper printings among them: 20703 o
 
 ### Failure modes: realistic, cross-printing, own printing held out, detected frames
 
-- **other**: 2257 of 2350
+- **other**: 2258 of 2350
   - Zurgo and Ojutai [mom 319, showcase] -> Dragonlord Ojutai (truth rank >5)
   - Zurgo and Ojutai [mom 319, showcase] -> Sarkhan, Soul Aflame (truth rank 4)
   - Quest for Renewal [sld 2405, borderless] -> Balefire Liege (truth rank >5)
@@ -959,8 +983,6 @@ Embedder class map: 82110 printings; catalog paper printings among them: 20703 o
   - Zopandrel, Hunger Dominus [one 315, showcase] -> Tekuthal, Inquiry Dominus (truth rank >5)
   - Talisman of Dominance [sld 1053, retro_frame_reprint] -> Talisman of Resilience (truth rank >5)
   - Talisman of Dominance [sld 1053, retro_frame_reprint] -> Talisman of Resilience (truth rank >5)
-- **wrong oracle shares the SAME illustration**: 1 of 2350
-  - The Colossal Dreadmaw [unk RG06b, m15] -> Dockbreacher (truth rank >5)
 
 ### Confidence: realistic, cross-printing, own printing PRESENT, detected frames (n=3476)
 

@@ -278,11 +278,16 @@ def main():
         print()
 
     # ---- confidence and failure modes
+    # bulk_meta() leaves an illustration id or artist as None when Scryfall gives none. An unknown
+    # never establishes a match: None is kept out of these sets and a None on the query side
+    # matches nothing, or two unrelated cards with missing metadata would "share" art or artist.
     ills = defaultdict(set)
     artists = defaultdict(set)
     for p in pr.values():
-        ills[p["oracle_id"]].add(p["ill"])
-        artists[p["oracle_id"]].add(p["artist"])
+        if p["ill"] is not None:
+            ills[p["oracle_id"]].add(p["ill"])
+        if p["artist"] is not None:
+            artists[p["oracle_id"]].add(p["artist"])
 
     def confidence_and_failures(key, title, needs_detection):
         pool = [r for r in sel if detected(r)] if needs_detection else sel
@@ -314,13 +319,13 @@ def main():
             top = res[0][0]
             qp = pr[q["query"]]
             refp = pr[oracles[t]["ref"]]
-            if qp["ill"] in ills[top] or refp["ill"] in ills[top]:
+            if {qp["ill"], refp["ill"]} & ills[top]:
                 mode = "wrong oracle shares the SAME illustration"
             elif oracles[top]["name"].split(" //")[0] == oracles[t]["name"].split(" //")[0]:
                 mode = "same name, different oracle"
             elif not q["same_art_as_ref"] and "single" in key:
                 mode = "query art differs from the indexed reference's art"
-            elif artists[top] & {qp["artist"]}:
+            elif qp["artist"] is not None and qp["artist"] in artists[top]:
                 mode = "same artist, different art"
             else:
                 mode = "other"

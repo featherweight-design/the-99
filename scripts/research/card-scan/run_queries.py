@@ -23,7 +23,9 @@ Query sets (all deterministic):
   F  300 of B: frame agreement. Blur and low light at severity 1-3, and the realistic mix, each
      rendered as 5 independent frames (rep 0-4, each its own seed) of the same printing.
   P  150 of B: dhvazquez's pose detector on every cell of A and B.
-  N  600 scenes with no card: the detectors' scores, to set a card-present gate.
+  N  600 scenes with no card: the detectors' scores, to set a card-present gate. Before
+     2026-10-15 these drew the clutter background too, a whole card blurred to fill the frame;
+     the report's figures come from that run (124 of the 600; see the report's Detector stage).
 
 Writes CARD_SCAN_DIR/out/results.jsonl (one JSON object per scene).
 """
@@ -157,8 +159,10 @@ def work(job):
     if job["kind"] == "negative":
         for j in job["cells"]:
             rng = np.random.default_rng(j["seed"])
-            clutter = bl.read_rgb(img_path(*G["single_list"][j["seed"] % len(G["single_list"])].rsplit("_", 1)))
-            img = bl.jpeg(bl.background(rng, clutter), 88)
+            # No clutter image: the clutter branch is a whole card (frame and text) blurred to fill
+            # the frame, so an "empty" scene would hold a card. With None, background() redraws a
+            # card-free kind; the other seeds keep exactly the background they drew before.
+            img = bl.jpeg(bl.background(rng, None), 88)
             _, sharp = G["hc"](img)
             _, pscore = G["pose"](img)
             out.append({"kind": "negative", "hc_sharp": sharp, "pose_score": pscore})
