@@ -28,7 +28,9 @@ directory and are not committed (see Reproduce).
   answers into "no answer". It barely raises the right-answer rate, because a blurred frame is
   wrong the same way each time.
 - **Bar used: oracle top-1 of at least 90% end to end on the realistic mix, cross-printing.**
-  Nothing reaches it. The best is 52.4% (own printing indexed, dhvazquez) and 21.7% held out.
+  Nothing reaches it. With the scanned printing indexed, the best is dhvazquez at 52.4% (n=5,184
+  scenes). Held out, dhvazquez reaches 21.7% on the same 5,184. On the 400-query DINOv2 subset
+  (render 0 only), DINOv2 reaches 28.0% held out, against dhvazquez's 22.8% on those same 400.
   **Step 2 is not promising on synthetic data.** Step 3, the lab page, is built anyway: per
   Hugh's correction it is now the way we collect real photos.
 - **Recommendation: collect real photos with the lab page next, with "Keep this frame" ticked, and
@@ -130,7 +132,9 @@ their 99th percentile (0.0607) sits close to the card scenes' median (0.0644).
 
 n = 700 per severity cell, 2,592 for clean and realistic. 3 of the 46,712 scenes (two at low
 light 3, one at blur 3) had a self-intersecting predicted quad that the run's convex IoU
-mis-measured as above 1; they count as misses. `bench_lib.quad_iou` now rasterizes instead.
+(`cv2.intersectConvexConvex`) mis-measured as above 1; they count as misses. Every figure here
+comes from that run. Since then, `bench_lib.quad_iou` rasterizes both quads after ordering their
+corners geometrically, so a crossed quad is measured as its uncrossed form.
 
 - **The corners are found almost always.** Sleeve sheen, glare and low contrast barely touch the
   detector; low contrast scored highest of all. The exceptions are **full-art cards** (corners
@@ -174,6 +178,10 @@ is the detector's own warp, counted over card-present frames.
 | low contrast | 3 | 32.1 | 46.9 | 52.9 | 64.3 | 53.8 | 100.0 | 100.0 |
 | foil | 1 / 2 / 3 | 31.0 / 28.7 / 22.7 | 46.1 / 42.0 / 35.9 | 52.3 / 48.7 / 42.3 | 63.1 / 58.1 / 53.3 | 52.4 / 45.5 / 44.8 | 100.0 / 99.9 / 99.6 | 100.0 / 99.8 / 99.6 |
 
+The realistic row counts render 0 only (n=2,592). The Headline table counts both renders
+(n=5,184), which is why it reads 28.2 and 69.8 on a perfect crop where this table reads 27.9 and
+68.6.
+
 Every severity of every augmentation is in the appendix. Foil (failure mode b) is matched
 correctly when the printing is indexed, and costs about 10 points held out.
 
@@ -190,6 +198,9 @@ correctly when the printing is indexed, and costs about 10 points held out.
 | occlusion | 2 | 63.9 | 19.0 | 49.2 | 31.4 | 31.4 | 63.9 |
 | low contrast | 3 | 92.9 | 30.9 | 53.8 | 50.0 | 50.0 | 92.9 |
 | foil | 3 | 76.1 | 18.9 | 44.8 | 34.1 | 34.1 | 75.9 |
+
+The realistic row counts render 0 only (n=2,592). The Headline table counts both renders
+(n=5,184), which is why it reads 52.4 and 21.7 where this table reads 52.0 and 21.8.
 
 The product equals the measured figure by construction: the matcher's rate is counted over
 the detected frames, and an undetected frame is a miss. Both are printed as a check on the
@@ -209,8 +220,13 @@ augmentations. DINOv2 runs at 224x168, CLS token, fp32.
 | occlusion | 30.2 / 19.8 | 40.8 / 28.2 | 43.0 / 25.8 | 63.5 / 41.5 | 48.8 / 31.2 | 64.5 / 41.8 | 100.0 / 62.5 | 95.0 / 57.8 |
 | foil | 30.8 / 25.5 | 17.5 / 13.0 | 43.8 / 36.0 | 27.5 / 19.5 | 49.8 / 38.8 | 27.5 / 21.8 | **99.8 / 83.0** | 50.7 / 35.5 |
 
-Perspective, glare, sleeve sheen and low contrast at severity 2 are within 3 points of clean for
-both models (appendix).
+Perspective, glare, sleeve sheen and low contrast at severity 2 (appendix):
+
+- **Below clean:** never more than 3.7 points, for either model, on a perfect crop or end to end.
+  The largest drop is DINOv2 held out under sleeve sheen, 68.8 against 72.5.
+- **Above clean:** low contrast reads up to 4.6 points higher end to end. Examples: dhvazquez,
+  own printing present, 94.2 against 89.8; DINOv2 93.8 against 89.2. The card-present gate
+  passes more low-contrast frames (94.0% against 90.8%).
 
 - **DINOv2 is a better *card* matcher and a worse *printing* matcher.** It finds the right card
   from a printing it never indexed far more often (72.5 against 54.2 clean), and it survives blur
@@ -289,9 +305,10 @@ From the realistic mix, cross-printing. All of the examples are real rows of the
    reference's. Examples: Eldrazi Monument [SLD 603, borderless] → Grim Lavamancer; Meteor
    Crater [EOS 26, borderless] → Mortus Strider; Quest for Renewal [SLD 2405] → Haughty Djinn.
    The fix is to index every printing; this is the ManaBox-style bundle.
-2. **The frame looks like another card's frame.** Old-border and full-art scans fall to basic
-   lands: Armageddon [PTC] → Forest, Mana Short [LEB] → Mountain, Dawn of Hope [LTC] → Swamp,
-   Restless Cottage [WOE borderless] → Forest. A cycle in the same treatment confuses its
+2. **The frame looks like another card's frame.** Scans fall to basic lands:
+   - two old-border cards: Armageddon [PTC] → Forest, Mana Short [LEB] → Mountain;
+   - an M15-frame card: Dawn of Hope [LTC] → Swamp;
+   - a borderless one: Restless Cottage [WOE] → Forest. A cycle in the same treatment confuses its
    members: Talisman of Dominance [SLD] → Talisman of Resilience, Furycalm Snarl → Frostboil
    Snarl, Zopandrel → Tekuthal (ONE showcase Dominus). 239 of 3,723 held-out errors are the same
    artist with different art.
@@ -333,9 +350,11 @@ right answers have a median margin of 0.197 against 0.014 for wrong ones.
 - **Images**: the catalog's stored `normal` URIs (cards.scryfall.io, 488x680), each fetched
   once (103,361 files, 11.0 GB, 0 failures). The fetch used 8 workers with keep-alive, a 0.1 s
   pause per worker and a research User-Agent, and ran at about 42/s.
-- **Queries**: 2,812 oracles, stratified 220 per stratum: treatment (old border, 2003, M15,
-  retro reprint, borderless, extended art, showcase, full art, flavor name), layout (DFC,
-  split/adventure), different-art printings, and single-printing cards. Tokens are excluded.
+- **Queries**: 2,812 oracles, stratified. 220 per stratum for treatment (old border, 2003, M15,
+  retro reprint, borderless, extended art, showcase, flavor name), layout (DFC,
+  split/adventure), different-art printings, and single-printing cards. Two strata ran short:
+  full art (170) and basic land (2). Strata are filled in name order, each oracle used once, and
+  the strata filled earlier had already taken the rest of their oracles. Tokens are excluded.
   The query printing is a random OTHER paper printing where one exists (2,592), plus the
   reference itself as a control.
 - **Scenes** (`bench_lib.render`): a 720x960 phone frame on a plain, wood, playmat or busy
@@ -545,7 +564,9 @@ The lab page matches on the phone only because a staging lab with no server inde
 
 ## Appendix: every table the run printed
 
-The output of `report.py` over `results.jsonl` (46,712 card scenes, 600 empty), unedited.
+The output of `report.py` over `results.jsonl` (46,712 card scenes, 600 empty), unedited. The
+realistic rows of its Detector, Matcher and End-to-end tables count render 0 only (n=2,592). The
+Headline table counts both renders (n=5,184).
 
 ### Gate
 

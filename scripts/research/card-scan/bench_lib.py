@@ -328,9 +328,10 @@ def warp(img, corners, h=EMB_H, w=EMB_W):
 
 
 def quad_iou(a, b):
-    """IoU of two quads by rasterising both: a self-intersecting predicted quad is measured as
-    drawn (cv2.intersectConvexConvex assumes convexity and read IoU > 1 on 3 of the first run's
-    46,712 scenes; report.py counts those as 0)."""
+    """IoU of two quads by rasterising both. Each quad's corners are first ordered geometrically
+    (sort_corners), so a self-intersecting (bowtie) prediction is measured as its uncrossed
+    quadrilateral, not as drawn. The benchmark run used cv2.intersectConvexConvex, which read
+    IoU > 1 on 3 of its 46,712 scenes; report.py counts those as 0."""
     ma = np.zeros((SCENE_H, SCENE_W), np.uint8)
     mb = np.zeros((SCENE_H, SCENE_W), np.uint8)
     cv2.fillPoly(ma, [np.round(sort_corners(a)).astype(np.int32)], 1)
