@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { preconsCopy } from "../../../lib/copy/precons";
 import { preconsLoadingCopy } from "../../../lib/copy/shell";
+import { PendingReporter } from "../../shell/pending-reporter";
 import { RowSkeleton, TileSkeleton } from "../../ui/tile-skeleton";
 import { PRECON_ROWS_CLASS, PRECON_TILES_CLASS } from "./precon-grid";
 
@@ -24,7 +25,10 @@ export function PreconsLoading({ view }: { view: "tiles" | "rows" }) {
     <div className="pb-[96px]">
       <span role="status" className="sr-only">{preconsLoadingCopy.status}</span>
       <header className="flex flex-col gap-[4px] border-b-[1px] border-solid border-x-0 border-t-0 border-b-[color:var(--border)] p-[12px_16px_12px] md:p-[16px_22px_16px]">
-        <Link href="/decks" className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">{copy.back}</Link>
+        <Link href="/decks" className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+          {copy.back}
+          <PendingReporter href="/decks" />
+        </Link>
         <h1 className="m-0 font-display text-[24px] font-normal text-[color:var(--fg)]">{copy.title}</h1>
         <span aria-hidden className="flex h-[16px] items-center anim-skeleton"><span className="block h-[11px] w-[55%] max-w-[420px] rounded-[3px] bg-[color:var(--elevated)]" /></span>
       </header>
