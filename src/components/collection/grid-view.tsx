@@ -29,8 +29,7 @@ import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
 import { GhostButton } from "../ui/button";
 import { HydratedImg } from "../ui/hydrated-art";
-import { useMemo } from "react";
-import { revealOf, useRevealFrom } from "../ui/use-reveal-from";
+import { revealOf } from "../ui/reveal-from";
 import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 /**
@@ -59,11 +58,14 @@ export function GridView({
   onShowMore,
   onOpen,
   pendingOracleId = null,
+  revealFrom = null,
   busy = false,
   mayBeHidden = false,
   showPrice = false,
 }: {
   cards: BrowseListCard[];
+  /** Where the latest Show more began, so the tiles it added fade in (E9); null reveals nothing. */
+  revealFrom?: number | null;
   /**
    * Sorted by price: the figure leads the sub-line and is spoken last, and the phone tile drops
    * the rarity to make room (Hugh, 2026-10-12). Decided by the sort, never by measurement.
@@ -87,8 +89,6 @@ export function GridView({
    */
   mayBeHidden?: boolean;
 }) {
-  // The tiles a `Show more` just added fade in one after another (E9); a filter or a new sort reveals nothing.
-  const from = useRevealFrom(useMemo(() => cards.map((c) => c.oracleId), [cards]));
   return (
     /* §Grid Container. The desktop track is a TILE FLOOR rather than a column
        count (card-captions readiness, erratum 5): `md:grid-cols-6` would begin
@@ -109,7 +109,7 @@ export function GridView({
           the desktop chip spells the availability state out in words too (below). */}
       <CollectionMarkKey className="col-span-full" />
       {cards.map((c, i) => {
-        const reveal = revealOf(i, from);
+        const reveal = revealOf(i, revealFrom);
         const state = c.availability ? availabilityState(c.availability) : "free";
         const spokenPrice = showPrice ? priceSpoken(c.price) : null;
         // Addendum 2 §2, matching the row: over-committed keeps its border tint

@@ -335,6 +335,8 @@ export function CollectionBrowser({
     close: closeDetail,
   } = useCardDetail();
   const [shown, setShown] = useState(PAGE_SIZE);
+  // Where the latest press of Show more began (E9). Dropped by anything that is not a press: a filter, a search, a sort.
+  const [revealFrom, setRevealFrom] = useState<number | null>(null);
 
   const totalQuantity = useMemo(() => cards.reduce((sum, c) => sum + c.quantity, 0), [cards]);
 
@@ -459,13 +461,19 @@ export function CollectionBrowser({
       if (message) publishAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
+      setRevealFrom(null);
     },
     [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement],
   );
+  const showMore = useCallback(() => {
+    setRevealFrom(shown);
+    setShown((s) => s + PAGE_SIZE);
+  }, [shown]);
   const updateSort = useCallback((s: SortKey, direction: SortDirection) => {
     setSort(s);
     setSortDirection(direction);
     setShown(PAGE_SIZE);
+    setRevealFrom(null);
   }, []);
 
   const filtered = useMemo(() => filterCards(cards, filters), [cards, filters]);
@@ -698,16 +706,16 @@ export function CollectionBrowser({
         // (`mayBeHidden`), or a phone downloads a screen of art it never shows.
         <>
           <div className="hidden md:block">
-            <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} mayBeHidden />
+            <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} mayBeHidden />
           </div>
           <div className="md:hidden">
-            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
+            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
           </div>
         </>
       ) : resolvedView === "rows" ? (
-        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
+        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
       ) : (
-        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
+        <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
       )}
       </HoverPreviewProvider>
     </>

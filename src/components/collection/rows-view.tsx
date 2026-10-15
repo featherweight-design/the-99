@@ -9,8 +9,7 @@ import { hasFrontFaceCost } from "../../lib/cards/faces";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { CostPips, COST_PIP_CAP, COST_PIP_SIZE } from "../ui/cost-pips";
-import { useMemo } from "react";
-import { revealOf, useRevealFrom } from "../ui/use-reveal-from";
+import { revealOf } from "../ui/reveal-from";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -36,10 +35,13 @@ export function RowsView({
   onShowMore,
   onOpen,
   pendingOracleId = null,
+  revealFrom = null,
   busy = false,
   showPrice = false,
 }: {
   cards: BrowseListCard[];
+  /** Where the latest Show more began, so the tiles it added fade in (E9); null reveals nothing. */
+  revealFrom?: number | null;
   /** Sorted by price: the figure leads the type line and is spoken last. Off, the row is as shipped. */
   showPrice?: boolean;
   totalCards: number;
@@ -55,7 +57,6 @@ export function RowsView({
   pendingOracleId?: string | null;
 }) {
   // The rows a `Show more` just added fade in one after another (E9); a filter or a new sort reveals nothing.
-  const from = useRevealFrom(useMemo(() => cards.map((c) => c.oracleId), [cards]));
   return (
     // §Rows Scroll Container: flex-1, padding 2px 12px 12px mobile / 12px 34px 34px desktop, flex column, gap 6/7px
     <div aria-busy={busy || undefined} className="flex-1 flex flex-col gap-[6px] md:gap-[7px] px-[12px] md:px-[34px] pt-[2px] md:pt-[12px] pb-[12px] md:pb-[34px]">
@@ -63,7 +64,7 @@ export function RowsView({
           thing that decodes it, rather than trusting a caller to mount one above. */}
       <CollectionMarkKey />
       {cards.map((c, i) => {
-        const reveal = revealOf(i, from);
+        const reveal = revealOf(i, revealFrom);
         const state = c.availability ? availabilityState(c.availability) : "free";
         // Addendum 2 §1 gave over-committed a border tint. Card-rows call 4
         // moved it to an inset ring: a tinted border froze the row's hover

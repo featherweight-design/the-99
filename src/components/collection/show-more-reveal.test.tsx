@@ -18,13 +18,13 @@ const buttons = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>("button"
 const reveals = (c: HTMLElement) => buttons(c).map((b) => (b.classList.contains("anim-reveal") ? b.style.getPropertyValue("--reveal-n") : null));
 
 describe.each([
-  ["the grid", (list: BrowseListCard[], pending: string | null = null) => <GridView cards={list} pendingOracleId={pending} {...props} />],
-  ["the rows", (list: BrowseListCard[], pending: string | null = null) => <RowsView cards={list} pendingOracleId={pending} {...props} />],
+  ["the grid", (list: BrowseListCard[], pending: string | null = null, from: number | null = null) => <GridView cards={list} pendingOracleId={pending} revealFrom={from} {...props} />],
+  ["the rows", (list: BrowseListCard[], pending: string | null = null, from: number | null = null) => <RowsView cards={list} pendingOracleId={pending} revealFrom={from} {...props} />],
 ])("%s", (_name, draw) => {
   it("draws the first window with no reveal, and fades in only what a Show more added, stepped and capped", () => {
     const { container, rerender } = render(draw(cards(20)));
     expect(reveals(container).every((r) => r === null)).toBe(true);
-    rerender(draw(cards(40)));
+    rerender(draw(cards(40), null, 20));
     const r = reveals(container);
     expect(r.slice(0, 20).every((x) => x === null)).toBe(true);
     expect(r[20]).toBe("0");
@@ -33,20 +33,23 @@ describe.each([
     expect(r[39]).toBe("11");
   });
 
-  it("reveals nothing for a different list (a filter or a sort), even a longer one", () => {
+  it("reveals nothing for a list that grew without a press of Show more, as clearing a search does", () => {
     const { container, rerender } = render(draw(cards(20)));
+    // The old results are a prefix of the new list, exactly as when a `Goblin` search is cleared.
+    rerender(draw(cards(60)));
+    expect(reveals(container).every((x) => x === null)).toBe(true);
     rerender(draw(cards(60, 100)));
     expect(reveals(container).every((x) => x === null)).toBe(true);
   });
 
   it("keeps a pending card's own dimming beside its place in the reveal", () => {
     const { container, rerender } = render(draw(cards(20)));
-    rerender(draw(cards(40), "o25"));
+    rerender(draw(cards(40), "o25", 20));
     const tile = buttons(container)[25];
     expect(tile.style.opacity).toBe("0.55");
     expect(tile.style.getPropertyValue("--reveal-n")).toBe("5");
     // And one that is already on screen keeps only its dimming.
-    rerender(draw(cards(40), "o3"));
+    rerender(draw(cards(40), "o3", 20));
     expect(buttons(container)[3].style.opacity).toBe("0.55");
     expect(buttons(container)[3].style.getPropertyValue("--reveal-n")).toBe("");
   });
