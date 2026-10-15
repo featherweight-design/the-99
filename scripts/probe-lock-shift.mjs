@@ -100,6 +100,12 @@ async function lockFirst(page) {
   const label = await toggle.getAttribute("aria-label");
   await toggle.click();
   await page.waitForFunction(() => document.querySelector("[data-testid=lock-mode-line]")?.textContent?.includes("1 locked"));
+  // The count moves before the server answers, and a press on a card with a write in flight is ignored: wait until the
+  // write has settled and the card still reads locked.
+  await page.waitForFunction((l) => {
+    const b = [...document.querySelectorAll("main button")].find((x) => x.getAttribute("aria-label") === l);
+    return b && b.getAttribute("aria-busy") !== "true" && b.getAttribute("aria-pressed") === "true";
+  }, label);
   return label;
 }
 
@@ -115,7 +121,8 @@ async function unlockCard(page, label) {
 }
 
 async function main() {
-  // The writes go through the server at BASE, so the target is checked as well as the database: a scratch
+  // The writes go through the server at BASE, so the target is checked as well as the database (a local server is the
+  // one the doc below tells the caller to point at the checked database; the probe cannot see which database it uses): a scratch
   // DATABASE_URL beside a staging BASE would pass the branch guard and lock a card on staging.
   const host = new URL(BASE).hostname;
   if (!["localhost", "127.0.0.1", "[::1]", "::1"].includes(host)) throw new Error(`Refusing ${BASE}: the probe writes, so it runs against a local server only.`);
