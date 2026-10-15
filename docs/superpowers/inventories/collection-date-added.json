@@ -1,0 +1,25 @@
+{
+  "feature": "Collection Date added sort (PR 2): the sort option, and its figure on rows and tiles at both widths",
+  "clearAbout": true,
+  "note": "Needs an account whose holdings carry added_at (run db:backfill:added-at, or date a local-dev fixture by hand). Reads only.",
+  "rows": [
+    {
+      "id": "added-rows-newest",
+      "label": "/collection?sort=added: rows, newest first (exact dates lead, then since, then undated)",
+      "view": "src/components/collection/rows-view.tsx",
+      "steps": [{ "goto": "/collection?sort=added&view=rows", "wait": "h1", "settle": 4000 }]
+    },
+    {
+      "id": "added-rows-oldest",
+      "label": "/collection?sort=added&dir=asc: rows, oldest first",
+      "view": "src/components/collection/rows-view.tsx",
+      "steps": [{ "goto": "/collection?sort=added&dir=asc&view=rows", "wait": "h1", "settle": 4000 }]
+    },
+    {
+      "id": "added-grid-newest",
+      "label": "/collection?sort=added: tiles, newest first",
+      "view": "src/components/collection/grid-view.tsx",
+      "steps": [{ "goto": "/collection?sort=added&view=grid", "wait": "h1", "settle": 4000 }]
+    }
+  ]
+}
