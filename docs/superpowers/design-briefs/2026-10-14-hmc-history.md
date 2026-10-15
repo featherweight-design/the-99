@@ -14,8 +14,8 @@ to it is the address of the results page.
   history, a bookmark, or a link pasted back in. Close the tab and the paid answer is out of reach, although the database
   holds it.
 - **The question is not kept with the answer.** A run's row stores a hash of the ask, never the words or the answers. The
-  words, the colors, themes, sets, budget, bracket and build-around card live in the results page's address (`w`, `c`,
-  `t`, `p`, `b`, `k`, `a`, `r`) and nowhere else (`src/lib/intake/params.ts`). So even an engineer with the row cannot say
+  words, the colors, themes, sets, budget, bracket and build-around card live in the results page's address (`w`, `c`, `m`,
+  `t`, `tj`, `p`, `pool`, `b`, `k`, `a`, `r`, with `n` for *Not used* and `v` for the screen) and nowhere else (`src/lib/intake/params.ts`). So even an engineer with the row cannot say
   what was asked. A list of past runs that shows "the question" needs the ask stored, which is new data (see
   "What engineering proposes").
 - **Asking again is not the same as opening again.** A repeat of the same ask is free since #1717, but only while
@@ -74,7 +74,7 @@ answer already serves two things: the repeat, and (by id) the page that draws it
 
 **What is viewable, and where.** `loadTheRead(readId, userId)` (`run-store.ts:71`) reads one run by id, scoped to the
 reader (another player's id reads as none). The results page calls it when the address carries `w` and `r`
-(`src/app/decks/new/choose/page.tsx:107`). Nothing lists runs; nothing reads `intake_reads` for a list. The admin pages
+(`src/app/decks/new/choose/page.tsx:108`). Nothing lists runs; nothing reads `intake_reads` for a list. The admin pages
 read model spend per feature, not runs.
 
 **What opening one does.** The results page does not replay a snapshot. It runs the free search again from the address's
@@ -136,7 +136,7 @@ Read-only, staging (`br-polished-pond-a6e63y0b`), 2026-10-14. Production was not
 Leans from the code as read on 2026-10-14. The plan confirms or changes each before Design draws against them.
 
 1. **Store the ask with the run.** One additive column on `intake_reads` holding the ask as the results address carries it
-   (the `ChooseParams` that `serializeChooseParams` writes, minus `r`), written by `startRead` in the same insert. Without
+   (the `ChooseParams` that `serializeChooseParams` writes, minus `r`; the plan decides that `n` and the card are left out), written by `startRead` in the same insert. Without
    it there is no question to list and no address to reopen from. Every existing row has none, so the 5 answered runs on
    staging hold a result and no ask. Engineering decides whether such a row is hidden or listed under a generic line;
    Design should draw the row both ways only if it asks for the second.
@@ -154,8 +154,9 @@ Leans from the code as read on 2026-10-14. The plan confirms or changes each bef
 
 ## Constraints
 
-- **Reading never calls the model.** Listing and opening a run are reads of stored rows. Neither reserves a credit, neither
-  moves the allowance, and neither depends on a credit being left.
+- **Reading never calls the model.** Listing and opening a run are reads of stored rows. Neither reserves a credit, and
+  neither depends on a credit being left. (The one exception to "moves no allowance" is a pending read past the reaper's
+  cutoff: opening or listing it reaps it and returns its credit, as the results page does today.)
 - **Per account.** A run is read by its owner only (`loadTheRead` scopes by `user_id`); no friend, pod or admin surface
   draws one. `intake_reads` is purged with the account (`PURGE_ORDER`).
 - **A run's reasons name the player's decks by commander.** A reopened reason that names a deleted deck draws no line
@@ -176,7 +177,7 @@ Hugh's rulings for this item:
 
 1. **Reopening a past run is free.** It is stored, so it makes no model call and spends no credit.
 2. **A past run is read-only.** It can be read and its commanders carried into a new deck; its answers and words cannot
-   be edited in place (a changed answer is a new ask, as the page says today).
+   be edited in place (a changed answer is a new ask, as the form works today).
 3. **Runs are per account.**
 
 ## Open for Design to call
