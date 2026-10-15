@@ -1309,7 +1309,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'The count is free. Look deeper uses a credit, and a run that names nothing or doesn’t finish gives it back.',
       'It never names your commander, a card you locked or a Key card.',
-      'Every reason cites a figure from the count. A reason whose figure doesn’t match is left out, not replaced.',
+      'Every reason is checked against the deck. One that doesn’t hold is swapped for a plain note, with only the figures that do.',
       'Cut changes the list straight away, and Undo puts the card back.',
     ],
     marksPending: true,
