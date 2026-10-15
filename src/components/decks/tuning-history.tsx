@@ -289,12 +289,12 @@ const ALL = "all";
 
 function Chips({ tools, value, onChange }: { tools: HistoryTool[]; value: HistoryTool | null; onChange: (t: HistoryTool | null) => void }) {
   // A radiogroup (segmented switch 3b): the arrows move the choice and the focus together, and a press reads its
-  // own page while the switch stays up, so the chosen segment keeps focus. It scrolls sideways at phone.
+  // own page while the switch stays up, so the chosen segment keeps focus. Default size, for the 44px floor the old chips held; it
+  // scrolls sideways when the row is narrower than its tools, at any width, rather than wrapping.
   return (
     <div>
       <SegmentedSwitch<HistoryTool | typeof ALL>
         kind="radio"
-        size="compact"
         scroll
         ariaLabel={copy.filterLabel}
         segments={[

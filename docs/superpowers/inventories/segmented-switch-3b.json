@@ -39,7 +39,7 @@
     },
     {
       "id": "stats-shared",
-      "label": "/decks Stats: Cards your decks share, Wanted more than you own chosen (compact, scrolling at phone)",
+      "label": "/decks Stats: Cards your decks share, Wanted more than you own chosen (compact, scrolling where it overruns)",
       "view": "src/components/decks/lineup/shared-card.tsx",
       "steps": [
         {
@@ -64,7 +64,7 @@
     },
     {
       "id": "stats-collection",
-      "label": "/decks Stats: Your collection, put to work, the 20% cut chosen (compact, scrolling at phone)",
+      "label": "/decks Stats: Your collection, put to work, the 20% cut chosen (compact, scrolling where it overruns)",
       "view": "src/components/decks/lineup/collection-card.tsx",
       "steps": [
         {
@@ -89,7 +89,7 @@
     },
     {
       "id": "tuning-history",
-      "label": "/decks/[id] Analysis, History filtered to Mana Balance (default size, scrolling at phone)",
+      "label": "/decks/[id] Analysis, History filtered to Mana Balance (default size, scrolling where it overruns)",
       "view": "src/components/decks/tuning-history.tsx",
       "steps": [
         {
@@ -130,7 +130,7 @@
     },
     {
       "id": "mana-colors",
-      "label": "/decks/[id] Mana Balance, Hardest costs open, a color other than the most-pipped chosen (default size, scrolling at phone)",
+      "label": "/decks/[id] Mana Balance, Hardest costs open, a color other than the most-pipped chosen (default size, scrolling where it overruns)",
       "view": "src/components/decks/mana-sections.tsx",
       "steps": [
         {
@@ -176,7 +176,7 @@
     },
     {
       "id": "facet-strip",
-      "label": "/commanders/[slug]: the synergy facet strip, Lands chosen (default size, scrolling at phone; no dashed All, no accent ring)",
+      "label": "/commanders/[slug]: the synergy facet strip, Lands chosen (default size, scrolling where it overruns; no dashed All, no accent ring)",
       "view": "src/components/commanders/facet-strip.tsx",
       "steps": [
         {
@@ -197,7 +197,7 @@
     },
     {
       "id": "admin-switches-show",
-      "label": "/admin/switches: Show filter, Overridden chosen (compact, scrolling at phone). Admin account only: see the note",
+      "label": "/admin/switches: Show filter, Overridden chosen (compact, scrolling where it overruns). Admin account only: see the note",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {

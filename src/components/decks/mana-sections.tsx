@@ -56,13 +56,12 @@ export function ManaSection({ id, label, clause, open, onToggle, tight = false, 
 }
 
 /** The single-select color chips: a radiogroup (segmented switch 3b), so the arrow keys move the selection. It
- *  scrolls sideways at phone, where five colors overrun a card. */
+ *  scrolls sideways where five colors overrun a card (any width), at the default size's 44px floor. */
 function ColorChips({ colors, picked, onPick }: { colors: BalanceColor[]; picked: BalanceColor; onPick: (c: BalanceColor) => void }) {
   return (
     <div>
       <SegmentedSwitch<BalanceColor>
         kind="radio"
-        size="compact"
         scroll
         ariaLabel={copy.patterns.chips}
         segments={colors.map((c) => ({

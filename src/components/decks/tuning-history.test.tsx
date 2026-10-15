@@ -76,6 +76,8 @@ describe("HistoryList", () => {
     const chips = within(group).getAllByRole("radio");
     expect(chips.map((c) => c.textContent)).toEqual([copy.filterAll, tuningHubCopy.tools.suggested.name, tuningHubCopy.tools.cuts.name]);
     expect(chips[0].getAttribute("aria-checked")).toBe("true");
+    // The default size: the 44px phone floor the old chips held, not compact's 40px.
+    for (const c of chips) expect(c.className.split(" ")).toContain("min-h-[44px]");
     readPage.mockResolvedValueOnce({ rows: rows.filter((r) => r.tool === "cuts"), nextCursor: null });
     fireEvent.click(chips[2]);
     await waitFor(() => expect(readPage).toHaveBeenLastCalledWith("d", "cuts", null));

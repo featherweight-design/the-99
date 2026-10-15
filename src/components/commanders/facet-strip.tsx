@@ -51,7 +51,7 @@ export function FacetStrip({
   // A radiogroup (segmented switch 3b): one tab stop, and the arrows, Home and End move the choice and the focus
   // together. Every pill is drawn alike: the dashed All and the accent ring went with the loose pills (d9, 2026-10-15).
   // The default size keeps the 44px phone floor, since a facet is the only route to its filter, and the well scrolls
-  // sideways at phone rather than wrapping (R3 §2).
+  // sideways rather than wrapping, at any width the row overruns (R3 §2).
   return (
     <SegmentedSwitch<CardFacet | "all">
       kind="radio"

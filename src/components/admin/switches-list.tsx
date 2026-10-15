@@ -197,7 +197,7 @@ export function SwitchesList({
           containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px] md:max-w-[420px]"
           className="text-[16px] md:text-[14px]"
         />
-        {/* A radiogroup (segmented switch 3b), compact like admin's other switches; it scrolls sideways at phone. */}
+        {/* A radiogroup (segmented switch 3b), compact like admin's other switches; it scrolls sideways where the row overruns, at any width. */}
         <div>
           <SegmentedSwitch<SwitchFilter>
             kind="radio"

@@ -214,6 +214,8 @@ describe("ManaBalancePanel: the folded sections", () => {
     const chips = screen.getByRole("radiogroup", { name: copy.patterns.chips });
     const radios = within(chips).getAllByRole("radio");
     expect(chips.querySelector("[aria-pressed]")).toBeNull();
+    // The default size: the 44px phone floor, not compact's 40px.
+    for (const r of radios) expect(r.className.split(" ")).toContain("min-h-[44px]");
     expect(within(chips).getByRole("radio", { name: "Green" }).getAttribute("data-mana-chip")).toBe("G");
     expect(within(chips).getByRole("radio", { name: "Red" }).getAttribute("data-mana-chip")).toBe("R");
     expect(radios.every((r) => r.hasAttribute("data-mana-chip"))).toBe(true);

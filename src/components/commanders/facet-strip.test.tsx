@@ -99,7 +99,9 @@ describe("FacetStrip", () => {
     expect(group.className).toContain("overflow-x-auto");
     const radios = screen.getAllByRole("radio");
     expect(radios.every((r) => !r.getAttribute("style"))).toBe(true);
+    // All is drawn as any other facet: no dashed border and no accent ring, in a class or a style.
     expect(radios[0].className).toBe(radios[2].className);
+    expect(radios[0].className).not.toMatch(/dashed|accent/);
     const creatures = screen.getByRole("radio", { name: synergyCopy.facet.itemAria("Creatures", "66") });
     fireEvent.keyDown(creatures, { key: "End" });
     expect(onSelect).toHaveBeenLastCalledWith("land");
