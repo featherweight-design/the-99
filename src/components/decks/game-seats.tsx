@@ -179,8 +179,14 @@ export function GameSeats({
     listPickerPodsAction().then((list) => { if (live) setPods(list); }).catch(() => {});
     return () => { live = false; };
   }, []);
-  // The friends a chip's press seated, so pressing it again clears them; and what that press could not seat.
-  const [podFilled, setPodFilled] = useState<{ podId: string; friends: string[] } | null>(null);
+  // The friends each chip's press seated, by pod, so pressing a chip again clears its own and leaves another pod's.
+  const [podFilled, setPodFilled] = useState<Record<string, string[]>>({});
+  // A pod read that lands after the row is gone (the form was cancelled) must not seat anyone into the next one.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const [podNote, setPodNote] = useState<string | null>(null);
   const [podBusy, setPodBusy] = useState(false);
   const room = hasRoom(podSize, seats.length);
@@ -199,28 +205,29 @@ export function GameSeats({
   }
 
   const seatedHere = seatedFriends(seats, null);
-  const chipOn = (pod: PickerPod) => podFilled?.podId === pod.id && podFilled.friends.some((id) => seatedHere.has(id));
+  const chipOn = (pod: PickerPod) => (podFilled[pod.id] ?? []).some((id) => seatedHere.has(id));
   async function seatPod(pod: PickerPod) {
     if (podBusy) return;
     setPodNote(null);
     if (chipOn(pod)) {
       // Pressed again: take back the seats it filled.
-      const mine = new Set(podFilled!.friends);
+      const mine = new Set(podFilled[pod.id]);
       for (const s of seats) if (s.friend && mine.has(s.friend.publicId)) onClear(s.key);
-      setPodFilled(null);
+      setPodFilled((held) => Object.fromEntries(Object.entries(held).filter(([id]) => id !== pod.id)));
       return;
     }
     setPodBusy(true);
     try {
       const members = await listPodSeatsAction(pod.id);
+      if (!mounted.current) return;
       const fill = podFill(seats, pod.memberCount, members.map((m) => ({ publicId: m.publicId, name: m.displayName })));
       onPod(fill.podSize, fill.add);
-      setPodFilled({ podId: pod.id, friends: fill.add.map((f) => f.publicId) });
+      setPodFilled((held) => ({ ...held, [pod.id]: fill.add.map((f) => f.publicId) }));
       if (fill.unseated.length > 0) setPodNote(copy.podLeftOut(names(fill.unseated)));
     } catch {
-      setPodNote(copy.podFailed);
+      if (mounted.current) setPodNote(copy.podFailed);
     } finally {
-      setPodBusy(false);
+      if (mounted.current) setPodBusy(false);
     }
   }
 

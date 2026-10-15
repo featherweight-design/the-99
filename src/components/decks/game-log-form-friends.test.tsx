@@ -154,6 +154,17 @@ describe("a friend's decks", () => {
     expect(await within(dialog).findByRole("button", { name: /Jo/ })).toBeInTheDocument();
   });
 
+  it("Back to friends and Another commander put focus in the field, so typing searches at once", async () => {
+    await mount();
+    const dialog = await openPicker();
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Dave/ }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: picker.back }));
+    await waitFor(() => expect(within(dialog).getByRole("searchbox")).toHaveFocus());
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Dave/ }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: new RegExp(picker.anotherCommander) }));
+    await waitFor(() => expect(within(dialog).getByRole("searchbox")).toHaveFocus());
+  });
+
   it("a failed read of the decks says so, and is not an empty list", async () => {
     friendDecks.mockRejectedValue(new Error("x"));
     await mount();
@@ -237,6 +248,37 @@ describe("Seat a pod", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: picker.title })).toBeNull());
     expect(screen.getByText("Avengers Tempo")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: seats.whichDeck })).toBeNull();
+  });
+
+  it("a pod read that lands after Cancel seats nobody into the next time the form opens", async () => {
+    pods.mockResolvedValue([pod]);
+    let land!: (m: unknown[]) => void;
+    podSeats.mockReturnValue(new Promise((r) => { land = r; }));
+    await mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Thursday" }));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.cancel }));
+    land([member(DAVE, "Dave"), member(JO, "Jo")]);
+    await new Promise((r) => setTimeout(r, 20));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.open }));
+    await waitFor(() => expect(screen.getByText(seats.count(0, 3))).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: seats.whichDeck })).toBeNull();
+  });
+
+  it("each chip undoes its own seats: pressing pod B after pod A leaves A pressed and able to clear", async () => {
+    const b = { id: "00000000-0000-4000-8000-0000000000c2", name: "Friday", memberCount: 3 };
+    pods.mockResolvedValue([pod, b]);
+    podSeats.mockImplementation(async (id: string) => (id === pod.id ? [member(DAVE, "Dave")] : [member(DAVE, "Dave"), member(JO, "Jo")]));
+    await mount();
+    const chipA = await screen.findByRole("button", { name: "Thursday" });
+    const chipB = screen.getByRole("button", { name: "Friday" });
+    fireEvent.click(chipA);
+    await waitFor(() => expect(chipA).toHaveAttribute("aria-pressed", "true"));
+    fireEvent.click(chipB);
+    await waitFor(() => expect(chipB).toHaveAttribute("aria-pressed", "true"));
+    expect(chipA).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(chipA);
+    expect(chipA).toHaveAttribute("aria-pressed", "false");
+    expect(chipB).toHaveAttribute("aria-pressed", "true");
   });
 
   it("a pod that could not be read says so and seats nothing", async () => {

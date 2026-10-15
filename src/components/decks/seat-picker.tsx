@@ -222,6 +222,14 @@ function Body({
     return named ? { step: "decks", friend: named } : { step: "list" };
   })();
 
+  // Back to friends and Another commander remove the button that held focus and mount the field: put focus in it, so
+  // typing searches at once. The first render is left to the dialog (the desktop panel is hidden until placed).
+  const opened = useRef(false);
+  useEffect(() => {
+    if (!opened.current) { opened.current = true; return; }
+    if (current.step !== "decks") inputRef.current?.focus();
+  }, [current.step, inputRef]);
+
   function change(next: string) {
     reset();
     setQuery(next);
