@@ -25,6 +25,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, PROBE_TARGET_URL: TARGET } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "PROBE_TARGET_URL"]);
@@ -166,6 +167,8 @@ async function run() {
       const context = await browser.newContext({ viewport: size, ...(VIDEO ? { recordVideo: { dir: VIDEO, size } } : {}) });
       const page = await context.newPage();
       await signIn(page);
+      // THE SPEND GUARD, before any press: Find commanders and Try again begin the read.
+      await assertModelStandIn(BASE, ["intake"], { get: pageGet(page) });
       userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
       if (!userId) throw new Error("no signed-in user id");
       await assertServerReadsTarget(page, userId);

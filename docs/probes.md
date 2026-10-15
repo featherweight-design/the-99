@@ -36,13 +36,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Suggested changes and Look deeper call the real model in development unless the server has
   `TUNING_STUB_DELAY_MS`, and each other path has a `*_LIVE` opt-in. A live path passes only
   when the server holds no real key (start it with a dummy `ANTHROPIC_API_KEY`) and no
-  `ANTHROPIC_BASE_URL`. **Today only `probe:tuning-hub-stays-put` calls it.** Applying it to the
-  other probes that press a spend path through a server is a follow-up PR, still pending: `ai-sweep`
-  and `run-after` (tuning), `analysis-load-order`, `analysis-tab`, `banner-busy`, `bracket-chip`,
-  `brackets-sheet`, `verdict-lean`, `verdict-findings`, `verdict-block`, `overview-hold` and
-  `synopsis-ui` (the overview), and `help-me-choose-screens` and `help-me-choose-one-loading` (the
-  read). Until it lands, run those only against `next dev` with their stand-ins set, as each header
-  says. `probe:synopsis --live` and `probe:tuning-owned` make real calls in-process on purpose,
+  `ANTHROPIC_BASE_URL`. Every probe that presses a spend path through a server calls it, right
+  after its first sign-in and before its first press: `tuning-hub-stays-put`, `analysis-load-order`,
+  `analysis-tab`, `banner-busy`, `bracket-chip`, `brackets-sheet`, `verdict-lean`,
+  `verdict-findings`, `verdict-block`, `overview-hold` and `synopsis-ui` (`synopsis`, the overview an
+  Analyze or Write one may write), `run-after` (`tuning`), `ai-sweep` (`tuning`, `intake` and
+  `fits`), and `help-me-choose-screens` and `help-me-choose-one-loading` (`intake`, the read). Run
+  them against `next dev` with their stand-ins set, as each header says, and a dummy
+  `ANTHROPIC_API_KEY` with `ANTHROPIC_BASE_URL` empty (the repo `.env` sets one). Against
+  `next start` each one exits non-zero with `spend guard: refusing to press anything` and presses
+  nothing. `probe:synopsis --live` and `probe:tuning-owned` make real calls in-process on purpose,
   under their own caps, and will not be guarded.
 
 ---

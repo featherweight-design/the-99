@@ -31,6 +31,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 // The real rule, not a restatement: run under tsx so a pure module of the app can be imported.
@@ -255,6 +256,8 @@ async function run() {
     const ctx = await browser.newContext({ viewport: DESKTOP });
     const page = await ctx.newPage();
     userId = await signIn(page);
+    // THE SPEND GUARD, before any press: Analyze and Write one write the overview.
+    await assertModelStandIn(BASE, ["synopsis"], { get: pageGet(page) });
     // A run killed part-way left its hold on disk: put that deck back before choosing one.
     await restoreHold();
 
@@ -554,7 +557,9 @@ async function run() {
         await v.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 });
         await v.waitForTimeout(500);
         await onPageRole(v, "tab", /versions/i).first().click();
-        const row = onPage(v, 'button[aria-expanded="false"]').first();
+        // The version's row by its own label (`v2 current …`): the deck header's `…` menu is an
+        // `aria-expanded` button too, and comes first.
+        const row = onPage(v, 'button[aria-expanded="false"]').filter({ hasText: /^\s*v\d/ }).first();
         await row.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
         // The link draws only after a server read, so a count taken at once would read 0 on a
         // build that drew it on the collapsed row. Wait out a round trip first.
@@ -567,7 +572,7 @@ async function run() {
         const g = await v.evaluate(() => {
           const l = document.querySelector('[data-testid="synopsis-version-link"]');
           const panel = l?.closest('[id]');
-          const r = document.querySelector('button[aria-expanded="true"]');
+          const r = [...document.querySelectorAll('button[aria-expanded="true"]')].find((b) => /^\s*v\d/.test(b.textContent));
           if (!l || !panel || !r) return null;
           const lr = l.getBoundingClientRect();
           const pr = panel.getBoundingClientRect();

@@ -19,6 +19,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
@@ -235,6 +236,8 @@ async function run() {
     const first = await browser.newContext({ viewport: WIDTHS[0].viewport });
     const scout = await first.newPage();
     await signIn(scout);
+    // THE SPEND GUARD, before any press: Analyze may write the overview.
+    await assertModelStandIn(BASE, ["synopsis"], { get: pageGet(scout) });
     const found = [];
     for (const candidate of (await deckHrefs(scout)).slice(0, 12)) {
       if ((await openAnalysis(scout, candidate)) && (await hasLean(scout))) {
