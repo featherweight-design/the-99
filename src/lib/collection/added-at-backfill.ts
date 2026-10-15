@@ -13,6 +13,8 @@
  * touched, so a re-run changes nothing it already settled.
  */
 export type Queryable = { query: (text: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> };
+/** A pool: the writes run one account at a time on a connection of their own, inside a transaction. */
+export type Pooled = Queryable & { connect: () => Promise<Queryable & { release: () => void }> };
 
 /** Every holding that would be dated, with its date and exactness. `$1` null = every account. */
 const CHOSEN = `
@@ -54,7 +56,7 @@ const JOIN = `
 
 export type BackfillReport = { undated: number; dated: number; exact: number; inexact: number };
 
-export async function backfillAddedAt(db: Queryable, opts: { userId?: string; dryRun?: boolean } = {}): Promise<BackfillReport> {
+export async function backfillAddedAt(db: Pooled, opts: { userId?: string; dryRun?: boolean } = {}): Promise<BackfillReport> {
   const params = [opts.userId ?? null];
   const [{ n: undated }] = (await db.query(
     `select count(*)::int as n from collection_items where added_at is null and ($1::text is null or user_id = $1)`, params,
@@ -65,14 +67,37 @@ export async function backfillAddedAt(db: Queryable, opts: { userId?: string; dr
     )).rows as { dated: number; exact: number }[];
     return { undated, dated: r.dated, exact: r.exact, inexact: r.dated - r.exact };
   }
-  const r = (await db.query(
-    `${CHOSEN}, done as (
-       update collection_items ci set added_at = c.at, added_exact = c.exact
-       from chosen c
-       where ci.user_id = c.user_id and ci.oracle_id::text = c.oracle_id and ci.set_code = c.set_code
-         and ci.collector_number = c.collector_number and ci.finish = c.finish and ci.added_at is null
-       returning c.exact
-     ) select count(*)::int as dated, count(*) filter (where exact)::int as exact from done`, params,
-  )).rows[0] as { dated: number; exact: number };
-  return { undated, dated: r.dated, exact: r.exact, inexact: r.dated - r.exact };
+  // ONE ACCOUNT PER TRANSACTION, under the per-user advisory lock both collection writers take
+  // (`hashtextextended(user, 0)`). Without it a Replace could read a holding undated, let this commit its
+  // date, then delete and reinsert its earlier snapshot, and the date would be lost with both succeeding.
+  const users = ((await db.query(
+    `select distinct user_id from collection_items where added_at is null and ($1::text is null or user_id = $1) order by user_id`, params,
+  )).rows as { user_id: string }[]).map((r) => r.user_id);
+  let dated = 0;
+  let exact = 0;
+  for (const userId of users) {
+    const client = await db.connect();
+    try {
+      await client.query("begin");
+      await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [userId]);
+      const r = (await client.query(
+        `${CHOSEN}, done as (
+           update collection_items ci set added_at = c.at, added_exact = c.exact
+           from chosen c
+           where ci.user_id = c.user_id and ci.oracle_id::text = c.oracle_id and ci.set_code = c.set_code
+             and ci.collector_number = c.collector_number and ci.finish = c.finish and ci.added_at is null
+           returning c.exact
+         ) select count(*)::int as dated, count(*) filter (where exact)::int as exact from done`, [userId],
+      )).rows[0] as { dated: number; exact: number };
+      await client.query("commit");
+      dated += r.dated;
+      exact += r.exact;
+    } catch (error) {
+      await client.query("rollback").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+  return { undated, dated, exact, inexact: dated - exact };
 }

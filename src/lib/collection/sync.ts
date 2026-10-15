@@ -1,3 +1,4 @@
+import { dateOf } from "./added-at";
 import type { HistoryRowState } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { toCollectionItemValues, type PendingItem } from "./pending";
@@ -143,7 +144,7 @@ export type SyncPlan = {
 };
 
 const stateOf = (h: SyncHolding): HistoryRowState =>
-  ({ quantity: h.quantity, scryfallId: h.scryfallId, condition: h.condition });
+  ({ quantity: h.quantity, scryfallId: h.scryfallId, condition: h.condition, ...dateOf(h) });
 const identityOf = (r: CollectionItemIdentity): CollectionItemIdentity =>
   ({ oracleId: r.oracleId, setCode: r.setCode, collectorNumber: r.collectorNumber, finish: r.finish });
 

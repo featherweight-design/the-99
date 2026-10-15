@@ -40,3 +40,10 @@ export function addedByKey(
 ): Map<string, Added> {
   return new Map(rows.map((r) => [collectionItemKey(r), { addedAt: r.addedAt, addedExact: r.addedExact }]));
 }
+
+/**
+ * The date fields a before-side carries, when the row was read with them: the entry records them so a revert of a
+ * removal can put the date back. Absent on a row read without them (an upload item, a row from before the column).
+ */
+export const dateOf = (h: { addedAt?: string | null; addedExact?: boolean }): { addedAt?: string | null; addedExact?: boolean } =>
+  h.addedAt !== undefined ? { addedAt: h.addedAt, addedExact: h.addedExact } : {};

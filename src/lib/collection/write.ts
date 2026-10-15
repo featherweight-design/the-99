@@ -36,7 +36,7 @@ import { readSyncBase } from "./sync-base";
  * on its own (`write.test.ts`); the transaction only reads, calls them and writes what they say.
  */
 
-import { addedFor, fileArrival, handArrival, restoredAdded, type Arrival } from "./added-at";
+import { addedFor, dateOf, fileArrival, handArrival, restoredAdded, type Arrival } from "./added-at";
 /** Entries older than this are hidden from history and pruned on the player's next write. */
 import { HISTORY_RETENTION_DAYS } from "./retention";
 export { HISTORY_RETENTION_DAYS };
@@ -386,9 +386,8 @@ const keyOf = (r: CollectionItemIdentity) => collectionItemKey(r);
 const qty = (s: HistoryRowState | null) => s?.quantity ?? 0;
 const stateOf = (h: Held): HistoryRowState => ({
   quantity: h.quantity, scryfallId: h.scryfallId, condition: h.condition,
-  // The date rides on a before-side so a revert of a removal can put it back; absent on a row read
-  // without it (an upload item, a row from before the column).
-  ...(h.addedAt !== undefined ? { addedAt: h.addedAt, addedExact: h.addedExact } : {}),
+  // The date rides on a before-side so a revert of a removal can put it back (`dateOf`).
+  ...dateOf(h),
 });
 const identityOf = (r: CollectionItemIdentity): CollectionItemIdentity =>
   ({ oracleId: r.oracleId, setCode: r.setCode, collectorNumber: r.collectorNumber, finish: r.finish });

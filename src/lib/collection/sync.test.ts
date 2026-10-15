@@ -27,6 +27,21 @@ const counts = (c: Partial<ReturnType<typeof one>["counts"]>) => ({
   taken: 0, kept: 0, agreed: 0, unchanged: 0, conflicts: 0, undecided: 0, answeredFile: 0, ignored: 0, ...c,
 });
 
+describe("planSync and the date a holding arrived", () => {
+  it("records the app row's date on the before side of a removal, so a revert can put it back", () => {
+    const dated = { ...hold(1, 2, "NM", "app"), addedAt: "2026-09-02T12:00:00.000Z", addedExact: false };
+    const p = planSync({ base: new Map([[key(1), 2]]), app: new Map([[key(1), dated]]), file: [], pick: "everything" });
+    expect(p.rows).toHaveLength(1);
+    expect(p.rows[0].after).toBeNull();
+    expect(p.rows[0].before).toMatchObject({ quantity: 2, addedAt: "2026-09-02T12:00:00.000Z", addedExact: false });
+  });
+
+  it("writes no date on an after side, which a file never dated", () => {
+    const p = planSync({ base: new Map(), app: new Map(), file: [hold(1, 1, "NM", "file")], pick: "everything" });
+    expect(p.rows[0].after).not.toHaveProperty("addedAt");
+  });
+});
+
 describe("planSync, the merge table", () => {
   it("f = b and a = b: unchanged, nothing written", () => {
     const p = one(2, 2, 2);
