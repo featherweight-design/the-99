@@ -77,7 +77,9 @@ describe("ArrivalsSummary", () => {
   // error screen, and this pins it.
   it("renders a lost receipt as nothing to report, and states no figure it does not have", () => {
     render(view(null));
-    expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
+    expect(screen.getByText(copy.summary.ledeNoReceipt)).toBeTruthy();
+    // A missing receipt records nothing, so no deck outcome is claimed from it.
+    expect(document.body.textContent).not.toMatch(/buy list|contested|Nothing your decks care about moved|new file/);
     expect(screen.getByText(copy.summary.headingNoReceipt)).toBeTruthy();
     // `0 cards in your collection` would be false for anybody with a collection, and would make
     // a successful import look like an emptied one.
@@ -342,9 +344,10 @@ describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () =
     expect(document.body.textContent).not.toMatch(/buy list|contested|Nothing your decks care about moved/);
   });
 
-  it("a lost Replace receipt keeps the shipped nothing-to-report lede", () => {
+  it("a lost Replace receipt claims no deck outcome", () => {
     render(<ArrivalsSummary summary={null} contested={[]} preview={null} filename="f.csv" stampDate="Oct 15, 2026" />);
-    expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
+    expect(screen.getByText(copy.summary.ledeNoReceipt)).toBeTruthy();
+    expect(screen.queryByText(copy.summary.ledeNothingToReport)).toBeNull();
   });
 });
 

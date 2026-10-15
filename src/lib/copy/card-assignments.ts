@@ -123,6 +123,14 @@ export const cardAssignmentsCopy = {
       "Nothing your decks care about moved. No purchase cleared, nothing went back on the " +
       "buy list, and no copy is contested. Your collection is the new file.",
     /**
+     * (new, for /copy-review) A Replace or an Add whose receipt did not survive its write (`summary_payload` is
+     * written after the upload commits). It used to take `ledeNothingToReport`, whose "no purchase cleared,
+     * nothing went back on the buy list, no copy contested" is a record of what the receipt held, and a
+     * missing receipt holds nothing: the import may have done any of those. States no deck outcome, and
+     * no "new file" either, since an Add keeps the collection it was added to.
+     */
+    ledeNoReceipt: "What this import did to your decks was not saved.",
+    /**
      * A Sync that moved no card, only tokens (Hugh's case, Y1b): the nothing-to-report line with
      * Sync's ending. Its collection is NOT the new file, so the shipped ending would be false.
      */
@@ -139,7 +147,7 @@ export const cardAssignmentsCopy = {
      * own stored figures: what it kept, what the player decided, the tokens it changed.
      */
     ledeNoReceiptSync: (sync: SyncLede) =>
-      "What it did to your decks was not saved." +
+      "What the sync did to your decks was not saved." +
       (sync.kept > 0 ? ` ${keptCards(sync.kept, "The")}.` : "") +
       (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : "") +
       tokensChanged(sync.tokens),

@@ -81,7 +81,7 @@ export const collectionEditCopy = {
      * (new, for /copy-review) No unreverted Replace or full Sync to compare against, or its file is too old to
      * read. No date: the ledger-base wording this replaced named the newest upload.
      */
-    syncUnavailableNoRecord: "Sync compares against your last full upload, and there isn’t one it can read. Replace or Add work as usual.",
+    syncUnavailableNoRecord: "Sync compares against your last full upload, and there isn’t one it can read. Replace or Add will work.",
     syncUnavailableNoUpload: "Sync compares a file with your last upload, and your collection was built in the app without one. Replace or Add will work.",
     continueSync: "Review the sync →",
     nextSync: "Next: what this sync takes from the file, what it keeps, and anything it needs you to decide.",

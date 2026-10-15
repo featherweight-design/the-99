@@ -248,6 +248,9 @@ export function ArrivalsSummary({
             // are stored on its upload, so those are said.
             : sync && summary === null ? copy.summary.ledeNoReceiptSync(sync)
             : sync ? copy.summary.ledeNothingToReportSync(sync)
+            // The same holds for a Replace or an Add: "nothing went back on the buy list" is read off the
+            // receipt's sections, and a lost receipt has none to read.
+            : summary === null ? copy.summary.ledeNoReceipt
             : copy.summary.ledeNothingToReport
           : (summary?.contested.length ?? 0) > 0
             ? copy.summary.lede(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0, lede)
