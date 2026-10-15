@@ -166,7 +166,7 @@ describe("GroupToggle view well (#349)", () => {
 // gap — in a toolbar whose wrapping this round is otherwise careful about.
 describe("GroupToggle's auto cluster at zero", () => {
   const row = () =>
-    screen.getByRole("button", { name: "By type" }).parentElement!.parentElement!;
+    screen.getByRole("radiogroup", { name: "Group the list" }).parentElement!.parentElement!;
 
   const emptyChildren = () =>
     [...row().children].filter(
@@ -221,7 +221,7 @@ describe("LockModeButton", () => {
 describe("GroupToggle's Stats segment", () => {
   it("is absent without the stats prop", () => {
     render(<GroupToggle {...props} filter="all" />);
-    expect(screen.queryByRole("button", { name: deckStatsCopy.segment.aria })).toBeNull();
+    expect(screen.queryByRole("tab", { name: deckStatsCopy.segment.aria })).toBeNull();
   });
 
   it("is drawn with it, reports a press, and shows the provenance line only when open", () => {
@@ -230,13 +230,13 @@ describe("GroupToggle's Stats segment", () => {
       <GroupToggle {...props} filter="all" stats={{ open: false, onChange }} />,
     );
     expect(screen.queryByText(deckStatsCopy.segment.provenance)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(onChange).toHaveBeenCalledWith(true);
 
     rerender(<GroupToggle {...props} filter="all" stats={{ open: true, onChange }} />);
     expect(screen.getByText(deckStatsCopy.segment.provenance)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: deckStatsCopy.segment.aria })).toHaveAttribute(
-      "aria-pressed",
+    expect(screen.getByRole("tab", { name: deckStatsCopy.segment.aria })).toHaveAttribute(
+      "aria-selected",
       "true",
     );
   });
@@ -248,7 +248,8 @@ describe("GroupToggle's Stats segment", () => {
     const groups = container.querySelectorAll("[data-toolbar-group]");
     expect(groups).toHaveLength(1);
     const group = groups[0] as HTMLElement;
-    expect(group).toHaveAttribute("role", "group");
+    // A tablist: the bar swaps which panel shows (d9's ruling 2, 2026-10-15).
+    expect(group).toHaveAttribute("role", "tablist");
     const buttons = Array.from(group.querySelectorAll("button"));
     expect(buttons.map((b) => b.textContent)).toEqual([
       expect.stringMatching(/^All \d+$/),
@@ -256,17 +257,17 @@ describe("GroupToggle's Stats segment", () => {
       "Stats",
     ]);
     // The divider sits between Shopping and Stats, inside the same container.
-    const divider = group.querySelector("[data-toolbar-divider]") as HTMLElement;
+    const divider = group.querySelector("[data-switch-divider]") as HTMLElement;
     expect(group.children[2]).toBe(divider);
     expect(group.children[3]).toBe(buttons[2]);
-    expect(buttons.map((b) => b.getAttribute("aria-pressed"))).toEqual(["false", "true", "false"]);
+    expect(buttons.map((b) => b.getAttribute("aria-selected"))).toEqual(["false", "true", "false"]);
     // Shopping keeps its warm ink while selected.
-    expect(buttons[1].className).toContain("text-[color:var(--warning)]");
+    expect(buttons[1].style.getPropertyValue("--seg-ink")).toBe("var(--warning)");
     expect(buttons[1].className).toContain("bg-[color:var(--elevated)]");
 
     rerender(<GroupToggle {...props} filter="shopping" stats={{ open: true, onChange: vi.fn() }} />);
     expect(
-      Array.from(container.querySelectorAll("[data-toolbar-group] button")).map((b) => b.getAttribute("aria-pressed")),
+      Array.from(container.querySelectorAll("[data-toolbar-group] button")).map((b) => b.getAttribute("aria-selected")),
     ).toEqual(["false", "false", "true"]);
     expect(screen.getByText(deckStatsCopy.segment.provenance)).toBeInTheDocument();
   });
@@ -274,7 +275,7 @@ describe("GroupToggle's Stats segment", () => {
   it("is today's toolbar, with no group, when the switch is off", () => {
     const { container } = render(<GroupToggle {...props} filter="all" />);
     expect(container.querySelector("[data-toolbar-group]")).toBeNull();
-    expect(container.querySelector("[data-toolbar-divider]")).toBeNull();
+    expect(container.querySelector("[data-switch-divider]")).toBeNull();
   });
 });
 

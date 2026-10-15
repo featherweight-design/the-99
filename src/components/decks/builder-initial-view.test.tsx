@@ -114,7 +114,7 @@ describe("BuilderShell — the tab it opens on", () => {
     const first = await mount("deck", true);
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
 
     fireEvent.click(screen.getByRole("tab", { name: new RegExp(gameLogCopy.tab.label) }));
@@ -125,5 +125,22 @@ describe("BuilderShell — the tab it opens on", () => {
     window.localStorage.removeItem("the99:deck-panel");
     await mount("deck", true);
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
+  });
+});
+
+// The grouping persists per reader, as the List / Card view does (segmented-switch plan, d9's ruling 3): one key
+// for every deck, read after hydration, and written on every choice.
+describe("BuilderShell — the grouping it opens on", () => {
+  it("opens By type with nothing stored, keeps a choice, and opens the next deck on it", async () => {
+    window.localStorage.removeItem("the99:deck-grouping");
+    const first = await mount("deck");
+    expect(screen.getByRole("radio", { name: "By type" })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getByRole("radio", { name: "By role" }));
+    expect(window.localStorage.getItem("the99:deck-grouping")).toBe("role");
+    expect(screen.getByRole("radio", { name: "By role" })).toHaveAttribute("aria-checked", "true");
+    first.unmount();
+    await mount("deck");
+    expect(screen.getByRole("radio", { name: "By role" })).toHaveAttribute("aria-checked", "true");
+    window.localStorage.removeItem("the99:deck-grouping");
   });
 });

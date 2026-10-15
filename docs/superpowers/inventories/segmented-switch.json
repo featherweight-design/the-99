@@ -1,0 +1,38 @@
+{
+  "feature": "Segmented switch",
+  "note": "PR 1: the deck toolbar's All · Shopping · Stats · Notes bar on SegmentedSwitch (a tablist, accent tone) and By type / By role beside the sort (a radiogroup, neutral tone). Needs a server with DECK_STATS_ENABLED and DECK_NOTES_ENABLED set to 'true', and SWITCH_DECK a deck the signed-in account owns (local-dev: d0000000-0000-4000-8000-00000000cafe). The By role row presses the radio; the grouping persists in localStorage (`the99:deck-grouping`), so the row after it opens on By role too, which is the persistence check.",
+  "clearAbout": true,
+  "shares": { "module": "src/components/ui/segmented-switch.tsx", "binding": "SegmentedSwitch" },
+  "rows": [
+    {
+      "id": "deck-toolbar",
+      "label": "/decks/[id]: the toolbar bar and the grouping switch, By type",
+      "view": "src/components/decks/group-toggle.tsx",
+      "steps": [
+        { "goto": "/decks/${SWITCH_DECK}", "wait": "[role=radiogroup]", "settle": 2500 },
+        { "clickRole": "radio", "name": "By type", "settle": 400 },
+        { "scrollTo": "[role=tablist][data-toolbar-group]", "settle": 500 }
+      ]
+    },
+    {
+      "id": "deck-toolbar-role",
+      "label": "/decks/[id]: By role chosen",
+      "view": "src/components/decks/group-toggle.tsx",
+      "steps": [
+        { "goto": "/decks/${SWITCH_DECK}", "wait": "[role=radiogroup]", "settle": 2500 },
+        { "clickRole": "radio", "name": "By role", "settle": 600 },
+        { "scrollTo": "[role=radiogroup]", "settle": 500 }
+      ]
+    },
+    {
+      "id": "deck-toolbar-stats",
+      "label": "/decks/[id]: Stats chosen in the bar",
+      "view": "src/components/decks/group-toggle.tsx",
+      "steps": [
+        { "goto": "/decks/${SWITCH_DECK}", "wait": "[role=tablist][data-toolbar-group]", "settle": 2500 },
+        { "clickRole": "tab", "name": "Show the deck as stats", "settle": 800 },
+        { "scrollTo": "[role=tablist][data-toolbar-group]", "settle": 500 }
+      ]
+    }
+  ]
+}

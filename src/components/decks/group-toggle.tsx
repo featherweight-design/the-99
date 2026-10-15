@@ -16,6 +16,7 @@ import {
   nextDeckSortState,
   type DeckSortDirection,
   type DeckSortKey,
+  DECK_GROUPING_ARIA,
   DECK_GROUPING_LABELS,
 } from "../../lib/copy/deck-sort";
 import { PriceStrip } from "./price-strip";
@@ -28,6 +29,7 @@ import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 
 export type DeckView = "list" | "card";
 
@@ -140,9 +142,6 @@ export function LockModeButton({ lockMode, onToggle }: { lockMode: boolean; onTo
   );
 }
 
-/** One segment of the Stats-on toolbar group (handoff 2a). Ink is set inline per segment. */
-const SEGMENT_BASE =
-  "flex min-h-[44px] flex-1 items-center justify-center gap-[6px] rounded-[6px] px-[14px] py-[6px] font-sans text-[14px] transition-[filter] hover:brightness-125 md:min-h-0 md:flex-none md:text-[13.5px]";
 
 export function GroupToggle({
   allCount,
@@ -224,55 +223,39 @@ export function GroupToggle({
              All and Shopping, a hairline, then Stats. The selected segment is the filled raised pill;
              Shopping keeps its warm ink selected or not. Full width at phone with the segments
              sharing it (44px targets), content-width from `md:`. */
-          <div
-            role="group"
-            aria-label={deckStatsCopy.segment.groupAria}
-            data-toolbar-group
-            className="flex w-full items-stretch gap-[2px] rounded-[9px] border border-solid border-[color:var(--border-strong)] p-[3px] md:inline-flex md:w-auto"
-          >
-            {(
-              [
-                { key: "all", label: "All", count: allCount, selected: shown === "all", ink: "text-[color:var(--fg-muted)]", onClick: () => onFilterChange("all"), aria: undefined },
-                { key: "shopping", label: "Shopping", count: shoppingCount, selected: shown === "shopping", ink: "text-[color:var(--warning)]", onClick: () => onFilterChange("shopping"), aria: undefined },
-              ] as const
-            ).map((seg) => (
-              <button
-                key={seg.key}
-                type="button"
-                aria-pressed={seg.selected}
-                onClick={seg.onClick}
-                data-shopping-filter={seg.key === "shopping" ? "" : undefined}
-                className={`${SEGMENT_BASE} ${seg.selected && seg.key === "all" ? "text-[color:var(--fg)]" : seg.ink} ${seg.selected ? "font-semibold bg-[color:var(--elevated)]" : "font-medium"}`}
-              >
-                {seg.label}{" "}
-                <span className="font-mono text-[11.5px]">{seg.count}</span>
-              </button>
-            ))}
-            <span aria-hidden data-toolbar-divider className="mx-[3px] my-[6px] w-px flex-none self-stretch bg-[color:var(--border-strong)]" />
-            {stats && (
-              <button
-                type="button"
-                aria-pressed={statsOpen}
-                aria-label={deckStatsCopy.segment.aria}
-                onClick={() => stats.onChange(true)}
-                className={`${SEGMENT_BASE} ${statsOpen ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]" : "font-medium text-[color:var(--fg-muted)]"}`}
-              >
-                {deckStatsCopy.segment.stats}
-              </button>
-            )}
-            {notes && (
-              <button
-                type="button"
-                aria-pressed={notesOpen}
-                aria-label={notes.count > 0 ? deckNotesCopy.head.segmentAria(String(notes.count)) : deckNotesCopy.head.segmentAriaNone}
-                onClick={() => notes.onChange(true)}
-                className={`${SEGMENT_BASE} ${notesOpen ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]" : "font-medium text-[color:var(--fg-muted)]"}`}
-              >
-                {deckNotesCopy.head.segment}
-                {notes.count > 0 && <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">{notes.count}</span>}
-              </button>
-            )}
-          </div>
+          <SegmentedSwitch
+            kind="tabs"
+            ariaLabel={deckStatsCopy.segment.groupAria}
+            tone="accent"
+            fill
+            data={{ "data-toolbar-group": "" }}
+            value={statsOpen ? "stats" : notesOpen ? "notes" : filter}
+            onChange={(v) => {
+              if (v === "stats") stats?.onChange(true);
+              else if (v === "notes") notes?.onChange(true);
+              else onFilterChange(v);
+            }}
+            segments={[
+              { value: "all", label: "All", count: <span className="font-mono text-[11.5px]">{allCount}</span> },
+              {
+                value: "shopping",
+                label: "Shopping",
+                count: <span className="font-mono text-[11.5px]">{shoppingCount}</span>,
+                ink: "var(--warning)",
+                data: { "data-shopping-filter": "" },
+              },
+              ...(stats ? [{ value: "stats" as const, label: deckStatsCopy.segment.stats, ariaLabel: deckStatsCopy.segment.aria, divideBefore: true }] : []),
+              ...(notes
+                ? [{
+                    value: "notes" as const,
+                    label: deckNotesCopy.head.segment,
+                    ariaLabel: notes.count > 0 ? deckNotesCopy.head.segmentAria(String(notes.count)) : deckNotesCopy.head.segmentAriaNone,
+                    count: notes.count > 0 ? <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">{notes.count}</span> : undefined,
+                    divideBefore: !stats,
+                  }]
+                : []),
+            ]}
+          />
         ) : (
           <>
         <button
@@ -452,33 +435,18 @@ export function GroupToggle({
             phoneRows ? "order-5 md:order-none" : ""
           }`}
         >
-        {/* By type — active: dark pill with border | idle: plain muted text */}
-        {/* Mobile active: px-10 py-4; Desktop active: px-13 py-5              */}
-        {/* Mobile idle:   px-6 py-4 no border; Desktop idle: px-13 py-5 border */}
-        <button
-          type="button"
-          onClick={() => onGroupingChange("type")}
-          className={
-            grouping === "type"
-              ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
-              : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)] font-medium text-[color:var(--fg-faint)] bg-transparent"
-          }
-        >
-          {DECK_GROUPING_LABELS.type}
-        </button>
-
-        {/* By role — idle: no border mobile, 1px solid var(--border) desktop */}
-        <button
-          type="button"
-          onClick={() => onGroupingChange("role")}
-          className={
-            grouping === "role"
-              ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
-              : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)] font-medium text-[color:var(--fg-faint)] bg-transparent"
-          }
-        >
-          {DECK_GROUPING_LABELS.role}
-        </button>
+        {/* The grouping (segmented-switch plan, PR 1): the bar's own well in the quieter neutral tone, a
+            radiogroup since it changes how the list is arranged rather than which panel shows. No counts. */}
+        <SegmentedSwitch
+          kind="radio"
+          ariaLabel={DECK_GROUPING_ARIA}
+          value={grouping}
+          onChange={onGroupingChange}
+          segments={[
+            { value: "type", label: DECK_GROUPING_LABELS.type },
+            { value: "role", label: DECK_GROUPING_LABELS.role },
+          ]}
+        />
 
         {/* The order the rows inside those sections take. One mount of the
             panel `/collection`'s own Sort is, in single-select: `By type` names

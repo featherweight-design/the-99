@@ -24,22 +24,22 @@ describe("notes on an empty deck", () => {
   it("opens notes from a deck whose last card was removed, and keeps the notes it already had", () => {
     mount(kept);
     expect(screen.getByText("the empty state")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Notes, 1 open" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Notes, 1 open" }));
     expect(screen.queryByText("the empty state")).toBeNull();
     expect(screen.getByText("swap the mana rock")).toBeTruthy();
   });
 
   it("opens notes on a commander-only deck with none yet, and All brings the empty state back", () => {
     mount(null);
-    fireEvent.click(screen.getByRole("button", { name: "Notes, none yet" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Notes, none yet" }));
     expect(screen.queryByText("the empty state")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /^All/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /^All/ }));
     expect(screen.getByText("the empty state")).toBeTruthy();
   });
 
   it("draws the empty state alone when notes are switched off", () => {
     mount(kept, false);
     expect(screen.getByText("the empty state")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /^Notes/ })).toBeNull();
+    expect(screen.queryByRole("tab", { name: /^Notes/ })).toBeNull();
   });
 });

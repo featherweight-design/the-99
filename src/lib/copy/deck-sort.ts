@@ -246,3 +246,15 @@ export const deckSortCopy: FilterPanelCopy = {
  * is exactly what the sort labels below were moved out of.
  */
 export const DECK_GROUPING_LABELS = { type: "By type", role: "By role" } as const;
+
+/** The grouping switch's accessible name (a radiogroup's label; segmented-switch plan, PR 1). */
+export const DECK_GROUPING_ARIA = "Group the list";
+
+/** Where the reader's last grouping is kept: one key for every deck, as `the99:deck-view` is. */
+export const DECK_GROUPING_KEY = "the99:deck-grouping";
+
+export type DeckGrouping = "type" | "role";
+
+export function isDeckGrouping(value: string): value is DeckGrouping {
+  return value === "type" || value === "role";
+}

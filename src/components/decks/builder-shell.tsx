@@ -4,6 +4,8 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
+import { useStoredView } from "../ui/use-stored-view";
+import { DECK_GROUPING_KEY, isDeckGrouping } from "../../lib/copy/deck-sort";
 import { SHOW_DECK_TOKENS } from "./deck-tokens-landing";
 import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
@@ -354,7 +356,11 @@ export function BuilderShell({
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
-  const [grouping, setGrouping] = useState<"type" | "role">("type");
+  // The grouping persists per reader, as the List / Card view does (`DECK_GROUPING_KEY`): "I read decks by role"
+  // is a fact about the reader, not about one deck. By type until this browser says otherwise, which is also what
+  // the server renders.
+  const [storedGrouping, setGrouping] = useStoredView(DECK_GROUPING_KEY, isDeckGrouping);
+  const grouping = storedGrouping ?? "type";
   // Which body the deck list shows (list or Stats). Held here, not in the list: the list remounts on
   // a tab switch, and a deck opened afresh must open on its list.
   const deckPanel = useState<DeckPanel>("list");

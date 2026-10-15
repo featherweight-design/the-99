@@ -21,7 +21,7 @@ import { JobsBody } from "./jobs-card";
 import { WorthBody } from "./worth-card";
 import { RecencyBody } from "./recency-card";
 import { SpreadBody } from "./spread-card";
-import { onSegmentKeys } from "./segment-keys";
+import { onSegmentKeys } from "../../ui/segment-keys";
 import { SEGMENT, SEGMENT_OFF, SEGMENT_ON, viewPanelId, viewTabId } from "./stats-view-switch";
 
 const copy = decksStatsCopy;

@@ -5,7 +5,7 @@
 // radiogroup: one tab stop, the arrows move the choice.
 
 import { preconsCopy } from "../../../lib/copy/precons";
-import { onSegmentKeys } from "../lineup/segment-keys";
+import { onSegmentKeys } from "../../ui/segment-keys";
 import { SEGMENT, SEGMENT_OFF, SEGMENT_ON } from "../lineup/stats-view-switch";
 import type { PreconEdition } from "../../../lib/precons/edition";
 
