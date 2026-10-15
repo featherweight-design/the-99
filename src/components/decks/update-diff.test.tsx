@@ -510,6 +510,12 @@ describe("UpdateDiff provenance", () => {
     expect(screen.getByRole("button", { name: copy.showMore("3") })).toBeInTheDocument();
   });
 
+  // Round 3: the unchanged chip and its disclosure count copies, as the in and out figures do.
+  it("counts unchanged copies, not unchanged rows", () => {
+    renderDiff({ unchanged: [row("island", { name: "Island", typeLine: "Basic Land", quantity: 12 })] });
+    expect(screen.getByRole("button", { name: copy.unchangedDisclosure("12") })).toBeInTheDocument();
+  });
+
   it("no longer prints the new-counts line", () => {
     const { container } = renderDiff({ fewer: [plains] });
     expect(container.textContent).not.toContain("new counts");

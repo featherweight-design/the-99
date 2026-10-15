@@ -49,6 +49,14 @@ function typeOrder<T extends { oracleId: string; name: string; typeLine: string 
 /** A row of the out or in group: an add or a removal, or a count change carrying both figures. */
 type DiffGroupRow = DeckUpdateChangedRow & { from?: number; to?: number };
 
+/** The copies a set of rows moves: a row's whole count, or a count change's difference. */
+function copiesOf(rows: { quantity: number; from?: number; to?: number }[]) {
+  return rows.reduce(
+    (n, r) => n + (r.from === undefined || r.to === undefined ? r.quantity : Math.abs(r.to - r.from)),
+    0,
+  );
+}
+
 /** A count change's two figures, for the row that draws them; nothing on an add or a removal. */
 function recountOf(row: { from?: number; to?: number }) {
   return row.from === undefined || row.to === undefined
@@ -197,10 +205,6 @@ export function UpdateDiff({
   // group (`more`), each carrying only the copies that move.
   const outRows: DiffGroupRow[] = [...preview.out, ...preview.fewer];
   const inRows: DiffGroupRow[] = [...preview.in, ...preview.more];
-  const moving = (r: { quantity: number; from?: number; to?: number }) =>
-    r.from === undefined || r.to === undefined ? r.quantity : Math.abs(r.to - r.from);
-  const copiesOf = (rows: { quantity: number; from?: number; to?: number }[]) =>
-    rows.reduce((n, r) => n + moving(r), 0);
   const outCopies = copiesOf(outRows);
   const arriving = copiesOf(inRows);
   const leaving = copiesOf(outRows.filter((r) => !kept.has(r.oracleId)));
@@ -293,7 +297,7 @@ export function UpdateDiff({
             labelMobile={copy.chipUnnamedMobile}
           />
           <Chip
-            figure={preview.unchanged.length}
+            figure={copiesOf(preview.unchanged)}
             label={copy.chipUnchanged}
             labelMobile={copy.chipUnchangedMobile}
           />
@@ -464,14 +468,14 @@ function UnchangedGroup({ rows }: { rows: DeckUpdatePreview["unchanged"] }) {
         aria-controls={expanded ? rowsId : undefined}
         className="font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
       >
-        {expanded ? copy.showFewer : copy.unchangedDisclosure(String(rows.length))}
+        {expanded ? copy.showFewer : copy.unchangedDisclosure(String(copiesOf(rows)))}
       </button>
       {expanded && (
         <div id={rowsId} className="mt-[10px] flex flex-col">
           {/* Expanded, so every row is shown — the cap belongs to the four
               capped groups, and this one is all-or-nothing. */}
           {typeGroups(rows, rows.length).map(([group, groupRows]) => (
-            <TypeGroup key={group} label={group} count={groupRows.length}>
+            <TypeGroup key={group} label={group} count={copiesOf(groupRows)}>
               {groupRows.map((row) => (
                 <DiffRowUnchanged key={row.oracleId} card={row} />
               ))}
