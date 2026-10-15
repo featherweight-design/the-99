@@ -20,6 +20,8 @@ import { CardDetailTrigger, cardDetailCopy, type Sibling } from "../cards/card-d
 import { CardTileCaption, TILE_ART_CLIP_SCALED, TILE_ART_RATIO, TILE_FIELD, TILE_SHELL_SCALED } from "../ui/card-tile-caption";
 import { HydratedImg } from "../ui/hydrated-art";
 import { OwnershipDot } from "../ui/ownership-dot";
+import { FoilGlint } from "../cards/foil-mark";
+import { foilSpoken } from "../../lib/copy/foil-mark";
 
 const copy = preconsCopy;
 
@@ -42,6 +44,9 @@ export function ReadOnlyCardTile({
     ? copy.open.basicArts(card.printedSetCode.toUpperCase(), basic.arts)
     : printing;
   const fullName = printedNameOf(card);
+  // The box's own foil copies, by the film's rule (only over art). The glint is silent, so the trigger's label says it.
+  const foilFinish = card.imageUri && card.printedFoil ? ("foil" as const) : undefined;
+  const foilClause = foilSpoken(foilFinish);
 
   return (
     <li className={`flex flex-col ${TILE_FIELD}`} data-testid={basic ? "read-only-basic-tile" : "read-only-card-tile"}>
@@ -58,7 +63,11 @@ export function ReadOnlyCardTile({
           siblings={siblings}
           // The trigger's label replaces everything nested in it, and the drawn `×N` is aria-hidden,
           // so a card the precon lists more than once says so here, as the deck tile does.
-          ariaLabel={card.quantity > 1 ? `${cardDetailCopy.triggerAria(fullName)}, ${copy.open.copiesAria(card.quantity)}` : undefined}
+          ariaLabel={
+            card.quantity > 1
+              ? `${cardDetailCopy.triggerAria(fullName)}, ${copy.open.copiesAria(card.quantity)}${foilClause}`
+              : foilClause ? `${cardDetailCopy.triggerAria(fullName)}${foilClause}` : undefined
+          }
           className={`relative block w-full overflow-hidden ${TILE_ART_CLIP_SCALED}`}
           style={{ aspectRatio: TILE_ART_RATIO, background: "var(--surface-sunken)" }}
         >
@@ -90,6 +99,7 @@ export function ReadOnlyCardTile({
             basic ? (
               <>
                 <span className="flex-none" style={{ color: "var(--fg-body)" }}>{copy.open.basicCount(card.quantity)}</span>
+                {foilFinish && <FoilGlint finish={foilFinish} precon={{ quantity: card.quantity }} />}
                 <span className="min-w-0 truncate" style={{ color: "var(--fg-faint)" }}>{copy.group.basicTag}</span>
               </>
             ) : (
@@ -99,6 +109,7 @@ export function ReadOnlyCardTile({
                   className="w-[8px] h-[8px] flex-none"
                   label={card.owned ? "Owned" : "Not owned"}
                 />
+                {foilFinish && <FoilGlint finish={foilFinish} precon={{ quantity: card.quantity }} />}
                 {!card.owned && (
                   <span aria-hidden className="flex-none" style={{ color: "var(--fg-faint)" }}>{copy.open.tileNotOwned}</span>
                 )}

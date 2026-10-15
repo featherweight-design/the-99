@@ -38,6 +38,8 @@ vi.mock("../decklist-group", () => ({
   ),
 }));
 import { OpenPreconView } from "./open-precon-view";
+import { cardMarkCopy } from "../../../lib/copy/card-mark";
+import { foilMarkCopy } from "../../../lib/copy/foil-mark";
 
 const card = (name: string, over: Partial<OpenPreconCard> = {}): OpenPreconCard => ({
   oracleId: name, name, typeLine: "Creature — Eldrazi", manaCost: null, layout: "normal", imageUri: null, quantity: 1, foil: 0,
@@ -373,5 +375,40 @@ describe("OpenPreconView edition switch", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Regular" }));
     expect(viewed("Sol Ring")).toBe("cmm");
     expect(mirrored.urls.at(-1)).toBe("/decks/precons/EldraziUnbound_CMM?from=new");
+  });
+});
+
+// The foil key (foil mark addendum M1): one entry, following the cards in view, in Card view where the tiles draw the glint.
+describe("OpenPreconView foil key", () => {
+  const withFoil = () => precon({}, [
+    card("Zhulodok", { isCommander: true, typeLine: "Legendary Creature — Eldrazi" }),
+    card("Sol Ring", { typeLine: "Artifact", imageUri: "https://cards.example/sol.jpg", quantity: 1, foil: 1 }),
+  ]);
+  const key = () => screen.queryByRole("group", { name: cardMarkCopy.keyRegionAria }) ?? screen.queryByLabelText(cardMarkCopy.keyRegionAria);
+
+  it("names `foil` in Card view when a card in view is all foil over art, and says nothing in List view", () => {
+    window.localStorage.setItem("the99:precons:openView", "card");
+    const { unmount } = render(<OpenPreconView precon={withFoil()} fromNew={false} />);
+    expect(key()).not.toBeNull();
+    expect(within(key()!).getByText(foilMarkCopy.key)).toBeInTheDocument();
+    unmount();
+    window.localStorage.setItem("the99:precons:openView", "list");
+    render(<OpenPreconView precon={withFoil()} fromNew={false} />);
+    expect(key()).toBeNull();
+  });
+
+  it("counts a foil basic over art, since Card view draws its tile with the glint", () => {
+    window.localStorage.setItem("the99:precons:openView", "card");
+    render(<OpenPreconView precon={precon({}, [card("Wastes", { typeLine: "Basic Land", basic: true, quantity: 15, foil: 15, imageUri: "https://cards.example/w.jpg" })])} fromNew={false} />);
+    expect(key()).not.toBeNull();
+  });
+
+  it("is absent when no card is all foil, or the foil copies have no art", () => {
+    window.localStorage.setItem("the99:precons:openView", "card");
+    const { unmount } = render(<OpenPreconView precon={precon()} fromNew={false} />);
+    expect(key()).toBeNull();
+    unmount();
+    render(<OpenPreconView precon={precon({}, [card("Sol Ring", { typeLine: "Artifact", imageUri: null, foil: 1 })])} fromNew={false} />);
+    expect(key()).toBeNull();
   });
 });

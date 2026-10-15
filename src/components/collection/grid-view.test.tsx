@@ -3,7 +3,7 @@
 // deliberately a copy of rows-view.test.tsx's — the two files are read side by
 // side, and a shared module for six lines would cost more than it saves.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
@@ -339,5 +339,49 @@ describe("GridView foil film", () => {
     unmount();
     renderTiles({ ...card, imageUri: null, foil: "foil" });
     expect(film()).toBeNull();
+  });
+});
+
+// The foil glint (foil mark addendum M1): first on the meta line, by the film's own rule, spoken after the name.
+describe("GridView foil glint", () => {
+  beforeEach(cleanup);
+  afterEach(cleanup);
+  // The key above the grid draws a sample glint too: a tile's own are inside its button.
+  const glints = () => document.querySelectorAll("button [data-testid='foil-mark']");
+  it("draws one glint for foil and for etched alike, over art, and says the finish after the name", () => {
+    const { unmount } = renderTiles({ ...card, imageUri: "https://cards.example/t.jpg", foil: "etched" });
+    expect(glints()).toHaveLength(1);
+    expect(screen.getAllByRole("button")[0].textContent).toContain(`${card.name}, etched foil`);
+    unmount();
+    renderTiles({ ...card, imageUri: "https://cards.example/t.jpg", foil: "foil" });
+    expect(glints()).toHaveLength(1);
+    expect(screen.getAllByRole("button")[0].textContent).toContain(`${card.name}, foil`);
+  });
+  it("is the first thing on the meta line, before the in-use chip", () => {
+    renderTiles({ ...card, imageUri: "https://cards.example/t.jpg", foil: "foil", availability: avail(2, 0, 1) });
+    const meta = glints()[0].parentElement!.parentElement!;
+    expect(meta.firstElementChild!.contains(glints()[0])).toBe(true);
+  });
+  const comboPartner = { name: "Thrasios, Triton Hero" };
+  it("gives up one mark's room: three marks beside a glint collapse to one and +2", () => {
+    renderTiles({
+      ...card,
+      imageUri: "https://cards.example/t.jpg",
+      foil: "foil",
+      facts: ["gameChanger", "massLandDenial"],
+      comboPartner,
+    });
+    expect(screen.getByText("+2")).toBeInTheDocument();
+    // The same three marks on a plain tile still draw whole (the cap is three).
+    cleanup();
+    renderTiles({ ...card, imageUri: "https://cards.example/t.jpg", facts: ["gameChanger", "massLandDenial"], comboPartner });
+    expect(screen.queryByText(/^\+\d/)).toBeNull();
+  });
+  it("draws nothing for a plain card, part-foil, or a card with no art", () => {
+    const { unmount } = renderTiles({ ...card, imageUri: "https://cards.example/t.jpg" });
+    expect(glints()).toHaveLength(0);
+    unmount();
+    renderTiles({ ...card, imageUri: null, foil: "foil" });
+    expect(glints()).toHaveLength(0);
   });
 });

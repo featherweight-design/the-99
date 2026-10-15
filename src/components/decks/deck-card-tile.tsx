@@ -34,6 +34,8 @@ import { CardTileCaption, TILE_ART_CLIP_SCALED, TILE_ART_RATIO, TILE_FIELD, TILE
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
+import { FoilGlint } from "../cards/foil-mark";
+import { foilSpoken } from "../../lib/copy/foil-mark";
 import { CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
@@ -194,6 +196,10 @@ export function DeckCardTile({
   const factClause = card.facts?.length
     ? `, ${cardMarkCopy.rowAria(card.facts.map(cardFactName))}`
     : "";
+  // The glint's finish, by the film's own rule (every owned copy of the drawn printing, and only over art). Part-foil,
+  // no foil and not-owned have none. It is spoken here, ahead of the facts, because the glint is `silent`.
+  const foilFinish = card.imageUri ? card.foil : undefined;
+  const markClause = foilSpoken(foilFinish) + factClause;
   const displayName = printedFaceName(card);
   const fullName = printedNameOf(card);
   // Null unless the string holds symbols this app can draw, so both branches
@@ -276,11 +282,11 @@ export function DeckCardTile({
                 // `!proxied` for the same reason the drawn count is suppressed:
               // a quantity the proxy state does not claim must not be claimed to
               // a reader who cannot see that it was withheld.
-              ? `${cardDetailCopy.triggerAria(fullName)}, ${cardTileCopy.copiesAria(card.quantity)}${factClause}`
+              ? `${cardDetailCopy.triggerAria(fullName)}, ${cardTileCopy.copiesAria(card.quantity)}${markClause}`
                 // `undefined` keeps the provider's own composition where there is
                 // nothing to add; a fact is the one thing worth composing for.
-                : factClause
-                  ? `${cardDetailCopy.triggerAria(fullName)}${factClause}`
+                : markClause
+                  ? `${cardDetailCopy.triggerAria(fullName)}${markClause}`
                   : undefined
             }
             /* The bottom wash deletes with the marks it was holding off the
@@ -415,6 +421,12 @@ export function DeckCardTile({
                 className="w-[8px] h-[8px] flex-none"
                 label={card.owned && !proxied ? "Owned" : "Not owned"}
               />
+              {/* The foil glint, right after the dot (foil mark addendum R2): it reads with "you own this" and never
+                  among the fact marks, and `flex-none` keeps it when a long meta line drops those. Where the line still
+                  overflows (a locked tile with a worded chip at 360px), the shipped truncation order holds (audit F8):
+                  Design ruled the fact marks drop and the glint never does, and a glyph-only chip was tried and refused
+                  because it hides the `short N` figure the deck key does not gloss. */}
+              {foilFinish && <FoilGlint finish={foilFinish} />}
               {/* THE SAME EXCLUSIVE DECISION THE LIST ROW MAKES, and the reason
                   all three occupants had to move together: read off `card.owned`
                   alone, this tile drew a buy tag on a printed card — the Card

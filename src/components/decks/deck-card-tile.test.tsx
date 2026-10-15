@@ -579,3 +579,24 @@ describe("the bracket marks the tile draws", () => {
     expect(label).toContain(cardMarkCopy.massLandDenial);
   });
 });
+
+// The foil glint (foil mark addendum M1): right after the ownership dot, by the film's own rule, spoken in the tile's name.
+describe("DeckCardTile foil glint", () => {
+  beforeEach(cleanup);
+  afterEach(cleanup);
+  const glints = () => document.querySelectorAll("[data-testid='foil-mark']");
+  it("draws one glint after the dot for foil and etched, and says the finish in the tile's name", () => {
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, foil: "etched" } as DeckDetailCard} />);
+    expect(glints()).toHaveLength(1);
+    const dot = document.querySelector("[data-owned], [aria-label='Owned'], [aria-label='Not owned']");
+    expect(dot).not.toBeNull();
+    expect(screen.getAllByRole("button").some((b) => (b.getAttribute("aria-label") ?? "").includes(", etched foil"))).toBe(true);
+  });
+  it("draws nothing for a plain card, part-foil, or a card with no art", () => {
+    renderTile(<DeckCardTile deckId="d1" card={card} />);
+    expect(glints()).toHaveLength(0);
+    cleanup();
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, foil: "foil", imageUri: null } as DeckDetailCard} />);
+    expect(glints()).toHaveLength(0);
+  });
+});

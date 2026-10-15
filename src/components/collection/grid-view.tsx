@@ -25,6 +25,8 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { comboClauseSpoken } from "../cards/combo-clause";
 import { ComboMark } from "../cards/combo-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
+import { FoilGlint } from "../cards/foil-mark";
+import { foilSpoken } from "../../lib/copy/foil-mark";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
@@ -128,8 +130,11 @@ export function GridView({
           ...(c.facts ?? []).map((fact) => ({ kind: "fact" as const, fact })),
           ...(c.comboPartner ? [{ kind: "combo" as const }] : []),
         ];
-        const tooMany = allMarks.length > MAX_TILE_MARKS;
-        const shownMarks = tooMany ? allMarks.slice(0, MAX_TILE_MARKS - 1) : allMarks;
+        // The foil glint takes one glyph's room (12px and its gap) on the same line, so a foil tile collapses one
+        // mark sooner: the worst line, glint + two facts + combo, would overrun the 3-up phone tile.
+        const maxMarks = c.imageUri && c.foil ? MAX_TILE_MARKS - 1 : MAX_TILE_MARKS;
+        const tooMany = allMarks.length > maxMarks;
+        const shownMarks = tooMany ? allMarks.slice(0, maxMarks - 1) : allMarks;
         const moreCount = tooMany ? allMarks.length - shownMarks.length : 0;
         return (
         <button
@@ -208,6 +213,9 @@ export function GridView({
             compact
             meta={
               <>
+                {/* The foil glint, FIRST on the meta line, before the in-use chip and the facts (foil mark addendum:
+                    no dot here, every tile is owned). By the film's own rule, only over art. */}
+                {c.imageUri && c.foil && <FoilGlint finish={c.foil} />}
                 {c.availability && (
                   <>
                     {/* Below `md` ONLY: the word is dropped (collection surfaces, Call 3) —
@@ -345,6 +353,7 @@ export function GridView({
             nameSpoken={
               <span className="sr-only">
                 {printedNameOf(c)}
+                {c.imageUri ? foilSpoken(c.foil) : ""}
                 {/* The facts ride the SPOKEN name rather than the meta line, so they are
                     heard straight after the card they describe. The glyphs above are
                     aria-hidden, which is what lets this sit in the reading order the

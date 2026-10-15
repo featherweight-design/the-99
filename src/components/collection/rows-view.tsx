@@ -18,6 +18,8 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { comboClauseSpoken } from "../cards/combo-clause";
 import { ComboMark } from "../cards/combo-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
+import { FoilGlint } from "../cards/foil-mark";
+import { foilSpoken } from "../../lib/copy/foil-mark";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { GhostButton } from "../ui/button";
@@ -97,7 +99,8 @@ export function RowsView({
           // visible caption below is the front face and may clip, and this is a
           // real button, so the whole string is spoken here.
           aria-label={availabilityCopy.collection.rowAria(
-            printedNameOf(c),
+            // The finish rides the name, so it is heard straight after the card it describes.
+            printedNameOf(c) + (c.imageUri ? foilSpoken(c.foil) : ""),
             c.typeLine,
             c.quantity,
             // The pips are `aria-hidden`, so without this clause a screen-reader user
@@ -126,8 +129,13 @@ export function RowsView({
           className={`${ROW_SHELL_GRID} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_1fr_76px_auto] md:[grid-template-columns:52px_1fr_90px_150px_92px_18px] ${reveal.className ?? ""}`}
         >
           {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, --accent, font-weight 500 */}
-          <span className="font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--accent)" }}>
+          <span className={`flex items-center gap-[4px] whitespace-nowrap font-mono text-[13px] md:text-[14px] font-medium${c.imageUri && c.foil && c.quantity >= 1000 ? " max-md:flex-wrap" : ""}`} style={{ color: "var(--accent)" }}>
             ×{c.quantity}
+            {/* The foil glint in the count column, after `×N` (foil mark addendum): no new column, so every name
+                keeps its full width. The phone column is 38px and the cell does not wrap, so `×10` to `×99` with a glint
+                run up to ~9px past it, into the 10px gap before the name, and so do three digits; from `×1000` (the cap is far higher) the
+                glint wraps under the count on the phone, so the name column is never reached. */}
+            {c.imageUri && c.foil && <FoilGlint finish={c.foil} />}
           </span>
 
           {/* Name column — §Row: Name Column Container: min-width 0 */}

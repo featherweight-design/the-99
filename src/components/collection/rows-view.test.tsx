@@ -1,8 +1,8 @@
 // The marker on a collection row (#43, Addendum 2 §1). `/collection` is the
 // count-only vantage: the row never names the deck holding a card, and it
 // never passes `selfExcluded`, because only a decklist is somewhere to stand.
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { RowsView } from "./rows-view";
@@ -204,5 +204,34 @@ describe("RowsView cost track accessibility", () => {
   it("says a land has no mana cost rather than falling silent", () => {
     renderRows({ ...card, typeLine: "Basic Land — Forest", manaCost: null });
     expect(screen.getByRole("button", { name: /no mana cost/ })).toBeInTheDocument();
+  });
+});
+
+// The foil glint (foil mark addendum M1): in the count column after `×N`, spoken after the name.
+describe("RowsView foil glint", () => {
+  beforeEach(cleanup);
+  afterEach(cleanup);
+  it("draws the glint in the count cell and says the finish after the name", () => {
+    renderRows({ ...card, imageUri: "https://cards.example/t.jpg", foil: "foil" });
+    // The key draws a sample glint too: the row's own is inside its button.
+    const glint = document.querySelector("button [data-testid='foil-mark']")!;
+    expect(glint).not.toBeNull();
+    expect(glint.closest("span.font-mono")!.textContent).toContain(`×${card.quantity}`);
+    expect(screen.getAllByRole("button")[0].getAttribute("aria-label")).toContain(`${card.name}, foil`);
+  });
+  it("lets the glint wrap under a count of 1000 or more on the phone, and never wraps a smaller one", () => {
+    renderRows({ ...card, quantity: 1000, imageUri: "https://cards.example/t.jpg", foil: "foil" });
+    const cell = () => document.querySelector("button [data-testid='foil-mark']")!.closest("span.font-mono")!;
+    expect(cell().className).toContain("max-md:flex-wrap");
+    cleanup();
+    renderRows({ ...card, quantity: 999, imageUri: "https://cards.example/t.jpg", foil: "foil" });
+    expect(cell().className).not.toContain("max-md:flex-wrap");
+  });
+  it("draws nothing for a plain card, or one with no art", () => {
+    renderRows({ ...card, imageUri: "https://cards.example/t.jpg" });
+    expect(document.querySelector("button [data-testid='foil-mark']")).toBeNull();
+    cleanup();
+    renderRows({ ...card, imageUri: null, foil: "foil" });
+    expect(document.querySelector("button [data-testid='foil-mark']")).toBeNull();
   });
 });

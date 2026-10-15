@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
@@ -41,6 +41,14 @@ describe("ReadOnlyCardTile", () => {
     expect(screen.getByTestId("read-only-basic-tile")).toBeInTheDocument();
   });
 
+  it("draws the glint on a basic the box holds in foil, with its copies in the tooltip's count", () => {
+    tile(card({ printedFoil: true }), { arts: 1 });
+    expect(within(screen.getByTestId("read-only-basic-tile")).getAllByTestId("foil-mark")).toHaveLength(1);
+    cleanup();
+    tile(card(), { arts: 1 });
+    expect(screen.queryByTestId("foil-mark")).toBeNull();
+  });
+
   it("names a basic held in one art by its printing", () => {
     tile(card(), { arts: 1 });
     expect(screen.getByText("CMM 287")).toBeInTheDocument();
@@ -64,5 +72,23 @@ describe("ReadOnlyCardTile foil film", () => {
   it("draws no film for a card the box holds plain", () => {
     tile(card({ printedFoil: false }));
     expect(document.querySelector("[data-foil]")).toBeNull();
+  });
+});
+
+// The foil glint (foil mark addendum M1): right after the dot, the box's own copies, only over art.
+describe("ReadOnlyCardTile foil glint", () => {
+  beforeEach(cleanup);
+  afterEach(cleanup);
+  it("draws the glint after the dot for a foil box copy, and says it in the trigger's name", () => {
+    tile(card({ printedFoil: true, quantity: 1 }));
+    expect(document.querySelectorAll("[data-testid='foil-mark']")).toHaveLength(1);
+    expect(screen.getAllByRole("button").some((b) => (b.getAttribute("aria-label") ?? "").endsWith(", foil"))).toBe(true);
+  });
+  it("draws nothing for a plain box copy, or without art", () => {
+    const { unmount } = tile(card({ printedFoil: false }));
+    expect(document.querySelector("[data-testid='foil-mark']")).toBeNull();
+    unmount();
+    tile(card({ printedFoil: true, imageUri: null }));
+    expect(document.querySelector("[data-testid='foil-mark']")).toBeNull();
   });
 });

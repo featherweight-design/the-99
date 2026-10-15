@@ -1,0 +1,65 @@
+{
+  "feature": "The foil mark's key entry",
+  "note": "The three keys that gloss the glint, each mounted by a different file (`collection-mark-key.tsx`, `decklist.tsx`, `open-precon-view.tsx`), so a row each: one row naming one file would leave the others free to stop glossing while the gate stayed green. Same preconditions as `foil-mark.json`: the deck and precon keys name the foil entry only when a card in view is all foil over art (`FOIL_DECK`, `FOIL_PRECON`).",
+  "shares": {
+    "module": "src/components/cards/foil-mark.tsx",
+    "binding": "FoilMark",
+    "note": "The key draws the glint without its tooltip."
+  },
+  "rows": [
+    {
+      "id": "collection-key",
+      "label": "/collection: the key's foil entry",
+      "view": "src/components/collection/collection-mark-key.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=rows",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "deck-key",
+      "label": "/decks/[id] Card view: the key's foil entry",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FOIL_DECK}",
+          "wait": "button[aria-label=\"Card view\"]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Card view",
+          "settle": 500
+        },
+        {
+          "wait": "[class*=\"min-h-[50px]\"]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "precon-key",
+      "label": "/decks/precons/[id] Card view: the key's foil entry",
+      "view": "src/components/decks/precons/open-precon-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/${FOIL_PRECON}",
+          "wait": "h1",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Card view",
+          "settle": 500
+        },
+        {
+          "wait": "[data-testid=\"read-only-card-tile\"]",
+          "settle": 2000
+        }
+      ]
+    }
+  ]
+}
