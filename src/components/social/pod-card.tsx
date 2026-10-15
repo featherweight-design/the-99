@@ -135,9 +135,7 @@ export function PodCard({
           type="checkbox"
           checked={shared}
           aria-busy={sharePending || undefined}
-          onChange={(e) => {
-            if (!sharePending) onShare(e.target.checked);
-          }}
+          onChange={(e) => onShare(e.target.checked)}
           className="peer sr-only"
         />
         <span
