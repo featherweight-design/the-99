@@ -95,6 +95,37 @@ export type SyncCounts = {
  * unanswered (an unanswered conflict is something to sync: the review has to ask it). What the preview's
  * `nothing` and the confirm's `nothingToSync` read, and `measure:sync` prints.
  */
+/**
+ * Holdings the anchor's file holds that this file lacks or holds fewer of: what the stale banner calls
+ * "missing", read from the two files alone, never from what the merge would write.
+ */
+export function missingFromAnchor(anchor: ReadonlyMap<string, number>, file: ReadonlyMap<string, number>): number {
+  let n = 0;
+  for (const [k, q] of anchor) if (q > 0 && (file.get(k) ?? 0) < q) n += 1;
+  return n;
+}
+
+/**
+ * Of a token plan's changes, the distinct tokens whose COUNT moves (`changed`; a source-only change, a hand
+ * mark becoming an upload row at the same count, is not one), and those the file raises above what is held
+ * (`incoming`: what the collection has not recorded). Printing rows and the read marker are not tokens.
+ */
+export function tokenChangeCounts(
+  changes: readonly { kind: string; id: string; from: number | null; to: number | null }[],
+): { changed: number; incoming: number } {
+  const changed = new Set<string>();
+  const incoming = new Set<string>();
+  for (const c of changes) {
+    if (c.kind !== "token") continue;
+    const from = c.from ?? 0;
+    const to = c.to ?? 0;
+    if (from === to) continue;
+    changed.add(c.id);
+    if (to > from) incoming.add(c.id);
+  }
+  return { changed: changed.size, incoming: incoming.size };
+}
+
 export function nothingToSync(plan: Pick<SyncPlan, "rows" | "counts">, tokenChanges: number): boolean {
   return plan.rows.length === 0 && tokenChanges === 0 && plan.counts.undecided === 0;
 }

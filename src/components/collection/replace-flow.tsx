@@ -168,9 +168,13 @@ export function ReplaceFlow({
     };
   }, [deckCheck, sync, previewedId, firstImport, readKey]);
 
-  // A follow-up pick's own dry run, read once per pick and cached. Only what it adds is read as soon as
-  // the follow-up can appear, so it is ready when Sync is picked; the others when they are picked.
-  const needPick = choosing && syncUsable && pickNow !== "everything" && cachedReads[pickNow] === undefined ? pickNow : null;
+  // A follow-up pick's own dry run, read once per pick and cached. When the follow-up can appear, both
+  // partial picks are read straight away (the pick in force first), because each option's body quotes its
+  // own read's figures (G8); Everything's is the plain Sync's. Otherwise only the pick in force, if partial.
+  const wanted: SyncPick[] = syncBase && followUpShown(syncBase)
+    ? [pickNow, ...(["additions", "tokens"] as const).filter((p) => p !== pickNow)].filter((p) => p !== "everything")
+    : pickNow !== "everything" ? [pickNow] : [];
+  const needPick = choosing && syncUsable ? (wanted.find((p) => cachedReads[p] === undefined) ?? null) : null;
   useEffect(() => {
     if (!needPick || !previewedId) return;
     let live = true;
@@ -382,27 +386,34 @@ export function ReplaceFlow({
     if (datas.sync) {
       const base = datas.sync;
       const own = pickRead && pickRead !== "failed" ? pickRead : null;
-      const addsRead = cachedReads.additions;
+      const ownOf = (p: SyncPick) => {
+        const r = p === "everything" ? base : cachedReads[p];
+        return r && r !== "failed" ? r : null;
+      };
+      const adds = ownOf("additions");
+      const tokensOnly = ownOf("tokens");
       syncChoice = {
         unavailable: base.sync.unavailable,
-        lastUploadAt: datas.replace.lastUploadAt,
+        // Every "since your <date> upload" names the file this one is compared with, never the newest upload.
+        anchorAt: base.sync.anchorConfirmedAt,
         before: base.detail.copiesBefore,
         after: own ? own.detail.copiesAfter : pickRead === "failed" ? "failed" : null,
         note: own ? syncNote(own, pickNow) : null,
         next: own ? syncNext(own, pickNow) : { kind: "sync" },
         stale:
           base.sync.stale === "older"
-            ? // The holdings the plain Sync takes out: what the file lacks that the last upload had.
-              { kind: "older", missing: base.detail.leaving }
+            ? { kind: "older", missing: base.sync.missingFromAnchor }
             : base.sync.stale === "noNewer"
-              ? { kind: "noNewer", tokens: base.sync.tokensChanged > 0 ? base.sync.tokensChanged : null }
+              ? // The tokens the file raises above what is held: what the collection has not recorded.
+                { kind: "noNewer", tokens: base.sync.tokensIncoming > 0 ? base.sync.tokensIncoming : null }
               : null,
         followUp: followUpShown(base)
           ? {
               pick: followPick,
-              adds: addsRead && addsRead !== "failed" ? addsRead.detail.up : null,
-              tokens: base.sync.tokens.count,
-              all: { up: base.detail.up, leaving: base.detail.leaving, down: base.detail.down },
+              // Each option's figures are its own dry run's, tokens included (the tokens that pick changes).
+              adds: adds ? { cards: adds.detail.up, tokens: adds.sync.tokensChanged } : null,
+              tokens: tokensOnly ? tokensOnly.sync.tokensChanged : null,
+              all: { up: base.detail.up, leaving: base.detail.leaving, down: base.detail.down, tokens: base.sync.tokensChanged },
               onPick: setFollowPick,
             }
           : null,

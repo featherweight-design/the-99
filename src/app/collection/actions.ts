@@ -21,7 +21,7 @@ import {
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
 import { collectionEditEnabled, collectionSyncEnabled } from "../../lib/collection/edit-flag";
-import { parseSyncOptions, SYNC_REVIEW_CAP, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
+import { parseSyncOptions, SYNC_REVIEW_CAP, tokenChangeCounts, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
 import { summarizeUploadPreview, type UploadPreviewDetail } from "../../lib/collection/upload-preview";
 import { randomUUID } from "node:crypto";
@@ -199,12 +199,20 @@ export type UploadSyncPreview = {
   /** The first `SYNC_REVIEW_CAP` kept holdings by key, and how many there are. */
   kept: { rows: SyncReviewRow[]; total: number };
   stale: Staleness;
+  /** ISO time the anchor (the upload this file is compared with) was confirmed; null when unavailable. */
+  anchorConfirmedAt: string | null;
+  /** Holdings the anchor's file holds that this file lacks or holds fewer of. */
+  missingFromAnchor: number;
+  /** Conflicts, uncapped, whose file count is above the app's. */
+  raisingConflicts: number;
   /** The tokens the file read: how many and how many copies. */
   tokens: { count: number; copies: number };
   /** Whether the confirm would record any token change. */
   tokensChange: boolean;
-  /** How many distinct tokens the confirm would change the count of (the token plan's `token` changes). */
+  /** Distinct tokens whose COUNT the confirm would change (a source-only change is not counted). */
   tokensChanged: number;
+  /** Distinct tokens the file reads above what is held: the ones the collection has not recorded. */
+  tokensIncoming: number;
   /** No card and no token would change. */
   nothing: boolean;
   /** Sent back with the confirm as `planDigest`. Empty when unavailable. */
@@ -327,12 +335,14 @@ export async function previewUploadChange(
           unavailable: result.reason, pick: sync!.pick,
           counts: { taken: 0, kept: 0, agreed: 0, unchanged: 0, conflicts: 0, undecided: 0, answeredFile: 0, ignored: 0 },
           conflicts: { rows: [], total: 0 }, kept: { rows: [], total: 0 }, stale: null,
-          tokens: tokenTotals(tokens), tokensChange: false, tokensChanged: 0, nothing: true, planDigest: "",
+          anchorConfirmedAt: null, missingFromAnchor: 0, raisingConflicts: 0,
+          tokens: tokenTotals(tokens), tokensChange: false, tokensChanged: 0, tokensIncoming: 0, nothing: true, planDigest: "",
         },
       };
     default: throw new Error(`upload preview refused: ${result.status}`);
   }
   const s = result.sync;
+  const tokenCounts = s ? tokenChangeCounts(s.tokenChanges) : null;
   return {
     raised: result.raised,
     lowered: result.lowered,
@@ -350,9 +360,13 @@ export async function previewUploadChange(
             conflicts: { rows: await namedRows(s.conflicts.slice(0, SYNC_REVIEW_CAP)), total: s.conflicts.length },
             kept: { rows: await namedRows(s.kept.slice(0, SYNC_REVIEW_CAP)), total: s.kept.length },
             stale: s.stale,
+            anchorConfirmedAt: s.anchorConfirmedAt.toISOString(),
+            missingFromAnchor: s.missingFromAnchor,
+            raisingConflicts: s.raisingConflicts,
             tokens: tokenTotals(tokens),
             tokensChange: s.tokenChanges.length > 0,
-            tokensChanged: new Set(s.tokenChanges.filter((c) => c.kind === "token").map((c) => c.id)).size,
+            tokensChanged: tokenCounts!.changed,
+            tokensIncoming: tokenCounts!.incoming,
             nothing: s.nothing,
             planDigest: s.planDigest,
           },

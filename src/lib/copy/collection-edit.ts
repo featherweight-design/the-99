@@ -66,15 +66,21 @@ export const collectionEditCopy = {
     syncKeeps: (k: number, since: string) => `Keeps the ${cards(k)} you changed in the app since your ${since} upload.`,
     syncKeepsNone: (since: string) => `You haven’t changed anything in the app since your ${since} upload, so this does what Replace does.`,
     syncTokensOnly: (t: number) => `Your cards stay as they are. Sync records the file’s ${tokens(t)}.`,
+    /** Only when the file's cards equal the upload it is compared with. */
     syncNothingNew: "Nothing new in this file. It matches your last upload, tokens included.",
-    syncUnavailableLead: "Sync can’t be used for this file.",
-    syncUnavailableNoRecord: (since: string) =>
-      `We have no record of what changed since your ${since} upload, so we can’t tell your changes from the file’s.`,
+    /** (new, for /copy-review) Nothing would change, and the file is not the last upload's: no match is claimed. */
+    syncNoChange: "Nothing in this file changes your collection.",
+    /**
+     * (new, for /copy-review) No unreverted Replace or full Sync to compare against, or its file is too old to
+     * read. No date: the ledger-base wording this replaced named the newest upload.
+     */
+    syncUnavailableNoRecord: "Sync compares against your last full upload, and there isn’t one it can read. Replace or Add work as usual.",
     syncUnavailableNoUpload: "Sync compares a file with your last upload, and your collection was built in the app without one. Replace or Add will work.",
     continueSync: "Review the sync →",
     nextSync: "Next: what this sync takes from the file, what it keeps, and anything it needs you to decide.",
     nextSyncTokens: "Next: the tokens this sync records. Your cards don’t move.",
-    nextSyncAdds: (c: number, t: number) => `Next: the ${cards(c)} and ${tokens(t)} this sync takes. Nothing leaves.`,
+    /** `t` is the tokens this pick would change; the zero form is (new, for /copy-review). */
+    nextSyncAdds: (c: number, t: number) => `Next: the ${cards(c)}${t ? ` and ${tokens(t)}` : ""} this sync takes. Nothing leaves.`,
     staleOlderTitle: (since: string) => `This file looks older than your ${since} upload.`,
     staleOlderBody: (k: number) =>
       `It’s missing ${cards(k)} that upload added, which usually means an earlier export. If it’s older, taking everything from it would undo them.`,
@@ -83,12 +89,15 @@ export const collectionEditCopy = {
     staleQuestion: "What should Sync take from this file?",
     staleAddsTitle: "Only what it adds",
     /** `c` counts raises as well as new holdings, so it reads as the review's own `going up or new`. */
-    staleAddsBody: (c: number, t: number) => `${cards(c)} going up or new, and its ${tokens(t)}. Nothing leaves or goes down.`,
+    // `t` in these three is the tokens that pick would change, from its own dry run; with none, the clause goes.
+    staleAddsBody: (c: number, t: number) =>
+      `${cards(c)} going up or new${t ? `, and its ${tokens(t)}` : ""}. Nothing leaves or goes down.`,
     staleTokensTitle: "Only its tokens",
-    staleTokensBody: (t: number) => `Its ${tokens(t)}. Your cards stay as they are.`,
+    /** The zero form is (new, for /copy-review). */
+    staleTokensBody: (t: number) => (t ? `Its ${tokens(t)}. Your cards stay as they are.` : "No tokens to record. Your cards stay as they are."),
     staleAllTitle: "Everything, removals too",
     staleAllBody: (up: number, leaving: number, down: number, t: number) =>
-      `${n(up)} going up or new, ${n(leaving)} leaving, ${n(down)} going down, and its ${tokens(t)}.`,
+      `${n(up)} going up or new, ${n(leaving)} leaving, ${n(down)} going down${t ? `, and its ${tokens(t)}` : ""}.`,
     /** (new) The comparison could not be read. */
     /** (new) A confirm failed and so did the read that would say whether it landed. */
     unconfirmed: "We couldn’t confirm whether that went through. Check your collection, then try again if it didn’t.",

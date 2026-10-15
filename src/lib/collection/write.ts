@@ -20,7 +20,7 @@ import {
   planTokenWrite, readTokenState, recordUploadTokens, syncPreconTokens, tokenFinalEntries, tokenOwnershipTablesExist,
   type TokenChange, type TokenFinal, type TokenHolding, type TokenWriteMode,
 } from "../tokens/ownership";
-import { nothingToSync, planSync, staleness, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
+import { missingFromAnchor, nothingToSync, planSync, quantitiesOf, staleness, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
 import { readSyncBase } from "./sync-base";
 
 /**
@@ -362,6 +362,12 @@ export type SyncPreview = {
   conflicts: SyncReviewRow[];
   kept: SyncReviewRow[];
   stale: Staleness;
+  /** When the anchor (the file this one is compared with) was confirmed: every "since your <date> upload" names it. */
+  anchorConfirmedAt: Date;
+  /** Holdings the anchor's file holds that this file lacks or holds fewer of (`missingFromAnchor`). */
+  missingFromAnchor: number;
+  /** Conflicts, uncapped, whose file count is above the app's: the ones Only what it adds still asks. */
+  raisingConflicts: number;
   /** The token rows the confirm would change; empty when the tokens stand as the file reads them. */
   tokenChanges: TokenChange[];
   /** No card and no token would change: the confirm answers `nothingToSync`. */
@@ -880,15 +886,16 @@ export async function applyCollectionChange(
           const tokenPlan = tokenState && change.tokens ? planTokenWrite(syncTokenMode(change.pick), tokenState, change.tokens) : null;
           const tokenChanges = tokenPlan?.changes ?? [];
           const digest = planDigest(plan, tokenChanges, tokenPlan?.final ?? null);
+          // The file folded per holding key as the anchor's items are, so a key on two rows counts once, summed.
+          const fileItems = quantitiesOf(items);
           syncPreview = {
             counts: merged.counts,
             conflicts: merged.conflicts,
             kept: merged.kept,
-            stale: staleness(
-              new Map(items.map((i) => [keyOf(i), i.quantity])),
-              base.anchor.items,
-              base.earlier.map((e) => e.items),
-            ),
+            stale: staleness(fileItems, base.anchor.items, base.earlier.map((e) => e.items)),
+            anchorConfirmedAt: base.anchor.confirmedAt,
+            missingFromAnchor: missingFromAnchor(base.anchor.items, fileItems),
+            raisingConflicts: merged.conflicts.filter((r) => r.file > r.app).length,
             tokenChanges,
             nothing: nothingToSync(merged, tokenChanges.length),
             planDigest: digest,

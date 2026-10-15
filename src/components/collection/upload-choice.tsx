@@ -25,8 +25,8 @@ export type ReplaceFacts = {
 export type SyncChoice = {
   /** Why Sync cannot run, or null when it can. */
   unavailable: SyncUnavailable | null;
-  /** ISO time of the newest confirmed upload, or null for none. */
-  lastUploadAt: string | null;
+  /** ISO time the anchor was confirmed (the upload this file is compared with), or null when unavailable. */
+  anchorAt: string | null;
   before: number;
   /** The collection's copies after the pick's Sync; null while that dry run is read; `failed` when it could not be. */
   after: number | null | "failed";
@@ -36,10 +36,13 @@ export type SyncChoice = {
   /** The follow-up under an older-looking file that adds a card, drawn while Sync is picked. */
   followUp: {
     pick: SyncPick;
-    /** The holdings Only what it adds raises or brings in, from its own dry run; null until it lands. */
-    adds: number | null;
-    tokens: number;
-    all: { up: number; leaving: number; down: number };
+    /**
+     * Each option's figures, from that pick's own dry run: the holdings Only what it adds raises or brings
+     * in, and every pick's tokens as the tokens IT would change. Null until that read lands.
+     */
+    adds: { cards: number; tokens: number } | null;
+    tokens: number | null;
+    all: { up: number; leaving: number; down: number; tokens: number };
     onPick: (pick: SyncPick) => void;
   } | null;
 };
@@ -186,11 +189,11 @@ function StaleBanner({ stale, since }: { stale: NonNullable<SyncChoice["stale"]>
 function FollowUp({ followUp }: { followUp: NonNullable<SyncChoice["followUp"]> }) {
   const c = collectionEditCopy.upload;
   const name = useId();
-  const { tokens: t, all } = followUp;
+  const { adds, tokens, all } = followUp;
   const options: { pick: SyncPick; title: string; body: string | null }[] = [
-    { pick: "additions", title: c.staleAddsTitle, body: followUp.adds === null ? null : c.staleAddsBody(followUp.adds, t) },
-    { pick: "tokens", title: c.staleTokensTitle, body: c.staleTokensBody(t) },
-    { pick: "everything", title: c.staleAllTitle, body: c.staleAllBody(all.up, all.leaving, all.down, t) },
+    { pick: "additions", title: c.staleAddsTitle, body: adds === null ? null : c.staleAddsBody(adds.cards, adds.tokens) },
+    { pick: "tokens", title: c.staleTokensTitle, body: tokens === null ? null : c.staleTokensBody(tokens) },
+    { pick: "everything", title: c.staleAllTitle, body: c.staleAllBody(all.up, all.leaving, all.down, all.tokens) },
   ];
   return (
     <fieldset className="m-0 mt-[18px] min-w-0 border-0 p-0 md:mt-[22px]">
@@ -244,6 +247,7 @@ function syncNoteText(note: SyncNote, since: string | null): string | null {
     case "keepsNone": return since ? c.syncKeepsNone(since) : null;
     case "tokensOnly": return c.syncTokensOnly(note.tokens);
     case "nothingNew": return c.syncNothingNew;
+    case "noChange": return c.syncNoChange;
   }
 }
 
@@ -256,11 +260,14 @@ function syncNextText(next: SyncNext): string {
   }
 }
 
-/** The reason an unavailable Sync card names: never uploaded, else no record (C3, C3c). */
-function unavailableReason(reason: SyncUnavailable, lastUploadAt: string | null): string {
+/**
+ * The reason an unavailable Sync card names: never uploaded, else nothing to compare against (no
+ * unreverted Replace or full Sync, or its file too old to read). Neither names a date: the newest upload
+ * is not what Sync compares with, and there is no anchor to name.
+ */
+function unavailableReason(reason: SyncUnavailable): string {
   const c = collectionEditCopy.upload;
-  if (reason === "neverUploaded" || lastUploadAt === null) return c.syncUnavailableNoUpload;
-  return `${c.syncUnavailableLead} ${c.syncUnavailableNoRecord(day(lastUploadAt))}`;
+  return reason === "neverUploaded" ? c.syncUnavailableNoUpload : c.syncUnavailableNoRecord;
 }
 
 export function UploadChoice({
@@ -300,8 +307,8 @@ export function UploadChoice({
   const headingId = useId();
   const pct = overlap.of > 0 ? Math.round((overlap.held / overlap.of) * 100) : 0;
   const showOverlap = overlap.of > 0 && overlap.held / overlap.of >= ADD_OVERLAP_NOTE_AT;
-  const syncOff = sync?.unavailable ? unavailableReason(sync.unavailable, sync.lastUploadAt) : undefined;
-  const since = sync?.lastUploadAt ? day(sync.lastUploadAt) : null;
+  const syncOff = sync?.unavailable ? unavailableReason(sync.unavailable) : undefined;
+  const since = sync?.anchorAt ? day(sync.anchorAt) : null;
   // The cards in their drawn order. Sync is third (call 2).
   const order: UploadMode[] = sync ? ["replace", "add", "sync"] : ["replace", "add"];
   // Roving radios: the arrow moves from the card that HAS focus, wrapping, and focus goes with the

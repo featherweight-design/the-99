@@ -17,7 +17,7 @@ const base = {
 };
 const sync = (over: Partial<SyncChoice> = {}): SyncChoice => ({
   unavailable: null,
-  lastUploadAt: "2026-10-02T12:00:00.000Z",
+  anchorAt: "2026-10-02T12:00:00.000Z",
   before: 4616,
   after: 4632,
   note: { kind: "keeps", cards: 121 },
@@ -91,7 +91,7 @@ describe("UploadChoice with Sync", () => {
     expect(card.getAttribute("aria-disabled")).toBe("true");
     const reason = document.getElementById(card.getAttribute("aria-describedby") ?? "");
     expect(reason?.textContent).toBe(
-      "Sync can’t be used for this file. We have no record of what changed since your Oct 2 upload, so we can’t tell your changes from the file’s.",
+      "Sync compares against your last full upload, and there isn’t one it can read. Replace or Add work as usual.",
     );
     expect(reason?.className).toContain("border-dashed");
     expect(reason?.className).toContain("mt-[6px]");
@@ -105,8 +105,20 @@ describe("UploadChoice with Sync", () => {
     expect(onPick).not.toHaveBeenCalled();
   });
 
+  it("names the anchor's date in Sync's note, not the newest upload's that Replace's warning names", () => {
+    render(<UploadChoice {...base} sync={sync({ anchorAt: "2026-09-28T12:00:00.000Z" })} picked={null} onPick={noop} />);
+    expect(screen.getByText("Keeps the 121 cards you changed in the app since your Sep 28 upload.")).toBeTruthy();
+    expect(screen.getByText("4 changes you made in the app since your Oct 2 upload will be overwritten.")).toBeTruthy();
+  });
+
+  it("says the file changes nothing without claiming it matches the last upload", () => {
+    render(<UploadChoice {...base} sync={sync({ note: { kind: "noChange" } })} picked={null} onPick={noop} />);
+    expect(screen.getByText("Nothing in this file changes your collection.")).toBeTruthy();
+    expect(screen.queryByText(/It matches your last upload/)).toBeNull();
+  });
+
   it("names a never-uploaded collection's reason alone", () => {
-    render(<UploadChoice {...base} sync={sync({ unavailable: "neverUploaded", lastUploadAt: null })} picked={null} onPick={noop} />);
+    render(<UploadChoice {...base} sync={sync({ unavailable: "neverUploaded", anchorAt: null })} picked={null} onPick={noop} />);
     const card = screen.getByRole("radio", { name: "Sync my collection" });
     expect(document.getElementById(card.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
       "Sync compares a file with your last upload, and your collection was built in the app without one. Replace or Add will work.",
@@ -141,7 +153,8 @@ describe("UploadChoice with Sync", () => {
 
 describe("UploadChoice · the stale file", () => {
   const followUp = (pick: "additions" | "tokens" | "everything" = "additions", onPick = noop) => ({
-    pick, adds: 3, tokens: 114, all: { up: 3, leaving: 16, down: 2 }, onPick,
+    // Each option's tokens are its own pick's: 40, 38 and 44, never the file's total.
+    pick, adds: { cards: 3, tokens: 40 }, tokens: 38, all: { up: 3, leaving: 16, down: 2, tokens: 44 }, onPick,
   });
 
   it("heads the step with the older banner, in “looks”, above the cards", () => {
@@ -182,9 +195,18 @@ describe("UploadChoice · the stale file", () => {
     expect(rings.map((r) => r.childElementCount)).toEqual([1, 0, 0]);
     expect(rings[0].getAttribute("aria-hidden")).toBe("true");
     expect(options[0].closest("label")?.className).toContain("has-[:focus-visible]:shadow-[0_0_0_2px_var(--accent)]");
-    expect(within(group).getByText("3 cards going up or new, and its 114 tokens. Nothing leaves or goes down.")).toBeTruthy();
-    expect(within(group).getByText("Its 114 tokens. Your cards stay as they are.")).toBeTruthy();
-    expect(within(group).getByText("3 going up or new, 16 leaving, 2 going down, and its 114 tokens.")).toBeTruthy();
+    expect(within(group).getByText("3 cards going up or new, and its 40 tokens. Nothing leaves or goes down.")).toBeTruthy();
+    expect(within(group).getByText("Its 38 tokens. Your cards stay as they are.")).toBeTruthy();
+    expect(within(group).getByText("3 going up or new, 16 leaving, 2 going down, and its 44 tokens.")).toBeTruthy();
+  });
+
+  it("waits for an option's own read before drawing its body, and drops a token clause with no tokens to change", () => {
+    const f = { ...followUp(), adds: { cards: 3, tokens: 0 }, tokens: null, all: { up: 3, leaving: 16, down: 2, tokens: 0 } };
+    render(<UploadChoice {...base} sync={sync({ stale: { kind: "older", missing: 16 }, followUp: f })} picked="sync" onPick={noop} />);
+    const group = screen.getByRole("group", { name: "What should Sync take from this file?" });
+    expect(within(group).getByText("3 cards going up or new. Nothing leaves or goes down.")).toBeTruthy();
+    expect(within(group).getByText("3 going up or new, 16 leaving, 2 going down.")).toBeTruthy();
+    expect(within(group).getByRole("radio", { name: "Only its tokens" })).toBeTruthy();
   });
 
   it("hands a follow-up press to the flow", () => {

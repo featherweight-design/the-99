@@ -12,7 +12,9 @@ export type SyncNote =
   | { kind: "keeps"; cards: number }
   | { kind: "keepsNone" }
   | { kind: "tokensOnly"; tokens: number }
-  | { kind: "nothingNew" };
+  | { kind: "nothingNew" }
+  /** The plan writes nothing, but the file is not the anchor's: nothing is claimed about a match. */
+  | { kind: "noChange" };
 
 /**
  * Whether the file would add a card under **Only what it adds**: a holding the plain Sync raises or
@@ -20,7 +22,8 @@ export type SyncNote =
  * Read from the plain Sync's dry run, so the follow-up is drawn or not before any other read lands.
  */
 export function fileAddsCards(base: SyncChoiceRead): boolean {
-  return base.detail.up > 0 || base.sync.conflicts.rows.some((r) => r.file > r.app);
+  // The server's uncapped count, never the 500 conflict rows the preview ships.
+  return base.detail.up > 0 || base.sync.raisingConflicts > 0;
 }
 
 /** The follow-up is drawn only under an older-looking file that adds a card (S1: never with nothing to choose). */
@@ -41,12 +44,15 @@ export function effectivePick(base: SyncChoiceRead, followPick: SyncPick): SyncP
 /** The note for the read the card's figure is drawn from, under `pick`. */
 export function syncNote(read: SyncChoiceRead, pick: SyncPick): SyncNote | null {
   const s = read.sync;
-  if (s.nothing) return { kind: "nothingNew" };
+  // "It matches your last upload" only when the file's cards ARE the anchor's; any other no-op claims no match.
+  if (s.nothing) return s.stale === "noNewer" ? { kind: "nothingNew" } : { kind: "noChange" };
   const cardsMove = s.counts.taken > 0 || s.counts.conflicts > 0;
-  if (!cardsMove) return s.tokensChange ? { kind: "tokensOnly", tokens: s.tokens.count } : null;
+  if (!cardsMove) return s.tokensChanged > 0 ? { kind: "tokensOnly", tokens: s.tokensChanged } : null;
   if (s.counts.kept > 0) return { kind: "keeps", cards: s.counts.kept };
-  // "does what Replace does" is true of the plain Sync only.
-  return pick === "everything" ? { kind: "keepsNone" } : null;
+  // "You haven't changed anything … does what Replace does": the plain Sync only, and only with no app change
+  // of any kind (an agreed card and a conflict are app changes too).
+  const appChanged = s.counts.kept + s.counts.agreed + s.counts.conflicts > 0;
+  return pick === "everything" && !appChanged ? { kind: "keepsNone" } : null;
 }
 
 /** The desktop foot's lead-in with Sync picked. */

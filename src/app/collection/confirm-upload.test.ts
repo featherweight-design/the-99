@@ -264,11 +264,13 @@ describe("sync (collection sync plan, PR 1)", () => {
   });
   const syncPreview = {
     counts, conflicts: Array.from({ length: 601 }, (_, i) => review(i)), kept: [review(9000), review(9001)],
-    stale: "noNewer",
-    // Two tokens change count; a printing row and the read marker are not tokens and are not counted.
+    stale: "noNewer", anchorConfirmedAt: new Date("2026-10-02T12:00:00.000Z"), missingFromAnchor: 7, raisingConflicts: 601,
+    // Three tokens change count (two raised, one lowered); a hand mark becoming an upload row at the same
+    // count, a printing row and the read marker are not counted.
     tokenChanges: [
       { kind: "token", id: "t", from: null, to: 2 }, { kind: "printing", id: "p", from: null, to: 2 },
       { kind: "token", id: "t2", from: 1, to: 3 }, { kind: "read", id: "", from: null, to: null },
+      { kind: "token", id: "t3", from: 2, to: 2, source: "upload" }, { kind: "token", id: "t4", from: 3, to: 1 },
     ],
     nothing: false, planDigest: "digest-1",
   };
@@ -296,7 +298,8 @@ describe("sync (collection sync plan, PR 1)", () => {
     expect(got).toHaveProperty("sync.conflicts.total", 601);
     expect((got as { sync: { conflicts: { rows: unknown[] } } }).sync.conflicts.rows).toHaveLength(500);
     expect(got).toHaveProperty("sync.kept.total", 2);
-    expect(got).toMatchObject({ sync: { unavailable: null, stale: "noNewer", tokens: { count: 2, copies: 5 }, tokensChange: true, tokensChanged: 2, nothing: false, planDigest: "digest-1" } });
+    expect(got).toMatchObject({ sync: { unavailable: null, stale: "noNewer", tokens: { count: 2, copies: 5 }, tokensChange: true, tokensChanged: 3, tokensIncoming: 2, nothing: false, planDigest: "digest-1",
+      anchorConfirmedAt: "2026-10-02T12:00:00.000Z", missingFromAnchor: 7, raisingConflicts: 601 } });
   });
 
   it("previews Sync as unavailable, with its reason, when there is no base", async () => {
