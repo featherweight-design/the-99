@@ -1,6 +1,6 @@
 {
   "feature": "Segmented switch, PR 3b",
-  "note": "PR 3b: the loose-pill radiogroups converge on SegmentedSwitch (kind radio, tone neutral). The three /decks Stats cards' filters (worth order, shared cards, collection cuts) are size compact like the Lineup filter above them; their accent fill is gone. Tuning history's tool chips and Mana Balance's color chips keep the default size (the 44px phone floor) in a well that scrolls sideways at phone, and keep data-history-chip and data-mana-chip. The commanders facet strip is default size and scrolling; its dashed All and accent ring are gone. The admin switches list's Show filter is compact and scrolling. Needs LINEUP_ENABLED=true and an account with several decks (a pull:staging copy) for the Stats rows; ANALYSIS_TAB_ENABLED, TUNING_ENABLED and MANA_BALANCE_ENABLED 'true' and MANA_MULTI_DECK naming a multi-color deck with a Mana Balance run in its history for the hub rows; FACET_COMMANDER_SLUG naming a commander whose synergy panel draws more than one populated facet. The admin row needs a server started with ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL staging (see admin.json); the headless account is no admin otherwise, and that row then fails, which is the gate working, not a regression.",
+  "note": "PR 3b: the loose-pill radiogroups converge on SegmentedSwitch (kind radio, tone neutral). The three /decks Stats cards' filters (worth order, shared cards, collection cuts) are size compact like the Lineup filter above them; their accent fill is gone. Tuning history's tool chips and Mana Balance's color chips keep the default size (the 44px phone floor) in a well that scrolls sideways at phone, and keep data-history-chip and data-mana-chip. The commanders facet strip is default size and scrolling; its dashed All and accent ring are gone. The admin switches list's Show filter is compact and scrolling. Needs LINEUP_ENABLED=true and an account with several decks (a pull:staging copy) for the Stats rows; ANALYSIS_TAB_ENABLED, TUNING_ENABLED and MANA_BALANCE_ENABLED 'true' and MANA_MULTI_DECK naming a multi-color deck with a Mana Balance run in its history for the hub rows; FACET_COMMANDER_SLUG naming a commander whose synergy panel draws more than one populated facet. The admin row needs a server started with ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL staging (see admin.json); the headless account is no admin otherwise, and that row then fails, which is the gate working, not a regression. The fold memory is a cookie, so only stats-worth presses Expand all and the two Stats rows after it find the cards still open; keep the three in that order.",
   "clearAbout": true,
   "out": "contact-sheets/segmented-switch-3b",
   "shares": {
@@ -32,7 +32,7 @@
           "settle": 600
         },
         {
-          "scrollTo": "[data-stats-card=worth]",
+          "scrollTo": "[data-stats-card=worth] [role=radiogroup]",
           "settle": 400
         }
       ]
@@ -48,10 +48,6 @@
           "settle": 1500
         },
         {
-          "click": "[data-stats-expand]",
-          "settle": 800
-        },
-        {
           "scrollTo": "[data-stats-card=shared]",
           "settle": 500
         },
@@ -61,7 +57,7 @@
           "settle": 600
         },
         {
-          "scrollTo": "[data-stats-card=shared]",
+          "scrollTo": "[data-stats-card=shared] [role=radiogroup]",
           "settle": 400
         }
       ]
@@ -77,10 +73,6 @@
           "settle": 1500
         },
         {
-          "click": "[data-stats-expand]",
-          "settle": 800
-        },
-        {
           "scrollTo": "[data-stats-card=collection]",
           "settle": 500
         },
@@ -90,7 +82,7 @@
           "settle": 600
         },
         {
-          "scrollTo": "[data-stats-card=collection]",
+          "scrollTo": "[data-stats-card=collection] [role=radiogroup]",
           "settle": 400
         }
       ]
@@ -189,7 +181,7 @@
       "steps": [
         {
           "goto": "/commanders/${FACET_COMMANDER_SLUG}",
-          "wait": "[role=radiogroup][aria-label='Filter the synergy list by card type']",
+          "wait": "[role=radiogroup][aria-label='Filter the synergy list by card type']:visible",
           "settle": 3500
         },
         {
@@ -198,7 +190,7 @@
           "settle": 600
         },
         {
-          "scrollTo": "[role=radiogroup][aria-label='Filter the synergy list by card type']",
+          "scrollTo": "[role=radiogroup][aria-label='Filter the synergy list by card type']:visible",
           "settle": 400
         }
       ]

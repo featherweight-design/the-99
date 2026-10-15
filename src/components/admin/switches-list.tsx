@@ -207,7 +207,7 @@ export function SwitchesList({
             segments={SWITCH_FILTERS.map((f) => ({
               value: f,
               label: copy.chips[f],
-              count: <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{counts[f]}</span>,
+              count: <span className="ml-[7px] font-mono text-[11px] text-[color:var(--fg-faint)]">{counts[f]}</span>,
             }))}
             value={filter}
             onChange={setFilter}
